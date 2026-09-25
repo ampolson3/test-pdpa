@@ -126,5 +126,49 @@
       "title": "การแจ้งเตือน",
       "empty": "ไม่มีการแจ้งเตือน"
     }
+  },
+  "collab": {
+    "tab": {
+      "comments": "ความเห็น",
+      "attachments": "ไฟล์แนบ",
+      "activity": "ประวัติ"
+    },
+    "loading": "กำลังโหลด...",
+    "loadError": "โหลดไม่สำเร็จ กรุณาลองใหม่",
+    "saveError": "บันทึกไม่สำเร็จ อาจมีผู้อื่นแก้ไขไปแล้ว",
+    "unknownUser": "ผู้ใช้เดิม",
+    "reply": "ตอบกลับ",
+    "resolve": "ปิดประเด็น",
+    "reopen": "เปิดประเด็นอีกครั้ง",
+    "resolved": "ปิดประเด็นแล้ว",
+    "edit": "แก้ไข",
+    "delete": "ลบ",
+    "save": "บันทึก",
+    "cancel": "ยกเลิก",
+    "post": "แสดงความเห็น",
+    "placeholder": "เขียนความเห็น — พิมพ์ @ เพื่อกล่าวถึงผู้อื่น",
+    "commentLabel": "ความเห็น",
+    "mentionLabel": "กล่าวถึงผู้ใช้",
+    "noComments": "ยังไม่มีความเห็น",
+    "noAttachments": "ยังไม่มีไฟล์แนบ",
+    "noActivity": "ยังไม่มีประวัติ",
+    "download": "ดาวน์โหลด",
+    "av": {
+      "pending": "กำลังตรวจไวรัส…",
+      "infected": "ถูกปฏิเสธ: พบไวรัส",
+      "error": "ตรวจไวรัสไม่สำเร็จ"
+    },
+    "actor": {
+      "system": "ระบบ",
+      "unknown": "ผู้ใช้"
+    },
+    "action": {
+      "platform_comment_create": "แสดงความเห็น",
+      "platform_comment_edit": "แก้ไขความเห็น",
+      "platform_comment_delete": "ลบความเห็น",
+      "platform_comment_resolve": "ปิด / เปิดประเด็น",
+      "platform_file_attach": "แนบไฟล์",
+      "platform_file_scan": "— ตรวจไวรัสเสร็จ"
+    }
   }
 }

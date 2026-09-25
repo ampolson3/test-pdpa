@@ -89,6 +89,15 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "คำขอส่งการแจ้งเตือนไม่ถูกต้อง",
 		En: "Invalid notification request",
 	},
+	// PLT-07 collaboration
+	"collab.has_replies": {
+		Th: "ลบความเห็นที่มีการตอบกลับแล้วไม่ได้",
+		En: "Comment has replies",
+	},
+	"collab.invalid": {
+		Th: "ความเห็นหรือไฟล์แนบไม่ถูกต้อง",
+		En: "Invalid comment or attachment",
+	},
 }
 
 // ProblemTitle returns the title for code in lang, falling back through: the requested

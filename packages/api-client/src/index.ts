@@ -19,3 +19,13 @@ export {
   type NotificationChannel,
   type Inbox,
 } from "./notify";
+export {
+  useComments,
+  useAttachments,
+  useActivity,
+  useCollabMutations,
+  useMentionSearch,
+  type Comment,
+  type Attachment,
+  type Activity,
+} from "./collab";

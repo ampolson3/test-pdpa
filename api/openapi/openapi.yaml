@@ -623,6 +623,340 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/records/{entityType}/{entityId}/comments:
+    get:
+      operationId: platformListComments
+      tags: [platform]
+      summary: Comments of a record, oldest first (PLT-07)
+      description: Allowed when the record type is registered by its module and the caller holds that module's read (list) or write (post) permission for it — deny by default (PLT-07).
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/EntityType'
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Comment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: platformCreateComment
+      tags: [platform]
+      summary: Comment on a record, or reply (parent_id); @mentions notify their users
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/EntityType'
+        - $ref: '#/components/parameters/EntityId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body:
+                  type: string
+                  maxLength: 20000
+                  description: 'Mentions are written as @[Display name](user-id)'
+                parent_id:
+                  $ref: '#/components/schemas/Uuid'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/records/{entityType}/{entityId}/attachments:
+    get:
+      operationId: platformListAttachments
+      tags: [platform]
+      summary: Files attached to a record
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/EntityType'
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Attachment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: platformAttachFile
+      tags: [platform]
+      summary: Attach a file the caller uploaded (POST /admin/v1/platform/files) to a record
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/EntityType'
+        - $ref: '#/components/parameters/EntityId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [file_id]
+              properties:
+                file_id:
+                  $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Done
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/records/{entityType}/{entityId}/activity:
+    get:
+      operationId: platformListActivity
+      tags: [platform]
+      summary: Activity timeline of a record (its audit trail), newest first
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/EntityType'
+        - $ref: '#/components/parameters/EntityId'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Activity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/comments/{id}:
+    patch:
+      operationId: platformUpdateComment
+      tags: [platform]
+      summary: Edit your own comment
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body:
+                  type: string
+                  maxLength: 20000
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+    delete:
+      operationId: platformDeleteComment
+      tags: [platform]
+      summary: Delete your own comment (not one with replies)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '204':
+          description: Done
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/comments/{id}/resolve:
+    post:
+      operationId: platformResolveComment
+      tags: [platform]
+      summary: Mark a comment thread resolved, or open it again
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resolved]
+              properties:
+                resolved:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/mentionable-users:
+    get:
+      operationId: platformSearchMentionableUsers
+      tags: [platform]
+      summary: Active users of the tenant matching a name prefix, for the @mention picker (names only)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 60
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, display_name]
+                      properties:
+                        id:
+                          $ref: '#/components/schemas/Uuid'
+                        display_name:
+                          type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /public/v1/collection-points/{key}:
     get:
       operationId: consentGetPublicCollectionPoint
@@ -756,6 +1090,20 @@ components:
       name: X-Signature
       description: 't=<unix seconds>,v1=<hex HMAC-SHA256(secret, t + "." + body)>; reject if older than 5 minutes'
   parameters:
+    EntityType:
+      name: entityType
+      in: path
+      required: true
+      description: Record type registered by its module (e.g. notification_template, dsar_request)
+      schema:
+        type: string
+        pattern: '^[a-z][a-z0-9_]{1,59}$'
+    EntityId:
+      name: entityId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -880,6 +1228,73 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    Comment:
+      type: object
+      required: [id, author_id, author_name, body, mentions, resolved, row_version, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        parent_id:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        author_id:
+          $ref: '#/components/schemas/Uuid'
+        author_name:
+          type: string
+        body:
+          type: string
+        mentions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        resolved:
+          type: boolean
+        row_version:
+          type: integer
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    Attachment:
+      type: object
+      required: [id, file_name, mime_type, size_bytes, av_status, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        file_name:
+          type: string
+        mime_type:
+          type: string
+        size_bytes:
+          type: integer
+          format: int64
+        av_status:
+          type: string
+          enum: [pending, clean, infected, error]
+        uploader_name:
+          type: string
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+    Activity:
+      type: object
+      required: [id, occurred_at, actor_type, action]
+      properties:
+        id:
+          type: integer
+          format: int64
+        occurred_at:
+          $ref: '#/components/schemas/Timestamp'
+        actor_type:
+          type: string
+        actor_name:
+          type: string
+        action:
+          type: string
+        before:
+          type: [object, 'null']
+        after:
+          type: [object, 'null']
     NotificationChannel:
       type: string
       enum: [email, sms, line, in_app]

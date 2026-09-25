@@ -337,6 +337,8 @@ snapshot และ diff ของ record ที่มีเวอร์ชัน
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `platform.comments.parent_id`
 
+- PLT-07: `entity_type` ต้องเป็นประเภทที่ module ลงทะเบียนกับ `collab.Service` (ตรวจว่ามี record จริงภายใต้ RLS ก่อนเขียน — decisions D-20) · `mentions` = user id ที่ถูกกล่าวถึงซึ่งเป็นผู้ใช้ active ของ tenant (แยกจาก `@[ชื่อ](id)` ใน body) · ตอบกลับได้ชั้นเดียว · `resolved_at` ใช้กับความเห็นแรกของ thread เท่านั้น
+
 <a id="platform-files"></a>
 ## platform.files
 

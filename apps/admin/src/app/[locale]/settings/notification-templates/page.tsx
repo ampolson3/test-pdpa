@@ -10,7 +10,7 @@ export default async function NotificationTemplatesPage() {
   if (!me) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("signInRequired")}</main>;
   return (
     <GrantsProvider grants={{ roles: me.roles, permissions: me.permissions, scopes: me.scopes }}>
-      <TemplatesContent />
+      <TemplatesContent currentUserId={me.id} />
     </GrantsProvider>
   );
 }

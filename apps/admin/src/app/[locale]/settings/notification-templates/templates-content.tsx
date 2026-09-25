@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
+import { RecordCollaboration } from "@/components/record-collaboration";
 import {
   createApiClient,
   useDeleteNotificationTemplate,
@@ -16,13 +17,14 @@ import {
 
 const CHANNELS: NotificationChannel[] = ["email", "sms", "line", "in_app"];
 
-type Draft = { id?: string; rowVersion?: number; global?: boolean; code: string; channel: NotificationChannel; language: "th" | "en"; subject: string; body: string; variables: string };
+type Draft = { id?: string; templateId?: string; rowVersion?: number; global?: boolean; code: string; channel: NotificationChannel; language: "th" | "en"; subject: string; body: string; variables: string };
 
 const empty: Draft = { code: "", channel: "email", language: "th", subject: "", body: "", variables: "" };
 
 function fromTemplate(t: NotificationTemplate): Draft {
   return {
     id: t.global ? undefined : t.id,
+    templateId: t.id,
     rowVersion: t.row_version,
     global: t.global,
     code: t.code,
@@ -43,7 +45,7 @@ function useDebounced<T>(value: T, ms: number): T {
   return v;
 }
 
-export function TemplatesContent() {
+export function TemplatesContent({ currentUserId }: { currentUserId: string }) {
   const t = useTranslations("notify");
   const canRead = usePermission("admin.notification.read");
   const canCreate = usePermission("admin.notification.create");
@@ -173,6 +175,12 @@ export function TemplatesContent() {
             )}
             <Button variant="ghost" onClick={() => setDraft(null)}>{t("cancel")}</Button>
           </div>
+
+          {/* PLT-07: discussion, attachments and history of the template (the shared component). */}
+          {draft.templateId && (
+            <RecordCollaboration key={draft.templateId} entityType="notification_template" entityId={draft.templateId}
+              canWrite={canUpdate} currentUserId={currentUserId} />
+          )}
         </section>
       )}
     </main>

@@ -289,6 +289,8 @@
 
 **Acceptance criteria:** ทุกโมดูลใช้ component เดียวกัน และการ mention ส่งแจ้งเตือน
 
+**Implementation (PLT-07):** `backend/internal/platform/collab` — module เจ้าของลงทะเบียนประเภท record (`collab.Service.Register(type, Policy{ReadPermission, WritePermission, Exists})`); ประเภทที่ไม่ลงทะเบียนถูกปฏิเสธ · ความเห็น + ตอบกลับ (1 ชั้น) + @mention (`@[ชื่อ](user-id)`, เฉพาะผู้ใช้ active ของ tenant) → แจ้งเตือน in-app ผ่าน PLT-04 (template กลาง `collab.mention` / `collab.reply`, migration 00026) · แก้ / ลบเฉพาะของตน (If-Match; ลบไม่ได้ถ้ามีคำตอบ) · ปิดประเด็น · ไฟล์แนบ = ไฟล์ PLT-09 ที่ผูกกับ record (ดาวน์โหลดด้วยสิทธิ์อ่าน record) · ประวัติ = audit log ของ record · API `/admin/v1/platform/records/{entityType}/{entityId}/{comments|attachments|activity}`, `/admin/v1/platform/comments/{id}`, `/admin/v1/platform/mentionable-users` · frontend: `apps/admin/src/components/record-collaboration.tsx` (ใช้ตัวเดียวทุกโมดูล) · ผู้ใช้รายแรก: `notification_template` (หน้าแก้ template)
+
 <a id="plt-08"></a>
 ### PLT-08 เวอร์ชันและการอนุมัติ
 

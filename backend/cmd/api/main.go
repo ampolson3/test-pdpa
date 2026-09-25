@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
 	iamhttp "pdpa-platform/internal/iam/http"
@@ -30,6 +31,8 @@ import (
 	"pdpa-platform/internal/pkg/ratelimit"
 	"pdpa-platform/internal/pkg/validate"
 	auditservice "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/collab"
+	collabhttp "pdpa-platform/internal/platform/collab/http"
 	"pdpa-platform/internal/platform/crypto"
 	"pdpa-platform/internal/platform/files"
 	fileshttp "pdpa-platform/internal/platform/files/http"
@@ -133,6 +136,9 @@ func run() error {
 			httpx.WriteProblem(w, r, p)
 			return
 		}
+		// Logged so a 500 can be traced (request_id is in the client's problem too). Handler errors come
+		// from our own code and the database driver; they carry no request data (CLAUDE.md rule 3).
+		slog.ErrorContext(r.Context(), "handler error", "request_id", middleware.GetReqID(r.Context()), "path", r.URL.Path, "error", err.Error())
 		httpx.WriteProblem(w, r, httpx.Internal())
 	}
 
@@ -152,7 +158,22 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	fileSvc := &files.Service{Store: store, River: riverClient, Config: files.DefaultConfig(), EntityPermissions: map[string]string{}}
+	fileSvc := &files.Service{Store: store, River: riverClient, Config: files.DefaultConfig()}
+
+	// Record types that take comments, attachments and an activity feed (PLT-07). Each module registers
+	// its own here as it is built; attachments of a record are downloadable with its read permission.
+	collabSvc := &collab.Service{Notify: notifySvc, Files: fileSvc, Audit: auditSvc}
+	collabSvc.Register("notification_template", collab.Policy{
+		ReadPermission: "admin.notification.read", WritePermission: "admin.notification.update",
+		Exists: func(ctx context.Context, id uuid.UUID) (bool, error) {
+			_, err := notifySvc.GetTemplate(ctx, id)
+			if errors.Is(err, notify.ErrNotFound) {
+				return false, nil
+			}
+			return err == nil, err
+		},
+	})
+	fileSvc.EntityPermissions = collabSvc.FilePermissions()
 
 	// The inbox stream (SSE) is the one route outside Idempotency + Tx: the Tx middleware buffers the
 	// response until COMMIT, which a stream never reaches. It opens a short transaction per check itself.
@@ -176,6 +197,11 @@ func run() error {
 			[]jobshttp.StrictMiddlewareFunc{authz.StrictMiddleware[jobshttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			jobshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		jobshttp.HandlerWithOptions(strictJobs, jobshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictCollab := collabhttp.NewStrictHandlerWithOptions(collabhttp.NewStrict(collabSvc),
+			[]collabhttp.StrictMiddlewareFunc{authz.StrictMiddleware[collabhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			collabhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		collabhttp.HandlerWithOptions(strictCollab, collabhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictNotify := notifyhttp.NewStrictHandlerWithOptions(notifyhttp.NewStrict(notifySvc),
 			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission)},

@@ -204,6 +204,23 @@ through the BFF, cross-origin POST refused, signed download redirect, English lo
 Note: `make test` now runs `go test -p 1` — parallel packages sharing one DB let one package's River worker steal
 another's jobs. Committed by mistake earlier and removed: `dump.rdb` (local Redis snapshot, now ignored).
 
+### PLT-07 Comments, attachments, activity (`docs/modules/PLT.md#plt-07`) — done
+`internal/platform/collab` + `collab/http`: modules opt a record type in with `collab.Service.Register` (read/write
+permission + an RLS existence check; unregistered types are refused; `files.Service.EntityPermissions` is derived
+from it, so attachments download with the record's read permission). Comments with one level of replies, @mentions
+as `@[Name](user-id)` limited to active users of the tenant, in-app notifications through PLT-04 (global templates
+`collab.mention` / `collab.reply`, migration 00026), edit/delete own (If-Match, not with replies), resolve,
+attachments (PLT-09 files), activity = the record's audit rows. `iam/service` gained `SearchUsers` (names only, LIKE
+wildcards escaped) and `Names`. Frontend: one `RecordCollaboration` component (comments with @-picker, attachments via
+`FileUploader`, activity), first mounted on the notification-template editor (`notification_template` registered in
+`cmd/api`). Tests: service (mention notifies — acceptance; non-users/other tenant/self ignored; reply notifies the
+parent author; access rules incl. other tenant; edit/delete/resolve rules; attachments + activity against real S3),
+HTTP contract through the real validator, and a Chromium E2E of the component on the real stack (9/9).
+Found by the E2E and fixed: the request audit stored `METHOD + full path` in `audit_log.action` (varchar(80)) — any
+path longer than ~76 characters made the audit insert and so **every such request fail with 500**; now ids become
+`{id}` and the action is capped (`audit.RequestAction`, tested). Also: `cmd/api`'s response-error handler and the Tx
+middleware now log the error with the request id (both used to swallow it).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

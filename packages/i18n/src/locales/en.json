@@ -126,5 +126,49 @@
       "title": "Notifications",
       "empty": "No notifications."
     }
+  },
+  "collab": {
+    "tab": {
+      "comments": "Comments",
+      "attachments": "Attachments",
+      "activity": "Activity"
+    },
+    "loading": "Loading...",
+    "loadError": "Couldn't load. Please try again.",
+    "saveError": "Couldn't save. It may have been changed by someone else.",
+    "unknownUser": "Former user",
+    "reply": "Reply",
+    "resolve": "Resolve",
+    "reopen": "Reopen",
+    "resolved": "Resolved",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "post": "Comment",
+    "placeholder": "Write a comment — type @ to mention someone",
+    "commentLabel": "Comment",
+    "mentionLabel": "Mention a user",
+    "noComments": "No comments yet.",
+    "noAttachments": "No attachments yet.",
+    "noActivity": "No activity yet.",
+    "download": "Download",
+    "av": {
+      "pending": "Scanning…",
+      "infected": "Rejected: malware",
+      "error": "Scan failed"
+    },
+    "actor": {
+      "system": "System",
+      "unknown": "Someone"
+    },
+    "action": {
+      "platform_comment_create": "commented",
+      "platform_comment_edit": "edited a comment",
+      "platform_comment_delete": "deleted a comment",
+      "platform_comment_resolve": "resolved or reopened a thread",
+      "platform_file_attach": "attached a file",
+      "platform_file_scan": "— file scan finished"
+    }
   }
 }
