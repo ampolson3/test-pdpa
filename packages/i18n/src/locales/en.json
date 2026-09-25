@@ -45,5 +45,25 @@
       "discarded": "Failed (retries exhausted)",
       "cancelled": "Cancelled"
     }
+  },
+  "files": {
+    "choose": "Choose a file",
+    "dropHere": "Drop a file here or click to choose",
+    "limits": "PDF, images, Word / Excel / PowerPoint, CSV or text — up to 25 MB",
+    "uploading": "Uploading",
+    "download": "Download",
+    "status": {
+      "pending": "Scanning for viruses…",
+      "infected": "Rejected: malware found",
+      "error": "Virus scan failed"
+    },
+    "error": {
+      "files_too_large": "The file is larger than 25 MB.",
+      "files_type_not_allowed": "This file type isn't allowed.",
+      "files_empty": "The file is empty.",
+      "files_invalid_name": "The file name isn't valid.",
+      "network": "Upload failed — check your connection.",
+      "generic": "Upload failed. Please try again."
+    }
   }
 }

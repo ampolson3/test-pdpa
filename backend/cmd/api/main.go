@@ -30,6 +30,8 @@ import (
 	"pdpa-platform/internal/pkg/ratelimit"
 	"pdpa-platform/internal/pkg/validate"
 	auditservice "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/files"
+	fileshttp "pdpa-platform/internal/platform/files/http"
 	"pdpa-platform/internal/platform/jobs"
 	jobshttp "pdpa-platform/internal/platform/jobs/http"
 )
@@ -103,6 +105,7 @@ func run() error {
 		MaxAge:           300,
 	}))
 	r.Use(limiter.Middleware)
+	r.Use(maxBody(files.DefaultConfig().MaxBytes))
 	// Structural request validation isn't one of the 13 named middlewares in
 	// docs/architecture/code-structure.md, but oapi-codegen's strict server assumes the request
 	// already matches the spec by the time a handler runs, so it sits here, before AuthN.
@@ -143,6 +146,16 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	store, err := files.NewS3Store(files.S3ConfigFromEnv())
+	if err != nil {
+		return err
+	}
+	fileSvc := &files.Service{Store: store, River: riverClient, Config: files.DefaultConfig(), EntityPermissions: map[string]string{}}
+	strictFiles := fileshttp.NewStrictHandlerWithOptions(fileshttp.NewStrict(fileSvc),
+		[]fileshttp.StrictMiddlewareFunc{authz.StrictMiddleware[fileshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+		fileshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+	fileshttp.HandlerWithOptions(strictFiles, fileshttp.ChiServerOptions{BaseRouter: r, ErrorHandlerFunc: requestError})
+
 	strictJobs := jobshttp.NewStrictHandlerWithOptions(jobshttp.NewStrict(riverClient),
 		[]jobshttp.StrictMiddlewareFunc{authz.StrictMiddleware[jobshttp.StrictHandlerFunc](authzCache, requiredPermission)},
 		jobshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})

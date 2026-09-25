@@ -7,6 +7,7 @@ package validate
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
@@ -51,6 +52,9 @@ func Middleware(spec *openapi3.T, authFunc openapi3filter.AuthenticationFunc) (f
 				QueryParams: r.URL.Query(),
 				Options: &openapi3filter.Options{
 					AuthenticationFunc: authFunc,
+					// File uploads are not buffered into memory for schema validation; the handler
+					// streams and checks the file itself (size, sniffed type) — PLT-09.
+					ExcludeRequestBody: strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data"),
 				},
 			}
 

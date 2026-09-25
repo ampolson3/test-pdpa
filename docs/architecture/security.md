@@ -98,6 +98,7 @@
 - ห้าม log ค่า PII / token / OTP / secret — log ได้เฉพาะ id, subject_ref, request_id · middleware redaction + linter ตรวจ key ต้องห้าม (email, phone, national_id, name ฯลฯ)
 - response ของ admin คืนค่า identifier แบบ mask ตาม `iam.field_masking_rules` เป็นค่าเริ่มต้น · ค่าเต็มผ่าน endpoint unmask ที่ต้องมี `pii.unmask.execute` + เหตุผล + step-up MFA
 - ไฟล์ export / แพ็กเกจ DSAR เข้ารหัสและหมดอายุ · ดาวน์โหลดผ่าน signed URL อายุสั้น (SEQ-07)
+- ไฟล์อัปโหลด (PLT-09): ตรวจขนาด + ชนิดจากเนื้อหา · ClamAV ก่อนดาวน์โหลด · signed URL บังคับ `Content-Disposition: attachment` · BFF ปฏิเสธคำขอเปลี่ยนแปลงข้อมูลที่ `Origin` ไม่ใช่ของแอป (CSRF) · API จำกัด body 1 MiB (upload: ขนาดไฟล์สูงสุด + 1 MiB)
 - webhook payload ส่ง `subject_ref` แทน PII — ปลายทางเรียก API กลับเมื่อจำเป็น
 - AI gateway ต้อง mask PII ก่อนส่ง LLM และเก็บ log prompt / token ต่อ tenant
 - ข้อมูลใน dev / sit เป็นข้อมูลสังเคราะห์ · uat ใช้ข้อมูลที่ผ่าน masking (`gov.masking_jobs`) เท่านั้น

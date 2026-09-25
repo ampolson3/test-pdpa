@@ -659,3 +659,41 @@ machines:
     event: replay (manual)
     guard: null
     action: null
+- machine: PLT-09
+  title: File virus scan
+  column: platform.files.av_status
+  states:
+  - pending
+  - clean
+  - infected
+  - error
+  initial:
+  - pending
+  terminal:
+  - clean
+  - infected
+  transitions:
+  - from: pending
+    to: clean
+    trigger: ClamAV ไม่พบไวรัส
+    event: files.scan
+    guard: null
+    action: เปิดให้ดาวน์โหลด
+  - from: pending
+    to: infected
+    trigger: ClamAV พบไวรัส
+    event: files.scan
+    guard: null
+    action: ลบ object ออกจาก storage + audit + alert file_infected
+  - from: pending
+    to: error
+    trigger: สแกนไม่สำเร็จครบจำนวนครั้ง
+    event: files.scan
+    guard: null
+    action: alert
+  - from: error
+    to: pending
+    trigger: สแกนใหม่ (manual)
+    event: rescan
+    guard: null
+    action: enqueue files.scan

@@ -47,6 +47,35 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "เกิดข้อผิดพลาดภายในระบบ",
 		En: "Internal error",
 	},
+	// PLT-09 files
+	"files.too_large": {
+		Th: "ไฟล์มีขนาดใหญ่เกินกำหนด",
+		En: "File too large",
+	},
+	"files.type_not_allowed": {
+		Th: "ไม่รองรับไฟล์ประเภทนี้",
+		En: "File type not allowed",
+	},
+	"files.empty": {
+		Th: "ไฟล์ว่างเปล่า",
+		En: "File is empty",
+	},
+	"files.invalid_name": {
+		Th: "ชื่อไฟล์ไม่ถูกต้อง",
+		En: "Invalid file name",
+	},
+	"files.scan_pending": {
+		Th: "กำลังตรวจไวรัส กรุณารอสักครู่",
+		En: "Virus scan not finished",
+	},
+	"files.infected": {
+		Th: "ไฟล์ถูกปฏิเสธเนื่องจากตรวจพบไวรัส",
+		En: "File rejected: malware found",
+	},
+	"files.scan_failed": {
+		Th: "ตรวจไวรัสไม่สำเร็จ",
+		En: "Virus scan failed",
+	},
 }
 
 // ProblemTitle returns the title for code in lang, falling back through: the requested

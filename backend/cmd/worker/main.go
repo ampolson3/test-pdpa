@@ -18,6 +18,7 @@ import (
 	auditjobs "pdpa-platform/internal/platform/audit/jobs"
 	auditservice "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/events"
+	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/jobs"
 )
 
@@ -54,6 +55,13 @@ func run() error {
 	river.AddWorker(workers, &events.Sweeper{Pool: pool})
 	river.AddWorker(workers, &auditjobs.Verifier{Audit: auditservice.New(), Logger: slog.Default()})
 	river.AddWorker(workers, &auditjobs.VerifySweeper{Pool: pool})
+
+	store, err := files.NewS3Store(files.S3ConfigFromEnv())
+	if err != nil {
+		return err
+	}
+	river.AddWorker(workers, &files.Scanner{Store: store, AV: &files.Clamd{Addr: envOr("CLAMD_ADDR", "localhost:3310")}, Audit: auditservice.New(), Logger: slog.Default()})
+	river.AddWorker(workers, &files.Expirer{Store: store})
 
 	client, err := jobs.NewWorkerClient(pool, jobs.WorkerOptions{
 		Logger:          slog.Default(),

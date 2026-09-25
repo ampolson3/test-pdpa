@@ -329,6 +329,8 @@
 
 **Acceptance criteria:** ไฟล์ติดไวรัสถูกปฏิเสธ และลิงก์ดาวน์โหลดหมดอายุตามเวลาที่ตั้ง
 
+**Implementation (PLT-09):** `backend/internal/platform/files` — `POST /admin/v1/platform/files` (multipart) · `GET /admin/v1/platform/files/{id}` · `GET …/{id}/download` → 302 signed URL (x-permission `authenticated`; สิทธิ์เห็นไฟล์: ผู้อัปโหลดขณะยังไม่ผูก, หลังผูกใช้ permission ที่ module เจ้าของลงทะเบียนต่อ entity type — ไม่ลงทะเบียน = ดาวน์โหลดไม่ได้) · job `files.scan` (clamd INSTREAM) และ `files.expire` · ค่าเริ่มต้น (config): 25 MB, PDF/PNG/JPEG/DOCX/XLSX/PPTX/CSV/TXT, ลิงก์ 5 นาที, orphan 24 ชม. · frontend: `@pdpa/ui` `FileDropzone`/`ProgressBar`, `apps/admin` `FileUploader`, BFF ส่ง body แบบ stream + ส่ง redirect กลับ + ตรวจ Origin (CSRF) · ทดสอบกับ SeaweedFS (S3 + SigV4) และ clamd จริง
+
 <a id="plt-10"></a>
 ### PLT-10 Background jobs และ scheduler
 

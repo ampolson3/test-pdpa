@@ -7,10 +7,21 @@ import { apiFetch } from "@/lib/api";
  * the Go API (docs/architecture/code-structure.md, Frontend: "app/api/bff/[...path] — proxy ไป Go
  * API แนบ JWT ฝั่ง server"). Client components call this path, never the Go API directly, so the
  * token never reaches the browser. Server Components skip this hop and call lib/api's apiFetch
- * directly. CSRF checking for state-changing methods is still open — add it here before this proxy
- * handles anything beyond the read-only reference slice.
+ * directly.
+ *
+ * - CSRF: a state-changing request must come from this app's own origin (Origin header, which
+ *   browsers always send on cross-origin and non-GET requests); anything else is refused before the
+ *   session's token is attached.
+ * - Bodies are streamed through untouched, so binary uploads (multipart, PLT-09) arrive intact.
+ * - Redirects are passed back to the browser, not followed: a file download answers 302 to a
+ *   short-lived signed object-storage URL the browser should fetch directly.
  */
 async function proxy(req: NextRequest, path: string[]): Promise<NextResponse> {
+  const mutating = !["GET", "HEAD"].includes(req.method);
+  if (mutating && !sameOrigin(req)) {
+    return NextResponse.json({ code: "authz.denied", title: "Cross-origin request refused", status: 403 }, { status: 403 });
+  }
+
   let upstream: Response;
   try {
     upstream = await apiFetch(`/${path.join("/")}${req.nextUrl.search}`, {
@@ -19,17 +30,30 @@ async function proxy(req: NextRequest, path: string[]): Promise<NextResponse> {
         "Content-Type": req.headers.get("content-type") ?? "application/json",
         "Accept-Language": localeFromReferer(req),
       },
-      body: ["GET", "HEAD"].includes(req.method) ? undefined : await req.text(),
-    });
+      body: mutating ? req.body : undefined,
+      // Node's fetch requires this to send a streamed request body.
+      ...(mutating ? { duplex: "half" } : {}),
+      redirect: "manual",
+    } as RequestInit);
   } catch {
     return NextResponse.json({ code: "authn.required", title: "Authentication required", status: 401 }, { status: 401 });
   }
 
-  const body = await upstream.text();
+  const location = upstream.headers.get("location");
+  if (upstream.status >= 300 && upstream.status < 400 && location) {
+    return new NextResponse(null, { status: upstream.status, headers: { Location: location } });
+  }
+
+  const body = await upstream.arrayBuffer();
   return new NextResponse(body, {
     status: upstream.status,
     headers: { "Content-Type": upstream.headers.get("content-type") ?? "application/json" },
   });
+}
+
+function sameOrigin(req: NextRequest): boolean {
+  const origin = req.headers.get("origin");
+  return origin !== null && origin === req.nextUrl.origin;
 }
 
 /**

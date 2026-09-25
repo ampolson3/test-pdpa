@@ -79,6 +79,11 @@ OpenBao (KEK ของ PLT-13) สำหรับ test: ดาวน์โหล
 `bao server -dev -dev-root-token-id=dev-root -dev-listen-address=127.0.0.1:8200` + `BAO_ADDR=http://127.0.0.1:8200 BAO_TOKEN=dev-root bao secrets enable transit`
 (test ของ `internal/platform/crypto` ใช้ `TEST_OPENBAO_ADDR` / `TEST_OPENBAO_TOKEN`, ถ้าไม่มีจะทดสอบกับ LocalKEK อย่างเดียว)
 
+ไฟล์ (PLT-09) สำหรับ test: S3 ที่ `127.0.0.1:8333` key `pdpa-dev` / `pdpa-dev-secret-key` (`TEST_S3_*`) — MinIO หรือ SeaweedFS
+(`weed server -s3 -s3.port=8333 -s3.config=<identities json> -master.volumeSizeLimitMB=64 -volume.max=50`, build จาก
+source ได้ถ้าดาวน์โหลด MinIO ไม่ได้) · clamd ที่ `127.0.0.1:3310` (`TEST_CLAMD_ADDR`, `apt install clamav-daemon` + `TCPSocket 3310`;
+ถ้า freshclam ดาวน์โหลด signature ไม่ได้ ให้ใส่ signature ของ EICAR ใน `/var/lib/clamav/eicar.hdb`) — ไม่มีจะ skip
+
 Keycloak ยังไม่ได้ตั้งทางนี้ (Organizations / `tid` claim ต้องรอ PoC T13 ตาม `docs/decisions.md` Q-18) — ทดสอบ
 endpoint ที่ต้อง login ได้ด้วย JWT ที่เซ็นเองชั่วคราวเท่านั้น (ดูวิธีใน git log ของ commit ที่ verify reference
 slice)

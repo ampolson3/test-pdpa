@@ -160,6 +160,27 @@ Not wired into `cmd/api`/`cmd/worker` yet (no consumer; first is CON's subject i
 `OPENBAO_ADDR`/token config then). Not done: blind-index key rotation (needs a reindex of every row),
 re-encrypting old data under a new DEK, a schedule for the 12-month KEK rotation.
 
+### PLT-09 File storage & AV scan (`docs/modules/PLT.md#plt-09`) — done
+`internal/platform/files` + `files/http`: `POST /admin/v1/platform/files` (multipart; validator skips buffering
+multipart bodies; `cmd/api` caps bodies at 1 MiB, upload route at max file + 1 MiB), `GET …/{id}`, `GET …/{id}/download`
+→ 302 pre-signed URL (5 min, forced attachment). Upload spools to a temp file, checks size and *sniffed* type,
+writes S3 (minio-go; SSE-S3 when `S3_SSE`, default on), inserts `platform.files` (pending) and enqueues
+`files.scan` + `files.expire` in the request tx. `files.scan` streams the object through clamd INSTREAM:
+pending → clean | infected (object deleted, row + audit kept, `alert=file_infected`) | error after 10 attempts
+(state machine `PLT-09` added to `docs/states/state-machines.yaml`). `files.expire` deletes uploads still
+unattached after 24 h. Visibility: uploader while unattached; attached files need the permission the owning
+module registers in `Service.EntityPermissions` (empty now → attached files undownloadable until a module registers).
+All limits are config with placeholder defaults (25 MB, PDF/images/Office/CSV/TXT) — none are in decisions.md.
+Frontend: `@pdpa/ui` `FileDropzone` + `ProgressBar`, `@pdpa/api-client` `uploadFile` (XHR progress) /
+`useFileStatus` / `fileDownloadHref`, `apps/admin/src/components/file-uploader.tsx` (th/en `files.*`), not mounted
+on a page yet (first consumer feature will). BFF now streams bodies, passes redirects back, and refuses
+cross-origin state-changing requests (Origin check — the CSRF item its comment had left open).
+Tests (real SeaweedFS S3 with SigV4 + real clamd with an EICAR signature): both acceptance criteria (EICAR
+rejected + object deleted + audited; link 200 then 403 after its TTL), bad files, visibility incl. other
+tenant, orphan expiry, failed-scan path, HTTP contract (401/201/409/404/302/415). Also run live with the real
+api + worker binaries. Not verified: SSE-S3 (SeaweedFS here has no KMS), the React component in a browser
+(no Keycloak session), BFF Origin check behind a proxy that rewrites Host.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.
