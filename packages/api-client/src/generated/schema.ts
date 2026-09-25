@@ -363,6 +363,149 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/platform/workflow-definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The newest version of each workflow the tenant uses (its own before global ones) */
+        get: operations["platformListWorkflowDefinitions"];
+        put?: never;
+        /** Create version 1 of a new workflow (PLT-05) */
+        post: operations["platformCreateWorkflowDefinition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/workflow-definitions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One version of a workflow definition */
+        get: operations["platformGetWorkflowDefinition"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/workflow-definitions/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save the next version of a workflow (or the tenant's own version of a global one); running instances keep theirs */
+        post: operations["platformSaveWorkflowVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/assignable-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Groups whose name starts with q, for assigning workflow tasks */
+        get: operations["platformSearchAssignableGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/workflow-instances/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A workflow with its tasks, SLA timers, timeline and the transitions the caller may take
+         * @description Visible to the people assigned its tasks (directly or through a group) and to holders of the record's permissions.
+         */
+        get: operations["platformGetWorkflowInstance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/workflow-instances/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move the workflow to another state (completes the current task) */
+        post: operations["platformTransitionWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/my-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's open workflow tasks — assigned to them or to one of their groups (unclaimed) */
+        get: operations["platformListMyTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/workflow-tasks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Claim, start or reassign a task
+         * @description A member of the task's group may claim it (assign it to themselves); its assignee may start it; holders of the record's write permission may reassign it.
+         */
+        patch: operations["platformUpdateWorkflowTask"];
+        trace?: never;
+    };
     "/admin/v1/platform/imports": {
         parameters: {
             query?: never;
@@ -569,6 +712,218 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        LocalizedText: {
+            th: string;
+            en?: string;
+        };
+        NamedRef: {
+            id: components["schemas"]["Uuid"];
+            name: string;
+        };
+        WorkflowDuration: {
+            /** @enum {string} */
+            mode: "calendar_days" | "business_days" | "hours";
+            amount: number;
+        };
+        WorkflowState: {
+            key: string;
+            label: components["schemas"]["LocalizedText"];
+            terminal?: boolean;
+            /** @description The SLA clock stops while the instance is in this state */
+            pause_sla?: boolean;
+            /** @description Work opened on entering the state, for exactly one of a user or a group */
+            task?: {
+                title: components["schemas"]["LocalizedText"];
+                assignee_user_id?: components["schemas"]["Uuid"];
+                assignee_group_id?: components["schemas"]["Uuid"];
+                due?: components["schemas"]["WorkflowDuration"];
+            };
+        };
+        WorkflowTransition: {
+            from: string;
+            to: string;
+            label?: components["schemas"]["LocalizedText"];
+        };
+        WorkflowSLA: {
+            code: string;
+            /** @enum {string} */
+            mode: "calendar_days" | "business_days" | "hours";
+            amount: number;
+            calendar_id?: components["schemas"]["Uuid"];
+            /** @description Remind this long before the due time, in the SLA's unit (e.g. [10, 5] on 30 days = day 20 and 25) */
+            remind_before?: number[];
+            escalate_user_ids?: components["schemas"]["Uuid"][];
+            escalate_group_id?: components["schemas"]["Uuid"];
+        };
+        WorkflowDefinitionBody: {
+            initial: string;
+            states: components["schemas"]["WorkflowState"][];
+            transitions: components["schemas"]["WorkflowTransition"][];
+            sla?: components["schemas"]["WorkflowSLA"];
+        };
+        /**
+         * @example {
+         *       "code": "dsar_access",
+         *       "name": "คำขอเข้าถึงข้อมูล",
+         *       "entity_type": "dsar_request",
+         *       "definition": {
+         *         "initial": "review",
+         *         "states": [
+         *           {
+         *             "key": "review",
+         *             "label": {
+         *               "th": "ตรวจสอบคำขอ",
+         *               "en": "Review"
+         *             },
+         *             "task": {
+         *               "title": {
+         *                 "th": "ตรวจสอบคำขอ"
+         *               },
+         *               "assignee_group_id": "01925f3c-7b8e-7c3a-9d51-2f0c6e1a4b77"
+         *             }
+         *           },
+         *           {
+         *             "key": "awaiting_info",
+         *             "label": {
+         *               "th": "รอข้อมูลเพิ่มเติม"
+         *             },
+         *             "pause_sla": true
+         *           },
+         *           {
+         *             "key": "done",
+         *             "label": {
+         *               "th": "เสร็จสิ้น"
+         *             },
+         *             "terminal": true
+         *           }
+         *         ],
+         *         "transitions": [
+         *           {
+         *             "from": "review",
+         *             "to": "awaiting_info"
+         *           },
+         *           {
+         *             "from": "awaiting_info",
+         *             "to": "review"
+         *           },
+         *           {
+         *             "from": "review",
+         *             "to": "done"
+         *           }
+         *         ],
+         *         "sla": {
+         *           "code": "response",
+         *           "mode": "calendar_days",
+         *           "amount": 30,
+         *           "remind_before": [
+         *             10,
+         *             5
+         *           ]
+         *         }
+         *       }
+         *     }
+         */
+        WorkflowDefinitionInput: {
+            /** @description Ignored when saving a new version (the version keeps its workflow's code) */
+            code: string;
+            name: string;
+            /** @description The kind of record the workflow runs for, e.g. dsar_request */
+            entity_type: string;
+            definition: components["schemas"]["WorkflowDefinitionBody"];
+        };
+        WorkflowDefinition: {
+            id: components["schemas"]["Uuid"];
+            /** @description Provided by the platform; saving a version creates the tenant's own */
+            global: boolean;
+            code: string;
+            name: string;
+            entity_type: string;
+            version: number;
+            definition: components["schemas"]["WorkflowDefinitionBody"];
+            active: boolean;
+            /** @description Display names of the users and groups the definition refers to, by id */
+            names?: {
+                [key: string]: string;
+            };
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        WorkflowTask: {
+            id: components["schemas"]["Uuid"];
+            instance_id: components["schemas"]["Uuid"];
+            state: string;
+            title: components["schemas"]["LocalizedText"];
+            assignee_user_id?: components["schemas"]["Uuid"];
+            assignee_name?: string;
+            assignee_group_id?: components["schemas"]["Uuid"];
+            group_name?: string;
+            /** @enum {string} */
+            status: "open" | "in_progress" | "done" | "cancelled";
+            due_at?: components["schemas"]["Timestamp"];
+            completed_at?: components["schemas"]["Timestamp"];
+            outcome?: string;
+            comment?: string;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        MyTask: components["schemas"]["WorkflowTask"] & {
+            entity_type: string;
+            entity_id: components["schemas"]["Uuid"];
+            workflow_name: string;
+            workflow_code: string;
+            state_label: components["schemas"]["LocalizedText"];
+            sla_status: components["schemas"]["SlaStatus"];
+            sla_due_at?: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        SlaStatus: "on_track" | "at_risk" | "overdue" | "paused" | "done";
+        SlaTimer: {
+            code: string;
+            /** @enum {string} */
+            mode: "calendar_days" | "business_days" | "hours";
+            started_at: components["schemas"]["Timestamp"];
+            due_at: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            status: "running" | "met" | "breached" | "stopped";
+            paused: boolean;
+            stopped_at?: components["schemas"]["Timestamp"];
+            reminders: {
+                at: components["schemas"]["Timestamp"];
+                sent: boolean;
+            }[];
+        };
+        WorkflowInstance: {
+            id: components["schemas"]["Uuid"];
+            workflow: {
+                id: components["schemas"]["Uuid"];
+                code: string;
+                name: string;
+                version: number;
+                definition: components["schemas"]["WorkflowDefinitionBody"];
+            };
+            entity_type: string;
+            entity_id: components["schemas"]["Uuid"];
+            state: string;
+            started_at: components["schemas"]["Timestamp"];
+            completed_at?: components["schemas"]["Timestamp"];
+            sla_status: components["schemas"]["SlaStatus"];
+            row_version: number;
+            tasks: components["schemas"]["WorkflowTask"][];
+            timers: components["schemas"]["SlaTimer"][];
+            history: {
+                at: components["schemas"]["Timestamp"];
+                actor_name?: string;
+                action: string;
+                before?: {
+                    [key: string]: unknown;
+                };
+                after?: {
+                    [key: string]: unknown;
+                };
+            }[];
+            /** @description The moves the caller may make now */
+            transitions: components["schemas"]["WorkflowTransition"][];
+        };
         /**
          * @example {
          *       "name": "ปฏิทินสำนักงานใหญ่",
@@ -1901,6 +2256,309 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    platformListWorkflowDefinitions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Definitions by code */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["WorkflowDefinition"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformCreateWorkflowDefinition: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowDefinitionInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowDefinition"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetWorkflowDefinition: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The definition */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowDefinition"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformSaveWorkflowVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowDefinitionInput"];
+            };
+        };
+        responses: {
+            /** @description The new version */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowDefinition"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformSearchAssignableGroups: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Up to 10 groups */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["NamedRef"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformGetWorkflowInstance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The instance */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowInstance"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformTransitionWorkflow: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "to": "approval",
+                 *       "comment": "ตรวจแล้ว ครบถ้วน"
+                 *     }
+                 */
+                "application/json": {
+                    to: string;
+                    comment?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The instance after the move */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowInstance"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListMyTasks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Open tasks, soonest due first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["MyTask"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformUpdateWorkflowTask: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    assignee_user_id?: components["schemas"]["Uuid"];
+                    assignee_group_id?: components["schemas"]["Uuid"];
+                    /** @enum {string} */
+                    status?: "open" | "in_progress";
+                };
+            };
+        };
+        responses: {
+            /** @description The task */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowTask"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     platformListImports: {

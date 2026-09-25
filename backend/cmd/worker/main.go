@@ -23,6 +23,7 @@ import (
 	"pdpa-platform/internal/platform/importer"
 	"pdpa-platform/internal/platform/jobs"
 	"pdpa-platform/internal/platform/notify"
+	"pdpa-platform/internal/platform/workflow"
 	"pdpa-platform/internal/wiring"
 )
 
@@ -81,8 +82,11 @@ func run() error {
 	river.AddWorker(workers, &importer.Validator{Service: importSvc})
 	river.AddWorker(workers, &importer.Applier{Service: importSvc})
 
+	notifySvc := &notify.Service{Keyring: &crypto.Keyring{KEK: kek}, River: inserter, Quiet: notify.DefaultQuietHours()}
+	river.AddWorker(workers, &workflow.Ticker{Service: wiring.Workflow(notifySvc, inserter, auditservice.New())})
+
 	river.AddWorker(workers, &notify.Deliverer{
-		Service: &notify.Service{Keyring: &crypto.Keyring{KEK: kek}, River: inserter, Quiet: notify.DefaultQuietHours()},
+		Service: notifySvc,
 		Senders: notifySenders(),
 		Audit:   auditservice.New(),
 		Logger:  slog.Default(),

@@ -959,6 +959,354 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/workflow-definitions:
+    get:
+      operationId: platformListWorkflowDefinitions
+      tags: [platform]
+      summary: The newest version of each workflow the tenant uses (its own before global ones)
+      x-permission: admin.workflow.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Definitions by code
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WorkflowDefinition'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: platformCreateWorkflowDefinition
+      tags: [platform]
+      summary: Create version 1 of a new workflow (PLT-05)
+      x-permission: admin.workflow.create
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowDefinitionInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDefinition'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/workflow-definitions/{id}:
+    get:
+      operationId: platformGetWorkflowDefinition
+      tags: [platform]
+      summary: One version of a workflow definition
+      x-permission: admin.workflow.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The definition
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDefinition'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/workflow-definitions/{id}/versions:
+    post:
+      operationId: platformSaveWorkflowVersion
+      tags: [platform]
+      summary: Save the next version of a workflow (or the tenant's own version of a global one); running instances keep theirs
+      x-permission: admin.workflow.update
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowDefinitionInput'
+      responses:
+        '201':
+          description: The new version
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowDefinition'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/assignable-groups:
+    get:
+      operationId: platformSearchAssignableGroups
+      tags: [platform]
+      summary: Groups whose name starts with q, for assigning workflow tasks
+      x-permission: admin.workflow.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        '200':
+          description: Up to 10 groups
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NamedRef'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/platform/workflow-instances/{id}:
+    get:
+      operationId: platformGetWorkflowInstance
+      tags: [platform]
+      summary: A workflow with its tasks, SLA timers, timeline and the transitions the caller may take
+      description: Visible to the people assigned its tasks (directly or through a group) and to holders of the record's permissions.
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The instance
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowInstance'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/workflow-instances/{id}/transitions:
+    post:
+      operationId: platformTransitionWorkflow
+      tags: [platform]
+      summary: Move the workflow to another state (completes the current task)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to]
+              properties:
+                to:
+                  type: string
+                  pattern: '^[a-z][a-z0-9_]{0,59}$'
+                comment:
+                  type: string
+                  maxLength: 2000
+            example:
+              to: approval
+              comment: ตรวจแล้ว ครบถ้วน
+      responses:
+        '200':
+          description: The instance after the move
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowInstance'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/my-tasks:
+    get:
+      operationId: platformListMyTasks
+      tags: [platform]
+      summary: The caller's open workflow tasks — assigned to them or to one of their groups (unclaimed)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Open tasks, soonest due first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MyTask'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /admin/v1/platform/workflow-tasks/{id}:
+    patch:
+      operationId: platformUpdateWorkflowTask
+      tags: [platform]
+      summary: Claim, start or reassign a task
+      description: A member of the task's group may claim it (assign it to themselves); its assignee may start it; holders of the record's write permission may reassign it.
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assignee_user_id:
+                  $ref: '#/components/schemas/Uuid'
+                assignee_group_id:
+                  $ref: '#/components/schemas/Uuid'
+                status:
+                  type: string
+                  enum: [open, in_progress]
+      responses:
+        '200':
+          description: The task
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowTask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/platform/imports:
     get:
       operationId: platformListImports
@@ -1698,6 +2046,344 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    LocalizedText:
+      type: object
+      required: [th]
+      properties:
+        th:
+          type: string
+          minLength: 1
+          maxLength: 200
+        en:
+          type: string
+          maxLength: 200
+    NamedRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+    WorkflowDuration:
+      type: object
+      required: [mode, amount]
+      properties:
+        mode:
+          type: string
+          enum: [calendar_days, business_days, hours]
+        amount:
+          type: integer
+          minimum: 1
+          maximum: 8760
+    WorkflowState:
+      type: object
+      required: [key, label]
+      properties:
+        key:
+          type: string
+          pattern: '^[a-z][a-z0-9_]{0,59}$'
+        label:
+          $ref: '#/components/schemas/LocalizedText'
+        terminal:
+          type: boolean
+        pause_sla:
+          type: boolean
+          description: The SLA clock stops while the instance is in this state
+        task:
+          type: object
+          required: [title]
+          description: Work opened on entering the state, for exactly one of a user or a group
+          properties:
+            title:
+              $ref: '#/components/schemas/LocalizedText'
+            assignee_user_id:
+              $ref: '#/components/schemas/Uuid'
+            assignee_group_id:
+              $ref: '#/components/schemas/Uuid'
+            due:
+              $ref: '#/components/schemas/WorkflowDuration'
+    WorkflowTransition:
+      type: object
+      required: [from, to]
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        label:
+          $ref: '#/components/schemas/LocalizedText'
+    WorkflowSLA:
+      type: object
+      required: [code, mode, amount]
+      properties:
+        code:
+          type: string
+          pattern: '^[a-z][a-z0-9_]{0,39}$'
+        mode:
+          type: string
+          enum: [calendar_days, business_days, hours]
+        amount:
+          type: integer
+          minimum: 1
+          maximum: 8760
+        calendar_id:
+          $ref: '#/components/schemas/Uuid'
+        remind_before:
+          type: array
+          description: Remind this long before the due time, in the SLA's unit (e.g. [10, 5] on 30 days = day 20 and 25)
+          maxItems: 5
+          items:
+            type: integer
+            minimum: 1
+        escalate_user_ids:
+          type: array
+          maxItems: 20
+          items:
+            $ref: '#/components/schemas/Uuid'
+        escalate_group_id:
+          $ref: '#/components/schemas/Uuid'
+    WorkflowDefinitionBody:
+      type: object
+      required: [initial, states, transitions]
+      properties:
+        initial:
+          type: string
+        states:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/WorkflowState'
+        transitions:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/WorkflowTransition'
+        sla:
+          $ref: '#/components/schemas/WorkflowSLA'
+    WorkflowDefinitionInput:
+      type: object
+      required: [code, name, entity_type, definition]
+      properties:
+        code:
+          type: string
+          pattern: '^[a-z][a-z0-9_]{0,59}$'
+          description: Ignored when saving a new version (the version keeps its workflow's code)
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        entity_type:
+          type: string
+          pattern: '^[a-z][a-z0-9_]{0,59}$'
+          description: The kind of record the workflow runs for, e.g. dsar_request
+        definition:
+          $ref: '#/components/schemas/WorkflowDefinitionBody'
+      example:
+        code: dsar_access
+        name: คำขอเข้าถึงข้อมูล
+        entity_type: dsar_request
+        definition:
+          initial: review
+          states:
+            - key: review
+              label: {th: ตรวจสอบคำขอ, en: Review}
+              task: {title: {th: ตรวจสอบคำขอ}, assignee_group_id: 01925f3c-7b8e-7c3a-9d51-2f0c6e1a4b77}
+            - key: awaiting_info
+              label: {th: รอข้อมูลเพิ่มเติม}
+              pause_sla: true
+            - key: done
+              label: {th: เสร็จสิ้น}
+              terminal: true
+          transitions:
+            - {from: review, to: awaiting_info}
+            - {from: awaiting_info, to: review}
+            - {from: review, to: done}
+          sla: {code: response, mode: calendar_days, amount: 30, remind_before: [10, 5]}
+    WorkflowDefinition:
+      type: object
+      required: [id, global, code, name, entity_type, version, definition, active, row_version, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        global:
+          type: boolean
+          description: Provided by the platform; saving a version creates the tenant's own
+        code:
+          type: string
+        name:
+          type: string
+        entity_type:
+          type: string
+        version:
+          type: integer
+        definition:
+          $ref: '#/components/schemas/WorkflowDefinitionBody'
+        active:
+          type: boolean
+        names:
+          type: object
+          description: Display names of the users and groups the definition refers to, by id
+          additionalProperties:
+            type: string
+        row_version:
+          type: integer
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    WorkflowTask:
+      type: object
+      required: [id, instance_id, state, title, status, row_version, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        instance_id:
+          $ref: '#/components/schemas/Uuid'
+        state:
+          type: string
+        title:
+          $ref: '#/components/schemas/LocalizedText'
+        assignee_user_id:
+          $ref: '#/components/schemas/Uuid'
+        assignee_name:
+          type: string
+        assignee_group_id:
+          $ref: '#/components/schemas/Uuid'
+        group_name:
+          type: string
+        status:
+          type: string
+          enum: [open, in_progress, done, cancelled]
+        due_at:
+          $ref: '#/components/schemas/Timestamp'
+        completed_at:
+          $ref: '#/components/schemas/Timestamp'
+        outcome:
+          type: string
+        comment:
+          type: string
+        row_version:
+          type: integer
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+    MyTask:
+      allOf:
+        - $ref: '#/components/schemas/WorkflowTask'
+        - type: object
+          required: [entity_type, entity_id, workflow_name, workflow_code, state_label, sla_status]
+          properties:
+            entity_type:
+              type: string
+            entity_id:
+              $ref: '#/components/schemas/Uuid'
+            workflow_name:
+              type: string
+            workflow_code:
+              type: string
+            state_label:
+              $ref: '#/components/schemas/LocalizedText'
+            sla_status:
+              $ref: '#/components/schemas/SlaStatus'
+            sla_due_at:
+              $ref: '#/components/schemas/Timestamp'
+    SlaStatus:
+      type: string
+      enum: [on_track, at_risk, overdue, paused, done]
+    SlaTimer:
+      type: object
+      required: [code, mode, started_at, due_at, status, paused, reminders]
+      properties:
+        code:
+          type: string
+        mode:
+          type: string
+          enum: [calendar_days, business_days, hours]
+        started_at:
+          $ref: '#/components/schemas/Timestamp'
+        due_at:
+          $ref: '#/components/schemas/Timestamp'
+        status:
+          type: string
+          enum: [running, met, breached, stopped]
+        paused:
+          type: boolean
+        stopped_at:
+          $ref: '#/components/schemas/Timestamp'
+        reminders:
+          type: array
+          items:
+            type: object
+            required: [at, sent]
+            properties:
+              at:
+                $ref: '#/components/schemas/Timestamp'
+              sent:
+                type: boolean
+    WorkflowInstance:
+      type: object
+      required: [id, workflow, entity_type, entity_id, state, started_at, sla_status, row_version, tasks, timers, history, transitions]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        workflow:
+          type: object
+          required: [id, code, name, version, definition]
+          properties:
+            id:
+              $ref: '#/components/schemas/Uuid'
+            code:
+              type: string
+            name:
+              type: string
+            version:
+              type: integer
+            definition:
+              $ref: '#/components/schemas/WorkflowDefinitionBody'
+        entity_type:
+          type: string
+        entity_id:
+          $ref: '#/components/schemas/Uuid'
+        state:
+          type: string
+        started_at:
+          $ref: '#/components/schemas/Timestamp'
+        completed_at:
+          $ref: '#/components/schemas/Timestamp'
+        sla_status:
+          $ref: '#/components/schemas/SlaStatus'
+        row_version:
+          type: integer
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkflowTask'
+        timers:
+          type: array
+          items:
+            $ref: '#/components/schemas/SlaTimer'
+        history:
+          type: array
+          items:
+            type: object
+            required: [at, action]
+            properties:
+              at:
+                $ref: '#/components/schemas/Timestamp'
+              actor_name:
+                type: string
+              action:
+                type: string
+              before:
+                type: object
+                additionalProperties: true
+              after:
+                type: object
+                additionalProperties: true
+        transitions:
+          type: array
+          description: The moves the caller may make now
+          items:
+            $ref: '#/components/schemas/WorkflowTransition'
     BusinessCalendarInput:
       type: object
       required: [name, timezone, workdays]

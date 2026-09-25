@@ -107,6 +107,30 @@ func (c Calendar) AddBusinessDays(t time.Time, n int) (time.Time, error) {
 	return l, nil
 }
 
+// SubBusinessDays is AddBusinessDays backwards: the moment n business days before t, keeping t's local
+// time of day. Reminders "N business days before the due date" use it.
+func (c Calendar) SubBusinessDays(t time.Time, n int) (time.Time, error) {
+	if n < 0 {
+		return time.Time{}, errors.New("bizcal: negative day count")
+	}
+	l := t.In(c.loc)
+	for i := 0; n > 0; i++ {
+		if i > maxSpan {
+			return time.Time{}, ErrTooFar
+		}
+		l = addLocalDays(l, -1, c.loc)
+		if c.IsBusinessDay(l) {
+			n--
+		}
+	}
+	return l, nil
+}
+
+// AddCalendarDays returns t moved by n local calendar days, keeping the wall clock in the calendar's zone.
+func (c Calendar) AddCalendarDays(t time.Time, n int) time.Time {
+	return addLocalDays(t.In(c.loc), n, c.loc)
+}
+
 // BusinessDaysBetween counts the business days whose local date is after from's and not after to's —
 // the number of AddBusinessDays steps from one to the other. It is negative when to is before from.
 func (c Calendar) BusinessDaysBetween(from, to time.Time) int {

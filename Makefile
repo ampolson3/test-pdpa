@@ -24,6 +24,7 @@ gen:
 	cd backend/internal/platform/notify/http && oapi-codegen -config oapi-codegen.yaml -o notify.gen.go ../../../../../api/openapi/openapi.yaml
 	cd backend/internal/platform/collab/http && oapi-codegen -config oapi-codegen.yaml -o collab.gen.go ../../../../../api/openapi/openapi.yaml
 	cd backend/internal/platform/importer/http && oapi-codegen -config oapi-codegen.yaml -o importer.gen.go ../../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/workflow/http && oapi-codegen -config oapi-codegen.yaml -o workflow.gen.go ../../../../../api/openapi/openapi.yaml
 	cd backend/internal/org/http && oapi-codegen -config oapi-codegen.yaml -o org.gen.go ../../../../api/openapi/openapi.yaml
 	pnpm gen:api-client
 	cd backend && go build ./...

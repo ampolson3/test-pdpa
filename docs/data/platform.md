@@ -122,6 +122,7 @@ public key สำหรับ /public/v1 และ portal: หา tenant ก่�
 - Unique: `uq_workflow_definitions_code_version_no UNIQUE NULLS NOT DISTINCT (tenant_id, code, version_no)`
 - RLS: tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write`
 - ถูกอ้างถึงโดย: `platform.workflow_instances.definition_id`, `dsar.request_types.workflow_definition_id`
+- `definition` (PLT-05): `{"initial": "<key>", "states": [{"key", "label": {"th", "en"}, "terminal", "pause_sla", "task": {"title": {"th", "en"}, "assignee_user_id" | "assignee_group_id", "due": {"mode", "amount"}}}], "transitions": [{"from", "to", "label"}], "sla": {"code", "mode", "amount", "calendar_id", "remind_before": [n…], "escalate_user_ids": […], "escalate_group_id"}}` — ตรวจโดย `workflow.Definition.Validate` (ต้องมีขั้นสุดท้าย, ไม่มีขั้นทางตัน, ขั้นสุดท้ายไม่มีงาน) · ทุกการบันทึกเป็นแถวใหม่ `version_no + 1` และปิด `is_active` ของเวอร์ชันก่อนหน้าของ tenant
 
 <a id="platform-workflow-instances"></a>
 ## platform.workflow_instances
@@ -169,6 +170,7 @@ workflow ที่กำลังทำงานของแต่ละ record
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_workflow_tasks_updated`
 - PK: `(id)`
 - Index: `platform.workflow_tasks (tenant_id, instance_id)` · `platform.workflow_tasks (tenant_id, assignee_user_id)` · `platform.workflow_tasks (tenant_id, assignee_group_id)`
+- Partial index (migration 00028): งานที่ยังเปิด (`open`, `in_progress`) ตาม `assignee_user_id` / `assignee_group_id` — สำหรับกระดานงานของฉัน · `title` เก็บชื่อภาษาไทย ส่วนชื่อหลายภาษามาจากนิยามของขั้น
 - RLS: tenant · RLS `tenant_isolation`
 
 <a id="platform-sla-timers"></a>
@@ -194,6 +196,7 @@ workflow ที่กำลังทำงานของแต่ละ record
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_sla_timers_updated`
 - PK: `(id)`
 - Index: `platform.sla_timers (tenant_id, instance_id)` · `platform.sla_timers (tenant_id, calendar_id)` · `platform.sla_timers (tenant_id, due_at)`
+- `paused_at timestamptz` (migration 00028): ตั้งเมื่อ instance เข้าขั้น `pause_sla`; เมื่อออก `due_at` ถูกเลื่อนตามช่วงที่หยุดแล้วล้างค่า · `reminders` = `[{"before": n, "at": ts, "sent_at": ts|null}]` เรียงตามเวลา · `calendar_id` NULL = ปฏิทินในตัว (จันทร์–ศุกร์ Asia/Bangkok) เพราะ tenant ยังไม่มีปฏิทิน · สถานะ: `running` → `met` (จบก่อนกำหนด) / `breached` (เลยกำหนด ตั้ง `escalated_at`) · `stopped_at` = เวลาที่ instance จบ
 - RLS: tenant · RLS `tenant_isolation`
 
 <a id="platform-form-definitions"></a>

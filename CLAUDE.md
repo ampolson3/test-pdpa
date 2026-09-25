@@ -251,6 +251,23 @@ Frontend `/settings/calendar` (calendar form, holidays by year in BE/CE, `Import
 date skips the tenant's holidays, two-tenant isolation, holiday import type), HTTP contract, Chromium E2E incl. a real
 CSV import with an error report (15/15).
 
+### PLT-05 Workflow & SLA engine (`docs/modules/PLT.md#plt-05`) — done (no module uses it yet)
+`internal/platform/workflow` (+ `http/`, `store/`). **The definition JSON format was designed here (no SA spec
+existed) — flagged for review in PLT.md.** Tenant definitions are versioned (every save = new row, running instances
+keep theirs; tenants override global ones). Modules call `Start` from their own service and register a `Policy`
+(read/write permission + `OnSLA` / `OnTransition` hooks for their own events) in `internal/wiring.Workflow`, which
+both binaries use. Access = the record's permissions or being on a task (directly or via an `iam` group, read through
+new `iamservice.GroupIDsOf/GroupMembers/GroupNames/SearchGroups`); only the current task's people or writers move it;
+group members claim. Deadlines are pure, clock-injected functions (`DueAt`, `ReminderTimes`, `Resume`) on the ORG-20
+calendar (`Calendars` interface, satisfied by `orgservice.Service`; `bizcal` gained `SubBusinessDays`,
+`AddCalendarDays`). `pause_sla` states pause the timer (`sla_timers.paused_at`, migration 00028 with the
+`admin.workflow.*` permissions, open-task indexes and the `workflow.*` in-app templates). SLA reminders/breaches run
+as River jobs scheduled exactly at those moments (`workflow.sla_tick`, idempotent). UI: `/tasks` board +
+`WorkflowPanel` + `SlaBadge`, `/settings/workflows` form editor. Tests: unit (due dates across Songkran for all
+three modes, reminders, pause/resume, definition validation), integration (acceptance: reminder at its configured
+time and breach escalation with an injected clock; pause/resume; tasks, claims, access; two-tenant isolation), HTTP
+contract, Chromium E2E with the real worker sending a due reminder (17/17).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

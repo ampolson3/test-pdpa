@@ -122,6 +122,7 @@
 | `consent.reconcile` | consent | ตามรอบ / หลัง webhook dead | เทียบสถานะกับระบบปลายทาง → consent.mismatch_found | BP-02 |
 | `cookie.scan` | cookie | ตามรอบของโดเมน / สั่งเอง | scanner (chromedp) crawl เว็บ → cookie.scan_completed | BP-03 |
 | `notice.indirect_due` | notice | รายวัน | แจ้งเตือนก่อนครบ 30 วันของการแจ้งตาม ม.25 | BP-04 |
+| `workflow.sla_tick` | platform | River ScheduledAt ณ เวลาเตือนแต่ละครั้งและ due_at ของ timer (PLT-05) | ส่งการเตือนที่ถึงเวลา / ทำเครื่องหมายเกินกำหนด + ส่งเรื่องต่อ แล้วนัด tick ถัดไป · idempotent (tick ซ้ำ/ค้างหลังหยุดนับไม่ทำอะไร) · module รับผลผ่าน hook `OnSLA` เพื่อส่ง event ของตน | PLT-05 |
 | `dsar.sla_timer` | dsar | รายชั่วโมง | ตรวจ due_at → dsar.sla_warning / escalate | BP-06 |
 | `breach.sla_timer` | breach | T+24 / 48 / 66 ชม. | เตือนก่อนครบ 72 ชม. นับจาก aware_at | BP-07 / SEQ-06 |
 | `retention.sweep` | gov | River cron 02:00 | หา record ที่ครบ retention → retention.due | BP-11 |

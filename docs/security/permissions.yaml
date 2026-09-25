@@ -284,6 +284,23 @@ permissions:
     - execute
     ORGADMIN:
     - execute
+- code: admin.workflow
+  category: Administration
+  name: นิยาม workflow และ SLA
+  epics:
+  - PLT
+  note: 'PLT-05 · นิยาม workflow / SLA ของ tenant (บันทึกแล้วเป็นเวอร์ชันใหม่ งานที่เริ่มแล้วใช้เวอร์ชันเดิม) · การทำงานกับ instance / task ใช้สิทธิ์ของ record เจ้าของ หรือเป็นผู้ได้รับมอบหมาย · seed: migration 00028'
+  grants:
+    SUPER:
+    - create
+    - read
+    - update
+    ORGADMIN:
+    - create
+    - read
+    - update
+    DPO:
+    - read
 - code: admin.notification
   category: Administration
   name: Template แจ้งเตือน

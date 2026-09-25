@@ -129,3 +129,22 @@ func TestDefault(t *testing.T) {
 		t.Error("default should be Mon–Fri in Bangkok without holidays")
 	}
 }
+
+func TestSubBusinessDays(t *testing.T) {
+	c := songkran(t)
+	// Due Tuesday 21 April 09:00; 5 business days before skips Songkran and the weekend.
+	got, err := c.SubBusinessDays(bkk(2026, 4, 21, 9), 5)
+	if want := bkk(2026, 4, 9, 9); err != nil || !got.Equal(want) {
+		t.Errorf("got %v %v, want %v", got, err, want)
+	}
+	for n := 0; n < 30; n++ {
+		end, _ := c.AddBusinessDays(bkk(2026, 4, 1, 9), n)
+		back, _ := c.SubBusinessDays(end, n)
+		if !back.Equal(bkk(2026, 4, 1, 9)) {
+			t.Fatalf("round trip %d: %v", n, back)
+		}
+	}
+	if got := c.AddCalendarDays(bkk(2026, 4, 10, 14), 30); !got.Equal(bkk(2026, 5, 10, 14)) {
+		t.Errorf("calendar days: %v", got)
+	}
+}

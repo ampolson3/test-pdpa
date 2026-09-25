@@ -44,6 +44,7 @@ import (
 	jobshttp "pdpa-platform/internal/platform/jobs/http"
 	"pdpa-platform/internal/platform/notify"
 	notifyhttp "pdpa-platform/internal/platform/notify/http"
+	workflowhttp "pdpa-platform/internal/platform/workflow/http"
 	"pdpa-platform/internal/wiring"
 )
 
@@ -183,6 +184,7 @@ func run() error {
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc}
+	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
 
 	// The inbox stream (SSE) is the one route outside Idempotency + Tx: the Tx middleware buffers the
 	// response until COMMIT, which a stream never reaches. It opens a short transaction per check itself.
@@ -216,6 +218,11 @@ func run() error {
 			[]importerhttp.StrictMiddlewareFunc{authz.StrictMiddleware[importerhttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			importerhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		importerhttp.HandlerWithOptions(strictImports, importerhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictWorkflow := workflowhttp.NewStrictHandlerWithOptions(workflowhttp.NewStrict(workflowSvc),
+			[]workflowhttp.StrictMiddlewareFunc{authz.StrictMiddleware[workflowhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			workflowhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		workflowhttp.HandlerWithOptions(strictWorkflow, workflowhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictOrg := orghttp.NewStrictHandlerWithOptions(orghttp.NewStrict(orgSvc),
 			[]orghttp.StrictMiddlewareFunc{authz.StrictMiddleware[orghttp.StrictHandlerFunc](authzCache, requiredPermission)},

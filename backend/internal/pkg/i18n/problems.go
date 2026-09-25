@@ -89,6 +89,19 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "คำขอส่งการแจ้งเตือนไม่ถูกต้อง",
 		En: "Invalid notification request",
 	},
+	// PLT-05 workflow
+	"workflow.invalid_transition": {
+		Th: "เปลี่ยนสถานะนี้ไม่ได้ในขั้นตอนปัจจุบัน",
+		En: "Transition not allowed from the current state",
+	},
+	"workflow.invalid_definition": {
+		Th: "นิยาม workflow ไม่ถูกต้อง",
+		En: "Invalid workflow definition",
+	},
+	"workflow.invalid_request": {
+		Th: "คำขอไม่ถูกต้อง",
+		En: "Invalid workflow request",
+	},
 	// ORG-20 calendars
 	"org.invalid_calendar": {
 		Th: "ข้อมูลปฏิทินไม่ถูกต้อง (ชื่อ เขตเวลา หรือวันทำการ)",

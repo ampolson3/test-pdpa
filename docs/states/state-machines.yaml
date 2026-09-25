@@ -802,3 +802,69 @@ machines:
     event: import.apply
     guard: null
     action: audit
+- machine: PLT-05#task
+  title: Workflow task (PLT-05)
+  column: platform.workflow_tasks.status
+  states:
+  - open
+  - in_progress
+  - done
+  - cancelled
+  initial:
+  - open
+  terminal:
+  - done
+  - cancelled
+  transitions:
+  - from: open
+    to: in_progress
+    trigger: ผู้รับงานเริ่มทำ (หรือรับงานของกลุ่มแล้วเริ่ม)
+    event: PATCH workflow-tasks status=in_progress
+    guard: ผู้รับงาน หรือผู้มีสิทธิ์แก้ไข record
+    action: audit
+  - from: in_progress
+    to: open
+    trigger: คืนสถานะยังไม่เริ่ม
+    event: PATCH workflow-tasks status=open
+    guard: ผู้รับงาน หรือผู้มีสิทธิ์แก้ไข record
+    action: audit
+  - from: open
+    to: done
+    trigger: instance ส่งต่อออกจากขั้นของงาน (outcome = ขั้นปลายทาง)
+    event: transition
+    guard: null
+    action: audit
+  - from: in_progress
+    to: done
+    trigger: instance ส่งต่อออกจากขั้นของงาน (outcome = ขั้นปลายทาง)
+    event: transition
+    guard: null
+    action: audit
+- machine: PLT-05#timer
+  title: SLA timer (PLT-05)
+  column: platform.sla_timers.status
+  states:
+  - running
+  - met
+  - breached
+  - stopped
+  initial:
+  - running
+  terminal:
+  - met
+  - breached
+  - stopped
+  transitions:
+  - from: running
+    to: met
+    trigger: instance ถึงขั้นสุดท้ายก่อนครบกำหนด
+    event: transition
+    guard: null
+    action: stopped_at
+  - from: running
+    to: breached
+    trigger: ถึง due_at ขณะไม่หยุดนับ
+    event: workflow.sla_tick
+    guard: paused_at IS NULL
+    action: escalated_at · แจ้งผู้รับงาน + ผู้รับการส่งต่อ · hook OnSLA(breached) · instance sla_status = overdue
+

@@ -39,3 +39,20 @@ export {
   type BusinessCalendarInput,
   type Holiday,
 } from "./calendars";
+export {
+  useWorkflowDefinitions,
+  useSaveWorkflowDefinition,
+  useGroupSearch,
+  useMyTasks,
+  useWorkflowInstance,
+  useWorkflowMutations,
+  type WorkflowDefinition,
+  type WorkflowDefinitionInput,
+  type WorkflowDefinitionBody,
+  type WorkflowState,
+  type WorkflowInstance,
+  type WorkflowTask,
+  type MyTask,
+  type SlaStatus,
+  type LocalizedText,
+} from "./workflow";

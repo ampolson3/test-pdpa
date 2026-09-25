@@ -2850,6 +2850,7 @@ type PlatformSlaTimer struct {
 	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy   pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion  int32              `db:"row_version" json:"row_version"`
+	PausedAt    pgtype.Timestamptz `db:"paused_at" json:"paused_at"`
 }
 
 // template เอกสาร / ข้อความ (กลางและของ tenant)

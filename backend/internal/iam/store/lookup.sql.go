@@ -11,6 +11,32 @@ import (
 	"github.com/google/uuid"
 )
 
+const activeGroupMembers = `-- name: ActiveGroupMembers :many
+SELECT m.user_id FROM iam.group_members m JOIN iam.users u ON u.id = m.user_id
+WHERE m.group_id = $1 AND u.status = 'active'
+ORDER BY m.user_id
+`
+
+func (q *Queries) ActiveGroupMembers(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, activeGroupMembers, groupID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var user_id uuid.UUID
+		if err := rows.Scan(&user_id); err != nil {
+			return nil, err
+		}
+		items = append(items, user_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const activeUserNames = `-- name: ActiveUserNames :many
 SELECT id, display_name FROM iam.users WHERE id = ANY ($1::uuid[]) AND status = 'active'
 `
@@ -30,6 +56,59 @@ func (q *Queries) ActiveUserNames(ctx context.Context, ids []uuid.UUID) ([]Activ
 	for rows.Next() {
 		var i ActiveUserNamesRow
 		if err := rows.Scan(&i.ID, &i.DisplayName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const groupIDsOfUser = `-- name: GroupIDsOfUser :many
+SELECT group_id FROM iam.group_members WHERE user_id = $1
+`
+
+func (q *Queries) GroupIDsOfUser(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, groupIDsOfUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var group_id uuid.UUID
+		if err := rows.Scan(&group_id); err != nil {
+			return nil, err
+		}
+		items = append(items, group_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const groupNames = `-- name: GroupNames :many
+SELECT id, name FROM iam.groups WHERE id = ANY ($1::uuid[])
+`
+
+type GroupNamesRow struct {
+	ID   uuid.UUID `db:"id" json:"id"`
+	Name string    `db:"name" json:"name"`
+}
+
+func (q *Queries) GroupNames(ctx context.Context, ids []uuid.UUID) ([]GroupNamesRow, error) {
+	rows, err := q.db.Query(ctx, groupNames, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GroupNamesRow
+	for rows.Next() {
+		var i GroupNamesRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -63,6 +142,35 @@ func (q *Queries) SearchActiveUsers(ctx context.Context, prefix *string) ([]Sear
 	for rows.Next() {
 		var i SearchActiveUsersRow
 		if err := rows.Scan(&i.ID, &i.DisplayName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const searchGroups = `-- name: SearchGroups :many
+SELECT id, name FROM iam.groups WHERE name ILIKE $1 || '%' ORDER BY name LIMIT 10
+`
+
+type SearchGroupsRow struct {
+	ID   uuid.UUID `db:"id" json:"id"`
+	Name string    `db:"name" json:"name"`
+}
+
+func (q *Queries) SearchGroups(ctx context.Context, prefix *string) ([]SearchGroupsRow, error) {
+	rows, err := q.db.Query(ctx, searchGroups, prefix)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchGroupsRow
+	for rows.Next() {
+		var i SearchGroupsRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

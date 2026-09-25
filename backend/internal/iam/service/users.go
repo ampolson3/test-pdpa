@@ -47,3 +47,51 @@ func Names(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error) {
 	}
 	return out, nil
 }
+
+// GroupIDsOf lists the groups a user belongs to (work assigned to a group is theirs to claim, PLT-05).
+func GroupIDsOf(ctx context.Context, userID uuid.UUID) ([]uuid.UUID, error) {
+	ids, err := iamstore.New(pdb.MustTxFromContext(ctx)).GroupIDsOfUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("iam: groups of user: %w", err)
+	}
+	return ids, nil
+}
+
+// GroupMembers lists the active members of a group.
+func GroupMembers(ctx context.Context, groupID uuid.UUID) ([]uuid.UUID, error) {
+	ids, err := iamstore.New(pdb.MustTxFromContext(ctx)).ActiveGroupMembers(ctx, groupID)
+	if err != nil {
+		return nil, fmt.Errorf("iam: group members: %w", err)
+	}
+	return ids, nil
+}
+
+// GroupNames returns the names of those ids that are groups of the tenant.
+func GroupNames(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error) {
+	out := map[uuid.UUID]string{}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := iamstore.New(pdb.MustTxFromContext(ctx)).GroupNames(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("iam: group names: %w", err)
+	}
+	for _, r := range rows {
+		out[r.ID] = r.Name
+	}
+	return out, nil
+}
+
+// SearchGroups finds up to 10 groups whose name starts with prefix (assignee pickers).
+func SearchGroups(ctx context.Context, prefix string) ([]UserName, error) {
+	p := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(strings.TrimSpace(prefix))
+	rows, err := iamstore.New(pdb.MustTxFromContext(ctx)).SearchGroups(ctx, &p)
+	if err != nil {
+		return nil, fmt.Errorf("iam: search groups: %w", err)
+	}
+	out := make([]UserName, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, UserName{ID: r.ID, DisplayName: r.Name})
+	}
+	return out, nil
+}
