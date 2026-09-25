@@ -70,12 +70,8 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	requiredPermission := func(pattern, method string) (string, bool) {
-		byMethod, ok := permissions[pattern]
-		if !ok {
-			return "", false
-		}
-		code, ok := byMethod[method]
+	requiredPermission := func(operationID string) (string, bool) {
+		code, ok := permissions[operationID]
 		return code, ok
 	}
 
@@ -109,10 +105,16 @@ func run() error {
 	// docs/architecture/code-structure.md, but oapi-codegen's strict server assumes the request
 	// already matches the spec by the time a handler runs, so it sits here, before AuthN.
 	r.Use(validateMw)
-	r.Use(verifier.Middleware)                              // AuthN (#7) — every mounted route today requires adminJwt
-	r.Use(authz.Middleware(authzCache, requiredPermission)) // AuthZ (#9)
-	r.Use(idemMw.Handler)                                   // Idempotency (#10)
-	r.Use(auditSvc.TxMiddleware(pool))                      // Tx (#11) + Audit (#13)
+	r.Use(verifier.Middleware)         // AuthN (#7) — every mounted route today requires adminJwt
+	r.Use(idemMw.Handler)              // Idempotency (#10)
+	r.Use(auditSvc.TxMiddleware(pool)) // Tx (#11) + Audit (#13)
+	// AuthZ (#9) is NOT here: chi.RouteContext(ctx).RoutePattern() is empty for anything mounted
+	// with r.Use() (only populated once the mux is dispatching to the matched route), so it runs
+	// as an oapi-codegen strict middleware instead, keyed by operationId — see
+	// internal/pkg/authz.StrictMiddleware and loadPermissions in permissions.go. That does mean it
+	// runs after Tx opens its transaction rather than strictly before, as the numbered list implies;
+	// that's fine because AuthZ's cache loader always opens its own separate read-only transaction
+	// regardless of when it's called, so it never touches the request's own transaction.
 
 	strictOpts := iamhttp.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
@@ -122,7 +124,10 @@ func run() error {
 			httpx.WriteProblem(w, r, httpx.Internal())
 		},
 	}
-	strictIam := iamhttp.NewStrictHandlerWithOptions(iamhttp.NewStrict(iamSvc), nil, strictOpts)
+	strictMiddlewares := []iamhttp.StrictMiddlewareFunc{
+		authz.StrictMiddleware[iamhttp.StrictHandlerFunc](authzCache, requiredPermission),
+	}
+	strictIam := iamhttp.NewStrictHandlerWithOptions(iamhttp.NewStrict(iamSvc), strictMiddlewares, strictOpts)
 	iamhttp.HandlerWithOptions(strictIam, iamhttp.ChiServerOptions{
 		BaseRouter: r,
 		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -30,7 +29,6 @@ func (s *Service) TxMiddleware(pool *pgxpool.Pool) func(http.Handler) http.Handl
 			}
 
 			rec := httpx.NewRecorder()
-			pattern := chi.RouteContext(r.Context()).RoutePattern()
 
 			err := pdb.WithTenantTx(r.Context(), pool, principal.TenantID, principal.UserID, func(ctx context.Context) error {
 				next.ServeHTTP(rec, r.WithContext(ctx))
@@ -38,7 +36,9 @@ func (s *Service) TxMiddleware(pool *pgxpool.Pool) func(http.Handler) http.Handl
 					return fmt.Errorf("handler returned %d", rec.Status())
 				}
 
-				entry := Entry{ActorType: principal.ActorType, Action: fmt.Sprintf("%s %s", r.Method, pattern)}
+				// r.URL.Path (not a chi route pattern): chi.RouteContext(ctx).RoutePattern() is
+				// empty for middleware mounted with r.Use() — see cmd/api's loadPermissions.
+				entry := Entry{ActorType: principal.ActorType, Action: fmt.Sprintf("%s %s", r.Method, r.URL.Path)}
 				if tid, err := uuid.Parse(principal.TenantID); err == nil {
 					entry.TenantID = tid
 				}
