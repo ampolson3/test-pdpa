@@ -236,6 +236,21 @@ State machine `PLT-14` in `docs/states/state-machines.yaml`; `files` gained trus
 with the error report (acceptance, ~15 s), rollback on a failing row, Excel, mapping rules and transitions, access and
 two-tenant isolation, infected file, HTTP contract (401/403/404/400/422/428).
 
+### ORG-20 Organization settings (`docs/modules/ORG.md#org-20`) — calendar part done, rest pending
+Only the business calendar was built (user's choice: PLT-05 needs it; language/logo/theme later).
+`internal/org/{store,service,http}` — the first business module: several calendars per tenant (name, IANA zone, ISO
+workdays 1–7), the first one becomes the default, moving the default keeps `org_settings.default_calendar_id` in step
+(migration 00027: one default per tenant, unique names). Holidays are entered by the admin or imported (PLT-14 type
+`org.holiday`, registered in `internal/wiring`; `importer.ParseDate` accepts ISO, D/M/YYYY with Buddhist-era years and
+Excel serials — the XLSX reader now returns raw cell values); **no seeded holiday data** (user's choice). Other modules
+use the exported `orgservice.Calendars` interface (`BusinessCalendar(ctx, id|nil)`) and do the arithmetic in the pure
+`internal/pkg/bizcal` (`AddBusinessDays`, `BusinessDaysBetween`, `IsBusinessDay`; no calendar → Mon–Fri Asia/Bangkok).
+Permissions: `org.settings.read`, `org.settings.update` (ORGADMIN has no `create`, so adding a calendar is an update).
+Frontend `/settings/calendar` (calendar form, holidays by year in BE/CE, `ImportWizard`). Tests: bizcal unit tests
+(weekends, Songkran, zone boundary, custom weeks, runaway guard), service (default/validation/audit, acceptance: due
+date skips the tenant's holidays, two-tenant isolation, holiday import type), HTTP contract, Chromium E2E incl. a real
+CSV import with an error report (15/15).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

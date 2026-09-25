@@ -17,6 +17,8 @@ tags:
     description: Users, roles, permissions, sessions (backend/internal/iam)
   - name: consent
     description: Purposes, collection points, consent transactions (backend/internal/consent)
+  - name: org
+    description: Organization — business calendars and holidays so far (backend/internal/org)
   - name: platform
     description: Platform services — background jobs, files, notifications, ... (backend/internal/platform/<service>)
 paths:
@@ -1189,6 +1191,242 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /admin/v1/org/calendars:
+    get:
+      operationId: orgListCalendars
+      tags: [org]
+      summary: The tenant's business calendars (workdays and time zone used to count SLAs)
+      x-permission: org.settings.read
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Calendars, the default first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BusinessCalendar'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: orgCreateCalendar
+      tags: [org]
+      summary: Add a calendar (the tenant's first calendar becomes its default)
+      x-permission: org.settings.update
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessCalendarInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessCalendar'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/org/calendars/{id}:
+    patch:
+      operationId: orgUpdateCalendar
+      tags: [org]
+      summary: Change a calendar's name, time zone or workdays, or make it the default
+      x-permission: org.settings.update
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessCalendarInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessCalendar'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/org/calendars/{id}/holidays:
+    get:
+      operationId: orgListHolidays
+      tags: [org]
+      summary: Holidays of a calendar, optionally of one year (Gregorian)
+      x-permission: org.settings.read
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1900
+            maximum: 2200
+      responses:
+        '200':
+          description: Holidays in date order
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Holiday'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/org/calendars/{id}/holidays/{date}:
+    put:
+      operationId: orgPutHoliday
+      tags: [org]
+      summary: Add a holiday, or rename the holiday on that date
+      x-permission: org.settings.update
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+            example:
+              name: วันสงกรานต์
+      responses:
+        '200':
+          description: The holiday
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Holiday'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+    delete:
+      operationId: orgDeleteHoliday
+      tags: [org]
+      summary: Remove a holiday
+      x-permission: org.settings.update
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '204':
+          description: Removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /public/v1/collection-points/{key}:
     get:
       operationId: consentGetPublicCollectionPoint
@@ -1460,6 +1698,65 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    BusinessCalendarInput:
+      type: object
+      required: [name, timezone, workdays]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        timezone:
+          type: string
+          description: IANA time zone the calendar's days are counted in
+          maxLength: 40
+        workdays:
+          type: array
+          description: ISO weekdays that are working days (1 = Monday … 7 = Sunday)
+          minItems: 1
+          maxItems: 7
+          uniqueItems: true
+          items:
+            type: integer
+            minimum: 1
+            maximum: 7
+        is_default:
+          type: boolean
+          description: Make this the tenant's default calendar (true only — the default moves, it is never cleared)
+      example:
+        name: ปฏิทินสำนักงานใหญ่
+        timezone: Asia/Bangkok
+        workdays: [1, 2, 3, 4, 5]
+        is_default: true
+    BusinessCalendar:
+      type: object
+      required: [id, name, timezone, workdays, is_default, row_version, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+        timezone:
+          type: string
+        workdays:
+          type: array
+          items:
+            type: integer
+        is_default:
+          type: boolean
+        row_version:
+          type: integer
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    Holiday:
+      type: object
+      required: [date, name]
+      properties:
+        date:
+          type: string
+          format: date
+        name:
+          type: string
     ImportJob:
       type: object
       required: [id, import_type, status, headers, suggested, mapping, columns, has_error_report, row_version, created_at, updated_at]

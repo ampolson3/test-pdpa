@@ -102,7 +102,9 @@ func (x *xlsxRows) Next() ([]string, error) {
 		}
 		return nil, io.EOF
 	}
-	cols, err := x.rows.Columns()
+	// Raw values: a date cell arrives as its serial number (see ParseDate), not in whatever display
+	// format the sheet happens to use; numbers lose their thousands separators.
+	cols, err := x.rows.Columns(excelize.Options{RawCellValue: true})
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrUnreadable, err)
 	}

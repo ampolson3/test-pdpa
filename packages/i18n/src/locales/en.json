@@ -197,5 +197,47 @@
       "apply_failed": "The import failed, so nothing was imported. Please try again.",
       "unknown": "The import failed."
     }
+  },
+  "calendar": {
+    "signInRequired": "Please sign in to manage calendars.",
+    "forbidden": "You don't have permission to view organization settings.",
+    "title": "Business calendars",
+    "intro": "Deadlines counted in business days (SLAs) skip the non-working days and holidays of the calendar. Records without their own calendar use the default one.",
+    "new": "New calendar",
+    "loading": "Loading…",
+    "loadError": "Couldn't load the data. Please try again.",
+    "empty": "No calendar yet — SLAs count Monday to Friday (Asia/Bangkok) without holidays until you create one.",
+    "default": "Default",
+    "settings": "Calendar settings",
+    "name": "Name",
+    "timezone": "Time zone (IANA)",
+    "workdays": "Working days",
+    "weekday": {
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat",
+      "7": "Sun"
+    },
+    "makeDefault": "Default calendar for SLAs",
+    "defaultHint": "To change the default, open another calendar and make it the default.",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saveError": "Couldn't save. Please try again.",
+    "duplicateName": "A calendar with this name already exists.",
+    "invalid": "Check the name, the time zone and pick at least one working day.",
+    "holidaysOf": "Holidays — {name}",
+    "prevYear": "Previous year",
+    "nextYear": "Next year",
+    "noHolidays": "No holidays in this year.",
+    "date": "Date",
+    "holidayName": "Holiday",
+    "remove": "Remove",
+    "add": "Add holiday",
+    "import": "Import holidays from a file",
+    "closeImport": "Close import",
+    "importHint": "Columns: date (YYYY-MM-DD or D/M/YYYY — Buddhist-era years accepted, Excel date cells too), holiday name, and optionally the calendar name (empty = the default calendar). An existing holiday on the same date is renamed."
   }
 }

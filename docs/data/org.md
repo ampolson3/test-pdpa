@@ -238,6 +238,8 @@
 - PK: `(id)`
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `platform.sla_timers.calendar_id`, `org.holidays.calendar_id`, `org.org_settings.default_calendar_id`
+- Unique (migration 00027): `ux_org_business_calendars_default (tenant_id) WHERE is_default` — ปฏิทินหลักได้หนึ่งเดียวต่อ tenant · `ux_org_business_calendars_name (tenant_id, lower(name))`
+- `workdays` = ISO weekday (1 = จันทร์ … 7 = อาทิตย์) · `is_default` คือแหล่งจริง; `org.org_settings.default_calendar_id` ถูกอัปเดตใน transaction เดียวกันทุกครั้งที่ปฏิทินหลักเปลี่ยน (ORG-20)
 
 <a id="org-holidays"></a>
 ## org.holidays

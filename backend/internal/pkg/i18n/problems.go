@@ -89,6 +89,15 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "คำขอส่งการแจ้งเตือนไม่ถูกต้อง",
 		En: "Invalid notification request",
 	},
+	// ORG-20 calendars
+	"org.invalid_calendar": {
+		Th: "ข้อมูลปฏิทินไม่ถูกต้อง (ชื่อ เขตเวลา หรือวันทำการ)",
+		En: "Invalid calendar (name, time zone or workdays)",
+	},
+	"org.duplicate_calendar_name": {
+		Th: "มีปฏิทินชื่อนี้อยู่แล้ว",
+		En: "A calendar with this name exists",
+	},
 	// PLT-14 import
 	"import.invalid_mapping": {
 		Th: "การจับคู่คอลัมน์ไม่ถูกต้อง",

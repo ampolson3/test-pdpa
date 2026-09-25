@@ -22,6 +22,8 @@ import (
 
 	iamhttp "pdpa-platform/internal/iam/http"
 	iamservice "pdpa-platform/internal/iam/service"
+	orghttp "pdpa-platform/internal/org/http"
+	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authn"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
@@ -180,6 +182,7 @@ func run() error {
 
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
+	orgSvc := &orgservice.Service{Audit: auditSvc}
 
 	// The inbox stream (SSE) is the one route outside Idempotency + Tx: the Tx middleware buffers the
 	// response until COMMIT, which a stream never reaches. It opens a short transaction per check itself.
@@ -213,6 +216,11 @@ func run() error {
 			[]importerhttp.StrictMiddlewareFunc{authz.StrictMiddleware[importerhttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			importerhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		importerhttp.HandlerWithOptions(strictImports, importerhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictOrg := orghttp.NewStrictHandlerWithOptions(orghttp.NewStrict(orgSvc),
+			[]orghttp.StrictMiddlewareFunc{authz.StrictMiddleware[orghttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			orghttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		orghttp.HandlerWithOptions(strictOrg, orghttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictNotify := notifyhttp.NewStrictHandlerWithOptions(notifyhttp.NewStrict(notifySvc),
 			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission)},

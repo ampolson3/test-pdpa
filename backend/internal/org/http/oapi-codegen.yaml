@@ -1,0 +1,13 @@
+package: orghttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - orgListCalendars
+    - orgCreateCalendar
+    - orgUpdateCalendar
+    - orgListHolidays
+    - orgPutHoliday
+    - orgDeleteHoliday

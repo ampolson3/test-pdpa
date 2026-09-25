@@ -194,6 +194,8 @@
 
 **หมายเหตุ:** ดึงเข้า P0 เพราะ SLA engine ต้องใช้ปฏิทิน
 
+**Implementation (ORG-20 — ส่วนปฏิทิน):** `backend/internal/org` — ปฏิทินวันทำการหลายชุดต่อ tenant (ชื่อ, เขตเวลา IANA, วันทำการ ISO 1–7) ปฏิทินแรกเป็นปฏิทินหลักอัตโนมัติ ย้ายปฏิทินหลักได้ (ซิงก์ `org.org_settings.default_calendar_id`) · วันหยุด: ผู้ดูแลกรอกเองหรือนำเข้า CSV/Excel ผ่าน PLT-14 (import type `org.holiday`: วันที่ YYYY-MM-DD / ว/ด/ปปปป รับปี พ.ศ. / เซลล์วันที่ Excel, ชื่อวันหยุด, ชื่อปฏิทิน — ว่าง = ปฏิทินหลัก) ไม่มีข้อมูลวันหยุดตั้งต้น · module อื่นอ่านผ่าน interface `orgservice.Calendars.BusinessCalendar` แล้วคำนวณด้วย `internal/pkg/bizcal` (ข้ามวันหยุดประจำสัปดาห์ + วันหยุด ตามเขตเวลาของปฏิทิน; tenant ที่ยังไม่มีปฏิทิน = จันทร์–ศุกร์ Asia/Bangkok ไม่มีวันหยุด) · API `/admin/v1/org/calendars` (GET `org.settings.read`, POST/PATCH `org.settings.update` — ORGADMIN ไม่มี `create` จึงใช้ `update` สำหรับการเพิ่มปฏิทิน), `/admin/v1/org/calendars/{id}/holidays[/{date}]` · migration 00027 (ปฏิทินหลักได้หนึ่งเดียว, ชื่อไม่ซ้ำ) · หน้าจอ `/settings/calendar` · ยังไม่ทำ: ภาษา โลโก้ ธีม และ template แจ้งเตือนของ ORG-20 (template อยู่ที่ PLT-04 แล้ว)
+
 <a id="org-06"></a>
 ### ORG-06 ทะเบียนหน่วยงานภายนอก
 
