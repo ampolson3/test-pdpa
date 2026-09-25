@@ -15,6 +15,8 @@ import (
 	"github.com/riverqueue/river"
 
 	pdb "pdpa-platform/internal/pkg/db"
+	auditjobs "pdpa-platform/internal/platform/audit/jobs"
+	auditservice "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/jobs"
 )
@@ -50,11 +52,13 @@ func run() error {
 	river.AddWorker(workers, &jobs.PartitionMaintainWorker{Pool: pool})
 	river.AddWorker(workers, &events.Dispatcher{Subscribers: subscribers, Logger: slog.Default()})
 	river.AddWorker(workers, &events.Sweeper{Pool: pool})
+	river.AddWorker(workers, &auditjobs.Verifier{Audit: auditservice.New(), Logger: slog.Default()})
+	river.AddWorker(workers, &auditjobs.VerifySweeper{Pool: pool})
 
 	client, err := jobs.NewWorkerClient(pool, jobs.WorkerOptions{
 		Logger:          slog.Default(),
 		Workers:         workers,
-		PeriodicJobs:    []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob()},
+		PeriodicJobs:    []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob()},
 		SoftStopTimeout: softStop,
 	})
 	if err != nil {

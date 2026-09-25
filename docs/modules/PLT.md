@@ -402,6 +402,8 @@
 
 **หมายเหตุ:** หน้าดู log คือ ORG-19
 
+**Implementation (PLT-12):** `backend/internal/platform/audit` — hash chain ต่อ tenant ครอบทุกคอลัมน์, advisory lock กัน chain แตกกิ่ง, `Verify` + job `audit.verify` รายวัน, `Changes` (JSON diff), request audit บันทึก IP + user agent · migration 00023 (index ของ chain) · ยังไม่ทำ: retention (ลบ partition เก่า) — รอนโยบาย
+
 <a id="plt-13"></a>
 ### PLT-13 เข้ารหัสข้อมูลส่วนบุคคลระดับฟิลด์
 

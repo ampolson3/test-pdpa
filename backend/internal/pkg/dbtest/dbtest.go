@@ -23,6 +23,7 @@ import (
 const (
 	defaultAppURL      = "postgres://pdpa_app:pdpa_app@localhost:5433/pdpa?sslmode=disable"
 	defaultPlatformURL = "postgres://pdpa_platform:pdpa_platform@localhost:5433/pdpa?sslmode=disable"
+	defaultOwnerURL    = "postgres://pdpa_migrator:pdpa_migrator@localhost:5433/pdpa?sslmode=disable&options=-c%20role%3Dpdpa_owner"
 )
 
 // Pool opens a pool as pdpa_app (the role backend/cmd/api and backend/cmd/worker connect as — no
@@ -39,6 +40,16 @@ func Pool(t *testing.T) *pgxpool.Pool {
 func PlatformPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	return connect(t, "TEST_PLATFORM_DATABASE_URL", defaultPlatformURL)
+}
+
+// OwnerPool opens a pool as pdpa_owner (via pdpa_migrator, as cmd/migrate connects) — the role that
+// owns the tables and so still holds the UPDATE/DELETE the application roles lost on append-only
+// tables. Tests use it only to play an attacker or DBA tampering with evidence out of band, and to
+// clean up rows the application roles can't delete. RLS is forced on the owner too, so set
+// app.tenant_id in the same transaction.
+func OwnerPool(t *testing.T) *pgxpool.Pool {
+	t.Helper()
+	return connect(t, "TEST_OWNER_DATABASE_URL", defaultOwnerURL)
 }
 
 func connect(t *testing.T, envVar, fallback string) *pgxpool.Pool {

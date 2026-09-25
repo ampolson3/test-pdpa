@@ -130,6 +130,21 @@ Not done: `webhook.deliver` (HTTP + HMAC + retry → PLT-15, needs ORG-16 API cl
 NATS forwarding (optional per ADR); retention/cleanup of published outbox rows (no rule yet). No module
 publishes events yet — the first producers arrive with their features.
 
+### PLT-12 Tamper-evident audit log (`docs/modules/PLT.md#plt-12`) — done (retention pending)
+`internal/platform/audit/service`: the hash now covers every column but `id`/`hash` (length-prefixed, tag
+`audit/v2`, canonical JSON for before/after so jsonb round-trips verify) — before, IP, user agent, actor/entity
+ids and times were unprotected. `Write` takes a per-tenant advisory lock (held to COMMIT; audit is the last
+step) and derives `occurred_at` from the DB clock, never earlier than the previous row — concurrent requests
+used to be able to fork the chain. `Verify` replays a chain in pages; `audit/jobs` runs it daily per tenant
+(`audit.verify_sweep` → `audit.verify`, alert `audit_chain_broken`). `Changes` gives the before/after diff.
+The request audit now records IP (TCP peer) and user agent. Migration 00023 is a Go migration (partition
+list differs per environment) for the chain index. `dbtest.OwnerPool` added for tamper tests. Tests: every
+column edit, row deletion and a forged hash detected at the right row; app role denied UPDATE/DELETE; 20
+concurrent writers keep one chain (checked the test fails without the lock); per-tenant chains + RLS; verifier
+alert; sweeper. **Rows written by the old hash code (local dev DBs only) no longer verify** — clear them.
+Open: retention/partition drop (policy undecided — only "≥ 90 days" in pdpa-rules; asked), real client IP
+behind a load balancer (needs a trusted-proxy setting).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

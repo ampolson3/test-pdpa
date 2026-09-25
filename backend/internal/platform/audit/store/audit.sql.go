@@ -13,55 +13,36 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getLatestAuditHash = `-- name: GetLatestAuditHash :one
-SELECT COALESCE(
-    (SELECT hash FROM platform.audit_log WHERE tenant_id = $1 ORDER BY occurred_at DESC, id DESC LIMIT 1),
-    ''
-)::text AS hash
-`
-
-// The hash of the most recent audit_log row for this tenant, or "" if this is the first entry.
-// The caller must hold this within the same transaction that inserts the next row (append-only
-// chain, CLAUDE.md rule 4): concurrent writers for one tenant would otherwise race on prev_hash.
-func (q *Queries) GetLatestAuditHash(ctx context.Context, tenantID uuid.UUID) (string, error) {
-	row := q.db.QueryRow(ctx, getLatestAuditHash, tenantID)
-	var hash string
-	err := row.Scan(&hash)
-	return hash, err
-}
-
 const insertAuditLog = `-- name: InsertAuditLog :one
 INSERT INTO platform.audit_log (
-    tenant_id, actor_type, actor_id, action, entity_type, entity_id, before, after, ip, user_agent, prev_hash, hash
+    tenant_id, occurred_at, actor_type, actor_id, action, entity_type, entity_id, before, after, ip, user_agent, prev_hash, hash
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULLIF($11, ''), $12
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+    NULLIF($12::text, ''), $13
 )
-RETURNING id, occurred_at
+RETURNING id
 `
 
 type InsertAuditLogParams struct {
-	TenantID   uuid.UUID   `db:"tenant_id" json:"tenant_id"`
-	ActorType  string      `db:"actor_type" json:"actor_type"`
-	ActorID    pgtype.UUID `db:"actor_id" json:"actor_id"`
-	Action     string      `db:"action" json:"action"`
-	EntityType *string     `db:"entity_type" json:"entity_type"`
-	EntityID   pgtype.UUID `db:"entity_id" json:"entity_id"`
-	Before     []byte      `db:"before" json:"before"`
-	After      []byte      `db:"after" json:"after"`
-	Ip         *netip.Addr `db:"ip" json:"ip"`
-	UserAgent  *string     `db:"user_agent" json:"user_agent"`
-	Column11   interface{} `db:"column_11" json:"column_11"`
-	Hash       string      `db:"hash" json:"hash"`
-}
-
-type InsertAuditLogRow struct {
-	ID         int64              `db:"id" json:"id"`
+	TenantID   uuid.UUID          `db:"tenant_id" json:"tenant_id"`
 	OccurredAt pgtype.Timestamptz `db:"occurred_at" json:"occurred_at"`
+	ActorType  string             `db:"actor_type" json:"actor_type"`
+	ActorID    pgtype.UUID        `db:"actor_id" json:"actor_id"`
+	Action     string             `db:"action" json:"action"`
+	EntityType *string            `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID        `db:"entity_id" json:"entity_id"`
+	Before     []byte             `db:"before" json:"before"`
+	After      []byte             `db:"after" json:"after"`
+	Ip         *netip.Addr        `db:"ip" json:"ip"`
+	UserAgent  *string            `db:"user_agent" json:"user_agent"`
+	PrevHash   string             `db:"prev_hash" json:"prev_hash"`
+	Hash       string             `db:"hash" json:"hash"`
 }
 
-func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) (InsertAuditLogRow, error) {
+func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) (int64, error) {
 	row := q.db.QueryRow(ctx, insertAuditLog,
 		arg.TenantID,
+		arg.OccurredAt,
 		arg.ActorType,
 		arg.ActorID,
 		arg.Action,
@@ -71,10 +52,146 @@ func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) 
 		arg.After,
 		arg.Ip,
 		arg.UserAgent,
-		arg.Column11,
+		arg.PrevHash,
 		arg.Hash,
 	)
-	var i InsertAuditLogRow
-	err := row.Scan(&i.ID, &i.OccurredAt)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const listAuditChainPage = `-- name: ListAuditChainPage :many
+SELECT id, occurred_at, actor_type, actor_id, action, entity_type, entity_id, before, after, ip, user_agent,
+       coalesce(prev_hash, '')::text AS prev_hash, hash
+FROM platform.audit_log
+WHERE tenant_id = $1::uuid
+  AND (occurred_at, id) > ($2::timestamptz, $3::bigint)
+ORDER BY occurred_at, id
+LIMIT $4
+`
+
+type ListAuditChainPageParams struct {
+	TenantID        uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	AfterOccurredAt pgtype.Timestamptz `db:"after_occurred_at" json:"after_occurred_at"`
+	AfterID         int64              `db:"after_id" json:"after_id"`
+	PageSize        int32              `db:"page_size" json:"page_size"`
+}
+
+type ListAuditChainPageRow struct {
+	ID         int64              `db:"id" json:"id"`
+	OccurredAt pgtype.Timestamptz `db:"occurred_at" json:"occurred_at"`
+	ActorType  string             `db:"actor_type" json:"actor_type"`
+	ActorID    pgtype.UUID        `db:"actor_id" json:"actor_id"`
+	Action     string             `db:"action" json:"action"`
+	EntityType *string            `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID        `db:"entity_id" json:"entity_id"`
+	Before     []byte             `db:"before" json:"before"`
+	After      []byte             `db:"after" json:"after"`
+	Ip         *netip.Addr        `db:"ip" json:"ip"`
+	UserAgent  *string            `db:"user_agent" json:"user_agent"`
+	PrevHash   string             `db:"prev_hash" json:"prev_hash"`
+	Hash       string             `db:"hash" json:"hash"`
+}
+
+// One page of a tenant's chain in chain order, after (occurred_at, id) of the previous page's last row.
+func (q *Queries) ListAuditChainPage(ctx context.Context, arg ListAuditChainPageParams) ([]ListAuditChainPageRow, error) {
+	rows, err := q.db.Query(ctx, listAuditChainPage,
+		arg.TenantID,
+		arg.AfterOccurredAt,
+		arg.AfterID,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAuditChainPageRow
+	for rows.Next() {
+		var i ListAuditChainPageRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OccurredAt,
+			&i.ActorType,
+			&i.ActorID,
+			&i.Action,
+			&i.EntityType,
+			&i.EntityID,
+			&i.Before,
+			&i.After,
+			&i.Ip,
+			&i.UserAgent,
+			&i.PrevHash,
+			&i.Hash,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLiveTenants = `-- name: ListLiveTenants :many
+SELECT id FROM platform.tenants WHERE status IN ('trial', 'active', 'suspended') ORDER BY id
+`
+
+// platform.tenants is global (no RLS) and readable by pdpa_app.
+func (q *Queries) ListLiveTenants(ctx context.Context) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listLiveTenants)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockAuditChain = `-- name: LockAuditChain :exec
+SELECT pg_advisory_xact_lock(hashtextextended(concat('platform.audit_log:', $1::uuid), 0))
+`
+
+// Serialises appends to one tenant's chain until the transaction ends, so two concurrent requests
+// can't both link to the same previous row (which would fork the chain). Taken at the end of the
+// request (the audit write is the last step before COMMIT), so it is held only briefly.
+func (q *Queries) LockAuditChain(ctx context.Context, tenantID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, lockAuditChain, tenantID)
+	return err
+}
+
+const nextAuditChainLink = `-- name: NextAuditChainLink :one
+SELECT coalesce(h.hash, '')::text AS prev_hash,
+       greatest(clock_timestamp(), coalesce(h.occurred_at + interval '1 microsecond', clock_timestamp()))::timestamptz AS occurred_at
+FROM (SELECT 1) AS one
+LEFT JOIN LATERAL (
+    SELECT hash, occurred_at FROM platform.audit_log
+    WHERE tenant_id = $1::uuid
+    ORDER BY occurred_at DESC, id DESC
+    LIMIT 1
+) AS h ON true
+`
+
+type NextAuditChainLinkRow struct {
+	PrevHash   string             `db:"prev_hash" json:"prev_hash"`
+	OccurredAt pgtype.Timestamptz `db:"occurred_at" json:"occurred_at"`
+}
+
+// The previous row's hash ("" for the first entry) and this row's occurred_at: the database clock,
+// but never earlier than the previous row, so chain order and (occurred_at, id) order agree.
+func (q *Queries) NextAuditChainLink(ctx context.Context, tenantID uuid.UUID) (NextAuditChainLinkRow, error) {
+	row := q.db.QueryRow(ctx, nextAuditChainLink, tenantID)
+	var i NextAuditChainLinkRow
+	err := row.Scan(&i.PrevHash, &i.OccurredAt)
 	return i, err
 }

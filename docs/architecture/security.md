@@ -106,6 +106,7 @@
 - เปลี่ยน role / scope / สิทธิ์ชั่วคราว / break-glass · export · unmask · ลบ · อนุมัติ / ปฏิเสธ / publish
 - platform.audit_log: actor_type, actor_id, action, entity_type, entity_id, before/after (mask PII), ip, user_agent, prev_hash → hash
 - ห้าม UPDATE / DELETE (สิทธิ์ DB + test) · ส่งต่อ SIEM ได้ · เก็บตามนโยบายองค์กร (ข้อมูลจราจรทางคอมพิวเตอร์อย่างน้อย 90 วัน)
+- โค้ด (PLT-12): `audit.Service.Write` (ใช้ `audit.Changes` ลด before/after เหลือเฉพาะฟิลด์ที่เปลี่ยน) · `Verify` + job `audit.verify` รายวัน · รายละเอียด hash ใน `docs/data/platform.md#platform-audit-log` · ยังไม่ทำ: ลบ partition ตามระยะเวลาเก็บ (รอกำหนดนโยบาย) และ IP จริงหลัง load balancer (ต้องกำหนด trusted proxy)
 
 ## Threat model
 

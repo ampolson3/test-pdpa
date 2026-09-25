@@ -18,6 +18,8 @@ var GlobalKinds = map[string]bool{
 	// events.SweepArgs (internal/platform/events imports this package, so the kind is spelled out):
 	// reads only platform.tenants and enqueues one outbox.dispatch per tenant.
 	"outbox.sweep": true,
+	// audit/jobs.VerifySweepArgs: reads only platform.tenants and enqueues one audit.verify per tenant.
+	"audit.verify_sweep": true,
 }
 
 // WorkerOptions configures NewWorkerClient. Zero values take the documented defaults.

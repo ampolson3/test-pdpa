@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/netip"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -45,6 +46,13 @@ func (s *Service) TxMiddleware(pool *pgxpool.Pool) func(http.Handler) http.Handl
 				if uid, err := uuid.Parse(principal.UserID); err == nil {
 					entry.ActorID = &uid
 				}
+				// The TCP peer. Behind a load balancer this is the proxy's address until trusted
+				// X-Forwarded-For handling is configured (open item, see PLT-12 in CLAUDE.md).
+				if ap, err := netip.ParseAddrPort(r.RemoteAddr); err == nil {
+					ip := ap.Addr().Unmap()
+					entry.IP = &ip
+				}
+				entry.UserAgent = r.UserAgent()
 				return s.Write(ctx, entry)
 			})
 

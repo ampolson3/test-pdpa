@@ -607,7 +607,8 @@ audit log แบบ append-only + hash chain (partition รายเดือน
 | `hash` | `char(64)` | ✓ |  |  |  |
 
 - PK: `(id, occurred_at)` — รวมคอลัมน์ partition
-- Index: `platform.audit_log (tenant_id, entity_type)` · `platform.audit_log (tenant_id, entity_id)`
+- Index: `platform.audit_log (tenant_id, entity_type)` · `platform.audit_log (tenant_id, entity_id)` · `ix_platform_audit_log_chain (tenant_id, occurred_at, id)` (migration 00023, Go migration: ON ONLY + CONCURRENTLY ต่อ partition + ATTACH)
+- hash chain ต่อ tenant (PLT-12, `internal/platform/audit/service`): `hash` = SHA-256 ของทุกคอลัมน์ยกเว้น `id`/`hash` (แต่ละฟิลด์มี length prefix, tag `audit/v2`, `before`/`after` เป็น canonical JSON, `occurred_at` ระดับ microsecond UTC) · `prev_hash` = `hash` ของแถวก่อนหน้า (แถวแรก NULL) · ลำดับ chain = `(occurred_at, id)` · ผู้เขียนถือ advisory lock ต่อ tenant ถึง COMMIT และ `occurred_at` = นาฬิกา DB แต่ไม่น้อยกว่าแถวก่อน + 1µs · `Verify` ไล่ตรวจทั้ง chain · job `audit.verify` ทุกวันต่อ tenant → `alert=audit_chain_broken`
 - RLS: tenant · RLS `tenant_isolation`
 
 <a id="platform-import-jobs"></a>
