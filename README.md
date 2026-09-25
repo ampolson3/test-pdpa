@@ -70,6 +70,11 @@ psql -h localhost -p 5433 -d postgres -v ON_ERROR_STOP=1 \
   go run ./cmd/migrate -grants ../deploy/db/10-grants.sql)
 ```
 
+บน Linux (Debian/Ubuntu, เช่น container ของ Claude Code on the web) ใช้ PostgreSQL 16 จาก apt แทน:
+`apt-get install -y postgresql-16-pgvector` → ตั้ง `port = 5433` ใน `/etc/postgresql/16/main/postgresql.conf` →
+`pg_ctlcluster 16 main start` → รัน `00-bootstrap.sql` ด้วย `su postgres -c "psql -p 5433 ..."` และ `cmd/migrate` ตามด้านบน
+(`redis-server --daemonize yes` แทน Valkey)
+
 Keycloak ยังไม่ได้ตั้งทางนี้ (Organizations / `tid` claim ต้องรอ PoC T13 ตาม `docs/decisions.md` Q-18) — ทดสอบ
 endpoint ที่ต้อง login ได้ด้วย JWT ที่เซ็นเองชั่วคราวเท่านั้น (ดูวิธีใน git log ของ commit ที่ verify reference
 slice)

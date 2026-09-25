@@ -5,14 +5,20 @@ go 1.27.1
 require (
 	github.com/getkin/kin-openapi v0.149.0
 	github.com/go-chi/chi/v5 v5.3.2
+	github.com/go-chi/cors v1.2.2
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/oapi-codegen/runtime v1.6.0
 	github.com/pgvector/pgvector-go v0.4.1
+	github.com/pressly/goose/v3 v3.28.0
 	github.com/redis/go-redis/v9 v9.22.0
+	github.com/riverqueue/river v0.47.0
+	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.47.0
+	github.com/riverqueue/river/rivertype v0.47.0
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.46.0
+	go.opentelemetry.io/otel/metric v1.46.0
 	go.opentelemetry.io/otel/sdk v1.46.0
 )
 
@@ -20,7 +26,6 @@ require (
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/go-chi/cors v1.2.2 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
@@ -32,12 +37,8 @@ require (
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/oasdiff/yaml v0.1.1 // indirect
 	github.com/oasdiff/yaml3 v0.0.14 // indirect
-	github.com/pressly/goose/v3 v3.28.0 // indirect
-	github.com/riverqueue/river v0.47.0 // indirect
 	github.com/riverqueue/river/riverdriver v0.47.0 // indirect
-	github.com/riverqueue/river/riverdriver/riverpgxv5 v0.47.0 // indirect
 	github.com/riverqueue/river/rivershared v0.47.0 // indirect
-	github.com/riverqueue/river/rivertype v0.47.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	github.com/sethvargo/go-retry v0.4.0 // indirect
 	github.com/tidwall/gjson v1.19.0 // indirect
@@ -46,7 +47,6 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.46.0 // indirect
-	go.opentelemetry.io/otel/metric v1.46.0 // indirect
 	go.opentelemetry.io/otel/trace v1.46.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect

@@ -110,6 +110,8 @@
 
 ## Background jobs (River)
 
+กฎร่วมของทุก job (PLT-10, `internal/platform/jobs`): 1 `WithTenantTx` ต่อ job จาก `tenant_id` ใน args · retry ตาม River ค่าเริ่มต้น (exponential attempt⁴ วินาที สูงสุด 25 ครั้ง) · ทุกครั้งที่ล้มเหลว log WARN + metric `pdpa.jobs.failed`; ครั้งสุดท้าย (หมดจำนวนครั้งหรือถูก cancel) log ERROR `alert=job_discarded` + metric `pdpa.jobs.discarded` สำหรับตั้ง alert · periodic job enqueue โดย leader เท่านั้น (ไม่ซ้ำเมื่อรันหลาย instance) · SIGTERM → soft stop รอ job ที่กำลังรัน `WORKER_SOFT_STOP_TIMEOUT` (ค่าเริ่มต้น 25s) แล้วจึง cancel
+
 | job | module | รอบ | หน้าที่ | อ้างอิง |
 |---|---|---|---|---|
 | `outbox.dispatch` | platform | enqueue ใน tx เดียวกับ outbox (args: tenant_id) + sweeper รายนาที | อ่าน outbox_events ของ tenant (FOR UPDATE SKIP LOCKED) → สร้าง webhook_deliveries | SEQ-04 |

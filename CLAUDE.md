@@ -87,6 +87,21 @@ covered the fixed strings the platform itself owns:
   there); Server Components use `next-intl/server`'s `getLocale()` directly in `lib/api.ts`, which
   does have one.
 
+### PLT-10 Background jobs และ scheduler (`docs/modules/PLT.md#plt-10`) — backend done, admin page pending
+`internal/platform/jobs` is now the job framework every module's `jobs/` package builds on (rules in
+`docs/architecture/code-structure.md` and `docs/architecture/integration.md` § Background jobs):
+`TenantArgs` + `TenantTxMiddleware` (one `WithTenantTx` per job from the args' `tenant_id`; no tenant and
+not in `GlobalKinds` → cancelled), `Enqueue` (InsertTx on the request's own tx, rejects another tenant's
+job), `AlertHandler` (WARN + `pdpa.jobs.failed` per failed attempt, ERROR `alert=job_discarded` +
+`pdpa.jobs.discarded` on the final one), `NewWorkerClient` (leader-only periodic jobs, 25s soft stop via
+`WORKER_SOFT_STOP_TIMEOUT`). `internal/platform/jobs/jobs_test.go` covers both acceptance criteria against a
+real Postgres (retry then alert; two worker instances work each job once and fire a periodic job once),
+plus RLS scoping inside a job, enqueue commit/rollback, per-tenant unique jobs and graceful shutdown — all
+passing. Not done: the admin job-status page (needs a permission code and a tenant-scoping decision for
+`river_job`, which has no RLS — asked, not guessed); failure alerts reach people only via log/metric alert
+rules until PLT-04 (notifications) exists; `cmd/api` doesn't construct the insert client yet (first job
+producer will).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.
