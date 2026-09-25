@@ -57,3 +57,13 @@ export {
   type LocalizedText,
 } from "./workflow";
 export { useAuditLog, auditExportHref, useVerifyAuditLog, type AuditEntry, type AuditFilter } from "./audit";
+export {
+  useRecordVersions,
+  useRecordVersion,
+  useCompareVersions,
+  useMyApprovals,
+  useVersionMutations,
+  type RecordVersion,
+  type VersionChange,
+  type ApprovalInboxItem,
+} from "./versioning";

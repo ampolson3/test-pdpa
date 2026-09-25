@@ -277,6 +277,18 @@ cells neutralized, the export itself audited as `platform.audit.export`), on-dem
 BFF now forwards `Content-Disposition`. Tests: acceptance (who changed whose roles and when, found by target and
 exported), kinds/prefix/range/paging/cursor, isolation, formula injection, HTTP contract, Chromium E2E (8/8).
 
+### PLT-08 Versioning & approval (`docs/modules/PLT.md#plt-08`) — done (no module registered yet)
+`internal/platform/versioning` (+ `http/`, `store/`): modules register a record type in `internal/wiring.Versioning`
+(read/edit/publish permissions, ≥ 1 approval step by role, `Title`, `OnPublish`) and call `SaveDraft` from their own
+service. draft → in_review (steps opened, diff vs published fixed) → approved → published (previous superseded,
+hook in the same tx); returned/rejected (reason required) → draft. Published content is never edited — a change is a
+new version (acceptance); maker-checker: author, requester and earlier-level approvers can't decide (acceptance);
+levels in order. Migration 00029: one open + one published version per record, pending-by-role index,
+`approval.approved/returned/rejected` in-app templates. `versioning.Diff` = JSON-path changes. Endpoints are
+`authenticated` with the policy checked in the service. UI: `RecordVersions`, `VersionDiff`, `/approvals` inbox.
+Tests: diff unit tests; integration (both acceptance criteria, level order, one person one level, returns, locked
+drafts, access, isolation); HTTP contract; Chromium E2E through a temporary (uncommitted) registration (9/9).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

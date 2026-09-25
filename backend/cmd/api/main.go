@@ -45,6 +45,7 @@ import (
 	jobshttp "pdpa-platform/internal/platform/jobs/http"
 	"pdpa-platform/internal/platform/notify"
 	notifyhttp "pdpa-platform/internal/platform/notify/http"
+	versioninghttp "pdpa-platform/internal/platform/versioning/http"
 	workflowhttp "pdpa-platform/internal/platform/workflow/http"
 	"pdpa-platform/internal/wiring"
 )
@@ -186,6 +187,7 @@ func run() error {
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc}
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
+	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
 
 	// The inbox stream (SSE) is the one route outside Idempotency + Tx: the Tx middleware buffers the
 	// response until COMMIT, which a stream never reaches. It opens a short transaction per check itself.
@@ -219,6 +221,11 @@ func run() error {
 			[]importerhttp.StrictMiddlewareFunc{authz.StrictMiddleware[importerhttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			importerhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		importerhttp.HandlerWithOptions(strictImports, importerhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictVersioning := versioninghttp.NewStrictHandlerWithOptions(versioninghttp.NewStrict(versioningSvc),
+			[]versioninghttp.StrictMiddlewareFunc{authz.StrictMiddleware[versioninghttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			versioninghttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		versioninghttp.HandlerWithOptions(strictVersioning, versioninghttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictAudit := audithttp.NewStrictHandlerWithOptions(audithttp.NewStrict(auditSvc),
 			[]audithttp.StrictMiddlewareFunc{authz.StrictMiddleware[audithttp.StrictHandlerFunc](authzCache, requiredPermission)},

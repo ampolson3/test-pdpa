@@ -89,6 +89,23 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "คำขอส่งการแจ้งเตือนไม่ถูกต้อง",
 		En: "Invalid notification request",
 	},
+	// PLT-08 versioning & approval
+	"versioning.invalid_transition": {
+		Th: "ทำรายการนี้ไม่ได้ในสถานะปัจจุบันของเวอร์ชัน",
+		En: "Not allowed in the version's current status",
+	},
+	"versioning.locked": {
+		Th: "มีเวอร์ชันที่รอตรวจหรืออนุมัติแล้ว จึงแก้ไขไม่ได้",
+		En: "A version is under review or approved; it can't be edited",
+	},
+	"versioning.self_approval": {
+		Th: "ผู้จัดทำ ผู้ส่งขออนุมัติ หรือผู้อนุมัติขั้นก่อนหน้า อนุมัติเองไม่ได้",
+		En: "The author, requester or an earlier approver can't approve",
+	},
+	"versioning.invalid_request": {
+		Th: "คำขอไม่ถูกต้อง",
+		En: "Invalid request",
+	},
 	// ORG-19 audit log
 	"audit.export_too_large": {
 		Th: "รายการมากเกินกว่าจะส่งออกในครั้งเดียว กรุณากรองให้แคบลง",

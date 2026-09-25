@@ -388,5 +388,54 @@
     "verifyOk": "Chain intact — {count} entries checked.",
     "verifyBroken": "Chain broken at entry {id} ({reason}). Report this to security.",
     "verifyError": "Couldn't verify the chain."
+  },
+  "versions": {
+    "status": {
+      "draft": "Draft",
+      "in_review": "In review",
+      "approved": "Approved",
+      "published": "Published",
+      "superseded": "Superseded"
+    },
+    "decision": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "returned": "Returned",
+      "rejected": "Rejected"
+    },
+    "title": "Versions",
+    "version": "Version {no}",
+    "by": "by {name}",
+    "current": "Published: version {no}",
+    "none": "Not published yet",
+    "submit": "Send for approval",
+    "publish": "Publish",
+    "compare": "Compare",
+    "compareWith": "Compare with",
+    "noChanges": "No differences.",
+    "path": "Field",
+    "before": "Before",
+    "after": "After",
+    "steps": "Approval",
+    "step": "Level {step} · {role}",
+    "loading": "Loading…",
+    "loadError": "Couldn't load the versions.",
+    "actionError": "Couldn't do that — the version may have changed. Reload and try again.",
+    "inbox": {
+      "title": "Waiting for my approval",
+      "empty": "Nothing waiting for you.",
+      "signInRequired": "Please sign in.",
+      "item": "{title} · version {no}",
+      "requestedBy": "Sent by {name}",
+      "author": "Written by {name}",
+      "changes": "Changes",
+      "reason": "Reason (required to return or reject)",
+      "approve": "Approve",
+      "return": "Return for changes",
+      "reject": "Reject",
+      "select": "Pick an item to review it.",
+      "done": "Decision recorded.",
+      "selfApproval": "You can't approve work you wrote, sent, or already approved at an earlier level."
+    }
   }
 }

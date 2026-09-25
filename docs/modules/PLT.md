@@ -314,6 +314,8 @@
 
 **Acceptance criteria:** record ที่เผยแพร่แล้วแก้ไม่ได้ต้องสร้างเวอร์ชันใหม่; ผู้สร้างอนุมัติงานของตนเองไม่ได้
 
+**Implementation (PLT-08):** `backend/internal/platform/versioning` บนตาราง `platform.record_versions` + `platform.approvals` — module ลงทะเบียนประเภท record ใน `internal/wiring.Versioning` (`Policy{ReadPermission, EditPermission, PublishPermission, Steps[]{Role}, Title, OnPublish}`; ต้องมีอย่างน้อย 1 ขั้น) และบันทึกร่างจาก service ของตนด้วย `SaveDraft` · ร่าง → รอตรวจ (`Submit` เปิดขั้นอนุมัติตามลำดับ, บันทึก diff เทียบฉบับเผยแพร่) → อนุมัติ (ครบทุกขั้น) → เผยแพร่ (`Publish`: ฉบับเดิม superseded + hook `OnPublish` ใน tx เดียว) · ส่งกลับ / ไม่อนุมัติต้องมีเหตุผล → กลับเป็นร่าง (ขั้นที่เหลือถูกยกเลิก) · ฉบับเผยแพร่ไม่ถูกแก้ การเปลี่ยนแปลงสร้างเวอร์ชันใหม่ · ขณะรอตรวจ/อนุมัติแล้วแก้ร่างไม่ได้ (409 `versioning.locked`) · **maker-checker:** ผู้จัดทำ ผู้ส่งขออนุมัติ และผู้ที่อนุมัติขั้นก่อนหน้า อนุมัติไม่ได้ (403 `versioning.self_approval`); ขั้นถัดไปรอขั้นก่อนหน้า · ผู้อนุมัติ = ผู้มี role ของขั้น · แจ้งผู้ส่งผ่าน PLT-04 (`approval.approved` / `approval.returned` / `approval.rejected`, migration 00029 ซึ่งเพิ่ม unique index: เวอร์ชันเปิดได้ 1 และเผยแพร่ได้ 1 ต่อ record) · diff = รายการ JSON path + ค่าเดิม/ใหม่ (`versioning.Diff`) · state machine `PLT-08#version` / `PLT-08#approval` · API `/admin/v1/platform/records/{type}/{id}/versions`, `/record-versions/{id}` (+ `/compare`, `/submit`, `/publish`), `/approvals/{id}/decision`, `/my-approvals` · frontend: `RecordVersions` (แถบสถานะ + ประวัติ + เปรียบเทียบ), `VersionDiff`, หน้า `/approvals` (กล่องงานรออนุมัติ) · ยังไม่มี module ใดลงทะเบียน (ผู้ใช้รายแรก: ประกาศ / RoPA / นโยบาย) · ยังไม่ผูกกับ PLT-05 workflow
+
 <a id="plt-09"></a>
 ### PLT-09 จัดเก็บไฟล์และสแกนไวรัส
 

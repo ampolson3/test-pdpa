@@ -867,4 +867,81 @@ machines:
     event: workflow.sla_tick
     guard: paused_at IS NULL
     action: escalated_at · แจ้งผู้รับงาน + ผู้รับการส่งต่อ · hook OnSLA(breached) · instance sla_status = overdue
+- machine: PLT-08#version
+  title: Record version (PLT-08)
+  column: platform.record_versions.status
+  states:
+  - draft
+  - in_review
+  - approved
+  - published
+  - superseded
+  initial:
+  - draft
+  terminal:
+  - superseded
+  transitions:
+  - from: draft
+    to: in_review
+    trigger: ส่งขออนุมัติ
+    event: submit
+    guard: สิทธิ์แก้ไข record
+    action: เปิดขั้นอนุมัติตาม policy · บันทึก diff · audit
+  - from: in_review
+    to: approved
+    trigger: อนุมัติขั้นสุดท้าย
+    event: decide approved
+    guard: role ของขั้น · ไม่ใช่ผู้จัดทำ / ผู้ส่ง / ผู้อนุมัติขั้นก่อน
+    action: แจ้งผู้ส่ง (approval.approved) · audit
+  - from: in_review
+    to: draft
+    trigger: ส่งกลับแก้ไข หรือ ไม่อนุมัติ (ต้องมีเหตุผล)
+    event: decide returned / rejected
+    guard: role ของขั้น · ไม่ใช่ผู้จัดทำ / ผู้ส่ง / ผู้อนุมัติขั้นก่อน
+    action: ลบขั้นที่ยังไม่ตัดสิน · แจ้งผู้ส่ง · audit
+  - from: approved
+    to: published
+    trigger: เผยแพร่
+    event: publish
+    guard: สิทธิ์เผยแพร่
+    action: ฉบับเผยแพร่เดิม → superseded · hook OnPublish · audit
+  - from: published
+    to: superseded
+    trigger: มีเวอร์ชันใหม่เผยแพร่
+    event: publish (เวอร์ชันถัดไป)
+    guard: null
+    action: null
+- machine: PLT-08#approval
+  title: Approval step (PLT-08)
+  column: platform.approvals.decision
+  states:
+  - pending
+  - approved
+  - rejected
+  - returned
+  initial:
+  - pending
+  terminal:
+  - approved
+  - rejected
+  - returned
+  transitions:
+  - from: pending
+    to: approved
+    trigger: ผู้อนุมัติของขั้นอนุมัติ
+    event: decide
+    guard: ขั้นก่อนหน้าอนุมัติแล้ว · maker-checker
+    action: audit
+  - from: pending
+    to: returned
+    trigger: ส่งกลับแก้ไข
+    event: decide
+    guard: มีเหตุผล · maker-checker
+    action: audit
+  - from: pending
+    to: rejected
+    trigger: ไม่อนุมัติ
+    event: decide
+    guard: มีเหตุผล · maker-checker
+    action: audit
 

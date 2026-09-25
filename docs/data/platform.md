@@ -289,6 +289,7 @@ snapshot และ diff ของ record ที่มีเวอร์ชัน
 - Index: `platform.record_versions (tenant_id, entity_type)` · `platform.record_versions (tenant_id, entity_id)`
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `platform.approvals.record_version_id`
+- PLT-08 (migration 00029): unique partial index — เวอร์ชันเปิด (`draft`, `in_review`, `approved`) ได้ 1 และ `published` ได้ 1 ต่อ `(tenant_id, entity_type, entity_id)` · `created_by` = ผู้จัดทำ (maker) · `diff` = `[{"path", "before", "after"}]` เทียบฉบับเผยแพร่ ณ เวลาส่งขออนุมัติ · แก้ `snapshot` ได้เฉพาะสถานะ `draft`
 
 <a id="platform-approvals"></a>
 ## platform.approvals
@@ -315,6 +316,7 @@ snapshot และ diff ของ record ที่มีเวอร์ชัน
 - Index: `platform.approvals (tenant_id, entity_type)` · `platform.approvals (tenant_id, entity_id)` · `platform.approvals (tenant_id, record_version_id)` · `platform.approvals (tenant_id, requested_by)` · `platform.approvals (tenant_id, approver_user_id)`
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `iam.role_assignments.approval_id`, `risk.acceptances.approval_id`
+- PLT-08: หนึ่งแถวต่อขั้นต่อรอบการส่ง (`step_no` 1…n, `approver_role` = role ที่ตัดสินขั้นนั้น, `requested_by` = ผู้ส่ง) · `approver_user_id` = ผู้ที่ตัดสินจริง · เมื่อส่งกลับ/ไม่อนุมัติ ขั้นที่ยัง `pending` ถูกลบ (การส่งใหม่เปิดรอบใหม่) · index `ix_platform_approvals_pending_role` สำหรับกล่องงานรออนุมัติ
 
 <a id="platform-comments"></a>
 ## platform.comments

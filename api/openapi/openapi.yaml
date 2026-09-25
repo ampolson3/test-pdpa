@@ -1485,6 +1485,276 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/platform/records/{entityType}/{entityId}/versions:
+    get:
+      operationId: platformListRecordVersions
+      tags: [platform]
+      summary: A record's versions, newest first (PLT-08)
+      description: Needs the read permission the record's module registered (or its edit / publish permission, or an approver role).
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/EntityType'
+        - $ref: '#/components/parameters/EntityId'
+      responses:
+        '200':
+          description: Versions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RecordVersion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/record-versions/{id}:
+    get:
+      operationId: platformGetRecordVersion
+      tags: [platform]
+      summary: One version with its snapshot, diff and approval steps
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The version
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordVersion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/record-versions/{id}/compare:
+    get:
+      operationId: platformCompareRecordVersions
+      tags: [platform]
+      summary: Field-by-field changes from this version to another version of the same record
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: with
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Changes (JSON paths with the values before and after)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [changes]
+                properties:
+                  changes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VersionChange'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/record-versions/{id}/submit:
+    post:
+      operationId: platformSubmitRecordVersion
+      tags: [platform]
+      summary: Send a draft for approval (opens one step per approval level)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The version, now in review
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordVersion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/record-versions/{id}/publish:
+    post:
+      operationId: platformPublishRecordVersion
+      tags: [platform]
+      summary: Publish an approved version (the previous published version is superseded)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The published version
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordVersion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/approvals/{id}/decision:
+    post:
+      operationId: platformDecideApproval
+      tags: [platform]
+      summary: Approve, return or reject the current approval step (maker-checker enforced)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision:
+                  type: string
+                  enum: [approved, returned, rejected]
+                reason:
+                  type: string
+                  maxLength: 2000
+                  description: Required to return or reject
+            example:
+              decision: returned
+              reason: แก้ข้อ 3 ให้ระบุระยะเวลาเก็บรักษา
+      responses:
+        '200':
+          description: The version after the decision
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordVersion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/my-approvals:
+    get:
+      operationId: platformListMyApprovals
+      tags: [platform]
+      summary: Approvals waiting on the caller (their roles, the current level, not their own work)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Pending approvals, oldest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApprovalInboxItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /admin/v1/platform/imports:
     get:
       operationId: platformListImports
@@ -2224,6 +2494,95 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    VersionChange:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          description: JSON path, e.g. `purposes[1]` or `contact.email`; `$` for the whole document
+        before: {}
+        after: {}
+    ApprovalStep:
+      type: object
+      required: [id, step, role, requested_by, decision, row_version]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        step:
+          type: integer
+        role:
+          type: string
+        requested_by:
+          $ref: '#/components/schemas/Uuid'
+        requester_name:
+          type: string
+        approver_id:
+          $ref: '#/components/schemas/Uuid'
+        approver_name:
+          type: string
+        decision:
+          type: string
+          enum: [pending, approved, rejected, returned]
+        reason:
+          type: string
+        decided_at:
+          $ref: '#/components/schemas/Timestamp'
+        row_version:
+          type: integer
+    RecordVersion:
+      type: object
+      required: [id, entity_type, entity_id, version, snapshot, status, created_at, updated_at, row_version, diff, approvals]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        entity_type:
+          type: string
+        entity_id:
+          $ref: '#/components/schemas/Uuid'
+        version:
+          type: integer
+        snapshot: {}
+        diff:
+          type: array
+          description: Changes against the version published when this one was submitted
+          items:
+            $ref: '#/components/schemas/VersionChange'
+        status:
+          type: string
+          enum: [draft, in_review, approved, published, superseded]
+        author_id:
+          $ref: '#/components/schemas/Uuid'
+        author_name:
+          type: string
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+        row_version:
+          type: integer
+        approvals:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApprovalStep'
+    ApprovalInboxItem:
+      allOf:
+        - $ref: '#/components/schemas/ApprovalStep'
+        - type: object
+          required: [version_id, entity_type, entity_id, version]
+          properties:
+            version_id:
+              $ref: '#/components/schemas/Uuid'
+            entity_type:
+              type: string
+            entity_id:
+              $ref: '#/components/schemas/Uuid'
+            version:
+              type: integer
+            title:
+              type: string
+            author_name:
+              type: string
     AuditEntry:
       type: object
       required: [id, occurred_at, actor_type, action]
