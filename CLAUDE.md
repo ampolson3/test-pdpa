@@ -20,14 +20,15 @@ When sources disagree: `backend/db/migrations` > `docs/states` > `docs/architect
 - Full detail: `docs/architecture/code-structure.md`.
 
 ## Commands
-Scaffolded (2026-09-25). No Docker in this environment, so `make dev`'s compose stack itself is
-untested — but the whole request path it's meant to support (migrations → RLS → AuthN → AuthZ → Tx
-→ audit) was verified for real against Postgres 17 + pgvector (installed via Homebrew, not Docker)
-and a throwaway signed JWT standing in for Keycloak. See "Scaffold status" below.
-- `make dev` — docker compose (postgres, valkey, minio, keycloak, gotenberg, clamav, mailpit); start `backend/cmd/api`, `backend/cmd/worker` and `pnpm dev` yourself alongside it (see the Makefile's echoed instructions) — not yet backgrounded into one command
+Scaffolded (2026-09-25). No Docker in this environment, so `deploy/compose/docker-compose.yml`
+itself is untested; instead, Postgres 17 + pgvector runs as a **permanent** Homebrew service on
+port 5433 (README.md § Local Postgres โดยไม่ใช้ Docker) and is what everything below actually ran
+against. Valkey (`redis`, already a Homebrew service on this machine) plays that role too. See
+"Scaffold status" below.
+- `make dev` — docker compose (postgres, valkey, minio, keycloak, gotenberg, clamav, mailpit); on this machine, use the Homebrew Postgres/Valkey above instead and start `backend/cmd/api`, `backend/cmd/worker` and `pnpm dev` yourself (see the Makefile's echoed instructions) — not yet backgrounded into one command
 - `make gen` — sqlc, oapi-codegen, openapi-typescript (all three re-run and produced correct output while scaffolding; CI should fail if generation leaves a diff — not wired into CI yet, there is no CI)
-- `make migrate` / `make migrate-down` — goose as `pdpa_migrator` with `options=-c role=pdpa_owner`, then River migrations and `deploy/db/10-grants.sql`; **verified**: all 20 goose migrations + River's own + grants applied cleanly to a fresh Postgres 17 database
-- `make test` — `go test -race ./...` (real) + `pnpm -r test` (no vitest config yet, will fail) · `make test-int` — not implemented (needs testcontainers-go setup) · `make e2e` — not implemented (needs a `@pdpa/e2e` Playwright package)
+- `make migrate` / `make migrate-down` — goose as `pdpa_migrator` with `options=-c role=pdpa_owner`, then River migrations and `deploy/db/10-grants.sql`; **verified**: all 20 goose migrations + River's own + grants applied cleanly, twice (once during initial verification, once for real onto the permanent database)
+- `make test` — `go test -race ./...` (real; includes `internal/iam/store`'s two-tenant RLS isolation test — see PLT-02 below) + `pnpm -r test` (no vitest config yet, will fail) · `make test-int` — not implemented (needs testcontainers-go setup; the isolation test above uses `internal/pkg/dbtest` against a real Postgres instead, as a stand-in until Docker is available) · `make e2e` — not implemented (needs a `@pdpa/e2e` Playwright package)
 - `make lint` — not implemented (needs golangci-lint config, ESLint flat config, sqlfluff config)
 
 ### Scaffold status (P0, from `/scaffold`)
@@ -35,6 +36,30 @@ and a throwaway signed JWT standing in for Keycloak. See "Scaffold status" below
 - Frontend: pnpm + Turborepo workspace. `apps/admin` (Next.js 16, Auth.js v5 + Keycloak, next-intl th/en, TanStack Query, the same `/admin/v1/me` reference slice via a BFF proxy) builds and was smoke-tested with `next build` + `next start` — correctly falls back to a sign-in prompt with no session. Not yet re-tested against the now-working backend (no Keycloak here to complete a real OAuth login). `apps/portal` is a bare, buildable shell (no portal features exist yet). `packages/ui` has one placeholder `Button`, not the shadcn/ui + Radix design system CLAUDE.md calls for. `packages/form-renderer` and `packages/cookie-sdk` are empty placeholders (no feature needs them yet).
 - Infra: `deploy/compose/docker-compose.yml` + `deploy/compose/initdb/01-bootstrap.sh` wrap `deploy/db/00-bootstrap.sql` correctly by construction — `00-bootstrap.sql` itself was run for real (see above) and works as written. The compose file's container wiring is still unverified (no Docker here). The `minio/minio` image reference is unverified — Docker Hub's public listing for it returned 404 while scaffolding; check before relying on it. Keycloak comes up with a blank realm only: the Organizations multi-tenant model and `tid` claim mapper (`docs/decisions.md` Q-18) need the T13 PoC first.
 - Not started: CI (explicitly deferred — ask before adding), lint/test tooling beyond `go vet`/`tsc`, every module besides `iam`'s `/admin/v1/me` slice and `platform`'s audit log.
+
+### PLT-02 Multi-tenant และการแยกข้อมูล (`docs/modules/PLT.md#plt-02`) — partial
+The DB-level half (`tenant_id` on every table + RLS) was already in the migrations from the
+knowledge kit, not new work here. What this pass added, against the acceptance criterion
+("ผู้ใช้ tenant A เข้าถึงข้อมูล tenant B ไม่ได้แม้เรียก API ตรง (automated test ทุก endpoint)"):
+- `internal/pkg/dbtest` — a reusable two-tenant test harness (seeds a tenant via `pdpa_platform`, a
+  user inside it via `pdpa_app` + `WithTenantTx`, cleans both up) so every future repository can
+  write its own isolation test the same way, per CLAUDE.md rule 1. Points at a real Postgres via
+  `TEST_DATABASE_URL` / `TEST_PLATFORM_DATABASE_URL` (defaults match the port-5433 local setup) and
+  skips cleanly if neither is reachable — a stand-in for the testcontainers-go setup
+  `docs/architecture/code-structure.md`'s testing table calls for, which needs Docker.
+- `internal/iam/store/isolation_test.go` — proves tenant B's own transaction cannot read tenant A's
+  `iam.users` row (gets `pgx.ErrNoRows`, not a permission error — RLS filters it, doesn't reject
+  the query), with a sanity check that a tenant can still read its own data. **Run and passing**
+  against the real local Postgres.
+
+Not done, and deliberately not scaffolded speculatively (no consuming endpoint exists yet — see
+"don't design for hypothetical future requirements" in this project's engineering conventions):
+- The subdomain / custom-domain / `platform.public_keys` tenant resolver for `/public/v1` and the
+  portal (`docs/architecture/security.md` describes it; the table exists in migrations already).
+  Build it when the first `/public/v1` feature (CON, DSAR or BRE) actually needs it.
+- Tenant provisioning (standard roles + master data for a new tenant) — depends on ORG, not built.
+- DB-per-tenant deployment mode.
+- Next.js tenant-context middleware / portal custom domain (same reasoning: no portal feature yet).
 
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
