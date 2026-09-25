@@ -86,9 +86,9 @@
 
 | รหัส | ชื่อ | สถานะ | ขึ้นกับ | ติดอยู่ที่ | คน-วัน |
 |---|---|---|---|---|---:|
-| PLT-01 | โครงระบบ Go modular monolith + Next.js monorepo | ยังไม่เริ่ม | T04, T05 | — | 22 |
-| PLT-02 | Multi-tenant และการแยกข้อมูล | ยังไม่เริ่ม | PLT-01 | — | 19 |
-| PLT-03 | ระบบหลายภาษา TH/EN | ยังไม่เริ่ม | PLT-01 | — | 12 |
+| PLT-01 | โครงระบบ Go modular monolith + Next.js monorepo | ทำไปมากแล้ว (ยังไม่ปิดใน backlog) | T04, T05 | — | 22 |
+| PLT-02 | Multi-tenant และการแยกข้อมูล | ทำไปมากแล้ว (ยังไม่ปิดใน backlog) | PLT-01 | — | 19 |
+| PLT-03 | ระบบหลายภาษา TH/EN | ทำไปมากแล้ว (ยังไม่ปิดใน backlog) | PLT-01 | — | 12 |
 | PLT-15 | Public API, webhook และ developer portal | ยังไม่เริ่ม | ORG-16, PLT-11 | รอ ORG-16 | 12 |
 | IAM-01 | Identity provider และ login flow | ยังไม่เริ่ม | PLT-01, PLT-02 | Q-18 โมเดล Keycloak | 24 |
 | IAM-02 | Permission engine (RBAC + data scope) | ยังไม่เริ่ม | IAM-01 | รอ IAM-01 | 22 |
