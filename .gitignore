@@ -1,0 +1,17 @@
+# Node / pnpm / Turborepo
+node_modules/
+.next/
+.turbo/
+dist/
+*.tsbuildinfo
+.env
+.env.*.local
+
+# Go
+/backend/bin/
+*.test
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,14 @@
+{
+  "common": {
+    "appName": "PDPA Compliance Platform",
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel"
+  },
+  "dashboard": {
+    "welcome": "Hello, {name}",
+    "tenant": "Organization: {name}",
+    "roles": "Roles",
+    "signIn": "Sign in"
+  }
+}

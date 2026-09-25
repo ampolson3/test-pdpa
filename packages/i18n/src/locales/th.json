@@ -1,0 +1,14 @@
+{
+  "common": {
+    "appName": "แพลตฟอร์มบริหารการปฏิบัติตาม PDPA",
+    "loading": "กำลังโหลด...",
+    "save": "บันทึก",
+    "cancel": "ยกเลิก"
+  },
+  "dashboard": {
+    "welcome": "สวัสดี, {name}",
+    "tenant": "องค์กร: {name}",
+    "roles": "บทบาท",
+    "signIn": "เข้าสู่ระบบ"
+  }
+}

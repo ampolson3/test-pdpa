@@ -1,0 +1,96 @@
+# Local P0 stack: `make dev` (see Makefile). Mirrors docs/architecture/deployment.md's data tier
+# and dependency list at dev scale — one instance each, no HA, no TLS.
+#
+# Keycloak comes up with a blank `pdpa` realm only: the Organizations-based multi-tenant model and
+# the `tid` protocol mapper (docs/decisions.md Q-18) are an open architecture PoC (T13, blocks
+# IAM-01), not something to script here before that PoC lands.
+name: pdpa
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+      PDPA_MIGRATOR_PASSWORD: ${PDPA_MIGRATOR_PASSWORD:-pdpa_migrator}
+      PDPA_APP_PASSWORD: ${PDPA_APP_PASSWORD:-pdpa_app}
+      PDPA_PLATFORM_PASSWORD: ${PDPA_PLATFORM_PASSWORD:-pdpa_platform}
+      PDPA_READONLY_PASSWORD: ${PDPA_READONLY_PASSWORD:-pdpa_readonly}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pdpa_postgres_data:/var/lib/postgresql/data
+      - ../db:/deploy-db:ro
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  valkey:
+    image: valkey/valkey:8.1-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - pdpa_valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    # Verify this is still the correct public image/tag before relying on it — MinIO changed its
+    # public distribution during 2025 and this reference was not confirmed against a live pull.
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pdpa_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-pdpa_minio_secret}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - pdpa_minio_data:/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7
+    restart: unless-stopped
+    command: ["start-dev"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: dev-file
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8081:8080"
+
+  gotenberg:
+    image: gotenberg/gotenberg:8.37.0
+    restart: unless-stopped
+    ports:
+      - "3010:3000"
+
+  clamav:
+    image: clamav/clamav:1.5-debian
+    restart: unless-stopped
+    ports:
+      - "3310:3310"
+
+  mailpit:
+    image: axllent/mailpit:v1.31.2
+    restart: unless-stopped
+    ports:
+      - "8025:8025" # web UI
+      - "1025:1025" # SMTP
+
+volumes:
+  pdpa_postgres_data:
+  pdpa_valkey_data:
+  pdpa_minio_data:

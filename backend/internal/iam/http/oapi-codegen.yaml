@@ -1,0 +1,8 @@
+package: iamhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-tags:
+    - iam

@@ -1,0 +1,151 @@
+// Command api is the PDPA platform's HTTP API (backend/cmd/api), serving /admin/v1, /portal/v1,
+// /public/v1, /api/v1, /scim/v2 and /webhooks per api/openapi/README.md. Only /admin/v1/me is wired
+// so far — the P0 reference slice from .claude/commands/scaffold.md.
+package main
+
+import (
+	"context"
+	"errors"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+	"github.com/redis/go-redis/v9"
+
+	iamhttp "pdpa-platform/internal/iam/http"
+	iamservice "pdpa-platform/internal/iam/service"
+	"pdpa-platform/internal/pkg/authn"
+	"pdpa-platform/internal/pkg/authz"
+	pdb "pdpa-platform/internal/pkg/db"
+	"pdpa-platform/internal/pkg/httpx"
+	"pdpa-platform/internal/pkg/idempotency"
+	"pdpa-platform/internal/pkg/otelx"
+	"pdpa-platform/internal/pkg/ratelimit"
+	"pdpa-platform/internal/pkg/validate"
+	auditservice "pdpa-platform/internal/platform/audit/service"
+)
+
+func main() {
+	if err := run(); err != nil {
+		slog.Error("api: fatal", "error", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	cfg := loadConfig()
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	shutdownOtel, err := otelx.Setup(ctx, "pdpa-api", cfg.OTelEndpoint)
+	if err != nil {
+		return err
+	}
+	defer shutdownOtel(context.Background())
+
+	pool, err := pdb.NewPool(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+
+	rdb := redis.NewClient(&redis.Options{Addr: cfg.ValkeyAddr})
+	defer rdb.Close()
+
+	spec, err := openapi3.NewLoader().LoadFromFile(cfg.OpenAPISpecPath)
+	if err != nil {
+		return err
+	}
+	if err := spec.Validate(ctx); err != nil {
+		return err
+	}
+	permissions, err := loadPermissions(spec)
+	if err != nil {
+		return err
+	}
+	requiredPermission := func(pattern, method string) (string, bool) {
+		byMethod, ok := permissions[pattern]
+		if !ok {
+			return "", false
+		}
+		code, ok := byMethod[method]
+		return code, ok
+	}
+
+	validateMw, err := validate.Middleware(spec, nil)
+	if err != nil {
+		return err
+	}
+
+	iamSvc := iamservice.New()
+	authzCache := authz.NewCachedLoader(rdb, iamservice.NewLoader(pool))
+	auditSvc := auditservice.New()
+	jwks := authn.NewJWKS(cfg.OIDCJWKSURL)
+	verifier := authn.NewVerifier(jwks, cfg.OIDCIssuer)
+	limiter := ratelimit.New(rdb, 100, time.Minute)
+	idemMw := idempotency.New(rdb)
+
+	r := chi.NewRouter()
+	r.Use(middleware.RequestID)
+	r.Use(otelx.Middleware("pdpa-api"))
+	r.Use(middleware.Recoverer)
+	r.Use(accessLog)
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   cfg.CORSAllowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type", "Idempotency-Key", "If-Match", "Accept-Language"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+	r.Use(limiter.Middleware)
+	// Structural request validation isn't one of the 13 named middlewares in
+	// docs/architecture/code-structure.md, but oapi-codegen's strict server assumes the request
+	// already matches the spec by the time a handler runs, so it sits here, before AuthN.
+	r.Use(validateMw)
+	r.Use(verifier.Middleware)                              // AuthN (#7) — every mounted route today requires adminJwt
+	r.Use(authz.Middleware(authzCache, requiredPermission)) // AuthZ (#9)
+	r.Use(idemMw.Handler)                                   // Idempotency (#10)
+	r.Use(auditSvc.TxMiddleware(pool))                      // Tx (#11) + Audit (#13)
+
+	strictOpts := iamhttp.StrictHTTPServerOptions{
+		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+		},
+		ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			httpx.WriteProblem(w, r, httpx.Internal())
+		},
+	}
+	strictIam := iamhttp.NewStrictHandlerWithOptions(iamhttp.NewStrict(iamSvc), nil, strictOpts)
+	iamhttp.HandlerWithOptions(strictIam, iamhttp.ChiServerOptions{
+		BaseRouter: r,
+		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+		},
+	})
+
+	srv := &http.Server{
+		Addr:              cfg.HTTPAddr,
+		Handler:           r,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	go func() {
+		<-ctx.Done()
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(shutdownCtx)
+	}()
+
+	slog.Info("api: listening", "addr", cfg.HTTPAddr)
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
+}

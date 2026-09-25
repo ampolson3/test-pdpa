@@ -20,12 +20,20 @@ When sources disagree: `backend/db/migrations` > `docs/states` > `docs/architect
 - Full detail: `docs/architecture/code-structure.md`.
 
 ## Commands
-Not scaffolded yet. The P0 scaffold (`/scaffold`) creates these Makefile targets — keep this list in sync afterwards:
-- `make dev` — docker compose (postgres, valkey, minio, keycloak, gotenberg) + api + worker + web apps
-- `make gen` — oapi-codegen, sqlc, openapi-typescript (CI fails if generation leaves a diff)
-- `make migrate` / `make migrate-down` — goose as `pdpa_migrator` with `options=-c role=pdpa_owner`, then River migrations and `deploy/db/10-grants.sql`
-- `make test` — `go test -race ./...` + vitest · `make test-int` — testcontainers · `make e2e` — Playwright
-- `make lint` — golangci-lint (incl. depguard), eslint, sqlfluff
+Scaffolded (2026-09-25). `make dev` needs Docker installed — not available in the environment that
+ran the scaffold, so the compose stack and anything that depends on a live Postgres/Valkey/Keycloak
+is untested beyond compiling. See "Scaffold status" below before relying on any of these.
+- `make dev` — docker compose (postgres, valkey, minio, keycloak, gotenberg, clamav, mailpit); start `backend/cmd/api`, `backend/cmd/worker` and `pnpm dev` yourself alongside it (see the Makefile's echoed instructions) — not yet backgrounded into one command
+- `make gen` — sqlc, oapi-codegen, openapi-typescript (CI should fail if generation leaves a diff — not wired into CI yet, there is no CI)
+- `make migrate` / `make migrate-down` — goose as `pdpa_migrator` with `options=-c role=pdpa_owner`, then River migrations and `deploy/db/10-grants.sql`; run once the stack is up
+- `make test` — `go test -race ./...` (real) + `pnpm -r test` (no vitest config yet, will fail) · `make test-int` — not implemented (needs testcontainers-go setup) · `make e2e` — not implemented (needs a `@pdpa/e2e` Playwright package)
+- `make lint` — not implemented (needs golangci-lint config, ESLint flat config, sqlfluff config)
+
+### Scaffold status (P0, from `/scaffold`)
+- Backend: Go module builds and vets clean (`cd backend && go build ./... && go vet ./...`). Reference slice `GET /admin/v1/me` is implemented end to end — chi router, full 13-step middleware chain (`internal/pkg/{authn,authz,db,httpx,idempotency,otelx,ratelimit,validate}`), sqlc store, oapi-codegen strict handler, hash-chained request audit (`internal/platform/audit`). `cmd/migrate` and `cmd/worker` (River, `partition.maintain`) build but are untested against a live database. `cmd/scanner` is an intentional stub (CON-02, not started).
+- Frontend: pnpm + Turborepo workspace. `apps/admin` (Next.js 16, Auth.js v5 + Keycloak, next-intl th/en, TanStack Query, the same `/admin/v1/me` reference slice via a BFF proxy) builds and was smoke-tested with `next build` + `next start` — correctly falls back to a sign-in prompt with no session. `apps/portal` is a bare, buildable shell (no portal features exist yet). `packages/ui` has one placeholder `Button`, not the shadcn/ui + Radix design system CLAUDE.md calls for. `packages/form-renderer` and `packages/cookie-sdk` are empty placeholders (no feature needs them yet).
+- Infra: `deploy/compose/docker-compose.yml` + `deploy/compose/initdb/01-bootstrap.sh` wrap `deploy/db/00-bootstrap.sql` correctly by construction but were never run (no Docker here). The `minio/minio` image reference is unverified — Docker Hub's public listing for it returned 404 while scaffolding; check before relying on it. Keycloak comes up with a blank realm only: the Organizations multi-tenant model and `tid` claim mapper (`docs/decisions.md` Q-18) need the T13 PoC first.
+- Not started: CI (explicitly deferred — ask before adding), lint/test tooling beyond `go vet`/`tsc`, every module besides `iam`'s `/admin/v1/me` slice and `platform`'s audit log.
 
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
