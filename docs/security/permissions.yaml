@@ -1,0 +1,1710 @@
+# RBAC matrix — source: Development Plan sheet Roles_Permissions (ต้องยืนยันกับลูกค้าใน T06)
+# seed: backend/db/migrations/00019_seed_iam_permissions.sql · change = new migration + update this file + OpenAPI x-permission
+version: 1
+actions:
+  C: create
+  R: read
+  U: update
+  D: delete
+  A: approve
+  P: publish
+  E: export
+  X: execute
+x_permission_format: <area>.<resource>.<action>  e.g. consent.purpose.approve (area is the RBAC area, not the Go package)
+roles:
+- code: SUPER
+  name: Platform Super Admin
+  description: 'ผู้ให้บริการแพลตฟอร์ม: tenant แพ็กเกจ และค่าระบบ ไม่เห็นข้อมูลธุรกิจของ tenant เว้นแต่ใช้ break-glass (IAM-07)'
+  default_scope: ทั้งแพลตฟอร์ม
+  mfa_required: true
+- code: ORGADMIN
+  name: Organization Admin
+  description: 'ผู้ดูแลระบบขององค์กร: ผู้ใช้ role โครงสร้างองค์กร SSO และการตั้งค่า'
+  default_scope: ทั้ง tenant
+  mfa_required: true
+- code: DPO
+  name: DPO
+  description: เจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล ดูแลทุกโมดูลและเป็นผู้อนุมัติหลัก
+  default_scope: tenant / บริษัทที่ได้รับมอบหมาย
+  mfa_required: true
+- code: PRIVACY
+  name: Privacy Team
+  description: ทีมงาน DPO ปฏิบัติงานประจำ แต่ไม่อนุมัติขั้นสุดท้าย
+  default_scope: บริษัทที่ได้รับมอบหมาย
+  mfa_required: true
+- code: LEGAL
+  name: Legal
+  description: 'ฝ่ายกฎหมาย: ประกาศ template สัญญา DPA/DSA'
+  default_scope: ทั้ง tenant
+  mfa_required: false
+- code: OWNER
+  name: Process Owner / Champion
+  description: เจ้าของกระบวนการหรือผู้ประสานงาน PDPA ของแผนก ดูแล RoPA และตอบแบบสอบถาม
+  default_scope: แผนกของตนเอง
+  mfa_required: false
+- code: IT
+  name: System Owner / IT
+  description: 'เจ้าของระบบ/IT: asset, data discovery, งานย่อยของคำขอ, ติดตั้ง script, connector'
+  default_scope: ระบบ/แผนกที่ได้รับมอบหมาย
+  mfa_required: false
+- code: MKT
+  name: Marketing / Business
+  description: 'การตลาด/ธุรกิจ: Purpose, Collection Point และแคมเปญขอความยินยอม'
+  default_scope: แผนก/แบรนด์ของตนเอง
+  mfa_required: false
+- code: FRONT
+  name: Front Staff
+  description: 'พนักงานหน้าร้าน/Call center: บันทึกความยินยอมแทนลูกค้าและรับคำขอใช้สิทธิ'
+  default_scope: สาขา/ทีมของตนเอง
+  mfa_required: false
+- code: SEC
+  name: Security / Incident
+  description: 'ทีมความปลอดภัย: เหตุละเมิดและประเมินมาตรการความปลอดภัย'
+  default_scope: ทั้ง tenant
+  mfa_required: true
+- code: PROC
+  name: Procurement / Vendor Manager
+  description: 'จัดซื้อ/ผู้ดูแลคู่ค้า: ทะเบียนและการประเมินคู่ค้า'
+  default_scope: คู่ค้าที่ตนดูแล
+  mfa_required: false
+- code: AUDIT
+  name: Auditor
+  description: ผู้ตรวจสอบภายใน/ภายนอก ดูและส่งออกได้อย่างเดียว
+  default_scope: ทั้ง tenant (อ่านอย่างเดียว)
+  mfa_required: true
+- code: EXEC
+  name: Executive
+  description: 'ผู้บริหาร: dashboard รายงาน และยอมรับความเสี่ยง'
+  default_scope: ทั้ง tenant (สรุป)
+  mfa_required: false
+- code: EMP
+  name: Employee
+  description: 'พนักงานทั่วไป: แจ้งเหตุ อบรม รับทราบนโยบาย ขอคำปรึกษา'
+  default_scope: ข้อมูลของตนเอง
+  mfa_required: false
+- code: GUEST
+  name: External Guest
+  description: คู่ค้า ผู้ประมวลผล หรือผู้ร่วมประเมินภายนอก เข้าผ่าน magic link (IAM-04)
+  default_scope: เฉพาะงานที่ได้รับเชิญ
+  mfa_required: false
+- code: API
+  name: API Client
+  description: บัญชีระบบสำหรับเชื่อมต่อ (CRM, POS, แอป) ใช้สิทธิ์ตาม scope
+  default_scope: ระบบที่ผูกไว้
+  mfa_required: false
+permissions:
+- code: admin.tenant
+  category: Administration
+  name: Tenant แพ็กเกจ และโมดูลที่เปิดใช้
+  epics:
+  - PLT
+  note: เฉพาะผู้ให้บริการแพลตฟอร์ม
+  grants:
+    SUPER:
+    - create
+    - read
+    - update
+    - delete
+- code: admin.user
+  category: Administration
+  name: ผู้ใช้
+  epics:
+  - IAM
+  note: SUPER สร้างเฉพาะผู้ดูแล tenant คนแรก
+  grants:
+    SUPER:
+    - create
+    ORGADMIN:
+    - create
+    - read
+    - update
+    - delete
+    DPO:
+    - read
+    AUDIT:
+    - read
+- code: admin.role
+  category: Administration
+  name: Role และ Permission
+  epics:
+  - IAM
+  note: เปลี่ยน role ระดับ admin ต้องมีผู้อนุมัติ (IAM-06)
+  grants:
+    ORGADMIN:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    DPO:
+    - read
+    AUDIT:
+    - read
+- code: admin.scope
+  category: Administration
+  name: ขอบเขตข้อมูลของผู้ใช้
+  epics:
+  - IAM
+  note: null
+  grants:
+    ORGADMIN:
+    - create
+    - read
+    - update
+    - delete
+    DPO:
+    - read
+    AUDIT:
+    - read
+- code: admin.group
+  category: Administration
+  name: กลุ่มผู้ใช้ / ทีม
+  epics:
+  - IAM
+  note: null
+  grants:
+    ORGADMIN:
+    - create
+    - read
+    - update
+    - delete
+    DPO:
+    - create
+    - read
+    - update
+    PRIVACY:
+    - read
+    OWNER:
+    - read
+    IT:
+    - read
+    SEC:
+    - read
+    AUDIT:
+    - read
+- code: admin.idp
+  category: Administration
+  name: SSO, IdP, นโยบายรหัสผ่านและ MFA
+  epics:
+  - IAM
+  note: ตั้งค่าใน Keycloak ผ่านหน้าจอของระบบ
+  grants:
+    ORGADMIN:
+    - create
+    - read
+    - update
+    - delete
+    SEC:
+    - read
+    AUDIT:
+    - read
+- code: admin.apiclient
+  category: Administration
+  name: API client และ webhook
+  epics:
+  - IAM
+  - PLT
+  note: IT จัดการได้เฉพาะ client ของระบบที่ตนดูแล
+  grants:
+    ORGADMIN:
+    - create
+    - read
+    - update
+    - delete
+    DPO:
+    - read
+    IT:
+    - create
+    - read
+    - update
+    AUDIT:
+    - read
+- code: admin.audit
+  category: Administration
+  name: Audit log
+  epics:
+  - PLT
+  note: ไม่มีใครแก้ไขหรือลบ log ได้
+  grants:
+    SUPER:
+    - read
+    - export
+    ORGADMIN:
+    - read
+    - export
+    DPO:
+    - read
+    - export
+    SEC:
+    - read
+    - export
+    AUDIT:
+    - read
+    - export
+- code: admin.accessreview
+  category: Administration
+  name: ทบทวนสิทธิ์
+  epics:
+  - IAM
+  note: หัวหน้าแผนกยืนยันสิทธิ์ของทีมตนเอง
+  grants:
+    ORGADMIN:
+    - create
+    - read
+    - update
+    - delete
+    - execute
+    DPO:
+    - read
+    OWNER:
+    - execute
+    IT:
+    - execute
+    AUDIT:
+    - read
+- code: admin.breakglass
+  category: Administration
+  name: ใช้สิทธิ์ฉุกเฉิน
+  epics:
+  - IAM
+  note: ต้องระบุเหตุผล มีเวลาจำกัด และแจ้ง DPO / Security ทันที
+  grants:
+    SUPER:
+    - execute
+    ORGADMIN:
+    - execute
+- code: admin.notification
+  category: Administration
+  name: Template แจ้งเตือน
+  epics:
+  - PLT
+  note: null
+  grants:
+    ORGADMIN:
+    - create
+    - read
+    - update
+    - delete
+    DPO:
+    - create
+    - read
+    - update
+    PRIVACY:
+    - create
+    - read
+    - update
+    MKT:
+    - create
+    - read
+    - update
+    AUDIT:
+    - read
+- code: org.structure
+  category: Organization
+  name: นิติบุคคลและโครงสร้างหน่วยงาน
+  epics:
+  - ORG
+  note: null
+  grants:
+    ORGADMIN:
+    - create
+    - read
+    - update
+    - delete
+    DPO:
+    - read
+    - update
+    PRIVACY:
+    - read
+    LEGAL:
+    - read
+    OWNER:
+    - read
+    IT:
+    - read
+    MKT:
+    - read
+    FRONT:
+    - read
+    SEC:
+    - read
+    PROC:
+    - read
+    AUDIT:
+    - read
+    EXEC:
+    - read
+    EMP:
+    - read
+- code: org.party
+  category: Organization
+  name: ทะเบียนหน่วยงานภายนอก
+  epics:
+  - ORG
+  note: null
+  grants:
+    ORGADMIN:
+    - create
+    - read
+    - update
+    - delete
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - create
+    - read
+    - update
+    OWNER:
+    - read
+    IT:
+    - read
+    PROC:
+    - create
+    - read
+    - update
+    AUDIT:
+    - read
+- code: org.masterdata
+  category: Organization
+  name: ข้อมูลตั้งต้น
+  epics:
+  - ORG
+  note: SUPER ดูแลค่าตั้งต้นกลางที่ทุก tenant ได้รับ
+  grants:
+    SUPER:
+    - create
+    - read
+    - update
+    - delete
+    ORGADMIN:
+    - create
+    - read
+    - update
+    - delete
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - read
+    OWNER:
+    - read
+    IT:
+    - read
+    MKT:
+    - read
+    SEC:
+    - read
+    AUDIT:
+    - read
+- code: org.settings
+  category: Organization
+  name: ตั้งค่าองค์กร แบรนด์ และปฏิทินวันทำการ
+  epics:
+  - ORG
+  note: null
+  grants:
+    SUPER:
+    - create
+    - read
+    - update
+    - delete
+    ORGADMIN:
+    - read
+    - update
+    DPO:
+    - read
+    AUDIT:
+    - read
+- code: cookie.banner
+  category: Consent
+  name: แบนเนอร์คุกกี้และโดเมน
+  epics:
+  - CON
+  note: IT คัดลอก script และแก้ค่าทางเทคนิค
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    - publish
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - read
+    IT:
+    - read
+    - update
+    MKT:
+    - read
+    AUDIT:
+    - read
+- code: cookie.scan
+  category: Consent
+  name: ผลสแกนคุกกี้
+  epics:
+  - CON
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - execute
+    PRIVACY:
+    - create
+    - read
+    - update
+    - execute
+    IT:
+    - create
+    - read
+    - update
+    - execute
+    MKT:
+    - read
+    AUDIT:
+    - read
+- code: consent.purpose
+  category: Consent
+  name: Purpose / Data Element / Purpose Preference
+  epics:
+  - CON
+  note: Marketing ร่างได้ DPO อนุมัติและเปิดใช้
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    - publish
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - read
+    - update
+    MKT:
+    - create
+    - read
+    - update
+    AUDIT:
+    - read
+    API:
+    - read
+- code: consent.collectionpoint
+  category: Consent
+  name: Collection Point / แบบฟอร์ม
+  epics:
+  - CON
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    - publish
+    PRIVACY:
+    - create
+    - read
+    - update
+    IT:
+    - read
+    - update
+    MKT:
+    - create
+    - read
+    - update
+    AUDIT:
+    - read
+    API:
+    - read
+- code: consent.record
+  category: Consent
+  name: ความยินยอมรายบุคคล / โปรไฟล์
+  epics:
+  - CON
+  note: identifier แสดงแบบปกปิด ยกเว้นมีสิทธิ์ pii.unmask
+  grants:
+    DPO:
+    - read
+    - export
+    PRIVACY:
+    - read
+    - export
+    IT:
+    - read
+    MKT:
+    - read
+    FRONT:
+    - read
+    AUDIT:
+    - read
+    - export
+    API:
+    - create
+    - read
+- code: consent.onbehalf
+  category: Consent
+  name: บันทึกความยินยอมแทนลูกค้า
+  epics:
+  - CON
+  note: Front Staff เห็นเฉพาะรายการที่ตนบันทึกในสาขา
+  grants:
+    DPO:
+    - create
+    - read
+    PRIVACY:
+    - create
+    - read
+    FRONT:
+    - create
+    - read
+    AUDIT:
+    - read
+- code: consent.bulk
+  category: Consent
+  name: นำเข้า / ส่งออกความยินยอม
+  epics:
+  - CON
+  note: export จำนวนมากต้องมีผู้อนุมัติ
+  grants:
+    DPO:
+    - execute
+    - export
+    PRIVACY:
+    - execute
+    - export
+    IT:
+    - execute
+    MKT:
+    - export
+    AUDIT:
+    - export
+- code: consent.campaign
+  category: Consent
+  name: แคมเปญขอความยินยอม
+  epics:
+  - CON
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    PRIVACY:
+    - create
+    - read
+    - update
+    MKT:
+    - create
+    - read
+    - update
+    - execute
+    AUDIT:
+    - read
+- code: notice.document
+  category: Notice
+  name: ประกาศความเป็นส่วนตัว
+  epics:
+  - PNG
+  note: ผู้สร้างกับผู้อนุมัติต้องต่างคน
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    - publish
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - create
+    - read
+    - update
+    - approve
+    OWNER:
+    - read
+    IT:
+    - read
+    MKT:
+    - read
+    AUDIT:
+    - read
+    EMP:
+    - read
+    API:
+    - read
+- code: notice.template
+  category: Notice
+  name: Template ประกาศ
+  epics:
+  - PNG
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    PRIVACY:
+    - read
+    LEGAL:
+    - create
+    - read
+    - update
+    - delete
+    AUDIT:
+    - read
+- code: notice.indirect
+  category: Notice
+  name: แจ้งกรณีได้ข้อมูลจากแหล่งอื่น (ม.25)
+  epics:
+  - PNG
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    PRIVACY:
+    - create
+    - read
+    - update
+    OWNER:
+    - create
+    - read
+    - update
+    MKT:
+    - create
+    - read
+    - update
+    AUDIT:
+    - read
+- code: ropa.inventory
+  category: RoPA
+  name: ทะเบียนข้อมูลและ asset
+  epics:
+  - ROPA
+  note: Process Owner เฉพาะแผนกตนเอง
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    PRIVACY:
+    - create
+    - read
+    - update
+    - delete
+    LEGAL:
+    - read
+    OWNER:
+    - create
+    - read
+    - update
+    IT:
+    - create
+    - read
+    - update
+    SEC:
+    - read
+    AUDIT:
+    - read
+- code: ropa.activity
+  category: RoPA
+  name: กิจกรรมการประมวลผล (RoPA)
+  epics:
+  - ROPA
+  note: Process Owner เฉพาะแผนกตนเอง
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    - export
+    PRIVACY:
+    - create
+    - read
+    - update
+    - export
+    LEGAL:
+    - read
+    OWNER:
+    - create
+    - read
+    - update
+    IT:
+    - read
+    MKT:
+    - read
+    SEC:
+    - read
+    AUDIT:
+    - read
+    - export
+    EXEC:
+    - read
+- code: ropa.template
+  category: RoPA
+  name: คลัง RoPA ฉบับมาตรฐาน
+  epics:
+  - RTG
+  note: SUPER ดูแลคลังกลาง; tenant สร้าง template ของตนเอง
+  grants:
+    SUPER:
+    - create
+    - read
+    - update
+    - delete
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - publish
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - create
+    - read
+    - update
+    OWNER:
+    - read
+    - execute
+    AUDIT:
+    - read
+- code: ropa.risk
+  category: RoPA
+  name: ความเสี่ยงและช่องว่างรายกิจกรรม
+  epics:
+  - RRA
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    PRIVACY:
+    - create
+    - read
+    - update
+    OWNER:
+    - read
+    - update
+    SEC:
+    - read
+    - update
+    AUDIT:
+    - read
+    EXEC:
+    - read
+- code: ropa.dataflow
+  category: RoPA
+  name: แผนผังการไหลของข้อมูล
+  epics:
+  - DFG
+  note: null
+  grants:
+    DPO:
+    - read
+    - update
+    - publish
+    - export
+    PRIVACY:
+    - read
+    - update
+    - export
+    LEGAL:
+    - read
+    OWNER:
+    - read
+    IT:
+    - read
+    SEC:
+    - read
+    AUDIT:
+    - read
+    - export
+    EXEC:
+    - read
+- code: ropa.discovery
+  category: RoPA
+  name: Data discovery และ connector
+  epics:
+  - DFG
+  note: null
+  grants:
+    DPO:
+    - read
+    PRIVACY:
+    - read
+    IT:
+    - create
+    - read
+    - update
+    - delete
+    - execute
+    SEC:
+    - read
+    AUDIT:
+    - read
+- code: dsar.request
+  category: DSAR
+  name: คำขอใช้สิทธิ
+  epics:
+  - DSAR
+  note: Owner/IT เห็นเฉพาะคำขอที่มีงานมอบหมาย; Front Staff เห็นเฉพาะที่ตนลงไว้
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    - execute
+    - export
+    PRIVACY:
+    - create
+    - read
+    - update
+    - execute
+    LEGAL:
+    - read
+    - update
+    OWNER:
+    - read
+    IT:
+    - read
+    FRONT:
+    - create
+    - read
+    AUDIT:
+    - read
+    - export
+    API:
+    - create
+- code: dsar.subtask
+  category: DSAR
+  name: งานย่อยของคำขอ
+  epics:
+  - DSAR
+  note: แก้ได้เฉพาะงานที่ได้รับมอบหมาย; GUEST คือผู้ประมวลผลที่ได้รับคำสั่ง
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - execute
+    PRIVACY:
+    - create
+    - read
+    - update
+    - execute
+    LEGAL:
+    - read
+    - update
+    OWNER:
+    - read
+    - update
+    IT:
+    - read
+    - update
+    AUDIT:
+    - read
+    GUEST:
+    - read
+    - update
+- code: dsar.package
+  category: DSAR
+  name: ข้อมูลที่ส่งคืนเจ้าของข้อมูล
+  epics:
+  - DSAR
+  note: Auditor เห็นเฉพาะ metadata
+  grants:
+    DPO:
+    - create
+    - read
+    - approve
+    PRIVACY:
+    - create
+    - read
+    IT:
+    - create
+    - update
+    AUDIT:
+    - read
+- code: dsar.form
+  category: DSAR
+  name: แบบฟอร์มคำขอใช้สิทธิ
+  epics:
+  - DSAR
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - publish
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - read
+    - update
+    AUDIT:
+    - read
+- code: breach.incident
+  category: Breach
+  name: เหตุละเมิด
+  epics:
+  - BRE
+  note: ผู้แจ้งเห็นเฉพาะเหตุที่ตนแจ้ง; GUEST คือผู้ประมวลผลที่แจ้งเหตุ
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    - execute
+    PRIVACY:
+    - create
+    - read
+    - update
+    - execute
+    LEGAL:
+    - read
+    - update
+    OWNER:
+    - create
+    IT:
+    - create
+    - read
+    - update
+    MKT:
+    - create
+    FRONT:
+    - create
+    SEC:
+    - create
+    - read
+    - update
+    - execute
+    AUDIT:
+    - read
+    EXEC:
+    - read
+    EMP:
+    - create
+    GUEST:
+    - create
+- code: breach.notification
+  category: Breach
+  name: แบบแจ้ง สคส. / แจ้งเจ้าของข้อมูล
+  epics:
+  - BRE
+  note: ส่งแบบแจ้งต้องให้ DPO อนุมัติ
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - approve
+    - publish
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - read
+    - update
+    SEC:
+    - read
+    AUDIT:
+    - read
+    EXEC:
+    - read
+- code: assessment.dpia
+  category: Assessment
+  name: DPIA / LIA
+  epics:
+  - DPIA
+  note: ผู้ร่วมประเมินแก้ได้เฉพาะส่วนที่ได้รับเชิญ; ผู้บริหารอนุมัติ/ยอมรับความเสี่ยง
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - read
+    - update
+    OWNER:
+    - read
+    - update
+    IT:
+    - read
+    - update
+    SEC:
+    - read
+    - update
+    AUDIT:
+    - read
+    EXEC:
+    - read
+    - approve
+    GUEST:
+    - read
+    - update
+- code: assessment.security
+  category: Assessment
+  name: ประเมินมาตรการความปลอดภัย
+  epics:
+  - DPIA
+  - DPX
+  note: null
+  grants:
+    DPO:
+    - read
+    - approve
+    PRIVACY:
+    - read
+    IT:
+    - read
+    - update
+    SEC:
+    - create
+    - read
+    - update
+    - delete
+    - execute
+    AUDIT:
+    - read
+- code: assessment.transfer
+  category: Assessment
+  name: ประเมินการโอนต่างประเทศ (TIA)
+  epics:
+  - DPX
+  - DPIA
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - read
+    - update
+    AUDIT:
+    - read
+- code: assessment.template
+  category: Assessment
+  name: Template แบบประเมิน
+  epics:
+  - DPIA
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - publish
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - create
+    - read
+    - update
+    SEC:
+    - create
+    - read
+    - update
+    AUDIT:
+    - read
+- code: vendor.vendor
+  category: Vendor
+  name: คู่ค้า / ผู้ประมวลผล
+  epics:
+  - VEN
+  note: Owner ขอเพิ่มคู่ค้าใหม่ได้
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - read
+    OWNER:
+    - create
+    - read
+    IT:
+    - read
+    SEC:
+    - read
+    - update
+    PROC:
+    - create
+    - read
+    - update
+    - delete
+    AUDIT:
+    - read
+- code: vendor.assessment
+  category: Vendor
+  name: แบบประเมินคู่ค้า
+  epics:
+  - VEN
+  note: GUEST ตอบเฉพาะแบบประเมินของบริษัทตนเอง
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    PRIVACY:
+    - create
+    - read
+    - update
+    - execute
+    SEC:
+    - read
+    - update
+    - execute
+    PROC:
+    - create
+    - read
+    - update
+    - execute
+    AUDIT:
+    - read
+    GUEST:
+    - read
+    - update
+- code: agreement.dpa
+  category: Agreement
+  name: ข้อตกลงการประมวลผล (DPA)
+  epics:
+  - DPA
+  note: GUEST ดูและลงนามฉบับที่ส่งให้
+  grants:
+    DPO:
+    - read
+    - approve
+    PRIVACY:
+    - read
+    LEGAL:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    - publish
+    OWNER:
+    - read
+    PROC:
+    - create
+    - read
+    AUDIT:
+    - read
+    GUEST:
+    - read
+- code: agreement.dsa
+  category: Agreement
+  name: ข้อตกลงการแบ่งปันข้อมูล (DSA)
+  epics:
+  - DSA
+  note: null
+  grants:
+    DPO:
+    - read
+    - approve
+    PRIVACY:
+    - read
+    LEGAL:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    - publish
+    OWNER:
+    - read
+    AUDIT:
+    - read
+    GUEST:
+    - read
+- code: agreement.clause
+  category: Agreement
+  name: คลังข้อความสัญญา
+  epics:
+  - DPA
+  - DSA
+  note: null
+  grants:
+    DPO:
+    - read
+    LEGAL:
+    - create
+    - read
+    - update
+    - delete
+    - publish
+    AUDIT:
+    - read
+- code: dpo.profile
+  category: DPO
+  name: ทะเบียน DPO
+  epics:
+  - DPO
+  note: null
+  grants:
+    ORGADMIN:
+    - read
+    - update
+    DPO:
+    - create
+    - read
+    - update
+    LEGAL:
+    - read
+    AUDIT:
+    - read
+    EXEC:
+    - read
+- code: dpo.task
+  category: DPO
+  name: Tasks / Ticket
+  epics:
+  - DPO
+  note: แก้ได้เฉพาะงานที่ได้รับมอบหมาย
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - execute
+    PRIVACY:
+    - create
+    - read
+    - update
+    - execute
+    LEGAL:
+    - read
+    - update
+    OWNER:
+    - read
+    - update
+    IT:
+    - read
+    - update
+    SEC:
+    - read
+    - update
+    AUDIT:
+    - read
+- code: dpo.advisory
+  category: DPO
+  name: คำปรึกษาถึง DPO
+  epics:
+  - DPO
+  note: ผู้ถามเห็นเฉพาะเรื่องของตนเอง
+  grants:
+    DPO:
+    - read
+    - update
+    - execute
+    PRIVACY:
+    - read
+    - update
+    - execute
+    LEGAL:
+    - read
+    - update
+    OWNER:
+    - create
+    - read
+    IT:
+    - create
+    - read
+    MKT:
+    - create
+    - read
+    AUDIT:
+    - read
+    EMP:
+    - create
+    - read
+- code: dpo.risk
+  category: DPO
+  name: ทะเบียนความเสี่ยง
+  epics:
+  - RRA
+  - DPO
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    PRIVACY:
+    - create
+    - read
+    - update
+    OWNER:
+    - read
+    SEC:
+    - create
+    - read
+    - update
+    AUDIT:
+    - read
+    EXEC:
+    - read
+    - approve
+- code: dpo.report
+  category: DPO
+  name: Dashboard และรายงาน
+  epics:
+  - DPO
+  note: null
+  grants:
+    ORGADMIN:
+    - read
+    DPO:
+    - read
+    - export
+    PRIVACY:
+    - read
+    - export
+    LEGAL:
+    - read
+    SEC:
+    - read
+    AUDIT:
+    - read
+    - export
+    EXEC:
+    - read
+    - export
+- code: dpo.kb
+  category: DPO
+  name: คลังเอกสารกฎหมายและ FAQ
+  epics:
+  - DPO
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - publish
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - create
+    - read
+    - update
+    OWNER:
+    - read
+    IT:
+    - read
+    MKT:
+    - read
+    FRONT:
+    - read
+    SEC:
+    - read
+    PROC:
+    - read
+    AUDIT:
+    - read
+    EXEC:
+    - read
+    EMP:
+    - read
+- code: dpx.training
+  category: DPO Extension
+  name: อบรมและทดสอบ
+  epics:
+  - DPX
+  note: พนักงานทุกคนเรียนและทำแบบทดสอบได้ (X)
+  grants:
+    ORGADMIN:
+    - read
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - publish
+    PRIVACY:
+    - create
+    - read
+    - update
+    LEGAL:
+    - execute
+    OWNER:
+    - execute
+    IT:
+    - execute
+    MKT:
+    - execute
+    FRONT:
+    - execute
+    SEC:
+    - execute
+    PROC:
+    - execute
+    AUDIT:
+    - read
+    EXEC:
+    - execute
+    EMP:
+    - execute
+- code: dpx.policy
+  category: DPO Extension
+  name: รับทราบนโยบายภายใน
+  epics:
+  - DPX
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - publish
+    LEGAL:
+    - create
+    - read
+    - update
+    OWNER:
+    - execute
+    IT:
+    - execute
+    MKT:
+    - execute
+    FRONT:
+    - execute
+    SEC:
+    - execute
+    PROC:
+    - execute
+    AUDIT:
+    - read
+    EXEC:
+    - execute
+    EMP:
+    - execute
+- code: dpx.audit
+  category: DPO Extension
+  name: ตรวจประเมินความพร้อมและแผนแก้ไข
+  epics:
+  - DPX
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    PRIVACY:
+    - create
+    - read
+    - update
+    OWNER:
+    - read
+    - update
+    IT:
+    - read
+    - update
+    SEC:
+    - read
+    - update
+    AUDIT:
+    - read
+    - export
+    EXEC:
+    - read
+- code: dpx.retention
+  category: DPO Extension
+  name: Retention และการทำลายข้อมูล
+  epics:
+  - DPX
+  note: IT ดำเนินการทำลายและแนบหลักฐาน
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    PRIVACY:
+    - create
+    - read
+    - update
+    OWNER:
+    - read
+    IT:
+    - read
+    - update
+    - execute
+    AUDIT:
+    - read
+- code: dpx.regulator
+  category: DPO Extension
+  name: ทะเบียนการติดต่อกับ สคส.
+  epics:
+  - DPX
+  note: null
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    PRIVACY:
+    - read
+    LEGAL:
+    - create
+    - read
+    - update
+    AUDIT:
+    - read
+    EXEC:
+    - read
+- code: dpx.ai
+  category: DPO Extension
+  name: ทะเบียนระบบ AI และผู้ช่วย AI
+  epics:
+  - DPX
+  note: ผู้ช่วย AI ใช้ได้ตาม license และการเปิดใช้ของ tenant
+  grants:
+    DPO:
+    - create
+    - read
+    - update
+    - delete
+    - approve
+    - execute
+    PRIVACY:
+    - create
+    - read
+    - update
+    - execute
+    LEGAL:
+    - execute
+    IT:
+    - create
+    - read
+    - update
+    SEC:
+    - read
+    AUDIT:
+    - read
+- code: dpx.integration
+  category: DPO Extension
+  name: Connector HR / ITSM / SIEM
+  epics:
+  - DPX
+  note: null
+  grants:
+    ORGADMIN:
+    - create
+    - read
+    - update
+    - delete
+    DPO:
+    - read
+    IT:
+    - create
+    - read
+    - update
+    - delete
+    SEC:
+    - read
+    AUDIT:
+    - read
+- code: pii.unmask
+  category: Special
+  name: เปิดดูข้อมูลส่วนบุคคลแบบไม่ปกปิด
+  epics:
+  - IAM
+  - CON
+  - DSAR
+  - BRE
+  note: ต้องระบุเหตุผล ถูกบันทึก log ทุกครั้ง และอาจต้องยืนยัน MFA ซ้ำ
+  grants:
+    DPO:
+    - execute
+    PRIVACY:
+    - execute
+    SEC:
+    - execute

@@ -1,0 +1,661 @@
+# State machines (generated from the SA pack; the same values as the CHECK constraints in backend/db/migrations)
+# transitions from/to [*] (initial / final pseudo-states) are omitted; see `initial` and `terminal`.
+# (from, to) pairs are the allow-list. `event` / `guard` / `action` are split from the diagram label (event [guard] / action);
+# they are descriptive (often Thai) — name the Go methods yourself and cover every guard with a test.
+machines:
+- machine: ST-01#1
+  title: Consent status
+  column: consent.consent_status.status
+  states:
+  - PENDING
+  - ACTIVE
+  - NOT_GIVEN
+  - WITHDRAWN
+  - EXPIRED
+  initial:
+  - PENDING
+  - ACTIVE
+  - NOT_GIVEN
+  terminal: []
+  transitions:
+  - from: PENDING
+    to: ACTIVE
+    trigger: CONFIRMED
+    event: CONFIRMED
+    guard: null
+    action: null
+  - from: ACTIVE
+    to: PENDING
+    trigger: purpose version material + requires_reconsent
+    event: purpose version material + requires_reconsent
+    guard: null
+    action: null
+  - from: PENDING
+    to: NOT_GIVEN
+    trigger: CANCELLED [หมดเวลา / ปฏิเสธ]
+    event: CANCELLED
+    guard: หมดเวลา / ปฏิเสธ
+    action: null
+  - from: NOT_GIVEN
+    to: ACTIVE
+    trigger: CONSENTED
+    event: CONSENTED
+    guard: null
+    action: null
+  - from: ACTIVE
+    to: WITHDRAWN
+    trigger: WITHDRAWN
+    event: WITHDRAWN
+    guard: null
+    action: null
+  - from: WITHDRAWN
+    to: ACTIVE
+    trigger: CONSENTED (ให้ใหม่)
+    event: CONSENTED (ให้ใหม่)
+    guard: null
+    action: null
+  - from: ACTIVE
+    to: EXPIRED
+    trigger: EXPIRED [now ≥ expires_at] / job expiry_sweep
+    event: EXPIRED
+    guard: now ≥ expires_at
+    action: job expiry_sweep
+  - from: EXPIRED
+    to: ACTIVE
+    trigger: CONSENTED / EXTENDED
+    event: CONSENTED / EXTENDED
+    guard: null
+    action: null
+  - from: ACTIVE
+    to: ACTIVE
+    trigger: EXTENDED · CHANGED_PREFERENCES
+    event: EXTENDED · CHANGED_PREFERENCES
+    guard: null
+    action: null
+- machine: ST-02#1
+  title: DSAR request
+  column: dsar.requests.status
+  states:
+  - received
+  - verifying
+  - in_review
+  - in_progress
+  - awaiting_info
+  - completed
+  - rejected
+  - withdrawn
+  initial:
+  - received
+  terminal:
+  - completed
+  - rejected
+  - withdrawn
+  transitions:
+  - from: received
+    to: verifying
+    trigger: ส่ง OTP / ขอเอกสาร
+    event: ส่ง OTP / ขอเอกสาร
+    guard: null
+    action: null
+  - from: verifying
+    to: in_review
+    trigger: ยืนยันสำเร็จ
+    event: ยืนยันสำเร็จ
+    guard: null
+    action: null
+  - from: in_review
+    to: in_progress
+    trigger: รับดำเนินการ / สร้าง subtasks
+    event: รับดำเนินการ
+    guard: null
+    action: สร้าง subtasks
+  - from: in_progress
+    to: completed
+    trigger: subtask ครบ + DPO อนุมัติ / ส่งผล · outcome
+    event: subtask ครบ + DPO อนุมัติ
+    guard: null
+    action: ส่งผล · outcome
+  - from: verifying
+    to: awaiting_info
+    trigger: ขอเอกสารเพิ่ม
+    event: ขอเอกสารเพิ่ม
+    guard: null
+    action: null
+  - from: in_review
+    to: awaiting_info
+    trigger: ขอข้อมูลเพิ่ม
+    event: ขอข้อมูลเพิ่ม
+    guard: null
+    action: null
+  - from: awaiting_info
+    to: in_review
+    trigger: ได้รับข้อมูล
+    event: ได้รับข้อมูล
+    guard: null
+    action: null
+  - from: in_progress
+    to: awaiting_info
+    trigger: ขอข้อมูลเพิ่ม
+    event: ขอข้อมูลเพิ่ม
+    guard: null
+    action: null
+  - from: in_review
+    to: rejected
+    trigger: เข้าเหตุปฏิเสธ / บันทึกเหตุผล ลง RoPA (ม.39) · แจ้งผู้ขอ
+    event: เข้าเหตุปฏิเสธ / บันทึกเหตุผล ลง RoPA (ม.39) · แจ้งผู้ขอ
+    guard: null
+    action: null
+  - from: awaiting_info
+    to: rejected
+    trigger: ไม่ได้รับข้อมูลภายในกำหนด
+    event: ไม่ได้รับข้อมูลภายในกำหนด
+    guard: null
+    action: null
+  - from: received
+    to: withdrawn
+    trigger: ผู้ขอยกเลิก (จากทุกสถานะใน Open)
+    event: ผู้ขอยกเลิก (จากทุกสถานะใน Open)
+    guard: null
+    action: null
+  - from: verifying
+    to: withdrawn
+    trigger: ผู้ขอยกเลิก (จากทุกสถานะใน Open)
+    event: ผู้ขอยกเลิก (จากทุกสถานะใน Open)
+    guard: null
+    action: null
+  - from: in_review
+    to: withdrawn
+    trigger: ผู้ขอยกเลิก (จากทุกสถานะใน Open)
+    event: ผู้ขอยกเลิก (จากทุกสถานะใน Open)
+    guard: null
+    action: null
+  - from: in_progress
+    to: withdrawn
+    trigger: ผู้ขอยกเลิก (จากทุกสถานะใน Open)
+    event: ผู้ขอยกเลิก (จากทุกสถานะใน Open)
+    guard: null
+    action: null
+  - from: awaiting_info
+    to: withdrawn
+    trigger: ผู้ขอยกเลิก (จากทุกสถานะใน Open)
+    event: ผู้ขอยกเลิก (จากทุกสถานะใน Open)
+    guard: null
+    action: null
+- machine: ST-03#1
+  title: Breach incident
+  column: breach.incidents.status
+  states:
+  - reported
+  - triage
+  - assessing
+  - notifying
+  - remediating
+  - closed
+  initial:
+  - reported
+  terminal:
+  - closed
+  transitions:
+  - from: reported
+    to: triage
+    trigger: รับเรื่อง / routing_rules
+    event: รับเรื่อง / routing_rules
+    guard: null
+    action: null
+  - from: triage
+    to: assessing
+    trigger: ยืนยันเหตุ / containment
+    event: ยืนยันเหตุ / containment
+    guard: null
+    action: null
+  - from: assessing
+    to: notifying
+    trigger: risk_level = low | high
+    event: risk_level = low | high
+    guard: null
+    action: null
+  - from: assessing
+    to: remediating
+    trigger: risk_level = none / no_notification
+    event: risk_level = none
+    guard: null
+    action: no_notification
+  - from: remediating
+    to: assessing
+    trigger: พบข้อเท็จจริงใหม่
+    event: พบข้อเท็จจริงใหม่
+    guard: null
+    action: null
+  - from: notifying
+    to: remediating
+    trigger: ยื่นแจ้งแล้ว [เกิน 72 ชม. → late_reason]
+    event: ยื่นแจ้งแล้ว
+    guard: เกิน 72 ชม. → late_reason
+    action: null
+  - from: triage
+    to: closed
+    trigger: ไม่ใช่เหตุละเมิดข้อมูลส่วนบุคคล / บันทึกเหตุผล
+    event: ไม่ใช่เหตุละเมิดข้อมูลส่วนบุคคล
+    guard: null
+    action: บันทึกเหตุผล
+  - from: remediating
+    to: closed
+    trigger: root cause + actions ครบ / lessons learned
+    event: root cause + actions ครบ
+    guard: null
+    action: lessons learned
+- machine: ST-04#1
+  title: Agreement (agreement.agreements.status)
+  column: agreement.agreements.status
+  states:
+  - draft
+  - in_review
+  - approved
+  - out_for_signature
+  - active
+  - expired
+  - terminated
+  initial:
+  - draft
+  terminal:
+  - expired
+  - terminated
+  transitions:
+  - from: draft
+    to: in_review
+    trigger: ส่งทบทวน [mandatory clauses ครบ]
+    event: ส่งทบทวน
+    guard: mandatory clauses ครบ
+    action: null
+  - from: in_review
+    to: draft
+    trigger: ส่งกลับแก้ไข
+    event: ส่งกลับแก้ไข
+    guard: null
+    action: null
+  - from: in_review
+    to: approved
+    trigger: อนุมัติ
+    event: อนุมัติ
+    guard: null
+    action: null
+  - from: approved
+    to: out_for_signature
+    trigger: ส่งลงนาม
+    event: ส่งลงนาม
+    guard: null
+    action: null
+  - from: out_for_signature
+    to: draft
+    trigger: คู่สัญญาขอแก้ / ไม่ลงนาม
+    event: คู่สัญญาขอแก้ / ไม่ลงนาม
+    guard: null
+    action: null
+  - from: out_for_signature
+    to: active
+    trigger: ลงนามครบ / hash + obligations
+    event: ลงนามครบ
+    guard: null
+    action: hash + obligations
+  - from: active
+    to: expired
+    trigger: end_date ผ่าน [ไม่ต่ออายุ]
+    event: end_date ผ่าน
+    guard: ไม่ต่ออายุ
+    action: null
+  - from: active
+    to: terminated
+    trigger: ยุติก่อนกำหนด
+    event: ยุติก่อนกำหนด
+    guard: null
+    action: null
+- machine: ST-04#2
+  title: Notice (notice.notices.status) — แต่ละ publish สร้าง notice_versions ใหม่
+  column: notice.notices.status
+  states:
+  - draft
+  - in_review
+  - published
+  - retired
+  initial:
+  - draft
+  terminal:
+  - retired
+  transitions:
+  - from: draft
+    to: in_review
+    trigger: ส่งทบทวน [checklist ม.23 ครบ]
+    event: ส่งทบทวน
+    guard: checklist ม.23 ครบ
+    action: null
+  - from: in_review
+    to: draft
+    trigger: ส่งกลับ
+    event: ส่งกลับ
+    guard: null
+    action: null
+  - from: in_review
+    to: published
+    trigger: อนุมัติ / publish version
+    event: อนุมัติ / publish version
+    guard: null
+    action: null
+  - from: published
+    to: draft
+    trigger: 'แก้ไข: ร่างเวอร์ชันใหม่ (ฉบับเดิมยังเผยแพร่)'
+    event: 'แก้ไข: ร่างเวอร์ชันใหม่ (ฉบับเดิมยังเผยแพร่)'
+    guard: null
+    action: null
+  - from: published
+    to: retired
+    trigger: เลิกใช้
+    event: เลิกใช้
+    guard: null
+    action: null
+- machine: ST-05#1
+  title: RoPA activity (ropa.processing_activities.status)
+  column: ropa.processing_activities.status
+  states:
+  - draft
+  - pending_approval
+  - active
+  - under_review
+  - ended
+  initial:
+  - draft
+  terminal:
+  - ended
+  transitions:
+  - from: draft
+    to: pending_approval
+    trigger: submit [validation ผ่าน]
+    event: submit
+    guard: validation ผ่าน
+    action: null
+  - from: pending_approval
+    to: draft
+    trigger: ส่งกลับ
+    event: ส่งกลับ
+    guard: null
+    action: null
+  - from: pending_approval
+    to: active
+    trigger: DPO อนุมัติ / publish · risk score
+    event: DPO อนุมัติ
+    guard: null
+    action: publish · risk score
+  - from: active
+    to: under_review
+    trigger: ครบรอบ / เปลี่ยนแปลง
+    event: ครบรอบ / เปลี่ยนแปลง
+    guard: null
+    action: null
+  - from: under_review
+    to: active
+    trigger: ยืนยันไม่เปลี่ยน
+    event: ยืนยันไม่เปลี่ยน
+    guard: null
+    action: null
+  - from: under_review
+    to: pending_approval
+    trigger: แก้ไขแล้วส่งอนุมัติ
+    event: แก้ไขแล้วส่งอนุมัติ
+    guard: null
+    action: null
+  - from: active
+    to: ended
+    trigger: ยุติ / ตั้ง retention
+    event: ยุติ / ตั้ง retention
+    guard: null
+    action: null
+- machine: ST-05#2
+  title: Assessment (assess.assessments.status)
+  column: assess.assessments.status
+  states:
+  - screening
+  - not_required
+  - in_progress
+  - in_review
+  - approved
+  - rejected
+  - needs_review
+  - closed
+  initial:
+  - screening
+  terminal:
+  - closed
+  transitions:
+  - from: screening
+    to: not_required
+    trigger: not_required
+    event: not_required
+    guard: null
+    action: null
+  - from: screening
+    to: in_progress
+    trigger: required | recommended
+    event: required | recommended
+    guard: null
+    action: null
+  - from: in_progress
+    to: in_review
+    trigger: ส่งตรวจ
+    event: ส่งตรวจ
+    guard: null
+    action: null
+  - from: in_review
+    to: in_progress
+    trigger: ขอข้อมูลเพิ่ม
+    event: ขอข้อมูลเพิ่ม
+    guard: null
+    action: null
+  - from: in_review
+    to: approved
+    trigger: อนุมัติ [residual risk ยอมรับได้ / มี acceptance]
+    event: อนุมัติ
+    guard: residual risk ยอมรับได้ / มี acceptance
+    action: null
+  - from: in_review
+    to: rejected
+    trigger: ไม่อนุมัติ
+    event: ไม่อนุมัติ
+    guard: null
+    action: null
+  - from: approved
+    to: needs_review
+    trigger: ครบรอบ / กิจกรรมเปลี่ยน
+    event: ครบรอบ / กิจกรรมเปลี่ยน
+    guard: null
+    action: null
+  - from: needs_review
+    to: in_progress
+    trigger: เริ่มทบทวน
+    event: เริ่มทบทวน
+    guard: null
+    action: null
+  - from: approved
+    to: closed
+    trigger: ปิด
+    event: ปิด
+    guard: null
+    action: null
+  - from: rejected
+    to: closed
+    trigger: ปิด
+    event: ปิด
+    guard: null
+    action: null
+  - from: not_required
+    to: closed
+    trigger: ปิด
+    event: ปิด
+    guard: null
+    action: null
+- machine: ST-06#1
+  title: Vendor
+  column: vendor.vendors.status
+  states:
+  - prospect
+  - onboarding
+  - approved
+  - conditional
+  - rejected
+  - offboarding
+  - terminated
+  initial:
+  - prospect
+  terminal:
+  - rejected
+  - terminated
+  transitions:
+  - from: prospect
+    to: onboarding
+    trigger: ส่งแบบประเมิน (guest link)
+    event: ส่งแบบประเมิน (guest link)
+    guard: null
+    action: null
+  - from: onboarding
+    to: approved
+    trigger: decision = approved
+    event: decision = approved
+    guard: null
+    action: null
+  - from: onboarding
+    to: conditional
+    trigger: decision = conditional / remediation_items
+    event: decision = conditional
+    guard: null
+    action: remediation_items
+  - from: onboarding
+    to: rejected
+    trigger: decision = rejected
+    event: decision = rejected
+    guard: null
+    action: null
+  - from: conditional
+    to: approved
+    trigger: remediation ครบ
+    event: remediation ครบ
+    guard: null
+    action: null
+  - from: approved
+    to: conditional
+    trigger: ประเมินซ้ำพบช่องว่าง
+    event: ประเมินซ้ำพบช่องว่าง
+    guard: null
+    action: null
+  - from: conditional
+    to: rejected
+    trigger: ไม่แก้ไขภายในกำหนด
+    event: ไม่แก้ไขภายในกำหนด
+    guard: null
+    action: null
+  - from: approved
+    to: offboarding
+    trigger: ยุติการใช้บริการ
+    event: ยุติการใช้บริการ
+    guard: null
+    action: null
+  - from: conditional
+    to: offboarding
+    trigger: ยุติการใช้บริการ
+    event: ยุติการใช้บริการ
+    guard: null
+    action: null
+  - from: offboarding
+    to: terminated
+    trigger: ยืนยันคืน / ทำลายข้อมูล
+    event: ยืนยันคืน / ทำลายข้อมูล
+    guard: null
+    action: null
+- machine: ST-07#1
+  title: User account
+  column: iam.users.status
+  states:
+  - invited
+  - active
+  - locked
+  - disabled
+  initial:
+  - invited
+  terminal: []
+  transitions:
+  - from: invited
+    to: active
+    trigger: login ครั้งแรก + ตั้ง MFA
+    event: login ครั้งแรก + ตั้ง MFA
+    guard: null
+    action: null
+  - from: invited
+    to: disabled
+    trigger: คำเชิญหมดอายุ / ยกเลิก
+    event: คำเชิญหมดอายุ / ยกเลิก
+    guard: null
+    action: null
+  - from: active
+    to: locked
+    trigger: login ผิดเกินกำหนด
+    event: login ผิดเกินกำหนด
+    guard: null
+    action: null
+  - from: locked
+    to: active
+    trigger: admin ปลดล็อก / reset
+    event: admin ปลดล็อก / reset
+    guard: null
+    action: null
+  - from: active
+    to: disabled
+    trigger: SCIM deactivate / ลาออก → revoke session
+    event: SCIM deactivate / ลาออก
+    guard: null
+    action: revoke session
+  - from: disabled
+    to: active
+    trigger: re-enable [maker-checker]
+    event: re-enable
+    guard: maker-checker
+    action: null
+- machine: ST-07#2
+  title: Webhook delivery
+  column: platform.webhook_deliveries.status
+  states:
+  - pending
+  - delivered
+  - failed
+  - dead
+  initial:
+  - pending
+  terminal:
+  - delivered
+  transitions:
+  - from: pending
+    to: delivered
+    trigger: 2xx
+    event: 2xx
+    guard: null
+    action: null
+  - from: pending
+    to: failed
+    trigger: non-2xx / timeout
+    event: non-2xx / timeout
+    guard: null
+    action: null
+  - from: failed
+    to: pending
+    trigger: 'retry: 1m · 5m · 30m · 2h · 6h · 24h'
+    event: 'retry: 1m · 5m · 30m · 2h · 6h · 24h'
+    guard: null
+    action: null
+  - from: failed
+    to: dead
+    trigger: ครบ 24 ชม. / แจ้งเตือน + reconcile
+    event: ครบ 24 ชม. / แจ้งเตือน + reconcile
+    guard: null
+    action: null
+  - from: dead
+    to: pending
+    trigger: replay (manual)
+    event: replay (manual)
+    guard: null
+    action: null

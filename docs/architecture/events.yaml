@@ -1,0 +1,397 @@
+# Event catalog (ARC-04). Envelope: {id (UUIDv7), type, tenant_id, occurred_at, subject, data, version}
+events:
+- name: consent.granted
+  producer: consent
+  data:
+  - subject_ref
+  - purpose_code
+  - purpose_version
+  - channel
+  - occurred_at
+  consumers:
+  - webhook subscriber (CRM / CDP)
+  - reconcile
+- name: consent.denied
+  producer: consent
+  data:
+  - subject_ref
+  - purpose_code
+  - purpose_version
+  - channel
+  - occurred_at
+  consumers:
+  - webhook subscriber (CRM / CDP)
+  - reconcile
+- name: consent.withdrawn
+  producer: consent
+  data:
+  - subject_ref
+  - purpose_code
+  - purpose_version
+  - channel
+  - occurred_at
+  consumers:
+  - webhook subscriber (CRM / CDP)
+  - reconcile
+- name: consent.expired
+  producer: consent
+  data:
+  - subject_ref
+  - purpose_code
+  - purpose_version
+  - channel
+  - occurred_at
+  consumers:
+  - webhook subscriber (CRM / CDP)
+  - reconcile
+- name: consent.preferences_changed
+  producer: consent
+  data:
+  - subject_ref
+  - purpose_code
+  - purpose_version
+  - channel
+  - occurred_at
+  consumers:
+  - webhook subscriber (CRM / CDP)
+  - reconcile
+- name: consent.mismatch_found
+  producer: consent
+  data:
+  - subject_ref
+  - purpose_code
+  - purpose_version
+  - channel
+  - occurred_at
+  consumers:
+  - webhook subscriber (CRM / CDP)
+  - reconcile
+- name: cookie.banner_published
+  producer: cookie
+  data:
+  - domain
+  - banner_version
+  - new_cookies
+  consumers:
+  - DPO dashboard
+  - CDN purge
+- name: cookie.scan_completed
+  producer: cookie
+  data:
+  - domain
+  - banner_version
+  - new_cookies
+  consumers:
+  - DPO dashboard
+  - CDN purge
+- name: notice.published
+  producer: notice
+  data:
+  - notice_id
+  - version
+  - effective_at
+  consumers:
+  - acknowledgement job
+  - เว็บไซต์ (embed)
+- name: notice.material_change
+  producer: notice
+  data:
+  - notice_id
+  - version
+  - effective_at
+  consumers:
+  - acknowledgement job
+  - เว็บไซต์ (embed)
+- name: ropa.activity_submitted
+  producer: ropa
+  data:
+  - activity_id
+  - version
+  - changed_fields
+  consumers:
+  - risk scoring
+  - dataflow snapshot
+  - notice links
+- name: ropa.activity_approved
+  producer: ropa
+  data:
+  - activity_id
+  - version
+  - changed_fields
+  consumers:
+  - risk scoring
+  - dataflow snapshot
+  - notice links
+- name: ropa.activity_changed
+  producer: ropa
+  data:
+  - activity_id
+  - version
+  - changed_fields
+  consumers:
+  - risk scoring
+  - dataflow snapshot
+  - notice links
+- name: risk.dpia_required
+  producer: risk / assess
+  data:
+  - activity_id
+  - score
+  - assessment_id
+  consumers:
+  - assess (สร้าง screening)
+  - RoPA
+- name: risk.accepted
+  producer: risk / assess
+  data:
+  - activity_id
+  - score
+  - assessment_id
+  consumers:
+  - assess (สร้าง screening)
+  - RoPA
+- name: dpia.submitted
+  producer: risk / assess
+  data:
+  - activity_id
+  - score
+  - assessment_id
+  consumers:
+  - assess (สร้าง screening)
+  - RoPA
+- name: dpia.approved
+  producer: risk / assess
+  data:
+  - activity_id
+  - score
+  - assessment_id
+  consumers:
+  - assess (สร้าง screening)
+  - RoPA
+- name: dsar.created
+  producer: dsar
+  data:
+  - request_ref
+  - request_type
+  - due_at
+  - status
+  consumers:
+  - ITSM / CRM (subtask)
+  - DPO
+- name: dsar.verified
+  producer: dsar
+  data:
+  - request_ref
+  - request_type
+  - due_at
+  - status
+  consumers:
+  - ITSM / CRM (subtask)
+  - DPO
+- name: dsar.subtask_assigned
+  producer: dsar
+  data:
+  - request_ref
+  - request_type
+  - due_at
+  - status
+  consumers:
+  - ITSM / CRM (subtask)
+  - DPO
+- name: dsar.sla_warning
+  producer: dsar
+  data:
+  - request_ref
+  - request_type
+  - due_at
+  - status
+  consumers:
+  - ITSM / CRM (subtask)
+  - DPO
+- name: dsar.completed
+  producer: dsar
+  data:
+  - request_ref
+  - request_type
+  - due_at
+  - status
+  consumers:
+  - ITSM / CRM (subtask)
+  - DPO
+- name: dsar.rejected
+  producer: dsar
+  data:
+  - request_ref
+  - request_type
+  - due_at
+  - status
+  consumers:
+  - ITSM / CRM (subtask)
+  - DPO
+- name: breach.reported
+  producer: breach
+  data:
+  - incident_ref
+  - aware_at
+  - risk_level
+  - deadline_at
+  consumers:
+  - SIEM / ITSM
+  - ผู้บริหาร
+- name: breach.assessed
+  producer: breach
+  data:
+  - incident_ref
+  - aware_at
+  - risk_level
+  - deadline_at
+  consumers:
+  - SIEM / ITSM
+  - ผู้บริหาร
+- name: breach.pdpc_notified
+  producer: breach
+  data:
+  - incident_ref
+  - aware_at
+  - risk_level
+  - deadline_at
+  consumers:
+  - SIEM / ITSM
+  - ผู้บริหาร
+- name: breach.subjects_notified
+  producer: breach
+  data:
+  - incident_ref
+  - aware_at
+  - risk_level
+  - deadline_at
+  consumers:
+  - SIEM / ITSM
+  - ผู้บริหาร
+- name: breach.closed
+  producer: breach
+  data:
+  - incident_ref
+  - aware_at
+  - risk_level
+  - deadline_at
+  consumers:
+  - SIEM / ITSM
+  - ผู้บริหาร
+- name: vendor.assessment_completed
+  producer: vendor
+  data:
+  - vendor_id
+  - tier
+  - expires_at
+  consumers:
+  - จัดซื้อ
+  - agreement
+- name: vendor.approved
+  producer: vendor
+  data:
+  - vendor_id
+  - tier
+  - expires_at
+  consumers:
+  - จัดซื้อ
+  - agreement
+- name: vendor.certificate_expiring
+  producer: vendor
+  data:
+  - vendor_id
+  - tier
+  - expires_at
+  consumers:
+  - จัดซื้อ
+  - agreement
+- name: agreement.signed
+  producer: agreement
+  data:
+  - agreement_id
+  - type
+  - end_date
+  consumers:
+  - ฝ่ายกฎหมาย
+  - vendor
+- name: agreement.expiring
+  producer: agreement
+  data:
+  - agreement_id
+  - type
+  - end_date
+  consumers:
+  - ฝ่ายกฎหมาย
+  - vendor
+- name: agreement.terminated
+  producer: agreement
+  data:
+  - agreement_id
+  - type
+  - end_date
+  consumers:
+  - ฝ่ายกฎหมาย
+  - vendor
+- name: retention.due
+  producer: gov
+  data:
+  - rule_id
+  - record_ref
+  - due_at
+  consumers:
+  - IT (ทำลายข้อมูล)
+  - DPO
+- name: disposal.approved
+  producer: gov
+  data:
+  - rule_id
+  - record_ref
+  - due_at
+  consumers:
+  - IT (ทำลายข้อมูล)
+  - DPO
+- name: disposal.completed
+  producer: gov
+  data:
+  - rule_id
+  - record_ref
+  - due_at
+  consumers:
+  - IT (ทำลายข้อมูล)
+  - DPO
+- name: user.provisioned
+  producer: iam
+  data:
+  - user_id
+  - role_code
+  - scope
+  consumers:
+  - audit
+  - SIEM
+- name: user.deprovisioned
+  producer: iam
+  data:
+  - user_id
+  - role_code
+  - scope
+  consumers:
+  - audit
+  - SIEM
+- name: access.granted
+  producer: iam
+  data:
+  - user_id
+  - role_code
+  - scope
+  consumers:
+  - audit
+  - SIEM
+- name: access.revoked
+  producer: iam
+  data:
+  - user_id
+  - role_code
+  - scope
+  consumers:
+  - audit
+  - SIEM

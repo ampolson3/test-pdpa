@@ -1,0 +1,302 @@
+# ORG — ข้อมูลหน่วยงาน (Organization)
+
+> ระบบบริหารจัดการข้อมูลหน่วยงาน (Organization Management) · ขอบเขต: นิติบุคคล โครงสร้างหน่วยงาน หน่วยงานภายนอก ข้อมูลตั้งต้น ปฏิทินวันทำการ และตั้งค่าองค์กร  
+> 10 features · Must 4 / Should 5 / Nice 1 · phase: P0 (5), P1 (1), P3 (3), P4 (1)
+
+## ภาพรวมทางเทคนิค
+
+| หัวข้อ | รายละเอียด |
+|---|---|
+| Go package | `backend/internal/org` |
+| PostgreSQL schema | [`org`](../data/org.md) (12 ตาราง) |
+| Admin API prefix | `/admin/v1/org` |
+| Endpoint ที่ SA กำหนดแล้ว | — (ออกแบบตาม [API conventions](../../api/openapi/README.md)) |
+| หน้าจอ (Next.js) | admin: /org/* |
+| พึ่งพาบริการ | importer, audit |
+| Diagram ต้นฉบับ | `design/PDPA_System_Analysis.drawio` → UC-02 ORG, DFD-1, ERD-04 |
+
+## Actors
+
+| key | ชื่อ | English | การยืนยันตัวตน |
+|---|---|---|---|
+| ORGADMIN | ผู้ดูแลระบบขององค์กร | Organization Admin | OIDC (Keycloak) + MFA บังคับ · Admin app |
+| PROC | จัดซื้อ / ผู้ดูแลคู่ค้า | Procurement / Vendor Manager | OIDC SSO · Admin app |
+| DPO | DPO / Privacy Team | DPO / Privacy Team | OIDC SSO + MFA · Admin app |
+| SUPER | ผู้ให้บริการแพลตฟอร์ม | Platform Super Admin / Content team | OIDC + MFA + IP allowlist · Provider console |
+
+## รายการ feature / use case
+
+เรียงตาม phase แล้วตามลำดับใน Function List · UC ID = Function ID = รหัสใน backlog
+
+| ID | ชื่อ | Priority | Phase | Actor | BE | FE | UX | BP |
+|---|---|---|---|---|---|---|---|---|
+| [ORG-01](#org-01) | ข้อมูลหน่วยงาน / นิติบุคคล | Must | P0 | ORGADMIN | S | S | Y |  |
+| [ORG-02](#org-02) | หลายนิติบุคคลและบริษัทในเครือ | Should | P0 | ORGADMIN | M | S | N |  |
+| [ORG-04](#org-04) | โครงสร้างหน่วยงานแบบลำดับชั้น | Must | P0 | ORGADMIN | M | M | Y |  |
+| [ORG-07](#org-07) | ข้อมูลตั้งต้นกลาง (Master data) | Must | P0 | DPO SUPER | M | M | N |  |
+| [ORG-20](#org-20) | ตั้งค่าองค์กร | Should | P0 | ORGADMIN | S | M | Y |  |
+| [ORG-06](#org-06) | ทะเบียนหน่วยงานภายนอก | Must | P1 | DPO PROC | M | M | Y |  |
+| [ORG-05](#org-05) | ผู้ประสานงาน PDPA ประจำหน่วยงาน | Should | P3 | ORGADMIN DPO | S | S | N |  |
+| [ORG-08](#org-08) | นำเข้าและส่งออกข้อมูลตั้งต้น | Should | P3 | DPO | XS | S | N |  |
+| [ORG-21](#org-21) | เลือกที่เก็บข้อมูลและรูปแบบติดตั้ง | Should | P3 | SUPER | M | S | N |  |
+| [ORG-03](#org-03) | ผู้แทนในประเทศไทย | Nice | P4 | ORGADMIN | XS | XS | N |  |
+
+### ความสัมพันธ์ระหว่าง use case
+
+- ORG-08 «extend» ORG-07 (ORG-08 เป็นทางเลือก/ส่วนขยายของ ORG-07)
+- ORG-05 «extend» ORG-04 (ORG-05 เป็นทางเลือก/ส่วนขยายของ ORG-04)
+
+## ตารางข้อมูล
+
+| ตาราง | คำอธิบาย |
+|---|---|
+| [org.legal_entities](../data/org.md#org-legal-entities) | นิติบุคคล (บริษัทในกลุ่ม) |
+| [org.org_units](../data/org.md#org-org-units) | โครงสร้างหน่วยงาน (ltree) |
+| [org.privacy_champions](../data/org.md#org-privacy-champions) | ผู้ประสานงาน PDPA ประจำหน่วยงาน |
+| [org.external_parties](../data/org.md#org-external-parties) | ทะเบียนหน่วยงานภายนอก (ผู้ประมวลผล ผู้รับ หน่วยงานรัฐ) |
+| [org.data_categories](../data/org.md#org-data-categories) | หมวดข้อมูลส่วนบุคคล (ทั่วไป / อ่อนไหว ม.26) |
+| [org.data_subject_types](../data/org.md#org-data-subject-types) | กลุ่มเจ้าของข้อมูล |
+| [org.processing_purposes](../data/org.md#org-processing-purposes) | วัตถุประสงค์การประมวลผล (master) |
+| [org.lawful_bases](../data/org.md#org-lawful-bases) | ฐานทางกฎหมาย ม.24 / ม.26 / ม.19 |
+| [org.countries](../data/org.md#org-countries) | ประเทศและสถานะมาตรฐานการคุ้มครองที่เพียงพอ |
+| [org.business_calendars](../data/org.md#org-business-calendars) | ปฏิทินวันทำการ |
+| [org.holidays](../data/org.md#org-holidays) | วันหยุดในปฏิทิน |
+| [org.org_settings](../data/org.md#org-org-settings) | ค่าตั้งค่าองค์กร (ภาษา แบรนด์ รูปแบบวันที่) |
+
+## สิทธิ์ (x-permission)
+
+รูปแบบ `x-permission: <area>.<resource>.<action>` เช่น `org.structure.read` (area ไม่จำเป็นต้องตรงกับชื่อ package) · ตัวอักษร: C สร้าง · R ดู · U แก้ไข · D ลบ · A อนุมัติ · P เผยแพร่ · E ส่งออก · X ดำเนินการ — รายละเอียดใน [permissions.md](../security/permissions.md)
+
+| permission code | ความหมาย | role → action | หมายเหตุ |
+|---|---|---|---|
+| `org.structure` | นิติบุคคลและโครงสร้างหน่วยงาน | ORGADMIN `CRUD` · DPO `RU` · PRIVACY `R` · LEGAL `R` · OWNER `R` · IT `R` · MKT `R` · FRONT `R` · SEC `R` · PROC `R` · AUDIT `R` · EXEC `R` · EMP `R` |  |
+| `org.party` | ทะเบียนหน่วยงานภายนอก | ORGADMIN `CRUD` · DPO `CRUD` · PRIVACY `CRU` · LEGAL `CRU` · OWNER `R` · IT `R` · PROC `CRU` · AUDIT `R` |  |
+| `org.masterdata` | ข้อมูลตั้งต้น | SUPER `CRUD` · ORGADMIN `CRUD` · DPO `CRUD` · PRIVACY `CRU` · LEGAL `R` · OWNER `R` · IT `R` · MKT `R` · SEC `R` · AUDIT `R` | SUPER ดูแลค่าตั้งต้นกลางที่ทุก tenant ได้รับ |
+| `org.settings` | ตั้งค่าองค์กร แบรนด์ และปฏิทินวันทำการ | SUPER `CRUD` · ORGADMIN `RU` · DPO `R` · AUDIT `R` |  |
+
+## ลำดับการ implement ที่แนะนำ
+
+ทำตาม phase (P0 → P4) ภายใน phase ให้ทำ Must ก่อน และทำ feature ที่เป็น dependency (คอลัมน์ “ขึ้นกับ”) ก่อนเสมอ ก่อนเริ่มแต่ละ feature ให้อ่าน process / state machine ที่เกี่ยวข้องข้างบน
+
+- **P0:** ORG-01, ORG-04, ORG-07, ORG-02, ORG-20
+- **P1:** ORG-06
+- **P3:** ORG-05, ORG-08, ORG-21
+- **P4:** ORG-03
+
+## รายละเอียด feature
+
+<a id="org-01"></a>
+### ORG-01 ข้อมูลหน่วยงาน / นิติบุคคล
+
+*Organization profile*
+
+- **Priority / Phase:** Must · P0 · กลุ่ม: ข้อมูลองค์กร
+- **ที่มา:** Function List: 08_Organization
+- **อ้างอิงกฎหมาย / แนวปฏิบัติ:** ม.23(5), ม.39(3)
+- **Actor:** ORGADMIN (ผู้ดูแลระบบขององค์กร)
+- **ขนาดงาน:** BE S (3 วัน) · FE S (3 วัน) · UX มีหน้าจอใหม่
+- **ขึ้นกับ:** PLT-02
+- **Process:** —
+
+**คำอธิบาย:** ชื่อ TH/EN เลขทะเบียนนิติบุคคล/ผู้เสียภาษี ที่อยู่ ช่องทางติดต่อ และโลโก้ ใช้ในประกาศ เอกสาร และแบบแจ้งเหตุ
+
+**Backend (Go):** นิติบุคคล: ชื่อ TH/EN, เลขทะเบียน 13 หลัก (ตรวจ checksum), ที่อยู่, ช่องทางติดต่อ, โลโก้; เป็น merge field ของเอกสาร
+
+**Frontend (Next.js):** ฟอร์มข้อมูลองค์กร + อัปโหลดโลโก้
+
+**Acceptance criteria:** ข้อมูลองค์กรแสดงถูกต้องในประกาศและเอกสารที่สร้าง
+
+<a id="org-02"></a>
+### ORG-02 หลายนิติบุคคลและบริษัทในเครือ
+
+*Multi-entity / group*
+
+- **Priority / Phase:** Should · P0 · กลุ่ม: ข้อมูลองค์กร
+- **ที่มา:** Function List: 08_Organization
+- **อ้างอิงกฎหมาย / แนวปฏิบัติ:** ม.41 วรรคสอง
+- **Actor:** ORGADMIN (ผู้ดูแลระบบขององค์กร)
+- **ขนาดงาน:** BE M (5 วัน) · FE S (3 วัน) · UX —
+- **ขึ้นกับ:** ORG-04
+- **Process:** —
+
+**คำอธิบาย:** จัดการหลายบริษัทในระบบเดียว แยกข้อมูลและสิทธิ์ต่อบริษัท และรองรับ DPO ร่วมของกลุ่ม
+
+**Backend (Go):** หลายบริษัทใน tenant เดียว, scope ต่อบริษัท, DPO ร่วมของกลุ่ม
+
+**Frontend (Next.js):** สลับบริษัทที่กำลังทำงาน + ตัวกรองบริษัท
+
+**Acceptance criteria:** ผู้ใช้ของบริษัท A ไม่เห็นข้อมูลบริษัท B ถ้าไม่ได้รับ scope
+
+**หมายเหตุ:** ดึงเข้า P0 เพราะกระทบ data model ทุกโมดูล
+
+<a id="org-04"></a>
+### ORG-04 โครงสร้างหน่วยงานแบบลำดับชั้น
+
+*Organization hierarchy*
+
+- **Priority / Phase:** Must · P0 · กลุ่ม: โครงสร้าง
+- **ที่มา:** Function List: 08_Organization
+- **อ้างอิงกฎหมาย / แนวปฏิบัติ:** แนวปฏิบัติตลาด
+- **Actor:** ORGADMIN (ผู้ดูแลระบบขององค์กร)
+- **ขนาดงาน:** BE M (5 วัน) · FE M (5 วัน) · UX มีหน้าจอใหม่
+- **ขึ้นกับ:** ORG-01
+- **Process:** —
+
+**คำอธิบาย:** กลุ่ม → บริษัท → ฝ่าย → แผนก/สาขา แสดงแบบ tree และใช้กำหนดขอบเขตข้อมูล
+
+**Backend (Go):** org tree (ltree), ย้ายหน่วยงาน, ปิดหน่วยงานโดยเก็บประวัติ, event เมื่อโครงสร้างเปลี่ยน
+
+**Frontend (Next.js):** tree view ลากวาง + ค้นหา
+
+**Acceptance criteria:** ย้ายแผนกแล้ว scope ของผู้ใช้และข้อมูลปรับตามทันที
+
+<a id="org-07"></a>
+### ORG-07 ข้อมูลตั้งต้นกลาง (Master data)
+
+*Master data*
+
+- **Priority / Phase:** Must · P0 · กลุ่ม: ข้อมูลตั้งต้น
+- **ที่มา:** Function List: 08_Organization
+- **อ้างอิงกฎหมาย / แนวปฏิบัติ:** ม.24, ม.26
+- **Actor:** DPO (DPO / Privacy Team), SUPER (ผู้ให้บริการแพลตฟอร์ม)
+- **ขนาดงาน:** BE M (5 วัน) · FE M (5 วัน) · UX —
+- **ขึ้นกับ:** ORG-01
+- **Process:** —
+
+**คำอธิบาย:** ประเภทข้อมูล ข้อมูลอ่อนไหว (ม.26) กลุ่มเจ้าของข้อมูล วัตถุประสงค์ ฐานกฎหมาย (ม.24/26) ระยะเวลาเก็บ และประเทศ
+
+**Backend (Go):** ประเภทข้อมูล, ข้อมูลอ่อนไหว ม.26, กลุ่มเจ้าของข้อมูล, วัตถุประสงค์, ฐานกฎหมาย ม.24/26, ระยะเวลาเก็บ, ประเทศ (สถานะมาตรฐานเพียงพอ); ชุดค่าเริ่มต้นภาษาไทย
+
+**Frontend (Next.js):** หน้าจัดการ master data แยกหมวด
+
+**Acceptance criteria:** แก้ที่เดียวมีผลทุกโมดูล และ tenant ใหม่ได้ชุดค่าเริ่มต้นครบ
+
+<a id="org-20"></a>
+### ORG-20 ตั้งค่าองค์กร
+
+*Organization settings*
+
+- **Priority / Phase:** Should · P0 · กลุ่ม: ตั้งค่า
+- **ที่มา:** Function List: 08_Organization
+- **อ้างอิงกฎหมาย / แนวปฏิบัติ:** แนวปฏิบัติตลาด
+- **Actor:** ORGADMIN (ผู้ดูแลระบบขององค์กร)
+- **ขนาดงาน:** BE S (3 วัน) · FE M (5 วัน) · UX มีหน้าจอใหม่
+- **ขึ้นกับ:** PLT-02
+- **Process:** —
+
+**คำอธิบาย:** ภาษา TH/EN โลโก้และธีม template แจ้งเตือน และปฏิทินวันทำการ/วันหยุดสำหรับนับ SLA
+
+**Backend (Go):** ตั้งค่าภาษา โลโก้ ธีม template แจ้งเตือน และปฏิทินวันทำการ / วันหยุดราชการไทยต่อปี (ใช้โดย SLA engine)
+
+**Frontend (Next.js):** หน้าตั้งค่าองค์กร + ปฏิทินวันหยุด
+
+**Acceptance criteria:** SLA ของทุกโมดูลนับตามปฏิทินของ tenant
+
+**หมายเหตุ:** ดึงเข้า P0 เพราะ SLA engine ต้องใช้ปฏิทิน
+
+<a id="org-06"></a>
+### ORG-06 ทะเบียนหน่วยงานภายนอก
+
+*External parties directory*
+
+- **Priority / Phase:** Must · P1 · กลุ่ม: โครงสร้าง
+- **ที่มา:** Function List: 08_Organization
+- **อ้างอิงกฎหมาย / แนวปฏิบัติ:** ม.39, ม.40
+- **Actor:** DPO (DPO / Privacy Team), PROC (จัดซื้อ / ผู้ดูแลคู่ค้า)
+- **ขนาดงาน:** BE M (5 วัน) · FE M (5 วัน) · UX มีหน้าจอใหม่
+- **ขึ้นกับ:** ORG-01
+- **Process:** —
+
+**คำอธิบาย:** ผู้ประมวลผล ผู้รับข้อมูล และหน่วยงานรัฐ ใช้ร่วมกับ RoPA, DSA, DPA และ Vendor
+
+**Backend (Go):** directory หน่วยงานภายนอก: ประเภท (ผู้ประมวลผล / ผู้รับข้อมูล / หน่วยงานรัฐ), ประเทศ, ผู้ติดต่อ, ตรวจรายการซ้ำ; ใช้ร่วม RoPA, DSA, DPA, Vendor
+
+**Frontend (Next.js):** หน้ารายการ + ฟอร์ม + รวมรายการซ้ำ
+
+**Acceptance criteria:** หน่วยงานภายนอกหนึ่งรายมี record เดียวที่ทุกโมดูลอ้างถึง
+
+<a id="org-05"></a>
+### ORG-05 ผู้ประสานงาน PDPA ประจำหน่วยงาน
+
+*Privacy champions*
+
+- **Priority / Phase:** Should · P3 · กลุ่ม: โครงสร้าง
+- **ที่มา:** Function List: 08_Organization
+- **อ้างอิงกฎหมาย / แนวปฏิบัติ:** แนวปฏิบัติตลาด
+- **Actor:** ORGADMIN (ผู้ดูแลระบบขององค์กร), DPO (DPO / Privacy Team)
+- **ขนาดงาน:** BE S (3 วัน) · FE S (3 วัน) · UX —
+- **ขึ้นกับ:** ORG-04, ORG-12
+- **Process:** —
+
+**คำอธิบาย:** ระบุผู้ประสานงานของแต่ละแผนก เพื่อรับงาน RoPA คำขอใช้สิทธิ และการแจ้งเตือน
+
+**Backend (Go):** ผู้ประสานงานต่อแผนก ใช้เป็นผู้รับงานเริ่มต้นของ RoPA / คำขอ / การแจ้งเตือน
+
+**Frontend (Next.js):** กำหนดผู้ประสานงานในหน้าหน่วยงาน
+
+**Acceptance criteria:** งานของแผนกถูกส่งถึงผู้ประสานงานอัตโนมัติ
+
+<a id="org-08"></a>
+### ORG-08 นำเข้าและส่งออกข้อมูลตั้งต้น
+
+*Master data import/export*
+
+- **Priority / Phase:** Should · P3 · กลุ่ม: ข้อมูลตั้งต้น
+- **ที่มา:** Function List: 08_Organization
+- **อ้างอิงกฎหมาย / แนวปฏิบัติ:** แนวปฏิบัติตลาด
+- **Actor:** DPO (DPO / Privacy Team)
+- **ขนาดงาน:** BE XS (1 วัน) · FE S (3 วัน) · UX —
+- **ขึ้นกับ:** PLT-14, ORG-07
+- **Process:** —
+
+**คำอธิบาย:** นำเข้าและส่งออกข้อมูลตั้งต้นด้วย Excel
+
+**Backend (Go):** template นำเข้า / ส่งออก master data (ใช้ PLT-14)
+
+**Frontend (Next.js):** ปุ่มนำเข้า / ส่งออกในหน้า master data
+
+**Acceptance criteria:** นำเข้าแล้วรายการซ้ำถูกตรวจพบก่อนบันทึก
+
+<a id="org-21"></a>
+### ORG-21 เลือกที่เก็บข้อมูลและรูปแบบติดตั้ง
+
+*Data residency & deployment*
+
+- **Priority / Phase:** Should · P3 · กลุ่ม: ตั้งค่า
+- **ที่มา:** Function List: 08_Organization
+- **อ้างอิงกฎหมาย / แนวปฏิบัติ:** แนวปฏิบัติตลาด
+- **Actor:** SUPER (ผู้ให้บริการแพลตฟอร์ม)
+- **ขนาดงาน:** BE M (5 วัน) · FE S (3 วัน) · UX —
+- **ขึ้นกับ:** T41
+- **Process:** —
+
+**คำอธิบาย:** ติดตั้งแบบ on-premise หรือ cloud ในประเทศ เพื่อให้ข้อมูลอยู่ในไทย
+
+**Backend (Go):** โหมดติดตั้ง on-prem: license key แบบ offline, ตั้งค่า region / data residency, ตรวจความพร้อมของ environment
+
+**Frontend (Next.js):** หน้าแสดงสถานะการติดตั้งและ license
+
+**Acceptance criteria:** ติดตั้ง on-prem ด้วย Helm ได้ตามคู่มือ และข้อมูลทั้งหมดอยู่ใน environment ของลูกค้า
+
+**หมายเหตุ:** SaaS บน cloud ในไทยทำใน T17 ตั้งแต่ P1
+
+<a id="org-03"></a>
+### ORG-03 ผู้แทนในประเทศไทย
+
+*Local representative*
+
+- **Priority / Phase:** Nice · P4 · กลุ่ม: ข้อมูลองค์กร
+- **ที่มา:** Function List: 08_Organization
+- **อ้างอิงกฎหมาย / แนวปฏิบัติ:** ม.37(5)
+- **Actor:** ORGADMIN (ผู้ดูแลระบบขององค์กร)
+- **ขนาดงาน:** BE XS (1 วัน) · FE XS (1 วัน) · UX —
+- **ขึ้นกับ:** ORG-01
+- **Process:** —
+
+**คำอธิบาย:** บันทึกผู้แทนกรณีผู้ควบคุมข้อมูลอยู่นอกประเทศ และใช้ในประกาศ
+
+**Backend (Go):** ฟิลด์ผู้แทนในประเทศไทย + merge field ในประกาศ
+
+**Frontend (Next.js):** ส่วนผู้แทนในหน้าข้อมูลองค์กร
+
+**Acceptance criteria:** ประกาศแสดงข้อมูลผู้แทนเมื่อกำหนดไว้

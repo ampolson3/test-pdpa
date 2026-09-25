@@ -1,0 +1,569 @@
+openapi: 3.1.0
+info:
+  title: PDPA Management Platform API
+  version: 0.1.0
+  summary: Contract base shared by all surfaces (admin, portal, public, api, scim, webhooks)
+  description: |
+    Source of truth for the Go handlers (oapi-codegen) and the TypeScript client (openapi-typescript).
+    Conventions are in api/openapi/README.md. Every operation must declare `x-permission`
+    (`<area>.<resource>.<action>` from docs/security/permissions.yaml, or `public`, `authenticated`, `scim`, `webhook`)
+    and `x-module` (the owning Go module / PostgreSQL schema).
+    The three operations below are reference examples; add the rest feature by feature.
+servers:
+  - url: https://api.pdpa.example
+    description: Placeholder — the real host is per environment
+tags:
+  - name: iam
+    description: Users, roles, permissions, sessions (backend/internal/iam)
+  - name: consent
+    description: Purposes, collection points, consent transactions (backend/internal/consent)
+paths:
+  /admin/v1/me:
+    get:
+      operationId: iamGetMe
+      tags: [iam]
+      summary: Current user, effective permissions and data scopes
+      description: Called by the admin BFF after login (SEQ-01). Result is cached per user in Valkey for 60 seconds.
+      x-permission: authenticated
+      x-module: iam
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: The signed-in user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+              example:
+                id: 01925f3c-7b8e-7c3a-9d51-2f0c6e1a4b77
+                display_name: สมศรี ใจดี
+                email_masked: so****@example.co.th
+                locale: th
+                tenant:
+                  id: 01925f3c-0000-7000-8000-000000000001
+                  code: acme
+                  name: บริษัท ตัวอย่าง จำกัด
+                roles: [DPO]
+                permissions: [ropa.activity.read, ropa.activity.approve, dsar.request.read]
+                scopes:
+                  - scope_type: legal_entity
+                    legal_entity_id: 01925f3c-0000-7000-8000-0000000000a1
+                    org_unit_id: null
+                    include_descendants: true
+                mfa_enrolled: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /public/v1/collection-points/{key}:
+    get:
+      operationId: consentGetPublicCollectionPoint
+      tags: [consent]
+      summary: Collection point configuration for a consent form (no login)
+      description: |
+        Tenant is resolved from `key` through platform.public_keys before the tenant transaction starts (ADR-19).
+        Returns the latest active purpose versions and the linked notice (BP-01 step t1–t2). Cacheable for 60 seconds.
+      x-permission: public
+      x-module: consent
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Public key of the collection point (random, at least 128 bits, base64url)
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Collection point with its purposes
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicCollectionPoint'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /api/v1/consents:
+    post:
+      operationId: consentSubmitConsents
+      tags: [consent]
+      summary: Record consent decisions from a channel system (CRM / POS / app)
+      description: |
+        SEQ-04. One receipt per call, one consent transaction per purpose decision, consent status projection updated and
+        `consent.*` events written to the outbox in the same transaction. Replaying the same Idempotency-Key with the same
+        body returns the stored status and body (201) with `Idempotent-Replayed: true`.
+      x-permission: consent.record.create
+      x-module: consent
+      security:
+        - clientCredentials: [consent.record.create]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentSubmission'
+            example:
+              collection_point_code: CRM-MEMBER
+              subject:
+                identifiers:
+                  - type: email
+                    value: customer@example.com
+              decisions:
+                - purpose_code: MARKETING-EMAIL
+                  purpose_version_no: 3
+                  decision: CONSENTED
+                  preferences:
+                    frequency: weekly
+                - purpose_code: PROFILING
+                  purpose_version_no: 1
+                  decision: NOT_CONSENTED
+              language: th
+              occurred_at: '2026-09-25T03:15:00Z'
+      responses:
+        '201':
+          description: Recorded (also returned, with Idempotent-Replayed, when an identical request is replayed)
+          headers:
+            Idempotent-Replayed:
+              $ref: '#/components/headers/IdempotentReplayed'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+components:
+  securitySchemes:
+    adminJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Keycloak access token attached server-side by the admin BFF. Browsers never hold it.
+    portalToken:
+      type: http
+      scheme: bearer
+      description: Short-lived token issued by the API after OTP / ThaID verification (idle 30 minutes), kept by the portal BFF.
+    guestToken:
+      type: http
+      scheme: bearer
+      description: Session issued after a guest link token plus e-mail OTP; bound to one task (IAM-04).
+    clientCredentials:
+      type: oauth2
+      description: OAuth2 client credentials via Keycloak (single realm, tenant in the `tid` claim — decisions Q-18), access token at most 15 minutes. Scopes are permission codes (decisions Q-10).
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.pdpa.example/realms/pdpa/protocol/openid-connect/token
+          scopes:
+            consent.record.create: Record consent decisions
+            consent.record.read: Read consent status of data subjects
+            dsar.request.create: Submit data subject requests
+            breach.incident.create: Report incidents (SIEM)
+    scimBearer:
+      type: http
+      scheme: bearer
+      description: SCIM 2.0 bearer token per tenant
+    webhookSignature:
+      type: apiKey
+      in: header
+      name: X-Signature
+      description: 't=<unix seconds>,v1=<hex HMAC-SHA256(secret, t + "." + body)>; reject if older than 5 minutes'
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it).
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+      schema:
+        type: string
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque cursor from `next_cursor` of the previous page
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    Sort:
+      name: sort
+      in: query
+      required: false
+      description: Comma-separated fields; prefix with `-` for descending (e.g. `-created_at`)
+      schema:
+        type: string
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: Language of messages and localized fields (default th)
+      schema:
+        type: string
+        enum: [th, en]
+        default: th
+  headers:
+    ETag:
+      description: Current row_version of the resource
+      schema:
+        type: string
+    IdempotentReplayed:
+      description: Present and `true` when the response is a replay of an earlier request with the same Idempotency-Key
+      schema:
+        type: boolean
+    RetryAfter:
+      description: Seconds to wait before retrying
+      schema:
+        type: integer
+    RateLimitRemaining:
+      description: Requests left in the current window
+      schema:
+        type: integer
+  responses:
+    BadRequest:
+      description: Malformed request or schema validation failure (`request.invalid`)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Missing or invalid credentials (`authn.required`)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: Authenticated but not allowed (`authz.denied`) — also written to iam.security_events
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Not found or not visible in this tenant / scope (`not_found`)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: Conflicting state (`<module>.invalid_transition`, `idempotency.in_progress`)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PreconditionFailed:
+      description: If-Match does not match the current row_version (`conflict.version_mismatch`)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    PreconditionRequired:
+      description: Required Idempotency-Key or If-Match header missing (`precondition.required`)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    UnprocessableEntity:
+      description: Business rule violation (`<module>.<rule>`, `idempotency.key_reused`)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    TooManyRequests:
+      description: Rate limit exceeded (`rate_limited`)
+      headers:
+        Retry-After:
+          $ref: '#/components/headers/RetryAfter'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+      description: UUIDv7 generated by the API
+    Timestamp:
+      type: string
+      format: date-time
+      description: RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+    Problem:
+      type: object
+      description: RFC 9457 problem details with a stable machine-readable `code`
+      required: [type, title, status, code]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          example: https://docs.pdpa.example/problems/consent.purpose_inactive
+        title:
+          type: string
+          example: Purpose is not active
+        status:
+          type: integer
+          example: 422
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+          pattern: '^[a-z_]+(\.[a-z_]+)+$|^[a-z_]+$'
+          example: consent.purpose_inactive
+        request_id:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+    FieldError:
+      type: object
+      required: [field, code]
+      properties:
+        field:
+          type: string
+          example: decisions[0].purpose_code
+        code:
+          type: string
+          example: required
+        message:
+          type: string
+    Me:
+      type: object
+      required: [id, display_name, locale, tenant, roles, permissions, scopes, mfa_enrolled]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        display_name:
+          type: string
+        email_masked:
+          type: string
+        locale:
+          type: string
+          enum: [th, en]
+        tenant:
+          type: object
+          required: [id, code, name]
+          properties:
+            id:
+              $ref: '#/components/schemas/Uuid'
+            code:
+              type: string
+            name:
+              type: string
+        roles:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          description: Effective permission codes (x-permission values)
+          items:
+            type: string
+        scopes:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataScope'
+        mfa_enrolled:
+          type: boolean
+    DataScope:
+      type: object
+      required: [scope_type]
+      properties:
+        scope_type:
+          type: string
+          enum: [tenant, legal_entity, org_unit, self]
+        legal_entity_id:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        org_unit_id:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        include_descendants:
+          type: boolean
+    PublicCollectionPoint:
+      type: object
+      required: [code, name, channel, purposes, double_opt_in, verification_method]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        channel:
+          type: string
+          enum: [web, app, pos, call_center, kiosk, paper, line, api, import, cookie]
+        verification_method:
+          type: string
+          enum: [none, otp, magic_link, idp]
+        double_opt_in:
+          type: boolean
+        age_gate:
+          type: boolean
+          description: Ask for age / guardian before consent (ม.20); minimum ages are per purpose (min_age)
+        notice:
+          type: [object, 'null']
+          properties:
+            slug:
+              type: string
+            version_no:
+              type: integer
+            url:
+              type: string
+              format: uri
+        purposes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicPurpose'
+    PublicPurpose:
+      type: object
+      required: [code, version_no, name, text, is_sensitive, requires_explicit]
+      properties:
+        code:
+          type: string
+        version_no:
+          type: integer
+        name:
+          type: string
+        text:
+          type: string
+          description: Consent text of this version in the requested language (sanitized HTML)
+        is_sensitive:
+          type: boolean
+        requires_explicit:
+          type: boolean
+        min_age:
+          type: [integer, 'null']
+        preferences:
+          type: array
+          items:
+            type: object
+            required: [code, name, pref_type]
+            properties:
+              code:
+                type: string
+              name:
+                type: string
+              pref_type:
+                type: string
+                enum: [channel, topic, frequency, other]
+              options:
+                type: array
+                description: From consent.purpose_preferences.options
+                items:
+                  type: object
+                  required: [value, label]
+                  properties:
+                    value:
+                      type: string
+                    label:
+                      type: string
+    SubjectIdentifier:
+      type: object
+      required: [type, value]
+      properties:
+        type:
+          type: string
+          enum: [email, phone, national_id, customer_id, passport, line_uid, other]
+        value:
+          type: string
+          description: Normalized by the API (lower-case e-mail, E.164 phone) before blind indexing. Never logged.
+          writeOnly: true
+    ConsentSubmission:
+      type: object
+      required: [collection_point_code, subject, decisions]
+      properties:
+        collection_point_code:
+          type: string
+        subject:
+          type: object
+          required: [identifiers]
+          properties:
+            identifiers:
+              type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/SubjectIdentifier'
+        decisions:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [purpose_code, purpose_version_no, decision]
+            properties:
+              purpose_code:
+                type: string
+              purpose_version_no:
+                type: integer
+                description: Version shown to the data subject; must be the active version or the request is rejected with consent.purpose_version_stale
+              decision:
+                type: string
+                enum: [CONSENTED, NOT_CONSENTED, WITHDRAWN]
+              preferences:
+                type: object
+                additionalProperties: true
+        language:
+          type: string
+          enum: [th, en]
+        occurred_at:
+          $ref: '#/components/schemas/Timestamp'
+    ConsentResult:
+      type: object
+      required: [receipt_no, subject_ref, transactions]
+      properties:
+        receipt_no:
+          type: string
+        subject_ref:
+          $ref: '#/components/schemas/Uuid'
+        transactions:
+          type: array
+          items:
+            type: object
+            required: [id, purpose_code, transaction_type, status]
+            properties:
+              id:
+                $ref: '#/components/schemas/Uuid'
+              purpose_code:
+                type: string
+              transaction_type:
+                type: string
+                enum: [CONSENTED, NOT_CONSENTED, WITHDRAWN, EXPIRED, EXTENDED, PENDING, CONFIRMED, CANCELLED, CHANGED_PREFERENCES]
+              status:
+                type: string
+                description: Resulting consent status (ST-01)
+                enum: [ACTIVE, NOT_GIVEN, WITHDRAWN, EXPIRED, PENDING]

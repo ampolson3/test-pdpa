@@ -1,0 +1,54 @@
+id,phase,category,task,deliverable,depends_on,effort_days_by_role
+T00-P0,P0,งานต่อเนื่อง,"บริหารโครงการ + DevOps ต่อเนื่อง Phase 0 (PM: ceremonies, status report, steering, risk/issue, change control; DevOps: environment, release, monitoring, on-call)","รายงานสถานะ, release",-,ต่อเนื่อง
+T00-P1,P1,งานต่อเนื่อง,บริหารโครงการ + DevOps ต่อเนื่อง Phase 1,"รายงานสถานะ, release",-,ต่อเนื่อง
+T00-P2,P2,งานต่อเนื่อง,บริหารโครงการ + DevOps ต่อเนื่อง Phase 2,"รายงานสถานะ, release",-,ต่อเนื่อง
+T00-P3,P3,งานต่อเนื่อง,บริหารโครงการ + DevOps ต่อเนื่อง Phase 3,"รายงานสถานะ, release",-,ต่อเนื่อง
+T00-P4,P4,งานต่อเนื่อง,บริหารโครงการ + DevOps ต่อเนื่อง Phase 4,"รายงานสถานะ, release",-,ต่อเนื่อง
+T01,P0,บริหารโครงการ,"Kickoff, project charter, RACI และแผนการสื่อสาร","Charter, RACI",-,PM:5 SA:1
+T02,P0,วิเคราะห์,Workshop ความต้องการกับ DPO / กฎหมาย / ธุรกิจ ครบ 15 โมดูล + User & Permission,"User stories, requirement notes",T01,PM:8 SA:16 UX:4 Legal:8
+T03,P0,วิเคราะห์,"วิเคราะห์ระบบ Consent เดิม (.NET, FSD V3.2): business rules, domain model, test case และแผนย้ายข้อมูลมาระบบ Go",Reuse & migration plan,T02,SA:5 BE:3 QA:2
+T04,P0,สถาปัตยกรรม,"Solution Architecture Document, NFR และ ADR (Next.js, Go, PostgreSQL, Keycloak, River, Gotenberg) + ตรวจ license ของ open source ทุกตัว","SAD, NFR, ADR",T02,SA:8 BE:4 FE:2 DevOps:2
+T05,P0,สถาปัตยกรรม,"ERD, data dictionary และมาตรฐาน OpenAPI (naming, error RFC 9457, pagination, x-permission)","ERD, API guideline",T04,SA:8 BE:4
+T06,P0,วิเคราะห์,ยืนยันโมเดลสิทธิ์ (Role / Permission / Data scope / Guest) กับลูกค้า,ชีต Roles_Permissions ฉบับอนุมัติ,T02,PM:1 SA:3 Legal:1
+T07,P0,UX,"Design system (shadcn/ui + Tailwind), information architecture และ prototype หน้าหลักของ admin และ portal",Figma + UI kit,T02,SA:2 UX:12 FE:3
+T08,P0,บริหารโครงการ,"Product backlog, release plan, Definition of Ready / Done และประมาณการรอบแรก","Backlog, release plan",T02,PM:4 SA:4
+T09,P0,Infra & DevOps,"Environment Dev / SIT / UAT / Prod บน Kubernetes + IaC (OpenTofu/Terraform) + PostgreSQL HA, Valkey, object storage, Keycloak",Environments,T04,DevOps:10
+T10,P0,Infra & DevOps,"CI/CD: golangci-lint, ESLint, unit test, SAST (gosec/Semgrep), govulncheck/OSV-Scanner, Trivy, SBOM (Syft), image signing (cosign), GitOps deploy",Pipeline,T09,BE:1 FE:1 DevOps:6
+T11,P0,ทดสอบ,Test strategy และ test plan,Test plan,T02,QA:4
+T12,P0,ทดสอบ,"Test automation framework: Go integration test (testcontainers-go), API contract test จาก OpenAPI, Playwright E2E, k6",Automation framework,T11,BE:2 QA:10
+T13,P0,สถาปัตยกรรม,"PoC ความเสี่ยงเทคนิค: Keycloak multi-tenant + theme, cookie scanner (chromedp), PDF/DOCX ภาษาไทย, OCR และตรวจจับ PII ภาษาไทย",PoC report,T04,SA:3 BE:10 FE:3
+T14,P0,Security,Threat modeling (STRIDE) และ security requirements ของแพลตฟอร์ม,Threat model,T04,SA:3 BE:2 DevOps:1
+T15,P1,กฎหมาย,"เนื้อหาชุด P1 (TH/EN): template ประกาศ 8 กลุ่ม, ข้อความยินยอม, หนังสือตอบคำขอ, แบบแจ้ง สคส., กิจกรรมมาตรฐานราว 50 รายการ, checklist มาตรการความปลอดภัย",Legal content P1,T02,Legal:20
+T16,P1,วิเคราะห์,"Integration specification: CRM / POS / LINE OA / Email / SMS gateway / SSO (Entra ID, Google) / ThaID",Integration spec,T04,SA:5 BE:2
+T17,P1,Infra & DevOps,Production บน cloud ที่มี data center ในไทย + CDN สำหรับ cookie SDK + WAF + Helm chart,Production,T09,DevOps:8
+T18,P1,Infra & DevOps,Monitoring / logging / alert (ร่วมกับ PLT-19) + on-call runbook,"Dashboards, runbook",T17,DevOps:3
+T19,P1,Infra & DevOps,"Backup, PITR, DR + ทดสอบ restore",DR runbook,T17,DevOps:4
+T20,P1,Security,"Security hardening: TLS, CSP, secret ใน KMS/OpenBao, network policy, hardening Keycloak",Hardening checklist,T17,BE:1 DevOps:4
+T21,P1,ทดสอบ,SIT รอบรวม Phase 1,SIT report,ฟีเจอร์ P1,BE:3 FE:3 QA:12
+T22,P1,ทดสอบ,"Performance / load test (k6): Consent API, config แบนเนอร์ผ่าน CDN, portal",Performance report,T21,BE:3 QA:5 DevOps:2
+T23,P1,Security,"Security test (SAST/DAST ด้วย OWASP ZAP, OWASP Top 10, ทดสอบการแยก tenant) + แก้ไข",Security test report,T21,BE:5 FE:2 QA:4
+T24,P1,Security,Penetration test โดยบุคคลภายนอก + retest (ค่าบริการแยก),Pentest report,T23,PM:1 BE:5 FE:2
+T25,P1,ทดสอบ,UAT Phase 1 (เตรียมข้อมูล ประสานงาน แก้ไข),UAT sign-off,T21,PM:5 SA:3 BE:3 FE:3 QA:6
+T26,P1,ย้ายข้อมูล,"ย้ายข้อมูลความยินยอมจากระบบ Consent เดิมและ RoPA จาก Excel (ใช้ CON-22, ROPA-18) + reconcile",Migration report,T25,SA:2 BE:5 QA:3
+T27,P1,เอกสาร/อบรม,คู่มือผู้ใช้และผู้ดูแลระบบ TH/EN,User & admin guide,T25,SA:2 Doc:10
+T28,P1,เอกสาร/อบรม,เอกสาร API + ตัวอย่างติดตั้ง cookie SDK และ Consent API,Developer docs,CON-16,BE:3 FE:2
+T29,P1,เอกสาร/อบรม,อบรมผู้ใช้ + Train the trainer,Training,T27,PM:2 SA:3
+T30,P1,กฎหมาย,Legal review ตามประกาศ สคส. ล่าสุด ก่อน go-live Phase 1,Legal sign-off,T25,Legal:3
+T31,P1,กฎหมาย,"PDPA ของตัวแพลตฟอร์มเอง: RoPA ของบริการ, DPA ให้ลูกค้า, privacy by design review",Platform compliance pack,T04,SA:2 DevOps:1 Legal:5
+T32,P1,Go-live,"Go-live readiness, cutover plan และ go-live",Go-live checklist,T25,PM:3 BE:1 DevOps:3
+T33,P1,Go-live,Hypercare 2 สัปดาห์หลัง go-live,Hypercare log,T32,PM:5 BE:8 FE:5 QA:4
+T34,P2,กฎหมาย,"เนื้อหาชุด P2: template DPIA/LIA/TIA, แบบประเมินคู่ค้า, DPA/DSA TH/EN และ clause มาตรฐาน",Legal content P2,T15,Legal:15
+T35,P2,วิเคราะห์,Integration spec: e-signature และระบบจัดซื้อ/ทะเบียนคู่ค้า,Integration spec,T16,SA:3 BE:1
+T36,P2,ทดสอบ,SIT + UAT Phase 2,UAT sign-off,ฟีเจอร์ P2,PM:4 SA:2 BE:4 FE:4 QA:12
+T37,P2,กฎหมาย,Legal review ก่อน go-live Phase 2,Legal sign-off,T36,Legal:3
+T38,P2,เอกสาร/อบรม,อัปเดตคู่มือ + อบรม Phase 2,คู่มือฉบับปรับปรุง,T36,SA:2 Doc:6
+T39,P2,Go-live,Go-live + Hypercare Phase 2,Go-live checklist,T36,PM:4 BE:5 FE:3 QA:2 DevOps:2
+T40,P3,กฎหมาย,"เนื้อหาชุด P3: template ตามอุตสาหกรรม (ประกาศ / RoPA), แม่แบบภาครัฐ สพร., คลังความรู้ DPO",Legal content P3,T34,Legal:12
+T41,P3,Infra & DevOps,"ชุดติดตั้ง on-prem (Helm / Docker Compose), อัปเดตแบบ offline, support matrix",On-prem package,T17,BE:2 DevOps:8
+T42,P3,ทดสอบ,SIT + UAT Phase 3,UAT sign-off,ฟีเจอร์ P3,PM:4 SA:2 BE:4 FE:4 QA:14
+T43,P3,เอกสาร/อบรม,อัปเดตคู่มือ + อบรม Phase 3,คู่มือฉบับปรับปรุง,T42,SA:2 Doc:6
+T44,P3,Go-live,Go-live + Hypercare Phase 3,Go-live checklist,T42,PM:3 BE:4 FE:2 QA:2 DevOps:2
+T45,P4,ทดสอบ,"ประเมินคุณภาพ AI: ชุดทดสอบภาษาไทย, hallucination, prompt injection, PII leakage",AI evaluation report,PLT-22,SA:2 BE:3 QA:5 Legal:2
+T46,P4,ทดสอบ,SIT + UAT Phase 4,UAT sign-off,ฟีเจอร์ P4,PM:3 SA:1 BE:3 FE:2 QA:8
+T47,P4,เอกสาร/อบรม,อัปเดตคู่มือ Phase 4,คู่มือฉบับปรับปรุง,T46,Doc:3
+T48,P4,Go-live,Go-live + Hypercare Phase 4,Go-live checklist,T46,PM:2 BE:3 FE:1 QA:1 DevOps:2
