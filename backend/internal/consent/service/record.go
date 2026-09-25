@@ -92,7 +92,7 @@ type DecisionError struct {
 // FieldError is one bad decision or identifier.
 type FieldError struct {
 	Field string // purpose code, or "identifiers"
-	Code  string // unknown_purpose | stale_version | required | missing | duplicate | invalid_preference | withdraw_not_allowed | invalid
+	Code  string // unknown_purpose | stale_version | required | missing | duplicate | invalid_preference | withdraw_not_allowed | invalid | no_change
 }
 
 func (e *DecisionError) Error() string {
@@ -157,6 +157,7 @@ func (s *Service) Record(ctx context.Context, sub Submission) (Receipt, error) {
 		txID      uuid.UUID
 	}
 	var writes []statusWrite
+	var kept []checkedDecision // decisions that record a transaction, in order
 	out := Receipt{ID: rid, No: rec.ReceiptNo, SubjectID: subjectID, OccurredAt: occurred}
 	for _, d := range decisions {
 		cur, err := q.LockStatus(ctx, consentstore.LockStatusParams{SubjectID: subjectID, PurposeID: d.purpose.PurposeID})
@@ -172,6 +173,9 @@ func (s *Service) Record(ctx context.Context, sub Submission) (Receipt, error) {
 		txType, status, err := Decide(current, d.in.Decision, current == StatusActive && d.in.Decision == TxConsented && !sameJSON(curPrefs, prefs))
 		if err != nil {
 			return Receipt{}, err
+		}
+		if txType == "" {
+			continue
 		}
 		var expires *time.Time
 		switch txType {
@@ -197,6 +201,10 @@ func (s *Service) Record(ctx context.Context, sub Submission) (Receipt, error) {
 			Preferences: json.RawMessage(prefs), ReasonCode: d.in.ReasonCode, ExpiresAt: expires, Source: sub.Source})
 		writes = append(writes, statusWrite{purpose: d.purpose.PurposeID, status: status, version: *d.purpose.CurrentVersionID, prefs: prefs, expiresAt: tsPtr(expires), txID: tid})
 		out.Transactions = append(out.Transactions, RecordedTransaction{ID: tid, PurposeCode: d.purpose.Code, Type: txType, Status: status})
+		kept = append(kept, d)
+	}
+	if len(rec.Transactions) == 0 {
+		return Receipt{}, &DecisionError{Fields: []FieldError{{"decisions", "no_change"}}}
 	}
 	rec.Hash = rec.hash()
 	var ip *netip.Addr
@@ -231,7 +239,7 @@ func (s *Service) Record(ctx context.Context, sub Submission) (Receipt, error) {
 			continue
 		}
 		if _, err := s.Events.Publish(ctx, events.Event{Type: ev, AggregateType: SubjectType, AggregateID: subjectID, OccurredAt: occurred,
-			Data: map[string]any{"subject_ref": subjectID.String(), "purpose_code": t.PurposeCode, "purpose_version": *decisions[i].purpose.CurrentVersionNo,
+			Data: map[string]any{"subject_ref": subjectID.String(), "purpose_code": t.PurposeCode, "purpose_version": *kept[i].purpose.CurrentVersionNo,
 				"channel": cp.Channel, "occurred_at": occurred.Format(time.RFC3339Nano)}}); err != nil {
 			return Receipt{}, err
 		}

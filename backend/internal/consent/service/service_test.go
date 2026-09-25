@@ -245,11 +245,24 @@ func TestReceipts_AppendOnlyAndTamperEvident(t *testing.T) {
 	f := consenttest.Setup(t)
 	news := f.LivePurpose(t, "NEWS", consenttest.Content("ข่าวสาร", "รับข่าวสาร"))
 	cp := f.LiveCP(t, "APP", consent.CPPurposeInput{PurposeID: news.ID})
-	for _, d := range []string{"CONSENTED", "NOT_CONSENTED", "CONSENTED"} {
-		if _, err := f.Record(t, consent.Submission{CollectionPointID: cp.ID, Identifiers: []consent.Identifier{{Type: "phone", Value: "081-234-5678"}}, Source: "app", Public: true,
-			Decisions: []consent.Decision{{PurposeCode: "NEWS", PurposeVersionNo: 1, Decision: d}}}); err != nil {
+	phone := []consent.Identifier{{Type: "phone", Value: "081-234-5678"}}
+	for _, d := range []string{"CONSENTED", "WITHDRAWN", "CONSENTED"} {
+		sub := consent.Submission{CollectionPointID: cp.ID, Identifiers: phone, Source: "app", Public: true,
+			Decisions: []consent.Decision{{PurposeCode: "NEWS", PurposeVersionNo: 1, Decision: d}}}
+		if d == "WITHDRAWN" { // withdrawal is explicit, and not on a public form
+			sub.Source, sub.Public = "staff", false
+		}
+		if _, err := f.Record(t, sub); err != nil {
 			t.Fatal(err)
 		}
+	}
+	// Leaving an ACTIVE purpose unticked on a public form changes nothing: a stranger who knows the number
+	// can't withdraw someone else's consent (ST-01 has no NOT_CONSENTED transition out of ACTIVE).
+	_, err := f.Record(t, consent.Submission{CollectionPointID: cp.ID, Identifiers: phone, Source: "app", Public: true,
+		Decisions: []consent.Decision{{PurposeCode: "NEWS", PurposeVersionNo: 1, Decision: "NOT_CONSENTED"}}})
+	var de *consent.DecisionError
+	if !errors.As(err, &de) || de.Fields[0].Code != "no_change" {
+		t.Errorf("unticked ACTIVE purpose: %v", err)
 	}
 	var subject uuid.UUID
 	f.As(t, f.A, f.Alice, nil, consenttest.Maker, func(ctx context.Context) error {

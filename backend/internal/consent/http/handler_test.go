@@ -167,13 +167,38 @@ func TestConsentEndpoints_Contract(t *testing.T) {
 	if res := do("POST", "/admin/v1/consent/purposes", &alice, map[string]any{"code": "X"}, nil); res.code != 400 {
 		t.Errorf("invalid body: %d, want 400", res.code)
 	}
-	if res := do("POST", "/admin/v1/consent/purposes", &alice, newPurpose, nil); res.code != 201 {
+	if res := do("POST", "/admin/v1/consent/purposes", &alice, newPurpose, nil); res.code != 201 || res.body["code"] != "NEWS" || res.body["id"] == nil {
 		t.Fatalf("create purpose: %d %v", res.code, res.body)
 	}
 
 	news := f.LivePurpose(t, "NEWSLETTER", consenttest.Content("จดหมายข่าว", "ยินยอมรับจดหมายข่าว"))
 	cp := f.LiveCP(t, "SIGNUP", consent.CPPurposeInput{PurposeID: news.ID})
 	cpPath := "/admin/v1/consent/collection-points/" + cp.ID.String()
+	if res := do("GET", "/admin/v1/consent/purposes", &alice, nil, nil); res.code == 200 {
+		found := false
+		for _, it := range res.body["data"].([]any) {
+			m := it.(map[string]any)
+			if m["code"] == "NEWSLETTER" {
+				found = true
+				live := m["live"].(map[string]any)
+				if live["consent_text"].(map[string]any)["th"] != "ยินยอมรับจดหมายข่าว" || len(m["versions"].([]any)) != 1 {
+					t.Errorf("listed purpose without its live text or versions: %v", m)
+				}
+			}
+		}
+		if !found {
+			t.Error("published purpose not listed")
+		}
+	}
+	if res := do("GET", "/admin/v1/consent/collection-points", &alice, nil, nil); res.code != 200 {
+		t.Errorf("list collection points: %d", res.code)
+	} else {
+		items, _ := res.body["data"].([]any)
+		ps, _ := items[0].(map[string]any)["purposes"].([]any)
+		if len(ps) != 1 || ps[0].(map[string]any)["current_version"] != float64(1) {
+			t.Errorf("listed collection point without its purposes' versions: %v", items[0])
+		}
+	}
 	update := map[string]any{"name": "สมัครสมาชิก", "channel": "web", "legal_entity_id": f.EntityA, "purposes": []map[string]any{{"purpose_id": news.ID, "required": false}}}
 	if res := do("PUT", cpPath, &alice, update, nil); res.code != 428 {
 		t.Errorf("update without If-Match: %d, want 428", res.code)

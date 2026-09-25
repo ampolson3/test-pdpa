@@ -18,7 +18,7 @@ func TestDecide(t *testing.T) {
 		{StatusNotGiven, TxNotConsented, false, TxNotConsented, StatusNotGiven, nil},
 		{StatusActive, TxConsented, false, TxExtended, StatusActive, nil},
 		{StatusActive, TxConsented, true, TxChangedPreferences, StatusActive, nil},
-		{StatusActive, TxNotConsented, false, TxWithdrawn, StatusWithdrawn, nil}, // unticking = withdrawing
+		{StatusActive, TxNotConsented, false, "", StatusActive, nil}, // unticked on a form: no change (withdrawal is explicit)
 		{StatusActive, TxWithdrawn, false, TxWithdrawn, StatusWithdrawn, nil},
 		{StatusWithdrawn, TxConsented, false, TxConsented, StatusActive, nil},
 		{StatusWithdrawn, TxNotConsented, false, TxNotConsented, StatusWithdrawn, nil},

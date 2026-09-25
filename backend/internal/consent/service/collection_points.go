@@ -212,7 +212,7 @@ func (s *Service) setCPPurposes(ctx context.Context, id uuid.UUID, ps []CPPurpos
 	return nil
 }
 
-// cpChecks are the publish rules (s.19, s.26 / CON-10). Codes are localized by the UI.
+// cpChecks are the publish rules (s.19 / CON-09, s.26 / CON-10). Codes are localized by the UI.
 func cpChecks(cp CollectionPoint, c Checklist) []string {
 	var failed []string
 	if len(cp.Purposes) == 0 {
@@ -323,13 +323,18 @@ func (s *Service) RetireCollectionPoint(ctx context.Context, id uuid.UUID, versi
 
 // ListCollectionPoints returns every point (without purposes).
 func (s *Service) ListCollectionPoints(ctx context.Context) ([]CollectionPoint, error) {
-	rows, err := consentstore.New(pdb.MustTxFromContext(ctx)).ListCollectionPoints(ctx)
+	q := consentstore.New(pdb.MustTxFromContext(ctx))
+	rows, err := q.ListCollectionPoints(ctx)
 	if err != nil {
 		return nil, err
 	}
 	out := make([]CollectionPoint, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, toCP(consentstore.GetCollectionPointRow(r)))
+		cp := toCP(consentstore.GetCollectionPointRow(r))
+		if cp.Purposes, err = cpPurposes(ctx, q, cp.ID); err != nil {
+			return nil, err
+		}
+		out = append(out, cp)
 	}
 	return out, nil
 }
@@ -345,18 +350,26 @@ func (s *Service) GetCollectionPoint(ctx context.Context, id uuid.UUID) (Collect
 		return CollectionPoint{}, err
 	}
 	cp := toCP(r)
-	ps, err := q.ListCollectionPointPurposes(ctx, id)
-	if err != nil {
+	if cp.Purposes, err = cpPurposes(ctx, q, id); err != nil {
 		return CollectionPoint{}, err
 	}
-	cp.Purposes = make([]CPPurpose, 0, len(ps))
+	return cp, nil
+}
+
+// cpPurposes are a point's purposes with their current versions.
+func cpPurposes(ctx context.Context, q *consentstore.Queries, id uuid.UUID) ([]CPPurpose, error) {
+	ps, err := q.ListCollectionPointPurposes(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]CPPurpose, 0, len(ps))
 	for _, p := range ps {
-		cp.Purposes = append(cp.Purposes, CPPurpose{PurposeID: p.PurposeID, Code: p.Code, Name: Text{Th: p.NameTh, En: deref(p.NameEn)}, Status: p.Status,
+		out = append(out, CPPurpose{PurposeID: p.PurposeID, Code: p.Code, Name: Text{Th: p.NameTh, En: deref(p.NameEn)}, Status: p.Status,
 			IsSensitive: p.IsSensitive, Required: p.IsRequired, CurrentVersionID: uuidPtr(p.CurrentVersionID), CurrentVersionNo: p.CurrentVersionNo,
 			ConsentText: Text{Th: deref(p.TextTh), En: deref(p.TextEn)}, ExplicitText: Text{Th: deref(p.ExplicitTextTh), En: deref(p.ExplicitTextEn)},
 			MinAge: p.MinAge, LifespanDays: p.LifespanDays})
 	}
-	return cp, nil
+	return out, nil
 }
 
 func toCP(r consentstore.GetCollectionPointRow) CollectionPoint {

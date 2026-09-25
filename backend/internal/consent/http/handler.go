@@ -57,7 +57,10 @@ func (h *Strict) ConsentCreatePurpose(ctx context.Context, req ConsentCreatePurp
 		return nil, ToProblem(err)
 	}
 	var w ConsentPurpose
-	return ConsentCreatePurpose201JSONResponse(w), convert(purposeMap(p), &w)
+	if err := convert(purposeMap(p), &w); err != nil {
+		return nil, err
+	}
+	return ConsentCreatePurpose201JSONResponse(w), nil
 }
 
 func (h *Strict) ConsentGetPurpose(ctx context.Context, req ConsentGetPurposeRequestObject) (ConsentGetPurposeResponseObject, error) {

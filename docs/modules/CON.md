@@ -291,6 +291,8 @@
 
 **Acceptance criteria:** ฟอร์มที่ publish แล้วรับความยินยอมแยกรายวัตถุประสงค์และออก receipt ทุกครั้ง
 
+**Implementation (CON-09):** `backend/internal/consent/service/collection_points.go` — จุดเก็บความยินยอม = ชื่อ, ช่องทาง, นิติบุคคล, วัตถุประสงค์ (แต่ละข้อ "จำเป็น" ได้ ยกเว้นข้อมูลอ่อนไหว), origin ที่อนุญาต · draft → active (publish) → retired · publish ต้องผ่าน `cpChecks`: มีวัตถุประสงค์, ทุกวัตถุประสงค์เผยแพร่แล้ว, และผู้ publish ยืนยัน checklist ม.19 ทั้ง 4 ข้อ (`separate_text`, `not_bundled`, `plain_language`, `withdrawal_info`, เก็บใน `publish_checklist`) — ไม่ผ่าน = 422 `consent.publish_checks` พร้อม `errors[].code` · publish ครั้งแรกออกคีย์สาธารณะ (`platform.public_keys`, 192 บิต base64url, entity `collection_point`) · retire เพิกถอนคีย์ทันที · ฟอร์มสาธารณะ: `GET /public/v1/collection-points/{key}` + `POST /public/v1/consents` (`X-Public-Key`, `Idempotency-Key`) — ไม่มี AuthN, `publickeys.Middleware` หา tenant จากคีย์ (ไม่รู้จัก = 404), ปฏิเสธ `Origin` ที่ไม่อยู่ในรายการ (403), ตั้ง principal `data_subject` แล้วผ่าน Idempotency + Tx + audit ตามปกติ · ฟอร์มสาธารณะต้องตัดสินทุกวัตถุประสงค์ที่แสดง (ติ๊ก = ยินยอม, ไม่ติ๊ก = ไม่ยินยอม) และถอนไม่ได้ (ต้องผ่านศูนย์ตั้งค่า CON-18/19) · หน้าจอ admin `/consent/collection-points` (แก้ไข, checklist, ลิงก์ + คีย์) · หน้าฟอร์มใน portal `/[locale]/c/[key]` (server action, Idempotency-Key ต่อการส่ง, ส่ง `X-Forwarded-For`/`User-Agent` ของผู้ใช้ต่อ — ต้องใส่ portal ใน `TRUSTED_PROXIES`) · migration 00034 · ยังไม่ทำ: QR code, embed script / SDK และ CORS สำหรับเว็บไซต์ลูกค้า (CON-07/14), CAPTCHA, `/api/v1` (CON-16 ต้องมี ORG-16), age gate (CON-11)
+
 **หมายเหตุ:** ย้าย domain model จากระบบ Consent เดิม
 
 <a id="con-10"></a>
@@ -313,6 +315,8 @@
 **Frontend (Next.js):** ส่วนตั้งค่าข้อมูลอ่อนไหวใน Purpose
 
 **Acceptance criteria:** publish ไม่ได้ถ้า Purpose ข้อมูลอ่อนไหวไม่มีช่องยินยอมแยก
+
+**Implementation (CON-10):** ความอ่อนไหวของวัตถุประสงค์มาจากหมวดข้อมูลที่เลือก (`purposes.data_category_codes` เทียบ `is_sensitive` ของ master data ORG-07) · วัตถุประสงค์ที่อ่อนไหวต้องมีข้อความยินยอมโดยชัดแจ้ง (`explicit_text`, `purpose_versions.explicit_text_th/en`) — ไม่มี = ส่งเผยแพร่ไม่ได้ (`explicit_text_required`) · เผยแพร่แล้ว lawful basis = `EXPLICIT_CONSENT`, `requires_explicit = true` · จุดเก็บความยินยอม publish ไม่ได้ถ้าวัตถุประสงค์อ่อนไหวถูกตั้งเป็น "จำเป็น" (`sensitive_required`) หรือไม่มีข้อความชัดแจ้ง (`sensitive_without_explicit_text`) · ฟอร์มแสดงข้อความชัดแจ้งกับช่องติ๊กของตัวเองเสมอ
 
 <a id="con-11"></a>
 ### CON-11 ความยินยอมผู้เยาว์และผู้ปกครอง
@@ -356,6 +360,8 @@
 
 **Acceptance criteria:** ย้อนดูได้ว่าแต่ละคนยินยอมข้อความเวอร์ชันใด
 
+**Implementation (CON-12):** วัตถุประสงค์ใช้ PLT-08 (ประเภท `consent_purpose`, สิทธิ์ `consent.purpose.read/update/publish`, 1 ขั้นอนุมัติโดย role DPO — maker-checker: ผู้ร่างอนุมัติเองไม่ได้) · เนื้อหาร่าง = ชื่อ, คำอธิบาย, ข้อความยินยอม, ข้อความชัดแจ้ง, หมวดข้อมูล, อายุขั้นต่ำ, อายุความยินยอม (วัน), ประเภทการเปลี่ยนแปลง (`minor`/`material`), ต้องขอใหม่, ตัวเลือกย่อย · `OnPublish` เพิ่ม `consent.purpose_versions` แถวใหม่ (ฉบับแรก = `initial`) และปรับ `current_version_id` ใน tx เดียว; ฉบับที่เผยแพร่ไม่ถูกแก้ · ทุก transaction อ้าง `purpose_version_id` ที่ผู้ใช้เห็น — ส่งเลขฉบับเก่า = 422 `stale_version` · โปรไฟล์เจ้าของข้อมูลแสดงฉบับที่ยินยอมและธง "ต้องขอใหม่" เมื่อฉบับปัจจุบัน `requires_reconsent` · หน้าจอ `/consent/purposes` (ตัวแก้ร่าง + `RecordVersions`) · ยังไม่ทำ: เปลี่ยนสถานะ ACTIVE → PENDING อัตโนมัติเมื่อมีฉบับ material (ST-01 ยังไม่มี PENDING + CONSENTED จึงยินยอมใหม่ไม่ได้ — decisions Q-22)
+
 <a id="con-13"></a>
 ### CON-13 ถอนความยินยอม
 
@@ -376,6 +382,8 @@
 **Frontend (Next.js):** ปุ่มถอนใน preference center และหน้าพนักงาน
 
 **Acceptance criteria:** ถอนแล้วสถานะเปลี่ยนทันทีและระบบปลายทางได้รับ event ภายใน 1 นาที
+
+**Implementation (CON-13) — บางส่วน:** การถอนเปลี่ยน `consent_status` เป็น `WITHDRAWN` ใน tx เดียวกับ transaction + receipt และเขียน `consent.withdrawn` ลง outbox (PLT-11 ส่งภายในไม่กี่วินาที) · ถอนได้เฉพาะจาก ACTIVE (อื่น ๆ = 422 `withdraw_not_allowed`) พร้อมเหตุผล (`reason_code`) · ตอนนี้ถอนได้ทางเจ้าหน้าที่ (`POST /admin/v1/consent/records`, `consent.onbehalf.create`, หน้าโปรไฟล์) · ยังไม่ทำ: เจ้าของข้อมูลถอนเอง (ศูนย์ตั้งค่า CON-18 + ยืนยันตัวตน CON-19), ส่ง webhook ถึงระบบปลายทาง (PLT-15 ต้องมี ORG-16)
 
 <a id="con-14"></a>
 ### CON-14 เก็บความยินยอมหลายช่องทาง
@@ -418,6 +426,8 @@
 **Frontend (Next.js):** หน้า profile + ประวัติรายการ
 
 **Acceptance criteria:** แก้หรือลบ transaction ไม่ได้ และตรวจย้อนหลังได้ว่าความยินยอมมาจากเวอร์ชันและช่องทางใด
+
+**Implementation (CON-15):** `Record()` ใน `consent/service/record.go` — ทุกการส่ง = 1 receipt (`CR-YYYYMMDD-XXXXXXXXXX`) + 1 transaction ต่อวัตถุประสงค์ (ฉบับ, ช่องทาง, จุดเก็บ, ที่มา web/app/staff, IP, user agent, ผู้บันทึก, idempotency key) · สถานะตาม ST-01 (`Decide`: ยินยอมซ้ำ = `EXTENDED`, เปลี่ยนตัวเลือก = `CHANGED_PREFERENCES`, ไม่ติ๊กครั้งแรก = `NOT_GIVEN`, ไม่ติ๊กขณะ ACTIVE = ไม่เปลี่ยนแปลง — decisions Q-21) · event `consent.granted/denied/withdrawn/preferences_changed` · receipt ต่อกันเป็น hash chain ต่อเจ้าของข้อมูล (SHA-256 บน canonical JSON แท็ก `consent-receipt/v1` ครอบคลุม receipt, `prev_hash` และ transaction ทุกแถว; advisory lock ต่อ subject) · `consent_transactions`/`consent_receipts` app role INSERT ได้อย่างเดียว · ตรวจห่วงโซ่ได้ที่ `POST /admin/v1/consent/subjects/{id}/verify` (บอก receipt แรกที่ผิดและสาเหตุ `hash_mismatch`/`prev_hash_mismatch`) · ส่ง receipt ทางอีเมล (template `consent.receipt`, PLT-04) เมื่อมีอีเมล · ค้นหาเจ้าของข้อมูลด้วย blind index แบบตรงตัว (`POST …/subjects/search`, ตัวระบุอยู่ใน body ไม่อยู่ใน URL) · โปรไฟล์: ตัวระบุแบบปกปิด, สถานะรายวัตถุประสงค์, ประวัติพร้อมเลข receipt · migration 00034 (index chain) + 00035 (index subject บนตาราง partitioned) · หน้าจอ `/consent/subjects`
 
 **หมายเหตุ:** Consent Transaction ตาม FSD V3.2
 
@@ -462,6 +472,8 @@
 **Frontend (Next.js):** แสดงตำแหน่งที่เก็บข้อมูลในหน้าตั้งค่า
 
 **Acceptance criteria:** ผลทดสอบยืนยันว่าข้อมูลความยินยอมเข้ารหัสและอยู่ใน region ที่กำหนด
+
+**Implementation (CON-17) — บางส่วน:** ตัวระบุ (อีเมล, โทรศัพท์, เลขบัตร ฯลฯ) เก็บใน `subject_identifiers.value_enc` ด้วย PLT-13 (AES-256-GCM, DEK ต่อ tenant คลาส `consent`, ผูก associated data กับคอลัมน์) + `blind_index` สำหรับค้นหา — ทดสอบแล้วว่าไบต์ที่เก็บไม่มีค่าเดิม · `GET /admin/v1/consent/settings` แสดง region ของ tenant (`platform.tenants.data_region`) และการจัดการกุญแจ (OpenBao Transit / กุญแจพัฒนา) บนหน้า `/consent/subjects` · ยังไม่ทำ: บังคับ region ที่ระดับ deployment (ฐานข้อมูล/บักเก็ตต่อ region) และหลักฐานทดสอบ region
 
 <a id="con-18"></a>
 ### CON-18 ศูนย์ตั้งค่าความเป็นส่วนตัว

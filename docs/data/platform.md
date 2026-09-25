@@ -102,6 +102,7 @@ public key สำหรับ /public/v1 และ portal: หา tenant ก่�
 - PK: `(key)`
 - Index: `platform.public_keys (tenant_id)` · `platform.public_keys (entity_id)`
 - RLS: lookup สาธารณะ · RLS `public_read` (อ่านได้ก่อนรู้ tenant) + `tenant_write`
+- ใช้งาน: `internal/platform/publickeys` — `Issue` (24 ไบต์สุ่ม base64url) / `Revoke` / `SetOrigins` ใน tx ของ tenant; `Middleware` ของ `/public/v1` หาคีย์จาก path `/public/v1/collection-points/{key}` หรือ header `X-Public-Key` ก่อนเปิด transaction (ไม่พบ/เพิกถอน = 404, `Origin` ไม่อยู่ใน `allowed_origins` = 403) แล้วตั้ง principal `data_subject` ของ tenant นั้น · ผู้ใช้รายแรก: collection point (CON-09)
 
 <a id="platform-workflow-definitions"></a>
 ## platform.workflow_definitions

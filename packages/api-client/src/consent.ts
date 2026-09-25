@@ -18,7 +18,7 @@ export type SubjectIdentifier = components["schemas"]["SubjectIdentifier"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 
-/** Purposes (CON-09/12) with their published versions. */
+/** Purposes (CON-12) with their published versions. */
 export function useConsentPurposes(client: ApiClient) {
   return useQuery({
     queryKey: ["consent", "purposes"],
@@ -80,7 +80,7 @@ export function usePurposeMutations(client: ApiClient) {
   };
 }
 
-/** Collection points (CON-10): forms, their purposes, the publish checklist and the public key. */
+/** Collection points (CON-09/10): forms, their purposes, the publish checklist and the public key. */
 export function useCollectionPoints(client: ApiClient) {
   return useQuery({
     queryKey: ["consent", "collection-points"],

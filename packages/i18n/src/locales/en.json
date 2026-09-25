@@ -744,5 +744,230 @@
     "required": "required",
     "readOnly": "This section is answered by someone else",
     "score": "Score {score} of {max}"
+  },
+  "consent": {
+    "signInRequired": "Please sign in",
+    "forbidden": "You don't have access to this page",
+    "loading": "Loading…",
+    "thai": "Thai",
+    "english": "English",
+    "code": "Code",
+    "legalEntity": "Legal entity",
+    "lawfulBasis": "Lawful basis",
+    "sensitive": "Sensitive",
+    "save": "Save",
+    "remove": "Remove",
+    "copy": "Copy",
+    "nav": {
+      "title": "Consent",
+      "purposes": "Purposes",
+      "collectionPoints": "Collection points",
+      "subjects": "Data subjects"
+    },
+    "status": {
+      "draft": "Draft",
+      "active": "Active",
+      "retired": "Retired",
+      "ACTIVE": "Consented",
+      "NOT_GIVEN": "Not given",
+      "WITHDRAWN": "Withdrawn",
+      "EXPIRED": "Expired",
+      "PENDING": "Pending"
+    },
+    "changeType": {
+      "initial": "Initial",
+      "minor": "Minor change",
+      "material": "Material change"
+    },
+    "prefType": {
+      "channel": "Channel",
+      "topic": "Topic",
+      "frequency": "Frequency",
+      "other": "Other"
+    },
+    "purposes": {
+      "title": "Consent purposes",
+      "intro": "Every version of a consent text needs DPO approval before it is published. All versions are kept so you can tell who agreed to which text.",
+      "new": "New purpose",
+      "create": "Create draft",
+      "empty": "No purposes yet",
+      "versionNo": "Version {no}",
+      "unpublished": "Not published",
+      "name": "Purpose name",
+      "description": "Description",
+      "consentText": "Consent text",
+      "explicitText": "Explicit consent text (sensitive data, s.26)",
+      "dataCategories": "Personal data categories used",
+      "minAge": "Minimum age (years)",
+      "lifespan": "Consent lifespan (days)",
+      "changeType": "Change type",
+      "reconsent": "Requires re-consent",
+      "preferences": "Preferences (channels / topics)",
+      "addPreference": "Add preference",
+      "optionsHint": "One option per line: value | Thai label | English label",
+      "saveDraft": "Save draft",
+      "saved": "Draft saved. Submit it for approval in Versions below.",
+      "locked": "This draft is in review and can't be edited until it is approved or returned.",
+      "retire": "Retire purpose",
+      "published": "Published versions",
+      "explicitNotice": "This purpose uses sensitive data: it needs its own explicit consent and can't be a condition of the service."
+    },
+    "cp": {
+      "title": "Collection points",
+      "intro": "Forms and channels that ask for consent. They pass a checklist before publishing, then get a link and a public key.",
+      "new": "New collection point",
+      "empty": "No collection points yet",
+      "name": "Name",
+      "channel": "Channel",
+      "purposes": "Purposes on the form",
+      "purposesHint": "Each purpose gets its own checkbox. Sensitive purposes can't be required.",
+      "required": "Required for the service",
+      "origins": "Websites allowed to use the key",
+      "originsHint": "One origin per line. Leave empty to allow any site.",
+      "publishTitle": "Publishing",
+      "checklistIntro": "Confirm the form meets s.19 before publishing",
+      "publish": "Publish",
+      "hostedLink": "Form link",
+      "publicKey": "Public key",
+      "publicKeyHint": "Sent as the X-Public-Key header when a website or app submits consent through the API",
+      "retire": "Retire",
+      "retireHint": "The link and key stop working at once."
+    },
+    "checklist": {
+      "separate_text": "The consent request is clearly separate from other text",
+      "not_bundled": "Consent isn't required beyond what the service needs",
+      "plain_language": "Plain language, not deceptive or misleading",
+      "withdrawal_info": "Explains how to withdraw, as easily as giving consent"
+    },
+    "checks": {
+      "no_purposes": "No purposes selected",
+      "purpose_not_published": "A purpose is not published or has been retired",
+      "sensitive_required": "A sensitive purpose can't be required",
+      "sensitive_without_explicit_text": "A sensitive purpose has no explicit consent text",
+      "checklist_separate_text": "Not confirmed: separate text",
+      "checklist_not_bundled": "Not confirmed: not bundled",
+      "checklist_plain_language": "Not confirmed: plain language",
+      "checklist_withdrawal_info": "Not confirmed: how to withdraw"
+    },
+    "channel": {
+      "web": "Website",
+      "app": "App",
+      "pos": "Point of sale",
+      "call_center": "Call centre",
+      "kiosk": "Kiosk",
+      "paper": "Paper",
+      "line": "LINE",
+      "api": "API"
+    },
+    "subjects": {
+      "title": "Consent by data subject",
+      "intro": "Search by an exact identifier (readable identifiers aren't stored), then see statuses, history and verify receipts.",
+      "recordNew": "Record on behalf",
+      "searchHint": "E-mail, phone or customer ID",
+      "search": "Search",
+      "clear": "Clear",
+      "results": "Results",
+      "recent": "Recent",
+      "none": "No data subjects found",
+      "verify": "Verify receipts",
+      "verifyOk": "{n} receipts verified, none altered",
+      "verifyBroken": "Receipt {receipt} fails ({reason})",
+      "reason": {
+        "hash_mismatch": "content altered",
+        "prev_hash_mismatch": "a receipt is missing from the chain"
+      },
+      "purpose": "Purpose",
+      "status": "Status",
+      "version": "Version",
+      "updated": "Updated",
+      "needsReconsent": "re-consent needed",
+      "history": "History",
+      "by": "recorded by {name}",
+      "recordTitle": "Record consent or withdrawal for this person",
+      "recordHint": "Use when the person tells a staff member. Your name is recorded in the history.",
+      "noLiveCp": "No published collection points",
+      "collectionPoint": "Collection point",
+      "noChange": "No change",
+      "reasonNone": "No reason given",
+      "record": "Record",
+      "recorded": "Recorded, receipt {receipt}"
+    },
+    "decision": {
+      "CONSENTED": "Consent",
+      "NOT_CONSENTED": "Decline",
+      "WITHDRAWN": "Withdraw"
+    },
+    "txType": {
+      "CONSENTED": "Consented",
+      "NOT_CONSENTED": "Declined",
+      "WITHDRAWN": "Withdrew",
+      "EXTENDED": "Re-confirmed",
+      "CHANGED_PREFERENCES": "Changed preferences",
+      "EXPIRED": "Expired"
+    },
+    "reason": {
+      "no_longer_interested": "No longer interested",
+      "too_many_messages": "Too many messages",
+      "privacy_concern": "Privacy concern",
+      "service_ended": "Stopped using the service",
+      "other": "Other"
+    },
+    "source": {
+      "web": "Website",
+      "app": "App",
+      "api": "API",
+      "staff": "Staff",
+      "import": "Import",
+      "campaign": "Campaign",
+      "dsar": "Rights request",
+      "system": "System"
+    },
+    "idType": {
+      "email": "E-mail",
+      "phone": "Phone",
+      "national_id": "National ID",
+      "customer_id": "Customer ID",
+      "passport": "Passport",
+      "line_uid": "LINE",
+      "other": "Other"
+    },
+    "storage": {
+      "summary": "Consent data is stored in region {region} · identifiers encrypted with {encryption}",
+      "km": {
+        "openbao_transit": "master keys in OpenBao Transit",
+        "local_development": "development keys (not for production)"
+      }
+    }
+  },
+  "portal": {
+    "home": "PDPA Platform — data subject portal",
+    "consent": {
+      "intro": "Please read and choose for each purpose separately. You don't have to agree to any purpose not marked as required.",
+      "contact": "Your contact details",
+      "contactHint": "Used to identify you and send your consent receipt. Fill in at least one.",
+      "email": "E-mail",
+      "phone": "Phone number",
+      "required": "(required for the service)",
+      "minAge": "For people aged {age} or over",
+      "agree": "I consent to this purpose",
+      "agreeExplicit": "I explicitly consent to the collection and use of my sensitive data for this purpose",
+      "submit": "Confirm",
+      "sending": "Sending…",
+      "thanks": "Your consent has been recorded",
+      "receipt": "Receipt number {receipt}",
+      "withdrawInfo": "You can withdraw your consent at any time by contacting the organization through the channels in its privacy notice.",
+      "errors": {
+        "generic": "Something isn't right, please check and try again",
+        "identifier_missing": "Please enter an e-mail or phone number",
+        "unavailable": "The service is temporarily unavailable, please try again",
+        "required": "This consent is required to use the service",
+        "stale_version": "This text has been updated, please reload the page",
+        "invalid_preference": "Invalid choice",
+        "consent_invalid_decisions": "Please check the highlighted items",
+        "consent_subject_conflict": "This e-mail and phone number belong to different people",
+        "not_found": "This form doesn't exist",
+        "no_change": "Nothing changed. To withdraw a consent you gave, contact the organization through the channels in its privacy notice."
+      }
+    }
   }
 }

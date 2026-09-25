@@ -345,6 +345,31 @@ permissions by type, two-tenant isolation), HTTP contract, vitest, Chromium E2E 
 Found by the E2E: the builder remounted on every refetch (keyed by `dataUpdatedAt`) and lost unsaved edits — now keyed by
 the latest version id. Not done: portal use (no portal feature yet), retiring forms, provider (global) forms.
 
+### CON consent (`docs/modules/CON.md`) — CON-09/10/12/15 done, CON-13/17 partial
+`internal/consent/{store,service,http,publichttp}` — the first P1 business module. Purposes are PLT-08 records
+(`consent_purpose`, one DPO approval step, `RegisterVersioning()` in `cmd/api`); `OnPublish` writes an immutable
+`consent.purpose_versions` row. A purpose is sensitive when one of its `data_category_codes` (migration 00034) is a
+sensitive ORG-07 category: it needs `explicit_text` and can't be "required" on a form (CON-10). Collection points pass
+`cpChecks` (purposes live + the four s.19 checklist items) before publish, which issues a `platform.public_keys` key
+(`internal/platform/publickeys`; retire revokes it). `Record()` is the one write path (public form, staff on behalf):
+per-purpose `Decide` against ST-01, one receipt per submission hash-chained per subject (`consent-receipt/v1`,
+advisory lock per subject), transactions + status in the same tx, `consent.*` events, receipt e-mail via PLT-04.
+**Leaving an ACTIVE purpose unticked changes nothing** (ST-01 has no such transition; an unverified form must not
+withdraw — decisions Q-21); withdrawal is an explicit `WITHDRAWN` decision, refused on public forms. Identifiers:
+PLT-13 `value_enc` + `blind_index`, masked on read, exact search in a POST body. `/public/v1`: `cmd/api` skips AuthN
+for that prefix; `publickeys.Middleware` resolves tenant + Origin, sets a `data_subject` principal, then Idempotency
++ Tx + audit. Tests: `internal/consent/consenttest` fixture (two tenants, maker + second DPO), service acceptance
+tests, contract tests for both chains (`consent/http/handler_test.go`), Chromium E2E of BP-01 (24/24: purposes with
+approval, checklist publish, portal form th/en, profile, verify, staff withdrawal). Frontend: admin
+`/consent/{purposes,collection-points,subjects}`; portal now has next-intl and `/[locale]/c/[key]` (server action,
+per-attempt Idempotency-Key, forwards `X-Forwarded-For`/`User-Agent`). Found and fixed: `return X(w), convert(&w)`
+returned an empty body (Go copies `w` first); list endpoints returned partial purposes/collection points; the BFF
+(`lib/api.ts`) never forwarded the browser's address or user agent, so the audit log saw only the BFF — it now does
+(list the admin app and portal in `TRUSTED_PROXIES`). Not done: re-consent flow (Q-22), CAPTCHA / embed SDK / CORS
+for customer sites, `/api/v1` + webhooks (CON-16 needs ORG-16/PLT-15), self-service withdrawal (CON-18/19), age gate
+(CON-11), region pinning. Known gap: the `/public/v1` validator accepts only `th`/`en` in Accept-Language, so a
+browser calling the API directly (future SDK) would get 400 — the portal sends the locale itself.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

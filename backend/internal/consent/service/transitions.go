@@ -25,9 +25,11 @@ var allowed = map[[2]string]bool{
 
 // Decide maps a data subject's decision on a purpose to the transaction recorded and the resulting status,
 // given the current status ("" when there is none). A decision that repeats a refusal changes nothing but is
-// still recorded; unticking a purpose that is ACTIVE is a withdrawal (withdrawing must be as easy as giving,
-// s.19); confirming an ACTIVE consent (same or newer version) renews it (EXTENDED), or records the new
-// preferences. Withdrawing what isn't given is ErrInvalidTransition.
+// still recorded. Leaving an ACTIVE purpose unticked is no decision at all (txType ""): ST-01 has no
+// NOT_CONSENTED transition out of ACTIVE, and an unverified web form must not withdraw someone's consent —
+// withdrawal is its own WITHDRAWN decision (decisions.md Q-21). Confirming an ACTIVE consent (same or newer
+// version) renews it (EXTENDED), or records the new preferences. Withdrawing what isn't given is
+// ErrInvalidTransition.
 func Decide(current, decision string, preferencesChanged bool) (txType, status string, err error) {
 	switch decision {
 	case TxConsented:
@@ -47,7 +49,7 @@ func Decide(current, decision string, preferencesChanged bool) (txType, status s
 		case "":
 			txType, status = TxNotConsented, StatusNotGiven
 		case StatusActive:
-			txType, status = TxWithdrawn, StatusWithdrawn
+			return "", StatusActive, nil
 		case StatusNotGiven, StatusWithdrawn, StatusExpired:
 			txType, status = TxNotConsented, current
 		default:

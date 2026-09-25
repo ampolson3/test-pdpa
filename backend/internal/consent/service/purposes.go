@@ -291,15 +291,16 @@ func (s *Service) applyPurpose(ctx context.Context, id uuid.UUID, snapshot json.
 
 // ListPurposes returns every purpose with its live state (no versions).
 func (s *Service) ListPurposes(ctx context.Context) ([]Purpose, error) {
-	rows, err := consentstore.New(pdb.MustTxFromContext(ctx)).ListPurposes(ctx)
+	q := consentstore.New(pdb.MustTxFromContext(ctx))
+	rows, err := q.ListPurposes(ctx)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]Purpose, 0, len(rows))
+	gs := make([]consentstore.GetPurposeRow, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, toPurpose(consentstore.GetPurposeRow(r)))
+		gs = append(gs, consentstore.GetPurposeRow(r))
 	}
-	return out, nil
+	return withDetails(ctx, q, gs)
 }
 
 // GetPurpose returns a purpose with its published versions.
@@ -312,32 +313,49 @@ func (s *Service) GetPurpose(ctx context.Context, id uuid.UUID) (Purpose, error)
 	if err != nil {
 		return Purpose{}, err
 	}
-	p := toPurpose(r)
-	vs, err := q.ListPurposeVersions(ctx, id)
+	ps, err := withDetails(ctx, q, []consentstore.GetPurposeRow{r})
 	if err != nil {
 		return Purpose{}, err
 	}
-	for _, v := range vs {
-		pv := toVersion(consentstore.GetPurposeVersionRow(v))
-		p.Versions = append(p.Versions, pv)
-		if r.CurrentVersionID.Valid && v.ID == uuid.UUID(r.CurrentVersionID.Bytes) {
-			cp := pv
-			p.CurrentVersion = &cp
-			p.Live.ConsentText, p.Live.ExplicitText = pv.ConsentText, pv.ExplicitText
-			p.Live.ChangeType, p.Live.RequiresReconsent = pv.ChangeType, pv.RequiresReconsent
+	return ps[0], nil
+}
+
+// withDetails builds purposes with their published versions, live texts and preferences.
+func withDetails(ctx context.Context, q *consentstore.Queries, rows []consentstore.GetPurposeRow) ([]Purpose, error) {
+	out := make([]Purpose, 0, len(rows))
+	ids := make([]uuid.UUID, 0, len(rows))
+	for _, r := range rows {
+		p := toPurpose(r)
+		vs, err := q.ListPurposeVersions(ctx, r.ID)
+		if err != nil {
+			return nil, err
 		}
+		for _, v := range vs {
+			pv := toVersion(consentstore.GetPurposeVersionRow(v))
+			p.Versions = append(p.Versions, pv)
+			if r.CurrentVersionID.Valid && v.ID == uuid.UUID(r.CurrentVersionID.Bytes) {
+				cp := pv
+				p.CurrentVersion = &cp
+				p.Live.ConsentText, p.Live.ExplicitText = pv.ConsentText, pv.ExplicitText
+				p.Live.ChangeType, p.Live.RequiresReconsent = pv.ChangeType, pv.RequiresReconsent
+			}
+		}
+		p.Live.Preferences = []Preference{}
+		out = append(out, p)
+		ids = append(ids, r.ID)
 	}
-	prefs, err := q.ListPurposePreferences(ctx, []uuid.UUID{id})
+	prefs, err := q.ListPurposePreferences(ctx, ids)
 	if err != nil {
-		return Purpose{}, err
+		return nil, err
 	}
 	for _, pr := range prefs {
-		p.Live.Preferences = append(p.Live.Preferences, toPreference(pr))
+		for i := range out {
+			if out[i].ID == pr.PurposeID {
+				out[i].Live.Preferences = append(out[i].Live.Preferences, toPreference(pr))
+			}
+		}
 	}
-	if p.Live.Preferences == nil {
-		p.Live.Preferences = []Preference{}
-	}
-	return p, nil
+	return out, nil
 }
 
 // RetirePurpose takes a purpose out of use; refused while an active collection point still shows it. Consent
