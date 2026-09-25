@@ -314,6 +314,24 @@ kind, one-source edits, read-only rules, in-use delete, isolation, HTTP contract
 testing: a YAML flow-map description with a comma made the spec invalid — `internal/pkg/validate`'s spec test
 catches that; run the full suite before starting the stack.
 
+### PLT-06 Form & assessment engine (`docs/modules/PLT.md#plt-06`) — done
+`internal/platform/forms` (+ `http/`, `store/`) and `packages/form-renderer`. **The schema/scoring JSON format was designed
+here (no SA spec existed) — flagged for review in PLT.md.** Question types text/textarea/number/date/email/single/multi/
+yes_no; `visible_if` on sections and questions (comparisons, all/any, only on earlier questions); weighted option scores
+into bands; hidden answers dropped. `forms.Evaluate` (Go) and `evaluate` (TS) are twins held together by the shared
+fixture `packages/form-renderer/src/fixtures/engine-cases.json` (tested on both sides) — change them together.
+Permissions per form type (user's choice, no new codes): `internal/wiring.Forms` registers assessment/questionnaire/dsar/
+consent with their module's codes; breach/intake/quiz have no module yet and can't be created. Versions: one draft per form
+(If-Match), published versions immutable, running responses keep their version. Responses: draft → submitted (validated,
+scored, `result` frozen); owners assign sections to users (in-app `form.section_assigned`), assignees answer only those and
+hand them back; `Record` is the one-shot path for modules taking answers from outside (consent, DSAR). Migration 00032,
+state machines `PLT-06#form|response|assignment`. UI: `FormRenderer` (react-hook-form + zod resolver calling the engine),
+`/forms`, `/forms/{id}` builder (dnd-kit incl. keyboard, condition + band editors, live th/en preview with score),
+`/form-responses/{id}`. Tests: fixture on both evaluators, schema validation, service (acceptance, versions, assignment,
+permissions by type, two-tenant isolation), HTTP contract, vitest, Chromium E2E of the whole flow with a second user (21/21).
+Found by the E2E: the builder remounted on every refetch (keyed by `dataUpdatedAt`) and lost unsaved edits — now keyed by
+the latest version id. Not done: portal use (no portal feature yet), retiring forms, provider (global) forms.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

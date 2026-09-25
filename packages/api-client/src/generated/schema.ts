@@ -679,6 +679,229 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/platform/form-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Form types the caller may read, with what they may do (PLT-06; permissions come from the owning module) */
+        get: operations["platformListFormTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/forms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Forms of the types the caller may read */
+        get: operations["platformListForms"];
+        put?: never;
+        /** Create a form with its first draft version (the form type's create permission) */
+        post: operations["platformCreateForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/forms/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A form with all its versions, newest first */
+        get: operations["platformGetForm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/forms/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a new draft version after the latest one was published (the form type's update permission) */
+        post: operations["platformCreateFormDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/forms/{id}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save the form's draft version (If-Match = the draft version's ETag) */
+        put: operations["platformSaveFormDraft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/forms/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish the draft version (If-Match = its ETag); new responses use it, running ones keep theirs */
+        post: operations["platformPublishForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/forms/{id}/responses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Responses to a form (the form type's read permission), newest first */
+        get: operations["platformListFormResponses"];
+        put?: never;
+        /** Start a draft response to the published version (the form type's respond permission) */
+        post: operations["platformStartFormResponse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/form-responses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A response (owner, assignee of a section, or holder of the respond permission) */
+        get: operations["platformGetFormResponse"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/form-responses/{id}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Merge answers into a draft response (null clears one); 422 with errors[] names invalid answers */
+        patch: operations["platformSaveFormAnswers"];
+        trace?: never;
+    };
+    "/admin/v1/platform/form-responses/{id}/assignments/{section}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Give a section to a user to answer, or take it back with null (response owner only) */
+        put: operations["platformAssignFormSection"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/form-responses/{id}/sections/{section}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hand an assigned section back as done (its visible required questions must be answered) */
+        post: operations["platformCompleteFormSection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/form-responses/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate, score and freeze a response (owner; every assigned section done) */
+        post: operations["platformSubmitFormResponse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/my-form-sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Form sections waiting for the caller to answer */
+        get: operations["platformListMyFormSections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/platform/imports": {
         parameters: {
             query?: never;
@@ -1026,6 +1249,156 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Text by language; th is required */
+        FormText: {
+            th: string;
+            en?: string;
+        };
+        /** @description Show when an earlier question's answer compares true (question + op + value), or all/any of nested conditions */
+        FormCondition: {
+            question?: string;
+            /** @enum {string} */
+            op?: "eq" | "neq" | "in" | "not_in" | "gt" | "gte" | "lt" | "lte" | "answered" | "not_answered";
+            value?: unknown;
+            all?: components["schemas"]["FormCondition"][];
+            any?: components["schemas"]["FormCondition"][];
+        };
+        /** @description A choice; label is required except on yes_no questions (whose options only carry scores) */
+        FormOption: {
+            value: string;
+            label?: components["schemas"]["FormText"];
+            score?: number;
+        };
+        FormQuestion: {
+            key: string;
+            /** @enum {string} */
+            type: "text" | "textarea" | "number" | "date" | "email" | "single_choice" | "multi_choice" | "yes_no";
+            label: components["schemas"]["FormText"];
+            help?: components["schemas"]["FormText"];
+            required?: boolean;
+            options?: components["schemas"]["FormOption"][];
+            min?: number;
+            max?: number;
+            max_length?: number;
+            weight?: number;
+            visible_if?: components["schemas"]["FormCondition"];
+        };
+        FormSection: {
+            key: string;
+            title: components["schemas"]["FormText"];
+            description?: components["schemas"]["FormText"];
+            visible_if?: components["schemas"]["FormCondition"];
+            questions: components["schemas"]["FormQuestion"][];
+        };
+        /** @description A form's content (PLT-06 format, docs/modules/PLT.md#plt-06) */
+        FormSchema: {
+            sections: components["schemas"]["FormSection"][];
+        };
+        FormScoring: {
+            bands: {
+                key: string;
+                label: components["schemas"]["FormText"];
+                min: number;
+                max?: number;
+            }[];
+        };
+        FormDraft: {
+            schema: components["schemas"]["FormSchema"];
+            scoring?: components["schemas"]["FormScoring"];
+            languages?: ("th" | "en")[];
+        };
+        FormTypeInfo: {
+            form_type: string;
+            can_create: boolean;
+            can_update: boolean;
+            can_publish: boolean;
+            can_respond: boolean;
+        };
+        FormSummary: {
+            id: components["schemas"]["Uuid"];
+            /** @description A platform form every tenant can use (read-only here) */
+            global: boolean;
+            code: string;
+            name: string;
+            form_type: string;
+            /** @enum {string} */
+            status: "draft" | "published" | "retired";
+            current_version_id?: components["schemas"]["Uuid"];
+            latest_version: number;
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        FormVersion: {
+            id: components["schemas"]["Uuid"];
+            form_id: components["schemas"]["Uuid"];
+            version: number;
+            schema: components["schemas"]["FormSchema"];
+            scoring?: components["schemas"]["FormScoring"];
+            languages: string[];
+            published_at?: components["schemas"]["Timestamp"];
+            /** @description The draft's ETag value (If-Match for saving and publishing it) */
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        Form: components["schemas"]["FormSummary"] & {
+            versions: components["schemas"]["FormVersion"][];
+        };
+        /** @description Answers by question key (string, number, or an array of option values for multi_choice) */
+        FormAnswers: {
+            [key: string]: unknown;
+        };
+        FormResult: {
+            visible: string[];
+            answers: components["schemas"]["FormAnswers"];
+            errors: {
+                question: string;
+                /** @enum {string} */
+                code: "required" | "invalid_type" | "invalid_option" | "out_of_range" | "too_long" | "invalid_date" | "invalid_email" | "unknown_question";
+            }[];
+            score: number;
+            max_score: number;
+            band?: string;
+        };
+        FormSectionAssignment: {
+            id: components["schemas"]["Uuid"];
+            section: string;
+            assignee_user_id: components["schemas"]["Uuid"];
+            assignee_name: string;
+            /** @enum {string} */
+            status: "open" | "done";
+            completed_at?: components["schemas"]["Timestamp"];
+            row_version: number;
+        };
+        FormResponseSummary: {
+            id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "draft" | "submitted";
+            owner_id?: components["schemas"]["Uuid"];
+            owner_name?: string;
+            submitted_at?: components["schemas"]["Timestamp"];
+            row_version: number;
+            result: components["schemas"]["FormResult"];
+        };
+        FormResponse: components["schemas"]["FormResponseSummary"] & {
+            form: components["schemas"]["FormSummary"];
+            version: components["schemas"]["FormVersion"];
+            entity_type?: string;
+            entity_id?: components["schemas"]["Uuid"];
+            answers: components["schemas"]["FormAnswers"];
+            assignments: components["schemas"]["FormSectionAssignment"][];
+            /** @description Sections the caller may answer now */
+            can_answer: string[];
+            is_owner: boolean;
+        };
+        FormSectionAssignmentItem: {
+            response_id: components["schemas"]["Uuid"];
+            form_id: components["schemas"]["Uuid"];
+            form_name: string;
+            form_type: string;
+            section: string;
+            section_title: components["schemas"]["FormText"];
+            created_at: components["schemas"]["Timestamp"];
+        };
         VersionChange: {
             /** @description JSON path, e.g. `purposes[1]` or `contact.email`; `$` for the whole document */
             path: string;
@@ -3404,6 +3777,506 @@ export interface operations {
                 content: {
                     "application/json": {
                         data: components["schemas"]["ApprovalInboxItem"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformListFormTypes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Form types */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["FormTypeInfo"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformListForms: {
+        parameters: {
+            query?: {
+                form_type?: string;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Forms */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["FormSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformCreateForm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    code: string;
+                    name: string;
+                    form_type: string;
+                    draft: components["schemas"]["FormDraft"];
+                };
+            };
+        };
+        responses: {
+            /** @description The form */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Form"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetForm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The form */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Form"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformCreateFormDraft: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FormDraft"];
+            };
+        };
+        responses: {
+            /** @description The new draft; its ETag is what saving and publishing it need */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormVersion"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformSaveFormDraft: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FormDraft"];
+            };
+        };
+        responses: {
+            /** @description The saved draft */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormVersion"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformPublishForm: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The form */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Form"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListFormResponses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Responses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["FormResponseSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformStartFormResponse: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    entity_type?: string;
+                    entity_id?: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description The response */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    platformGetFormResponse: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The response */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformSaveFormAnswers: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    answers: components["schemas"]["FormAnswers"];
+                };
+            };
+        };
+        responses: {
+            /** @description The response */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformAssignFormSection: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                section: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    assignee_user_id: components["schemas"]["Uuid"] | null;
+                };
+            };
+        };
+        responses: {
+            /** @description The response */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformCompleteFormSection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                section: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The response */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformSubmitFormResponse: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The submitted response with its score */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListMyFormSections: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Open assignments, oldest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["FormSectionAssignmentItem"][];
                     };
                 };
             };

@@ -89,6 +89,31 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "คำขอส่งการแจ้งเตือนไม่ถูกต้อง",
 		En: "Invalid notification request",
 	},
+	// PLT-06 form & assessment engine
+	"forms.invalid_answers": {
+		Th: "คำตอบบางข้อไม่ถูกต้อง",
+		En: "Some answers are invalid",
+	},
+	"forms.invalid_state": {
+		Th: "ทำรายการนี้ไม่ได้ในสถานะปัจจุบันของแบบฟอร์ม",
+		En: "Not allowed in the form's current state",
+	},
+	"forms.unknown_type": {
+		Th: "ไม่มีโมดูลที่ใช้แบบฟอร์มประเภทนี้",
+		En: "No module offers this form type",
+	},
+	"forms.invalid_schema": {
+		Th: "โครงสร้างแบบฟอร์มไม่ถูกต้อง",
+		En: "Invalid form structure",
+	},
+	"forms.invalid_request": {
+		Th: "คำขอไม่ถูกต้อง",
+		En: "Invalid request",
+	},
+	"forms.draft_exists": {
+		Th: "มีฉบับร่างอยู่แล้ว",
+		En: "A draft already exists",
+	},
 	// PLT-08 versioning & approval
 	"versioning.invalid_transition": {
 		Th: "ทำรายการนี้ไม่ได้ในสถานะปัจจุบันของเวอร์ชัน",

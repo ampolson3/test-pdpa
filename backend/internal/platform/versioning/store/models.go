@@ -2687,6 +2687,21 @@ type PlatformFormDefinition struct {
 	RowVersion       int32              `db:"row_version" json:"row_version"`
 }
 
+type PlatformFormSectionAssignment struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	TenantID       uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	SubmissionID   uuid.UUID          `db:"submission_id" json:"submission_id"`
+	SectionKey     string             `db:"section_key" json:"section_key"`
+	AssigneeUserID uuid.UUID          `db:"assignee_user_id" json:"assignee_user_id"`
+	Status         string             `db:"status" json:"status"`
+	CompletedAt    pgtype.Timestamptz `db:"completed_at" json:"completed_at"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy      pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy      pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion     int32              `db:"row_version" json:"row_version"`
+}
+
 // คำตอบของฟอร์ม
 type PlatformFormSubmission struct {
 	ID              uuid.UUID          `db:"id" json:"id"`
@@ -2704,6 +2719,8 @@ type PlatformFormSubmission struct {
 	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy       pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion      int32              `db:"row_version" json:"row_version"`
+	Status          string             `db:"status" json:"status"`
+	Result          []byte             `db:"result" json:"result"`
 }
 
 // เวอร์ชันของฟอร์ม (schema JSON)

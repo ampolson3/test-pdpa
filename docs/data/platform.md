@@ -20,6 +20,7 @@
 | [form_definitions](#platform-form-definitions) | ฟอร์ม / แบบประเมิน (form engine) | tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write` |  | ERD-01 |  |
 | [form_versions](#platform-form-versions) | เวอร์ชันของฟอร์ม (schema JSON) | tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write` |  | ERD-01 |  |
 | [form_submissions](#platform-form-submissions) | คำตอบของฟอร์ม | tenant · RLS `tenant_isolation` |  | ERD-01 |  |
+| [form_section_assignments](#platform-form-section-assignments) | มอบหมายส่วนของคำตอบให้ผู้ตอบ | tenant · RLS `tenant_isolation` |  | PLT-06 |  |
 | [record_versions](#platform-record-versions) | snapshot และ diff ของ record ที่มีเวอร์ชัน | tenant · RLS `tenant_isolation` |  | ERD-01 | BP-05, SEQ-02 |
 | [approvals](#platform-approvals) | ขั้นตอนอนุมัติ (maker-checker / หลายระดับ) | tenant · RLS `tenant_isolation` |  | ERD-01 | BP-05, BP-12 |
 | [comments](#platform-comments) | ความเห็น / @mention ต่อ record | tenant · RLS `tenant_isolation` |  | ERD-01 |  |
@@ -242,6 +243,7 @@ workflow ที่กำลังทำงานของแต่ละ record
 - Index: `platform.form_versions (form_id)` · `platform.form_versions (published_by)`
 - RLS: tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write`
 - ถูกอ้างถึงโดย: `platform.form_submissions.form_version_id`, `assess.assessments.form_version_id`
+- PLT-06 (migration 00032): ร่างได้ครั้งละหนึ่งเวอร์ชันต่อฟอร์ม (`ux_platform_form_versions_draft` unique `(form_id) WHERE published_at IS NULL`) · `ux_platform_form_versions_no (form_id, version_no)` · เวอร์ชันที่มี `published_at` แก้ไม่ได้อีก · รูปแบบ `schema` / `scoring` ดู [PLT.md#plt-06](../modules/PLT.md#plt-06)
 
 <a id="platform-form-submissions"></a>
 ## platform.form_submissions
@@ -259,13 +261,36 @@ workflow ที่กำลังทำงานของแต่ละ record
 | `submitted_by` | `uuid` |  |  |  |  |
 | `answers` | `jsonb` | ✓ |  |  |  |
 | `score` | `numeric(8,2)` |  |  |  |  |
-| `submitted_at` | `timestamptz` | ✓ | now() |  |  |
+| `submitted_at` | `timestamptz` |  | now() |  | NULL ขณะยังเป็นร่าง (migration 00032) |
+| `status` | `text` | ✓ | 'submitted' |  | ค่า: `draft`, `submitted` (migration 00032) |
+| `result` | `jsonb` |  |  |  | ผลประเมินตอนส่ง: `visible`, `answers`, `errors`, `score`, `max_score`, `band` (migration 00032) |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_form_submissions_updated`
 - PK: `(id)`
 - Index: `platform.form_submissions (tenant_id, form_version_id)` · `platform.form_submissions (tenant_id, entity_type)` · `platform.form_submissions (tenant_id, entity_id)`
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `consent.consent_receipts.form_submission_id`, `ropa.questionnaires.form_submission_id`, `ropa.sme_exemption_checks.form_submission_id`, `dsar.requests.form_submission_id`, `breach.assessments.form_submission_id`, `vendor.intakes.form_submission_id`
+- PLT-06: `status = 'draft'` คือคำตอบที่ยังตอบไม่เสร็จ (แก้ได้ แบ่งส่วนให้คนอื่นตอบได้ผ่าน [form_section_assignments](#platform-form-section-assignments)); `submitted` ถูกตรวจ คิดคะแนน และแช่แข็ง — โมดูลที่รับคำตอบจากภายนอก (consent, DSAR) บันทึกเป็น `submitted` ทีเดียวด้วย `forms.Service.Record`
+
+<a id="platform-form-section-assignments"></a>
+## platform.form_section_assignments
+
+การมอบหมายส่วนของคำตอบให้ผู้ใช้ตอบ (PLT-06, migration 00032)
+
+| คอลัมน์ | type | NOT NULL | default | key / อ้างอิง | หมายเหตุ |
+|---|---|---|---|---|---|
+| `id` | `uuid` | ✓ | gen_random_uuid() | PK |  |
+| `tenant_id` | `uuid` | ✓ |  | FK → [platform.tenants](#platform-tenants) | RLS |
+| `submission_id` | `uuid` | ✓ |  | FK → [platform.form_submissions](#platform-form-submissions) ON DELETE CASCADE |  |
+| `section_key` | `varchar(60)` | ✓ |  |  | `key` ของส่วนใน schema ของเวอร์ชัน |
+| `assignee_user_id` | `uuid` | ✓ |  | FK → [iam.users](iam.md#iam-users) |  |
+| `status` | `text` | ✓ | 'open' |  | ค่า: `open`, `done` |
+| `completed_at` | `timestamptz` |  |  |  |  |
+
+- มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_form_section_assignments_updated`
+- PK: `(id)` · Unique: `uq_form_section_assignments (tenant_id, submission_id, section_key)` — หนึ่งส่วนหนึ่งผู้ตอบ
+- Index: `ix_platform_form_section_assignments_assignee (tenant_id, assignee_user_id) WHERE status = 'open'`
+- RLS: tenant · RLS `tenant_isolation`
 
 <a id="platform-record-versions"></a>
 ## platform.record_versions

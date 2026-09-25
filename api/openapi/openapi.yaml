@@ -1755,6 +1755,604 @@ paths:
                       $ref: '#/components/schemas/ApprovalInboxItem'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /admin/v1/platform/form-types:
+    get:
+      operationId: platformListFormTypes
+      tags: [platform]
+      summary: Form types the caller may read, with what they may do (PLT-06; permissions come from the owning module)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Form types
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FormTypeInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /admin/v1/platform/forms:
+    get:
+      operationId: platformListForms
+      tags: [platform]
+      summary: Forms of the types the caller may read
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: form_type
+          in: query
+          schema:
+            type: string
+            maxLength: 40
+      responses:
+        '200':
+          description: Forms
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FormSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: platformCreateForm
+      tags: [platform]
+      summary: Create a form with its first draft version (the form type's create permission)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name, form_type, draft]
+              additionalProperties: false
+              properties:
+                code:
+                  type: string
+                  pattern: '^[a-z][a-z0-9_]{0,59}$'
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                form_type:
+                  type: string
+                  maxLength: 40
+                draft:
+                  $ref: '#/components/schemas/FormDraft'
+      responses:
+        '201':
+          description: The form
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/forms/{id}:
+    get:
+      operationId: platformGetForm
+      tags: [platform]
+      summary: A form with all its versions, newest first
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The form
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/forms/{id}/versions:
+    post:
+      operationId: platformCreateFormDraft
+      tags: [platform]
+      summary: Start a new draft version after the latest one was published (the form type's update permission)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormDraft'
+      responses:
+        '201':
+          description: The new draft; its ETag is what saving and publishing it need
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormVersion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/forms/{id}/draft:
+    put:
+      operationId: platformSaveFormDraft
+      tags: [platform]
+      summary: Save the form's draft version (If-Match = the draft version's ETag)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormDraft'
+      responses:
+        '200':
+          description: The saved draft
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormVersion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/forms/{id}/publish:
+    post:
+      operationId: platformPublishForm
+      tags: [platform]
+      summary: Publish the draft version (If-Match = its ETag); new responses use it, running ones keep theirs
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The form
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Form'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/forms/{id}/responses:
+    get:
+      operationId: platformListFormResponses
+      tags: [platform]
+      summary: Responses to a form (the form type's read permission), newest first
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Responses
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FormResponseSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: platformStartFormResponse
+      tags: [platform]
+      summary: Start a draft response to the published version (the form type's respond permission)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                entity_type:
+                  type: string
+                  maxLength: 60
+                entity_id:
+                  $ref: '#/components/schemas/Uuid'
+      responses:
+        '201':
+          description: The response
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /admin/v1/platform/form-responses/{id}:
+    get:
+      operationId: platformGetFormResponse
+      tags: [platform]
+      summary: A response (owner, assignee of a section, or holder of the respond permission)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The response
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/form-responses/{id}/answers:
+    patch:
+      operationId: platformSaveFormAnswers
+      tags: [platform]
+      summary: Merge answers into a draft response (null clears one); 422 with errors[] names invalid answers
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answers]
+              additionalProperties: false
+              properties:
+                answers:
+                  $ref: '#/components/schemas/FormAnswers'
+      responses:
+        '200':
+          description: The response
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/form-responses/{id}/assignments/{section}:
+    put:
+      operationId: platformAssignFormSection
+      tags: [platform]
+      summary: Give a section to a user to answer, or take it back with null (response owner only)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: section
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 60
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assignee_user_id]
+              additionalProperties: false
+              properties:
+                assignee_user_id:
+                  oneOf:
+                    - $ref: '#/components/schemas/Uuid'
+                    - type: 'null'
+      responses:
+        '200':
+          description: The response
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/form-responses/{id}/sections/{section}/complete:
+    post:
+      operationId: platformCompleteFormSection
+      tags: [platform]
+      summary: Hand an assigned section back as done (its visible required questions must be answered)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: section
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 60
+      responses:
+        '200':
+          description: The response
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/form-responses/{id}/submit:
+    post:
+      operationId: platformSubmitFormResponse
+      tags: [platform]
+      summary: Validate, score and freeze a response (owner; every assigned section done)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The submitted response with its score
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/my-form-sections:
+    get:
+      operationId: platformListMyFormSections
+      tags: [platform]
+      summary: Form sections waiting for the caller to answer
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Open assignments, oldest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FormSectionAssignmentItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /admin/v1/platform/imports:
     get:
       operationId: platformListImports
@@ -3031,6 +3629,339 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    FormText:
+      type: object
+      description: Text by language; th is required
+      required: [th]
+      additionalProperties: false
+      properties:
+        th:
+          type: string
+          maxLength: 2000
+        en:
+          type: string
+          maxLength: 2000
+    FormCondition:
+      type: object
+      description: Show when an earlier question's answer compares true (question + op + value), or all/any of nested conditions
+      additionalProperties: false
+      properties:
+        question:
+          type: string
+          maxLength: 60
+        op:
+          type: string
+          enum: [eq, neq, in, not_in, gt, gte, lt, lte, answered, not_answered]
+        value: {}
+        all:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormCondition'
+        any:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormCondition'
+    FormOption:
+      type: object
+      description: A choice; label is required except on yes_no questions (whose options only carry scores)
+      required: [value]
+      additionalProperties: false
+      properties:
+        value:
+          type: string
+          maxLength: 60
+        label:
+          $ref: '#/components/schemas/FormText'
+        score:
+          type: number
+    FormQuestion:
+      type: object
+      required: [key, type, label]
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+          pattern: '^[a-z][a-z0-9_]{0,59}$'
+        type:
+          type: string
+          enum: [text, textarea, number, date, email, single_choice, multi_choice, yes_no]
+        label:
+          $ref: '#/components/schemas/FormText'
+        help:
+          $ref: '#/components/schemas/FormText'
+        required:
+          type: boolean
+        options:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/FormOption'
+        min:
+          type: number
+        max:
+          type: number
+        max_length:
+          type: integer
+          minimum: 0
+        weight:
+          type: number
+        visible_if:
+          $ref: '#/components/schemas/FormCondition'
+    FormSection:
+      type: object
+      required: [key, title, questions]
+      additionalProperties: false
+      properties:
+        key:
+          type: string
+          pattern: '^[a-z][a-z0-9_]{0,59}$'
+        title:
+          $ref: '#/components/schemas/FormText'
+        description:
+          $ref: '#/components/schemas/FormText'
+        visible_if:
+          $ref: '#/components/schemas/FormCondition'
+        questions:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/FormQuestion'
+    FormSchema:
+      type: object
+      description: A form's content (PLT-06 format, docs/modules/PLT.md#plt-06)
+      required: [sections]
+      additionalProperties: false
+      properties:
+        sections:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/FormSection'
+    FormScoring:
+      type: object
+      required: [bands]
+      additionalProperties: false
+      properties:
+        bands:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            required: [key, label, min]
+            additionalProperties: false
+            properties:
+              key:
+                type: string
+                pattern: '^[a-z][a-z0-9_]{0,59}$'
+              label:
+                $ref: '#/components/schemas/FormText'
+              min:
+                type: number
+              max:
+                type: number
+    FormDraft:
+      type: object
+      required: [schema]
+      additionalProperties: false
+      properties:
+        schema:
+          $ref: '#/components/schemas/FormSchema'
+        scoring:
+          $ref: '#/components/schemas/FormScoring'
+        languages:
+          type: array
+          items:
+            type: string
+            enum: [th, en]
+    FormTypeInfo:
+      type: object
+      required: [form_type, can_create, can_update, can_publish, can_respond]
+      properties:
+        form_type:
+          type: string
+        can_create:
+          type: boolean
+        can_update:
+          type: boolean
+        can_publish:
+          type: boolean
+        can_respond:
+          type: boolean
+    FormSummary:
+      type: object
+      required: [id, global, code, name, form_type, status, latest_version, row_version, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        global:
+          type: boolean
+          description: A platform form every tenant can use (read-only here)
+        code:
+          type: string
+        name:
+          type: string
+        form_type:
+          type: string
+        status:
+          type: string
+          enum: [draft, published, retired]
+        current_version_id:
+          $ref: '#/components/schemas/Uuid'
+        latest_version:
+          type: integer
+        row_version:
+          type: integer
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    FormVersion:
+      type: object
+      required: [id, form_id, version, schema, languages, row_version, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        form_id:
+          $ref: '#/components/schemas/Uuid'
+        version:
+          type: integer
+        schema:
+          $ref: '#/components/schemas/FormSchema'
+        scoring:
+          $ref: '#/components/schemas/FormScoring'
+        languages:
+          type: array
+          items:
+            type: string
+        published_at:
+          $ref: '#/components/schemas/Timestamp'
+        row_version:
+          type: integer
+          description: The draft's ETag value (If-Match for saving and publishing it)
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    Form:
+      allOf:
+        - $ref: '#/components/schemas/FormSummary'
+        - type: object
+          required: [versions]
+          properties:
+            versions:
+              type: array
+              items:
+                $ref: '#/components/schemas/FormVersion'
+    FormAnswers:
+      type: object
+      description: Answers by question key (string, number, or an array of option values for multi_choice)
+      additionalProperties: {}
+    FormResult:
+      type: object
+      required: [visible, answers, errors, score, max_score]
+      properties:
+        visible:
+          type: array
+          items:
+            type: string
+        answers:
+          $ref: '#/components/schemas/FormAnswers'
+        errors:
+          type: array
+          items:
+            type: object
+            required: [question, code]
+            properties:
+              question:
+                type: string
+              code:
+                type: string
+                enum: [required, invalid_type, invalid_option, out_of_range, too_long, invalid_date, invalid_email, unknown_question]
+        score:
+          type: number
+        max_score:
+          type: number
+        band:
+          type: string
+    FormSectionAssignment:
+      type: object
+      required: [id, section, assignee_user_id, assignee_name, status, row_version]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        section:
+          type: string
+        assignee_user_id:
+          $ref: '#/components/schemas/Uuid'
+        assignee_name:
+          type: string
+        status:
+          type: string
+          enum: [open, done]
+        completed_at:
+          $ref: '#/components/schemas/Timestamp'
+        row_version:
+          type: integer
+    FormResponseSummary:
+      type: object
+      required: [id, status, row_version, result]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        status:
+          type: string
+          enum: [draft, submitted]
+        owner_id:
+          $ref: '#/components/schemas/Uuid'
+        owner_name:
+          type: string
+        submitted_at:
+          $ref: '#/components/schemas/Timestamp'
+        row_version:
+          type: integer
+        result:
+          $ref: '#/components/schemas/FormResult'
+    FormResponse:
+      allOf:
+        - $ref: '#/components/schemas/FormResponseSummary'
+        - type: object
+          required: [form, version, answers, assignments, can_answer, is_owner]
+          properties:
+            form:
+              $ref: '#/components/schemas/FormSummary'
+            version:
+              $ref: '#/components/schemas/FormVersion'
+            entity_type:
+              type: string
+            entity_id:
+              $ref: '#/components/schemas/Uuid'
+            answers:
+              $ref: '#/components/schemas/FormAnswers'
+            assignments:
+              type: array
+              items:
+                $ref: '#/components/schemas/FormSectionAssignment'
+            can_answer:
+              type: array
+              description: Sections the caller may answer now
+              items:
+                type: string
+            is_owner:
+              type: boolean
+    FormSectionAssignmentItem:
+      type: object
+      required: [response_id, form_id, form_name, form_type, section, section_title, created_at]
+      properties:
+        response_id:
+          $ref: '#/components/schemas/Uuid'
+        form_id:
+          $ref: '#/components/schemas/Uuid'
+        form_name:
+          type: string
+        form_type:
+          type: string
+        section:
+          type: string
+        section_title:
+          $ref: '#/components/schemas/FormText'
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
     VersionChange:
       type: object
       required: [path]

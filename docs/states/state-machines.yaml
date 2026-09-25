@@ -945,3 +945,68 @@ machines:
     guard: มีเหตุผล · maker-checker
     action: audit
 
+- machine: PLT-06#form
+  title: Form definition (PLT-06)
+  column: platform.form_definitions.status
+  states:
+  - draft
+  - published
+  - retired
+  initial:
+  - draft
+  terminal:
+  - retired
+  transitions:
+  - from: draft
+    to: published
+    trigger: เผยแพร่ร่างเวอร์ชันแรก
+    event: publish
+    guard: สิทธิ์ publish ของประเภทฟอร์ม · schema ผ่าน Validate · If-Match ของร่าง
+    action: ร่างได้ published_at (แก้ไม่ได้อีก) · current_version_id → เวอร์ชันนี้ · audit
+  - from: published
+    to: published
+    trigger: เผยแพร่ร่างเวอร์ชันถัดไป
+    event: publish
+    guard: สิทธิ์ publish ของประเภทฟอร์ม · schema ผ่าน Validate · If-Match ของร่าง
+    action: current_version_id → เวอร์ชันใหม่ · คำตอบที่เริ่มแล้วคงใช้เวอร์ชันเดิม · audit
+- machine: PLT-06#response
+  title: Form response (PLT-06)
+  column: platform.form_submissions.status
+  states:
+  - draft
+  - submitted
+  initial:
+  - draft
+  - submitted
+  terminal:
+  - submitted
+  transitions:
+  - from: draft
+    to: submitted
+    trigger: เจ้าของคำตอบกดส่ง
+    event: submit
+    guard: เป็นเจ้าของ · ทุกส่วนที่มอบหมายเป็น done · คำถามบังคับที่แสดงอยู่ตอบครบและถูกต้อง
+    action: คำนวณคะแนนและระดับ · ตัดคำตอบของคำถามที่ถูกซ่อน · เก็บ result · audit
+- machine: PLT-06#assignment
+  title: Section assignment (PLT-06)
+  column: platform.form_section_assignments.status
+  states:
+  - open
+  - done
+  initial:
+  - open
+  terminal:
+  - done
+  transitions:
+  - from: open
+    to: done
+    trigger: ผู้ได้รับมอบหมายส่งส่วนของตน
+    event: complete section
+    guard: เป็นผู้ได้รับมอบหมาย · คำถามบังคับที่แสดงอยู่ในส่วนนั้นตอบครบ
+    action: audit
+  - from: done
+    to: open
+    trigger: เจ้าของมอบหมายส่วนนั้นใหม่
+    event: assign
+    guard: เป็นเจ้าของ · คำตอบยังเป็น draft
+    action: แจ้งผู้รับ (form.section_assigned) · audit
