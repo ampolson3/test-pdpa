@@ -37,6 +37,43 @@
 - ลิงก์ภายใน 2084 ลิงก์ชี้ไฟล์และ anchor ที่มีอยู่จริง · feature ทุกตัวมี section · ตารางทุกตัวมี data dictionary
 - state machine 10 ชุดตรงกับ CHECK constraint · x-permission ใน OpenAPI อยู่ใน permission catalogue (282 code)
 
+## Local Postgres โดยไม่ใช้ Docker
+
+เครื่องที่สร้างชุดนี้ไม่มี Docker และมี PostgreSQL 18 ตัวอื่นใช้ port 5432 อยู่แล้ว (ของโปรเจกต์อื่น ไม่แตะ) จึงตั้ง
+PostgreSQL 17 + pgvector ผ่าน Homebrew แยกต่างหากที่ **port 5433** แทน `deploy/compose/docker-compose.yml`
+(รันจริงแล้ว: bootstrap → migrate ผ่านทั้งหมด ดู `CLAUDE.md` § Scaffold status) หากเครื่องคุณมี Docker
+ใช้ `make dev` ตามปกติแทนได้เลย (ไม่ต้องทำตามหัวข้อนี้) — ค่า `DATABASE_URL` ใน `.env.example` จะต้องเปลี่ยน
+port กลับเป็น 5432
+
+ทำซ้ำ setup นี้บนเครื่องอื่น (หรือหลัง `brew uninstall`):
+
+```bash
+brew install postgresql@17 pgvector redis
+# pgvector build ไว้เฉพาะ postgresql@17/@18 (ไม่มี @16) — คัดลอกเข้า postgresql@17 เอง:
+cp "$(brew --prefix pgvector)/../../Cellar/pgvector"/*/lib/postgresql@17/vector.dylib \
+   "$(brew --prefix postgresql@17)/lib/postgresql/"
+cp "$(brew --prefix pgvector)/../../Cellar/pgvector"/*/share/postgresql@17/extension/vector* \
+   "$(brew --prefix postgresql@17)/share/postgresql/extension/"
+
+# เปลี่ยน port เป็น 5433 (5432 ชนกับ Postgres อื่นที่มีอยู่แล้ว) — ข้ามถ้าเครื่องคุณว่าง 5432
+sed -i '' "s/^#port = 5432/port = 5433/" "$(brew --prefix)/var/postgresql@17/postgresql.conf"
+
+brew services start postgresql@17
+brew services start redis  # Valkey-compatible สำหรับ dev
+
+psql -h localhost -p 5433 -d postgres -v ON_ERROR_STOP=1 \
+  -v migrator_password=pdpa_migrator -v app_password=pdpa_app \
+  -v platform_password=pdpa_platform -v readonly_password=pdpa_readonly \
+  -f deploy/db/00-bootstrap.sql
+
+(cd backend && MIGRATOR_DATABASE_URL="postgres://pdpa_migrator:pdpa_migrator@localhost:5433/pdpa?sslmode=disable" \
+  go run ./cmd/migrate -grants ../deploy/db/10-grants.sql)
+```
+
+Keycloak ยังไม่ได้ตั้งทางนี้ (Organizations / `tid` claim ต้องรอ PoC T13 ตาม `docs/decisions.md` Q-18) — ทดสอบ
+endpoint ที่ต้อง login ได้ด้วย JWT ที่เซ็นเองชั่วคราวเท่านั้น (ดูวิธีใน git log ของ commit ที่ verify reference
+slice)
+
 ## ข้อควรรู้
 
 - สิ่งที่ยังต้องตัดสินใจ (ผู้ให้บริการ SMS / e-Sign, การนับวัน DSAR, การตีความแจ้งเหตุล่าช้า ฯลฯ) อยู่ใน `docs/decisions.md` ส่วนที่ 2 — Claude Code ถูกสั่งให้ถาม ไม่เดา
