@@ -29,6 +29,8 @@
 | D-19 | Role และสิทธิ์ของฐานข้อมูล | `deploy/db/00-bootstrap.sql` + migrate ด้วย `pdpa_migrator` (`role=pdpa_owner`) + `deploy/db/10-grants.sql` · partition มี RLS และแอปเข้าได้ผ่านตารางแม่เท่านั้น · partition ใหม่ผ่าน `platform.ensure_monthly_partitions()` (SECURITY DEFINER) | ทดสอบแล้วด้วย role จริง: 12 กรณีผ่าน (ดู `backend/db/README.md`) |
 | D-20 | FK ข้าม tenant | FK constraint ไม่ผ่าน RLS → service ต้องตรวจว่าแถวที่อ้างถึงมองเห็นได้ภายใต้ RLS ก่อนเขียน + test | composite FK (tenant_id, id) เป็นทางเลือกภายหลังถ้าต้องการบังคับที่ฐานข้อมูล |
 | D-21 | Outbox dispatch | enqueue River job ต่อ tenant ใน transaction เดียวกับ outbox + sweeper วน tenant — worker ไม่ต้องใช้ BYPASSRLS | ลดการใช้ role ที่ข้าม RLS |
+| D-22 | ระยะเก็บ audit log | เก็บ `platform.audit_log` **5 ปี** (ผู้ใช้ตัดสิน 2026-09-25) · job `audit.retention` รายวันลบทั้ง partition รายเดือนที่พ้น 60 เดือนผ่าน `platform.drop_expired_audit_partitions()` (SECURITY DEFINER, ปฏิเสธค่าที่ต่ำกว่า 60 เดือน — ตั้ง `AUDIT_RETENTION_MONTHS` ให้นานขึ้นได้เท่านั้น) · ก่อนลบบันทึก hash สุดท้ายต่อ tenant ใน `platform.audit_chain_anchors` ให้ Verify ต่อ chain ได้ | เกินขั้นต่ำ 90 วันของ พ.ร.บ.คอมพิวเตอร์ ม.26 · แถวใน `audit_log_default` ไม่ถูกลบโดย job นี้ |
+| D-23 | IP จริงของผู้ใช้หลัง load balancer | `TRUSTED_PROXIES` (รายการ IP / CIDR, ค่าเริ่มต้นว่าง = ใช้ TCP peer) · เมื่อ peer อยู่ในรายการ อ่าน `X-Forwarded-For` จากขวาไปซ้าย ข้าม hop ที่เชื่อถือได้ ใช้ address แรกที่ไม่อยู่ในรายการ · ใช้ทั้ง audit และ rate limit (`internal/pkg/clientip`) | ผู้ใช้ตัดสิน 2026-09-25 · ไม่เชื่อ `X-Forwarded-For` จาก peer ที่ไม่อยู่ในรายการ (ป้องกันการปลอม IP) |
 
 ## 2. ยังเปิดอยู่ (ต้องถาม — ห้ามเดา)
 

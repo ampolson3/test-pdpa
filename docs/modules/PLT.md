@@ -414,7 +414,7 @@
 
 **หมายเหตุ:** หน้าดู log คือ ORG-19
 
-**Implementation (PLT-12):** `backend/internal/platform/audit` — hash chain ต่อ tenant ครอบทุกคอลัมน์, advisory lock กัน chain แตกกิ่ง, `Verify` + job `audit.verify` รายวัน, `Changes` (JSON diff), request audit บันทึก IP + user agent · migration 00023 (index ของ chain) · ยังไม่ทำ: retention (ลบ partition เก่า) — รอนโยบาย
+**Implementation (PLT-12):** `backend/internal/platform/audit` — hash chain ต่อ tenant ครอบทุกคอลัมน์, advisory lock กัน chain แตกกิ่ง, `Verify` + job `audit.verify` รายวัน, `Changes` (JSON diff), request audit บันทึก IP + user agent · migration 00023 (index ของ chain) · **retention 5 ปี** (decisions D-22, migration 00033): job `audit.retention` รายวันเรียก `platform.drop_expired_audit_partitions()` ลบทั้ง partition รายเดือนที่พ้น 60 เดือน (ฟังก์ชันปฏิเสธค่าต่ำกว่า 60; `AUDIT_RETENTION_MONTHS` ตั้งให้นานขึ้นได้เท่านั้น) และบันทึก hash สุดท้ายที่ลบต่อ tenant ใน `platform.audit_chain_anchors` (append-only) — Verify และแถวใหม่ต่อ chain จาก anchor ล่าสุด, anchor ปลอมถูกตรวจพบ · **IP จริงหลัง load balancer** (D-23): `TRUSTED_PROXIES` + `internal/pkg/clientip` อ่าน `X-Forwarded-For` เฉพาะจาก proxy ที่เชื่อถือ ใช้ทั้ง audit และ rate limit
 
 <a id="plt-13"></a>
 ### PLT-13 เข้ารหัสข้อมูลส่วนบุคคลระดับฟิลด์

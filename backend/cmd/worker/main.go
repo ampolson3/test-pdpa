@@ -6,9 +6,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -60,6 +62,11 @@ func run() error {
 	river.AddWorker(workers, &events.Sweeper{Pool: pool})
 	river.AddWorker(workers, &auditjobs.Verifier{Audit: auditservice.New(), Logger: slog.Default()})
 	river.AddWorker(workers, &auditjobs.VerifySweeper{Pool: pool})
+	river.AddWorker(workers, &auditjobs.Retention{Pool: pool, Logger: slog.Default()})
+	retentionMonths, err := strconv.Atoi(envOr("AUDIT_RETENTION_MONTHS", strconv.Itoa(auditjobs.DefaultRetentionMonths)))
+	if err != nil || retentionMonths < auditjobs.DefaultRetentionMonths {
+		return fmt.Errorf("AUDIT_RETENTION_MONTHS must be a whole number of at least %d", auditjobs.DefaultRetentionMonths)
+	}
 
 	store, err := files.NewS3Store(files.S3ConfigFromEnv())
 	if err != nil {
@@ -95,7 +102,7 @@ func run() error {
 	client, err := jobs.NewWorkerClient(pool, jobs.WorkerOptions{
 		Logger:          slog.Default(),
 		Workers:         workers,
-		PeriodicJobs:    []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob()},
+		PeriodicJobs:    []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob(), auditjobs.RetentionPeriodicJob(retentionMonths)},
 		SoftStopTimeout: softStop,
 	})
 	if err != nil {

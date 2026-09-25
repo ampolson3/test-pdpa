@@ -2498,6 +2498,19 @@ type PlatformApproval struct {
 	RowVersion      int32              `db:"row_version" json:"row_version"`
 }
 
+// หลักฐานการลบ partition ของ audit_log ที่พ้นระยะเก็บ: hash สุดท้ายที่ถูกลบต่อ tenant (append-only)
+type PlatformAuditChainAnchor struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	TenantID       uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	PartitionName  string             `db:"partition_name" json:"partition_name"`
+	DroppedThrough pgtype.Timestamptz `db:"dropped_through" json:"dropped_through"`
+	LastID         int64              `db:"last_id" json:"last_id"`
+	LastOccurredAt pgtype.Timestamptz `db:"last_occurred_at" json:"last_occurred_at"`
+	LastHash       string             `db:"last_hash" json:"last_hash"`
+	RowsDropped    int64              `db:"rows_dropped" json:"rows_dropped"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 // audit log แบบ append-only + hash chain (partition รายเดือน)
 type PlatformAuditLog struct {
 	ID         int64              `db:"id" json:"id"`

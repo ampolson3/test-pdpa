@@ -20,6 +20,9 @@ var GlobalKinds = map[string]bool{
 	"outbox.sweep": true,
 	// audit/jobs.VerifySweepArgs: reads only platform.tenants and enqueues one audit.verify per tenant.
 	"audit.verify_sweep": true,
+	// audit/jobs.RetentionArgs: calls platform.drop_expired_audit_partitions(), which switches to each tenant's
+	// RLS setting itself to record the chain anchors before dropping whole expired months.
+	"audit.retention": true,
 }
 
 // WorkerOptions configures NewWorkerClient. Zero values take the documented defaults.

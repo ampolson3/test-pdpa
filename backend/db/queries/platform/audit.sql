@@ -5,9 +5,10 @@
 SELECT pg_advisory_xact_lock(hashtextextended(concat('platform.audit_log:', sqlc.arg(tenant_id)::uuid), 0));
 
 -- name: NextAuditChainLink :one
--- The previous row's hash ("" for the first entry) and this row's occurred_at: the database clock,
--- but never earlier than the previous row, so chain order and (occurred_at, id) order agree.
-SELECT coalesce(h.hash, '')::text AS prev_hash,
+-- The previous row's hash (the newest retention anchor's when every row was purged, "" for the first
+-- entry ever) and this row's occurred_at: the database clock, but never earlier than the previous row, so
+-- chain order and (occurred_at, id) order agree.
+SELECT coalesce(h.hash, a.last_hash, '')::text AS prev_hash,
        greatest(clock_timestamp(), coalesce(h.occurred_at + interval '1 microsecond', clock_timestamp()))::timestamptz AS occurred_at
 FROM (SELECT 1) AS one
 LEFT JOIN LATERAL (
@@ -15,7 +16,13 @@ LEFT JOIN LATERAL (
     WHERE tenant_id = @tenant_id::uuid
     ORDER BY occurred_at DESC, id DESC
     LIMIT 1
-) AS h ON true;
+) AS h ON true
+LEFT JOIN LATERAL (
+    SELECT last_hash FROM platform.audit_chain_anchors
+    WHERE tenant_id = @tenant_id::uuid
+    ORDER BY dropped_through DESC
+    LIMIT 1
+) AS a ON true;
 
 -- name: InsertAuditLog :one
 INSERT INTO platform.audit_log (
@@ -55,3 +62,12 @@ WHERE (sqlc.narg(actor_id)::uuid IS NULL OR actor_id = sqlc.narg(actor_id)::uuid
   AND (occurred_at, id) < (@before_occurred_at::timestamptz, @before_id::bigint)
 ORDER BY occurred_at DESC, id DESC
 LIMIT @page_size;
+
+-- name: LatestAuditAnchor :one
+-- The newest record of a retention purge (platform.drop_expired_audit_partitions): the hash the tenant's oldest
+-- surviving row must chain to.
+SELECT last_hash::text AS last_hash
+FROM platform.audit_chain_anchors
+WHERE tenant_id = @tenant_id::uuid
+ORDER BY dropped_through DESC
+LIMIT 1;

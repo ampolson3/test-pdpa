@@ -17,6 +17,7 @@
 | [workflow_instances](#platform-workflow-instances) | workflow ที่กำลังทำงานของแต่ละ record | tenant · RLS `tenant_isolation` |  | ERD-01 |  |
 | [workflow_tasks](#platform-workflow-tasks) | งานในแต่ละขั้นของ workflow | tenant · RLS `tenant_isolation` |  | ERD-01 |  |
 | [sla_timers](#platform-sla-timers) | ตัวนับเวลา SLA (วันปฏิทิน / วันทำการ / ชั่วโมง) | tenant · RLS `tenant_isolation` |  | ERD-01 | BP-06, SEQ-05 |
+| [audit_chain_anchors](#platform-audit-chain-anchors) | หลักฐานการลบ audit log ที่พ้นระยะเก็บ (hash สุดท้ายต่อ tenant) | tenant · RLS `tenant_isolation` | append-only | D-22 |  |
 | [form_definitions](#platform-form-definitions) | ฟอร์ม / แบบประเมิน (form engine) | tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write` |  | ERD-01 |  |
 | [form_versions](#platform-form-versions) | เวอร์ชันของฟอร์ม (schema JSON) | tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write` |  | ERD-01 |  |
 | [form_submissions](#platform-form-submissions) | คำตอบของฟอร์ม | tenant · RLS `tenant_isolation` |  | ERD-01 |  |
@@ -199,6 +200,26 @@ workflow ที่กำลังทำงานของแต่ละ record
 - Index: `platform.sla_timers (tenant_id, instance_id)` · `platform.sla_timers (tenant_id, calendar_id)` · `platform.sla_timers (tenant_id, due_at)`
 - `paused_at timestamptz` (migration 00028): ตั้งเมื่อ instance เข้าขั้น `pause_sla`; เมื่อออก `due_at` ถูกเลื่อนตามช่วงที่หยุดแล้วล้างค่า · `reminders` = `[{"before": n, "at": ts, "sent_at": ts|null}]` เรียงตามเวลา · `calendar_id` NULL = ปฏิทินในตัว (จันทร์–ศุกร์ Asia/Bangkok) เพราะ tenant ยังไม่มีปฏิทิน · สถานะ: `running` → `met` (จบก่อนกำหนด) / `breached` (เลยกำหนด ตั้ง `escalated_at`) · `stopped_at` = เวลาที่ instance จบ
 - RLS: tenant · RLS `tenant_isolation`
+
+<a id="platform-audit-chain-anchors"></a>
+## platform.audit_chain_anchors
+
+หลักฐานการลบ partition ของ `audit_log` ที่พ้นระยะเก็บ 5 ปี (decisions D-22, migration 00033) — append-only
+
+| คอลัมน์ | type | NOT NULL | default | key / อ้างอิง | หมายเหตุ |
+|---|---|---|---|---|---|
+| `id` | `uuid` | ✓ | gen_random_uuid() | PK |  |
+| `tenant_id` | `uuid` | ✓ |  | FK → [platform.tenants](#platform-tenants) | RLS |
+| `partition_name` | `text` | ✓ |  |  | partition ที่ถูกลบ เช่น `audit_log_y2020m01` |
+| `dropped_through` | `timestamptz` | ✓ |  |  | ขอบบนของเดือนที่ลบ |
+| `last_id` | `bigint` | ✓ |  |  | แถวสุดท้ายของ tenant ในเดือนนั้น |
+| `last_occurred_at` | `timestamptz` | ✓ |  |  |  |
+| `last_hash` | `char(64)` | ✓ |  |  | hash ที่แถวแรกที่เหลือต้องอ้างถึง (`prev_hash`) |
+| `rows_dropped` | `bigint` | ✓ |  |  |  |
+| `created_at` | `timestamptz` | ✓ | now() |  |  |
+
+- PK: `(id)` · Unique: `uq_audit_chain_anchors (tenant_id, partition_name)` · Index: `ix_platform_audit_chain_anchors_latest (tenant_id, dropped_through DESC)`
+- RLS: tenant · RLS `tenant_isolation` · เขียนได้เฉพาะ `platform.drop_expired_audit_partitions()` (SECURITY DEFINER) — แอปอ่านได้อย่างเดียว (REVOKE ใน `deploy/db/10-grants.sql`)
 
 <a id="platform-form-definitions"></a>
 ## platform.form_definitions

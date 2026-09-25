@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	pdb "pdpa-platform/internal/pkg/db"
@@ -22,14 +24,20 @@ type VerifyResult struct {
 }
 
 // Verify replays the chain of the transaction's tenant from its first row, oldest first: every row's
-// prev_hash must equal the previous row's hash (the first row's must be empty) and its hash must
+// prev_hash must equal the previous row's hash (the first row's must be empty, or the newest retention
+// anchor's hash after a purge) and its hash must
 // equal the hash recomputed from its columns. It reads in pages, so it works on chains of any size.
 func (s *Service) Verify(ctx context.Context, tenantID uuid.UUID) (VerifyResult, error) {
 	q := store.New(pdb.MustTxFromContext(ctx))
 	const pageSize = 1000
 
 	res := VerifyResult{OK: true}
-	prev := ""
+	// After a retention purge (decisions.md D-22) the oldest surviving row chains to the last purged one,
+	// whose hash the purge recorded; with no purge the chain starts from nothing.
+	prev, err := q.LatestAuditAnchor(ctx, tenantID)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return VerifyResult{}, fmt.Errorf("audit: verify anchor: %w", err)
+	}
 	after := pgtype.Timestamptz{Time: time.Unix(0, 0).UTC(), InfinityModifier: pgtype.NegativeInfinity, Valid: true}
 	afterID := int64(math.MinInt64)
 	for {

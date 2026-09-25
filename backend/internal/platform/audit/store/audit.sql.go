@@ -60,6 +60,23 @@ func (q *Queries) InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) 
 	return id, err
 }
 
+const latestAuditAnchor = `-- name: LatestAuditAnchor :one
+SELECT last_hash::text AS last_hash
+FROM platform.audit_chain_anchors
+WHERE tenant_id = $1::uuid
+ORDER BY dropped_through DESC
+LIMIT 1
+`
+
+// The newest record of a retention purge (platform.drop_expired_audit_partitions): the hash the tenant's oldest
+// surviving row must chain to.
+func (q *Queries) LatestAuditAnchor(ctx context.Context, tenantID uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, latestAuditAnchor, tenantID)
+	var last_hash string
+	err := row.Scan(&last_hash)
+	return last_hash, err
+}
+
 const listAuditChainPage = `-- name: ListAuditChainPage :many
 SELECT id, occurred_at, actor_type, actor_id, action, entity_type, entity_id, before, after, ip, user_agent,
        coalesce(prev_hash, '')::text AS prev_hash, hash
@@ -171,7 +188,7 @@ func (q *Queries) LockAuditChain(ctx context.Context, tenantID uuid.UUID) error 
 }
 
 const nextAuditChainLink = `-- name: NextAuditChainLink :one
-SELECT coalesce(h.hash, '')::text AS prev_hash,
+SELECT coalesce(h.hash, a.last_hash, '')::text AS prev_hash,
        greatest(clock_timestamp(), coalesce(h.occurred_at + interval '1 microsecond', clock_timestamp()))::timestamptz AS occurred_at
 FROM (SELECT 1) AS one
 LEFT JOIN LATERAL (
@@ -180,6 +197,12 @@ LEFT JOIN LATERAL (
     ORDER BY occurred_at DESC, id DESC
     LIMIT 1
 ) AS h ON true
+LEFT JOIN LATERAL (
+    SELECT last_hash FROM platform.audit_chain_anchors
+    WHERE tenant_id = $1::uuid
+    ORDER BY dropped_through DESC
+    LIMIT 1
+) AS a ON true
 `
 
 type NextAuditChainLinkRow struct {
@@ -187,8 +210,9 @@ type NextAuditChainLinkRow struct {
 	OccurredAt pgtype.Timestamptz `db:"occurred_at" json:"occurred_at"`
 }
 
-// The previous row's hash ("" for the first entry) and this row's occurred_at: the database clock,
-// but never earlier than the previous row, so chain order and (occurred_at, id) order agree.
+// The previous row's hash (the newest retention anchor's when every row was purged, "" for the first
+// entry ever) and this row's occurred_at: the database clock, but never earlier than the previous row, so
+// chain order and (occurred_at, id) order agree.
 func (q *Queries) NextAuditChainLink(ctx context.Context, tenantID uuid.UUID) (NextAuditChainLinkRow, error) {
 	row := q.db.QueryRow(ctx, nextAuditChainLink, tenantID)
 	var i NextAuditChainLinkRow

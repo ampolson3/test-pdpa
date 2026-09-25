@@ -142,8 +142,14 @@ list differs per environment) for the chain index. `dbtest.OwnerPool` added for 
 column edit, row deletion and a forged hash detected at the right row; app role denied UPDATE/DELETE; 20
 concurrent writers keep one chain (checked the test fails without the lock); per-tenant chains + RLS; verifier
 alert; sweeper. **Rows written by the old hash code (local dev DBs only) no longer verify** — clear them.
-Open: retention/partition drop (policy undecided — only "≥ 90 days" in pdpa-rules; asked), real client IP
-behind a load balancer (needs a trusted-proxy setting).
+Retention (user's decision D-22: **5 years**, migration 00033): daily `audit.retention` calls SECURITY DEFINER
+`platform.drop_expired_audit_partitions(keep)` — drops whole monthly partitions older than `AUDIT_RETENTION_MONTHS`
+(default 60; the function refuses less, so app credentials can't purge recent evidence) after recording each tenant's
+last dropped row in append-only `platform.audit_chain_anchors`; `Verify` and `NextAuditChainLink` start from the newest
+anchor, so chains still verify and keep growing (also for a tenant whose every row was purged) while a forged anchor is
+caught. Rows in `audit_log_default` are never dropped. Client IP (D-23): `internal/pkg/clientip` + `TRUSTED_PROXIES`
+(IPs/CIDRs; empty = TCP peer) — X-Forwarded-For read right to left only when the peer is trusted, first untrusted hop
+wins; used by the request audit and the rate limiter; verified live with the api binary.
 
 ### PLT-13 Field-level PII encryption (`docs/modules/PLT.md#plt-13`) — done
 `internal/platform/crypto`: `Keyring` seals `*_enc` values (AES-256-GCM, versioned DEK per tenant + data class,

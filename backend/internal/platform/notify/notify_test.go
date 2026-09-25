@@ -277,7 +277,9 @@ func TestDelivery_WorkerRetriesUntilSent(t *testing.T) {
 	}
 	t.Cleanup(func() { cancel(); <-client.Stopped() })
 
-	id := f.send(t, notify.Request{TemplateCode: "dsar.otp", Channel: "sms", RecipientAddress: "0812345678", Vars: map[string]any{"otp": "1"}})
+	// Urgent, as an OTP is: with the wall clock in use, a non-urgent SMS sent during quiet hours (21:00–08:00
+	// Bangkok) would wait for the morning and the test would fail at night.
+	id := f.send(t, notify.Request{TemplateCode: "dsar.otp", Channel: "sms", RecipientAddress: "0812345678", Vars: map[string]any{"otp": "1"}, Urgent: true})
 	deadline := time.Now().Add(30 * time.Second)
 	for {
 		d := f.status(t, id)

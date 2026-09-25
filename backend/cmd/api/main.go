@@ -26,6 +26,7 @@ import (
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authn"
 	"pdpa-platform/internal/pkg/authz"
+	"pdpa-platform/internal/pkg/clientip"
 	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/idempotency"
@@ -105,6 +106,10 @@ func run() error {
 	jwks := authn.NewJWKS(cfg.OIDCJWKSURL)
 	verifier := authn.NewVerifier(jwks, cfg.OIDCIssuer)
 	limiter := ratelimit.New(rdb, 100, time.Minute)
+	clientIP, err := clientip.Parse(cfg.TrustedProxies)
+	if err != nil {
+		return err
+	}
 	idemMw := idempotency.New(rdb)
 
 	r := chi.NewRouter()
@@ -119,6 +124,7 @@ func run() error {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+	r.Use(clientIP.Middleware) // before the rate limiter and the request audit, which key on the client address
 	r.Use(limiter.Middleware)
 	r.Use(maxBody(files.DefaultConfig().MaxBytes))
 	// Structural request validation isn't one of the 13 named middlewares in
