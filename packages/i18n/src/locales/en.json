@@ -3,12 +3,14 @@
     "appName": "PDPA Compliance Platform",
     "loading": "Loading...",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "language": "Language"
   },
   "dashboard": {
     "welcome": "Hello, {name}",
     "tenant": "Organization: {name}",
     "roles": "Roles",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "today": "Today: {date}"
   }
 }

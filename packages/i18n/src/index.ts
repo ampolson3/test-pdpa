@@ -10,3 +10,5 @@ export async function getMessages(locale: Locale) {
       return (await import("./locales/th.json")).default;
   }
 }
+
+export { formatDate } from "./date";

@@ -61,6 +61,32 @@ Not done, and deliberately not scaffolded speculatively (no consuming endpoint e
 - DB-per-tenant deployment mode.
 - Next.js tenant-context middleware / portal custom domain (same reasoning: no portal feature yet).
 
+### PLT-03 ระบบหลายภาษา TH/EN (`docs/modules/PLT.md#plt-03`) — done for what exists so far
+Domain content doesn't get a separate translation table (already true in the migrations — the SA
+note on this feature says so): `_th`/`_en` columns or `{th, en}` jsonb next to the data. This pass
+covered the fixed strings the platform itself owns:
+- Backend: `internal/pkg/i18n` — a Go message catalog (CLAUDE.md rule 12) resolving
+  `Accept-Language` (falling back to `th`, decisions.md Q-17) and localizing every
+  `httpx.Problem`'s title by its stable `code`; module-specific business-rule codes get cataloged
+  as each module is built. Unit-tested (`go test ./internal/pkg/i18n/...`) and confirmed live:
+  the same `authn.required` request returns "กรุณาเข้าสู่ระบบ" with no header / `Accept-Language: th`
+  and "Authentication required" with `Accept-Language: en`.
+- Frontend: `apps/admin` now has a working `LocaleSwitcher` in the root layout header (so it's on
+  every page, satisfying the acceptance criterion literally, not just the dashboard), proper
+  next-intl routing (`defineRouting` + `createNavigation` in `src/i18n/routing.ts`, so the switcher
+  changes locale without leaving the current page), the Sarabun font (Thai government's standard
+  typeface, covers Latin too) via `next/font/google`, and `@pdpa/i18n`'s `formatDate` — Buddhist Era
+  for th / Gregorian for en, both converted to Asia/Bangkok before formatting (CLAUDE.md rule 11).
+  `formatDate` has real unit tests (`pnpm --filter @pdpa/i18n test`, Vitest — the first vitest setup
+  in this monorepo) proving the BE-year math and the UTC→Bangkok day boundary, not just eyeballed.
+- Fixed a real bug this surfaced: the BFF (`apps/admin/src/app/api/bff/[...path]/route.ts`) was
+  forwarding the browser's raw `Accept-Language` header (e.g. `"en-US,en;q=0.9"`) straight to the
+  Go API, which only accepts the literal values `"th"`/`"en"` — every real browser request would
+  have gotten a spurious 400. Fixed by reading the locale from the page's own path via `Referer`
+  instead (that route isn't nested under `app/[locale]/`, so next-intl has no param to resolve
+  there); Server Components use `next-intl/server`'s `getLocale()` directly in `lib/api.ts`, which
+  does have one.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

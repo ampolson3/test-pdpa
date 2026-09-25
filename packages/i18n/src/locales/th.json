@@ -3,12 +3,14 @@
     "appName": "แพลตฟอร์มบริหารการปฏิบัติตาม PDPA",
     "loading": "กำลังโหลด...",
     "save": "บันทึก",
-    "cancel": "ยกเลิก"
+    "cancel": "ยกเลิก",
+    "language": "ภาษา"
   },
   "dashboard": {
     "welcome": "สวัสดี, {name}",
     "tenant": "องค์กร: {name}",
     "roles": "บทบาท",
-    "signIn": "เข้าสู่ระบบ"
+    "signIn": "เข้าสู่ระบบ",
+    "today": "วันนี้: {date}"
   }
 }

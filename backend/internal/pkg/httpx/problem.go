@@ -7,6 +7,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5/middleware"
+
+	"pdpa-platform/internal/pkg/i18n"
 )
 
 // Problem is an RFC 9457 problem detail. Code is the stable, machine-readable discriminator
@@ -30,10 +32,16 @@ type FieldError struct {
 
 func (p Problem) Error() string { return p.Code + ": " + p.Title }
 
-// WriteProblem writes p as application/problem+json with p.Status as the HTTP status.
+// WriteProblem writes p as application/problem+json with p.Status as the HTTP status. p.Title is
+// localized from p.Code against the caller's Accept-Language (PLT-03) when a translation exists;
+// otherwise the title Problem was constructed with stands as the fallback.
 func WriteProblem(w http.ResponseWriter, r *http.Request, p Problem) {
 	if p.RequestID == "" {
 		p.RequestID = middleware.GetReqID(r.Context())
+	}
+	lang := i18n.FromAcceptLanguage(r.Header.Get("Accept-Language"))
+	if title, ok := i18n.ProblemTitle(p.Code, lang); ok {
+		p.Title = title
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(p.Status)
