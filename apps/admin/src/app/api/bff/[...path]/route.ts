@@ -13,6 +13,7 @@ import { apiFetch } from "@/lib/api";
  *   browsers always send on cross-origin and non-GET requests); anything else is refused before the
  *   session's token is attached.
  * - Bodies are streamed through untouched, so binary uploads (multipart, PLT-09) arrive intact.
+ * - Responses are streamed back (server-sent events for the inbox, PLT-04), with ETag for If-Match.
  * - Redirects are passed back to the browser, not followed: a file download answers 302 to a
  *   short-lived signed object-storage URL the browser should fetch directly.
  */
@@ -29,6 +30,7 @@ async function proxy(req: NextRequest, path: string[]): Promise<NextResponse> {
       headers: {
         "Content-Type": req.headers.get("content-type") ?? "application/json",
         "Accept-Language": localeFromReferer(req),
+        ...(req.headers.get("if-match") ? { "If-Match": req.headers.get("if-match")! } : {}),
       },
       body: mutating ? req.body : undefined,
       // Node's fetch requires this to send a streamed request body.
@@ -44,11 +46,13 @@ async function proxy(req: NextRequest, path: string[]): Promise<NextResponse> {
     return new NextResponse(null, { status: upstream.status, headers: { Location: location } });
   }
 
-  const body = await upstream.arrayBuffer();
-  return new NextResponse(body, {
-    status: upstream.status,
-    headers: { "Content-Type": upstream.headers.get("content-type") ?? "application/json" },
-  });
+  // Streamed, not buffered: the inbox's server-sent events (PLT-04) never end on their own.
+  const headers: Record<string, string> = { "Content-Type": upstream.headers.get("content-type") ?? "application/json" };
+  for (const h of ["etag", "cache-control"]) {
+    const v = upstream.headers.get(h);
+    if (v) headers[h] = v;
+  }
+  return new NextResponse(upstream.body, { status: upstream.status, headers });
 }
 
 function sameOrigin(req: NextRequest): boolean {

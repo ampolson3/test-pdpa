@@ -31,8 +31,10 @@ migrate:
 migrate-down:
 	cd backend && go run ./cmd/migrate -down
 
+# -p 1: the integration tests share one database, and River workers started by one package's tests would
+# otherwise pick up (and fail, as an unknown kind) jobs another package enqueued on the same queue.
 test:
-	cd backend && go test -race ./...
+	cd backend && go test -race -p 1 ./...
 	pnpm -r test
 
 # testcontainers-go: spins up its own Postgres + Valkey, needs Docker.

@@ -220,6 +220,8 @@
 
 **Acceptance criteria:** ส่งล้มเหลวมี retry อัตโนมัติ และตรวจสถานะรายข้อความได้
 
+**Implementation (PLT-04):** `backend/internal/platform/notify` — `Service.Send` (ใน tx ของผู้เรียก, เข้ารหัสผู้รับ + ตัวแปรด้วย PLT-13, normalize ที่อยู่, quiet hours 21:00–08:00 สำหรับ SMS/LINE ที่ไม่เร่งด่วน — ค่า config) · job `notify.deliver` บันทึกทุกครั้งที่ล้มเหลว (error ตัดที่อยู่/เบอร์ออก) แล้วตั้งรอบถัดไป 1m · 5m · 30m · 2h · 6h จากนั้น `failed` · state machine `PLT-04` ใน `docs/states/state-machines.yaml` · SMTP จริง, SMS / LINE เป็น mock ตาม decisions Q-03 · API: `/admin/v1/platform/notification-templates` (CRUD + ETag/If-Match + preview, `admin.notification.*`), `/admin/v1/platform/notifications` (สถานะรายข้อความ, `admin.notification.read`), `/admin/v1/platform/inbox` (+ `/stream` SSE, `/{id}/read`) · หน้าจอ: `/settings/notification-templates`, `/settings/notifications`, กระดิ่งใน header · migration 00025
+
 <a id="plt-05"></a>
 ### PLT-05 Workflow & SLA engine
 

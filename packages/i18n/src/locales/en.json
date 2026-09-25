@@ -65,5 +65,66 @@
       "network": "Upload failed — check your connection.",
       "generic": "Upload failed. Please try again."
     }
+  },
+  "notify": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view this page.",
+    "loading": "Loading...",
+    "loadError": "Couldn't load. Please try again.",
+    "loadMore": "Load more",
+    "save": "Save",
+    "cancel": "Cancel",
+    "channel": {
+      "email": "E-mail",
+      "sms": "SMS",
+      "line": "LINE",
+      "in_app": "In-app"
+    },
+    "status": {
+      "queued": "Queued",
+      "sent": "Sent",
+      "delivered": "Delivered / read",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "templates": {
+      "title": "Notification templates",
+      "new": "New template",
+      "empty": "No templates yet.",
+      "global": "platform",
+      "globalHint": "This is a platform template. Saving creates your organization's own version, which is used instead.",
+      "code": "Code",
+      "channel": "Channel",
+      "language": "Language",
+      "subject": "Subject",
+      "body": "Message",
+      "variables": "Variables",
+      "variablesHint": "Comma-separated names, used in the message as '{{.name}}'.",
+      "preview": "Preview",
+      "invalid": "The template doesn't render — check the syntax and that every variable is declared.",
+      "saveError": "Couldn't save. The template may have been changed by someone else, or its code already exists.",
+      "override": "Save as our version",
+      "delete": "Delete"
+    },
+    "deliveries": {
+      "title": "Notification delivery",
+      "description": "The status of every message the system sent. Failed sends are retried automatically; refreshed every 10 seconds.",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "allChannels": "All channels",
+      "empty": "No messages match these filters.",
+      "template": "Template",
+      "recipient": "Recipient",
+      "attempts": "Attempts",
+      "createdAt": "Queued",
+      "lastError": "Last error",
+      "user": "User"
+    },
+    "bell": {
+      "label": "Notifications",
+      "labelUnread": "Notifications, {count} unread",
+      "title": "Notifications",
+      "empty": "No notifications."
+    }
   }
 }

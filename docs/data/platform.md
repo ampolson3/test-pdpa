@@ -512,7 +512,8 @@ template อีเมล / SMS / LINE / in-app
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_notifications_updated`
 - PK: `(id)`
-- Index: `platform.notifications (tenant_id, template_id)` · `platform.notifications (tenant_id, recipient_user_id)` · `platform.notifications (tenant_id, entity_type)` · `platform.notifications (tenant_id, entity_id)`
+- Index: `platform.notifications (tenant_id, template_id)` · `platform.notifications (tenant_id, recipient_user_id)` · `platform.notifications (tenant_id, entity_type)` · `platform.notifications (tenant_id, entity_id)` · `ix_platform_notifications_created (tenant_id, created_at DESC, id DESC)` · `ix_platform_notifications_inbox (tenant_id, recipient_user_id, created_at DESC) WHERE channel = 'in_app'` (migration 00025)
+- PLT-04: `payload` = `{"language", "vars_enc"}` — ตัวแปรของ template เข้ารหัสด้วย keyring (class `notification`) เพราะมักมีชื่อ / ข้อมูลส่วนบุคคล · `recipient_address_enc` เก็บที่อยู่ที่ normalize แล้ว (อีเมล lower-case, เบอร์ E.164) · `status` ตาม state machine `PLT-04`: in-app สร้างเป็น `sent` ทันที และเป็น `delivered` เมื่อผู้รับเปิดอ่าน · `error` ผ่านการตัดอีเมล / ตัวเลขยาวออก
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `dsar.communications.notification_id`
 

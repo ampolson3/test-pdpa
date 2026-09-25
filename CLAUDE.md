@@ -181,6 +181,29 @@ tenant, orphan expiry, failed-scan path, HTTP contract (401/201/409/404/302/415)
 api + worker binaries. Not verified: SSE-S3 (SeaweedFS here has no KMS), the React component in a browser
 (no Keycloak session), BFF Origin check behind a proxy that rewrites Host.
 
+### PLT-04 Notification service (`docs/modules/PLT.md#plt-04`) — done (providers pending Q-03)
+`internal/platform/notify` + `notify/http`: templates (tenant override > global, th fallback, text/template with
+declared variables only), `Service.Send` in the caller's tx (recipient + variables encrypted via PLT-13, addresses
+normalized, non-urgent SMS/LINE held in quiet hours 21:00–08:00 Bangkok — config, undecided), `notify.deliver`
+(each failed attempt recorded with a redacted error, next one scheduled 1m/5m/30m/2h/6h, then `failed`; SMTP 5xx
+fails at once; status changes audited; state machine `PLT-04` added). Senders: real SMTP (deadline, STARTTLS, Thai
+subjects); SMS, LINE — and e-mail without `SMTP_ADDR` — are `MockSender` per decisions.md Q-03, which marks messages
+sent without delivering them: **choose providers before production**. `iam/service.ContactOf` resolves user
+recipients (rule 9). API: template CRUD with ETag/If-Match + preview (`admin.notification.*`), delivery log +
+per-message status (`admin.notification.read`, recipients masked), inbox/read (`authenticated`), and an SSE unread
+stream mounted outside Idempotency+Tx (`cmd/api` now registers generated handlers inside `r.Group` with those two
+middlewares). `crypto.KEKFromEnv` (Transit, or `KEK_PROVIDER=local` + `LOCAL_KEK_BASE64` for dev) is now required by
+api and worker. Frontend: `/settings/notification-templates` (editor + live preview), `/settings/notifications`,
+`NotificationBell` in the header (SSE via `EventSource` through the BFF, which now streams response bodies), shared
+`lib/me.ts`. `packages/i18n/src/messages.test.ts` parses every th/en message as ICU (caught a real `{{.name}}` bug).
+Verified: Go tests (acceptance: retries recorded per attempt then `failed`; a real worker retrying until sent),
+HTTP contract incl. 412/428 through the real validator, SSE test; **and an end-to-end browser run** (Playwright +
+Chromium against real api + worker + Next with a minted Auth.js session): bell count over SSE, read clears it,
+template create with preview, SMS delivered by the worker shown masked on the delivery page, jobs page, file upload
+through the BFF, cross-origin POST refused, signed download redirect, English locale, no unexpected errors.
+Note: `make test` now runs `go test -p 1` — parallel packages sharing one DB let one package's River worker steal
+another's jobs. Committed by mistake earlier and removed: `dump.rdb` (local Redis snapshot, now ignored).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.
