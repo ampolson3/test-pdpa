@@ -18,6 +18,9 @@ REVOKE ALL ON public.goose_db_version FROM pdpa_app, pdpa_platform;
 REVOKE UPDATE, DELETE, TRUNCATE ON platform.audit_log, consent.consent_transactions, consent.consent_receipts, breach.timeline_events
   FROM pdpa_app, pdpa_platform;
 
+-- wrapped data keys: deleting one makes its data unreadable (crypto-shredding is a tenant-offboarding step, PLT-13)
+REVOKE DELETE, TRUNCATE ON platform.tenant_keys FROM pdpa_app, pdpa_platform;
+
 -- global tables without RLS: read-only for the application, written by the provider console (pdpa_platform) or migrations
 REVOKE INSERT, UPDATE, DELETE ON platform.tenants, iam.permissions, org.lawful_bases, org.countries, cookie.cookie_kb,
   agreement.mandatory_rules, gov.regulatory_updates FROM pdpa_app;

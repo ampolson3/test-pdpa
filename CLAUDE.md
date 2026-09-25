@@ -145,6 +145,21 @@ alert; sweeper. **Rows written by the old hash code (local dev DBs only) no long
 Open: retention/partition drop (policy undecided — only "≥ 90 days" in pdpa-rules; asked), real client IP
 behind a load balancer (needs a trusted-proxy setting).
 
+### PLT-13 Field-level PII encryption (`docs/modules/PLT.md#plt-13`) — done
+`internal/platform/crypto`: `Keyring` seals `*_enc` values (AES-256-GCM, versioned DEK per tenant + data class,
+associated data = tenant + class + column) and computes `blind_index` (per-tenant HMAC-SHA256 over the
+normalized identifier — e-mail lower-case, phone E.164 defaulting to +66, 13-digit national id, Thai digits
+mapped). DEKs live wrapped in new table `platform.tenant_keys` (migration 00024; DELETE revoked from the app
+roles — deleting a key is crypto-shredding) and are cached unwrapped for 5 min. KEK = `crypto.Transit`
+(OpenBao, one key `tenant-<uuid>` per tenant); `LocalKEK` is for dev/tests only. Rotation: `RotateDEK` (new
+writes use v+1, old versions still decrypt), `RotateKEK` (rotate Transit key + rewrap every DEK, no data
+re-encryption). Tests run against a real OpenBao dev server when reachable (README) and LocalKEK:
+acceptance (stored bytes unreadable, exact lookup from differently formatted input, unreadable without the
+KEK), tenant isolation, column binding/tamper, both rotations, concurrent first use, app can't delete keys.
+Not wired into `cmd/api`/`cmd/worker` yet (no consumer; first is CON's subject identifiers — add
+`OPENBAO_ADDR`/token config then). Not done: blind-index key rotation (needs a reindex of every row),
+re-encrypting old data under a new DEK, a schedule for the 12-month KEK rotation.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

@@ -584,6 +584,27 @@ webhook ที่ระบบปลายทางลงทะเบียน
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `consent.downstream_syncs.webhook_delivery_id`
 
+<a id="platform-tenant-keys"></a>
+## platform.tenant_keys
+
+กุญแจข้อมูล (DEK / blind index key) ต่อ tenant ที่ห่อด้วย KEK ใน OpenBao Transit — ห้ามลบ (PLT-13, migration 00024)
+
+| คอลัมน์ | type | NOT NULL | default | key / อ้างอิง | หมายเหตุ |
+|---|---|---|---|---|---|
+| `id` | `uuid` | ✓ | gen_random_uuid() | PK |  |
+| `tenant_id` | `uuid` | ✓ |  | FK → [platform.tenants](#platform-tenants) | RLS |
+| `purpose` | `text` | ✓ |  |  | ค่า: `dek` (AES-256-GCM สำหรับ `*_enc`), `blind_index` (HMAC-SHA256) |
+| `data_class` | `varchar(60)` | ✓ |  |  | ประเภทข้อมูลของ DEK เช่น `subject_identifier`, `contact` · blind index ใช้ `default` (1 key ต่อ tenant) |
+| `version` | `int` | ✓ |  |  | เริ่ม 1 · `RotateDEK` เพิ่มทีละ 1 |
+| `wrapped_key` | `bytea` | ✓ |  |  | key ที่ห่อด้วย KEK ของ tenant (Transit ciphertext) |
+| `kek_ref` | `varchar(200)` | ✓ |  |  | KEK version ที่ห่อ เช่น `transit:tenant-<id>:v2` · เปลี่ยนเมื่อ `RotateKEK` rewrap |
+| `status` | `text` | ✓ | 'active' |  | ค่า: `active`, `retired` (version เก่ายังใช้ถอดรหัสได้) |
+
+- มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_tenant_keys_updated`
+- Unique: `uq_tenant_keys_purpose_class_version (tenant_id, purpose, data_class, version)` · `uq_tenant_keys_active (tenant_id, purpose, data_class) WHERE status = 'active'`
+- RLS: tenant · RLS `tenant_isolation` · `pdpa_app` / `pdpa_platform` ไม่มีสิทธิ์ DELETE / TRUNCATE (`deploy/db/10-grants.sql`) — ลบ key = ข้อมูลอ่านไม่ได้ถาวร (crypto-shredding ตอนเลิกใช้ tenant)
+- รูปแบบค่าใน `*_enc`: `0x01 | DEK version (uint32) | nonce | AES-256-GCM ciphertext+tag` · associated data = tenant_id + data_class + ชื่อคอลัมน์ (ย้าย ciphertext ไปคอลัมน์ / tenant อื่นแล้วถอดไม่ได้) · `blind_index` = HMAC-SHA256(key, identifier_type ‖ ค่าที่ normalize) — normalize: อีเมล lower-case, เบอร์ E.164 (ค่าเริ่มต้น +66), เลขบัตร 13 หลัก, เลขไทยแปลงเป็นอารบิก
+
 <a id="platform-audit-log"></a>
 ## platform.audit_log
 

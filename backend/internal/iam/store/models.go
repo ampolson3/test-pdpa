@@ -2891,6 +2891,23 @@ type PlatformTenant struct {
 	RowVersion    int32              `db:"row_version" json:"row_version"`
 }
 
+// กุญแจข้อมูล (DEK / blind index key) ต่อ tenant ที่ห่อด้วย KEK ใน OpenBao Transit — ห้ามลบ (PLT-13)
+type PlatformTenantKey struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	TenantID   uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	Purpose    string             `db:"purpose" json:"purpose"`
+	DataClass  string             `db:"data_class" json:"data_class"`
+	Version    int32              `db:"version" json:"version"`
+	WrappedKey []byte             `db:"wrapped_key" json:"wrapped_key"`
+	KekRef     string             `db:"kek_ref" json:"kek_ref"`
+	Status     string             `db:"status" json:"status"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy  pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy  pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion int32              `db:"row_version" json:"row_version"`
+}
+
 // โมดูลที่เปิดใช้ต่อ tenant (license)
 type PlatformTenantModule struct {
 	TenantID         uuid.UUID          `db:"tenant_id" json:"tenant_id"`

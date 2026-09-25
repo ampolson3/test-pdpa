@@ -75,6 +75,10 @@ psql -h localhost -p 5433 -d postgres -v ON_ERROR_STOP=1 \
 `pg_ctlcluster 16 main start` → รัน `00-bootstrap.sql` ด้วย `su postgres -c "psql -p 5433 ..."` และ `cmd/migrate` ตามด้านบน
 (`redis-server --daemonize yes` แทน Valkey)
 
+OpenBao (KEK ของ PLT-13) สำหรับ test: ดาวน์โหลด binary จาก github.com/openbao/openbao/releases แล้ว
+`bao server -dev -dev-root-token-id=dev-root -dev-listen-address=127.0.0.1:8200` + `BAO_ADDR=http://127.0.0.1:8200 BAO_TOKEN=dev-root bao secrets enable transit`
+(test ของ `internal/platform/crypto` ใช้ `TEST_OPENBAO_ADDR` / `TEST_OPENBAO_TOKEN`, ถ้าไม่มีจะทดสอบกับ LocalKEK อย่างเดียว)
+
 Keycloak ยังไม่ได้ตั้งทางนี้ (Organizations / `tid` claim ต้องรอ PoC T13 ตาม `docs/decisions.md` Q-18) — ทดสอบ
 endpoint ที่ต้อง login ได้ด้วย JWT ที่เซ็นเองชั่วคราวเท่านั้น (ดูวิธีใน git log ของ commit ที่ verify reference
 slice)

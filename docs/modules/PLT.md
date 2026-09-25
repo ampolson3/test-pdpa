@@ -425,6 +425,8 @@
 
 **Acceptance criteria:** identifier ในฐานข้อมูลอ่านไม่ออกถ้าไม่มี key แต่ยังค้นหาแบบตรงตัวได้
 
+**Implementation (PLT-13):** `backend/internal/platform/crypto` + ตาราง `platform.tenant_keys` (migration 00024) · รายละเอียดใน `docs/architecture/security.md` § ลำดับชั้นกุญแจ และ `docs/data/platform.md#platform-tenant-keys` · ทดสอบกับ OpenBao Transit จริง (dev server) และ LocalKEK
+
 <a id="plt-14"></a>
 ### PLT-14 Import framework (Excel / CSV)
 

@@ -91,6 +91,8 @@
 | Blind index key | HMAC-SHA256 key แยกต่อ tenant · ใช้ค้นหาแบบตรงตัวโดยไม่ถอดรหัส (normalize ก่อน: lower-case อีเมล, E.164 เบอร์โทร) |
 | ลบ tenant | ทำลาย KEK = crypto-shredding |
 
+โค้ด (PLT-13): `backend/internal/platform/crypto` — `Keyring.Encrypt/Decrypt(ctx, class, column, …)`, `BlindIndex(ctx, kind, value)`, `RotateDEK`, `RotateKEK` (rotate Transit key + rewrap DEK ทั้งหมดของ tenant) · KEK = `crypto.Transit` (OpenBao, key `tenant-<uuid>` ต่อ tenant) · `LocalKEK` สำหรับ dev/test เท่านั้น · DEK cache ในหน่วยความจำ 5 นาที · ตาราง `platform.tenant_keys` · ยังไม่ทำ: หมุน blind index key (ต้อง reindex ทุกแถว), job re-encrypt ข้อมูลด้วย DEK ใหม่, การหมุน KEK ตามรอบ 12 เดือน (ops สั่ง `RotateKEK`)
+
 ## PII ในโค้ดและ log
 
 - ห้าม log ค่า PII / token / OTP / secret — log ได้เฉพาะ id, subject_ref, request_id · middleware redaction + linter ตรวจ key ต้องห้าม (email, phone, national_id, name ฯลฯ)
