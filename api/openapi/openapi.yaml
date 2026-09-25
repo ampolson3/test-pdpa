@@ -957,6 +957,238 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/imports:
+    get:
+      operationId: platformListImports
+      tags: [platform]
+      summary: Recent imports of the types the caller may run (PLT-14)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: import_type
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 60
+      responses:
+        '200':
+          description: Imports
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ImportJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: platformCreateImport
+      tags: [platform]
+      summary: Start an import of an uploaded file (upload first with POST /admin/v1/platform/files)
+      description: Each import type requires its own permission (e.g. the holiday import needs org.calendar.update); checked in the service.
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [import_type, file_id]
+              properties:
+                import_type:
+                  type: string
+                  maxLength: 60
+                file_id:
+                  $ref: '#/components/schemas/Uuid'
+      responses:
+        '201':
+          description: Created; the file is scanned and its header row read next
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/imports/{id}:
+    get:
+      operationId: platformGetImport
+      tags: [platform]
+      summary: An import's status, headers, mapping and counts
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The import
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/imports/{id}/mapping:
+    put:
+      operationId: platformSetImportMapping
+      tags: [platform]
+      summary: Map file headers to columns and validate every row (dry run)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [columns]
+              properties:
+                columns:
+                  type: object
+                  description: column key → header text in the file
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: Validation queued
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/imports/{id}/confirm:
+    post:
+      operationId: platformConfirmImport
+      tags: [platform]
+      summary: Import the rows that passed validation (all or nothing)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: Import queued
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/imports/{id}/errors:
+    get:
+      operationId: platformDownloadImportErrors
+      tags: [platform]
+      summary: Redirect to the error report (CSV — line, column, reason; never the cell values)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '302':
+          description: Signed URL
+          headers:
+            Location:
+              required: true
+              schema:
+                type: string
+                format: uri
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /public/v1/collection-points/{key}:
     get:
       operationId: consentGetPublicCollectionPoint
@@ -1228,6 +1460,61 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    ImportJob:
+      type: object
+      required: [id, import_type, status, headers, suggested, mapping, columns, has_error_report, row_version, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        import_type:
+          type: string
+        status:
+          type: string
+          enum: [queued, validating, ready, importing, done, failed]
+        headers:
+          type: array
+          description: Header row of the file (empty until the file has been scanned and read)
+          items:
+            type: string
+        suggested:
+          type: object
+          additionalProperties:
+            type: string
+        mapping:
+          type: object
+          additionalProperties:
+            type: string
+        columns:
+          type: array
+          items:
+            type: object
+            required: [key, label, required]
+            properties:
+              key:
+                type: string
+              label:
+                type: object
+                additionalProperties:
+                  type: string
+              required:
+                type: boolean
+        total_rows:
+          type: [integer, 'null']
+        valid_rows:
+          type: [integer, 'null']
+        error_rows:
+          type: [integer, 'null']
+        has_error_report:
+          type: boolean
+        failure:
+          type: string
+          description: file_rejected, file_unreadable, no_header_row, apply_failed_line_<n>
+        row_version:
+          type: integer
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
     Comment:
       type: object
       required: [id, author_id, author_name, body, mentions, resolved, row_version, created_at, updated_at]

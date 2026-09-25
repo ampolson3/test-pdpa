@@ -20,8 +20,10 @@ import (
 	"pdpa-platform/internal/platform/crypto"
 	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/files"
+	"pdpa-platform/internal/platform/importer"
 	"pdpa-platform/internal/platform/jobs"
 	"pdpa-platform/internal/platform/notify"
+	"pdpa-platform/internal/wiring"
 )
 
 func main() {
@@ -74,6 +76,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileStore(store, inserter), River: inserter, Audit: auditservice.New()}
+	river.AddWorker(workers, &importer.Preparer{Service: importSvc})
+	river.AddWorker(workers, &importer.Validator{Service: importSvc})
+	river.AddWorker(workers, &importer.Applier{Service: importSvc})
+
 	river.AddWorker(workers, &notify.Deliverer{
 		Service: &notify.Service{Keyring: &crypto.Keyring{KEK: kek}, River: inserter, Quiet: notify.DefaultQuietHours()},
 		Senders: notifySenders(),

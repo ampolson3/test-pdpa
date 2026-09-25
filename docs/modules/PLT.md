@@ -456,6 +456,8 @@
 
 **หมายเหตุ:** ใช้ร่วม ORG-08, ORG-09, ROPA-18, CON-22
 
+**Implementation (PLT-14):** `backend/internal/platform/importer` — module เจ้าของลงทะเบียนประเภทการนำเข้าใน `internal/wiring.ImportTypes()` (`importer.Type{Permission, Columns, Validate, Apply}`; ประเภทที่ไม่ลงทะเบียนถูกปฏิเสธ, สิทธิ์ตรวจตาม `Permission` ของประเภท) · ขั้นตอน async ด้วย PLT-10: `import.prepare` (รอผลสแกนไวรัส PLT-09, อ่านหัวคอลัมน์, เสนอ mapping จากชื่อ/alias) → ผู้ใช้ map คอลัมน์ → `import.validate` (dry-run ทุกแถว ไม่เขียนข้อมูล, รายงาน CSV `line,column,error` — ไม่มีค่าของเซลล์ — เก็บเป็นไฟล์ PLT-09) → ยืนยัน → `import.apply` (แถวที่ผ่านทั้งหมดใน savepoint เดียว; แถวใดล้มเหลว = rollback ทั้งหมด, สถานะ `failed`) · CSV (UTF-8 BOM, `,`/`;`) และ XLSX (sheet แรก, excelize แบบ stream) · timeout 30 นาทีต่อขั้น · state machine `PLT-14` ใน `docs/states/state-machines.yaml` · API `/admin/v1/platform/imports` (+ `/{id}`, `/{id}/mapping` PUT + If-Match, `/{id}/confirm` + If-Match, `/{id}/errors` → 302) · frontend: `apps/admin/src/components/import-wizard.tsx` (อัปโหลด → map → ตรวจ → ยืนยัน) + `@pdpa/api-client` `useImport` · ทดสอบ 50,000 แถว (ผ่านใน ~15 วินาที) พร้อมรายงานแถวผิด · ผู้ใช้รายแรก: นำเข้าวันหยุด (ORG-20)
+
 <a id="plt-15"></a>
 ### PLT-15 Public API, webhook และ developer portal
 

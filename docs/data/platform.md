@@ -658,6 +658,7 @@ audit log แบบ append-only + hash chain (partition รายเดือน
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_import_jobs_updated`
 - PK: `(id)`
 - Index: `platform.import_jobs (tenant_id, file_id)` · `platform.import_jobs (tenant_id, error_file_id)`
+- `mapping` (PLT-14): `{"headers": [หัวคอลัมน์ในไฟล์], "suggested": {column_key: header}, "columns": {column_key: header} (ที่ผู้ใช้ยืนยัน), "failure": "<เหตุผล เช่น file_rejected, no_header_row, apply_failed_line_N>"}` · `dry_run` = true จนกว่าจะเริ่ม `importing` · `success_rows` = แถวที่ผ่านการตรวจ (ขณะ `ready`) แล้วเป็นแถวที่นำเข้าจริง (`done`) · `error_file_id` = รายงาน CSV ของแถวที่ผิด (ไม่มีค่าเซลล์ เพื่อไม่ให้ PII หลุด)
 - RLS: tenant · RLS `tenant_isolation`
 
 <a id="platform-export-jobs"></a>

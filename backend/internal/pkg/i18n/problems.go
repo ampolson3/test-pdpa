@@ -89,6 +89,15 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "คำขอส่งการแจ้งเตือนไม่ถูกต้อง",
 		En: "Invalid notification request",
 	},
+	// PLT-14 import
+	"import.invalid_mapping": {
+		Th: "การจับคู่คอลัมน์ไม่ถูกต้อง",
+		En: "Invalid column mapping",
+	},
+	"import.file_not_usable": {
+		Th: "ใช้ไฟล์นี้นำเข้าไม่ได้ (ไม่พบ ไม่ใช่ไฟล์ของคุณ หรือถูกใช้แล้ว)",
+		En: "File not found, not yours, or already used",
+	},
 	// PLT-07 collaboration
 	"collab.has_replies": {
 		Th: "ลบความเห็นที่มีการตอบกลับแล้วไม่ได้",

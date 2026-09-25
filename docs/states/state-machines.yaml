@@ -738,3 +738,67 @@ machines:
     event: read
     guard: ผู้รับเท่านั้น
     action: null
+- machine: PLT-14
+  title: Bulk import
+  column: platform.import_jobs.status
+  states:
+  - queued
+  - validating
+  - ready
+  - importing
+  - done
+  - failed
+  initial:
+  - queued
+  terminal:
+  - done
+  - failed
+  transitions:
+  - from: queued
+    to: validating
+    trigger: ผู้ใช้ยืนยันการจับคู่คอลัมน์ (หลังไฟล์ผ่านการสแกนและอ่านหัวตารางแล้ว)
+    event: set mapping
+    guard: อ่านหัวตารางแล้ว
+    action: enqueue import.validate
+  - from: queued
+    to: failed
+    trigger: ไฟล์ติดไวรัส / สแกนไม่สำเร็จ / อ่านไฟล์ไม่ได้
+    event: import.prepare
+    guard: null
+    action: null
+  - from: validating
+    to: ready
+    trigger: ตรวจทุกแถวเสร็จ (dry-run) พร้อมรายงานแถวที่ผิด
+    event: import.validate
+    guard: null
+    action: เก็บไฟล์รายงานข้อผิดพลาด
+  - from: validating
+    to: failed
+    trigger: อ่านไฟล์ไม่ได้ระหว่างตรวจ
+    event: import.validate
+    guard: null
+    action: null
+  - from: ready
+    to: validating
+    trigger: เปลี่ยนการจับคู่คอลัมน์แล้วตรวจใหม่
+    event: set mapping
+    guard: null
+    action: enqueue import.validate
+  - from: ready
+    to: importing
+    trigger: ผู้ใช้ยืนยันนำเข้า
+    event: confirm
+    guard: มีแถวที่ผ่านอย่างน้อย 1 แถว
+    action: enqueue import.apply
+  - from: importing
+    to: done
+    trigger: บันทึกแถวที่ผ่านทั้งหมดใน transaction เดียว
+    event: import.apply
+    guard: null
+    action: audit
+  - from: importing
+    to: failed
+    trigger: บันทึกแถวใดไม่สำเร็จ — ย้อนกลับทั้งหมด (rollback)
+    event: import.apply
+    guard: null
+    action: audit

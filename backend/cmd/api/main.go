@@ -36,10 +36,13 @@ import (
 	"pdpa-platform/internal/platform/crypto"
 	"pdpa-platform/internal/platform/files"
 	fileshttp "pdpa-platform/internal/platform/files/http"
+	"pdpa-platform/internal/platform/importer"
+	importerhttp "pdpa-platform/internal/platform/importer/http"
 	"pdpa-platform/internal/platform/jobs"
 	jobshttp "pdpa-platform/internal/platform/jobs/http"
 	"pdpa-platform/internal/platform/notify"
 	notifyhttp "pdpa-platform/internal/platform/notify/http"
+	"pdpa-platform/internal/wiring"
 )
 
 func main() {
@@ -175,6 +178,9 @@ func run() error {
 	})
 	fileSvc.EntityPermissions = collabSvc.FilePermissions()
 
+	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
+	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
+
 	// The inbox stream (SSE) is the one route outside Idempotency + Tx: the Tx middleware buffers the
 	// response until COMMIT, which a stream never reaches. It opens a short transaction per check itself.
 	r.Method(http.MethodGet, "/admin/v1/platform/inbox/stream", &notifyhttp.Stream{Service: notifySvc, Pool: pool})
@@ -202,6 +208,11 @@ func run() error {
 			[]collabhttp.StrictMiddlewareFunc{authz.StrictMiddleware[collabhttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			collabhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		collabhttp.HandlerWithOptions(strictCollab, collabhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictImports := importerhttp.NewStrictHandlerWithOptions(importerhttp.NewStrict(importSvc),
+			[]importerhttp.StrictMiddlewareFunc{authz.StrictMiddleware[importerhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			importerhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		importerhttp.HandlerWithOptions(strictImports, importerhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictNotify := notifyhttp.NewStrictHandlerWithOptions(notifyhttp.NewStrict(notifySvc),
 			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission)},

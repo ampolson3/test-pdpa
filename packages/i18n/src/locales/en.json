@@ -170,5 +170,32 @@
       "platform_file_attach": "attached a file",
       "platform_file_scan": "— file scan finished"
     }
+  },
+  "import": {
+    "choose": "Choose a file",
+    "dropHere": "Drop a CSV or Excel file here, or click to choose",
+    "formats": "CSV (UTF-8) or .xlsx, first row = column headers",
+    "uploading": "Uploading",
+    "uploadFailed": "Upload failed — check the file type and size.",
+    "scanning": "Checking the file for viruses and reading its columns…",
+    "mapHint": "Match each field to a column of your file. Fields marked * are required.",
+    "notMapped": "— not imported —",
+    "mapError": "The mapping isn't valid. Map every required field to a different column.",
+    "check": "Check the data",
+    "validating": "Checking every row…",
+    "summary": "{total} rows: {valid} ready to import, {errors} with problems.",
+    "downloadErrors": "Download the list of rows with problems",
+    "confirm": "Import {count} rows",
+    "remap": "Change the mapping",
+    "importing": "Importing…",
+    "done": "Imported {count} rows.",
+    "again": "Import another file",
+    "failure": {
+      "file_rejected": "The file was rejected by the virus scan.",
+      "file_unreadable": "The file can't be read as CSV or Excel.",
+      "no_header_row": "The file has no header row.",
+      "apply_failed": "The import failed, so nothing was imported. Please try again.",
+      "unknown": "The import failed."
+    }
   }
 }

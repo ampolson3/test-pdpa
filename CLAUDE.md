@@ -221,6 +221,21 @@ path longer than ~76 characters made the audit insert and so **every such reques
 `{id}` and the action is capped (`audit.RequestAction`, tested). Also: `cmd/api`'s response-error handler and the Tx
 middleware now log the error with the request id (both used to swallow it).
 
+### PLT-14 Import framework (`docs/modules/PLT.md#plt-14`) — done
+`internal/platform/importer` + `importer/http`: modules register an import type in `internal/wiring.ImportTypes()`
+(shared by `cmd/api` and `cmd/worker`) as `importer.Type{Permission, Columns, Validate, Apply}`; unregistered types are
+404, the type's permission is checked in the service (endpoints are `authenticated`). Flow on River (PLT-10), each job
+in its own tenant tx with a 30-minute timeout: `import.prepare` (snoozes until the PLT-09 virus scan is done, reads the
+header row, suggests a mapping from labels/aliases) → `PUT …/mapping` (If-Match) → `import.validate` (dry run over every
+row, nothing written; error report CSV `line,column,error` without cell values, stored as a PLT-09 file attached to the
+import) → `POST …/confirm` (If-Match) → `import.apply` (all valid rows in one savepoint; any failure rolls the whole
+import back and marks it `failed`). CSV (BOM stripped, `,`/`;` detected) and XLSX (first sheet, excelize streaming).
+State machine `PLT-14` in `docs/states/state-machines.yaml`; `files` gained trusted system operations (`Status`, `Open`,
+`SignedURL`, `SaveGenerated`, `AttachSystem`). Frontend: `ImportWizard` (upload → map → check → confirm) +
+`@pdpa/api-client` `useImport`, first mounted by ORG-20's holiday import. Tests: 50,000 rows validated and imported
+with the error report (acceptance, ~15 s), rollback on a failing row, Excel, mapping rules and transitions, access and
+two-tenant isolation, infected file, HTTP contract (401/403/404/400/422/428).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.
