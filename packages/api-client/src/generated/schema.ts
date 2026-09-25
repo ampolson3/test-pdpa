@@ -1202,6 +1202,267 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/consent/purposes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Purposes with their live version (CON-12) */
+        get: operations["consentListPurposes"];
+        put?: never;
+        /** Create a purpose with its first draft; it goes live once a DPO approves and it is published (PLT-08) */
+        post: operations["consentCreatePurpose"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/purposes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A purpose with its published versions */
+        get: operations["consentGetPurpose"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/purposes/{id}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save the draft of the next version (then submit it for approval through the record-versions endpoints) */
+        put: operations["consentSavePurposeDraft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/purposes/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take a purpose out of use (refused while an active collection point shows it) */
+        post: operations["consentRetirePurpose"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/collection-points": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Collection points (CON-09) */
+        get: operations["consentListCollectionPoints"];
+        put?: never;
+        /** Create a draft collection point */
+        post: operations["consentCreateCollectionPoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/collection-points/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A collection point with its purposes */
+        get: operations["consentGetCollectionPoint"];
+        /** Save a collection point (If-Match); a live one must still pass the publish checks */
+        put: operations["consentUpdateCollectionPoint"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/collection-points/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish after the s.19 / s.26 checks; issues the public key used by links, QR codes and forms */
+        post: operations["consentPublishCollectionPoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/collection-points/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire a collection point; its public key stops working */
+        post: operations["consentRetireCollectionPoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Most recently active data subjects (identifiers masked) */
+        get: operations["consentListSubjects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/subjects/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Find the data subject an identifier belongs to (exact match by blind index; POST keeps the identifier out of URLs) */
+        post: operations["consentSearchSubjects"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/subjects/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A data subject profile: status per purpose and full history (CON-15) */
+        get: operations["consentGetSubject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/subjects/{id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recompute the subject's receipt chain and report the first receipt that doesn't match */
+        post: operations["consentVerifySubject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record decisions for a data subject as staff (counter, call centre) — including withdrawal with a reason (CON-13) */
+        post: operations["consentRecordOnBehalf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where consent data is stored and how identifiers are protected (CON-17) */
+        get: operations["consentGetSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/consents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a data subject's decisions from a published collection point (BP-01)
+         * @description The collection point's public key (X-Public-Key) names the tenant. Every purpose the form shows must be decided (nothing pre-ticked); withdrawing needs the verified preference centre. Replaying an Idempotency-Key returns the first result.
+         */
+        post: operations["consentSubmitPublicConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/v1/collection-points/{key}": {
         parameters: {
             query?: never;
@@ -2075,6 +2336,11 @@ export interface components {
             text: string;
             is_sensitive: boolean;
             requires_explicit: boolean;
+            /** @description Must be consented to to continue (never a sensitive purpose) */
+            required?: boolean;
+            description?: string;
+            /** @description Statement shown with a sensitive purpose's own checkbox (s.26) */
+            explicit_text?: string;
             min_age?: number | null;
             preferences?: {
                 code: string;
@@ -2093,6 +2359,188 @@ export interface components {
             type: "email" | "phone" | "national_id" | "customer_id" | "passport" | "line_uid" | "other";
             /** @description Normalized by the API (lower-case e-mail, E.164 phone) before blind indexing. Never logged. */
             value: string;
+        };
+        ConsentText: {
+            th: string;
+            en?: string;
+        };
+        ConsentPreference: {
+            code: string;
+            name: components["schemas"]["ConsentText"];
+            /** @enum {string} */
+            type: "channel" | "topic" | "frequency" | "other";
+            options: {
+                value: string;
+                label: components["schemas"]["ConsentText"];
+            }[];
+        };
+        /** @description What a purpose version says (the draft snapshot approved through PLT-08) */
+        PurposeContent: {
+            name: components["schemas"]["ConsentText"];
+            description?: components["schemas"]["ConsentText"];
+            consent_text: components["schemas"]["ConsentText"];
+            /** @description Required when a data category is sensitive (s.26): the statement shown with its own checkbox */
+            explicit_text?: components["schemas"]["ConsentText"];
+            data_category_codes?: string[];
+            min_age?: number | null;
+            lifespan_days?: number | null;
+            /** @enum {string} */
+            change_type?: "minor" | "material";
+            requires_reconsent?: boolean;
+            preferences?: components["schemas"]["ConsentPreference"][];
+        };
+        PurposeVersionInfo: {
+            id: components["schemas"]["Uuid"];
+            version: number;
+            consent_text: components["schemas"]["ConsentText"];
+            explicit_text?: components["schemas"]["ConsentText"];
+            /** @enum {string} */
+            change_type: "initial" | "minor" | "material";
+            requires_reconsent: boolean;
+            published_at: components["schemas"]["Timestamp"];
+        };
+        ConsentPurpose: {
+            id: components["schemas"]["Uuid"];
+            code: string;
+            legal_entity_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "draft" | "active" | "retired";
+            is_sensitive: boolean;
+            requires_explicit: boolean;
+            lawful_basis: string;
+            current_version?: number | null;
+            live: components["schemas"]["PurposeContent"];
+            versions: components["schemas"]["PurposeVersionInfo"][];
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        PurposeDraftSaved: {
+            version_id: components["schemas"]["Uuid"];
+            version: number;
+            status: string;
+            row_version: number;
+        };
+        /** @description s.19 attestation made when publishing */
+        ConsentChecklist: {
+            separate_text: boolean;
+            not_bundled: boolean;
+            plain_language: boolean;
+            withdrawal_info: boolean;
+        };
+        CollectionPointInput: {
+            name: string;
+            /** @enum {string} */
+            channel: "web" | "app" | "pos" | "call_center" | "kiosk" | "paper" | "line" | "api";
+            legal_entity_id: components["schemas"]["Uuid"];
+            allowed_origins?: string[];
+            purposes: {
+                purpose_id: components["schemas"]["Uuid"];
+                required: boolean;
+            }[];
+        };
+        ConsentCollectionPoint: {
+            id: components["schemas"]["Uuid"];
+            code: string;
+            name: string;
+            channel: string;
+            legal_entity_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "draft" | "active" | "retired";
+            /** @description Issued on the first publish; used by links, QR codes and forms */
+            public_key?: string;
+            allowed_origins: string[];
+            checklist?: components["schemas"]["ConsentChecklist"];
+            published_at?: components["schemas"]["Timestamp"];
+            purposes: {
+                purpose_id: components["schemas"]["Uuid"];
+                code: string;
+                name: components["schemas"]["ConsentText"];
+                status: string;
+                is_sensitive: boolean;
+                required: boolean;
+                current_version?: number | null;
+            }[];
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        ConsentSubjectSummary: {
+            id: components["schemas"]["Uuid"];
+            key: string;
+            identifiers: {
+                type: string;
+                masked: string;
+                primary: boolean;
+                verified: boolean;
+            }[];
+            last_activity_at?: components["schemas"]["Timestamp"];
+            created_at: components["schemas"]["Timestamp"];
+        };
+        ConsentSubjectProfile: components["schemas"]["ConsentSubjectSummary"] & {
+            statuses: {
+                purpose_id: components["schemas"]["Uuid"];
+                purpose_code: string;
+                purpose_name: components["schemas"]["ConsentText"];
+                is_sensitive: boolean;
+                /** @enum {string} */
+                status: "ACTIVE" | "NOT_GIVEN" | "WITHDRAWN" | "EXPIRED" | "PENDING";
+                version: number;
+                current_version?: number | null;
+                needs_reconsent: boolean;
+                preferences?: Record<string, never> | null;
+                expires_at?: components["schemas"]["Timestamp"];
+                updated_at: components["schemas"]["Timestamp"];
+            }[];
+            history: {
+                id: components["schemas"]["Uuid"];
+                occurred_at: components["schemas"]["Timestamp"];
+                type: string;
+                purpose_code: string;
+                purpose_name: components["schemas"]["ConsentText"];
+                version: number;
+                preferences?: Record<string, never> | null;
+                reason_code?: string;
+                expires_at?: components["schemas"]["Timestamp"];
+                source: string;
+                receipt_no: string;
+                channel: string;
+                collection_point: string;
+                captured_by?: string;
+            }[];
+        };
+        ConsentVerifyResult: {
+            ok: boolean;
+            checked: number;
+            /** @description Receipt number of the first receipt that fails */
+            broken_at?: string;
+            /** @enum {string} */
+            reason?: "hash_mismatch" | "prev_hash_mismatch";
+        };
+        ConsentDecisionInput: {
+            purpose_code: string;
+            purpose_version_no: number;
+            /** @enum {string} */
+            decision: "CONSENTED" | "NOT_CONSENTED" | "WITHDRAWN";
+            preferences?: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            reason_code?: "no_longer_interested" | "too_many_messages" | "privacy_concern" | "service_ended" | "other";
+        };
+        ConsentRecordInput: {
+            collection_point_id: components["schemas"]["Uuid"];
+            subject_id?: components["schemas"]["Uuid"];
+            identifiers?: components["schemas"]["SubjectIdentifier"][];
+            decisions: components["schemas"]["ConsentDecisionInput"][];
+            /** @enum {string} */
+            language?: "th" | "en";
+        };
+        ConsentSettings: {
+            /** @description ISO country code of where consent data is stored */
+            data_region: string;
+            /** @enum {string} */
+            identifier_encryption: "aes-256-gcm";
+            /** @enum {string} */
+            key_management: "openbao_transit" | "local_development";
         };
         ConsentSubmission: {
             collection_point_code: string;
@@ -5128,6 +5576,582 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    consentListPurposes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ConsentPurpose"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    consentCreatePurpose: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    code: string;
+                    legal_entity_id: components["schemas"]["Uuid"];
+                    content: components["schemas"]["PurposeContent"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentPurpose"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    consentGetPurpose: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentPurpose"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    consentSavePurposeDraft: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurposeContent"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurposeDraftSaved"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    consentRetirePurpose: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentPurpose"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    consentListCollectionPoints: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ConsentCollectionPoint"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    consentCreateCollectionPoint: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionPointInput"] & {
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentCollectionPoint"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    consentGetCollectionPoint: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentCollectionPoint"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    consentUpdateCollectionPoint: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionPointInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentCollectionPoint"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    consentPublishCollectionPoint: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentChecklist"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentCollectionPoint"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    consentRetireCollectionPoint: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentCollectionPoint"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    consentListSubjects: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ConsentSubjectSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    consentSearchSubjects: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    identifier: components["schemas"]["SubjectIdentifier"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ConsentSubjectSummary"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    consentGetSubject: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentSubjectProfile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    consentVerifySubject: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentVerifyResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    consentRecordOnBehalf: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentRecordInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    consentGetSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    consentSubmitPublicConsent: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                "X-Public-Key": string;
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    subject: {
+                        identifiers: components["schemas"]["SubjectIdentifier"][];
+                    };
+                    decisions: components["schemas"]["ConsentDecisionInput"][];
+                    /** @enum {string} */
+                    language?: "th" | "en";
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     consentGetPublicCollectionPoint: {

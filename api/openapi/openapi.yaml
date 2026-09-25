@@ -3358,6 +3358,657 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/consent/purposes:
+    get:
+      operationId: consentListPurposes
+      tags:
+      - consent
+      summary: Purposes with their live version (CON-12)
+      x-permission: consent.purpose.read
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConsentPurpose'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: consentCreatePurpose
+      tags:
+      - consent
+      summary: Create a purpose with its first draft; it goes live once a DPO approves and it is published (PLT-08)
+      x-permission: consent.purpose.create
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - code
+              - legal_entity_id
+              - content
+              additionalProperties: false
+              properties:
+                code:
+                  type: string
+                  pattern: ^[A-Za-z0-9][A-Za-z0-9_-]{1,59}$
+                legal_entity_id:
+                  $ref: '#/components/schemas/Uuid'
+                content:
+                  $ref: '#/components/schemas/PurposeContent'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentPurpose'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/consent/purposes/{id}:
+    get:
+      operationId: consentGetPurpose
+      tags:
+      - consent
+      summary: A purpose with its published versions
+      x-permission: consent.purpose.read
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - &id001
+        name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentPurpose'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/consent/purposes/{id}/draft:
+    put:
+      operationId: consentSavePurposeDraft
+      tags:
+      - consent
+      summary: Save the draft of the next version (then submit it for approval through the record-versions endpoints)
+      x-permission: consent.purpose.update
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurposeContent'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurposeDraftSaved'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/consent/purposes/{id}/retire:
+    post:
+      operationId: consentRetirePurpose
+      tags:
+      - consent
+      summary: Take a purpose out of use (refused while an active collection point shows it)
+      x-permission: consent.purpose.delete
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - *id001
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentPurpose'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /admin/v1/consent/collection-points:
+    get:
+      operationId: consentListCollectionPoints
+      tags:
+      - consent
+      summary: Collection points (CON-09)
+      x-permission: consent.collectionpoint.read
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConsentCollectionPoint'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: consentCreateCollectionPoint
+      tags:
+      - consent
+      summary: Create a draft collection point
+      x-permission: consent.collectionpoint.create
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: '#/components/schemas/CollectionPointInput'
+              - type: object
+                required:
+                - code
+                properties:
+                  code:
+                    type: string
+                    pattern: ^[A-Za-z0-9][A-Za-z0-9_-]{1,59}$
+      responses:
+        '201':
+          description: OK
+          headers: &id002
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentCollectionPoint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/consent/collection-points/{id}:
+    get:
+      operationId: consentGetCollectionPoint
+      tags:
+      - consent
+      summary: A collection point with its purposes
+      x-permission: consent.collectionpoint.read
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - *id001
+      responses:
+        '200':
+          description: OK
+          headers: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentCollectionPoint'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: consentUpdateCollectionPoint
+      tags:
+      - consent
+      summary: Save a collection point (If-Match); a live one must still pass the publish checks
+      x-permission: consent.collectionpoint.update
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectionPointInput'
+      responses:
+        '200':
+          description: OK
+          headers: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentCollectionPoint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/consent/collection-points/{id}/publish:
+    post:
+      operationId: consentPublishCollectionPoint
+      tags:
+      - consent
+      summary: Publish after the s.19 / s.26 checks; issues the public key used by links, QR codes and forms
+      x-permission: consent.collectionpoint.publish
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentChecklist'
+      responses:
+        '200':
+          description: OK
+          headers: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentCollectionPoint'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/consent/collection-points/{id}/retire:
+    post:
+      operationId: consentRetireCollectionPoint
+      tags:
+      - consent
+      summary: Retire a collection point; its public key stops working
+      x-permission: consent.collectionpoint.delete
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - *id001
+      responses:
+        '200':
+          description: OK
+          headers: *id002
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentCollectionPoint'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/consent/subjects:
+    get:
+      operationId: consentListSubjects
+      tags:
+      - consent
+      summary: Most recently active data subjects (identifiers masked)
+      x-permission: consent.record.read
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConsentSubjectSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/consent/subjects/search:
+    post:
+      operationId: consentSearchSubjects
+      tags:
+      - consent
+      summary: Find the data subject an identifier belongs to (exact match by blind index; POST keeps the identifier out of URLs)
+      x-permission: consent.record.read
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - identifier
+              additionalProperties: false
+              properties:
+                identifier:
+                  $ref: '#/components/schemas/SubjectIdentifier'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConsentSubjectSummary'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/consent/subjects/{id}:
+    get:
+      operationId: consentGetSubject
+      tags:
+      - consent
+      summary: 'A data subject profile: status per purpose and full history (CON-15)'
+      x-permission: consent.record.read
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - *id001
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentSubjectProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/consent/subjects/{id}/verify:
+    post:
+      operationId: consentVerifySubject
+      tags:
+      - consent
+      summary: Recompute the subject's receipt chain and report the first receipt that doesn't match
+      x-permission: consent.record.read
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - *id001
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentVerifyResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/consent/records:
+    post:
+      operationId: consentRecordOnBehalf
+      tags:
+      - consent
+      summary: Record decisions for a data subject as staff (counter, call centre) — including withdrawal with a reason (CON-13)
+      x-permission: consent.onbehalf.create
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentRecordInput'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/consent/settings:
+    get:
+      operationId: consentGetSettings
+      tags:
+      - consent
+      summary: Where consent data is stored and how identifiers are protected (CON-17)
+      x-permission: consent.record.read
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /public/v1/consents:
+    post:
+      operationId: consentSubmitPublicConsent
+      tags:
+      - consent
+      summary: Record a data subject's decisions from a published collection point (BP-01)
+      description: The collection point's public key (X-Public-Key) names the tenant. Every purpose the form shows must be decided (nothing pre-ticked); withdrawing needs the verified preference centre. Replaying
+        an Idempotency-Key returns the first result.
+      x-permission: public
+      x-module: consent
+      security: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: X-Public-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{22,64}$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - subject
+              - decisions
+              additionalProperties: false
+              properties:
+                subject:
+                  type: object
+                  required:
+                  - identifiers
+                  properties:
+                    identifiers:
+                      type: array
+                      minItems: 1
+                      maxItems: 5
+                      items:
+                        $ref: '#/components/schemas/SubjectIdentifier'
+                decisions:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items:
+                    $ref: '#/components/schemas/ConsentDecisionInput'
+                language:
+                  type: string
+                  enum:
+                  - th
+                  - en
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /public/v1/collection-points/{key}:
     get:
       operationId: consentGetPublicCollectionPoint
@@ -5076,6 +5727,14 @@ components:
           type: boolean
         requires_explicit:
           type: boolean
+        required:
+          type: boolean
+          description: Must be consented to to continue (never a sensitive purpose)
+        description:
+          type: string
+        explicit_text:
+          type: string
+          description: Statement shown with a sensitive purpose's own checkbox (s.26)
         min_age:
           type: [integer, 'null']
         preferences:
@@ -5113,6 +5772,559 @@ components:
           type: string
           description: Normalized by the API (lower-case e-mail, E.164 phone) before blind indexing. Never logged.
           writeOnly: true
+    ConsentText:
+      type: object
+      required:
+      - th
+      additionalProperties: false
+      properties:
+        th:
+          type: string
+          maxLength: 10000
+        en:
+          type: string
+          maxLength: 10000
+    ConsentPreference:
+      type: object
+      required:
+      - code
+      - name
+      - type
+      - options
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{0,59}$
+        name:
+          $ref: '#/components/schemas/ConsentText'
+        type:
+          type: string
+          enum:
+          - channel
+          - topic
+          - frequency
+          - other
+        options:
+          type: array
+          minItems: 1
+          maxItems: 30
+          items:
+            type: object
+            required:
+            - value
+            - label
+            additionalProperties: false
+            properties:
+              value:
+                type: string
+                pattern: ^[a-z][a-z0-9_]{0,59}$
+              label:
+                $ref: '#/components/schemas/ConsentText'
+    PurposeContent:
+      type: object
+      required:
+      - name
+      - consent_text
+      additionalProperties: false
+      description: What a purpose version says (the draft snapshot approved through PLT-08)
+      properties:
+        name:
+          $ref: '#/components/schemas/ConsentText'
+        description:
+          $ref: '#/components/schemas/ConsentText'
+        consent_text:
+          $ref: '#/components/schemas/ConsentText'
+        explicit_text:
+          allOf:
+          - $ref: '#/components/schemas/ConsentText'
+          description: 'Required when a data category is sensitive (s.26): the statement shown with its own checkbox'
+        data_category_codes:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            maxLength: 60
+        min_age:
+          type:
+          - integer
+          - 'null'
+          minimum: 0
+          maximum: 25
+        lifespan_days:
+          type:
+          - integer
+          - 'null'
+          minimum: 1
+          maximum: 3650
+        change_type:
+          type: string
+          enum:
+          - minor
+          - material
+        requires_reconsent:
+          type: boolean
+        preferences:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/ConsentPreference'
+    PurposeVersionInfo:
+      type: object
+      required:
+      - id
+      - version
+      - consent_text
+      - change_type
+      - requires_reconsent
+      - published_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        version:
+          type: integer
+        consent_text:
+          $ref: '#/components/schemas/ConsentText'
+        explicit_text:
+          $ref: '#/components/schemas/ConsentText'
+        change_type:
+          type: string
+          enum:
+          - initial
+          - minor
+          - material
+        requires_reconsent:
+          type: boolean
+        published_at:
+          $ref: '#/components/schemas/Timestamp'
+    ConsentPurpose:
+      type: object
+      required:
+      - id
+      - code
+      - legal_entity_id
+      - status
+      - is_sensitive
+      - requires_explicit
+      - lawful_basis
+      - live
+      - versions
+      - row_version
+      - updated_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        code:
+          type: string
+        legal_entity_id:
+          $ref: '#/components/schemas/Uuid'
+        status:
+          type: string
+          enum:
+          - draft
+          - active
+          - retired
+        is_sensitive:
+          type: boolean
+        requires_explicit:
+          type: boolean
+        lawful_basis:
+          type: string
+        current_version:
+          type:
+          - integer
+          - 'null'
+        live:
+          $ref: '#/components/schemas/PurposeContent'
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurposeVersionInfo'
+        row_version:
+          type: integer
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    PurposeDraftSaved:
+      type: object
+      required:
+      - version_id
+      - version
+      - status
+      - row_version
+      properties:
+        version_id:
+          $ref: '#/components/schemas/Uuid'
+        version:
+          type: integer
+        status:
+          type: string
+        row_version:
+          type: integer
+    ConsentChecklist:
+      type: object
+      required:
+      - separate_text
+      - not_bundled
+      - plain_language
+      - withdrawal_info
+      additionalProperties: false
+      description: s.19 attestation made when publishing
+      properties:
+        separate_text:
+          type: boolean
+        not_bundled:
+          type: boolean
+        plain_language:
+          type: boolean
+        withdrawal_info:
+          type: boolean
+    CollectionPointInput:
+      type: object
+      required:
+      - name
+      - channel
+      - legal_entity_id
+      - purposes
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        channel:
+          type: string
+          enum:
+          - web
+          - app
+          - pos
+          - call_center
+          - kiosk
+          - paper
+          - line
+          - api
+        legal_entity_id:
+          $ref: '#/components/schemas/Uuid'
+        allowed_origins:
+          type: array
+          maxItems: 20
+          items:
+            type: string
+            maxLength: 200
+        purposes:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            required:
+            - purpose_id
+            - required
+            additionalProperties: false
+            properties:
+              purpose_id:
+                $ref: '#/components/schemas/Uuid'
+              required:
+                type: boolean
+    ConsentCollectionPoint:
+      type: object
+      required:
+      - id
+      - code
+      - name
+      - channel
+      - legal_entity_id
+      - status
+      - allowed_origins
+      - purposes
+      - row_version
+      - updated_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        code:
+          type: string
+        name:
+          type: string
+        channel:
+          type: string
+        legal_entity_id:
+          $ref: '#/components/schemas/Uuid'
+        status:
+          type: string
+          enum:
+          - draft
+          - active
+          - retired
+        public_key:
+          type: string
+          description: Issued on the first publish; used by links, QR codes and forms
+        allowed_origins:
+          type: array
+          items:
+            type: string
+        checklist:
+          $ref: '#/components/schemas/ConsentChecklist'
+        published_at:
+          $ref: '#/components/schemas/Timestamp'
+        purposes:
+          type: array
+          items:
+            type: object
+            required:
+            - purpose_id
+            - code
+            - name
+            - status
+            - is_sensitive
+            - required
+            properties:
+              purpose_id:
+                $ref: '#/components/schemas/Uuid'
+              code:
+                type: string
+              name:
+                $ref: '#/components/schemas/ConsentText'
+              status:
+                type: string
+              is_sensitive:
+                type: boolean
+              required:
+                type: boolean
+              current_version:
+                type:
+                - integer
+                - 'null'
+        row_version:
+          type: integer
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    ConsentSubjectSummary:
+      type: object
+      required:
+      - id
+      - key
+      - identifiers
+      - created_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        key:
+          type: string
+        identifiers:
+          type: array
+          items:
+            type: object
+            required:
+            - type
+            - masked
+            - primary
+            - verified
+            properties:
+              type:
+                type: string
+              masked:
+                type: string
+              primary:
+                type: boolean
+              verified:
+                type: boolean
+        last_activity_at:
+          $ref: '#/components/schemas/Timestamp'
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+    ConsentSubjectProfile:
+      allOf:
+      - $ref: '#/components/schemas/ConsentSubjectSummary'
+      - type: object
+        required:
+        - statuses
+        - history
+        properties:
+          statuses:
+            type: array
+            items:
+              type: object
+              required:
+              - purpose_id
+              - purpose_code
+              - purpose_name
+              - is_sensitive
+              - status
+              - version
+              - needs_reconsent
+              - updated_at
+              properties:
+                purpose_id:
+                  $ref: '#/components/schemas/Uuid'
+                purpose_code:
+                  type: string
+                purpose_name:
+                  $ref: '#/components/schemas/ConsentText'
+                is_sensitive:
+                  type: boolean
+                status:
+                  type: string
+                  enum:
+                  - ACTIVE
+                  - NOT_GIVEN
+                  - WITHDRAWN
+                  - EXPIRED
+                  - PENDING
+                version:
+                  type: integer
+                current_version:
+                  type:
+                  - integer
+                  - 'null'
+                needs_reconsent:
+                  type: boolean
+                preferences:
+                  type:
+                  - object
+                  - 'null'
+                expires_at:
+                  $ref: '#/components/schemas/Timestamp'
+                updated_at:
+                  $ref: '#/components/schemas/Timestamp'
+          history:
+            type: array
+            items:
+              type: object
+              required:
+              - id
+              - occurred_at
+              - type
+              - purpose_code
+              - purpose_name
+              - version
+              - source
+              - receipt_no
+              - channel
+              - collection_point
+              properties:
+                id:
+                  $ref: '#/components/schemas/Uuid'
+                occurred_at:
+                  $ref: '#/components/schemas/Timestamp'
+                type:
+                  type: string
+                purpose_code:
+                  type: string
+                purpose_name:
+                  $ref: '#/components/schemas/ConsentText'
+                version:
+                  type: integer
+                preferences:
+                  type:
+                  - object
+                  - 'null'
+                reason_code:
+                  type: string
+                expires_at:
+                  $ref: '#/components/schemas/Timestamp'
+                source:
+                  type: string
+                receipt_no:
+                  type: string
+                channel:
+                  type: string
+                collection_point:
+                  type: string
+                captured_by:
+                  type: string
+    ConsentVerifyResult:
+      type: object
+      required:
+      - ok
+      - checked
+      properties:
+        ok:
+          type: boolean
+        checked:
+          type: integer
+        broken_at:
+          type: string
+          description: Receipt number of the first receipt that fails
+        reason:
+          type: string
+          enum:
+          - hash_mismatch
+          - prev_hash_mismatch
+    ConsentDecisionInput:
+      type: object
+      required:
+      - purpose_code
+      - purpose_version_no
+      - decision
+      additionalProperties: false
+      properties:
+        purpose_code:
+          type: string
+          maxLength: 60
+        purpose_version_no:
+          type: integer
+          minimum: 1
+        decision:
+          type: string
+          enum:
+          - CONSENTED
+          - NOT_CONSENTED
+          - WITHDRAWN
+        preferences:
+          type: object
+          additionalProperties: true
+        reason_code:
+          type: string
+          enum:
+          - no_longer_interested
+          - too_many_messages
+          - privacy_concern
+          - service_ended
+          - other
+    ConsentRecordInput:
+      type: object
+      required:
+      - collection_point_id
+      - decisions
+      additionalProperties: false
+      properties:
+        collection_point_id:
+          $ref: '#/components/schemas/Uuid'
+        subject_id:
+          $ref: '#/components/schemas/Uuid'
+        identifiers:
+          type: array
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/SubjectIdentifier'
+        decisions:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/ConsentDecisionInput'
+        language:
+          type: string
+          enum:
+          - th
+          - en
+    ConsentSettings:
+      type: object
+      required:
+      - data_region
+      - identifier_encryption
+      - key_management
+      properties:
+        data_region:
+          type: string
+          description: ISO country code of where consent data is stored
+        identifier_encryption:
+          type: string
+          enum:
+          - aes-256-gcm
+        key_management:
+          type: string
+          enum:
+          - openbao_transit
+          - local_development
     ConsentSubmission:
       type: object
       required: [collection_point_code, subject, decisions]

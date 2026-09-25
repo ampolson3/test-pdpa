@@ -29,6 +29,8 @@ gen:
 	cd backend/internal/platform/audit/http && oapi-codegen -config oapi-codegen.yaml -o audit.gen.go ../../../../../api/openapi/openapi.yaml
 	cd backend/internal/platform/forms/http && oapi-codegen -config oapi-codegen.yaml -o forms.gen.go ../../../../../api/openapi/openapi.yaml
 	cd backend/internal/org/http && oapi-codegen -config oapi-codegen.yaml -o org.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/consent/http && oapi-codegen -config oapi-codegen.yaml -o consent.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/consent/publichttp && oapi-codegen -config oapi-codegen.yaml -o public.gen.go ../../../../api/openapi/openapi.yaml
 	pnpm gen:api-client
 	cd backend && go build ./...
 

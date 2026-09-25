@@ -184,6 +184,31 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "มีปฏิทินชื่อนี้อยู่แล้ว",
 		En: "A calendar with this name exists",
 	},
+	// CON consent
+	"consent.invalid_decisions": {
+		Th: "ข้อมูลการให้ความยินยอมไม่ถูกต้อง",
+		En: "Invalid consent decisions",
+	},
+	"consent.publish_checks": {
+		Th: "ยังไม่ผ่านรายการตรวจก่อนเผยแพร่",
+		En: "Publish checks failed",
+	},
+	"consent.invalid_transition": {
+		Th: "เปลี่ยนสถานะความยินยอมนี้ไม่ได้",
+		En: "Invalid consent status change",
+	},
+	"consent.subject_conflict": {
+		Th: "ตัวระบุที่ส่งมาเป็นของเจ้าของข้อมูลต่างคนกัน",
+		En: "Identifiers belong to different data subjects",
+	},
+	"consent.in_use": {
+		Th: "รายการนี้ถูกใช้งานอยู่",
+		En: "This item is in use",
+	},
+	"consent.invalid_request": {
+		Th: "ข้อมูลไม่ถูกต้อง",
+		En: "Invalid consent request",
+	},
 	// PLT-14 import
 	"import.invalid_mapping": {
 		Th: "การจับคู่คอลัมน์ไม่ถูกต้อง",

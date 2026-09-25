@@ -586,6 +586,11 @@ type ConsentCollectionPoint struct {
 	UpdatedAt          pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy          pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion         int32              `db:"row_version" json:"row_version"`
+	PublicKey          *string            `db:"public_key" json:"public_key"`
+	AllowedOrigins     []string           `db:"allowed_origins" json:"allowed_origins"`
+	PublishChecklist   []byte             `db:"publish_checklist" json:"publish_checklist"`
+	PublishedAt        pgtype.Timestamptz `db:"published_at" json:"published_at"`
+	PublishedBy        pgtype.UUID        `db:"published_by" json:"published_by"`
 }
 
 // Purpose ที่แสดงใน Collection Point
@@ -756,25 +761,28 @@ type ConsentGuardianApproval struct {
 
 // Purpose: วัตถุประสงค์ที่ขอความยินยอม
 type ConsentPurpose struct {
-	ID               uuid.UUID          `db:"id" json:"id"`
-	TenantID         uuid.UUID          `db:"tenant_id" json:"tenant_id"`
-	Code             string             `db:"code" json:"code"`
-	NameTh           string             `db:"name_th" json:"name_th"`
-	NameEn           *string            `db:"name_en" json:"name_en"`
-	LegalEntityID    uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
-	LawfulBasisCode  string             `db:"lawful_basis_code" json:"lawful_basis_code"`
-	IsSensitive      bool               `db:"is_sensitive" json:"is_sensitive"`
-	RequiresExplicit bool               `db:"requires_explicit" json:"requires_explicit"`
-	MinAge           *int16             `db:"min_age" json:"min_age"`
-	LifespanDays     *int32             `db:"lifespan_days" json:"lifespan_days"`
-	DoubleOptIn      bool               `db:"double_opt_in" json:"double_opt_in"`
-	Status           string             `db:"status" json:"status"`
-	CurrentVersionID pgtype.UUID        `db:"current_version_id" json:"current_version_id"`
-	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	CreatedBy        pgtype.UUID        `db:"created_by" json:"created_by"`
-	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	UpdatedBy        pgtype.UUID        `db:"updated_by" json:"updated_by"`
-	RowVersion       int32              `db:"row_version" json:"row_version"`
+	ID                uuid.UUID          `db:"id" json:"id"`
+	TenantID          uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	Code              string             `db:"code" json:"code"`
+	NameTh            string             `db:"name_th" json:"name_th"`
+	NameEn            *string            `db:"name_en" json:"name_en"`
+	LegalEntityID     uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	LawfulBasisCode   string             `db:"lawful_basis_code" json:"lawful_basis_code"`
+	IsSensitive       bool               `db:"is_sensitive" json:"is_sensitive"`
+	RequiresExplicit  bool               `db:"requires_explicit" json:"requires_explicit"`
+	MinAge            *int16             `db:"min_age" json:"min_age"`
+	LifespanDays      *int32             `db:"lifespan_days" json:"lifespan_days"`
+	DoubleOptIn       bool               `db:"double_opt_in" json:"double_opt_in"`
+	Status            string             `db:"status" json:"status"`
+	CurrentVersionID  pgtype.UUID        `db:"current_version_id" json:"current_version_id"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy         pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy         pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion        int32              `db:"row_version" json:"row_version"`
+	DataCategoryCodes []string           `db:"data_category_codes" json:"data_category_codes"`
+	DescriptionTh     *string            `db:"description_th" json:"description_th"`
+	DescriptionEn     *string            `db:"description_en" json:"description_en"`
 }
 
 // Data Element ที่ใช้ในแต่ละ Purpose
@@ -819,6 +827,8 @@ type ConsentPurposeVersion struct {
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy         pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
+	ExplicitTextTh    *string            `db:"explicit_text_th" json:"explicit_text_th"`
+	ExplicitTextEn    *string            `db:"explicit_text_en" json:"explicit_text_en"`
 }
 
 // รายการที่สถานะไม่ตรงกัน

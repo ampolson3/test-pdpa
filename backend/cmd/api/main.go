@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -20,6 +21,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
+	consenthttp "pdpa-platform/internal/consent/http"
+	consentpublichttp "pdpa-platform/internal/consent/publichttp"
+	consentservice "pdpa-platform/internal/consent/service"
 	iamhttp "pdpa-platform/internal/iam/http"
 	iamservice "pdpa-platform/internal/iam/service"
 	orghttp "pdpa-platform/internal/org/http"
@@ -38,6 +42,7 @@ import (
 	"pdpa-platform/internal/platform/collab"
 	collabhttp "pdpa-platform/internal/platform/collab/http"
 	"pdpa-platform/internal/platform/crypto"
+	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/files"
 	fileshttp "pdpa-platform/internal/platform/files/http"
 	formshttp "pdpa-platform/internal/platform/forms/http"
@@ -47,6 +52,7 @@ import (
 	jobshttp "pdpa-platform/internal/platform/jobs/http"
 	"pdpa-platform/internal/platform/notify"
 	notifyhttp "pdpa-platform/internal/platform/notify/http"
+	"pdpa-platform/internal/platform/publickeys"
 	versioninghttp "pdpa-platform/internal/platform/versioning/http"
 	workflowhttp "pdpa-platform/internal/platform/workflow/http"
 	"pdpa-platform/internal/wiring"
@@ -120,7 +126,7 @@ func run() error {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.CORSAllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type", "Idempotency-Key", "If-Match", "Accept-Language"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type", "Idempotency-Key", "If-Match", "Accept-Language", "X-Public-Key"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
@@ -131,7 +137,17 @@ func run() error {
 	// docs/architecture/code-structure.md, but oapi-codegen's strict server assumes the request
 	// already matches the spec by the time a handler runs, so it sits here, before AuthN.
 	r.Use(validateMw)
-	r.Use(verifier.Middleware) // AuthN (#7) — every mounted route today requires adminJwt
+	// AuthN (#7) — every route but /public/v1, whose tenant comes from a public key (publickeys.Middleware).
+	r.Use(func(next http.Handler) http.Handler {
+		authn := verifier.Middleware(next)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/public/v1/") {
+				next.ServeHTTP(w, r)
+				return
+			}
+			authn.ServeHTTP(w, r)
+		})
+	})
 	// AuthZ (#9) is NOT here: chi.RouteContext(ctx).RoutePattern() is empty for anything mounted
 	// with r.Use() (only populated once the mux is dispatching to the matched route), so it runs
 	// as an oapi-codegen strict middleware instead, keyed by operationId — see
@@ -197,6 +213,20 @@ func run() error {
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
 	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
 	formsSvc := wiring.Forms(notifySvc, auditSvc)
+	consentSvc := &consentservice.Service{Versioning: versioningSvc, Events: &events.Publisher{River: riverClient},
+		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc}
+	consentSvc.RegisterVersioning()
+
+	// Public consent forms (BP-01): tenant and principal from the public key, then the same Idempotency + Tx chain.
+	r.Group(func(g chi.Router) {
+		g.Use(publickeys.Middleware(pool))
+		g.Use(idemMw.Handler)
+		g.Use(auditSvc.TxMiddleware(pool))
+		strictPublic := consentpublichttp.NewStrictHandlerWithOptions(consentpublichttp.NewStrict(consentSvc),
+			[]consentpublichttp.StrictMiddlewareFunc{consentpublichttp.RequestInfo},
+			consentpublichttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		consentpublichttp.HandlerWithOptions(strictPublic, consentpublichttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+	})
 
 	// The inbox stream (SSE) is the one route outside Idempotency + Tx: the Tx middleware buffers the
 	// response until COMMIT, which a stream never reaches. It opens a short transaction per check itself.
@@ -254,6 +284,11 @@ func run() error {
 			[]orghttp.StrictMiddlewareFunc{authz.StrictMiddleware[orghttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			orghttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		orghttp.HandlerWithOptions(strictOrg, orghttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictConsent := consenthttp.NewStrictHandlerWithOptions(consenthttp.NewStrict(consentSvc),
+			[]consenthttp.StrictMiddlewareFunc{authz.StrictMiddleware[consenthttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			consenthttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		consenthttp.HandlerWithOptions(strictConsent, consenthttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictNotify := notifyhttp.NewStrictHandlerWithOptions(notifyhttp.NewStrict(notifySvc),
 			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission)},
