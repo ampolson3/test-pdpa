@@ -697,3 +697,44 @@ machines:
     event: rescan
     guard: null
     action: enqueue files.scan
+- machine: PLT-04
+  title: Notification delivery
+  column: platform.notifications.status
+  states:
+  - queued
+  - sent
+  - delivered
+  - failed
+  - cancelled
+  initial:
+  - queued
+  - sent
+  terminal:
+  - delivered
+  - failed
+  - cancelled
+  transitions:
+  - from: queued
+    to: sent
+    trigger: ผู้ให้บริการรับข้อความ
+    event: notify.deliver
+    guard: null
+    action: audit
+  - from: queued
+    to: failed
+    trigger: ส่งไม่สำเร็จครบจำนวนครั้ง (1m · 5m · 30m · 2h · 6h) หรือผิดพลาดถาวร
+    event: notify.deliver
+    guard: null
+    action: audit + alert notification_failed
+  - from: queued
+    to: cancelled
+    trigger: ยกเลิกก่อนส่ง
+    event: cancel
+    guard: null
+    action: null
+  - from: sent
+    to: delivered
+    trigger: in-app — ผู้รับเปิดอ่าน
+    event: read
+    guard: ผู้รับเท่านั้น
+    action: null

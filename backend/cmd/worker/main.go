@@ -17,9 +17,11 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	auditjobs "pdpa-platform/internal/platform/audit/jobs"
 	auditservice "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/crypto"
 	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/jobs"
+	"pdpa-platform/internal/platform/notify"
 )
 
 func main() {
@@ -63,6 +65,22 @@ func run() error {
 	river.AddWorker(workers, &files.Scanner{Store: store, AV: &files.Clamd{Addr: envOr("CLAMD_ADDR", "localhost:3310")}, Audit: auditservice.New(), Logger: slog.Default()})
 	river.AddWorker(workers, &files.Expirer{Store: store})
 
+	kek, err := crypto.KEKFromEnv()
+	if err != nil {
+		return err
+	}
+	// The worker enqueues its own retries (notify.deliver) with an insert-only client of its pool.
+	inserter, err := jobs.NewInsertClient(pool)
+	if err != nil {
+		return err
+	}
+	river.AddWorker(workers, &notify.Deliverer{
+		Service: &notify.Service{Keyring: &crypto.Keyring{KEK: kek}, River: inserter, Quiet: notify.DefaultQuietHours()},
+		Senders: notifySenders(),
+		Audit:   auditservice.New(),
+		Logger:  slog.Default(),
+	})
+
 	client, err := jobs.NewWorkerClient(pool, jobs.WorkerOptions{
 		Logger:          slog.Default(),
 		Workers:         workers,
@@ -85,6 +103,23 @@ func run() error {
 	<-client.Stopped()
 	slog.Info("worker: stopped")
 	return nil
+}
+
+// notifySenders: SMTP for e-mail when SMTP_ADDR is set; SMS and LINE use mocks until their providers are
+// chosen (decisions.md Q-03) — so does e-mail without SMTP_ADDR (development).
+func notifySenders() map[string]notify.Sender {
+	senders := map[string]notify.Sender{
+		notify.ChannelSMS:   &notify.MockSender{Channel: notify.ChannelSMS, Logger: slog.Default()},
+		notify.ChannelLine:  &notify.MockSender{Channel: notify.ChannelLine, Logger: slog.Default()},
+		notify.ChannelEmail: &notify.MockSender{Channel: notify.ChannelEmail, Logger: slog.Default()},
+	}
+	if addr := os.Getenv("SMTP_ADDR"); addr != "" {
+		senders[notify.ChannelEmail] = &notify.SMTPSender{
+			Addr: addr, From: envOr("SMTP_FROM", "noreply@pdpa.local"),
+			Username: os.Getenv("SMTP_USERNAME"), Password: os.Getenv("SMTP_PASSWORD"),
+		}
+	}
+	return senders
 }
 
 func envOr(key, fallback string) string {

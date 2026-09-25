@@ -30,10 +30,13 @@ import (
 	"pdpa-platform/internal/pkg/ratelimit"
 	"pdpa-platform/internal/pkg/validate"
 	auditservice "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/crypto"
 	"pdpa-platform/internal/platform/files"
 	fileshttp "pdpa-platform/internal/platform/files/http"
 	"pdpa-platform/internal/platform/jobs"
 	jobshttp "pdpa-platform/internal/platform/jobs/http"
+	"pdpa-platform/internal/platform/notify"
+	notifyhttp "pdpa-platform/internal/platform/notify/http"
 )
 
 func main() {
@@ -110,9 +113,7 @@ func run() error {
 	// docs/architecture/code-structure.md, but oapi-codegen's strict server assumes the request
 	// already matches the spec by the time a handler runs, so it sits here, before AuthN.
 	r.Use(validateMw)
-	r.Use(verifier.Middleware)         // AuthN (#7) — every mounted route today requires adminJwt
-	r.Use(idemMw.Handler)              // Idempotency (#10)
-	r.Use(auditSvc.TxMiddleware(pool)) // Tx (#11) + Audit (#13)
+	r.Use(verifier.Middleware) // AuthN (#7) — every mounted route today requires adminJwt
 	// AuthZ (#9) is NOT here: chi.RouteContext(ctx).RoutePattern() is empty for anything mounted
 	// with r.Use() (only populated once the mux is dispatching to the matched route), so it runs
 	// as an oapi-codegen strict middleware instead, keyed by operationId — see
@@ -135,31 +136,52 @@ func run() error {
 		httpx.WriteProblem(w, r, httpx.Internal())
 	}
 
-	strictIam := iamhttp.NewStrictHandlerWithOptions(iamhttp.NewStrict(iamSvc),
-		[]iamhttp.StrictMiddlewareFunc{authz.StrictMiddleware[iamhttp.StrictHandlerFunc](authzCache, requiredPermission)},
-		iamhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
-	iamhttp.HandlerWithOptions(strictIam, iamhttp.ChiServerOptions{BaseRouter: r, ErrorHandlerFunc: requestError})
-
 	// Insert-only River client: enqueues jobs on the request transaction (jobs.Enqueue) and lists
 	// them for the job-status page; cmd/worker is the only process that works them.
 	riverClient, err := jobs.NewInsertClient(pool)
 	if err != nil {
 		return err
 	}
+	kek, err := crypto.KEKFromEnv()
+	if err != nil {
+		return err
+	}
+	keyring := &crypto.Keyring{KEK: kek}
+	notifySvc := &notify.Service{Keyring: keyring, River: riverClient, Quiet: notify.DefaultQuietHours()}
 	store, err := files.NewS3Store(files.S3ConfigFromEnv())
 	if err != nil {
 		return err
 	}
 	fileSvc := &files.Service{Store: store, River: riverClient, Config: files.DefaultConfig(), EntityPermissions: map[string]string{}}
-	strictFiles := fileshttp.NewStrictHandlerWithOptions(fileshttp.NewStrict(fileSvc),
-		[]fileshttp.StrictMiddlewareFunc{authz.StrictMiddleware[fileshttp.StrictHandlerFunc](authzCache, requiredPermission)},
-		fileshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
-	fileshttp.HandlerWithOptions(strictFiles, fileshttp.ChiServerOptions{BaseRouter: r, ErrorHandlerFunc: requestError})
 
-	strictJobs := jobshttp.NewStrictHandlerWithOptions(jobshttp.NewStrict(riverClient),
-		[]jobshttp.StrictMiddlewareFunc{authz.StrictMiddleware[jobshttp.StrictHandlerFunc](authzCache, requiredPermission)},
-		jobshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
-	jobshttp.HandlerWithOptions(strictJobs, jobshttp.ChiServerOptions{BaseRouter: r, ErrorHandlerFunc: requestError})
+	// The inbox stream (SSE) is the one route outside Idempotency + Tx: the Tx middleware buffers the
+	// response until COMMIT, which a stream never reaches. It opens a short transaction per check itself.
+	r.Method(http.MethodGet, "/admin/v1/platform/inbox/stream", &notifyhttp.Stream{Service: notifySvc, Pool: pool})
+
+	r.Group(func(g chi.Router) {
+		g.Use(idemMw.Handler)              // Idempotency (#10)
+		g.Use(auditSvc.TxMiddleware(pool)) // Tx (#11) + Audit (#13)
+
+		strictIam := iamhttp.NewStrictHandlerWithOptions(iamhttp.NewStrict(iamSvc),
+			[]iamhttp.StrictMiddlewareFunc{authz.StrictMiddleware[iamhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			iamhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		iamhttp.HandlerWithOptions(strictIam, iamhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictFiles := fileshttp.NewStrictHandlerWithOptions(fileshttp.NewStrict(fileSvc),
+			[]fileshttp.StrictMiddlewareFunc{authz.StrictMiddleware[fileshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			fileshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		fileshttp.HandlerWithOptions(strictFiles, fileshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictJobs := jobshttp.NewStrictHandlerWithOptions(jobshttp.NewStrict(riverClient),
+			[]jobshttp.StrictMiddlewareFunc{authz.StrictMiddleware[jobshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			jobshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		jobshttp.HandlerWithOptions(strictJobs, jobshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictNotify := notifyhttp.NewStrictHandlerWithOptions(notifyhttp.NewStrict(notifySvc),
+			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			notifyhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		notifyhttp.HandlerWithOptions(strictNotify, notifyhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+	})
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

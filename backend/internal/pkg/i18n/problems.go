@@ -76,6 +76,19 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "ตรวจไวรัสไม่สำเร็จ",
 		En: "Virus scan failed",
 	},
+	// PLT-04 notifications
+	"notify.template_exists": {
+		Th: "มี template รหัส ช่องทาง และภาษานี้อยู่แล้ว",
+		En: "Template already exists",
+	},
+	"notify.template_invalid": {
+		Th: "template ไม่ถูกต้อง หรือใช้ตัวแปรที่ไม่ได้ประกาศ",
+		En: "Template invalid or uses an undeclared variable",
+	},
+	"notify.invalid": {
+		Th: "คำขอส่งการแจ้งเตือนไม่ถูกต้อง",
+		En: "Invalid notification request",
+	},
 }
 
 // ProblemTitle returns the title for code in lang, falling back through: the requested

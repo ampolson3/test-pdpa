@@ -246,6 +246,383 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /admin/v1/platform/notification-templates:
+    get:
+      operationId: platformListNotificationTemplates
+      tags: [platform]
+      summary: Notification templates visible to the tenant (its own and the platform's global ones)
+      x-permission: admin.notification.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Templates
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificationTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: platformCreateNotificationTemplate
+      tags: [platform]
+      summary: Create a tenant template (or override a global one with the same code, channel and language)
+      x-permission: admin.notification.create
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationTemplateInput'
+            example:
+              code: dsar.received
+              channel: email
+              language: th
+              subject: ได้รับคำขอ {{.request_no}}
+              body: เรียน {{.name}} เราได้รับคำขอ {{.request_no}} แล้ว
+              variables: [name, request_no]
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/notification-templates/preview:
+    post:
+      operationId: platformPreviewNotificationTemplate
+      tags: [platform]
+      summary: Render a template with sample values (declared variables not given show as {name})
+      x-permission: admin.notification.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                subject:
+                  type: string
+                body:
+                  type: string
+                variables:
+                  type: array
+                  items:
+                    type: string
+                values:
+                  type: object
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: Rendered
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [body]
+                properties:
+                  subject:
+                    type: string
+                  body:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/notification-templates/{id}:
+    get:
+      operationId: platformGetNotificationTemplate
+      tags: [platform]
+      summary: One template
+      x-permission: admin.notification.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The template
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: platformUpdateNotificationTemplate
+      tags: [platform]
+      summary: Change subject, body and variables of a tenant template (global templates are read-only)
+      x-permission: admin.notification.update
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                subject:
+                  type: string
+                body:
+                  type: string
+                variables:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+    delete:
+      operationId: platformDeleteNotificationTemplate
+      tags: [platform]
+      summary: Delete a tenant template
+      x-permission: admin.notification.delete
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/notifications:
+    get:
+      operationId: platformListNotifications
+      tags: [platform]
+      summary: Delivery log — status of every message, newest first (PLT-04)
+      description: Recipients are masked; message text and variables are never returned.
+      x-permission: admin.notification.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/NotificationStatus'
+        - name: channel
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/NotificationChannel'
+      responses:
+        '200':
+          description: One page
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, next_cursor]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificationDelivery'
+                  next_cursor:
+                    type: [string, 'null']
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/platform/notifications/{id}:
+    get:
+      operationId: platformGetNotification
+      tags: [platform]
+      summary: Delivery status of one message
+      x-permission: admin.notification.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: The message's status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationDelivery'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/inbox:
+    get:
+      operationId: platformGetInbox
+      tags: [platform]
+      summary: The signed-in user's in-app notifications and unread count (the bell)
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Inbox
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inbox'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /admin/v1/platform/inbox/stream:
+    get:
+      operationId: platformStreamInbox
+      tags: [platform]
+      summary: Server-sent events with the unread count whenever it changes
+      description: |
+        `text/event-stream`; each event is `event: unread` with data `{"unread": <n>}`, sent on connect and on
+        every change (checked every few seconds), plus a comment line as keep-alive. Reconnect with EventSource.
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      responses:
+        '200':
+          description: Event stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /admin/v1/platform/inbox/{id}/read:
+    post:
+      operationId: platformMarkInboxRead
+      tags: [platform]
+      summary: Mark one of the user's own in-app notifications read
+      x-permission: authenticated
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Marked read
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /public/v1/collection-points/{key}:
     get:
       operationId: consentGetPublicCollectionPoint
@@ -503,6 +880,122 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    NotificationChannel:
+      type: string
+      enum: [email, sms, line, in_app]
+    NotificationStatus:
+      type: string
+      enum: [queued, sent, delivered, failed, cancelled]
+    NotificationTemplateInput:
+      type: object
+      required: [code, channel, language, body]
+      properties:
+        code:
+          type: string
+          pattern: '^[a-z][a-z0-9_.]{1,79}$'
+        channel:
+          $ref: '#/components/schemas/NotificationChannel'
+        language:
+          type: string
+          enum: [th, en]
+        subject:
+          type: string
+        body:
+          type: string
+          description: text/template syntax, e.g. {{.request_no}}; every variable used must be declared
+        variables:
+          type: array
+          items:
+            type: string
+    NotificationTemplate:
+      type: object
+      required: [id, global, code, channel, language, body, variables, row_version, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        global:
+          type: boolean
+          description: A platform template (read-only for tenants; override it by creating your own)
+        code:
+          type: string
+        channel:
+          $ref: '#/components/schemas/NotificationChannel'
+        language:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+        variables:
+          type: array
+          items:
+            type: string
+        row_version:
+          type: integer
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    NotificationDelivery:
+      type: object
+      required: [id, channel, status, attempts, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        template_code:
+          type: string
+        channel:
+          $ref: '#/components/schemas/NotificationChannel'
+        recipient_user_id:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        recipient_masked:
+          type: string
+          description: Masked address, e.g. so****@example.co.th (empty for user recipients)
+        status:
+          $ref: '#/components/schemas/NotificationStatus'
+        attempts:
+          type: integer
+        provider_message_id:
+          type: string
+        sent_at:
+          oneOf:
+            - $ref: '#/components/schemas/Timestamp'
+            - type: 'null'
+        error:
+          type: string
+          description: Last failure, with addresses and numbers removed
+        entity_type:
+          type: string
+        entity_id:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    Inbox:
+      type: object
+      required: [unread, items]
+      properties:
+        unread:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            required: [id, title, body, read, created_at]
+            properties:
+              id:
+                $ref: '#/components/schemas/Uuid'
+              title:
+                type: string
+              body:
+                type: string
+              read:
+                type: boolean
+              created_at:
+                $ref: '#/components/schemas/Timestamp'
     StoredFile:
       type: object
       required: [id, file_name, mime_type, size_bytes, sha256, av_status, created_at]
