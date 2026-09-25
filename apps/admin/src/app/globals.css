@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* Tailwind only scans this app by default; the shared component packages need their classes generated too. */
+@source "../../../../packages/ui/src";
+@source "../../../../packages/form-renderer/src";
 
 @theme inline {
   --font-sans: var(--font-sarabun);

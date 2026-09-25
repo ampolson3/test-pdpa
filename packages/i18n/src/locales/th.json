@@ -472,7 +472,8 @@
       "save": "บันทึก",
       "cancel": "ยกเลิก",
       "saved": "บันทึกแล้ว",
-      "saveError": "บันทึกไม่สำเร็จ: {detail}"
+      "saveError": "บันทึกไม่สำเร็จ: {detail}",
+      "logoLimits": "PNG หรือ JPEG — ไม่เกิน 25 MB"
     },
     "tree": {
       "title": "โครงสร้างหน่วยงาน — {name}",

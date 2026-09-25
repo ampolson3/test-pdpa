@@ -19,9 +19,20 @@ type Item = { key: string; name: string; progress: number; file?: StoredFile; pr
 /**
  * Upload / download component (PLT-09): drag-and-drop or pick, upload progress, then the virus-scan
  * status until the file is clean (download link) or rejected. `onUploaded` gives the parent the file
- * id to attach to its record.
+ * id to attach to its record. `accept` and `hint` narrow the picker and its text for fields that take fewer
+ * types (the server still checks the content).
  */
-export function FileUploader({ onUploaded, multiple = false }: { onUploaded?: (file: StoredFile) => void; multiple?: boolean }) {
+export function FileUploader({
+  onUploaded,
+  multiple = false,
+  accept = ".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.pptx,.csv,.txt",
+  hint,
+}: {
+  onUploaded?: (file: StoredFile) => void;
+  multiple?: boolean;
+  accept?: string;
+  hint?: string;
+}) {
   const t = useTranslations("files");
   const [items, setItems] = useState<Item[]>([]);
 
@@ -46,13 +57,13 @@ export function FileUploader({ onUploaded, multiple = false }: { onUploaded?: (f
       <FileDropzone
         onFiles={start}
         multiple={multiple}
-        accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.pptx,.csv,.txt"
+        accept={accept}
         inputLabel={t("choose")}
         prompt={
           <span>
             {t("dropHere")}
             <br />
-            <span className="text-xs text-slate-500">{t("limits")}</span>
+            <span className="text-xs text-slate-500">{hint ?? t("limits")}</span>
           </span>
         }
       />

@@ -115,7 +115,7 @@ export function OrganizationContent() {
             </div>
             <div className="sm:col-span-2">
               <span className="block text-slate-600">{t("form.logo")}{form.logo_file_id && <span className="ml-2 text-emerald-700">· {t("form.logoSet")}</span>}</span>
-              {editable && <FileUploader onUploaded={(f) => set({ logo_file_id: f.id })} />}
+              {editable && <FileUploader accept=".png,.jpg,.jpeg" hint={t("form.logoLimits")} onUploaded={(f) => set({ logo_file_id: f.id })} />}
             </div>
             {save.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("form.saveError", { detail: detail(save.error) })}</p>}
             {saved && <p className="text-emerald-800 sm:col-span-2" role="status">{t("form.saved")}</p>}

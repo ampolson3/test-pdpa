@@ -472,7 +472,8 @@
       "save": "Save",
       "cancel": "Cancel",
       "saved": "Saved.",
-      "saveError": "Couldn't save: {detail}"
+      "saveError": "Couldn't save: {detail}",
+      "logoLimits": "PNG or JPEG — up to 25 MB"
     },
     "tree": {
       "title": "Organization structure — {name}",
