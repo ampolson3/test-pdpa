@@ -504,3 +504,96 @@ func (b *syncBuffer) String() string {
 	defer b.mu.Unlock()
 	return b.buf.String()
 }
+
+// ListForTenant (admin job-status page): river_job has no RLS, so this is the two-tenant isolation
+// test for the tenant filter — tenant A sees its own jobs only, never tenant B's or platform-wide
+// ones — plus the kind/state filters and cursor paging.
+func TestListForTenant_IsolatesFiltersAndPages(t *testing.T) {
+	f := setup(t)
+	ctx := context.Background()
+	insert, err := jobs.NewInsertClient(f.pool)
+	if err != nil {
+		t.Fatalf("NewInsertClient: %v", err)
+	}
+	for i := 0; i < 5; i++ {
+		if _, err := insert.Insert(ctx, countArgs{TenantArgs: jobs.TenantArgs{TenantID: f.tenant.ID.String()}, N: i}, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := insert.Insert(ctx, failArgs{TenantArgs: jobs.TenantArgs{TenantID: f.tenant.ID.String()}},
+		&river.InsertOpts{ScheduledAt: time.Now().Add(time.Hour)}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := insert.Insert(ctx, countArgs{TenantArgs: jobs.TenantArgs{TenantID: f.other.ID.String()}, N: 99}, nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := insert.Insert(ctx, unscopedArgs{N: 1}, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	list := func(tenant uuid.UUID, filter jobs.ListFilter) (jobs.Page, error) {
+		var page jobs.Page
+		err := pdb.WithTenantTx(ctx, f.pool, tenant.String(), "", func(ctx context.Context) error {
+			var err error
+			page, err = jobs.ListForTenant(ctx, insert, filter)
+			return err
+		})
+		return page, err
+	}
+	testKinds := func(p jobs.Page) (n int) {
+		for _, j := range p.Jobs {
+			if strings.HasPrefix(j.Kind, "test.jobs.") {
+				n++
+				if !strings.Contains(string(j.EncodedArgs), f.tenant.ID.String()) {
+					t.Errorf("tenant A's list includes job %d (%s) of another tenant or none", j.ID, j.Kind)
+				}
+			}
+		}
+		return n
+	}
+
+	all, err := list(f.tenant.ID, jobs.ListFilter{Limit: 200})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := testKinds(all); n != 6 {
+		t.Errorf("tenant A sees %d test jobs, want 6", n)
+	}
+
+	scheduled, err := list(f.tenant.ID, jobs.ListFilter{States: []rivertype.JobState{rivertype.JobStateScheduled}, Kind: "test.jobs.fail"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(scheduled.Jobs) != 1 || scheduled.Jobs[0].Kind != "test.jobs.fail" {
+		t.Errorf("state+kind filter returned %d jobs, want the 1 scheduled test.jobs.fail", len(scheduled.Jobs))
+	}
+
+	// Page through tenant A's five count jobs two at a time: newest first, no gaps or repeats.
+	var seen []int64
+	cursor := ""
+	for pages := 0; ; pages++ {
+		p, err := list(f.tenant.ID, jobs.ListFilter{Kind: "test.jobs.count", Limit: 2, Cursor: cursor})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, j := range p.Jobs {
+			seen = append(seen, j.ID)
+		}
+		if p.NextCursor == "" || pages > 5 {
+			break
+		}
+		cursor = p.NextCursor
+	}
+	if len(seen) != 5 {
+		t.Fatalf("paged through %d jobs, want 5: %v", len(seen), seen)
+	}
+	for i := 1; i < len(seen); i++ {
+		if seen[i] >= seen[i-1] {
+			t.Errorf("page order not newest first: %v", seen)
+		}
+	}
+
+	if _, err := list(f.tenant.ID, jobs.ListFilter{Cursor: "not-a-cursor"}); !errors.Is(err, jobs.ErrInvalidCursor) {
+		t.Errorf("bad cursor: got %v, want ErrInvalidCursor", err)
+	}
+}

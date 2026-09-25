@@ -83,6 +83,7 @@
 | `admin.idp` | SSO, IdP, นโยบายรหัสผ่านและ MFA |  | CRUD |  |  |  |  |  |  |  | R |  | R |  |  |  |  | ตั้งค่าใน Keycloak ผ่านหน้าจอของระบบ |
 | `admin.apiclient` | API client และ webhook |  | CRUD | R |  |  |  | CRU |  |  |  |  | R |  |  |  |  | IT จัดการได้เฉพาะ client ของระบบที่ตนดูแล |
 | `admin.audit` | Audit log | RE | RE | RE |  |  |  |  |  |  | RE |  | RE |  |  |  |  | ไม่มีใครแก้ไขหรือลบ log ได้ |
+| `admin.job` | งานเบื้องหลัง (background job) | R | R |  |  |  |  |  |  |  |  |  |  |  |  |  |  | เฉพาะ job ของ tenant ตนเอง · SUPER ดูข้าม tenant ผ่าน /provider/v1 (PLT-10) |
 | `admin.accessreview` | ทบทวนสิทธิ์ |  | CRUDX | R |  |  | X | X |  |  |  |  | R |  |  |  |  | หัวหน้าแผนกยืนยันสิทธิ์ของทีมตนเอง |
 | `admin.breakglass` | ใช้สิทธิ์ฉุกเฉิน | X | X |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ต้องระบุเหตุผล มีเวลาจำกัด และแจ้ง DPO / Security ทันที |
 | `admin.notification` | Template แจ้งเตือน |  | CRUD | CRU | CRU |  |  |  | CRU |  |  |  | R |  |  |  |  |  |

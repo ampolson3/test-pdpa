@@ -19,9 +19,20 @@ import (
 // non-nil, runs as part of validation (kin-openapi calls it once per declared security requirement);
 // leave nil to validate schema only and let the AuthN middleware (#7) handle authentication.
 func Middleware(spec *openapi3.T, authFunc openapi3filter.AuthenticationFunc) (func(http.Handler) http.Handler, error) {
-	router, err := gorillamux.NewRouter(spec)
+	// Route on path only. The spec's `servers` list names the public host (api.pdpa.example), and
+	// gorillamux matches it — so against any other Host (localhost, the cluster service name) every
+	// FindRoute failed and every request skipped validation. A shallow copy keeps spec untouched.
+	routing := *spec
+	routing.Servers = openapi3.Servers{{URL: "/"}}
+	router, err := gorillamux.NewRouter(&routing)
 	if err != nil {
 		return nil, err
+	}
+
+	// kin-openapi treats a nil AuthenticationFunc as "every secured operation fails validation", not
+	// "skip security"; the no-op func gives the schema-only behaviour documented above.
+	if authFunc == nil {
+		authFunc = openapi3filter.NoopAuthenticationFunc
 	}
 
 	return func(next http.Handler) http.Handler {

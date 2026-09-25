@@ -30,6 +30,8 @@ import (
 	"pdpa-platform/internal/pkg/ratelimit"
 	"pdpa-platform/internal/pkg/validate"
 	auditservice "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/jobs"
+	jobshttp "pdpa-platform/internal/platform/jobs/http"
 )
 
 func main() {
@@ -116,24 +118,35 @@ func run() error {
 	// that's fine because AuthZ's cache loader always opens its own separate read-only transaction
 	// regardless of when it's called, so it never touches the request's own transaction.
 
-	strictOpts := iamhttp.StrictHTTPServerOptions{
-		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
-			httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
-		},
-		ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
-			httpx.WriteProblem(w, r, httpx.Internal())
-		},
+	requestError := func(w http.ResponseWriter, r *http.Request, err error) {
+		httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
 	}
-	strictMiddlewares := []iamhttp.StrictMiddlewareFunc{
-		authz.StrictMiddleware[iamhttp.StrictHandlerFunc](authzCache, requiredPermission),
+	// A handler may return an httpx.Problem as its error to have it written (and localized) here;
+	// anything else is an internal error whose details never reach the client.
+	responseError := func(w http.ResponseWriter, r *http.Request, err error) {
+		var p httpx.Problem
+		if errors.As(err, &p) {
+			httpx.WriteProblem(w, r, p)
+			return
+		}
+		httpx.WriteProblem(w, r, httpx.Internal())
 	}
-	strictIam := iamhttp.NewStrictHandlerWithOptions(iamhttp.NewStrict(iamSvc), strictMiddlewares, strictOpts)
-	iamhttp.HandlerWithOptions(strictIam, iamhttp.ChiServerOptions{
-		BaseRouter: r,
-		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
-			httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
-		},
-	})
+
+	strictIam := iamhttp.NewStrictHandlerWithOptions(iamhttp.NewStrict(iamSvc),
+		[]iamhttp.StrictMiddlewareFunc{authz.StrictMiddleware[iamhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+		iamhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+	iamhttp.HandlerWithOptions(strictIam, iamhttp.ChiServerOptions{BaseRouter: r, ErrorHandlerFunc: requestError})
+
+	// Insert-only River client: enqueues jobs on the request transaction (jobs.Enqueue) and lists
+	// them for the job-status page; cmd/worker is the only process that works them.
+	riverClient, err := jobs.NewInsertClient(pool)
+	if err != nil {
+		return err
+	}
+	strictJobs := jobshttp.NewStrictHandlerWithOptions(jobshttp.NewStrict(riverClient),
+		[]jobshttp.StrictMiddlewareFunc{authz.StrictMiddleware[jobshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+		jobshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+	jobshttp.HandlerWithOptions(strictJobs, jobshttp.ChiServerOptions{BaseRouter: r, ErrorHandlerFunc: requestError})
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

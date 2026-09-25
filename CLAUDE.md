@@ -87,20 +87,31 @@ covered the fixed strings the platform itself owns:
   there); Server Components use `next-intl/server`'s `getLocale()` directly in `lib/api.ts`, which
   does have one.
 
-### PLT-10 Background jobs และ scheduler (`docs/modules/PLT.md#plt-10`) — backend done, admin page pending
-`internal/platform/jobs` is now the job framework every module's `jobs/` package builds on (rules in
+### PLT-10 Background jobs และ scheduler (`docs/modules/PLT.md#plt-10`) — done
+`internal/platform/jobs` is the job framework every module's `jobs/` package builds on (rules in
 `docs/architecture/code-structure.md` and `docs/architecture/integration.md` § Background jobs):
 `TenantArgs` + `TenantTxMiddleware` (one `WithTenantTx` per job from the args' `tenant_id`; no tenant and
 not in `GlobalKinds` → cancelled), `Enqueue` (InsertTx on the request's own tx, rejects another tenant's
 job), `AlertHandler` (WARN + `pdpa.jobs.failed` per failed attempt, ERROR `alert=job_discarded` +
 `pdpa.jobs.discarded` on the final one), `NewWorkerClient` (leader-only periodic jobs, 25s soft stop via
-`WORKER_SOFT_STOP_TIMEOUT`). `internal/platform/jobs/jobs_test.go` covers both acceptance criteria against a
-real Postgres (retry then alert; two worker instances work each job once and fire a periodic job once),
-plus RLS scoping inside a job, enqueue commit/rollback, per-tenant unique jobs and graceful shutdown — all
-passing. Not done: the admin job-status page (needs a permission code and a tenant-scoping decision for
-`river_job`, which has no RLS — asked, not guessed); failure alerts reach people only via log/metric alert
-rules until PLT-04 (notifications) exists; `cmd/api` doesn't construct the insert client yet (first job
-producer will).
+`WORKER_SOFT_STOP_TIMEOUT`), `NewInsertClient` (cmd/api's insert-only client). Tests against real Postgres
+cover both acceptance criteria (retry then alert; two worker instances work each job once and fire a
+periodic job once), RLS inside a job, enqueue commit/rollback, per-tenant unique jobs, graceful shutdown.
+- Job-status page: `GET /admin/v1/platform/jobs` (`platformListJobs`, `x-permission: admin.job.read` —
+  new permission, ORGADMIN + SUPER, migration 00021) → `internal/platform/jobs/http` (own oapi-codegen
+  config, `include-operation-ids`) → `jobs.ListForTenant`. `river_job` has no RLS, so the tenant filter is
+  `args->>'tenant_id' = current_setting('app.tenant_id')` read from the request tx; its two-tenant test is
+  `TestListForTenant_IsolatesFiltersAndPages`, contract test (401/403/200 + isolation) in
+  `jobs/http/handler_test.go`. Frontend: `apps/admin` `/[locale]/settings/jobs` (`useJobs` infinite query,
+  10 s refresh, state/kind filters, th/en keys under `jobs.*`). Verified live against the running API with a
+  self-signed JWT; the page itself is only build/typecheck-verified (no Keycloak here for a real login).
+- Fixed while verifying: `internal/pkg/validate` never validated anything — gorillamux matched the spec's
+  `servers` host (`api.pdpa.example`), so `FindRoute` failed for every real Host and requests passed
+  through; and with a nil auth func kin-openapi fails every secured operation instead of skipping
+  security. Both fixed + `validate_test.go`. Also `cmd/migrate -down` no longer drops River's tables
+  (which deleted every queued job) unless `-river-down` is given.
+- Not done: SUPER's cross-tenant job view (`/provider/v1`, no provider surface exists yet); failure alerts
+  reach people only through log/metric alert rules until PLT-04 (notifications) exists.
 
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.

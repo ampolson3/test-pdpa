@@ -350,6 +350,8 @@
 
 **Acceptance criteria:** job ที่ล้มเหลวมี retry และแจ้งเตือน; ไม่มี job ซ้ำเมื่อรันหลาย instance
 
+**Implementation (PLT-10):** `backend/internal/platform/jobs` (กฎดู `docs/architecture/code-structure.md`) · หน้าจอ admin `/settings/jobs` ← `GET /admin/v1/platform/jobs` (`platformListJobs`, `x-permission: admin.job.read` — ORGADMIN, SUPER; migration 00021) แสดงเฉพาะ job ของ tenant ตนเอง (กรองด้วย `args.tenant_id` เพราะ `river_job` ไม่มี RLS) · SUPER ดูข้าม tenant ผ่าน `/provider/v1` ภายหลัง · การแจ้งเตือนเมื่อ job ล้มเหลว = log `alert=job_discarded` + metric `pdpa.jobs.discarded` (ส่งถึงคนผ่าน PLT-04 เมื่อสร้างแล้ว)
+
 <a id="plt-11"></a>
 ### PLT-11 Domain events และ outbox
 

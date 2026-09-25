@@ -241,6 +241,17 @@ permissions:
     AUDIT:
     - read
     - export
+- code: admin.job
+  category: Administration
+  name: งานเบื้องหลัง (background job)
+  epics:
+  - PLT
+  note: 'PLT-10 · ดูได้เฉพาะ job ของ tenant ตนเอง (river_job ไม่มี RLS — กรองด้วย args.tenant_id ใน query) · SUPER ดูข้าม tenant ผ่าน /provider/v1 เท่านั้น · seed: migration 00021'
+  grants:
+    SUPER:
+    - read
+    ORGADMIN:
+    - read
 - code: admin.accessreview
   category: Administration
   name: ทบทวนสิทธิ์

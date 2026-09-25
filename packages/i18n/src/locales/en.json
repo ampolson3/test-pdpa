@@ -12,5 +12,38 @@
     "roles": "Roles",
     "signIn": "Sign in",
     "today": "Today: {date}"
+  },
+  "jobs": {
+    "title": "Background jobs",
+    "description": "Jobs the system runs for your organization (notifications, webhooks, imports, …). The list refreshes every 10 seconds.",
+    "signInRequired": "Please sign in to view background jobs.",
+    "forbidden": "You don't have permission to view background jobs (admin.job.read).",
+    "loading": "Loading...",
+    "loadError": "Couldn't load the job list. Please try again.",
+    "empty": "No jobs match these filters.",
+    "loadMore": "Load more",
+    "filter": {
+      "state": "State",
+      "allStates": "All states",
+      "kind": "Job kind"
+    },
+    "column": {
+      "kind": "Job kind",
+      "state": "State",
+      "attempts": "Attempts",
+      "createdAt": "Created",
+      "nextRunOrFinished": "Next run / finished",
+      "lastError": "Last error"
+    },
+    "state": {
+      "available": "Queued",
+      "scheduled": "Scheduled",
+      "pending": "Pending",
+      "running": "Running",
+      "retryable": "Waiting to retry",
+      "completed": "Completed",
+      "discarded": "Failed (retries exhausted)",
+      "cancelled": "Cancelled"
+    }
   }
 }
