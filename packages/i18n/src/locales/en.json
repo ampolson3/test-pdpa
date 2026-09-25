@@ -343,5 +343,50 @@
       "saveError": "Couldn't save: {detail}",
       "cancel": "Cancel"
     }
+  },
+  "auditLog": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view the audit log.",
+    "title": "Audit log",
+    "intro": "Every change: who did it, when, and the values before and after. Entries cannot be edited or deleted.",
+    "loading": "Loading…",
+    "loadError": "Couldn't load the log. Check the filters and try again.",
+    "empty": "No entries match.",
+    "filters": {
+      "actor": "By",
+      "anyone": "Anyone",
+      "searchActor": "Type a name…",
+      "module": "Action starts with",
+      "entityType": "Record type",
+      "entityId": "Record id",
+      "from": "From",
+      "to": "To (exclusive)",
+      "kind": "Show",
+      "kinds": {
+        "changes": "Changes",
+        "requests": "API requests",
+        "all": "Everything"
+      },
+      "clear": "Clear"
+    },
+    "col": {
+      "time": "When",
+      "actor": "Who",
+      "action": "Action",
+      "entity": "Record",
+      "details": "Details"
+    },
+    "system": "System",
+    "show": "Show",
+    "hide": "Hide",
+    "before": "Before",
+    "after": "After",
+    "ip": "IP",
+    "more": "Load more",
+    "export": "Export CSV",
+    "verify": "Verify chain",
+    "verifyOk": "Chain intact — {count} entries checked.",
+    "verifyBroken": "Chain broken at entry {id} ({reason}). Report this to security.",
+    "verifyError": "Couldn't verify the chain."
   }
 }

@@ -506,6 +506,57 @@ export interface paths {
         patch: operations["platformUpdateWorkflowTask"];
         trace?: never;
     };
+    "/admin/v1/platform/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search the tenant's audit trail, newest first (ORG-19) */
+        get: operations["platformSearchAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/audit-log/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export matching entries as CSV (at most 50,000 rows; the export itself is audited) */
+        get: operations["platformExportAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/audit-log/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replay the tenant's hash chain now and report the first broken row, if any */
+        post: operations["platformVerifyAuditLog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/platform/imports": {
         parameters: {
             query?: never;
@@ -712,6 +763,24 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AuditEntry: {
+            /** Format: int64 */
+            id: number;
+            occurred_at: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            actor_type: "user" | "api_client" | "guest" | "data_subject" | "system";
+            actor_id?: components["schemas"]["Uuid"];
+            actor_name?: string;
+            action: string;
+            entity_type?: string;
+            entity_id?: components["schemas"]["Uuid"];
+            /** @description For entity_type user — whose record changed */
+            entity_name?: string;
+            before?: unknown;
+            after?: unknown;
+            ip?: string;
+            user_agent?: string;
+        };
         LocalizedText: {
             th: string;
             en?: string;
@@ -2559,6 +2628,118 @@ export interface operations {
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformSearchAuditLog: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from `next_cursor` of the previous page */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                actor_id?: components["schemas"]["Uuid"];
+                entity_type?: string;
+                entity_id?: components["schemas"]["Uuid"];
+                /** @description Start of the action, e.g. `iam.` for one module */
+                action_prefix?: string;
+                from?: components["schemas"]["Timestamp"];
+                to?: components["schemas"]["Timestamp"];
+                /** @description changes = business actions (default) · requests = one row per API request · all */
+                kind?: "changes" | "requests" | "all";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AuditEntry"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformExportAuditLog: {
+        parameters: {
+            query?: {
+                actor_id?: components["schemas"]["Uuid"];
+                entity_type?: string;
+                entity_id?: components["schemas"]["Uuid"];
+                /** @description Start of the action, e.g. `iam.` for one module */
+                action_prefix?: string;
+                from?: components["schemas"]["Timestamp"];
+                to?: components["schemas"]["Timestamp"];
+                /** @description changes = business actions (default) · requests = one row per API request · all */
+                kind?: "changes" | "requests" | "all";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV (UTF-8 with BOM), newest first */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformVerifyAuditLog: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                        checked: number;
+                        /** Format: int64 */
+                        broken_at_id?: number;
+                        /** @enum {string} */
+                        reason?: "hash_mismatch" | "prev_hash_mismatch";
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     platformListImports: {

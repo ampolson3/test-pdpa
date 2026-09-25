@@ -39,3 +39,19 @@ LIMIT @page_size;
 -- name: ListLiveTenants :many
 -- platform.tenants is global (no RLS) and readable by pdpa_app.
 SELECT id FROM platform.tenants WHERE status IN ('trial', 'active', 'suspended') ORDER BY id;
+
+-- name: SearchAuditLog :many
+-- ORG-19: the tenant's audit trail (RLS), newest first, before the cursor (occurred_at, id).
+-- kind: 'changes' = business actions, 'requests' = per-request rows ("GET /admin/v1/…"), 'all'.
+SELECT id, occurred_at, actor_type, actor_id, action, entity_type, entity_id, before, after, ip, user_agent
+FROM platform.audit_log
+WHERE (sqlc.narg(actor_id)::uuid IS NULL OR actor_id = sqlc.narg(actor_id)::uuid)
+  AND (sqlc.narg(entity_type)::text IS NULL OR entity_type = sqlc.narg(entity_type)::text)
+  AND (sqlc.narg(entity_id)::uuid IS NULL OR entity_id = sqlc.narg(entity_id)::uuid)
+  AND (sqlc.narg(action_prefix)::text IS NULL OR action LIKE sqlc.narg(action_prefix)::text || '%')
+  AND (sqlc.narg(from_at)::timestamptz IS NULL OR occurred_at >= sqlc.narg(from_at)::timestamptz)
+  AND (sqlc.narg(to_at)::timestamptz IS NULL OR occurred_at < sqlc.narg(to_at)::timestamptz)
+  AND (@kind::text = 'all' OR (@kind::text = 'requests') = (action ~ '^[A-Z]+ '))
+  AND (occurred_at, id) < (@before_occurred_at::timestamptz, @before_id::bigint)
+ORDER BY occurred_at DESC, id DESC
+LIMIT @page_size;

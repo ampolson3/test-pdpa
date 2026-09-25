@@ -89,6 +89,11 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "คำขอส่งการแจ้งเตือนไม่ถูกต้อง",
 		En: "Invalid notification request",
 	},
+	// ORG-19 audit log
+	"audit.export_too_large": {
+		Th: "รายการมากเกินกว่าจะส่งออกในครั้งเดียว กรุณากรองให้แคบลง",
+		En: "Too many entries to export at once; narrow the filter",
+	},
 	// PLT-05 workflow
 	"workflow.invalid_transition": {
 		Th: "เปลี่ยนสถานะนี้ไม่ได้ในขั้นตอนปัจจุบัน",

@@ -343,5 +343,50 @@
       "saveError": "บันทึกไม่สำเร็จ: {detail}",
       "cancel": "ยกเลิก"
     }
+  },
+  "auditLog": {
+    "signInRequired": "กรุณาเข้าสู่ระบบ",
+    "forbidden": "คุณไม่มีสิทธิ์ดู audit log",
+    "title": "Audit log",
+    "intro": "ทุกการเปลี่ยนแปลง: ใครทำ เมื่อไร และค่าก่อน/หลัง รายการแก้ไขหรือลบไม่ได้",
+    "loading": "กำลังโหลด…",
+    "loadError": "โหลดไม่สำเร็จ ตรวจตัวกรองแล้วลองใหม่",
+    "empty": "ไม่พบรายการ",
+    "filters": {
+      "actor": "ผู้กระทำ",
+      "anyone": "ทุกคน",
+      "searchActor": "พิมพ์ชื่อ…",
+      "module": "การกระทำขึ้นต้นด้วย",
+      "entityType": "ประเภทรายการ",
+      "entityId": "รหัสรายการ",
+      "from": "ตั้งแต่",
+      "to": "ถึง (ไม่รวม)",
+      "kind": "แสดง",
+      "kinds": {
+        "changes": "การเปลี่ยนแปลง",
+        "requests": "คำขอ API",
+        "all": "ทั้งหมด"
+      },
+      "clear": "ล้าง"
+    },
+    "col": {
+      "time": "เวลา",
+      "actor": "ผู้กระทำ",
+      "action": "การกระทำ",
+      "entity": "รายการ",
+      "details": "รายละเอียด"
+    },
+    "system": "ระบบ",
+    "show": "ดู",
+    "hide": "ซ่อน",
+    "before": "ก่อน",
+    "after": "หลัง",
+    "ip": "IP",
+    "more": "โหลดเพิ่ม",
+    "export": "ส่งออก CSV",
+    "verify": "ตรวจ hash chain",
+    "verifyOk": "chain สมบูรณ์ — ตรวจแล้ว {count} รายการ",
+    "verifyBroken": "chain ขาดที่รายการ {id} ({reason}) กรุณาแจ้งทีม Security",
+    "verifyError": "ตรวจ chain ไม่สำเร็จ"
   }
 }

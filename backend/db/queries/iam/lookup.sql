@@ -21,3 +21,7 @@ SELECT id, name FROM iam.groups WHERE id = ANY (@ids::uuid[]);
 
 -- name: SearchGroups :many
 SELECT id, name FROM iam.groups WHERE name ILIKE @prefix || '%' ORDER BY name LIMIT 10;
+
+-- name: UserNamesAnyStatus :many
+-- Names of users whatever their status (audit trails name people who have since left).
+SELECT id, display_name FROM iam.users WHERE id = ANY (@ids::uuid[]);

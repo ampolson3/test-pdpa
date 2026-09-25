@@ -1307,6 +1307,184 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/audit-log:
+    get:
+      operationId: platformSearchAuditLog
+      tags: [platform]
+      summary: Search the tenant's audit trail, newest first (ORG-19)
+      x-permission: admin.audit.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: actor_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: entity_type
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 60
+        - name: entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: action_prefix
+          in: query
+          required: false
+          description: Start of the action, e.g. `iam.` for one module
+          schema:
+            type: string
+            maxLength: 80
+        - name: from
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Timestamp'
+        - name: to
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Timestamp'
+        - name: kind
+          in: query
+          required: false
+          description: changes = business actions (default) · requests = one row per API request · all
+          schema:
+            type: string
+            enum: [changes, requests, all]
+      responses:
+        '200':
+          description: One page
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEntry'
+                  next_cursor:
+                    type: [string, 'null']
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/platform/audit-log/export:
+    get:
+      operationId: platformExportAuditLog
+      tags: [platform]
+      summary: Export matching entries as CSV (at most 50,000 rows; the export itself is audited)
+      x-permission: admin.audit.export
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: actor_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: entity_type
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 60
+        - name: entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: action_prefix
+          in: query
+          required: false
+          description: Start of the action, e.g. `iam.` for one module
+          schema:
+            type: string
+            maxLength: 80
+        - name: from
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Timestamp'
+        - name: to
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Timestamp'
+        - name: kind
+          in: query
+          required: false
+          description: changes = business actions (default) · requests = one row per API request · all
+          schema:
+            type: string
+            enum: [changes, requests, all]
+      responses:
+        '200':
+          description: CSV (UTF-8 with BOM), newest first
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            text/csv:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/audit-log/verify:
+    post:
+      operationId: platformVerifyAuditLog
+      tags: [platform]
+      summary: Replay the tenant's hash chain now and report the first broken row, if any
+      x-permission: admin.audit.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, checked]
+                properties:
+                  ok:
+                    type: boolean
+                  checked:
+                    type: integer
+                  broken_at_id:
+                    type: integer
+                    format: int64
+                  reason:
+                    type: string
+                    enum: [hash_mismatch, prev_hash_mismatch]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/platform/imports:
     get:
       operationId: platformListImports
@@ -2046,6 +2224,37 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    AuditEntry:
+      type: object
+      required: [id, occurred_at, actor_type, action]
+      properties:
+        id:
+          type: integer
+          format: int64
+        occurred_at:
+          $ref: '#/components/schemas/Timestamp'
+        actor_type:
+          type: string
+          enum: [user, api_client, guest, data_subject, system]
+        actor_id:
+          $ref: '#/components/schemas/Uuid'
+        actor_name:
+          type: string
+        action:
+          type: string
+        entity_type:
+          type: string
+        entity_id:
+          $ref: '#/components/schemas/Uuid'
+        entity_name:
+          type: string
+          description: For entity_type user — whose record changed
+        before: {}
+        after: {}
+        ip:
+          type: string
+        user_agent:
+          type: string
     LocalizedText:
       type: object
       required: [th]

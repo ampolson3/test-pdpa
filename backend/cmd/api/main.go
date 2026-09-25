@@ -32,6 +32,7 @@ import (
 	"pdpa-platform/internal/pkg/otelx"
 	"pdpa-platform/internal/pkg/ratelimit"
 	"pdpa-platform/internal/pkg/validate"
+	audithttp "pdpa-platform/internal/platform/audit/http"
 	auditservice "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/collab"
 	collabhttp "pdpa-platform/internal/platform/collab/http"
@@ -218,6 +219,11 @@ func run() error {
 			[]importerhttp.StrictMiddlewareFunc{authz.StrictMiddleware[importerhttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			importerhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		importerhttp.HandlerWithOptions(strictImports, importerhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictAudit := audithttp.NewStrictHandlerWithOptions(audithttp.NewStrict(auditSvc),
+			[]audithttp.StrictMiddlewareFunc{authz.StrictMiddleware[audithttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			audithttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		audithttp.HandlerWithOptions(strictAudit, audithttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictWorkflow := workflowhttp.NewStrictHandlerWithOptions(workflowhttp.NewStrict(workflowSvc),
 			[]workflowhttp.StrictMiddlewareFunc{authz.StrictMiddleware[workflowhttp.StrictHandlerFunc](authzCache, requiredPermission)},

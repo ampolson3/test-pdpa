@@ -268,6 +268,15 @@ three modes, reminders, pause/resume, definition validation), integration (accep
 time and breach escalation with an injected clock; pause/resume; tasks, claims, access; two-tenant isolation), HTTP
 contract, Chromium E2E with the real worker sending a due reminder (17/17).
 
+### ORG-19 Audit log (`docs/modules/IAM.md#org-19`) — done
+`audit/service/search.go` + `audit/http`: search (`admin.audit.read`; actor, record, action prefix with LIKE
+wildcards escaped, time range, `kind` changes/requests/all — every API request is audited, so per-request rows are
+hidden by default; cursor on (occurred_at, id)), CSV export (`admin.audit.export`, ≤ 50,000 rows else 422, formula
+cells neutralized, the export itself audited as `platform.audit.export`), on-demand chain verify. Names via new
+`iamservice.AllNames` (includes disabled users). UI `/settings/audit` (filters, before/after, export link, verify).
+BFF now forwards `Content-Disposition`. Tests: acceptance (who changed whose roles and when, found by target and
+exported), kinds/prefix/range/paging/cursor, isolation, formula injection, HTTP contract, Chromium E2E (8/8).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

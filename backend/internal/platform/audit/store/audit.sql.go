@@ -195,3 +195,90 @@ func (q *Queries) NextAuditChainLink(ctx context.Context, tenantID uuid.UUID) (N
 	err := row.Scan(&i.PrevHash, &i.OccurredAt)
 	return i, err
 }
+
+const searchAuditLog = `-- name: SearchAuditLog :many
+SELECT id, occurred_at, actor_type, actor_id, action, entity_type, entity_id, before, after, ip, user_agent
+FROM platform.audit_log
+WHERE ($1::uuid IS NULL OR actor_id = $1::uuid)
+  AND ($2::text IS NULL OR entity_type = $2::text)
+  AND ($3::uuid IS NULL OR entity_id = $3::uuid)
+  AND ($4::text IS NULL OR action LIKE $4::text || '%')
+  AND ($5::timestamptz IS NULL OR occurred_at >= $5::timestamptz)
+  AND ($6::timestamptz IS NULL OR occurred_at < $6::timestamptz)
+  AND ($7::text = 'all' OR ($7::text = 'requests') = (action ~ '^[A-Z]+ '))
+  AND (occurred_at, id) < ($8::timestamptz, $9::bigint)
+ORDER BY occurred_at DESC, id DESC
+LIMIT $10
+`
+
+type SearchAuditLogParams struct {
+	ActorID          pgtype.UUID        `db:"actor_id" json:"actor_id"`
+	EntityType       *string            `db:"entity_type" json:"entity_type"`
+	EntityID         pgtype.UUID        `db:"entity_id" json:"entity_id"`
+	ActionPrefix     *string            `db:"action_prefix" json:"action_prefix"`
+	FromAt           pgtype.Timestamptz `db:"from_at" json:"from_at"`
+	ToAt             pgtype.Timestamptz `db:"to_at" json:"to_at"`
+	Kind             string             `db:"kind" json:"kind"`
+	BeforeOccurredAt pgtype.Timestamptz `db:"before_occurred_at" json:"before_occurred_at"`
+	BeforeID         int64              `db:"before_id" json:"before_id"`
+	PageSize         int32              `db:"page_size" json:"page_size"`
+}
+
+type SearchAuditLogRow struct {
+	ID         int64              `db:"id" json:"id"`
+	OccurredAt pgtype.Timestamptz `db:"occurred_at" json:"occurred_at"`
+	ActorType  string             `db:"actor_type" json:"actor_type"`
+	ActorID    pgtype.UUID        `db:"actor_id" json:"actor_id"`
+	Action     string             `db:"action" json:"action"`
+	EntityType *string            `db:"entity_type" json:"entity_type"`
+	EntityID   pgtype.UUID        `db:"entity_id" json:"entity_id"`
+	Before     []byte             `db:"before" json:"before"`
+	After      []byte             `db:"after" json:"after"`
+	Ip         *netip.Addr        `db:"ip" json:"ip"`
+	UserAgent  *string            `db:"user_agent" json:"user_agent"`
+}
+
+// ORG-19: the tenant's audit trail (RLS), newest first, before the cursor (occurred_at, id).
+// kind: 'changes' = business actions, 'requests' = per-request rows ("GET /admin/v1/…"), 'all'.
+func (q *Queries) SearchAuditLog(ctx context.Context, arg SearchAuditLogParams) ([]SearchAuditLogRow, error) {
+	rows, err := q.db.Query(ctx, searchAuditLog,
+		arg.ActorID,
+		arg.EntityType,
+		arg.EntityID,
+		arg.ActionPrefix,
+		arg.FromAt,
+		arg.ToAt,
+		arg.Kind,
+		arg.BeforeOccurredAt,
+		arg.BeforeID,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SearchAuditLogRow
+	for rows.Next() {
+		var i SearchAuditLogRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OccurredAt,
+			&i.ActorType,
+			&i.ActorID,
+			&i.Action,
+			&i.EntityType,
+			&i.EntityID,
+			&i.Before,
+			&i.After,
+			&i.Ip,
+			&i.UserAgent,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

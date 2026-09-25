@@ -180,3 +180,33 @@ func (q *Queries) SearchGroups(ctx context.Context, prefix *string) ([]SearchGro
 	}
 	return items, nil
 }
+
+const userNamesAnyStatus = `-- name: UserNamesAnyStatus :many
+SELECT id, display_name FROM iam.users WHERE id = ANY ($1::uuid[])
+`
+
+type UserNamesAnyStatusRow struct {
+	ID          uuid.UUID `db:"id" json:"id"`
+	DisplayName string    `db:"display_name" json:"display_name"`
+}
+
+// Names of users whatever their status (audit trails name people who have since left).
+func (q *Queries) UserNamesAnyStatus(ctx context.Context, ids []uuid.UUID) ([]UserNamesAnyStatusRow, error) {
+	rows, err := q.db.Query(ctx, userNamesAnyStatus, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []UserNamesAnyStatusRow
+	for rows.Next() {
+		var i UserNamesAnyStatusRow
+		if err := rows.Scan(&i.ID, &i.DisplayName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

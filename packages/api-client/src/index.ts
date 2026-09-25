@@ -56,3 +56,4 @@ export {
   type SlaStatus,
   type LocalizedText,
 } from "./workflow";
+export { useAuditLog, auditExportHref, useVerifyAuditLog, type AuditEntry, type AuditFilter } from "./audit";

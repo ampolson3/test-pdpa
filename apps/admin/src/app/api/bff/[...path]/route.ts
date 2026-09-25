@@ -48,7 +48,7 @@ async function proxy(req: NextRequest, path: string[]): Promise<NextResponse> {
 
   // Streamed, not buffered: the inbox's server-sent events (PLT-04) never end on their own.
   const headers: Record<string, string> = { "Content-Type": upstream.headers.get("content-type") ?? "application/json" };
-  for (const h of ["etag", "cache-control"]) {
+  for (const h of ["etag", "cache-control", "content-disposition"]) {
     const v = upstream.headers.get(h);
     if (v) headers[h] = v;
   }

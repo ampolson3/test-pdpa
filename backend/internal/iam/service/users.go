@@ -95,3 +95,20 @@ func SearchGroups(ctx context.Context, prefix string) ([]UserName, error) {
 	}
 	return out, nil
 }
+
+// AllNames returns display names of those ids that are users of the tenant, active or not (for records
+// such as the audit trail that name people who may have left since).
+func AllNames(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error) {
+	out := map[uuid.UUID]string{}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := iamstore.New(pdb.MustTxFromContext(ctx)).UserNamesAnyStatus(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("iam: names: %w", err)
+	}
+	for _, r := range rows {
+		out[r.ID] = r.DisplayName
+	}
+	return out, nil
+}
