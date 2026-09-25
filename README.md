@@ -88,6 +88,30 @@ Keycloak ยังไม่ได้ตั้งทางนี้ (Organization
 endpoint ที่ต้อง login ได้ด้วย JWT ที่เซ็นเองชั่วคราวเท่านั้น (ดูวิธีใน git log ของ commit ที่ verify reference
 slice)
 
+## รันบนเครื่องตัวเอง (ไม่ต้องมี Docker / Keycloak)
+
+ต้องมี Go, Node + pnpm, PostgreSQL 16/17 + pgvector และ Redis/Valkey (ตั้งตามหัวข้อด้านบน) แล้วจาก root ของ repo:
+
+```sh
+pnpm install
+make dev-env      # สร้าง .env จาก .env.example + สุ่ม AUTH_SECRET / LOCAL_KEK_BASE64 (รันซ้ำได้ ไม่ทับค่าเดิม)
+# รัน deploy/db/00-bootstrap.sql ครั้งแรกครั้งเดียว (ดูหัวข้อด้านบน) แล้ว
+make migrate
+make dev-seed     # สร้างองค์กรตัวอย่าง + ผู้ดูแลระบบ (ORGADMIN, DPO) สำหรับ dev login
+make run-api      # terminal ที่ 1 — :8080
+make run-worker   # terminal ที่ 2
+make run-web      # terminal ที่ 3 — http://localhost:3000/th → กด "เข้าสู่ระบบ"
+```
+
+**Dev login** (`AUTH_DEV_LOGIN=true` ใน `.env`): ปุ่มเข้าสู่ระบบจะเข้าเป็นผู้ใช้จาก `make dev-seed` ทันทีโดยไม่ผ่าน Keycloak —
+แอป admin เซ็น access token เอง (`apps/admin/src/lib/dev-auth.ts`, กุญแจเก็บใน `apps/admin/.dev-auth/` ซึ่ง git ไม่เก็บ) และเปิด
+public key ที่ `/api/dev-auth/jwks` ซึ่ง `.env` ชี้ `OIDC_ISSUER` / `OIDC_JWKS_URL` ของ API ไปหา ใช้ได้เฉพาะ `next dev` —
+build สำหรับ production ปิดเสมอแม้ตั้งค่าไว้ และ API ของ production ที่ชี้ไป Keycloak จะไม่ยอมรับ token เหล่านี้
+หน้า "Server error — problem with the server configuration" ที่ `/api/auth/signin/keycloak` แปลว่ายังไม่ได้ตั้งทั้ง Keycloak
+และ dev login (มักเพราะยังไม่มี `.env` ที่ root)
+
+ไม่มี S3 (MinIO) / ClamAV ก็รันได้ — เฉพาะการอัปโหลดไฟล์ที่ใช้ไม่ได้ (`make dev` ของ Docker เปิดให้ครบ)
+
 ## ข้อควรรู้
 
 - สิ่งที่ยังต้องตัดสินใจ (ผู้ให้บริการ SMS / e-Sign, การนับวัน DSAR, การตีความแจ้งเหตุล่าช้า ฯลฯ) อยู่ใน `docs/decisions.md` ส่วนที่ 2 — Claude Code ถูกสั่งให้ถาม ไม่เดา
