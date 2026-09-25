@@ -298,7 +298,13 @@ func TestFailingJob_IsRetriedThenAlerted(t *testing.T) {
 	if s.Attempt != 3 || attempts.Load() != 3 {
 		t.Errorf("attempts: row=%d worker=%d, want 3", s.Attempt, attempts.Load())
 	}
-	out := logs.String()
+	// Count only this job's lines: jobs of other test packages sharing the queue can fail here too.
+	var out string
+	for _, line := range strings.Split(logs.String(), "\n") {
+		if strings.Contains(line, `"kind":"test.jobs.fail"`) {
+			out += line + "\n"
+		}
+	}
 	if got := strings.Count(out, `"msg":"job attempt failed; will retry"`); got != 2 {
 		t.Errorf("retry warnings = %d, want 2\n%s", got, out)
 	}

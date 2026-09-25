@@ -58,6 +58,7 @@
 - header: `X-Event-Id`, `X-Event-Type`, `X-Signature: t=<unix>,v1=<hex HMAC-SHA256(secret, t + '.' + body)>` · secret อยู่ใน OpenBao (`webhook_subscriptions.secret_ref`)
 - retry: 1 นาที → 5 นาที → 30 นาที → 2 ชม. → 6 ชม. → 24 ชม. แล้ว `dead` + แจ้งเตือน + เข้าคิว reconcile · replay ด้วยมือต้องมี `admin.apiclient.update` และถูก audit (ST-07)
 - ผู้รับต้อง idempotent ตาม `X-Event-Id` และปฏิเสธ timestamp เก่ากว่า 5 นาที
+- โค้ด (PLT-11, `backend/internal/platform/events`): `Publisher.Publish(ctx, Event)` ตรวจชื่อ event และฟิลด์ `data` กับ catalog (`catalog.gen.go` สร้างจาก `events.yaml` ด้วย `go generate` — มี test กัน drift) แล้วเขียน outbox + enqueue `outbox.dispatch` (unique ต่อ tenant) ใน tx เดียวกัน · `Dispatcher` ส่ง event ให้ subscriber ภายใน (`Registry.Subscribe`, ลงทะเบียนใน `cmd/worker`) + สร้าง `webhook_deliveries` (pending) + ตั้ง `published_at` ใน savepoint ต่อ event · event ที่ล้มเหลว: ไม่ publish, `attempts`+1, event ถัดไปของ aggregate เดียวกันถูกกันไว้ (รักษาลำดับ) ส่วน aggregate อื่นไปต่อ · ลองใหม่ทุกรอบ sweeper (1 นาที) · log WARN แต่ละครั้ง และ ERROR `alert=outbox_event_stuck` เมื่อ attempts ≥ 5 · at-least-once: subscriber ต้อง idempotent ตาม `Event.ID` (ถ้าเขียนเฉพาะใน tx ที่ได้รับจะได้ผลนี้อัตโนมัติ) · NATS JetStream ยังไม่ทำ (ทางเลือกตาม ADR)
 - breaking change ของ payload → เพิ่ม `version` ใหม่ และคงเวอร์ชันเดิมอย่างน้อย 12 เดือน
 
 ## Event catalog

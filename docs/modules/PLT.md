@@ -373,6 +373,8 @@
 
 **Acceptance criteria:** event ไม่สูญหายเมื่อระบบล่มกลางคัน (at-least-once + idempotent consumer)
 
+**Implementation (PLT-11):** `backend/internal/platform/events` — `Publisher` (outbox + enqueue ใน tx ของ request), `Dispatcher` (`outbox.dispatch`), `Sweeper` (`outbox.sweep` ทุก 1 นาที), catalog สร้างจาก `docs/architecture/events.yaml` · migration 00022 (index สำหรับ dispatcher + unique delivery) · รายละเอียดใน `docs/architecture/integration.md` § Outbox → webhook · การส่ง HTTP + HMAC (`webhook.deliver`) อยู่ใน PLT-15 · NATS ยังไม่ทำ
+
 **หมายเหตุ:** ใช้เชื่อมโมดูลกัน เช่น ROPA-19, DSAR-21, DFG-02
 
 **หมายเหตุจาก SA (ใช้แทนข้อความในแผนเมื่อขัดกัน):** dispatch แบบต่อ tenant: service enqueue River job `outbox.dispatch` (args: tenant_id) ใน tx เดียวกับ outbox · sweeper วน tenant เก็บรายการค้าง — ไม่ต้องใช้ BYPASSRLS (ดู integration.md)

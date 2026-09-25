@@ -534,7 +534,8 @@ transactional outbox ของ domain event
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_outbox_events_updated`
 - PK: `(id)`
-- Index: `platform.outbox_events (tenant_id, event_type)` · `platform.outbox_events (tenant_id, published_at)`
+- Index: `platform.outbox_events (tenant_id, event_type)` · `platform.outbox_events (tenant_id, published_at)` · `ix_platform_outbox_events_unpublished (tenant_id, occurred_at, id) WHERE published_at IS NULL` (migration 00022 — dispatcher)
+- `payload` = `{"version": <n>, "data": {...}}` · `data` มีฟิลด์ตาม `docs/architecture/events.yaml` ครบและไม่เกิน (ตรวจใน `events.Publisher`) · envelope `subject` = `aggregate_type` + `aggregate_id` · `attempts` นับทุกครั้งที่ dispatch (สำเร็จหรือล้มเหลว) (PLT-11)
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `platform.webhook_deliveries.event_id`
 
@@ -579,6 +580,7 @@ webhook ที่ระบบปลายทางลงทะเบียน
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_webhook_deliveries_updated`
 - PK: `(id)`
 - Index: `platform.webhook_deliveries (tenant_id, subscription_id)` · `platform.webhook_deliveries (tenant_id, event_id)` · `platform.webhook_deliveries (tenant_id, next_retry_at)`
+- Unique: `uq_platform_webhook_deliveries_subscription_event (tenant_id, subscription_id, event_id)` (migration 00022) — dispatch ซ้ำไม่สร้าง delivery ซ้ำ · แถวถูกสร้างเป็น `pending` โดย `outbox.dispatch` (PLT-11) และส่งจริงโดย `webhook.deliver` (PLT-15)
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `consent.downstream_syncs.webhook_delivery_id`
 

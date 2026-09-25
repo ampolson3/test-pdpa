@@ -15,6 +15,7 @@ import (
 	"github.com/riverqueue/river"
 
 	pdb "pdpa-platform/internal/pkg/db"
+	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/jobs"
 )
 
@@ -42,13 +43,18 @@ func run() error {
 		return err
 	}
 
+	// In-process event subscribers: modules register theirs here as they are built (PLT-11).
+	subscribers := events.NewRegistry()
+
 	workers := river.NewWorkers()
 	river.AddWorker(workers, &jobs.PartitionMaintainWorker{Pool: pool})
+	river.AddWorker(workers, &events.Dispatcher{Subscribers: subscribers, Logger: slog.Default()})
+	river.AddWorker(workers, &events.Sweeper{Pool: pool})
 
 	client, err := jobs.NewWorkerClient(pool, jobs.WorkerOptions{
 		Logger:          slog.Default(),
 		Workers:         workers,
-		PeriodicJobs:    []*river.PeriodicJob{jobs.PeriodicJob()},
+		PeriodicJobs:    []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob()},
 		SoftStopTimeout: softStop,
 	})
 	if err != nil {

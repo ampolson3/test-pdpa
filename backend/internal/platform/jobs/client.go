@@ -15,6 +15,9 @@ import (
 // tenant data (see TenantTxMiddleware); add a kind here only with that justification.
 var GlobalKinds = map[string]bool{
 	PartitionMaintainArgs{}.Kind(): true,
+	// events.SweepArgs (internal/platform/events imports this package, so the kind is spelled out):
+	// reads only platform.tenants and enqueues one outbox.dispatch per tenant.
+	"outbox.sweep": true,
 }
 
 // WorkerOptions configures NewWorkerClient. Zero values take the documented defaults.

@@ -113,6 +113,23 @@ periodic job once), RLS inside a job, enqueue commit/rollback, per-tenant unique
 - Not done: SUPER's cross-tenant job view (`/provider/v1`, no provider surface exists yet); failure alerts
   reach people only through log/metric alert rules until PLT-04 (notifications) exists.
 
+### PLT-11 Domain events และ outbox (`docs/modules/PLT.md#plt-11`) — done
+`internal/platform/events` (rules in `docs/architecture/integration.md` § Outbox → webhook): services call
+`Publisher.Publish(ctx, events.Event{...})` inside their request tx — it validates type + data fields against
+`Catalog` (generated from `docs/architecture/events.yaml` by `go generate ./internal/platform/events`, drift
+test included), writes `platform.outbox_events` and enqueues `outbox.dispatch` (unique per tenant) in the same
+tx. `Dispatcher` delivers each event to in-process subscribers (`Registry.Subscribe`, wired in `cmd/worker`)
+and creates `pending` webhook deliveries in a per-event savepoint (`db.Savepoint`, new), keeping per-aggregate
+order when one fails; `Sweeper` (`outbox.sweep`, every minute, in `jobs.GlobalKinds`) re-dispatches every live
+tenant. Migration 00022: partial index for unpublished events + unique (subscription, event) delivery.
+Tests (`events_test.go`, real Postgres): catalog drift, catalog validation, publish commit/rollback + one
+dispatch per burst, delivery + subscription matching, crash-before-commit redelivery with an idempotent
+consumer (the acceptance criterion), failing event blocks only its aggregate, two-tenant isolation, sweeper.
+Also run live: real `cmd/worker` published a raw outbox row within ~4 s via sweep → dispatch.
+Not done: `webhook.deliver` (HTTP + HMAC + retry → PLT-15, needs ORG-16 API clients and OpenBao secrets);
+NATS forwarding (optional per ADR); retention/cleanup of published outbox rows (no rule yet). No module
+publishes events yet — the first producers arrive with their features.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.
