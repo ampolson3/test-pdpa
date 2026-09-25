@@ -35,6 +35,10 @@ func setup(t *testing.T, suffix string) env {
 			_, _ = tx.Exec(ctx, `DELETE FROM org.org_settings`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.holidays`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.business_calendars`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.org_units`)
+			_, _ = tx.Exec(ctx, `UPDATE org.legal_entities SET parent_id = NULL`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
+			_, _ = tx.Exec(ctx, `DELETE FROM platform.files`)
 			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
 			return err
 		})

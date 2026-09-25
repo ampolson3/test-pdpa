@@ -11,3 +11,12 @@ output-options:
     - orgListHolidays
     - orgPutHoliday
     - orgDeleteHoliday
+    - orgListLegalEntities
+    - orgCreateLegalEntity
+    - orgGetLegalEntity
+    - orgUpdateLegalEntity
+    - orgListUnits
+    - orgCreateUnit
+    - orgUpdateUnit
+    - orgMoveUnit
+    - orgCloseUnit

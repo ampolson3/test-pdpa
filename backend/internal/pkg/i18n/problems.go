@@ -124,6 +124,23 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "คำขอไม่ถูกต้อง",
 		En: "Invalid workflow request",
 	},
+	// ORG-01 / ORG-04 structure
+	"org.invalid": {
+		Th: "ข้อมูลไม่ถูกต้อง",
+		En: "Invalid organization data",
+	},
+	"org.cycle": {
+		Th: "ย้ายหน่วยงานไปอยู่ใต้ตัวเองไม่ได้",
+		En: "A unit can't be placed under itself",
+	},
+	"org.has_active_units": {
+		Th: "ต้องปิดหน่วยงานย่อยที่ยังเปิดอยู่ก่อน",
+		En: "Close the active units below it first",
+	},
+	"org.logo_not_usable": {
+		Th: "โลโก้ต้องเป็นไฟล์ PNG หรือ JPEG ที่คุณอัปโหลดและผ่านการตรวจไวรัสแล้ว",
+		En: "The logo must be your own clean PNG or JPEG upload",
+	},
 	// ORG-20 calendars
 	"org.invalid_calendar": {
 		Th: "ข้อมูลปฏิทินไม่ถูกต้อง (ชื่อ เขตเวลา หรือวันทำการ)",

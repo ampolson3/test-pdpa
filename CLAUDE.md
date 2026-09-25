@@ -289,6 +289,18 @@ levels in order. Migration 00029: one open + one published version per record, p
 Tests: diff unit tests; integration (both acceptance criteria, level order, one person one level, returns, locked
 drafts, access, isolation); HTTP contract; Chromium E2E through a temporary (uncommitted) registration (9/9).
 
+### ORG-01 Legal entities · ORG-04 Org-unit tree (`docs/modules/ORG.md`) — done
+`internal/org/service/structure.go` + `org/http/structure.go` (`org.structure.*`). ORG-01: 13-digit registration/tax
+ids with the Thai mod-11 check digit (`ValidThaiID`), unique per tenant, address jsonb, parent company without
+cycles, logo = the caller's clean PNG/JPEG PLT-09 upload attached as `legal_entity` (`orgservice.Service.Files`, a
+small `FileStore` interface; `cmd/api` registers the download permission), `MergeFields` for future document
+templates. ORG-04: ltree paths of `u<id>` labels; move rewrites the whole subtree in one statement (cycle refused,
+same legal entity only), close needs no active children and keeps history; `UnitWithin` answers scope questions on
+the live tree (acceptance: a moved department's team is in its new parent's scope at once). No org events yet
+(none in events.yaml). Migration 00030. UI `/settings/organization`: entity form + logo upload, tree with HTML5
+drag-and-drop, move menu, search with ancestors, add/rename/close. Tests: check digit, validation, logo rules,
+merge fields, move/scope/cycle/close, two-tenant isolation, HTTP contract, Chromium E2E (10/10, real S3 + clamd).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

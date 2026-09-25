@@ -67,3 +67,13 @@ export {
   type VersionChange,
   type ApprovalInboxItem,
 } from "./versioning";
+export {
+  useLegalEntities,
+  useSaveLegalEntity,
+  useOrgUnits,
+  useOrgUnitMutations,
+  type LegalEntity,
+  type LegalEntityInput,
+  type OrgUnit,
+  type OrgUnitType,
+} from "./org";

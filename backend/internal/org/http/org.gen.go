@@ -17,6 +17,90 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for LegalEntityStatus.
+const (
+	LegalEntityStatusActive   LegalEntityStatus = "active"
+	LegalEntityStatusInactive LegalEntityStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the LegalEntityStatus enum.
+func (e LegalEntityStatus) Valid() bool {
+	switch e {
+	case LegalEntityStatusActive:
+		return true
+	case LegalEntityStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegalEntityInputStatus.
+const (
+	LegalEntityInputStatusActive   LegalEntityInputStatus = "active"
+	LegalEntityInputStatusInactive LegalEntityInputStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the LegalEntityInputStatus enum.
+func (e LegalEntityInputStatus) Valid() bool {
+	switch e {
+	case LegalEntityInputStatusActive:
+		return true
+	case LegalEntityInputStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgUnitStatus.
+const (
+	OrgUnitStatusActive OrgUnitStatus = "active"
+	OrgUnitStatusClosed OrgUnitStatus = "closed"
+)
+
+// Valid indicates whether the value is a known member of the OrgUnitStatus enum.
+func (e OrgUnitStatus) Valid() bool {
+	switch e {
+	case OrgUnitStatusActive:
+		return true
+	case OrgUnitStatusClosed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgUnitType.
+const (
+	Branch     OrgUnitType = "branch"
+	Company    OrgUnitType = "company"
+	Department OrgUnitType = "department"
+	Division   OrgUnitType = "division"
+	Group      OrgUnitType = "group"
+	Team       OrgUnitType = "team"
+)
+
+// Valid indicates whether the value is a known member of the OrgUnitType enum.
+func (e OrgUnitType) Valid() bool {
+	switch e {
+	case Branch:
+		return true
+	case Company:
+		return true
+	case Department:
+		return true
+	case Division:
+		return true
+	case Group:
+		return true
+	case Team:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AcceptLanguage.
 const (
 	AcceptLanguageEn AcceptLanguage = "en"
@@ -143,6 +227,179 @@ func (e OrgPutHolidayParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for OrgListLegalEntitiesParamsAcceptLanguage.
+const (
+	OrgListLegalEntitiesParamsAcceptLanguageEn OrgListLegalEntitiesParamsAcceptLanguage = "en"
+	OrgListLegalEntitiesParamsAcceptLanguageTh OrgListLegalEntitiesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgListLegalEntitiesParamsAcceptLanguage enum.
+func (e OrgListLegalEntitiesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgListLegalEntitiesParamsAcceptLanguageEn:
+		return true
+	case OrgListLegalEntitiesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgCreateLegalEntityParamsAcceptLanguage.
+const (
+	OrgCreateLegalEntityParamsAcceptLanguageEn OrgCreateLegalEntityParamsAcceptLanguage = "en"
+	OrgCreateLegalEntityParamsAcceptLanguageTh OrgCreateLegalEntityParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgCreateLegalEntityParamsAcceptLanguage enum.
+func (e OrgCreateLegalEntityParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgCreateLegalEntityParamsAcceptLanguageEn:
+		return true
+	case OrgCreateLegalEntityParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgGetLegalEntityParamsAcceptLanguage.
+const (
+	OrgGetLegalEntityParamsAcceptLanguageEn OrgGetLegalEntityParamsAcceptLanguage = "en"
+	OrgGetLegalEntityParamsAcceptLanguageTh OrgGetLegalEntityParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgGetLegalEntityParamsAcceptLanguage enum.
+func (e OrgGetLegalEntityParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgGetLegalEntityParamsAcceptLanguageEn:
+		return true
+	case OrgGetLegalEntityParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgUpdateLegalEntityParamsAcceptLanguage.
+const (
+	OrgUpdateLegalEntityParamsAcceptLanguageEn OrgUpdateLegalEntityParamsAcceptLanguage = "en"
+	OrgUpdateLegalEntityParamsAcceptLanguageTh OrgUpdateLegalEntityParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgUpdateLegalEntityParamsAcceptLanguage enum.
+func (e OrgUpdateLegalEntityParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgUpdateLegalEntityParamsAcceptLanguageEn:
+		return true
+	case OrgUpdateLegalEntityParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgListUnitsParamsAcceptLanguage.
+const (
+	OrgListUnitsParamsAcceptLanguageEn OrgListUnitsParamsAcceptLanguage = "en"
+	OrgListUnitsParamsAcceptLanguageTh OrgListUnitsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgListUnitsParamsAcceptLanguage enum.
+func (e OrgListUnitsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgListUnitsParamsAcceptLanguageEn:
+		return true
+	case OrgListUnitsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgCreateUnitParamsAcceptLanguage.
+const (
+	OrgCreateUnitParamsAcceptLanguageEn OrgCreateUnitParamsAcceptLanguage = "en"
+	OrgCreateUnitParamsAcceptLanguageTh OrgCreateUnitParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgCreateUnitParamsAcceptLanguage enum.
+func (e OrgCreateUnitParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgCreateUnitParamsAcceptLanguageEn:
+		return true
+	case OrgCreateUnitParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgUpdateUnitParamsAcceptLanguage.
+const (
+	OrgUpdateUnitParamsAcceptLanguageEn OrgUpdateUnitParamsAcceptLanguage = "en"
+	OrgUpdateUnitParamsAcceptLanguageTh OrgUpdateUnitParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgUpdateUnitParamsAcceptLanguage enum.
+func (e OrgUpdateUnitParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgUpdateUnitParamsAcceptLanguageEn:
+		return true
+	case OrgUpdateUnitParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgCloseUnitParamsAcceptLanguage.
+const (
+	OrgCloseUnitParamsAcceptLanguageEn OrgCloseUnitParamsAcceptLanguage = "en"
+	OrgCloseUnitParamsAcceptLanguageTh OrgCloseUnitParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgCloseUnitParamsAcceptLanguage enum.
+func (e OrgCloseUnitParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgCloseUnitParamsAcceptLanguageEn:
+		return true
+	case OrgCloseUnitParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgMoveUnitParamsAcceptLanguage.
+const (
+	OrgMoveUnitParamsAcceptLanguageEn OrgMoveUnitParamsAcceptLanguage = "en"
+	OrgMoveUnitParamsAcceptLanguageTh OrgMoveUnitParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgMoveUnitParamsAcceptLanguage enum.
+func (e OrgMoveUnitParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgMoveUnitParamsAcceptLanguageEn:
+		return true
+	case OrgMoveUnitParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Address defines model for Address.
+type Address struct {
+	CountryCode *string `json:"country_code,omitempty"`
+	District    *string `json:"district,omitempty"`
+	Line1       *string `json:"line1,omitempty"`
+	Line2       *string `json:"line2,omitempty"`
+	PostalCode  *string `json:"postal_code,omitempty"`
+	Province    *string `json:"province,omitempty"`
+	Subdistrict *string `json:"subdistrict,omitempty"`
+}
+
 // BusinessCalendar defines model for BusinessCalendar.
 type BusinessCalendar struct {
 	// Id UUIDv7 generated by the API
@@ -183,6 +440,108 @@ type Holiday struct {
 	Name string             `json:"name"`
 }
 
+// LegalEntity defines model for LegalEntity.
+type LegalEntity struct {
+	Address      Address `json:"address"`
+	ContactEmail *string `json:"contact_email,omitempty"`
+	ContactPhone *string `json:"contact_phone,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id           Uuid `json:"id"`
+	IsController bool `json:"is_controller"`
+	IsProcessor  bool `json:"is_processor"`
+
+	// LogoFileId UUIDv7 generated by the API
+	LogoFileId *Uuid   `json:"logo_file_id,omitempty"`
+	NameEn     *string `json:"name_en,omitempty"`
+	NameTh     string  `json:"name_th"`
+
+	// ParentId UUIDv7 generated by the API
+	ParentId       *Uuid             `json:"parent_id,omitempty"`
+	RegistrationNo *string           `json:"registration_no,omitempty"`
+	RowVersion     int               `json:"row_version"`
+	Status         LegalEntityStatus `json:"status"`
+	TaxId          *string           `json:"tax_id,omitempty"`
+
+	// UpdatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	UpdatedAt Timestamp `json:"updated_at"`
+}
+
+// LegalEntityStatus defines model for LegalEntity.Status.
+type LegalEntityStatus string
+
+// LegalEntityInput defines model for LegalEntityInput.
+type LegalEntityInput struct {
+	Address      *Address `json:"address,omitempty"`
+	ContactEmail *string  `json:"contact_email,omitempty"`
+	ContactPhone *string  `json:"contact_phone,omitempty"`
+	IsController *bool    `json:"is_controller,omitempty"`
+	IsProcessor  *bool    `json:"is_processor,omitempty"`
+
+	// LogoFileId A clean PNG or JPEG the caller uploaded (POST /admin/v1/platform/files)
+	LogoFileId *Uuid   `json:"logo_file_id,omitempty"`
+	NameEn     *string `json:"name_en,omitempty"`
+	NameTh     string  `json:"name_th"`
+
+	// ParentId UUIDv7 generated by the API
+	ParentId *Uuid `json:"parent_id,omitempty"`
+
+	// RegistrationNo 13-digit juristic registration number (dashes and spaces ignored; check digit verified)
+	RegistrationNo *string                 `json:"registration_no,omitempty"`
+	Status         *LegalEntityInputStatus `json:"status,omitempty"`
+	TaxId          *string                 `json:"tax_id,omitempty"`
+}
+
+// LegalEntityInputStatus defines model for LegalEntityInput.Status.
+type LegalEntityInputStatus string
+
+// OrgUnit defines model for OrgUnit.
+type OrgUnit struct {
+	// ClosedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	ClosedAt *Timestamp `json:"closed_at,omitempty"`
+	Code     string     `json:"code"`
+
+	// Depth 1 for a root unit
+	Depth int `json:"depth"`
+
+	// Id UUIDv7 generated by the API
+	Id Uuid `json:"id"`
+
+	// LegalEntityId UUIDv7 generated by the API
+	LegalEntityId Uuid    `json:"legal_entity_id"`
+	NameEn        *string `json:"name_en,omitempty"`
+	NameTh        string  `json:"name_th"`
+
+	// ParentId UUIDv7 generated by the API
+	ParentId   *Uuid         `json:"parent_id,omitempty"`
+	RowVersion int           `json:"row_version"`
+	Status     OrgUnitStatus `json:"status"`
+	UnitType   OrgUnitType   `json:"unit_type"`
+
+	// UpdatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	UpdatedAt Timestamp `json:"updated_at"`
+}
+
+// OrgUnitStatus defines model for OrgUnit.Status.
+type OrgUnitStatus string
+
+// OrgUnitInput defines model for OrgUnitInput.
+type OrgUnitInput struct {
+	Code string `json:"code"`
+
+	// LegalEntityId UUIDv7 generated by the API
+	LegalEntityId Uuid    `json:"legal_entity_id"`
+	NameEn        *string `json:"name_en,omitempty"`
+	NameTh        string  `json:"name_th"`
+
+	// ParentId UUIDv7 generated by the API
+	ParentId *Uuid       `json:"parent_id,omitempty"`
+	UnitType OrgUnitType `json:"unit_type"`
+}
+
+// OrgUnitType defines model for OrgUnitType.
+type OrgUnitType string
+
 // Problem RFC 9457 problem details with a stable machine-readable `code`
 type Problem struct {
 	Code      string        `json:"code"`
@@ -209,6 +568,9 @@ type IfMatch = string
 
 // BadRequest RFC 9457 problem details with a stable machine-readable `code`
 type BadRequest = Problem
+
+// Conflict RFC 9457 problem details with a stable machine-readable `code`
+type Conflict = Problem
 
 // Forbidden RFC 9457 problem details with a stable machine-readable `code`
 type Forbidden = Problem
@@ -292,6 +654,115 @@ type OrgPutHolidayParams struct {
 // OrgPutHolidayParamsAcceptLanguage defines parameters for OrgPutHoliday.
 type OrgPutHolidayParamsAcceptLanguage string
 
+// OrgListLegalEntitiesParams defines parameters for OrgListLegalEntities.
+type OrgListLegalEntitiesParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgListLegalEntitiesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// OrgListLegalEntitiesParamsAcceptLanguage defines parameters for OrgListLegalEntities.
+type OrgListLegalEntitiesParamsAcceptLanguage string
+
+// OrgCreateLegalEntityParams defines parameters for OrgCreateLegalEntity.
+type OrgCreateLegalEntityParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgCreateLegalEntityParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// OrgCreateLegalEntityParamsAcceptLanguage defines parameters for OrgCreateLegalEntity.
+type OrgCreateLegalEntityParamsAcceptLanguage string
+
+// OrgGetLegalEntityParams defines parameters for OrgGetLegalEntity.
+type OrgGetLegalEntityParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgGetLegalEntityParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// OrgGetLegalEntityParamsAcceptLanguage defines parameters for OrgGetLegalEntity.
+type OrgGetLegalEntityParamsAcceptLanguage string
+
+// OrgUpdateLegalEntityParams defines parameters for OrgUpdateLegalEntity.
+type OrgUpdateLegalEntityParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgUpdateLegalEntityParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// OrgUpdateLegalEntityParamsAcceptLanguage defines parameters for OrgUpdateLegalEntity.
+type OrgUpdateLegalEntityParamsAcceptLanguage string
+
+// OrgListUnitsParams defines parameters for OrgListUnits.
+type OrgListUnitsParams struct {
+	LegalEntityId *Uuid `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+	IncludeClosed *bool `form:"include_closed,omitempty" json:"include_closed,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgListUnitsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// OrgListUnitsParamsAcceptLanguage defines parameters for OrgListUnits.
+type OrgListUnitsParamsAcceptLanguage string
+
+// OrgCreateUnitParams defines parameters for OrgCreateUnit.
+type OrgCreateUnitParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgCreateUnitParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// OrgCreateUnitParamsAcceptLanguage defines parameters for OrgCreateUnit.
+type OrgCreateUnitParamsAcceptLanguage string
+
+// OrgUpdateUnitJSONBody defines parameters for OrgUpdateUnit.
+type OrgUpdateUnitJSONBody struct {
+	Code     string      `json:"code"`
+	NameEn   *string     `json:"name_en,omitempty"`
+	NameTh   string      `json:"name_th"`
+	UnitType OrgUnitType `json:"unit_type"`
+}
+
+// OrgUpdateUnitParams defines parameters for OrgUpdateUnit.
+type OrgUpdateUnitParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgUpdateUnitParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// OrgUpdateUnitParamsAcceptLanguage defines parameters for OrgUpdateUnit.
+type OrgUpdateUnitParamsAcceptLanguage string
+
+// OrgCloseUnitParams defines parameters for OrgCloseUnit.
+type OrgCloseUnitParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgCloseUnitParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// OrgCloseUnitParamsAcceptLanguage defines parameters for OrgCloseUnit.
+type OrgCloseUnitParamsAcceptLanguage string
+
+// OrgMoveUnitJSONBody defines parameters for OrgMoveUnit.
+type OrgMoveUnitJSONBody struct {
+	ParentId *Uuid `json:"parent_id"`
+}
+
+// OrgMoveUnitParams defines parameters for OrgMoveUnit.
+type OrgMoveUnitParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgMoveUnitParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// OrgMoveUnitParamsAcceptLanguage defines parameters for OrgMoveUnit.
+type OrgMoveUnitParamsAcceptLanguage string
+
 // OrgCreateCalendarJSONRequestBody defines body for OrgCreateCalendar for application/json ContentType.
 type OrgCreateCalendarJSONRequestBody = BusinessCalendarInput
 
@@ -300,6 +771,21 @@ type OrgUpdateCalendarJSONRequestBody = BusinessCalendarInput
 
 // OrgPutHolidayJSONRequestBody defines body for OrgPutHoliday for application/json ContentType.
 type OrgPutHolidayJSONRequestBody OrgPutHolidayJSONBody
+
+// OrgCreateLegalEntityJSONRequestBody defines body for OrgCreateLegalEntity for application/json ContentType.
+type OrgCreateLegalEntityJSONRequestBody = LegalEntityInput
+
+// OrgUpdateLegalEntityJSONRequestBody defines body for OrgUpdateLegalEntity for application/json ContentType.
+type OrgUpdateLegalEntityJSONRequestBody = LegalEntityInput
+
+// OrgCreateUnitJSONRequestBody defines body for OrgCreateUnit for application/json ContentType.
+type OrgCreateUnitJSONRequestBody = OrgUnitInput
+
+// OrgUpdateUnitJSONRequestBody defines body for OrgUpdateUnit for application/json ContentType.
+type OrgUpdateUnitJSONRequestBody OrgUpdateUnitJSONBody
+
+// OrgMoveUnitJSONRequestBody defines body for OrgMoveUnit for application/json ContentType.
+type OrgMoveUnitJSONRequestBody OrgMoveUnitJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -321,6 +807,33 @@ type ServerInterface interface {
 	// OrgPutHoliday Add a holiday, or rename the holiday on that date
 	// (PUT /admin/v1/org/calendars/{id}/holidays/{date})
 	OrgPutHoliday(w http.ResponseWriter, r *http.Request, id Uuid, date openapi_types.Date, params OrgPutHolidayParams)
+	// OrgListLegalEntities The tenant's legal entities (ORG-01)
+	// (GET /admin/v1/org/legal-entities)
+	OrgListLegalEntities(w http.ResponseWriter, r *http.Request, params OrgListLegalEntitiesParams)
+	// OrgCreateLegalEntity Add a legal entity
+	// (POST /admin/v1/org/legal-entities)
+	OrgCreateLegalEntity(w http.ResponseWriter, r *http.Request, params OrgCreateLegalEntityParams)
+	// OrgGetLegalEntity One legal entity
+	// (GET /admin/v1/org/legal-entities/{id})
+	OrgGetLegalEntity(w http.ResponseWriter, r *http.Request, id Uuid, params OrgGetLegalEntityParams)
+	// OrgUpdateLegalEntity Change a legal entity (all editable fields)
+	// (PATCH /admin/v1/org/legal-entities/{id})
+	OrgUpdateLegalEntity(w http.ResponseWriter, r *http.Request, id Uuid, params OrgUpdateLegalEntityParams)
+	// OrgListUnits The org-unit tree in path order (parents before children) (ORG-04)
+	// (GET /admin/v1/org/units)
+	OrgListUnits(w http.ResponseWriter, r *http.Request, params OrgListUnitsParams)
+	// OrgCreateUnit Add a unit under a parent (or as a root of its legal entity)
+	// (POST /admin/v1/org/units)
+	OrgCreateUnit(w http.ResponseWriter, r *http.Request, params OrgCreateUnitParams)
+	// OrgUpdateUnit Rename or recode a unit
+	// (PATCH /admin/v1/org/units/{id})
+	OrgUpdateUnit(w http.ResponseWriter, r *http.Request, id Uuid, params OrgUpdateUnitParams)
+	// OrgCloseUnit Close a unit with no active units below it (kept for history)
+	// (POST /admin/v1/org/units/{id}/close)
+	OrgCloseUnit(w http.ResponseWriter, r *http.Request, id Uuid, params OrgCloseUnitParams)
+	// OrgMoveUnit Move a unit and everything below it under another parent of the same legal entity (null = root)
+	// (POST /admin/v1/org/units/{id}/move)
+	OrgMoveUnit(w http.ResponseWriter, r *http.Request, id Uuid, params OrgMoveUnitParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -360,6 +873,60 @@ func (_ Unimplemented) OrgDeleteHoliday(w http.ResponseWriter, r *http.Request, 
 // OrgPutHoliday Add a holiday, or rename the holiday on that date
 // (PUT /admin/v1/org/calendars/{id}/holidays/{date})
 func (_ Unimplemented) OrgPutHoliday(w http.ResponseWriter, r *http.Request, id Uuid, date openapi_types.Date, params OrgPutHolidayParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgListLegalEntities The tenant's legal entities (ORG-01)
+// (GET /admin/v1/org/legal-entities)
+func (_ Unimplemented) OrgListLegalEntities(w http.ResponseWriter, r *http.Request, params OrgListLegalEntitiesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgCreateLegalEntity Add a legal entity
+// (POST /admin/v1/org/legal-entities)
+func (_ Unimplemented) OrgCreateLegalEntity(w http.ResponseWriter, r *http.Request, params OrgCreateLegalEntityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgGetLegalEntity One legal entity
+// (GET /admin/v1/org/legal-entities/{id})
+func (_ Unimplemented) OrgGetLegalEntity(w http.ResponseWriter, r *http.Request, id Uuid, params OrgGetLegalEntityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgUpdateLegalEntity Change a legal entity (all editable fields)
+// (PATCH /admin/v1/org/legal-entities/{id})
+func (_ Unimplemented) OrgUpdateLegalEntity(w http.ResponseWriter, r *http.Request, id Uuid, params OrgUpdateLegalEntityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgListUnits The org-unit tree in path order (parents before children) (ORG-04)
+// (GET /admin/v1/org/units)
+func (_ Unimplemented) OrgListUnits(w http.ResponseWriter, r *http.Request, params OrgListUnitsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgCreateUnit Add a unit under a parent (or as a root of its legal entity)
+// (POST /admin/v1/org/units)
+func (_ Unimplemented) OrgCreateUnit(w http.ResponseWriter, r *http.Request, params OrgCreateUnitParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgUpdateUnit Rename or recode a unit
+// (PATCH /admin/v1/org/units/{id})
+func (_ Unimplemented) OrgUpdateUnit(w http.ResponseWriter, r *http.Request, id Uuid, params OrgUpdateUnitParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgCloseUnit Close a unit with no active units below it (kept for history)
+// (POST /admin/v1/org/units/{id}/close)
+func (_ Unimplemented) OrgCloseUnit(w http.ResponseWriter, r *http.Request, id Uuid, params OrgCloseUnitParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgMoveUnit Move a unit and everything below it under another parent of the same legal entity (null = root)
+// (POST /admin/v1/org/units/{id}/move)
+func (_ Unimplemented) OrgMoveUnit(w http.ResponseWriter, r *http.Request, id Uuid, params OrgMoveUnitParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -708,6 +1275,538 @@ func (siw *ServerInterfaceWrapper) OrgPutHoliday(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// OrgListLegalEntities operation middleware
+func (siw *ServerInterfaceWrapper) OrgListLegalEntities(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgListLegalEntitiesParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgListLegalEntitiesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgListLegalEntities(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgCreateLegalEntity operation middleware
+func (siw *ServerInterfaceWrapper) OrgCreateLegalEntity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgCreateLegalEntityParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgCreateLegalEntityParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgCreateLegalEntity(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgGetLegalEntity operation middleware
+func (siw *ServerInterfaceWrapper) OrgGetLegalEntity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgGetLegalEntityParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgGetLegalEntityParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgGetLegalEntity(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgUpdateLegalEntity operation middleware
+func (siw *ServerInterfaceWrapper) OrgUpdateLegalEntity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgUpdateLegalEntityParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgUpdateLegalEntityParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgUpdateLegalEntity(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgListUnits operation middleware
+func (siw *ServerInterfaceWrapper) OrgListUnits(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgListUnitsParams
+
+	// ------------- Optional query parameter "legal_entity_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "legal_entity_id", r.URL.Query(), &params.LegalEntityId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "legal_entity_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legal_entity_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include_closed" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include_closed", r.URL.Query(), &params.IncludeClosed, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include_closed"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include_closed", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgListUnitsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgListUnits(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgCreateUnit operation middleware
+func (siw *ServerInterfaceWrapper) OrgCreateUnit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgCreateUnitParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgCreateUnitParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgCreateUnit(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgUpdateUnit operation middleware
+func (siw *ServerInterfaceWrapper) OrgUpdateUnit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgUpdateUnitParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgUpdateUnitParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgUpdateUnit(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgCloseUnit operation middleware
+func (siw *ServerInterfaceWrapper) OrgCloseUnit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgCloseUnitParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgCloseUnitParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgCloseUnit(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgMoveUnit operation middleware
+func (siw *ServerInterfaceWrapper) OrgMoveUnit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgMoveUnitParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgMoveUnitParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgMoveUnit(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -822,6 +1921,33 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/org/legal-entities", wrapper.OrgListLegalEntities)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/org/legal-entities", wrapper.OrgCreateLegalEntity)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/org/legal-entities/{id}", wrapper.OrgGetLegalEntity)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/admin/v1/org/legal-entities/{id}", wrapper.OrgUpdateLegalEntity)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/org/units", wrapper.OrgListUnits)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/org/units", wrapper.OrgCreateUnit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/admin/v1/org/units/{id}", wrapper.OrgUpdateUnit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/org/units/{id}/move", wrapper.OrgMoveUnit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/org/units/{id}/close", wrapper.OrgCloseUnit)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/org/calendars", wrapper.OrgListCalendars)
 	})
 	r.Group(func(r chi.Router) {
@@ -844,6 +1970,8 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 }
 
 type BadRequestApplicationProblemPlusJSONResponse Problem
+
+type ConflictApplicationProblemPlusJSONResponse Problem
 
 type ForbiddenApplicationProblemPlusJSONResponse Problem
 
@@ -1416,6 +2544,1008 @@ func (response OrgPutHoliday422ApplicationProblemPlusJSONResponse) VisitOrgPutHo
 	return err
 }
 
+type OrgListLegalEntitiesRequestObject struct {
+	Params OrgListLegalEntitiesParams
+}
+
+type OrgListLegalEntitiesResponseObject interface {
+	VisitOrgListLegalEntitiesResponse(w http.ResponseWriter) error
+}
+
+type OrgListLegalEntities200JSONResponse struct {
+	Data []LegalEntity `json:"data"`
+}
+
+func (response OrgListLegalEntities200JSONResponse) VisitOrgListLegalEntitiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgListLegalEntities401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgListLegalEntities401ApplicationProblemPlusJSONResponse) VisitOrgListLegalEntitiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgListLegalEntities403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgListLegalEntities403ApplicationProblemPlusJSONResponse) VisitOrgListLegalEntitiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateLegalEntityRequestObject struct {
+	Params OrgCreateLegalEntityParams
+	Body   *OrgCreateLegalEntityJSONRequestBody
+}
+
+type OrgCreateLegalEntityResponseObject interface {
+	VisitOrgCreateLegalEntityResponse(w http.ResponseWriter) error
+}
+
+type OrgCreateLegalEntity201ResponseHeaders struct {
+	ETag *string
+}
+
+type OrgCreateLegalEntity201JSONResponse struct {
+	Body    LegalEntity
+	Headers OrgCreateLegalEntity201ResponseHeaders
+}
+
+func (response OrgCreateLegalEntity201JSONResponse) VisitOrgCreateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateLegalEntity400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCreateLegalEntity400ApplicationProblemPlusJSONResponse) VisitOrgCreateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateLegalEntity401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCreateLegalEntity401ApplicationProblemPlusJSONResponse) VisitOrgCreateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateLegalEntity403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCreateLegalEntity403ApplicationProblemPlusJSONResponse) VisitOrgCreateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateLegalEntity422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCreateLegalEntity422ApplicationProblemPlusJSONResponse) VisitOrgCreateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgGetLegalEntityRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params OrgGetLegalEntityParams
+}
+
+type OrgGetLegalEntityResponseObject interface {
+	VisitOrgGetLegalEntityResponse(w http.ResponseWriter) error
+}
+
+type OrgGetLegalEntity200ResponseHeaders struct {
+	ETag *string
+}
+
+type OrgGetLegalEntity200JSONResponse struct {
+	Body    LegalEntity
+	Headers OrgGetLegalEntity200ResponseHeaders
+}
+
+func (response OrgGetLegalEntity200JSONResponse) VisitOrgGetLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgGetLegalEntity401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgGetLegalEntity401ApplicationProblemPlusJSONResponse) VisitOrgGetLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgGetLegalEntity403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgGetLegalEntity403ApplicationProblemPlusJSONResponse) VisitOrgGetLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgGetLegalEntity404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response OrgGetLegalEntity404ApplicationProblemPlusJSONResponse) VisitOrgGetLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateLegalEntityRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params OrgUpdateLegalEntityParams
+	Body   *OrgUpdateLegalEntityJSONRequestBody
+}
+
+type OrgUpdateLegalEntityResponseObject interface {
+	VisitOrgUpdateLegalEntityResponse(w http.ResponseWriter) error
+}
+
+type OrgUpdateLegalEntity200ResponseHeaders struct {
+	ETag *string
+}
+
+type OrgUpdateLegalEntity200JSONResponse struct {
+	Body    LegalEntity
+	Headers OrgUpdateLegalEntity200ResponseHeaders
+}
+
+func (response OrgUpdateLegalEntity200JSONResponse) VisitOrgUpdateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateLegalEntity400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateLegalEntity400ApplicationProblemPlusJSONResponse) VisitOrgUpdateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateLegalEntity401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateLegalEntity401ApplicationProblemPlusJSONResponse) VisitOrgUpdateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateLegalEntity403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateLegalEntity403ApplicationProblemPlusJSONResponse) VisitOrgUpdateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateLegalEntity404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateLegalEntity404ApplicationProblemPlusJSONResponse) VisitOrgUpdateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateLegalEntity409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateLegalEntity409ApplicationProblemPlusJSONResponse) VisitOrgUpdateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateLegalEntity412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateLegalEntity412ApplicationProblemPlusJSONResponse) VisitOrgUpdateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateLegalEntity422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateLegalEntity422ApplicationProblemPlusJSONResponse) VisitOrgUpdateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateLegalEntity428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateLegalEntity428ApplicationProblemPlusJSONResponse) VisitOrgUpdateLegalEntityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgListUnitsRequestObject struct {
+	Params OrgListUnitsParams
+}
+
+type OrgListUnitsResponseObject interface {
+	VisitOrgListUnitsResponse(w http.ResponseWriter) error
+}
+
+type OrgListUnits200JSONResponse struct {
+	Data []OrgUnit `json:"data"`
+}
+
+func (response OrgListUnits200JSONResponse) VisitOrgListUnitsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgListUnits400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response OrgListUnits400ApplicationProblemPlusJSONResponse) VisitOrgListUnitsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgListUnits401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgListUnits401ApplicationProblemPlusJSONResponse) VisitOrgListUnitsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgListUnits403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgListUnits403ApplicationProblemPlusJSONResponse) VisitOrgListUnitsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateUnitRequestObject struct {
+	Params OrgCreateUnitParams
+	Body   *OrgCreateUnitJSONRequestBody
+}
+
+type OrgCreateUnitResponseObject interface {
+	VisitOrgCreateUnitResponse(w http.ResponseWriter) error
+}
+
+type OrgCreateUnit201ResponseHeaders struct {
+	ETag *string
+}
+
+type OrgCreateUnit201JSONResponse struct {
+	Body    OrgUnit
+	Headers OrgCreateUnit201ResponseHeaders
+}
+
+func (response OrgCreateUnit201JSONResponse) VisitOrgCreateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateUnit400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCreateUnit400ApplicationProblemPlusJSONResponse) VisitOrgCreateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateUnit401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCreateUnit401ApplicationProblemPlusJSONResponse) VisitOrgCreateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateUnit403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCreateUnit403ApplicationProblemPlusJSONResponse) VisitOrgCreateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateUnit422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCreateUnit422ApplicationProblemPlusJSONResponse) VisitOrgCreateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateUnitRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params OrgUpdateUnitParams
+	Body   *OrgUpdateUnitJSONRequestBody
+}
+
+type OrgUpdateUnitResponseObject interface {
+	VisitOrgUpdateUnitResponse(w http.ResponseWriter) error
+}
+
+type OrgUpdateUnit200ResponseHeaders struct {
+	ETag *string
+}
+
+type OrgUpdateUnit200JSONResponse struct {
+	Body    OrgUnit
+	Headers OrgUpdateUnit200ResponseHeaders
+}
+
+func (response OrgUpdateUnit200JSONResponse) VisitOrgUpdateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateUnit400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateUnit400ApplicationProblemPlusJSONResponse) VisitOrgUpdateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateUnit401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateUnit401ApplicationProblemPlusJSONResponse) VisitOrgUpdateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateUnit403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateUnit403ApplicationProblemPlusJSONResponse) VisitOrgUpdateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateUnit404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateUnit404ApplicationProblemPlusJSONResponse) VisitOrgUpdateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateUnit412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateUnit412ApplicationProblemPlusJSONResponse) VisitOrgUpdateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateUnit422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateUnit422ApplicationProblemPlusJSONResponse) VisitOrgUpdateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateUnit428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateUnit428ApplicationProblemPlusJSONResponse) VisitOrgUpdateUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCloseUnitRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params OrgCloseUnitParams
+}
+
+type OrgCloseUnitResponseObject interface {
+	VisitOrgCloseUnitResponse(w http.ResponseWriter) error
+}
+
+type OrgCloseUnit200ResponseHeaders struct {
+	ETag *string
+}
+
+type OrgCloseUnit200JSONResponse struct {
+	Body    OrgUnit
+	Headers OrgCloseUnit200ResponseHeaders
+}
+
+func (response OrgCloseUnit200JSONResponse) VisitOrgCloseUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCloseUnit401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCloseUnit401ApplicationProblemPlusJSONResponse) VisitOrgCloseUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCloseUnit403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCloseUnit403ApplicationProblemPlusJSONResponse) VisitOrgCloseUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCloseUnit404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCloseUnit404ApplicationProblemPlusJSONResponse) VisitOrgCloseUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCloseUnit409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCloseUnit409ApplicationProblemPlusJSONResponse) VisitOrgCloseUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCloseUnit412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCloseUnit412ApplicationProblemPlusJSONResponse) VisitOrgCloseUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCloseUnit428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCloseUnit428ApplicationProblemPlusJSONResponse) VisitOrgCloseUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMoveUnitRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params OrgMoveUnitParams
+	Body   *OrgMoveUnitJSONRequestBody
+}
+
+type OrgMoveUnitResponseObject interface {
+	VisitOrgMoveUnitResponse(w http.ResponseWriter) error
+}
+
+type OrgMoveUnit200ResponseHeaders struct {
+	ETag *string
+}
+
+type OrgMoveUnit200JSONResponse struct {
+	Body    OrgUnit
+	Headers OrgMoveUnit200ResponseHeaders
+}
+
+func (response OrgMoveUnit200JSONResponse) VisitOrgMoveUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMoveUnit400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMoveUnit400ApplicationProblemPlusJSONResponse) VisitOrgMoveUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMoveUnit401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMoveUnit401ApplicationProblemPlusJSONResponse) VisitOrgMoveUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMoveUnit403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMoveUnit403ApplicationProblemPlusJSONResponse) VisitOrgMoveUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMoveUnit404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMoveUnit404ApplicationProblemPlusJSONResponse) VisitOrgMoveUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMoveUnit409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMoveUnit409ApplicationProblemPlusJSONResponse) VisitOrgMoveUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMoveUnit412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMoveUnit412ApplicationProblemPlusJSONResponse) VisitOrgMoveUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMoveUnit422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMoveUnit422ApplicationProblemPlusJSONResponse) VisitOrgMoveUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMoveUnit428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMoveUnit428ApplicationProblemPlusJSONResponse) VisitOrgMoveUnitResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// OrgListCalendars The tenant's business calendars (workdays and time zone used to count SLAs)
@@ -1436,6 +3566,33 @@ type StrictServerInterface interface {
 	// OrgPutHoliday Add a holiday, or rename the holiday on that date
 	// (PUT /admin/v1/org/calendars/{id}/holidays/{date})
 	OrgPutHoliday(ctx context.Context, request OrgPutHolidayRequestObject) (OrgPutHolidayResponseObject, error)
+	// OrgListLegalEntities The tenant's legal entities (ORG-01)
+	// (GET /admin/v1/org/legal-entities)
+	OrgListLegalEntities(ctx context.Context, request OrgListLegalEntitiesRequestObject) (OrgListLegalEntitiesResponseObject, error)
+	// OrgCreateLegalEntity Add a legal entity
+	// (POST /admin/v1/org/legal-entities)
+	OrgCreateLegalEntity(ctx context.Context, request OrgCreateLegalEntityRequestObject) (OrgCreateLegalEntityResponseObject, error)
+	// OrgGetLegalEntity One legal entity
+	// (GET /admin/v1/org/legal-entities/{id})
+	OrgGetLegalEntity(ctx context.Context, request OrgGetLegalEntityRequestObject) (OrgGetLegalEntityResponseObject, error)
+	// OrgUpdateLegalEntity Change a legal entity (all editable fields)
+	// (PATCH /admin/v1/org/legal-entities/{id})
+	OrgUpdateLegalEntity(ctx context.Context, request OrgUpdateLegalEntityRequestObject) (OrgUpdateLegalEntityResponseObject, error)
+	// OrgListUnits The org-unit tree in path order (parents before children) (ORG-04)
+	// (GET /admin/v1/org/units)
+	OrgListUnits(ctx context.Context, request OrgListUnitsRequestObject) (OrgListUnitsResponseObject, error)
+	// OrgCreateUnit Add a unit under a parent (or as a root of its legal entity)
+	// (POST /admin/v1/org/units)
+	OrgCreateUnit(ctx context.Context, request OrgCreateUnitRequestObject) (OrgCreateUnitResponseObject, error)
+	// OrgUpdateUnit Rename or recode a unit
+	// (PATCH /admin/v1/org/units/{id})
+	OrgUpdateUnit(ctx context.Context, request OrgUpdateUnitRequestObject) (OrgUpdateUnitResponseObject, error)
+	// OrgCloseUnit Close a unit with no active units below it (kept for history)
+	// (POST /admin/v1/org/units/{id}/close)
+	OrgCloseUnit(ctx context.Context, request OrgCloseUnitRequestObject) (OrgCloseUnitResponseObject, error)
+	// OrgMoveUnit Move a unit and everything below it under another parent of the same legal entity (null = root)
+	// (POST /admin/v1/org/units/{id}/move)
+	OrgMoveUnit(ctx context.Context, request OrgMoveUnitRequestObject) (OrgMoveUnitResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -1653,6 +3810,280 @@ func (sh *strictHandler) OrgPutHoliday(w http.ResponseWriter, r *http.Request, i
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(OrgPutHolidayResponseObject); ok {
 		if err := validResponse.VisitOrgPutHolidayResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgListLegalEntities operation middleware
+func (sh *strictHandler) OrgListLegalEntities(w http.ResponseWriter, r *http.Request, params OrgListLegalEntitiesParams) {
+	var request OrgListLegalEntitiesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgListLegalEntities(ctx, request.(OrgListLegalEntitiesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgListLegalEntities")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgListLegalEntitiesResponseObject); ok {
+		if err := validResponse.VisitOrgListLegalEntitiesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgCreateLegalEntity operation middleware
+func (sh *strictHandler) OrgCreateLegalEntity(w http.ResponseWriter, r *http.Request, params OrgCreateLegalEntityParams) {
+	var request OrgCreateLegalEntityRequestObject
+
+	request.Params = params
+
+	var body OrgCreateLegalEntityJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgCreateLegalEntity(ctx, request.(OrgCreateLegalEntityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgCreateLegalEntity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgCreateLegalEntityResponseObject); ok {
+		if err := validResponse.VisitOrgCreateLegalEntityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgGetLegalEntity operation middleware
+func (sh *strictHandler) OrgGetLegalEntity(w http.ResponseWriter, r *http.Request, id Uuid, params OrgGetLegalEntityParams) {
+	var request OrgGetLegalEntityRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgGetLegalEntity(ctx, request.(OrgGetLegalEntityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgGetLegalEntity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgGetLegalEntityResponseObject); ok {
+		if err := validResponse.VisitOrgGetLegalEntityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgUpdateLegalEntity operation middleware
+func (sh *strictHandler) OrgUpdateLegalEntity(w http.ResponseWriter, r *http.Request, id Uuid, params OrgUpdateLegalEntityParams) {
+	var request OrgUpdateLegalEntityRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body OrgUpdateLegalEntityJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgUpdateLegalEntity(ctx, request.(OrgUpdateLegalEntityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgUpdateLegalEntity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgUpdateLegalEntityResponseObject); ok {
+		if err := validResponse.VisitOrgUpdateLegalEntityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgListUnits operation middleware
+func (sh *strictHandler) OrgListUnits(w http.ResponseWriter, r *http.Request, params OrgListUnitsParams) {
+	var request OrgListUnitsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgListUnits(ctx, request.(OrgListUnitsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgListUnits")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgListUnitsResponseObject); ok {
+		if err := validResponse.VisitOrgListUnitsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgCreateUnit operation middleware
+func (sh *strictHandler) OrgCreateUnit(w http.ResponseWriter, r *http.Request, params OrgCreateUnitParams) {
+	var request OrgCreateUnitRequestObject
+
+	request.Params = params
+
+	var body OrgCreateUnitJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgCreateUnit(ctx, request.(OrgCreateUnitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgCreateUnit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgCreateUnitResponseObject); ok {
+		if err := validResponse.VisitOrgCreateUnitResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgUpdateUnit operation middleware
+func (sh *strictHandler) OrgUpdateUnit(w http.ResponseWriter, r *http.Request, id Uuid, params OrgUpdateUnitParams) {
+	var request OrgUpdateUnitRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body OrgUpdateUnitJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgUpdateUnit(ctx, request.(OrgUpdateUnitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgUpdateUnit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgUpdateUnitResponseObject); ok {
+		if err := validResponse.VisitOrgUpdateUnitResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgCloseUnit operation middleware
+func (sh *strictHandler) OrgCloseUnit(w http.ResponseWriter, r *http.Request, id Uuid, params OrgCloseUnitParams) {
+	var request OrgCloseUnitRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgCloseUnit(ctx, request.(OrgCloseUnitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgCloseUnit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgCloseUnitResponseObject); ok {
+		if err := validResponse.VisitOrgCloseUnitResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgMoveUnit operation middleware
+func (sh *strictHandler) OrgMoveUnit(w http.ResponseWriter, r *http.Request, id Uuid, params OrgMoveUnitParams) {
+	var request OrgMoveUnitRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body OrgMoveUnitJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgMoveUnit(ctx, request.(OrgMoveUnitRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgMoveUnit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgMoveUnitResponseObject); ok {
+		if err := validResponse.VisitOrgMoveUnitResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

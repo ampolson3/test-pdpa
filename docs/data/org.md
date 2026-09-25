@@ -51,6 +51,7 @@
 - Index: `org.legal_entities (tenant_id, parent_id)` · `org.legal_entities (tenant_id, logo_file_id)`
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `iam.role_assignments.legal_entity_id`, `org.legal_entities.parent_id`, `org.org_units.legal_entity_id`, `consent.purposes.legal_entity_id`, `consent.collection_points.legal_entity_id`, `cookie.domains.legal_entity_id`, `notice.notices.legal_entity_id`, `ropa.processing_activities.legal_entity_id`, `ropa.sme_exemption_checks.legal_entity_id`, `dsar.requests.legal_entity_id`, `breach.incidents.legal_entity_id`, `breach.routing_rules.legal_entity_id`, `agreement.parties.legal_entity_id`, `dpo.appointments.legal_entity_id`, `dpo.requirement_checks.legal_entity_id`, `gov.audits.legal_entity_id`
+- ORG-01 (migration 00030): unique `(tenant_id, registration_no)` เมื่อไม่ว่าง · `registration_no` / `tax_id` ผ่านการตรวจ check digit 13 หลัก · `address` = `{"line1", "line2", "subdistrict", "district", "province", "postal_code", "country_code"}` · `logo_file_id` = ไฟล์ PLT-09 ที่ผูกกับ entity `legal_entity`
 
 <a id="org-org-units"></a>
 ## org.org_units
@@ -77,6 +78,7 @@
 - Index: `org.org_units (tenant_id, legal_entity_id)` · `org.org_units (tenant_id, parent_id)` · `org.org_units (tenant_id, path)`
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `iam.users.primary_org_unit_id`, `iam.role_assignments.org_unit_id`, `org.org_units.parent_id`, `org.privacy_champions.org_unit_id`, `consent.consent_receipts.branch_org_unit_id`, `ropa.processing_activities.org_unit_id`, `ropa.assets.org_unit_id`, `ropa.data_inventory.org_unit_id`, `ropa.questionnaires.org_unit_id`, `ropa.generation_runs.org_unit_id`, `dpo.tasks.org_unit_id`, `dpo.advisories.org_unit_id`
+- ORG-04: `path` = label ของหน่วยงานแม่ต่อกันจนถึงตัวเอง แต่ละ label = `u` + id ไม่มีขีด (ไม่เปลี่ยนเมื่อแก้ชื่อ) · ย้ายหน่วยงานเขียน path ใหม่ของทั้ง subtree ในคำสั่งเดียว · GiST index `ix_org_org_units_path_gist` (migration 00030) สำหรับ `<@` / `@>` · ปิดแล้ว (`status = closed`) ยังอยู่ใน tree
 
 <a id="org-privacy-champions"></a>
 ## org.privacy_champions

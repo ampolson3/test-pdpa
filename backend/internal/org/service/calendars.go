@@ -42,9 +42,10 @@ type Calendars interface {
 
 var _ Calendars = (*Service)(nil)
 
-// Service owns the org schema.
+// Service owns the org schema. Files is needed only to attach legal-entity logos (ORG-01).
 type Service struct {
 	Audit *audit.Service
+	Files FileStore
 }
 
 // Calendar is a business calendar as the admin sees it.
@@ -334,7 +335,7 @@ func (s *Service) audit(ctx context.Context, action string, id uuid.UUID, before
 			return fmt.Errorf("org: audit without a tenant: %w", err)
 		}
 	}
-	e := audit.Entry{TenantID: tenant, ActorType: "system", Action: action, EntityType: CalendarEntityType, EntityID: &id, Before: before, After: after}
+	e := audit.Entry{TenantID: tenant, ActorType: "system", Action: action, EntityType: entityTypeOf(action), EntityID: &id, Before: before, After: after}
 	if actor, err := uuid.Parse(g.UserID); err == nil {
 		e.ActorType, e.ActorID = "user", &actor
 	}

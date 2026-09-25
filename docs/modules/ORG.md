@@ -106,6 +106,8 @@
 
 **Acceptance criteria:** ข้อมูลองค์กรแสดงถูกต้องในประกาศและเอกสารที่สร้าง
 
+**Implementation (ORG-01):** `backend/internal/org/service/structure.go` — CRUD นิติบุคคล (`org.structure.*`): ชื่อ TH/EN, เลขทะเบียน/ผู้เสียภาษี 13 หลักตรวจ check digit (ตัด - และช่องว่าง, ซ้ำในองค์กรไม่ได้ — migration 00030), ที่อยู่ (jsonb: line1, subdistrict, district, province, postal_code 5 หลักเมื่อเป็น TH, country_code), อีเมล/โทรศัพท์ติดต่อ, บริษัทแม่ (กันวน), ผู้ควบคุม/ผู้ประมวลผล, สถานะ · โลโก้ = ไฟล์ PNG/JPEG ของผู้ใช้ที่ผ่านการสแกน ผูกผ่าน PLT-09 (`files` entity `legal_entity`, ดาวน์โหลดด้วย `org.structure.read`) · `MergeFields` ให้ค่าตัวแปรเอกสาร (`org_name_th`, `org_name_en`, `org_registration_no`, `org_tax_id`, `org_address`, `org_email`, `org_phone`) สำหรับ composer ในอนาคต · API `/admin/v1/org/legal-entities` · หน้าจอ `/settings/organization` · ยังไม่ทำ: ผู้แทนในไทย (`representative`, ORG-03)
+
 <a id="org-02"></a>
 ### ORG-02 หลายนิติบุคคลและบริษัทในเครือ
 
@@ -149,6 +151,8 @@
 **Frontend (Next.js):** tree view ลากวาง + ค้นหา
 
 **Acceptance criteria:** ย้ายแผนกแล้ว scope ของผู้ใช้และข้อมูลปรับตามทันที
+
+**Implementation (ORG-04):** tree บน ltree (`org_units.path` = ลำดับ label `u<id>`; GiST index, migration 00030) · เพิ่มใต้หน่วยงานของนิติบุคคลเดียวกัน, แก้ชื่อ/รหัส/ประเภท, ย้ายพร้อมหน่วยงานย่อยทั้งหมดในคำสั่งเดียว (กันย้ายไปใต้ตัวเอง), ปิดหน่วยงานได้เมื่อไม่มีหน่วยงานย่อยที่เปิดอยู่ (เก็บไว้เป็นประวัติ) — ทุกการเปลี่ยนแปลงลง audit · `UnitWithin(unit, scope, includeDescendants)` ตรวจกับ tree ปัจจุบัน จึงให้ผลใหม่ทันทีหลังย้าย (acceptance; ใช้โดย data scope ของ IAM-02 / ORG-11 เมื่อสร้าง) · ยังไม่ส่ง event เพราะ `events.yaml` ไม่มี event ของ org — เพิ่มเมื่อมีผู้รับ · หน้าจอ tree ลากวาง + เมนูย้าย + ค้นหา (แสดงผลที่พบพร้อมหน่วยงานแม่)
 
 <a id="org-07"></a>
 ### ORG-07 ข้อมูลตั้งต้นกลาง (Master data)

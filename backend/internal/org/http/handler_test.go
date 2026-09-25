@@ -50,6 +50,8 @@ func TestCalendarEndpoints_Contract(t *testing.T) {
 			_, _ = tx.Exec(ctx, `DELETE FROM org.org_settings`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.holidays`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.business_calendars`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.org_units`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
 			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
 			return err
 		})
@@ -70,7 +72,8 @@ func TestCalendarEndpoints_Contract(t *testing.T) {
 		}
 	}
 	other := uuid.New()
-	grants := map[string][]string{tenant.UserID.String(): {"org.settings.read", "org.settings.update"}, other.String(): {"org.settings.read"}}
+	grants := map[string][]string{tenant.UserID.String(): {"org.settings.read", "org.settings.update", "org.structure.read", "org.structure.create", "org.structure.update", "org.structure.delete"},
+		other.String(): {"org.settings.read", "org.structure.read", "org.structure.update"}}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
 	})
@@ -202,5 +205,57 @@ func TestCalendarEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", "/admin/v1/org/calendars", &dpo, nil, nil); code != 200 || !strings.Contains(body, `"name":"HQ"`) {
 		t.Errorf("list: %d %s", code, body)
+	}
+
+	// ORG-01 / ORG-04
+	if code, _ := do("POST", "/admin/v1/org/legal-entities", &dpo, map[string]any{"name_th": "x"}, nil); code != 403 {
+		t.Errorf("create entity without org.structure.create: %d, want 403", code)
+	}
+	// 1234567890123: the check digit would be 1.
+	if code, body := do("POST", "/admin/v1/org/legal-entities", &admin, map[string]any{"name_th": "x", "registration_no": "1234567890123"}, nil); code != 422 || !strings.Contains(body, "org.invalid") {
+		t.Errorf("bad check digit: %d %s, want 422", code, body)
+	}
+	code, body = do("POST", "/admin/v1/org/legal-entities", &admin, map[string]any{"name_th": "บริษัท ก", "address": map[string]any{"province": "กรุงเทพมหานคร", "postal_code": "10110"}}, nil)
+	if code != 201 || !strings.Contains(body, `"country_code":"TH"`) {
+		t.Fatalf("create entity: %d %s", code, body)
+	}
+	var le orghttp.LegalEntity
+	_ = json.Unmarshal([]byte(body), &le)
+	if code, _ := do("PATCH", "/admin/v1/org/legal-entities/"+le.Id.String(), &admin, map[string]any{"name_th": "บริษัท ก จำกัด"}, nil); code != 428 {
+		t.Errorf("update entity without If-Match: %d, want 428", code)
+	}
+	unit := func(code string, parent *string) orghttp.OrgUnit {
+		body := map[string]any{"legal_entity_id": le.Id, "code": code, "name_th": code, "unit_type": "department"}
+		if parent != nil {
+			body["parent_id"] = *parent
+		}
+		c, b := do("POST", "/admin/v1/org/units", &admin, body, nil)
+		if c != 201 {
+			t.Fatalf("create unit %s: %d %s", code, c, b)
+		}
+		var u orghttp.OrgUnit
+		_ = json.Unmarshal([]byte(b), &u)
+		return u
+	}
+	a := unit("A", nil)
+	aID := a.Id.String()
+	b := unit("B", &aID)
+	if code, _ := do("POST", "/admin/v1/org/units", &admin, map[string]any{"legal_entity_id": le.Id, "code": "C", "name_th": "c", "unit_type": "bogus"}, nil); code != 400 {
+		t.Errorf("bad unit type: %d, want 400", code)
+	}
+	if code, body := do("POST", "/admin/v1/org/units/"+aID+"/move", &admin, map[string]any{"parent_id": b.Id}, map[string]string{"If-Match": `"1"`}); code != 409 || !strings.Contains(body, "org.cycle") {
+		t.Errorf("move under own child: %d %s", code, body)
+	}
+	if code, body := do("POST", "/admin/v1/org/units/"+b.Id.String()+"/move", &dpo, map[string]any{"parent_id": nil}, map[string]string{"If-Match": `"1"`}); code != 200 || !strings.Contains(body, `"depth":1`) {
+		t.Errorf("move to root: %d %s", code, body)
+	}
+	if code, _ := do("POST", "/admin/v1/org/units/"+aID+"/close", &dpo, nil, map[string]string{"If-Match": `"1"`}); code != 403 {
+		t.Errorf("close without org.structure.delete: %d, want 403", code)
+	}
+	if code, body := do("POST", "/admin/v1/org/units/"+aID+"/close", &admin, nil, map[string]string{"If-Match": `"1"`}); code != 200 || !strings.Contains(body, `"status":"closed"`) {
+		t.Errorf("close: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/org/units?legal_entity_id="+le.Id.String(), &dpo, nil, nil); code != 200 || strings.Count(body, `"code"`) != 1 {
+		t.Errorf("list active units: %d %s", code, body)
 	}
 }

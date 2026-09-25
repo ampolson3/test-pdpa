@@ -182,10 +182,11 @@ func run() error {
 		},
 	})
 	fileSvc.EntityPermissions = collabSvc.FilePermissions()
+	fileSvc.EntityPermissions[orgservice.LegalEntityType] = "org.structure.read" // ORG-01 logos
 
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
-	orgSvc := &orgservice.Service{Audit: auditSvc}
+	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
 	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
 

@@ -768,6 +768,111 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/org/legal-entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's legal entities (ORG-01) */
+        get: operations["orgListLegalEntities"];
+        put?: never;
+        /** Add a legal entity */
+        post: operations["orgCreateLegalEntity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/legal-entities/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One legal entity */
+        get: operations["orgGetLegalEntity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a legal entity (all editable fields) */
+        patch: operations["orgUpdateLegalEntity"];
+        trace?: never;
+    };
+    "/admin/v1/org/units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The org-unit tree in path order (parents before children) (ORG-04) */
+        get: operations["orgListUnits"];
+        put?: never;
+        /** Add a unit under a parent (or as a root of its legal entity) */
+        post: operations["orgCreateUnit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/units/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename or recode a unit */
+        patch: operations["orgUpdateUnit"];
+        trace?: never;
+    };
+    "/admin/v1/org/units/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a unit and everything below it under another parent of the same legal entity (null = root) */
+        post: operations["orgMoveUnit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/units/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a unit with no active units below it (kept for history) */
+        post: operations["orgCloseUnit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/org/calendars": {
         parameters: {
             query?: never;
@@ -1159,6 +1264,91 @@ export interface components {
             }[];
             /** @description The moves the caller may make now */
             transitions: components["schemas"]["WorkflowTransition"][];
+        };
+        Address: {
+            line1?: string;
+            line2?: string;
+            subdistrict?: string;
+            district?: string;
+            province?: string;
+            postal_code?: string;
+            country_code?: string;
+        };
+        /**
+         * @example {
+         *       "name_th": "บริษัท ตัวอย่าง จำกัด",
+         *       "name_en": "Example Co., Ltd.",
+         *       "registration_no": "0-1055-56123-45-6",
+         *       "address": {
+         *         "line1": "99 ถนนสุขุมวิท",
+         *         "district": "วัฒนา",
+         *         "province": "กรุงเทพมหานคร",
+         *         "postal_code": "10110"
+         *       },
+         *       "contact_email": "dpo@example.co.th",
+         *       "is_controller": true
+         *     }
+         */
+        LegalEntityInput: {
+            parent_id?: components["schemas"]["Uuid"];
+            name_th: string;
+            name_en?: string;
+            /** @description 13-digit juristic registration number (dashes and spaces ignored; check digit verified) */
+            registration_no?: string;
+            tax_id?: string;
+            address?: components["schemas"]["Address"];
+            contact_email?: string;
+            contact_phone?: string;
+            /** @description A clean PNG or JPEG the caller uploaded (POST /admin/v1/platform/files) */
+            logo_file_id?: components["schemas"]["Uuid"];
+            is_controller?: boolean;
+            is_processor?: boolean;
+            /** @enum {string} */
+            status?: "active" | "inactive";
+        };
+        LegalEntity: {
+            id: components["schemas"]["Uuid"];
+            parent_id?: components["schemas"]["Uuid"];
+            name_th: string;
+            name_en?: string;
+            registration_no?: string;
+            tax_id?: string;
+            address: components["schemas"]["Address"];
+            contact_email?: string;
+            contact_phone?: string;
+            logo_file_id?: components["schemas"]["Uuid"];
+            is_controller: boolean;
+            is_processor: boolean;
+            /** @enum {string} */
+            status: "active" | "inactive";
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        OrgUnitType: "group" | "company" | "division" | "department" | "branch" | "team";
+        OrgUnitInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            parent_id?: components["schemas"]["Uuid"];
+            code: string;
+            name_th: string;
+            name_en?: string;
+            unit_type: components["schemas"]["OrgUnitType"];
+        };
+        OrgUnit: {
+            id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            parent_id?: components["schemas"]["Uuid"];
+            /** @description 1 for a root unit */
+            depth: number;
+            code: string;
+            name_th: string;
+            name_en?: string;
+            unit_type: components["schemas"]["OrgUnitType"];
+            /** @enum {string} */
+            status: "active" | "closed";
+            closed_at?: components["schemas"]["Timestamp"];
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
         };
         /**
          * @example {
@@ -3343,6 +3533,317 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    orgListLegalEntities: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Legal entities, active first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LegalEntity"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgCreateLegalEntity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalEntityInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalEntity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    orgGetLegalEntity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The legal entity */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalEntity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    orgUpdateLegalEntity: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalEntityInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalEntity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgListUnits: {
+        parameters: {
+            query?: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+                include_closed?: boolean;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Units */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["OrgUnit"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgCreateUnit: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrgUnitInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgUnit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    orgUpdateUnit: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    code: string;
+                    name_th: string;
+                    name_en?: string;
+                    unit_type: components["schemas"]["OrgUnitType"];
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgUnit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgMoveUnit: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    parent_id: components["schemas"]["Uuid"] | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Moved */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgUnit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgCloseUnit: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Closed */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgUnit"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     orgListCalendars: {
