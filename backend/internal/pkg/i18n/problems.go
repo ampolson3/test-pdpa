@@ -141,6 +141,15 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "โลโก้ต้องเป็นไฟล์ PNG หรือ JPEG ที่คุณอัปโหลดและผ่านการตรวจไวรัสแล้ว",
 		En: "The logo must be your own clean PNG or JPEG upload",
 	},
+	// ORG-07 master data
+	"org.master_read_only": {
+		Th: "ข้อมูลตั้งต้นของแพลตฟอร์มแก้ไขหรือลบไม่ได้",
+		En: "Platform default master data can't be changed",
+	},
+	"org.master_in_use": {
+		Th: "รายการนี้ถูกใช้งานอยู่ จึงลบไม่ได้",
+		En: "This entry is in use",
+	},
 	// ORG-20 calendars
 	"org.invalid_calendar": {
 		Th: "ข้อมูลปฏิทินไม่ถูกต้อง (ชื่อ เขตเวลา หรือวันทำการ)",

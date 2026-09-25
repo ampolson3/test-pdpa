@@ -52,6 +52,7 @@ func TestCalendarEndpoints_Contract(t *testing.T) {
 			_, _ = tx.Exec(ctx, `DELETE FROM org.business_calendars`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.org_units`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.data_subject_types WHERE tenant_id IS NOT NULL`)
 			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
 			return err
 		})
@@ -72,8 +73,8 @@ func TestCalendarEndpoints_Contract(t *testing.T) {
 		}
 	}
 	other := uuid.New()
-	grants := map[string][]string{tenant.UserID.String(): {"org.settings.read", "org.settings.update", "org.structure.read", "org.structure.create", "org.structure.update", "org.structure.delete"},
-		other.String(): {"org.settings.read", "org.structure.read", "org.structure.update"}}
+	grants := map[string][]string{tenant.UserID.String(): {"org.settings.read", "org.settings.update", "org.structure.read", "org.structure.create", "org.structure.update", "org.structure.delete", "org.masterdata.read", "org.masterdata.create", "org.masterdata.update", "org.masterdata.delete"},
+		other.String(): {"org.settings.read", "org.structure.read", "org.structure.update", "org.masterdata.read"}}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
 	})
@@ -257,5 +258,35 @@ func TestCalendarEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", "/admin/v1/org/units?legal_entity_id="+le.Id.String(), &dpo, nil, nil); code != 200 || strings.Count(body, `"code"`) != 1 {
 		t.Errorf("list active units: %d %s", code, body)
+	}
+
+	// ORG-07
+	md := "/admin/v1/org/master-data/"
+	if code, body := do("GET", md+"countries", &dpo, nil, nil); code != 200 || !strings.Contains(body, `"name_th":"ไทย"`) || !strings.Contains(body, `"adequacy_status":"unknown"`) {
+		t.Errorf("countries: %d %.200s", code, body)
+	}
+	if code, _ := do("GET", md+"bogus", &dpo, nil, nil); code != 400 {
+		t.Errorf("unknown kind: %d, want 400", code)
+	}
+	if code, _ := do("POST", md+"data_subject_types", &dpo, map[string]any{"code": "member", "name_th": "สมาชิก"}, nil); code != 403 {
+		t.Errorf("create without org.masterdata.create: %d, want 403", code)
+	}
+	if code, body := do("POST", md+"lawful_bases", &admin, map[string]any{"code": "x", "name_th": "x"}, nil); code != 409 || !strings.Contains(body, "org.master_read_only") {
+		t.Errorf("add a lawful basis: %d %s", code, body)
+	}
+	code, body = do("POST", md+"data_subject_types", &admin, map[string]any{"code": "member", "name_th": "สมาชิก", "is_vulnerable": false}, nil)
+	if code != 201 || !strings.Contains(body, `"global":false`) {
+		t.Fatalf("create: %d %s", code, body)
+	}
+	var mdItem orghttp.MasterDataItem
+	_ = json.Unmarshal([]byte(body), &mdItem)
+	if code, _ := do("PATCH", md+"data_subject_types/"+mdItem.Id.String(), &admin, map[string]any{"code": "member", "name_th": "สมาชิกบัตร"}, nil); code != 428 {
+		t.Errorf("update without If-Match: %d, want 428", code)
+	}
+	if code, body := do("PATCH", md+"data_subject_types/"+mdItem.Id.String(), &admin, map[string]any{"code": "member", "name_th": "สมาชิกบัตร"}, map[string]string{"If-Match": `"1"`}); code != 200 || !strings.Contains(body, "สมาชิกบัตร") {
+		t.Errorf("update: %d %s", code, body)
+	}
+	if code, _ := do("DELETE", md+"data_subject_types/"+mdItem.Id.String(), &admin, nil, map[string]string{"If-Match": `"2"`}); code != 204 {
+		t.Errorf("delete: %d, want 204", code)
 	}
 }

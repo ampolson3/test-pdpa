@@ -504,5 +504,49 @@
       "empty": "No units yet.",
       "save": "Save"
     }
+  },
+  "masterData": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view master data.",
+    "title": "Master data",
+    "intro": "Shared lists every module uses. Change an entry here and every record that refers to it shows the change.",
+    "draftNotice": "The platform defaults are a draft pending legal review — check them with your legal team before relying on them.",
+    "kinds": {
+      "data_categories": "Data categories",
+      "data_subject_types": "Data subject groups",
+      "processing_purposes": "Purposes",
+      "lawful_bases": "Lawful bases",
+      "countries": "Countries"
+    },
+    "default": "Default",
+    "own": "Ours",
+    "search": "Search…",
+    "code": "Code",
+    "name": "Name",
+    "nameEn": "Name (English)",
+    "details": "Details",
+    "sensitive": "Sensitive (s.26)",
+    "vulnerable": "Vulnerable group",
+    "category": "Category",
+    "section": "Section",
+    "needsConsent": "needs consent",
+    "needsLia": "needs a legitimate-interest assessment",
+    "forSensitive": "for sensitive data",
+    "adequacy": {
+      "adequate": "adequate protection",
+      "not_adequate": "not adequate",
+      "unknown": "adequacy not determined"
+    },
+    "add": "Add",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "remove": "Delete",
+    "parent": "Under",
+    "none": "—",
+    "readOnly": "Read-only list",
+    "loading": "Loading…",
+    "loadError": "Couldn't load. Please try again.",
+    "actionError": "Couldn't do that: {detail}"
   }
 }

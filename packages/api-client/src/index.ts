@@ -77,3 +77,4 @@ export {
   type OrgUnit,
   type OrgUnitType,
 } from "./org";
+export { useMasterData, useMasterDataMutations, type MasterDataKind, type MasterDataItem, type MasterDataInput } from "./masterdata";

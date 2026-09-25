@@ -45,7 +45,7 @@ IAM-10,IAM,สิทธิ์ชั่วคราวและมอบอำน
 ORG-01,ORG,ข้อมูลหน่วยงาน / นิติบุคคล,Organization profile,Must,P0,ข้อมูลองค์กร,"ม.23(5), ม.39(3)",ORGADMIN,S,S,Y,3,3,0.7,1.2,2.1,PLT-02,,docs/modules/ORG.md#org-01,ข้อมูลองค์กรแสดงถูกต้องในประกาศและเอกสารที่สร้าง,done
 ORG-02,ORG,หลายนิติบุคคลและบริษัทในเครือ,Multi-entity / group,Should,P0,ข้อมูลองค์กร,ม.41 วรรคสอง,ORGADMIN,M,S,N,5,3,1.0,0,2.8,ORG-04,,docs/modules/ORG.md#org-02,ผู้ใช้ของบริษัท A ไม่เห็นข้อมูลบริษัท B ถ้าไม่ได้รับ scope,todo
 ORG-04,ORG,โครงสร้างหน่วยงานแบบลำดับชั้น,Organization hierarchy,Must,P0,โครงสร้าง,แนวปฏิบัติตลาด,ORGADMIN,M,M,Y,5,5,1.2,2.0,3.5,ORG-01,,docs/modules/ORG.md#org-04,ย้ายแผนกแล้ว scope ของผู้ใช้และข้อมูลปรับตามทันที,done
-ORG-07,ORG,ข้อมูลตั้งต้นกลาง (Master data),Master data,Must,P0,ข้อมูลตั้งต้น,"ม.24, ม.26",DPO SUPER,M,M,N,5,5,1.2,0,3.5,ORG-01,,docs/modules/ORG.md#org-07,แก้ที่เดียวมีผลทุกโมดูล และ tenant ใหม่ได้ชุดค่าเริ่มต้นครบ,todo
+ORG-07,ORG,ข้อมูลตั้งต้นกลาง (Master data),Master data,Must,P0,ข้อมูลตั้งต้น,"ม.24, ม.26",DPO SUPER,M,M,N,5,5,1.2,0,3.5,ORG-01,,docs/modules/ORG.md#org-07,แก้ที่เดียวมีผลทุกโมดูล และ tenant ใหม่ได้ชุดค่าเริ่มต้นครบ,done
 ORG-20,ORG,ตั้งค่าองค์กร,Organization settings,Should,P0,ตั้งค่า,แนวปฏิบัติตลาด,ORGADMIN,S,M,Y,3,5,1.0,2.0,2.8,PLT-02,,docs/modules/ORG.md#org-20,SLA ของทุกโมดูลนับตามปฏิทินของ tenant,in_progress
 ORG-06,ORG,ทะเบียนหน่วยงานภายนอก,External parties directory,Must,P1,โครงสร้าง,"ม.39, ม.40",DPO PROC,M,M,Y,5,5,1.2,2.0,3.5,ORG-01,,docs/modules/ORG.md#org-06,หน่วยงานภายนอกหนึ่งรายมี record เดียวที่ทุกโมดูลอ้างถึง,todo
 ORG-05,ORG,ผู้ประสานงาน PDPA ประจำหน่วยงาน,Privacy champions,Should,P3,โครงสร้าง,แนวปฏิบัติตลาด,ORGADMIN DPO,S,S,N,3,3,0.7,0,2.1,"ORG-04, ORG-12",,docs/modules/ORG.md#org-05,งานของแผนกถูกส่งถึงผู้ประสานงานอัตโนมัติ,todo

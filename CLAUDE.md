@@ -301,6 +301,19 @@ the live tree (acceptance: a moved department's team is in its new parent's scop
 drag-and-drop, move menu, search with ancestors, add/rename/close. Tests: check digit, validation, logo rules,
 merge fields, move/scope/cycle/close, two-tenant isolation, HTTP contract, Chromium E2E (10/10, real S3 + clamd).
 
+### ORG-07 Master data (`docs/modules/ORG.md#org-07`) — done (defaults are a draft, decisions.md Q-20)
+`org/service/masterdata.go` + `org/http/masterdata.go` (`org.masterdata.*`, one `{kind}` path for data_categories,
+data_subject_types, processing_purposes, lawful_bases, countries). Migration 00031 seeds the platform defaults —
+**user's choice: seed a draft and flag it for legal review** (Q-20 added): 13 lawful bases paraphrasing PDPA
+ss.19/24/26 with consent/LIA/sensitive flags, 19 data categories (10 sensitive per s.26), 9 subject groups, 10
+purposes, 249 ISO countries with Thai/English names generated from CLDR (`Intl.DisplayNames`) and adequacy `unknown`.
+Every tenant sees the defaults at once (acceptance: nothing to provision); tenants add/edit/delete their own rows
+of the three editable kinds (codes may not shadow a default; delete refused while referenced); defaults, lawful
+bases and countries are read-only. UI `/settings/master-data` with the pending-review banner. Tests: defaults per
+kind, one-source edits, read-only rules, in-use delete, isolation, HTTP contract, Chromium E2E (8/8). Found while
+testing: a YAML flow-map description with a comma made the spec invalid — `internal/pkg/validate`'s spec test
+catches that; run the full suite before starting the stack.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

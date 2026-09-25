@@ -86,7 +86,7 @@ func TestLegalEntities(t *testing.T) {
 		}
 		co, err := e.svc.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ตัวอย่าง จำกัด", NameEn: "Example Co., Ltd.", ParentID: &group.ID,
 			RegistrationNo: reg[:1] + "-" + reg[1:5] + "-" + reg[5:], TaxID: reg, ContactEmail: "dpo@example.co.th", ContactPhone: "02-123-4567",
-			Address: orgservice.Address{Line1: "99 ถนนสุขุมวิท", District: "วัฒนา", Province: "กรุงเทพมหานคร", PostalCode: "10110"},
+			Address:      orgservice.Address{Line1: "99 ถนนสุขุมวิท", District: "วัฒนา", Province: "กรุงเทพมหานคร", PostalCode: "10110"},
 			IsController: true, LogoFileID: &logo.file.ID}, 0)
 		if err != nil {
 			t.Fatalf("create: %v", err)

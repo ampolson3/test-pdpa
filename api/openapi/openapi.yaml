@@ -2358,6 +2358,172 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/org/master-data/{kind}:
+    get:
+      operationId: orgListMasterData
+      tags: [org]
+      summary: One kind of master data — the platform defaults (read-only) then the tenant's own (ORG-07)
+      x-permission: org.masterdata.read
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: kind
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/MasterDataKind'
+      responses:
+        '200':
+          description: Entries
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MasterDataItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: orgCreateMasterData
+      tags: [org]
+      summary: Add a tenant entry (data categories, data subject types and processing purposes only)
+      x-permission: org.masterdata.create
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: kind
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/MasterDataKind'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MasterDataInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterDataItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/org/master-data/{kind}/{id}:
+    patch:
+      operationId: orgUpdateMasterData
+      tags: [org]
+      summary: Change a tenant entry (the code stays; defaults are read-only)
+      x-permission: org.masterdata.update
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: kind
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/MasterDataKind'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MasterDataInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterDataItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+    delete:
+      operationId: orgDeleteMasterData
+      tags: [org]
+      summary: Remove a tenant entry nothing refers to
+      x-permission: org.masterdata.delete
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: kind
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/MasterDataKind'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/org/calendars:
     get:
       operationId: orgListCalendars
@@ -3323,6 +3489,45 @@ components:
           description: The moves the caller may make now
           items:
             $ref: '#/components/schemas/WorkflowTransition'
+    MasterDataKind:
+      type: string
+      enum: [data_categories, data_subject_types, processing_purposes, lawful_bases, countries]
+    MasterDataInput:
+      type: object
+      required: [code, name_th]
+      properties:
+        code:
+          type: string
+          pattern: '^[a-z][a-z0-9_]{0,39}$'
+          description: Ignored on update (the code identifies the entry)
+        name_th: {type: string, minLength: 1, maxLength: 200}
+        name_en: {type: string, maxLength: 200}
+        is_sensitive: {type: boolean, description: 'data_categories: sensitive data under PDPA s.26'}
+        sensitive_type: {type: string, maxLength: 40}
+        parent_id: {$ref: '#/components/schemas/Uuid'}
+        is_vulnerable: {type: boolean, description: 'data_subject_types: e.g. minors'}
+        category: {type: string, maxLength: 40, description: 'processing_purposes'}
+    MasterDataItem:
+      type: object
+      required: [code, name_th, global]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        code: {type: string}
+        name_th: {type: string}
+        name_en: {type: string}
+        global: {type: boolean, description: 'A platform default (a draft pending legal review, decisions.md Q-20); read-only'}
+        row_version: {type: integer}
+        is_sensitive: {type: boolean}
+        sensitive_type: {type: string}
+        parent_id: {$ref: '#/components/schemas/Uuid'}
+        is_vulnerable: {type: boolean}
+        category: {type: string}
+        section_ref: {type: string}
+        for_sensitive: {type: boolean}
+        requires_consent: {type: boolean}
+        requires_lia: {type: boolean}
+        adequacy_status: {type: string, enum: [adequate, not_adequate, unknown]}
+        region: {type: string}
     Address:
       type: object
       properties:

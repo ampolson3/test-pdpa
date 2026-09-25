@@ -20,3 +20,7 @@ output-options:
     - orgUpdateUnit
     - orgMoveUnit
     - orgCloseUnit
+    - orgListMasterData
+    - orgCreateMasterData
+    - orgUpdateMasterData
+    - orgDeleteMasterData

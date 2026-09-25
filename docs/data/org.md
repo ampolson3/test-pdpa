@@ -146,6 +146,8 @@
 - RLS: tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write`
 - ถูกอ้างถึงโดย: `org.data_categories.parent_id`, `consent.data_elements.data_category_id`, `ropa.activity_data.data_category_id`, `ropa.retention_rules.data_category_id`, `ropa.data_inventory.data_category_id`, `dataflow.classifiers.data_category_id`, `dataflow.discovery_findings.suggested_category_id`, `dsar.legal_holds.data_category_id`
 
+- ORG-07: ค่าตั้งต้น (tenant_id NULL) seed ใน migration 00031 เป็นร่างรอฝ่ายกฎหมาย (decisions Q-20) · tenant แก้/ลบได้เฉพาะแถวของตน · รหัสของ tenant ซ้ำรหัสค่าตั้งต้นไม่ได้
+
 <a id="org-data-subject-types"></a>
 ## org.data_subject_types
 
@@ -204,6 +206,8 @@
 - PK: `(code)`
 - RLS: global · ไม่มี RLS (อ่านอย่างเดียวสำหรับแอป)
 - ถูกอ้างถึงโดย: `consent.purposes.lawful_basis_code`, `ropa.activity_purposes.lawful_basis_code`
+
+- ORG-07: seed ครบ 249 ประเทศ (migration 00031) ทุกแถว `adequacy_status = unknown` จนกว่าฝ่ายกฎหมายกำหนด
 
 <a id="org-countries"></a>
 ## org.countries

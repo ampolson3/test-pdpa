@@ -38,6 +38,10 @@ func setup(t *testing.T, suffix string) env {
 			_, _ = tx.Exec(ctx, `DELETE FROM org.org_units`)
 			_, _ = tx.Exec(ctx, `UPDATE org.legal_entities SET parent_id = NULL`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.data_categories WHERE parent_id IS NOT NULL AND tenant_id IS NOT NULL`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.data_categories WHERE tenant_id IS NOT NULL`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.data_subject_types WHERE tenant_id IS NOT NULL`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.processing_purposes WHERE tenant_id IS NOT NULL`)
 			_, _ = tx.Exec(ctx, `DELETE FROM platform.files`)
 			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
 			return err

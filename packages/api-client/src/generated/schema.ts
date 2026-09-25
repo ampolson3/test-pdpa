@@ -873,6 +873,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/org/master-data/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One kind of master data — the platform defaults (read-only) then the tenant's own (ORG-07) */
+        get: operations["orgListMasterData"];
+        put?: never;
+        /** Add a tenant entry (data categories, data subject types and processing purposes only) */
+        post: operations["orgCreateMasterData"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/master-data/{kind}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a tenant entry nothing refers to */
+        delete: operations["orgDeleteMasterData"];
+        options?: never;
+        head?: never;
+        /** Change a tenant entry (the code stays; defaults are read-only) */
+        patch: operations["orgUpdateMasterData"];
+        trace?: never;
+    };
     "/admin/v1/org/calendars": {
         parameters: {
             query?: never;
@@ -1264,6 +1300,43 @@ export interface components {
             }[];
             /** @description The moves the caller may make now */
             transitions: components["schemas"]["WorkflowTransition"][];
+        };
+        /** @enum {string} */
+        MasterDataKind: "data_categories" | "data_subject_types" | "processing_purposes" | "lawful_bases" | "countries";
+        MasterDataInput: {
+            /** @description Ignored on update (the code identifies the entry) */
+            code: string;
+            name_th: string;
+            name_en?: string;
+            /** @description data_categories: sensitive data under PDPA s.26 */
+            is_sensitive?: boolean;
+            sensitive_type?: string;
+            parent_id?: components["schemas"]["Uuid"];
+            /** @description data_subject_types: e.g. minors */
+            is_vulnerable?: boolean;
+            /** @description processing_purposes */
+            category?: string;
+        };
+        MasterDataItem: {
+            id?: components["schemas"]["Uuid"];
+            code: string;
+            name_th: string;
+            name_en?: string;
+            /** @description A platform default (a draft pending legal review, decisions.md Q-20); read-only */
+            global: boolean;
+            row_version?: number;
+            is_sensitive?: boolean;
+            sensitive_type?: string;
+            parent_id?: components["schemas"]["Uuid"];
+            is_vulnerable?: boolean;
+            category?: string;
+            section_ref?: string;
+            for_sensitive?: boolean;
+            requires_consent?: boolean;
+            requires_lia?: boolean;
+            /** @enum {string} */
+            adequacy_status?: "adequate" | "not_adequate" | "unknown";
+            region?: string;
         };
         Address: {
             line1?: string;
@@ -3843,6 +3916,144 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgListMasterData: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                kind: components["schemas"]["MasterDataKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["MasterDataItem"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgCreateMasterData: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                kind: components["schemas"]["MasterDataKind"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MasterDataInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterDataItem"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    orgDeleteMasterData: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                kind: components["schemas"]["MasterDataKind"];
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgUpdateMasterData: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                kind: components["schemas"]["MasterDataKind"];
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MasterDataInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterDataItem"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
         };
     };

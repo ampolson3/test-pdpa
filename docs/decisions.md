@@ -53,3 +53,4 @@
 | Q-17 | ภาษาเพิ่มจาก TH / EN | TH (ค่าเริ่มต้น) + EN | ลูกค้า |
 | Q-18 | โมเดล multi-tenant ของ Keycloak | realm เดียว `pdpa` + Organizations 1 องค์กรต่อ tenant (`platform.tenants.keycloak_org_id`) + mapper ใส่ claim `tid` · ทางเลือก: realm ต่อ tenant | สถาปนิก · PoC T13 (บล็อก IAM-01) |
 | Q-19 | Provider console ของผู้ให้บริการ (SUPER) | surface `/provider/v1` ใน admin app · บัญชี SUPER อยู่ใน tenant พิเศษ `platform` (iam.users.tenant_id NOT NULL) · DB role `pdpa_platform` เฉพาะ package `internal/platform/provider` · เข้า tenant ลูกค้าได้ผ่าน break-glass เท่านั้น | สถาปนิก / ผู้ให้บริการ (บล็อก IAM-03) |
+| Q-20 | ชุดค่าตั้งต้น master data (ORG-07): ชื่อและขอบเขตฐานทางกฎหมาย ม.19/24/26 · รายการหมวดข้อมูลอ่อนไหว · กลุ่มเจ้าของข้อมูล · วัตถุประสงค์ · สถานะ adequacy ของประเทศ | seed เป็นร่างใน migration 00031 (ถ้อยคำสรุปจากตัวบท, adequacy = `unknown` ทุกประเทศ) หน้าจอแสดงป้าย "รอฝ่ายกฎหมายตรวจ" · แก้ด้วย migration ใหม่เมื่อได้คำตอบ | ฝ่ายกฎหมาย / DPO |
