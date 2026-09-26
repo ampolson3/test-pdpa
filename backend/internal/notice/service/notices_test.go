@@ -18,6 +18,7 @@ import (
 	"pdpa-platform/internal/platform/docs"
 	"pdpa-platform/internal/platform/docs/render"
 	"pdpa-platform/internal/platform/jobs"
+	"pdpa-platform/internal/platform/versioning"
 	ropaservice "pdpa-platform/internal/ropa/service"
 	"pdpa-platform/internal/wiring"
 )
@@ -25,10 +26,12 @@ import (
 type env struct {
 	app    *pgxpool.Pool
 	tenant dbtest.Tenant
+	dpo    uuid.UUID
 	svc    *noticeservice.Service
 	org    *orgservice.Service
 	ropa   *ropaservice.Service
 	docs   *docs.Service
+	ver    *versioning.Service
 }
 
 var noticePermissions = []string{"notice.document.read", "notice.document.create", "notice.document.update",
@@ -67,18 +70,34 @@ func setup(t *testing.T, suffix string) env {
 	versioningSvc := wiring.Versioning(nil, audit.New())
 	docsSvc := wiring.Docs(versioningSvc, nil, client, audit.New(), nil)
 	docsSvc.RegisterVersioning()
-	svc := &noticeservice.Service{Audit: audit.New(), Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc}
-	return env{app: app, tenant: tenant, svc: svc, org: orgSvc, ropa: ropaSvc, docs: docsSvc}
+	svc := &noticeservice.Service{Audit: audit.New(), Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc, EnforceChecklist: true}
+	docsSvc.SetValidate("notice", svc.CheckPublishable)
+
+	var dpo uuid.UUID
+	if err := pdb.WithTenantTx(ctx, owner, tenant.ID.String(), "", func(ctx context.Context) error {
+		return pdb.MustTxFromContext(ctx).QueryRow(ctx,
+			`INSERT INTO iam.users (tenant_id, email, display_name, status) VALUES ($1, $2, 'Dee DPO', 'active') RETURNING id`,
+			tenant.ID, uuid.NewString()[:8]+"@notice.example").Scan(&dpo)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return env{app: app, tenant: tenant, dpo: dpo, svc: svc, org: orgSvc, ropa: ropaSvc, docs: docsSvc, ver: versioningSvc}
 }
 
 func (e env) in(t *testing.T, fn func(ctx context.Context) error) {
 	t.Helper()
-	err := pdb.WithTenantTx(context.Background(), e.app, e.tenant.ID.String(), e.tenant.UserID.String(), func(ctx context.Context) error {
-		return fn(authz.WithGrants(ctx, authz.Grants{TenantID: e.tenant.ID.String(), UserID: e.tenant.UserID.String(), Permissions: noticePermissions}))
-	})
-	if err != nil {
+	if err := e.inAs(e.tenant.UserID, noticePermissions, nil, fn); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// inAs runs fn as a specific user with the given permissions/roles — used for the DPO's own approval steps
+// (PLT-08 maker-checker refuses the same user as both author and approver, so this needs a real second user,
+// not just different grants for the same one).
+func (e env) inAs(user uuid.UUID, permissions, roles []string, fn func(ctx context.Context) error) error {
+	return pdb.WithTenantTx(context.Background(), e.app, e.tenant.ID.String(), user.String(), func(ctx context.Context) error {
+		return fn(authz.WithGrants(ctx, authz.Grants{TenantID: e.tenant.ID.String(), UserID: user.String(), Permissions: permissions, Roles: roles}))
+	})
 }
 
 // seedActivity builds one fully-populated processing activity (purpose+lawful basis, sensitive data category,
@@ -184,10 +203,10 @@ func TestCreateWizard_ComposesFromActivity(t *testing.T) {
 		text := sb.String()
 		for _, want := range []string{
 			"จ่ายเงินเดือนและสวัสดิการพนักงาน", // purpose
-			"84 เดือน",                       // retention
-			"ผู้ให้บริการคลาวด์ต่างประเทศ",         // recipient
-			"standard_clauses",              // transfer basis
-			"สิทธิของเจ้าของข้อมูลส่วนบุคคล",        // rights boilerplate
+			"84 เดือน", // retention
+			"ผู้ให้บริการคลาวด์ต่างประเทศ", // recipient
+			"standard_clauses", // transfer basis
+			"สิทธิของเจ้าของข้อมูลส่วนบุคคล", // rights boilerplate
 		} {
 			if !strings.Contains(text, want) {
 				t.Errorf("draft content missing %q", want)

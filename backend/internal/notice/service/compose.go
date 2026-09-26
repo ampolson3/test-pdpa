@@ -12,13 +12,18 @@ import (
 	ropaservice "pdpa-platform/internal/ropa/service"
 )
 
-// section is one ม.23 topic, in both languages.
+// section is one ม.23 topic, in both languages. topic is a stable code (PNG-02's checklist keys headings by it,
+// so the checklist works whether the heading text itself is later reworded by the editor) — omitted (empty) for
+// a section PNG-02 doesn't check on its own (data/retention are combined into one ม.23 item, "data_retention",
+// scored complete only when both are).
 type section struct {
+	topic                string
 	headingTh, headingEn string
 	bodyTh, bodyEn       []string // one paragraph per string; a placeholder if nothing could be derived
 }
 
 var rightsBoilerplate = section{
+	topic:     TopicRights,
 	headingTh: "สิทธิของเจ้าของข้อมูลส่วนบุคคล",
 	headingEn: "Your rights as a data subject",
 	bodyTh: []string{
@@ -30,6 +35,7 @@ var rightsBoilerplate = section{
 }
 
 var consequenceSection = section{
+	topic:     TopicConsequence,
 	headingTh: "ผลกระทบหากไม่ให้ข้อมูลส่วนบุคคล",
 	headingEn: "Consequences of not providing your personal data",
 	bodyTh:    []string{"[โปรดระบุผลกระทบหากท่านไม่ให้ข้อมูลที่จำเป็นตามกฎหมายหรือสัญญา]"},
@@ -51,10 +57,10 @@ func (s *Service) compose(ctx context.Context, legalEntity orgservice.LegalEntit
 	}
 
 	var purposeSec, dataSec, retentionSec, recipientSec section
-	purposeSec.headingTh, purposeSec.headingEn = "วัตถุประสงค์และฐานทางกฎหมายในการเก็บรวบรวม ใช้ หรือเปิดเผยข้อมูล", "Purposes and lawful basis for collecting, using or disclosing your data"
-	dataSec.headingTh, dataSec.headingEn = "ข้อมูลส่วนบุคคลที่เก็บรวบรวมและระยะเวลาการเก็บรักษา", "Personal data collected and how long it is kept"
-	retentionSec.headingTh, retentionSec.headingEn = "ระยะเวลาการเก็บรักษาข้อมูล", "Data retention period"
-	recipientSec.headingTh, recipientSec.headingEn = "ผู้รับข้อมูลและการโอนข้อมูลไปต่างประเทศ", "Recipients of your data and international transfers"
+	purposeSec.topic, purposeSec.headingTh, purposeSec.headingEn = TopicPurposeBasis, "วัตถุประสงค์และฐานทางกฎหมายในการเก็บรวบรวม ใช้ หรือเปิดเผยข้อมูล", "Purposes and lawful basis for collecting, using or disclosing your data"
+	dataSec.topic, dataSec.headingTh, dataSec.headingEn = TopicData, "ข้อมูลส่วนบุคคลที่เก็บรวบรวมและระยะเวลาการเก็บรักษา", "Personal data collected and how long it is kept"
+	retentionSec.topic, retentionSec.headingTh, retentionSec.headingEn = TopicRetention, "ระยะเวลาการเก็บรักษาข้อมูล", "Data retention period"
+	recipientSec.topic, recipientSec.headingTh, recipientSec.headingEn = TopicRecipients, "ผู้รับข้อมูลและการโอนข้อมูลไปต่างประเทศ", "Recipients of your data and international transfers"
 
 	for _, id := range activityIDs {
 		a, err := s.Ropa.GetActivity(ctx, id)
@@ -136,6 +142,7 @@ func (s *Service) compose(ctx context.Context, legalEntity orgservice.LegalEntit
 
 func contactSection(e orgservice.LegalEntity) section {
 	return section{
+		topic:     TopicContact,
 		headingTh: "ข้อมูลติดต่อผู้ควบคุมข้อมูลส่วนบุคคลและเจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล (DPO)",
 		headingEn: "Contact details of the data controller and Data Protection Officer (DPO)",
 		bodyTh:    []string{mergeFieldPlaceholder("org_name_th") + " อีเมล " + mergeFieldPlaceholder("org_email") + " โทร " + mergeFieldPlaceholder("org_phone") + " ที่อยู่ " + mergeFieldPlaceholder("org_address")},
@@ -154,7 +161,11 @@ func docNode(sections []section, lang string) render.Node {
 		if lang == "en" {
 			heading, body = sec.headingEn, sec.bodyEn
 		}
-		content = append(content, render.Node{Type: "heading", Attrs: map[string]any{"level": float64(2)}, Content: []render.Node{{Type: "text", Text: heading}}})
+		attrs := map[string]any{"level": float64(2)}
+		if sec.topic != "" {
+			attrs["topic"] = sec.topic
+		}
+		content = append(content, render.Node{Type: "heading", Attrs: attrs, Content: []render.Node{{Type: "text", Text: heading}}})
 		for _, p := range body {
 			content = append(content, render.Node{Type: "paragraph", Content: inlineWithFields(p)})
 		}

@@ -13,9 +13,9 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	noticestore "pdpa-platform/internal/notice/store"
 	pdb "pdpa-platform/internal/pkg/db"
 	docsservice "pdpa-platform/internal/platform/docs"
-	noticestore "pdpa-platform/internal/notice/store"
 )
 
 var noticeTypes = []string{"privacy_notice", "privacy_policy", "cookie_policy", "cctv", "layered_short", "employee"}

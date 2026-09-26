@@ -7606,6 +7606,41 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/notices/{id}/checklist:
+    get:
+      operationId: noticeGetChecklist
+      tags: [notice]
+      summary: The six ม.23 mandatory topics and whether each is filled in (PNG-02) — a notice's document can't be published while any is missing
+      x-permission: notice.document.read
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NoticeChecklistItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     adminJwt:
@@ -9063,6 +9098,15 @@ components:
             $ref: '#/components/schemas/Uuid'
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
+    NoticeChecklistItemCode:
+      type: string
+      enum: [purpose_basis, consequence, data_retention, recipients, contact, rights]
+    NoticeChecklistItem:
+      type: object
+      required: [code, complete]
+      properties:
+        code: {$ref: '#/components/schemas/NoticeChecklistItemCode'}
+        complete: {type: boolean}
     BusinessCalendarInput:
       type: object
       required: [name, timezone, workdays]

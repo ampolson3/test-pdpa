@@ -8,3 +8,4 @@ output-options:
     - noticeListNotices
     - noticeCreateNotice
     - noticeGetNotice
+    - noticeGetChecklist

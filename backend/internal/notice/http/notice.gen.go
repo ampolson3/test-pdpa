@@ -59,6 +59,36 @@ func (e FormConditionOp) Valid() bool {
 	}
 }
 
+// Defines values for NoticeChecklistItemCode.
+const (
+	Consequence   NoticeChecklistItemCode = "consequence"
+	Contact       NoticeChecklistItemCode = "contact"
+	DataRetention NoticeChecklistItemCode = "data_retention"
+	PurposeBasis  NoticeChecklistItemCode = "purpose_basis"
+	Recipients    NoticeChecklistItemCode = "recipients"
+	Rights        NoticeChecklistItemCode = "rights"
+)
+
+// Valid indicates whether the value is a known member of the NoticeChecklistItemCode enum.
+func (e NoticeChecklistItemCode) Valid() bool {
+	switch e {
+	case Consequence:
+		return true
+	case Contact:
+		return true
+	case DataRetention:
+		return true
+	case PurposeBasis:
+		return true
+	case Recipients:
+		return true
+	case Rights:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for NoticeStatus.
 const (
 	Draft     NoticeStatus = "draft"
@@ -185,6 +215,24 @@ func (e NoticeGetNoticeParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for NoticeGetChecklistParamsAcceptLanguage.
+const (
+	NoticeGetChecklistParamsAcceptLanguageEn NoticeGetChecklistParamsAcceptLanguage = "en"
+	NoticeGetChecklistParamsAcceptLanguageTh NoticeGetChecklistParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the NoticeGetChecklistParamsAcceptLanguage enum.
+func (e NoticeGetChecklistParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case NoticeGetChecklistParamsAcceptLanguageEn:
+		return true
+	case NoticeGetChecklistParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // FieldError defines model for FieldError.
 type FieldError struct {
 	Code    string  `json:"code"`
@@ -232,6 +280,15 @@ type Notice struct {
 	// UpdatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
 	UpdatedAt Timestamp `json:"updated_at"`
 }
+
+// NoticeChecklistItem defines model for NoticeChecklistItem.
+type NoticeChecklistItem struct {
+	Code     NoticeChecklistItemCode `json:"code"`
+	Complete bool                    `json:"complete"`
+}
+
+// NoticeChecklistItemCode defines model for NoticeChecklistItemCode.
+type NoticeChecklistItemCode string
 
 // NoticeStatus defines model for NoticeStatus.
 type NoticeStatus string
@@ -322,6 +379,15 @@ type NoticeGetNoticeParams struct {
 // NoticeGetNoticeParamsAcceptLanguage defines parameters for NoticeGetNotice.
 type NoticeGetNoticeParamsAcceptLanguage string
 
+// NoticeGetChecklistParams defines parameters for NoticeGetChecklist.
+type NoticeGetChecklistParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *NoticeGetChecklistParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// NoticeGetChecklistParamsAcceptLanguage defines parameters for NoticeGetChecklist.
+type NoticeGetChecklistParamsAcceptLanguage string
+
 // NoticeCreateNoticeJSONRequestBody defines body for NoticeCreateNotice for application/json ContentType.
 type NoticeCreateNoticeJSONRequestBody = NoticeWizardInput
 
@@ -336,6 +402,9 @@ type ServerInterface interface {
 	// NoticeGetNotice One notice, with the RoPA activities it covers
 	// (GET /admin/v1/notices/{id})
 	NoticeGetNotice(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetNoticeParams)
+	// NoticeGetChecklist The six ม.23 mandatory topics and whether each is filled in (PNG-02) — a notice's document can't be published while any is missing
+	// (GET /admin/v1/notices/{id}/checklist)
+	NoticeGetChecklist(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetChecklistParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -357,6 +426,12 @@ func (_ Unimplemented) NoticeCreateNotice(w http.ResponseWriter, r *http.Request
 // NoticeGetNotice One notice, with the RoPA activities it covers
 // (GET /admin/v1/notices/{id})
 func (_ Unimplemented) NoticeGetNotice(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetNoticeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// NoticeGetChecklist The six ม.23 mandatory topics and whether each is filled in (PNG-02) — a notice's document can't be published while any is missing
+// (GET /admin/v1/notices/{id}/checklist)
+func (_ Unimplemented) NoticeGetChecklist(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetChecklistParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -553,6 +628,56 @@ func (siw *ServerInterfaceWrapper) NoticeGetNotice(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// NoticeGetChecklist operation middleware
+func (siw *ServerInterfaceWrapper) NoticeGetChecklist(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params NoticeGetChecklistParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage NoticeGetChecklistParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.NoticeGetChecklist(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -674,6 +799,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/notices/{id}", wrapper.NoticeGetNotice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/notices/{id}/checklist", wrapper.NoticeGetChecklist)
 	})
 
 	return r
@@ -924,6 +1052,79 @@ func (response NoticeGetNotice404ApplicationProblemPlusJSONResponse) VisitNotice
 	return err
 }
 
+type NoticeGetChecklistRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params NoticeGetChecklistParams
+}
+
+type NoticeGetChecklistResponseObject interface {
+	VisitNoticeGetChecklistResponse(w http.ResponseWriter) error
+}
+
+type NoticeGetChecklist200JSONResponse struct {
+	Data []NoticeChecklistItem `json:"data"`
+}
+
+func (response NoticeGetChecklist200JSONResponse) VisitNoticeGetChecklistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetChecklist401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeGetChecklist401ApplicationProblemPlusJSONResponse) VisitNoticeGetChecklistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetChecklist403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeGetChecklist403ApplicationProblemPlusJSONResponse) VisitNoticeGetChecklistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetChecklist404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeGetChecklist404ApplicationProblemPlusJSONResponse) VisitNoticeGetChecklistResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// NoticeListNotices The tenant's privacy notices / policies (PNG-01)
@@ -935,6 +1136,9 @@ type StrictServerInterface interface {
 	// NoticeGetNotice One notice, with the RoPA activities it covers
 	// (GET /admin/v1/notices/{id})
 	NoticeGetNotice(ctx context.Context, request NoticeGetNoticeRequestObject) (NoticeGetNoticeResponseObject, error)
+	// NoticeGetChecklist The six ม.23 mandatory topics and whether each is filled in (PNG-02) — a notice's document can't be published while any is missing
+	// (GET /admin/v1/notices/{id}/checklist)
+	NoticeGetChecklist(ctx context.Context, request NoticeGetChecklistRequestObject) (NoticeGetChecklistResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -1055,6 +1259,33 @@ func (sh *strictHandler) NoticeGetNotice(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(NoticeGetNoticeResponseObject); ok {
 		if err := validResponse.VisitNoticeGetNoticeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// NoticeGetChecklist operation middleware
+func (sh *strictHandler) NoticeGetChecklist(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetChecklistParams) {
+	var request NoticeGetChecklistRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.NoticeGetChecklist(ctx, request.(NoticeGetChecklistRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "NoticeGetChecklist")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(NoticeGetChecklistResponseObject); ok {
+		if err := validResponse.VisitNoticeGetChecklistResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

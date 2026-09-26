@@ -199,4 +199,16 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 	if code, body := do("GET", "/admin/v1/notices?notice_type=privacy_notice", &viewer, nil); code != 200 || !strings.Contains(body, `"slug":"test-notice"`) {
 		t.Errorf("list: %d %s", code, body)
 	}
+
+	// PNG-02 checklist.
+	checklist := item + "/checklist"
+	if code, _ := do("GET", checklist, nil, nil); code != 401 {
+		t.Errorf("checklist, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", checklist, &viewer, nil); code != 200 || !strings.Contains(body, `"code":"purpose_basis"`) || !strings.Contains(body, `"complete":false`) {
+		t.Errorf("checklist: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/notices/"+uuid.New().String()+"/checklist", &admin, nil); code != 404 {
+		t.Errorf("checklist, unknown notice: %d, want 404", code)
+	}
 }

@@ -621,6 +621,36 @@ for the freshly composed draft. Tests: unit (the draft contains every ม.23 top
 linked, placeholders when none is, validation, duplicate slug, two-tenant isolation of both the legal-entity
 and activity FKs), HTTP contract (401/403/400/422).
 
+### PNG-02 Mandatory content checklist (`docs/modules/PNG.md#png-02`) — done
+No new endpoint or migration — the gate lives inside the existing publish flow. `docs.Service` (PLT-16) gained
+`SetValidate(docType, fn)`: an extra publish-time check run right after the generic merge-field/clause
+completeness check already there (`missing(in)`), inside the same request transaction — an error blocks the
+PLT-08 publish exactly like that generic check already does. It's a setter, not a `Policy` field, because the
+module's own service (the thing that actually implements the check) is built *after* `docs.Service` in
+`cmd/api/main.go`; wiring calls `docsSvc.SetValidate("notice", noticeSvc.CheckPublishable)` right after
+`noticeSvc` exists. `compose.go`'s headings (PNG-01) now carry a stable topic code (`attrs.topic`), matched by
+a new pure function, `Checklist(content)`, against ม.23's six mandatory items — `purpose_basis`, `consequence`,
+`data_retention` (needs both the data *and* retention sections — ม.23 counts them as one item), `recipients`,
+`contact`, `rights` — each complete when its heading exists and the text under it isn't empty or one of the
+wizard's own bracketed placeholders. A document with no topic-coded headings at all (created directly through
+PLT-16's generic document endpoints, bypassing the wizard) reads as every topic missing — deliberate: this
+checklist only recognizes what PNG-01 itself composes, not free-form authoring, rather than guessing from
+arbitrary text. `CheckPublishable` looks the notice up by `document_id` (`GetNoticeByDocumentID`, new sqlc
+query, still no migration) and blocks with `ErrChecklistIncomplete` (422 `versioning.invalid_request`,
+following `docs.IncompleteError`'s own reporting pattern) when anything is missing. Configurable per the
+module doc's "(ตั้งค่าได้)": `Service.EnforceChecklist` (default true, `NOTICE_CHECKLIST_ENFORCE=false` to turn
+it off) — a tunable, not a `docs/decisions.md` question, since it changes no data model or contract.
+`GET /admin/v1/notices/{id}/checklist` reads the same function live off the current draft for the UI panel.
+Tests: unit (`Checklist` directly: complete, one placeholder blocking only its own item, `data_retention`
+needing both halves, no topic codes at all → everything missing), integration through the *real* PLT-08
+submit → DPO approve → publish chain (a notice left with placeholders is blocked at publish with the itemized
+list; a notice completed *before* submission — the real BP-04 order — publishes normally; `EnforceChecklist =
+false` skips the gate), HTTP contract. Found while writing the integration test: PLT-08 has no "unapprove"
+action, so a version already at `approved` when publish is blocked is locked against further edits (`SaveDraft`
+refuses anything but the open draft) — recovering means a fresh review round on a *new* draft, not editing the
+blocked one in place; the test proves the gate with two independent notices rather than working around that
+(existing PLT-08 behaviour, not something for this feature to fix).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

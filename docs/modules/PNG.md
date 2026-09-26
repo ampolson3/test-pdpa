@@ -191,6 +191,40 @@ acknowledgements (no portal feature yet).
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
 
+**Implementation (PNG-02):** No new endpoint or migration — the gate lives inside the existing publish flow.
+PLT-16's document publish (`docs.Service.publish`, called from PLT-08's generic
+`POST /admin/v1/platform/record-versions/{id}/publish`) already ran one completeness check (merge fields /
+clauses) before this feature; PNG-02 adds a second, notice-specific one at the same point via a small new
+platform hook (`docs.Policy` — actually `docs.Service` itself — gained `SetValidate(docType, fn)`, called once
+both `docs.Service` and the owning module's own service exist — wired for `"notice"` in `cmd/api/main.go` right
+after `noticeSvc` is constructed) rather than baking notice's own business rule into the generic PLT-16/PLT-08
+packages. `compose.go`'s headings (PNG-01) now carry a stable topic code (`attrs.topic`) matched against six
+checklist items — `purpose_basis`, `consequence`, `data_retention` (needs both the data *and* retention
+sections, ม.23 states them as one item), `recipients`, `contact`, `rights` — each complete when its heading
+exists and the text under it isn't empty or one of the wizard's own bracketed placeholders (`Checklist`, a pure
+function over the document's Thai content — BP-04 rule 5: Thai is the minimum required language). A document
+with no topic-coded headings at all (created directly through PLT-16's generic document endpoints, bypassing
+the wizard) reads as every topic missing; this checklist only recognizes what PNG-01 itself composes, not
+free-form authoring — a known, documented limit rather than a fuzzy text-matching guess. `notice.Service`'s
+`CheckPublishable` (the registered validator) looks up the notice by `document_id` (`GetNoticeByDocumentID`,
+new sqlc query — still no migration) and blocks with `ErrChecklistIncomplete` (422 `versioning.invalid_request`,
+following `docs.IncompleteError`'s own pattern for reporting through PLT-08) whenever a topic is missing.
+Configurable per the description's "(ตั้งค่าได้)": `Service.EnforceChecklist` (default true; `NOTICE_CHECKLIST_ENFORCE=false`
+turns it off), no `docs/decisions.md` entry needed since it's a tunable, not legally-relevant behaviour.
+`GET /admin/v1/notices/{id}/checklist` (`notice.document.read`) reads the same `Checklist` function live off
+the current draft, for the UI panel — no separate stored checklist result (unlike `notice_versions.checklist_result`,
+which is PNG-08's job at actual publish time, once that table gets a writer). UI: an expandable "ตรวจความครบถ้วน"
+row per notice in `/notices`' list showing all six items with ✓/✗. Tests: unit (`Checklist` directly — complete,
+one placeholder blocking only its own item, `data_retention` needing both halves, no topic codes at all →
+everything missing), integration through the real PLT-08 submit → DPO approve → publish chain (a notice left
+with placeholders is blocked at publish with the itemized list; a notice completed *before* submission —
+matching the real BP-04 order, content edited ahead of the ม.23 gate — publishes normally; `EnforceChecklist =
+false` skips the gate), HTTP contract (401/200/404). Not done: PNG-08's own publish/versioning
+(`notice_versions`, hosting), PNG-14's dedicated approval UI (PLT-08's generic `/approvals` inbox already
+works), and — deliberately — recovering an *already-approved* version whose publish was blocked: PLT-08 has no
+"unapprove" action, only a DPO return-to-draft during review, so a blocked notice must go through a fresh
+review round once edited; that is existing PLT-08 behaviour, not something to work around from here.
+
 <a id="png-03"></a>
 ### PNG-03 แม่แบบตามกลุ่มเจ้าของข้อมูล
 

@@ -414,6 +414,11 @@ func (s *Service) publish(ctx context.Context, docType string, id uuid.UUID, sna
 	if m := missing(in); m != nil {
 		return m
 	}
+	if v := s.validator(docType); v != nil {
+		if err := v(ctx, id, d); err != nil {
+			return err
+		}
+	}
 	var eff *time.Time
 	if d.EffectiveFrom != "" {
 		t, _ := time.Parse(time.DateOnly, d.EffectiveFrom)

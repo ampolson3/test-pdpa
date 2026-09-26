@@ -13,8 +13,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"pdpa-platform/internal/pkg/httpx"
 	noticeservice "pdpa-platform/internal/notice/service"
+	"pdpa-platform/internal/pkg/httpx"
 )
 
 type Strict struct {
@@ -77,6 +77,18 @@ func (h *Strict) NoticeGetNotice(ctx context.Context, req NoticeGetNoticeRequest
 		return nil, problem(err)
 	}
 	return NoticeGetNotice200JSONResponse{Body: toNoticeWire(n), Headers: NoticeGetNotice200ResponseHeaders{ETag: etag(n.RowVersion)}}, nil
+}
+
+func (h *Strict) NoticeGetChecklist(ctx context.Context, req NoticeGetChecklistRequestObject) (NoticeGetChecklistResponseObject, error) {
+	items, err := h.svc.GetChecklist(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := NoticeGetChecklist200JSONResponse{Data: make([]NoticeChecklistItem, 0, len(items))}
+	for _, it := range items {
+		resp.Data = append(resp.Data, NoticeChecklistItem{Code: NoticeChecklistItemCode(it.Code), Complete: it.Complete})
+	}
+	return resp, nil
 }
 
 func toNoticeWire(n noticeservice.Notice) Notice {

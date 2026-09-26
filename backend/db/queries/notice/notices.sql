@@ -30,3 +30,9 @@ ON CONFLICT DO NOTHING;
 
 -- name: ListNoticeActivityLinks :many
 SELECT activity_id FROM notice.notice_activity_links WHERE notice_id = $1 ORDER BY activity_id;
+
+-- name: GetNoticeByDocumentID :one
+SELECT id, legal_entity_id, subject_type_id, notice_type, title, slug, document_id, status, current_version_id,
+    owner_user_id, review_cycle_months, row_version, updated_at
+FROM notice.notices
+WHERE document_id = $1;

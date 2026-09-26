@@ -94,8 +94,30 @@ type Service struct {
 	PDF        render.PDFRenderer // nil: PDFs are not produced (the version's render_status says failed)
 	Now        func() time.Time
 
-	mu       sync.RWMutex
-	policies map[string]Policy
+	mu         sync.RWMutex
+	policies   map[string]Policy
+	validators map[string]func(ctx context.Context, id uuid.UUID, d Draft) error
+}
+
+// SetValidate registers an extra publish-time check for a document type, run after the generic merge-field /
+// clause completeness check (missing) and before the version is frozen — an error here (wrap it in
+// versioning.ErrInvalidRequest, as IncompleteError does, for a 422) blocks the publish in the same transaction,
+// same as that generic check. Call once at start-up, after both this type's Register and the owning module's own
+// service exist (the module's service is what actually implements the check, so the two constructions must be
+// sequenced: docs.Service, then the module's service, then SetValidate — see internal/wiring and cmd/api/main.go).
+func (s *Service) SetValidate(docType string, fn func(ctx context.Context, id uuid.UUID, d Draft) error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.validators == nil {
+		s.validators = map[string]func(ctx context.Context, id uuid.UUID, d Draft) error{}
+	}
+	s.validators[docType] = fn
+}
+
+func (s *Service) validator(docType string) func(ctx context.Context, id uuid.UUID, d Draft) error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.validators[docType]
 }
 
 // Register offers a document type (at start-up, in internal/wiring).

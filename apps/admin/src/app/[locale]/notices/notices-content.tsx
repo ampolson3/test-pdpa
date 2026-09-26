@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
@@ -10,6 +10,8 @@ import {
   useCreateNoticeWizard,
   useLegalEntities,
   useNotices,
+  useNoticeChecklist,
+  type ApiClient,
   type NoticeType,
 } from "@pdpa/api-client";
 import { Link, useRouter } from "@/i18n/routing";
@@ -25,6 +27,26 @@ function detail(e: unknown): string {
 type Draft = { legal_entity_id: string; notice_type: NoticeType | ""; title: string; slug: string; activity_ids: string[] };
 const blank: Draft = { legal_entity_id: "", notice_type: "", title: "", slug: "", activity_ids: [] };
 
+/** PNG-02: the ม.23 checklist for one notice — expanded inline under its row. */
+function ChecklistPanel({ client, noticeId }: { client: ApiClient; noticeId: string }) {
+  const t = useTranslations("notices");
+  const checklist = useNoticeChecklist(client, noticeId);
+  if (checklist.isPending) return <p className="text-slate-500">{t("loading")}</p>;
+  if (checklist.isError) return <p className="text-red-700">{t("loadError")}</p>;
+  const missing = (checklist.data ?? []).filter((i) => !i.complete);
+  return (
+    <ul className="grid gap-1 sm:grid-cols-2" data-testid="checklist-panel">
+      {(checklist.data ?? []).map((item) => (
+        <li key={item.code} className="flex items-center gap-2">
+          <span className={item.complete ? "text-emerald-700" : "text-amber-700"}>{item.complete ? "✓" : "✗"}</span>
+          <span>{t(`checklist.${item.code}`)}</span>
+        </li>
+      ))}
+      {missing.length === 0 && <li className="text-emerald-700 sm:col-span-2">{t("checklist.complete")}</li>}
+    </ul>
+  );
+}
+
 export function NoticesContent() {
   const t = useTranslations("notices");
   const canRead = usePermission("notice.document.read");
@@ -32,6 +54,7 @@ export function NoticesContent() {
   const client = useMemo(() => createApiClient("/api/bff"), []);
   const router = useRouter();
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const list = useNotices(client, {});
   const wizard = useCreateNoticeWizard(client);
@@ -121,16 +144,30 @@ export function NoticesContent() {
         <table className="w-full rounded-md border border-slate-200 bg-white" data-testid="notices-list">
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr><th className="px-3 py-2">{t("form.noticeTitle")}</th><th className="px-3 py-2">{t("form.noticeType")}</th>
-              <th className="px-3 py-2">{t("statusLabel")}</th><th className="px-3 py-2">{t("form.slug")}</th></tr>
+              <th className="px-3 py-2">{t("statusLabel")}</th><th className="px-3 py-2">{t("form.slug")}</th><th className="px-3 py-2">{t("checklist.title")}</th></tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((n) => (
-              <tr key={n.id}>
-                <td className="px-3 py-2"><Link className="text-sky-700 underline" href={`/documents/${n.document_id}`}>{n.title}</Link></td>
-                <td className="px-3 py-2">{t(`types.${n.notice_type}`)}</td>
-                <td className="px-3 py-2">{t(`statuses.${n.status}`)}</td>
-                <td className="px-3 py-2 font-mono text-xs">{n.slug}</td>
-              </tr>
+              <Fragment key={n.id}>
+                <tr>
+                  <td className="px-3 py-2"><Link className="text-sky-700 underline" href={`/documents/${n.document_id}`}>{n.title}</Link></td>
+                  <td className="px-3 py-2">{t(`types.${n.notice_type}`)}</td>
+                  <td className="px-3 py-2">{t(`statuses.${n.status}`)}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{n.slug}</td>
+                  <td className="px-3 py-2">
+                    <button type="button" className="text-sky-700 underline" onClick={() => setExpanded(expanded === n.id ? null : n.id)} data-testid={`checklist-toggle-${n.id}`}>
+                      {expanded === n.id ? t("checklist.hide") : t("checklist.check")}
+                    </button>
+                  </td>
+                </tr>
+                {expanded === n.id && (
+                  <tr>
+                    <td colSpan={5} className="bg-slate-50 px-3 py-3">
+                      <ChecklistPanel client={client} noticeId={n.id} />
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>

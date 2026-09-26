@@ -17,8 +17,8 @@ import (
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
-	docsservice "pdpa-platform/internal/platform/docs"
 	audit "pdpa-platform/internal/platform/audit/service"
+	docsservice "pdpa-platform/internal/platform/docs"
 	ropaservice "pdpa-platform/internal/ropa/service"
 )
 
@@ -56,6 +56,7 @@ type Ropa interface {
 type Docs interface {
 	Create(ctx context.Context, in docsservice.CreateInput) (docsservice.Document, error)
 	SaveDraft(ctx context.Context, id uuid.UUID, rowVersion int32, d docsservice.Draft) (docsservice.Document, error)
+	Get(ctx context.Context, id uuid.UUID) (docsservice.Document, error)
 }
 
 type Service struct {
@@ -63,6 +64,9 @@ type Service struct {
 	Org   Org
 	Ropa  Ropa
 	Docs  Docs
+	// EnforceChecklist gates PNG-02's ม.23 checklist at publish time (CheckPublishable) — configurable per
+	// CLAUDE.md (a tunable, not a legally-relevant behaviour with a decisions.md entry); default true.
+	EnforceChecklist bool
 }
 
 func (s *Service) audit(ctx context.Context, action string, id uuid.UUID, before, after any) error {

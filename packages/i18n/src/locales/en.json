@@ -811,6 +811,18 @@
       "choose": "Choose…",
       "cancel": "Cancel",
       "saveError": "Couldn't generate the draft: {detail}"
+    },
+    "checklist": {
+      "title": "s.23 checklist",
+      "check": "Check completeness",
+      "hide": "Hide",
+      "complete": "Every mandatory topic is filled in — publishable",
+      "purpose_basis": "Purposes and lawful basis",
+      "consequence": "Consequence of not providing data",
+      "data_retention": "Data collected and retention period",
+      "recipients": "Recipients of data",
+      "contact": "Contact details of the controller and DPO",
+      "rights": "Data subject rights"
     }
   },
   "masterData": {

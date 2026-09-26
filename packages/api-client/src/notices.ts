@@ -5,6 +5,7 @@ export type Notice = components["schemas"]["Notice"];
 export type NoticeType = components["schemas"]["NoticeType"];
 export type NoticeStatus = components["schemas"]["NoticeStatus"];
 export type NoticeWizardInput = components["schemas"]["NoticeWizardInput"];
+export type NoticeChecklistItem = components["schemas"]["NoticeChecklistItem"];
 
 const noticesKey = ["notice", "notices"] as const;
 const noticeKey = (id: string) => [...noticesKey, id] as const;
@@ -34,6 +35,19 @@ export function useNotice(client: ApiClient, id: string | undefined) {
       const { data, error } = await client.GET("/admin/v1/notices/{id}", { params: { path: { id: id! } } });
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+/** GET /admin/v1/notices/{id}/checklist (PNG-02) — the six ม.23 mandatory topics and whether each is filled in. */
+export function useNoticeChecklist(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...noticeKey(id ?? ""), "checklist"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/notices/{id}/checklist", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data.data;
     },
   });
 }
