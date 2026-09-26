@@ -3,7 +3,8 @@
 import { useLocale, useTranslations } from "next-intl";
 import type { ConsentText } from "@pdpa/api-client";
 
-export const input = "w-full rounded-md border border-slate-300 px-2 py-1.5";
+export const field = "rounded-md border border-slate-300 px-2 py-1.5";
+export const input = `w-full ${field}`;
 
 /** A problem+json's title and detail, or its field errors' codes, for an inline error line. */
 export function problemText(e: unknown): string {

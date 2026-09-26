@@ -15,7 +15,7 @@ import {
   type ConsentDecisionInput,
   type SubjectIdentifier,
 } from "@pdpa/api-client";
-import { StatusBadge, input, problemText, useText } from "../shared";
+import { StatusBadge, field, input, problemText, useText } from "../shared";
 
 const ID_TYPES = ["email", "phone", "customer_id", "national_id", "passport", "line_uid", "other"] as const;
 const REASONS = ["no_longer_interested", "too_many_messages", "privacy_concern", "service_ended", "other"] as const;
@@ -43,10 +43,10 @@ export function SubjectsContent() {
       </header>
       <StorageCard />
       <form className="flex flex-wrap items-end gap-2" onSubmit={(e) => { e.preventDefault(); setSearch(draft.value.trim() ? { type: draft.type, value: draft.value.trim() } : null); }}>
-        <select className={`${input} w-40`} value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as SubjectIdentifier["type"] })}>
+        <select className={`${field} w-40`} value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as SubjectIdentifier["type"] })}>
           {ID_TYPES.map((x) => <option key={x} value={x}>{t(`idType.${x}`)}</option>)}
         </select>
-        <input className={`${input} w-72`} value={draft.value} placeholder={t("subjects.searchHint")} onChange={(e) => setDraft({ ...draft, value: e.target.value })} data-testid="subject-search" />
+        <input className={`${field} w-72`} value={draft.value} placeholder={t("subjects.searchHint")} onChange={(e) => setDraft({ ...draft, value: e.target.value })} data-testid="subject-search" />
         <Button type="submit">{t("subjects.search")}</Button>
         {search && <Button variant="ghost" type="button" onClick={() => { setSearch(null); setDraft({ ...draft, value: "" }); }}>{t("subjects.clear")}</Button>}
       </form>
@@ -194,10 +194,10 @@ function RecordForm({ subjectId, active = [], onDone }: { subjectId?: string; ac
         <>
           {!subjectId && (
             <div className="flex flex-wrap gap-2">
-              <select className={`${input} w-40`} value={ident.type} onChange={(e) => setIdent({ ...ident, type: e.target.value as SubjectIdentifier["type"] })}>
+              <select className={`${field} w-40`} value={ident.type} onChange={(e) => setIdent({ ...ident, type: e.target.value as SubjectIdentifier["type"] })}>
                 {ID_TYPES.map((x) => <option key={x} value={x}>{t(`idType.${x}`)}</option>)}
               </select>
-              <input className={`${input} w-72`} value={ident.value} onChange={(e) => setIdent({ ...ident, value: e.target.value })} data-testid="record-identifier" />
+              <input className={`${field} w-72`} value={ident.value} onChange={(e) => setIdent({ ...ident, value: e.target.value })} data-testid="record-identifier" />
             </div>
           )}
           <label className="block space-y-0.5">
@@ -214,14 +214,14 @@ function RecordForm({ subjectId, active = [], onDone }: { subjectId?: string; ac
                 <li key={p.purpose_id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5">
                   <span>{text(p.name)}</span>
                   <span className="flex gap-2">
-                    <select className={`${input} w-44`} value={c.decision} onChange={(e) => set({ decision: e.target.value as typeof c.decision })} data-testid={`decision-${p.code}`}>
+                    <select className={`${field} w-44`} value={c.decision} onChange={(e) => set({ decision: e.target.value as typeof c.decision })} data-testid={`decision-${p.code}`}>
                       <option value="">{t("subjects.noChange")}</option>
                       <option value="CONSENTED">{t("decision.CONSENTED")}</option>
                       <option value="NOT_CONSENTED">{t("decision.NOT_CONSENTED")}</option>
                       {active.includes(p.code) && <option value="WITHDRAWN">{t("decision.WITHDRAWN")}</option>}
                     </select>
                     {c.decision === "WITHDRAWN" && (
-                      <select className={`${input} w-48`} value={c.reason} onChange={(e) => set({ reason: e.target.value })} data-testid={`reason-${p.code}`}>
+                      <select className={`${field} w-48`} value={c.reason} onChange={(e) => set({ reason: e.target.value })} data-testid={`reason-${p.code}`}>
                         <option value="">{t("subjects.reasonNone")}</option>
                         {REASONS.map((r) => <option key={r} value={r}>{t(`reason.${r}`)}</option>)}
                       </select>

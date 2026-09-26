@@ -359,7 +359,9 @@ type Contribution struct {
 	Question string  `json:"question"`
 	Label    Text    `json:"label"`
 	Answer   any     `json:"answer"`
-	Points   float64 `json:"points"`
+	// AnswerLabels are the labels of the chosen options (choice questions whose options have labels).
+	AnswerLabels []Text  `json:"answer_labels,omitempty"`
+	Points       float64 `json:"points"`
 }
 
 // Contributions lists, in form order, every answered question of a result (res.Answers holds only visible, valid
@@ -372,7 +374,22 @@ func Contributions(s Schema, answers Answers) []Contribution {
 			if !ok {
 				continue
 			}
-			out = append(out, Contribution{Question: q.Key, Label: q.Label, Answer: v, Points: round(score(q, v))})
+			c := Contribution{Question: q.Key, Label: q.Label, Answer: v, Points: round(score(q, v))}
+			var chosen []string
+			switch x := v.(type) {
+			case string:
+				chosen = []string{x}
+			case []string:
+				chosen = x
+			}
+			for _, val := range chosen {
+				for _, o := range q.Options {
+					if o.Value == val && len(o.Label) > 0 {
+						c.AnswerLabels = append(c.AnswerLabels, o.Label)
+					}
+				}
+			}
+			out = append(out, c)
 		}
 	}
 	return out

@@ -31,6 +31,13 @@ export function DashboardContent({ me }: { me: Me }) {
         </ul>
       </section>
 
+      <Can permission="breach.incident.read">
+        <section>
+          <h2 className="text-sm font-medium text-slate-500">{t("breach")}</h2>
+          <Link className="text-sm text-sky-700 underline" href="/incidents">{t("breachRegister")}</Link>
+        </section>
+      </Can>
+
       <Can permission="consent.record.read">
         <ConsentLinks />
       </Can>

@@ -11,7 +11,9 @@
     "tenant": "Organization: {name}",
     "roles": "Roles",
     "signIn": "Sign in",
-    "today": "Today: {date}"
+    "today": "Today: {date}",
+    "breach": "Data breaches",
+    "breachRegister": "Breach register"
   },
   "jobs": {
     "title": "Background jobs",
@@ -970,5 +972,180 @@
         "no_change": "Nothing changed. To withdraw a consent you gave, contact the organization through the channels in its privacy notice."
       }
     }
+  },
+  "breach": {
+    "signInRequired": "Please sign in",
+    "forbidden": "You don't have access to this part",
+    "loading": "Loading…",
+    "title": "Breach register",
+    "intro": "Notify the PDPC within 72 hours of becoming aware, unless there is no risk to rights and freedoms (s.37(4)). Alerts at 24 / 48 / 66 hours.",
+    "new": "Record an incident",
+    "create": "Record",
+    "cancel": "Cancel",
+    "search": "Search number, title or description",
+    "searchButton": "Search",
+    "allStatuses": "All statuses",
+    "openOnly": "Open only",
+    "no": "No.",
+    "incident": "Incident",
+    "statusLabel": "Status",
+    "riskLabel": "Risk",
+    "awareAt": "Aware at",
+    "deadline": "PDPC notice due",
+    "owner": "Owner",
+    "empty": "No incidents",
+    "drill": "drill",
+    "awareHint": "Awareness starts the 72-hour clock: enter when the organization had reason to believe the breach happened, not when you record it.",
+    "titleLabel": "Title",
+    "description": "Description",
+    "affectedSubjects": "Data subjects affected",
+    "reportedVia": "Reported via",
+    "legalEntity": "Legal entity",
+    "breachTypes": "Nature of the breach",
+    "decisionLabel": "Decision",
+    "overdueNotice": "Past 72 hours: notify the PDPC with the reason for the delay (within 15 days of awareness).",
+    "next": "Next step",
+    "status": {
+      "reported": "Reported",
+      "triage": "Triage",
+      "assessing": "Assessing risk",
+      "notifying": "Notifying",
+      "remediating": "Remediating",
+      "closed": "Closed"
+    },
+    "risk": {
+      "none": "No risk",
+      "low": "Risk",
+      "high": "High risk"
+    },
+    "decision": {
+      "no_notification": "No notice",
+      "notify_pdpc": "Notify the PDPC",
+      "notify_pdpc_and_subjects": "Notify the PDPC and data subjects"
+    },
+    "type": {
+      "confidentiality": "Confidentiality (disclosed)",
+      "integrity": "Integrity (altered)",
+      "availability": "Availability (lost / unusable)"
+    },
+    "via": {
+      "employee_form": "Employee",
+      "email": "E-mail",
+      "phone": "Phone",
+      "system": "Detection system",
+      "public_form": "Public form",
+      "processor": "Processor"
+    },
+    "channel": {
+      "email": "E-mail",
+      "sms": "SMS"
+    },
+    "clock": {
+      "left": "{hours} h {minutes} min left",
+      "overdue": "{hours} h overdue",
+      "stopped": "Stopped"
+    },
+    "tabs": {
+      "timeline": "Timeline",
+      "assessment": "Risk assessment",
+      "evidence": "Evidence",
+      "notices": "Data subject notices"
+    },
+    "actions": {
+      "takeUp": "Take it up (I'm the owner)",
+      "confirm": "Confirm the breach → assess risk",
+      "notABreach": "Not a personal data breach",
+      "close": "Close",
+      "reassess": "New facts → reassess",
+      "assessHint": "Assess the risk in the Risk assessment tab; then the DPO decides who must be notified.",
+      "pdpcPending": "Waiting for the PDPC notice to be recorded (notice form and filing evidence — BRE-09 in progress)",
+      "closeReason": "Reason / lessons learned",
+      "reassessReason": "The new facts",
+      "confirmButton": "Confirm"
+    },
+    "timeline": {
+      "note": "Note",
+      "system": "System",
+      "addNote": "Add an event to the timeline",
+      "add": "Add",
+      "reported": "Reported ({via})",
+      "status": "Status {from} → {to}",
+      "owner": "Owner changed",
+      "contained": "Contained",
+      "awareAt": "Awareness time corrected",
+      "assessment": "Risk assessed: {risk} (score {score})",
+      "decision": "Decision: {decision} (risk: {risk})",
+      "evidence": "Evidence kept (SHA-256 {hash}…)",
+      "deadline": "{hours} hours since awareness",
+      "overdue": "72 hours passed — PDPC not notified",
+      "noticeDraft": "Data subject notice drafted ({channel})",
+      "noticeApproved": "Notice approved ({channel}) for {total}",
+      "noticeSent": "Notice finished ({channel}): {handed} handed over, {failed} failed"
+    },
+    "assessment": {
+      "title": "Assess the incident's risk",
+      "noForm": "No published breach assessment form yet: the DPO creates one under Forms (type “Breach risk assessment”, bands none / low / high).",
+      "score": "Score {score}",
+      "factor": "Factor",
+      "answer": "Answer",
+      "points": "Points",
+      "submit": "Record the assessment"
+    },
+    "decisionPanel": {
+      "title": "Decide who must be notified",
+      "required": "The risk requires at least: {decision}",
+      "reason": "Reason for the decision",
+      "submit": "Record the decision",
+      "waiting": "Waiting for the DPO's decision"
+    },
+    "evidence": {
+      "description": "Description",
+      "add": "Keep as evidence",
+      "scanning": "Virus scan in progress…",
+      "file": "File",
+      "by": "Collected by",
+      "when": "When",
+      "none": "No evidence yet"
+    },
+    "notices": {
+      "notNeeded": "This incident's decision does not include notifying data subjects.",
+      "new": "Notice to data subjects",
+      "draftTemplate": "The wording comes from the “breach.subject_notice” template, a draft pending legal approval — edit it under Notification templates.",
+      "vars": {
+        "organization": "Organization",
+        "summary": "What happened and how it affects people",
+        "remedy": "Remedy / what people should do",
+        "contact": "Contact"
+      },
+      "create": "Create draft",
+      "by": "Drafted by {name}",
+      "approvedBy": "approved by {name}",
+      "status": {
+        "draft": "Draft",
+        "sending": "Sending",
+        "done": "Done",
+        "failed": "Failed"
+      },
+      "progress": "{total} recipients · {handed} handed over · {failed} could not be · delivery: {sent} sent / {queued} queued / {undelivered} failed",
+      "csvHint": "CSV with a column email (or phone for SMS) and an optional language (th / en)",
+      "loadRecipients": "Use this list",
+      "send": "Approve and send ({total})",
+      "showRecipients": "Show recipients",
+      "hideRecipients": "Hide recipients",
+      "address": "Address (masked)",
+      "handover": "Handed over",
+      "delivery": "Delivery",
+      "handoverStatus": {
+        "queued": "Waiting",
+        "sent": "Handed over",
+        "failed": "Failed"
+      },
+      "deliveryStatus": {
+        "queued": "Queued",
+        "sent": "Sent",
+        "failed": "Failed"
+      }
+    },
+    "nav": "Data breaches"
   }
 }

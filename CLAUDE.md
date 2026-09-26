@@ -370,6 +370,25 @@ for customer sites, `/api/v1` + webhooks (CON-16 needs ORG-16/PLT-15), self-serv
 (CON-11), region pinning. Known gap: the `/public/v1` validator accepts only `th`/`en` in Accept-Language, so a
 browser calling the API directly (future SDK) would get 400 — the portal sends the locale itself.
 
+### BRE breach (`docs/modules/BRE.md`) — BRE-02/05/06/07/10/12/13 done; BRE-08/09 wait on Q-23
+`internal/breach/{store,service,http}` (+ `breachtest` fixture). Incidents `BR-YYYY-NNNN` with an owner (migration 00036)
+move on ST-03 through `Transition` / `Decide` only; closing needs `breach.incident.approve` + a reason. The 72-hour clock
+is pure functions in `service/deadlines.go` (`PDPCDue`, `Checkpoints`, `ToSchedule`, `ClockAt`, `LateReasonRequired`) —
+`breach.sla_timer` River jobs at 24/48/66/72 h alert the owner + role DPO, + role EXEC from 66 h (default recipients until
+BRE-04 routing); moving `aware_at` needs approve + a reason and reschedules (stale jobs see the old aware_at and skip).
+Risk assessment = a published PLT-06 form of the new type `breach` whose bands are exactly none/low/high, answered through
+`forms.Record`; factors = `forms.Contributions` (new, with option labels). The DPO's decision may exceed, never undercut,
+what the risk requires. Timeline rows are append-only tokens (`status:a:b`, `deadline:66`, …) the UI localizes, plus any
+human reason. Evidence = the caller's clean upload + SHA-256. Data-subject notices: CSV → encrypted recipients (batch
+INSERT with `unnest` — **COPY is refused on RLS tables**), maker-checker send, 1000-per-job hand-off to PLT-04, per-person
+delivery via new `notify.Service.Statuses`; the `breach.subject_notice` template is a marked DRAFT (rule 8). Recording the
+PDPC notice needs `pdpc_notifications.document_version_id` (PLT-16) — until decided (decisions Q-23) notifying →
+remediating is 409 `breach.pdpc_notice_missing`. New `iamservice.UsersWithRole`. Tests: deadline unit tests, service
+acceptance (register + alerts, reminders/escalation with an injected clock, assessment/decision/timeline, 10,000
+notices tracked per person, evidence/search/access, two-tenant isolation), HTTP contract, Chromium E2E of BP-07 (20/20).
+UI `/incidents`, `/incidents/{id}`. Local stack note: `.env` points S3 at MinIO :9000 and SMTP at :1025; with the
+Homebrew-style local services use S3 127.0.0.1:8333 (bucket pdpa-files-test), clamd :3310 and an empty SMTP_ADDR.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

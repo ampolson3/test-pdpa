@@ -7568,6 +7568,12 @@ components:
                 additionalProperties:
                   type: string
               answer: {}
+              answer_labels:
+                type: array
+                items:
+                  type: object
+                  additionalProperties:
+                    type: string
               points:
                 type: number
         assessed_by:

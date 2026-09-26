@@ -2838,6 +2838,9 @@ export interface components {
                     [key: string]: string;
                 };
                 answer?: unknown;
+                answer_labels?: {
+                    [key: string]: string;
+                }[];
                 points: number;
             }[];
             assessed_by: components["schemas"]["Uuid"];
