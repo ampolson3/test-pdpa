@@ -2363,6 +2363,7 @@ type OrgExternalParty struct {
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy      pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion     int32              `db:"row_version" json:"row_version"`
+	MergedIntoID   pgtype.UUID        `db:"merged_into_id" json:"merged_into_id"`
 }
 
 // วันหยุดในปฏิทิน

@@ -7,6 +7,12 @@ output-options:
   include-operation-ids:
     - orgGetSettings
     - orgUpdateSettings
+    - orgListExternalParties
+    - orgCreateExternalParty
+    - orgListDuplicateExternalParties
+    - orgGetExternalParty
+    - orgUpdateExternalParty
+    - orgMergeExternalParty
     - orgListCalendars
     - orgCreateCalendar
     - orgUpdateCalendar

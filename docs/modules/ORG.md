@@ -232,6 +232,23 @@ engine (IAM-02, ยัง blocked อยู่ที่ Keycloak/IAM-01, Q-18) �
 
 **Acceptance criteria:** หน่วยงานภายนอกหนึ่งรายมี record เดียวที่ทุกโมดูลอ้างถึง
 
+**Implementation (ORG-06):** `backend/internal/org/service/parties.go` (`org.party.*`) — CRUD หน่วยงานภายนอกบน
+`org.external_parties` ที่มีอยู่แล้วในฐานความรู้ (baseline migration 00004: `party_type`, ประเทศเป็น FK ไป
+`org.countries`, `contact` jsonb, `dedupe_key`) เพิ่มแค่คอลัมน์ `merged_into_id` (migration 00038) สำหรับ "รวม
+รายการซ้ำ" — รวมแล้ว record เดิมไม่ถูกลบ แค่ปิดใช้งาน (`status='inactive'`) และชี้ไปที่ record ที่รอด เพื่อให้
+ทุกโมดูลที่เคยอ้างถึง id เดิมยังหาเจอ (acceptance) · **ตรวจรายการซ้ำ:** `dedupe_key` คำนวณอัตโนมัติจากชื่อ
+(ตัดช่องว่าง/เครื่องหมายวรรคตอน, lowercase) + รหัสประเทศ ไม่บล็อกการสร้างซ้ำ (ชื่อซ้ำกันอาจเป็นคนละบริษัทจริง ๆ
+ก็ได้) แต่มี endpoint แยก `/duplicates` ให้ผู้ใช้ตรวจและเลือกรวมเอง — `MergeExternalParty` (permission
+`org.party.delete`, สูงกว่า `update` เพราะเปลี่ยนสถานะถาวร) ปฏิเสธการรวมเข้าตัวเอง, การรวมสอง record ที่ถูกรวม
+ไปแล้ว (`ErrPartyMerged`), และห้ามแก้ไข record ที่ถูกรวมไปแล้ว · **ยังไม่ทำ (ตามที่มีจริงตอนนี้ ไม่ใช่แบบ
+เก็งอนาคต):** โอน FK ข้าม schema เมื่อรวม — ยังไม่มีโมดูลไหน (RoPA, DSAR, Vendor, Agreement) เขียนแถวจริงที่
+อ้างถึง `org.external_parties` (แม้แต่ `breach.incidents.processor_party_id` ที่มีคอลัมน์อยู่แล้วก็ยังไม่มีจุด
+ไหนตั้งค่า) จึงไม่มีข้อมูลข้ามโมดูลให้โอนตอนนี้ — เมื่อโมดูลแรกเริ่มเขียนค่านี้จริง ต้องตาม `merged_into_id`
+เอง · API `/admin/v1/org/external-parties` (cursor pagination แบบเดียวกับ PLT-16's documents),
+`/external-parties/duplicates`, `/external-parties/{id}/merge` · หน้าจอ `/settings/external-parties`
+(รายการ + ฟอร์ม + แผงตรวจรายการซ้ำ) · ทดสอบ: unit (validation, update/merge/duplicate-detection ตรงตาม
+acceptance, isolation), HTTP contract (401/403/400 schema/412/428)
+
 <a id="org-05"></a>
 ### ORG-05 ผู้ประสานงาน PDPA ประจำหน่วยงาน
 

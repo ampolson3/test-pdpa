@@ -116,10 +116,11 @@
 | `website` | `text` |  |  |  |  |
 | `dedupe_key` | `varchar(120)` |  |  | IX |  |
 | `status` | `text` | ✓ | 'active' |  | ค่า: `active`, `inactive` |
+| `merged_into_id` | `uuid` |  |  | FK → [org.external_parties](#org-external-parties) | ORG-06 migration 00038: ผลของการรวมรายการซ้ำ — ต้อง `<> id` |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_external_parties_updated`
 - PK: `(id)`
-- Index: `org.external_parties (tenant_id, country_code)` · `org.external_parties (tenant_id, dedupe_key)`
+- Index: `org.external_parties (tenant_id, country_code)` · `org.external_parties (tenant_id, dedupe_key)` · `org.external_parties (tenant_id, merged_into_id) WHERE merged_into_id IS NOT NULL`
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `notice.indirect_collections.source_party_id`, `ropa.processing_activities.controller_party_id`, `ropa.activity_data.source_party_id`, `ropa.activity_recipients.party_id`, `ropa.assets.provider_party_id`, `dsar.subtasks.assignee_party_id`, `dsar.downstream_notices.party_id`, `breach.incidents.processor_party_id`, `vendor.vendors.party_id`, `vendor.sub_processors.party_id`, `agreement.agreements.counterparty_id`, `agreement.parties.party_id`, `gov.ai_systems.vendor_party_id`
 

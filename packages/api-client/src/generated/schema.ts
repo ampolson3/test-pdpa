@@ -1096,6 +1096,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/org/external-parties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's external parties (ORG-06) — processors, recipients, government bodies, … */
+        get: operations["orgListExternalParties"];
+        put?: never;
+        /** Register an external party */
+        post: operations["orgCreateExternalParty"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/external-parties/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active parties whose normalized name + country match another active party, grouped for merging */
+        get: operations["orgListDuplicateExternalParties"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/external-parties/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One external party */
+        get: operations["orgGetExternalParty"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change an external party's details */
+        patch: operations["orgUpdateExternalParty"];
+        trace?: never;
+    };
+    "/admin/v1/org/external-parties/{id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge a duplicate party into another one — the source becomes inactive and points at the target */
+        post: operations["orgMergeExternalParty"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/org/master-data/{kind}": {
         parameters: {
             query?: never;
@@ -2562,6 +2632,62 @@ export interface components {
             closed_at?: components["schemas"]["Timestamp"];
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        ExternalPartyType: "processor" | "recipient" | "controller" | "joint_controller" | "government" | "other";
+        ExternalPartyContact: {
+            name?: string;
+            /** Format: email */
+            email?: string;
+            phone?: string;
+        };
+        /**
+         * @example {
+         *       "party_type": "processor",
+         *       "name_th": "บริษัท ผู้ประมวลผล จำกัด",
+         *       "country_code": "TH"
+         *     }
+         */
+        ExternalPartyInput: {
+            party_type: components["schemas"]["ExternalPartyType"];
+            name_th: string;
+            name_en?: string;
+            registration_no?: string;
+            /** @description ISO 3166-1 alpha-2 */
+            country_code: string;
+            contact?: components["schemas"]["ExternalPartyContact"];
+            website?: string;
+            /** @enum {string} */
+            status?: "active" | "inactive";
+        };
+        ExternalParty: {
+            id: components["schemas"]["Uuid"];
+            party_type: components["schemas"]["ExternalPartyType"];
+            name_th: string;
+            name_en?: string;
+            registration_no?: string;
+            country_code: string;
+            contact?: components["schemas"]["ExternalPartyContact"];
+            website?: string;
+            /** @enum {string} */
+            status: "active" | "inactive";
+            merged_into_id?: components["schemas"]["Uuid"];
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        ExternalPartyDuplicate: {
+            id: components["schemas"]["Uuid"];
+            party_type: components["schemas"]["ExternalPartyType"];
+            name_th: string;
+            name_en?: string;
+            country_code: string;
+        };
+        ExternalPartyDuplicateGroup: {
+            dedupe_key: string;
+            parties: components["schemas"]["ExternalPartyDuplicate"][];
+        };
+        ExternalPartyMergeInput: {
+            target_id: components["schemas"]["Uuid"];
         };
         /**
          * @example {
@@ -6136,6 +6262,208 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgListExternalParties: {
+        parameters: {
+            query?: {
+                party_type?: components["schemas"]["ExternalPartyType"];
+                country_code?: string;
+                /** @description Name or registration number contains */
+                q?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ExternalParty"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgCreateExternalParty: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExternalPartyInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalParty"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    orgListDuplicateExternalParties: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ExternalPartyDuplicateGroup"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgGetExternalParty: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalParty"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    orgUpdateExternalParty: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExternalPartyInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalParty"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgMergeExternalParty: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExternalPartyMergeInput"];
+            };
+        };
+        responses: {
+            /** @description Merged */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalParty"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
         };
     };

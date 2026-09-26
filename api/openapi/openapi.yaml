@@ -2958,6 +2958,256 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/org/external-parties:
+    get:
+      operationId: orgListExternalParties
+      tags: [org]
+      summary: The tenant's external parties (ORG-06) — processors, recipients, government bodies, …
+      x-permission: org.party.read
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: party_type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ExternalPartyType'
+        - name: country_code
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 2
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+          description: Name or registration number contains
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExternalParty'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: orgCreateExternalParty
+      tags: [org]
+      summary: Register an external party
+      x-permission: org.party.create
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalPartyInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalParty'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/org/external-parties/duplicates:
+    get:
+      operationId: orgListDuplicateExternalParties
+      tags: [org]
+      summary: Active parties whose normalized name + country match another active party, grouped for merging
+      x-permission: org.party.read
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ExternalPartyDuplicateGroup'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/org/external-parties/{id}:
+    get:
+      operationId: orgGetExternalParty
+      tags: [org]
+      summary: One external party
+      x-permission: org.party.read
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalParty'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: orgUpdateExternalParty
+      tags: [org]
+      summary: Change an external party's details
+      x-permission: org.party.update
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalPartyInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalParty'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/org/external-parties/{id}/merge:
+    post:
+      operationId: orgMergeExternalParty
+      tags: [org]
+      summary: Merge a duplicate party into another one — the source becomes inactive and points at the target
+      x-permission: org.party.delete
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalPartyMergeInput'
+      responses:
+        '200':
+          description: Merged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalParty'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/org/master-data/{kind}:
     get:
       operationId: orgListMasterData
@@ -7244,6 +7494,69 @@ components:
         closed_at: {$ref: '#/components/schemas/Timestamp'}
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
+    ExternalPartyType:
+      type: string
+      enum: [processor, recipient, controller, joint_controller, government, other]
+    ExternalPartyContact:
+      type: object
+      properties:
+        name: {type: string, maxLength: 200}
+        email: {type: string, format: email, maxLength: 200}
+        phone: {type: string, maxLength: 30}
+    ExternalPartyInput:
+      type: object
+      required: [party_type, name_th, country_code]
+      properties:
+        party_type: {$ref: '#/components/schemas/ExternalPartyType'}
+        name_th: {type: string, maxLength: 300}
+        name_en: {type: string, maxLength: 300}
+        registration_no: {type: string, maxLength: 30}
+        country_code: {type: string, minLength: 2, maxLength: 2, description: ISO 3166-1 alpha-2}
+        contact: {$ref: '#/components/schemas/ExternalPartyContact'}
+        website: {type: string, maxLength: 300}
+        status: {type: string, enum: [active, inactive]}
+      example:
+        party_type: processor
+        name_th: บริษัท ผู้ประมวลผล จำกัด
+        country_code: TH
+    ExternalParty:
+      type: object
+      required: [id, party_type, name_th, country_code, status, row_version, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        party_type: {$ref: '#/components/schemas/ExternalPartyType'}
+        name_th: {type: string}
+        name_en: {type: string}
+        registration_no: {type: string}
+        country_code: {type: string}
+        contact: {$ref: '#/components/schemas/ExternalPartyContact'}
+        website: {type: string}
+        status: {type: string, enum: [active, inactive]}
+        merged_into_id: {$ref: '#/components/schemas/Uuid'}
+        row_version: {type: integer}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
+    ExternalPartyDuplicate:
+      type: object
+      required: [id, party_type, name_th, country_code]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        party_type: {$ref: '#/components/schemas/ExternalPartyType'}
+        name_th: {type: string}
+        name_en: {type: string}
+        country_code: {type: string}
+    ExternalPartyDuplicateGroup:
+      type: object
+      required: [dedupe_key, parties]
+      properties:
+        dedupe_key: {type: string}
+        parties:
+          type: array
+          items: {$ref: '#/components/schemas/ExternalPartyDuplicate'}
+    ExternalPartyMergeInput:
+      type: object
+      required: [target_id]
+      properties:
+        target_id: {$ref: '#/components/schemas/Uuid'}
     BusinessCalendarInput:
       type: object
       required: [name, timezone, workdays]

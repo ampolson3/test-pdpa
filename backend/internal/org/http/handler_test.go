@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -48,6 +49,8 @@ func TestCalendarEndpoints_Contract(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.org_settings`)
+			_, _ = tx.Exec(ctx, `UPDATE org.external_parties SET merged_into_id = NULL`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.external_parties`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.holidays`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.business_calendars`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.org_units`)
@@ -73,8 +76,8 @@ func TestCalendarEndpoints_Contract(t *testing.T) {
 		}
 	}
 	other := uuid.New()
-	grants := map[string][]string{tenant.UserID.String(): {"org.settings.read", "org.settings.update", "org.structure.read", "org.structure.create", "org.structure.update", "org.structure.delete", "org.masterdata.read", "org.masterdata.create", "org.masterdata.update", "org.masterdata.delete"},
-		other.String(): {"org.settings.read", "org.structure.read", "org.structure.update", "org.masterdata.read"}}
+	grants := map[string][]string{tenant.UserID.String(): {"org.settings.read", "org.settings.update", "org.structure.read", "org.structure.create", "org.structure.update", "org.structure.delete", "org.masterdata.read", "org.masterdata.create", "org.masterdata.update", "org.masterdata.delete", "org.party.read", "org.party.create", "org.party.update", "org.party.delete"},
+		other.String(): {"org.settings.read", "org.structure.read", "org.structure.update", "org.masterdata.read", "org.party.read"}}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
 	})
@@ -286,6 +289,57 @@ func TestCalendarEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", "/admin/v1/org/units?legal_entity_id="+le.Id.String(), &dpo, nil, nil); code != 200 || strings.Count(body, `"code"`) != 1 {
 		t.Errorf("list active units: %d %s", code, body)
+	}
+
+	// ORG-06 external parties
+	if code, _ := do("GET", "/admin/v1/org/external-parties", nil, nil, nil); code != 401 {
+		t.Errorf("parties, no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", "/admin/v1/org/external-parties", &dpo, map[string]any{"party_type": "processor", "name_th": "x", "country_code": "TH"}, nil); code != 403 {
+		t.Errorf("create party with read permission only: %d, want 403", code)
+	}
+	if code, _ := do("POST", "/admin/v1/org/external-parties", &admin, map[string]any{"party_type": "bogus", "name_th": "x", "country_code": "TH"}, nil); code != 400 {
+		t.Errorf("bad party_type: %d, want 400 (schema)", code)
+	}
+	code, body = do("POST", "/admin/v1/org/external-parties", &admin, map[string]any{"party_type": "processor", "name_th": "บริษัท เอ", "country_code": "TH"}, nil)
+	if code != 201 || !strings.Contains(body, `"status":"active"`) {
+		t.Fatalf("create party: %d %s", code, body)
+	}
+	var party orghttp.ExternalParty
+	_ = json.Unmarshal([]byte(body), &party)
+	partyItem := "/admin/v1/org/external-parties/" + party.Id.String()
+	if code, _ := do("PATCH", partyItem, &admin, map[string]any{"party_type": "processor", "name_th": "บริษัท เอ", "country_code": "TH"}, nil); code != 428 {
+		t.Errorf("update party without If-Match: %d, want 428", code)
+	}
+	if code, body := do("PATCH", partyItem, &admin, map[string]any{"party_type": "recipient", "name_th": "บริษัท เอ", "country_code": "TH"}, map[string]string{"If-Match": `"1"`}); code != 200 || !strings.Contains(body, `"party_type":"recipient"`) {
+		t.Errorf("update party: %d %s", code, body)
+	}
+	if code, body := do("GET", partyItem, &dpo, nil, nil); code != 200 || !strings.Contains(body, `"row_version":2`) {
+		t.Errorf("get party: %d %s", code, body)
+	}
+	code, body = do("POST", "/admin/v1/org/external-parties", &admin, map[string]any{"party_type": "processor", "name_th": "บริษัท เอ", "country_code": "TH"}, nil)
+	if code != 201 {
+		t.Fatalf("create duplicate party: %d %s", code, body)
+	}
+	var dup orghttp.ExternalParty
+	_ = json.Unmarshal([]byte(body), &dup)
+	if code, body := do("GET", "/admin/v1/org/external-parties/duplicates", &dpo, nil, nil); code != 200 || !strings.Contains(body, dup.Id.String()) {
+		t.Errorf("duplicates: %d %s", code, body)
+	}
+	if code, _ := do("POST", partyItem+"/merge", &dpo, map[string]any{"target_id": dup.Id}, map[string]string{"If-Match": `"2"`}); code != 403 {
+		t.Errorf("merge with read permission only (needs delete): %d, want 403", code)
+	}
+	if code, body := do("POST", partyItem+"/merge", &admin, map[string]any{"target_id": party.Id}, map[string]string{"If-Match": `"2"`}); code != 422 {
+		t.Errorf("merge into self: %d %s, want 422", code, body)
+	}
+	if code, body := do("POST", "/admin/v1/org/external-parties/"+dup.Id.String()+"/merge", &admin, map[string]any{"target_id": party.Id}, map[string]string{"If-Match": `"1"`}); code != 200 || !strings.Contains(body, `"status":"inactive"`) {
+		t.Errorf("merge: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/org/external-parties/duplicates", &dpo, nil, nil); code != 200 || strings.Contains(body, `"dedupe_key"`) {
+		t.Errorf("no duplicates left after merge: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/org/external-parties?q="+url.QueryEscape("บริษัท"), &dpo, nil, nil); code != 200 || strings.Count(body, `"id"`) < 1 {
+		t.Errorf("search parties: %d %s", code, body)
 	}
 
 	// ORG-07

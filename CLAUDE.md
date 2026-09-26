@@ -447,6 +447,26 @@ text-layer for Thai combining marks — confirmed with a minimal reproduction ou
 PDF is pixel-correct, only extraction is lossy — so "correct characters" is verified via DOCX (byte-exact) and the
 PDF only for validity + embedded font. Not done: portal/`/api/v1` use, version retention/archival.
 
+### ORG-06 External parties directory (`docs/modules/ORG.md#org-06`) — done
+`internal/org/service/parties.go` (`org.party.*`) — CRUD on `org.external_parties`, which the baseline
+migrations already had (party_type, a real FK to `org.countries`, `contact` jsonb, `dedupe_key`); this
+pass added only `merged_into_id` (migration 00038) for merging duplicates. Merging never deletes a
+record — the loser becomes `inactive` and points at the survivor, so an id any module already stored
+still resolves (the acceptance criterion). Duplicate detection is non-blocking: `dedupe_key` is a
+normalized name + country computed on every save, and a separate `/duplicates` endpoint groups active
+parties that share one for the admin to review and merge — creating an exact-name duplicate is never
+refused outright, since same-name-different-company is a real case. `MergeExternalParty` needs
+`org.party.delete` (a permanent status change, not a plain update), refuses merging into self, and
+refuses touching an already-merged record on either side. Not done, deliberately: reassigning FKs from
+other schemas when merging — nothing writes a real row referencing `org.external_parties` yet (RoPA,
+DSAR, Vendor and Agreement aren't built; even `breach.incidents.processor_party_id`, which already has
+the column, is never set) so there's nothing to reassign today — the first module that does must follow
+`merged_into_id` itself. API `/admin/v1/org/external-parties` (cursor pagination, same shape as PLT-16's
+document list), `/external-parties/duplicates`, `/external-parties/{id}/merge`. UI
+`/settings/external-parties` (list + form + a duplicates panel with a merge-into picker). Tests: unit
+(validation, update, merge rules, duplicate detection matches the normalization exactly, two-tenant
+isolation), HTTP contract (401/403/400 schema/412/428).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

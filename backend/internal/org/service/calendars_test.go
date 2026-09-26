@@ -33,6 +33,8 @@ func setup(t *testing.T, suffix string) env {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.org_settings`)
+			_, _ = tx.Exec(ctx, `UPDATE org.external_parties SET merged_into_id = NULL`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.external_parties`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.holidays`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.business_calendars`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.org_units`)

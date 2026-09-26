@@ -17,6 +17,72 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for ExternalPartyStatus.
+const (
+	ExternalPartyStatusActive   ExternalPartyStatus = "active"
+	ExternalPartyStatusInactive ExternalPartyStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the ExternalPartyStatus enum.
+func (e ExternalPartyStatus) Valid() bool {
+	switch e {
+	case ExternalPartyStatusActive:
+		return true
+	case ExternalPartyStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExternalPartyInputStatus.
+const (
+	ExternalPartyInputStatusActive   ExternalPartyInputStatus = "active"
+	ExternalPartyInputStatusInactive ExternalPartyInputStatus = "inactive"
+)
+
+// Valid indicates whether the value is a known member of the ExternalPartyInputStatus enum.
+func (e ExternalPartyInputStatus) Valid() bool {
+	switch e {
+	case ExternalPartyInputStatusActive:
+		return true
+	case ExternalPartyInputStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExternalPartyType.
+const (
+	Controller      ExternalPartyType = "controller"
+	Government      ExternalPartyType = "government"
+	JointController ExternalPartyType = "joint_controller"
+	Other           ExternalPartyType = "other"
+	Processor       ExternalPartyType = "processor"
+	Recipient       ExternalPartyType = "recipient"
+)
+
+// Valid indicates whether the value is a known member of the ExternalPartyType enum.
+func (e ExternalPartyType) Valid() bool {
+	switch e {
+	case Controller:
+		return true
+	case Government:
+		return true
+	case JointController:
+		return true
+	case Other:
+		return true
+	case Processor:
+		return true
+	case Recipient:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for FormConditionOp.
 const (
 	Answered    FormConditionOp = "answered"
@@ -389,6 +455,114 @@ func (e OrgPutHolidayParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for OrgListExternalPartiesParamsAcceptLanguage.
+const (
+	OrgListExternalPartiesParamsAcceptLanguageEn OrgListExternalPartiesParamsAcceptLanguage = "en"
+	OrgListExternalPartiesParamsAcceptLanguageTh OrgListExternalPartiesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgListExternalPartiesParamsAcceptLanguage enum.
+func (e OrgListExternalPartiesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgListExternalPartiesParamsAcceptLanguageEn:
+		return true
+	case OrgListExternalPartiesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgCreateExternalPartyParamsAcceptLanguage.
+const (
+	OrgCreateExternalPartyParamsAcceptLanguageEn OrgCreateExternalPartyParamsAcceptLanguage = "en"
+	OrgCreateExternalPartyParamsAcceptLanguageTh OrgCreateExternalPartyParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgCreateExternalPartyParamsAcceptLanguage enum.
+func (e OrgCreateExternalPartyParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgCreateExternalPartyParamsAcceptLanguageEn:
+		return true
+	case OrgCreateExternalPartyParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgListDuplicateExternalPartiesParamsAcceptLanguage.
+const (
+	OrgListDuplicateExternalPartiesParamsAcceptLanguageEn OrgListDuplicateExternalPartiesParamsAcceptLanguage = "en"
+	OrgListDuplicateExternalPartiesParamsAcceptLanguageTh OrgListDuplicateExternalPartiesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgListDuplicateExternalPartiesParamsAcceptLanguage enum.
+func (e OrgListDuplicateExternalPartiesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgListDuplicateExternalPartiesParamsAcceptLanguageEn:
+		return true
+	case OrgListDuplicateExternalPartiesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgGetExternalPartyParamsAcceptLanguage.
+const (
+	OrgGetExternalPartyParamsAcceptLanguageEn OrgGetExternalPartyParamsAcceptLanguage = "en"
+	OrgGetExternalPartyParamsAcceptLanguageTh OrgGetExternalPartyParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgGetExternalPartyParamsAcceptLanguage enum.
+func (e OrgGetExternalPartyParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgGetExternalPartyParamsAcceptLanguageEn:
+		return true
+	case OrgGetExternalPartyParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgUpdateExternalPartyParamsAcceptLanguage.
+const (
+	OrgUpdateExternalPartyParamsAcceptLanguageEn OrgUpdateExternalPartyParamsAcceptLanguage = "en"
+	OrgUpdateExternalPartyParamsAcceptLanguageTh OrgUpdateExternalPartyParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgUpdateExternalPartyParamsAcceptLanguage enum.
+func (e OrgUpdateExternalPartyParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgUpdateExternalPartyParamsAcceptLanguageEn:
+		return true
+	case OrgUpdateExternalPartyParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgMergeExternalPartyParamsAcceptLanguage.
+const (
+	OrgMergeExternalPartyParamsAcceptLanguageEn OrgMergeExternalPartyParamsAcceptLanguage = "en"
+	OrgMergeExternalPartyParamsAcceptLanguageTh OrgMergeExternalPartyParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgMergeExternalPartyParamsAcceptLanguage enum.
+func (e OrgMergeExternalPartyParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgMergeExternalPartyParamsAcceptLanguageEn:
+		return true
+	case OrgMergeExternalPartyParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OrgListLegalEntitiesParamsAcceptLanguage.
 const (
 	OrgListLegalEntitiesParamsAcceptLanguageEn OrgListLegalEntitiesParamsAcceptLanguage = "en"
@@ -696,6 +870,81 @@ type BusinessCalendarInput struct {
 	// Workdays ISO weekdays that are working days (1 = Monday … 7 = Sunday)
 	Workdays []int `json:"workdays"`
 }
+
+// ExternalParty defines model for ExternalParty.
+type ExternalParty struct {
+	Contact     *ExternalPartyContact `json:"contact,omitempty"`
+	CountryCode string                `json:"country_code"`
+
+	// Id UUIDv7 generated by the API
+	Id Uuid `json:"id"`
+
+	// MergedIntoId UUIDv7 generated by the API
+	MergedIntoId   *Uuid               `json:"merged_into_id,omitempty"`
+	NameEn         *string             `json:"name_en,omitempty"`
+	NameTh         string              `json:"name_th"`
+	PartyType      ExternalPartyType   `json:"party_type"`
+	RegistrationNo *string             `json:"registration_no,omitempty"`
+	RowVersion     int                 `json:"row_version"`
+	Status         ExternalPartyStatus `json:"status"`
+
+	// UpdatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	UpdatedAt Timestamp `json:"updated_at"`
+	Website   *string   `json:"website,omitempty"`
+}
+
+// ExternalPartyStatus defines model for ExternalParty.Status.
+type ExternalPartyStatus string
+
+// ExternalPartyContact defines model for ExternalPartyContact.
+type ExternalPartyContact struct {
+	Email *openapi_types.Email `json:"email,omitempty"`
+	Name  *string              `json:"name,omitempty"`
+	Phone *string              `json:"phone,omitempty"`
+}
+
+// ExternalPartyDuplicate defines model for ExternalPartyDuplicate.
+type ExternalPartyDuplicate struct {
+	CountryCode string `json:"country_code"`
+
+	// Id UUIDv7 generated by the API
+	Id        Uuid              `json:"id"`
+	NameEn    *string           `json:"name_en,omitempty"`
+	NameTh    string            `json:"name_th"`
+	PartyType ExternalPartyType `json:"party_type"`
+}
+
+// ExternalPartyDuplicateGroup defines model for ExternalPartyDuplicateGroup.
+type ExternalPartyDuplicateGroup struct {
+	DedupeKey string                   `json:"dedupe_key"`
+	Parties   []ExternalPartyDuplicate `json:"parties"`
+}
+
+// ExternalPartyInput defines model for ExternalPartyInput.
+type ExternalPartyInput struct {
+	Contact *ExternalPartyContact `json:"contact,omitempty"`
+
+	// CountryCode ISO 3166-1 alpha-2
+	CountryCode    string                    `json:"country_code"`
+	NameEn         *string                   `json:"name_en,omitempty"`
+	NameTh         string                    `json:"name_th"`
+	PartyType      ExternalPartyType         `json:"party_type"`
+	RegistrationNo *string                   `json:"registration_no,omitempty"`
+	Status         *ExternalPartyInputStatus `json:"status,omitempty"`
+	Website        *string                   `json:"website,omitempty"`
+}
+
+// ExternalPartyInputStatus defines model for ExternalPartyInput.Status.
+type ExternalPartyInputStatus string
+
+// ExternalPartyMergeInput defines model for ExternalPartyMergeInput.
+type ExternalPartyMergeInput struct {
+	// TargetId UUIDv7 generated by the API
+	TargetId Uuid `json:"target_id"`
+}
+
+// ExternalPartyType defines model for ExternalPartyType.
+type ExternalPartyType string
 
 // FieldError defines model for FieldError.
 type FieldError struct {
@@ -1031,6 +1280,74 @@ type OrgPutHolidayParams struct {
 // OrgPutHolidayParamsAcceptLanguage defines parameters for OrgPutHoliday.
 type OrgPutHolidayParamsAcceptLanguage string
 
+// OrgListExternalPartiesParams defines parameters for OrgListExternalParties.
+type OrgListExternalPartiesParams struct {
+	PartyType   *ExternalPartyType `form:"party_type,omitempty" json:"party_type,omitempty"`
+	CountryCode *string            `form:"country_code,omitempty" json:"country_code,omitempty"`
+
+	// Q Name or registration number contains
+	Q      *string `form:"q,omitempty" json:"q,omitempty"`
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgListExternalPartiesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// OrgListExternalPartiesParamsAcceptLanguage defines parameters for OrgListExternalParties.
+type OrgListExternalPartiesParamsAcceptLanguage string
+
+// OrgCreateExternalPartyParams defines parameters for OrgCreateExternalParty.
+type OrgCreateExternalPartyParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgCreateExternalPartyParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// OrgCreateExternalPartyParamsAcceptLanguage defines parameters for OrgCreateExternalParty.
+type OrgCreateExternalPartyParamsAcceptLanguage string
+
+// OrgListDuplicateExternalPartiesParams defines parameters for OrgListDuplicateExternalParties.
+type OrgListDuplicateExternalPartiesParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgListDuplicateExternalPartiesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// OrgListDuplicateExternalPartiesParamsAcceptLanguage defines parameters for OrgListDuplicateExternalParties.
+type OrgListDuplicateExternalPartiesParamsAcceptLanguage string
+
+// OrgGetExternalPartyParams defines parameters for OrgGetExternalParty.
+type OrgGetExternalPartyParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgGetExternalPartyParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// OrgGetExternalPartyParamsAcceptLanguage defines parameters for OrgGetExternalParty.
+type OrgGetExternalPartyParamsAcceptLanguage string
+
+// OrgUpdateExternalPartyParams defines parameters for OrgUpdateExternalParty.
+type OrgUpdateExternalPartyParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgUpdateExternalPartyParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// OrgUpdateExternalPartyParamsAcceptLanguage defines parameters for OrgUpdateExternalParty.
+type OrgUpdateExternalPartyParamsAcceptLanguage string
+
+// OrgMergeExternalPartyParams defines parameters for OrgMergeExternalParty.
+type OrgMergeExternalPartyParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgMergeExternalPartyParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// OrgMergeExternalPartyParamsAcceptLanguage defines parameters for OrgMergeExternalParty.
+type OrgMergeExternalPartyParamsAcceptLanguage string
+
 // OrgListLegalEntitiesParams defines parameters for OrgListLegalEntities.
 type OrgListLegalEntitiesParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -1212,6 +1529,15 @@ type OrgUpdateCalendarJSONRequestBody = BusinessCalendarInput
 // OrgPutHolidayJSONRequestBody defines body for OrgPutHoliday for application/json ContentType.
 type OrgPutHolidayJSONRequestBody OrgPutHolidayJSONBody
 
+// OrgCreateExternalPartyJSONRequestBody defines body for OrgCreateExternalParty for application/json ContentType.
+type OrgCreateExternalPartyJSONRequestBody = ExternalPartyInput
+
+// OrgUpdateExternalPartyJSONRequestBody defines body for OrgUpdateExternalParty for application/json ContentType.
+type OrgUpdateExternalPartyJSONRequestBody = ExternalPartyInput
+
+// OrgMergeExternalPartyJSONRequestBody defines body for OrgMergeExternalParty for application/json ContentType.
+type OrgMergeExternalPartyJSONRequestBody = ExternalPartyMergeInput
+
 // OrgCreateLegalEntityJSONRequestBody defines body for OrgCreateLegalEntity for application/json ContentType.
 type OrgCreateLegalEntityJSONRequestBody = LegalEntityInput
 
@@ -1256,6 +1582,24 @@ type ServerInterface interface {
 	// OrgPutHoliday Add a holiday, or rename the holiday on that date
 	// (PUT /admin/v1/org/calendars/{id}/holidays/{date})
 	OrgPutHoliday(w http.ResponseWriter, r *http.Request, id Uuid, date openapi_types.Date, params OrgPutHolidayParams)
+	// OrgListExternalParties The tenant's external parties (ORG-06) — processors, recipients, government bodies, …
+	// (GET /admin/v1/org/external-parties)
+	OrgListExternalParties(w http.ResponseWriter, r *http.Request, params OrgListExternalPartiesParams)
+	// OrgCreateExternalParty Register an external party
+	// (POST /admin/v1/org/external-parties)
+	OrgCreateExternalParty(w http.ResponseWriter, r *http.Request, params OrgCreateExternalPartyParams)
+	// OrgListDuplicateExternalParties Active parties whose normalized name + country match another active party, grouped for merging
+	// (GET /admin/v1/org/external-parties/duplicates)
+	OrgListDuplicateExternalParties(w http.ResponseWriter, r *http.Request, params OrgListDuplicateExternalPartiesParams)
+	// OrgGetExternalParty One external party
+	// (GET /admin/v1/org/external-parties/{id})
+	OrgGetExternalParty(w http.ResponseWriter, r *http.Request, id Uuid, params OrgGetExternalPartyParams)
+	// OrgUpdateExternalParty Change an external party's details
+	// (PATCH /admin/v1/org/external-parties/{id})
+	OrgUpdateExternalParty(w http.ResponseWriter, r *http.Request, id Uuid, params OrgUpdateExternalPartyParams)
+	// OrgMergeExternalParty Merge a duplicate party into another one — the source becomes inactive and points at the target
+	// (POST /admin/v1/org/external-parties/{id}/merge)
+	OrgMergeExternalParty(w http.ResponseWriter, r *http.Request, id Uuid, params OrgMergeExternalPartyParams)
 	// OrgListLegalEntities The tenant's legal entities (ORG-01)
 	// (GET /admin/v1/org/legal-entities)
 	OrgListLegalEntities(w http.ResponseWriter, r *http.Request, params OrgListLegalEntitiesParams)
@@ -1340,6 +1684,42 @@ func (_ Unimplemented) OrgDeleteHoliday(w http.ResponseWriter, r *http.Request, 
 // OrgPutHoliday Add a holiday, or rename the holiday on that date
 // (PUT /admin/v1/org/calendars/{id}/holidays/{date})
 func (_ Unimplemented) OrgPutHoliday(w http.ResponseWriter, r *http.Request, id Uuid, date openapi_types.Date, params OrgPutHolidayParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgListExternalParties The tenant's external parties (ORG-06) — processors, recipients, government bodies, …
+// (GET /admin/v1/org/external-parties)
+func (_ Unimplemented) OrgListExternalParties(w http.ResponseWriter, r *http.Request, params OrgListExternalPartiesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgCreateExternalParty Register an external party
+// (POST /admin/v1/org/external-parties)
+func (_ Unimplemented) OrgCreateExternalParty(w http.ResponseWriter, r *http.Request, params OrgCreateExternalPartyParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgListDuplicateExternalParties Active parties whose normalized name + country match another active party, grouped for merging
+// (GET /admin/v1/org/external-parties/duplicates)
+func (_ Unimplemented) OrgListDuplicateExternalParties(w http.ResponseWriter, r *http.Request, params OrgListDuplicateExternalPartiesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgGetExternalParty One external party
+// (GET /admin/v1/org/external-parties/{id})
+func (_ Unimplemented) OrgGetExternalParty(w http.ResponseWriter, r *http.Request, id Uuid, params OrgGetExternalPartyParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgUpdateExternalParty Change an external party's details
+// (PATCH /admin/v1/org/external-parties/{id})
+func (_ Unimplemented) OrgUpdateExternalParty(w http.ResponseWriter, r *http.Request, id Uuid, params OrgUpdateExternalPartyParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgMergeExternalParty Merge a duplicate party into another one — the source becomes inactive and points at the target
+// (POST /admin/v1/org/external-parties/{id}/merge)
+func (_ Unimplemented) OrgMergeExternalParty(w http.ResponseWriter, r *http.Request, id Uuid, params OrgMergeExternalPartyParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1769,6 +2149,390 @@ func (siw *ServerInterfaceWrapper) OrgPutHoliday(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.OrgPutHoliday(w, r, id, date, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgListExternalParties operation middleware
+func (siw *ServerInterfaceWrapper) OrgListExternalParties(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgListExternalPartiesParams
+
+	// ------------- Optional query parameter "party_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "party_type", r.URL.Query(), &params.PartyType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "party_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "party_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "country_code" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "country_code", r.URL.Query(), &params.CountryCode, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "country_code"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "country_code", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgListExternalPartiesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgListExternalParties(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgCreateExternalParty operation middleware
+func (siw *ServerInterfaceWrapper) OrgCreateExternalParty(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgCreateExternalPartyParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgCreateExternalPartyParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgCreateExternalParty(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgListDuplicateExternalParties operation middleware
+func (siw *ServerInterfaceWrapper) OrgListDuplicateExternalParties(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgListDuplicateExternalPartiesParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgListDuplicateExternalPartiesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgListDuplicateExternalParties(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgGetExternalParty operation middleware
+func (siw *ServerInterfaceWrapper) OrgGetExternalParty(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgGetExternalPartyParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgGetExternalPartyParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgGetExternalParty(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgUpdateExternalParty operation middleware
+func (siw *ServerInterfaceWrapper) OrgUpdateExternalParty(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgUpdateExternalPartyParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgUpdateExternalPartyParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgUpdateExternalParty(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// OrgMergeExternalParty operation middleware
+func (siw *ServerInterfaceWrapper) OrgMergeExternalParty(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgMergeExternalPartyParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgMergeExternalPartyParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgMergeExternalParty(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2820,6 +3584,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/admin/v1/org/units/{id}/close", wrapper.OrgCloseUnit)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/org/external-parties", wrapper.OrgListExternalParties)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/org/external-parties", wrapper.OrgCreateExternalParty)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/org/external-parties/duplicates", wrapper.OrgListDuplicateExternalParties)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/org/external-parties/{id}", wrapper.OrgGetExternalParty)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/admin/v1/org/external-parties/{id}", wrapper.OrgUpdateExternalParty)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/org/external-parties/{id}/merge", wrapper.OrgMergeExternalParty)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/org/master-data/{kind}", wrapper.OrgListMasterData)
 	})
 	r.Group(func(r chi.Router) {
@@ -3430,6 +4212,611 @@ func (response OrgPutHoliday422ApplicationProblemPlusJSONResponse) VisitOrgPutHo
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgListExternalPartiesRequestObject struct {
+	Params OrgListExternalPartiesParams
+}
+
+type OrgListExternalPartiesResponseObject interface {
+	VisitOrgListExternalPartiesResponse(w http.ResponseWriter) error
+}
+
+type OrgListExternalParties200JSONResponse struct {
+	Data       []ExternalParty `json:"data"`
+	NextCursor *string         `json:"next_cursor,omitempty"`
+}
+
+func (response OrgListExternalParties200JSONResponse) VisitOrgListExternalPartiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgListExternalParties401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgListExternalParties401ApplicationProblemPlusJSONResponse) VisitOrgListExternalPartiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgListExternalParties403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgListExternalParties403ApplicationProblemPlusJSONResponse) VisitOrgListExternalPartiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateExternalPartyRequestObject struct {
+	Params OrgCreateExternalPartyParams
+	Body   *OrgCreateExternalPartyJSONRequestBody
+}
+
+type OrgCreateExternalPartyResponseObject interface {
+	VisitOrgCreateExternalPartyResponse(w http.ResponseWriter) error
+}
+
+type OrgCreateExternalParty201ResponseHeaders struct {
+	ETag *string
+}
+
+type OrgCreateExternalParty201JSONResponse struct {
+	Body    ExternalParty
+	Headers OrgCreateExternalParty201ResponseHeaders
+}
+
+func (response OrgCreateExternalParty201JSONResponse) VisitOrgCreateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateExternalParty400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCreateExternalParty400ApplicationProblemPlusJSONResponse) VisitOrgCreateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateExternalParty401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCreateExternalParty401ApplicationProblemPlusJSONResponse) VisitOrgCreateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateExternalParty403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCreateExternalParty403ApplicationProblemPlusJSONResponse) VisitOrgCreateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgCreateExternalParty422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response OrgCreateExternalParty422ApplicationProblemPlusJSONResponse) VisitOrgCreateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgListDuplicateExternalPartiesRequestObject struct {
+	Params OrgListDuplicateExternalPartiesParams
+}
+
+type OrgListDuplicateExternalPartiesResponseObject interface {
+	VisitOrgListDuplicateExternalPartiesResponse(w http.ResponseWriter) error
+}
+
+type OrgListDuplicateExternalParties200JSONResponse struct {
+	Data []ExternalPartyDuplicateGroup `json:"data"`
+}
+
+func (response OrgListDuplicateExternalParties200JSONResponse) VisitOrgListDuplicateExternalPartiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgListDuplicateExternalParties401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgListDuplicateExternalParties401ApplicationProblemPlusJSONResponse) VisitOrgListDuplicateExternalPartiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgListDuplicateExternalParties403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgListDuplicateExternalParties403ApplicationProblemPlusJSONResponse) VisitOrgListDuplicateExternalPartiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgGetExternalPartyRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params OrgGetExternalPartyParams
+}
+
+type OrgGetExternalPartyResponseObject interface {
+	VisitOrgGetExternalPartyResponse(w http.ResponseWriter) error
+}
+
+type OrgGetExternalParty200ResponseHeaders struct {
+	ETag *string
+}
+
+type OrgGetExternalParty200JSONResponse struct {
+	Body    ExternalParty
+	Headers OrgGetExternalParty200ResponseHeaders
+}
+
+func (response OrgGetExternalParty200JSONResponse) VisitOrgGetExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgGetExternalParty401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgGetExternalParty401ApplicationProblemPlusJSONResponse) VisitOrgGetExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgGetExternalParty403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgGetExternalParty403ApplicationProblemPlusJSONResponse) VisitOrgGetExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgGetExternalParty404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response OrgGetExternalParty404ApplicationProblemPlusJSONResponse) VisitOrgGetExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateExternalPartyRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params OrgUpdateExternalPartyParams
+	Body   *OrgUpdateExternalPartyJSONRequestBody
+}
+
+type OrgUpdateExternalPartyResponseObject interface {
+	VisitOrgUpdateExternalPartyResponse(w http.ResponseWriter) error
+}
+
+type OrgUpdateExternalParty200ResponseHeaders struct {
+	ETag *string
+}
+
+type OrgUpdateExternalParty200JSONResponse struct {
+	Body    ExternalParty
+	Headers OrgUpdateExternalParty200ResponseHeaders
+}
+
+func (response OrgUpdateExternalParty200JSONResponse) VisitOrgUpdateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateExternalParty400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateExternalParty400ApplicationProblemPlusJSONResponse) VisitOrgUpdateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateExternalParty401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateExternalParty401ApplicationProblemPlusJSONResponse) VisitOrgUpdateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateExternalParty403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateExternalParty403ApplicationProblemPlusJSONResponse) VisitOrgUpdateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateExternalParty404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateExternalParty404ApplicationProblemPlusJSONResponse) VisitOrgUpdateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateExternalParty409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateExternalParty409ApplicationProblemPlusJSONResponse) VisitOrgUpdateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateExternalParty412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateExternalParty412ApplicationProblemPlusJSONResponse) VisitOrgUpdateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateExternalParty422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateExternalParty422ApplicationProblemPlusJSONResponse) VisitOrgUpdateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgUpdateExternalParty428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response OrgUpdateExternalParty428ApplicationProblemPlusJSONResponse) VisitOrgUpdateExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMergeExternalPartyRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params OrgMergeExternalPartyParams
+	Body   *OrgMergeExternalPartyJSONRequestBody
+}
+
+type OrgMergeExternalPartyResponseObject interface {
+	VisitOrgMergeExternalPartyResponse(w http.ResponseWriter) error
+}
+
+type OrgMergeExternalParty200JSONResponse ExternalParty
+
+func (response OrgMergeExternalParty200JSONResponse) VisitOrgMergeExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMergeExternalParty400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMergeExternalParty400ApplicationProblemPlusJSONResponse) VisitOrgMergeExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMergeExternalParty401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMergeExternalParty401ApplicationProblemPlusJSONResponse) VisitOrgMergeExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMergeExternalParty403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMergeExternalParty403ApplicationProblemPlusJSONResponse) VisitOrgMergeExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMergeExternalParty404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMergeExternalParty404ApplicationProblemPlusJSONResponse) VisitOrgMergeExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMergeExternalParty409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMergeExternalParty409ApplicationProblemPlusJSONResponse) VisitOrgMergeExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMergeExternalParty412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMergeExternalParty412ApplicationProblemPlusJSONResponse) VisitOrgMergeExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMergeExternalParty422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMergeExternalParty422ApplicationProblemPlusJSONResponse) VisitOrgMergeExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgMergeExternalParty428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response OrgMergeExternalParty428ApplicationProblemPlusJSONResponse) VisitOrgMergeExternalPartyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -5113,6 +6500,24 @@ type StrictServerInterface interface {
 	// OrgPutHoliday Add a holiday, or rename the holiday on that date
 	// (PUT /admin/v1/org/calendars/{id}/holidays/{date})
 	OrgPutHoliday(ctx context.Context, request OrgPutHolidayRequestObject) (OrgPutHolidayResponseObject, error)
+	// OrgListExternalParties The tenant's external parties (ORG-06) — processors, recipients, government bodies, …
+	// (GET /admin/v1/org/external-parties)
+	OrgListExternalParties(ctx context.Context, request OrgListExternalPartiesRequestObject) (OrgListExternalPartiesResponseObject, error)
+	// OrgCreateExternalParty Register an external party
+	// (POST /admin/v1/org/external-parties)
+	OrgCreateExternalParty(ctx context.Context, request OrgCreateExternalPartyRequestObject) (OrgCreateExternalPartyResponseObject, error)
+	// OrgListDuplicateExternalParties Active parties whose normalized name + country match another active party, grouped for merging
+	// (GET /admin/v1/org/external-parties/duplicates)
+	OrgListDuplicateExternalParties(ctx context.Context, request OrgListDuplicateExternalPartiesRequestObject) (OrgListDuplicateExternalPartiesResponseObject, error)
+	// OrgGetExternalParty One external party
+	// (GET /admin/v1/org/external-parties/{id})
+	OrgGetExternalParty(ctx context.Context, request OrgGetExternalPartyRequestObject) (OrgGetExternalPartyResponseObject, error)
+	// OrgUpdateExternalParty Change an external party's details
+	// (PATCH /admin/v1/org/external-parties/{id})
+	OrgUpdateExternalParty(ctx context.Context, request OrgUpdateExternalPartyRequestObject) (OrgUpdateExternalPartyResponseObject, error)
+	// OrgMergeExternalParty Merge a duplicate party into another one — the source becomes inactive and points at the target
+	// (POST /admin/v1/org/external-parties/{id}/merge)
+	OrgMergeExternalParty(ctx context.Context, request OrgMergeExternalPartyRequestObject) (OrgMergeExternalPartyResponseObject, error)
 	// OrgListLegalEntities The tenant's legal entities (ORG-01)
 	// (GET /admin/v1/org/legal-entities)
 	OrgListLegalEntities(ctx context.Context, request OrgListLegalEntitiesRequestObject) (OrgListLegalEntitiesResponseObject, error)
@@ -5375,6 +6780,186 @@ func (sh *strictHandler) OrgPutHoliday(w http.ResponseWriter, r *http.Request, i
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(OrgPutHolidayResponseObject); ok {
 		if err := validResponse.VisitOrgPutHolidayResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgListExternalParties operation middleware
+func (sh *strictHandler) OrgListExternalParties(w http.ResponseWriter, r *http.Request, params OrgListExternalPartiesParams) {
+	var request OrgListExternalPartiesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgListExternalParties(ctx, request.(OrgListExternalPartiesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgListExternalParties")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgListExternalPartiesResponseObject); ok {
+		if err := validResponse.VisitOrgListExternalPartiesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgCreateExternalParty operation middleware
+func (sh *strictHandler) OrgCreateExternalParty(w http.ResponseWriter, r *http.Request, params OrgCreateExternalPartyParams) {
+	var request OrgCreateExternalPartyRequestObject
+
+	request.Params = params
+
+	var body OrgCreateExternalPartyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgCreateExternalParty(ctx, request.(OrgCreateExternalPartyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgCreateExternalParty")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgCreateExternalPartyResponseObject); ok {
+		if err := validResponse.VisitOrgCreateExternalPartyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgListDuplicateExternalParties operation middleware
+func (sh *strictHandler) OrgListDuplicateExternalParties(w http.ResponseWriter, r *http.Request, params OrgListDuplicateExternalPartiesParams) {
+	var request OrgListDuplicateExternalPartiesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgListDuplicateExternalParties(ctx, request.(OrgListDuplicateExternalPartiesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgListDuplicateExternalParties")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgListDuplicateExternalPartiesResponseObject); ok {
+		if err := validResponse.VisitOrgListDuplicateExternalPartiesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgGetExternalParty operation middleware
+func (sh *strictHandler) OrgGetExternalParty(w http.ResponseWriter, r *http.Request, id Uuid, params OrgGetExternalPartyParams) {
+	var request OrgGetExternalPartyRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgGetExternalParty(ctx, request.(OrgGetExternalPartyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgGetExternalParty")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgGetExternalPartyResponseObject); ok {
+		if err := validResponse.VisitOrgGetExternalPartyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgUpdateExternalParty operation middleware
+func (sh *strictHandler) OrgUpdateExternalParty(w http.ResponseWriter, r *http.Request, id Uuid, params OrgUpdateExternalPartyParams) {
+	var request OrgUpdateExternalPartyRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body OrgUpdateExternalPartyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgUpdateExternalParty(ctx, request.(OrgUpdateExternalPartyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgUpdateExternalParty")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgUpdateExternalPartyResponseObject); ok {
+		if err := validResponse.VisitOrgUpdateExternalPartyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgMergeExternalParty operation middleware
+func (sh *strictHandler) OrgMergeExternalParty(w http.ResponseWriter, r *http.Request, id Uuid, params OrgMergeExternalPartyParams) {
+	var request OrgMergeExternalPartyRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body OrgMergeExternalPartyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgMergeExternalParty(ctx, request.(OrgMergeExternalPartyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgMergeExternalParty")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgMergeExternalPartyResponseObject); ok {
+		if err := validResponse.VisitOrgMergeExternalPartyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
