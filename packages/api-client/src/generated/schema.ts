@@ -2382,6 +2382,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/notices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's privacy notices / policies (PNG-01) */
+        get: operations["noticeListNotices"];
+        put?: never;
+        /** Wizard-generate a notice draft — RoPA activities' purposes/lawful basis/data/retention/recipients/transfers, ORG-07 master data and the legal entity's contact are assembled into a PLT-16 document (BP-04 steps t1-t2) */
+        post: operations["noticeCreateNotice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/notices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One notice, with the RoPA activities it covers */
+        get: operations["noticeGetNotice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3195,6 +3230,47 @@ export interface components {
             safeguards?: string;
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        NoticeType: "privacy_notice" | "privacy_policy" | "cookie_policy" | "cctv" | "layered_short" | "employee";
+        /** @enum {string} */
+        NoticeStatus: "draft" | "in_review" | "published" | "retired";
+        /**
+         * @example {
+         *       "legal_entity_id": "00000000-0000-0000-0000-000000000000",
+         *       "notice_type": "privacy_notice",
+         *       "title": "ประกาศความเป็นส่วนตัวสำหรับลูกค้า",
+         *       "slug": "customer-privacy-notice",
+         *       "activity_ids": []
+         *     }
+         */
+        NoticeWizardInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            subject_type_id?: components["schemas"]["Uuid"];
+            notice_type: components["schemas"]["NoticeType"];
+            title: string;
+            slug: string;
+            /**
+             * @description RoPA processing activities (ROPA-03/06/07/08) whose purposes, lawful basis, data, retention, recipients and transfers are assembled into the draft (BP-04 t2)
+             * @default []
+             */
+            activity_ids: components["schemas"]["Uuid"][];
+        };
+        Notice: {
+            id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            subject_type_id?: components["schemas"]["Uuid"];
+            notice_type: components["schemas"]["NoticeType"];
+            title: string;
+            slug: string;
+            /** @description The PLT-16 document holding this notice's content — edit it at /admin/v1/platform/documents/{document_id} */
+            document_id: components["schemas"]["Uuid"];
+            status: components["schemas"]["NoticeStatus"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            review_cycle_months: number;
+            activity_ids?: components["schemas"]["Uuid"][];
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
         };
         /**
          * @example {
@@ -10380,6 +10456,100 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    noticeListNotices: {
+        parameters: {
+            query?: {
+                notice_type?: components["schemas"]["NoticeType"];
+                status?: components["schemas"]["NoticeStatus"];
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Notice"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    noticeCreateNotice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoticeWizardInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    noticeGetNotice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notice"];
+                };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

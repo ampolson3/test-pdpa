@@ -28,6 +28,8 @@ import (
 	consentservice "pdpa-platform/internal/consent/service"
 	iamhttp "pdpa-platform/internal/iam/http"
 	iamservice "pdpa-platform/internal/iam/service"
+	noticehttp "pdpa-platform/internal/notice/http"
+	noticeservice "pdpa-platform/internal/notice/service"
 	orghttp "pdpa-platform/internal/org/http"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authn"
@@ -231,6 +233,7 @@ func run() error {
 		fileSvc.EntityPermissions[k] = v
 	}
 	breachSvc := wiring.Breach(notifySvc, fileSvc, riverClient, auditSvc, keyring, docsSvc)
+	noticeSvc := &noticeservice.Service{Audit: auditSvc, Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc}
 	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                // BRE-12 evidence
 	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read" // BRE-10 recipient lists
 	fileSvc.EntityPermissions[breach.PDPCEntityType] = "breach.notification.read"          // BRE-09 filing evidence
@@ -322,6 +325,11 @@ func run() error {
 			[]docshttp.StrictMiddlewareFunc{authz.StrictMiddleware[docshttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			docshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		docshttp.HandlerWithOptions(strictDocs, docshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictNotice := noticehttp.NewStrictHandlerWithOptions(noticehttp.NewStrict(noticeSvc),
+			[]noticehttp.StrictMiddlewareFunc{authz.StrictMiddleware[noticehttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			noticehttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		noticehttp.HandlerWithOptions(strictNotice, noticehttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictNotify := notifyhttp.NewStrictHandlerWithOptions(notifyhttp.NewStrict(notifySvc),
 			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission)},

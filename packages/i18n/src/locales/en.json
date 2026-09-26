@@ -769,6 +769,50 @@
       "saveError": "Couldn't save: {detail}"
     }
   },
+  "notices": {
+    "signInRequired": "Please sign in",
+    "forbidden": "You don't have permission to view privacy notices",
+    "title": "Privacy notices (s.23)",
+    "intro": "Generate a draft with the wizard — purposes, lawful basis, data collected, retention and recipients are pulled from RoPA and assembled into the draft automatically.",
+    "newNotice": "New notice",
+    "statusLabel": "Status",
+    "loading": "Loading…",
+    "loadError": "Couldn't load. Please try again.",
+    "empty": "No notices yet.",
+    "more": "Load more",
+    "types": {
+      "privacy_notice": "Privacy notice",
+      "privacy_policy": "Privacy policy",
+      "cookie_policy": "Cookie policy",
+      "cctv": "CCTV notice",
+      "layered_short": "Layered short notice",
+      "employee": "Employee notice"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "in_review": "In review (DPO)",
+      "published": "Published",
+      "retired": "Retired"
+    },
+    "wizard": {
+      "title": "Notice wizard",
+      "intro": "Pick a legal entity and the RoPA processing activities this notice covers. A complete draft covering every s.23 topic is generated — you can keep editing the content on the document page.",
+      "generate": "Generate draft"
+    },
+    "form": {
+      "legalEntity": "Legal entity",
+      "noticeType": "Notice type",
+      "noticeTitle": "Notice title",
+      "slug": "Slug (for the link)",
+      "slugInvalid": "Lowercase letters, digits and hyphens only",
+      "activities": "RoPA processing activities this notice covers",
+      "activitiesHint": "You can pick more than one — or none, and fill in the topics yourself",
+      "noActivities": "No processing activities recorded yet",
+      "choose": "Choose…",
+      "cancel": "Cancel",
+      "saveError": "Couldn't generate the draft: {detail}"
+    }
+  },
   "masterData": {
     "signInRequired": "Please sign in.",
     "forbidden": "You don't have permission to view master data.",

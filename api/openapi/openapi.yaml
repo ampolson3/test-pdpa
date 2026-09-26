@@ -7487,6 +7487,125 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/notices:
+    get:
+      operationId: noticeListNotices
+      tags: [notice]
+      summary: The tenant's privacy notices / policies (PNG-01)
+      x-permission: notice.document.read
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: notice_type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/NoticeType'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/NoticeStatus'
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notice'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: noticeCreateNotice
+      tags: [notice]
+      summary: Wizard-generate a notice draft — RoPA activities' purposes/lawful basis/data/retention/recipients/transfers, ORG-07 master data and the legal entity's contact are assembled into a PLT-16 document (BP-04 steps t1-t2)
+      x-permission: notice.document.create
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeWizardInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/notices/{id}:
+    get:
+      operationId: noticeGetNotice
+      tags: [notice]
+      summary: One notice, with the RoPA activities it covers
+      x-permission: notice.document.read
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     adminJwt:
@@ -8895,6 +9014,55 @@ components:
         safeguards: {type: string}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    NoticeType:
+      type: string
+      enum: [privacy_notice, privacy_policy, cookie_policy, cctv, layered_short, employee]
+    NoticeStatus:
+      type: string
+      enum: [draft, in_review, published, retired]
+    NoticeWizardInput:
+      type: object
+      required: [legal_entity_id, notice_type, title, slug]
+      properties:
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        subject_type_id: {$ref: '#/components/schemas/Uuid'}
+        notice_type: {$ref: '#/components/schemas/NoticeType'}
+        title: {type: string, maxLength: 300}
+        slug: {type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9-]+$'}
+        activity_ids:
+          type: array
+          description: RoPA processing activities (ROPA-03/06/07/08) whose purposes, lawful basis, data, retention, recipients and transfers are assembled into the draft (BP-04 t2)
+          items:
+            $ref: '#/components/schemas/Uuid'
+          default: []
+      example:
+        legal_entity_id: 00000000-0000-0000-0000-000000000000
+        notice_type: privacy_notice
+        title: ประกาศความเป็นส่วนตัวสำหรับลูกค้า
+        slug: customer-privacy-notice
+        activity_ids: []
+    Notice:
+      type: object
+      required: [id, legal_entity_id, notice_type, title, slug, document_id, status, review_cycle_months, row_version, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        subject_type_id: {$ref: '#/components/schemas/Uuid'}
+        notice_type: {$ref: '#/components/schemas/NoticeType'}
+        title: {type: string}
+        slug: {type: string}
+        document_id:
+          $ref: '#/components/schemas/Uuid'
+          description: The PLT-16 document holding this notice's content — edit it at /admin/v1/platform/documents/{document_id}
+        status: {$ref: '#/components/schemas/NoticeStatus'}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        review_cycle_months: {type: integer}
+        activity_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        row_version: {type: integer}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
     BusinessCalendarInput:
       type: object
       required: [name, timezone, workdays]

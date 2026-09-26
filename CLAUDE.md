@@ -595,6 +595,32 @@ the service-side rule. Tests: unit (a consent-basis purpose without a link is re
 round-trips; the shared `lawfulBasisCode` test helper now explicitly picks a non-consent code so earlier tests
 don't trip this new rule by accident), HTTP contract (422 `ropa.invalid_input`).
 
+### PNG-01 Wizard-based generator (`docs/modules/PNG.md#png-01`) — done
+`internal/notice` — the first module on the `notice` schema (`notice.document.{read,create,update}`,
+`notice.template.*` — already seeded in the baseline permission migration for PLT-16's pre-registered "notice"
+document type, so no new migration). A notice (`notice.notices`) is a thin wrapper — legal entity, subject
+type, slug, ST-04 status — around a PLT-16 document (`document_id`, NOT NULL): `CreateWizard` is the whole
+wizard in one call, composing the document's first draft (`docs.Service.Create` + `SaveDraft`) from data the
+platform already has rather than a generic conditional Q&A engine (that would duplicate PLT-06's forms engine
+for no acceptance-criterion benefit). For each linked RoPA processing activity (ROPA-03/06/07/08),
+`ListActivityPurposes`/`ListActivityData`/`ListRetentionRules`/`ListActivityRecipients`/`ListActivityTransfers`
+(+ ORG-07 lawful-basis/data-category/country names, rule 9) are turned into ม.23 sections; a topic nothing was
+linked for becomes a bracketed placeholder rather than blocking creation — the acceptance criterion is a
+*complete* draft within 30 minutes, not a finished one. The DPO-contact section uses `mergeField` nodes
+resolved from the legal entity (ORG-01) the same way every other PLT-16 document does. `notice.notices.status`
+starts and stays `draft` (ST-04's `[*] → draft`, the only transition this feature makes); the ม.23 checklist
+gate (PNG-02), subject/industry templates (PNG-03/PNG-11), re-flagging on RoPA change (PNG-10 — a distinct
+event-driven feature per the module's own «extend» relationship, not part of the one-time compose), DPO
+approval and publish (PNG-14/PNG-08) are sibling features layered on the same document, not rebuilt here. The
+slug is typed by the caller (not transliterated from the often-Thai title), validated `^[a-z0-9-]+$` and
+enforced unique per tenant via a `pdb.Savepoint`-wrapped insert (the established pattern for a real
+unique-constraint violation not aborting the request transaction). API `/admin/v1/notices` (cursor pagination),
+`GET /{id}` (includes `activity_ids`) — editing the composed content is PLT-16's own document-draft endpoint,
+not duplicated here. UI `/notices`: a wizard form that on success routes straight to the PLT-16 document editor
+for the freshly composed draft. Tests: unit (the draft contains every ม.23 topic verbatim when an activity is
+linked, placeholders when none is, validation, duplicate slug, two-tenant isolation of both the legal-entity
+and activity FKs), HTTP contract (401/403/400/422).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.
