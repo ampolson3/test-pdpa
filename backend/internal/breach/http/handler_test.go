@@ -243,4 +243,35 @@ func TestBreachEndpoints_Contract(t *testing.T) {
 	if res := do("GET", path+"/notices", &exec, nil, nil); res.code != 403 {
 		t.Errorf("notices without a notification permission: %d", res.code)
 	}
+
+	// PDPC filing rounds (BRE-08/09): recorded against a published pdpc_form document (PLT-16), maker-checker
+	// through the API, late without a reason refused.
+	docVersion := f.PDPCForm(t, "แบบแจ้ง สคส. สำหรับทดสอบ")
+	if res := do("POST", path+"/pdpc-notifications", &sec, map[string]any{"notification_type": "initial", "document_version_id": docVersion.String(),
+		"submitted_at": time.Now().UTC().Format(time.RFC3339)}, nil); res.code != 403 {
+		t.Errorf("SEC recording a PDPC round: %d", res.code)
+	}
+	awareAt, err := time.Parse(time.RFC3339, incident["aware_at"].(string))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The late/reason rule itself (submitted_at within the 72-hour window vs. after it, with/without a reason) is
+	// covered by the service-level tests with an incident aged enough to make both "on time" and "late" reachable
+	// without landing in the future; this contract test only needs a valid, on-time submission to exercise the
+	// wire format and maker-checker permissions.
+	rec := do("POST", path+"/pdpc-notifications", &dpo, map[string]any{"notification_type": "initial", "document_version_id": docVersion.String(),
+		"submitted_at": awareAt.Add(time.Hour).Format(time.RFC3339), "submission_ref": "PDPC-2026-0001"}, nil)
+	if rec.code != 201 || rec.body["is_late"] != false || rec.body["sequence_no"] != float64(1) {
+		t.Fatalf("record: %d %v", rec.code, rec.body)
+	}
+	pdpcPath := "/admin/v1/breach/pdpc-notifications/" + rec.body["id"].(string)
+	if res := do("POST", pdpcPath+"/confirm", &dpo, nil, map[string]string{"If-Match": rec.hdr.Get("ETag")}); res.code != 403 || res.body["code"] != "breach.self_approval" {
+		t.Errorf("self confirmation: %d %v", res.code, res.body)
+	}
+	if res := do("POST", pdpcPath+"/confirm", &dpo2, nil, map[string]string{"If-Match": rec.hdr.Get("ETag")}); res.code != 200 || res.body["approved_by"] == nil {
+		t.Errorf("confirm: %d %v", res.code, res.body)
+	}
+	if res := do("GET", path+"/pdpc-notifications", &dpo, nil, nil); res.code != 200 || len(res.body["data"].([]any)) != 1 {
+		t.Errorf("list: %d %v", res.code, res.body)
+	}
 }

@@ -60,6 +60,7 @@ export function useComposedDocument(client: ApiClient, id: string) {
 export function usePublishedDocumentVersions(client: ApiClient, id: string) {
   return useQuery({
     queryKey: [...docKey(id), "published"],
+    enabled: !!id,
     refetchInterval: (q) => (q.state.data?.some((v) => v.render_status === "pending") ? 2000 : false),
     queryFn: async () => {
       const { data, error } = await client.GET("/admin/v1/platform/documents/{id}/published", { params: { path: { id } } });

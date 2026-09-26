@@ -131,6 +131,8 @@ export {
   useNoticeRecipients,
   useIncidentMutations,
   useNoticeMutations,
+  useIncidentPDPCNotifications,
+  usePDPCNotificationMutations,
   type BreachIncident,
   type BreachIncidentInput,
   type BreachIncidentUpdate,
@@ -140,6 +142,7 @@ export {
   type BreachNotice,
   type BreachNoticeVars,
   type BreachRecipient,
+  type BreachPDPCNotification,
   type BreachFilter,
 } from "./breach";
 export {

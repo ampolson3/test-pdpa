@@ -220,14 +220,15 @@ func run() error {
 	consentSvc := &consentservice.Service{Versioning: versioningSvc, Events: &events.Publisher{River: riverClient},
 		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc}
 	consentSvc.RegisterVersioning()
-	breachSvc := wiring.Breach(notifySvc, fileSvc, riverClient, auditSvc, keyring)
-	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                // BRE-12 evidence
-	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read" // BRE-10 recipient lists
 	docsSvc := wiring.Docs(versioningSvc, fileSvc, riverClient, auditSvc, render.FromEnv())
 	docsSvc.RegisterVersioning()
 	for k, v := range docsSvc.FilePermissions() { // PLT-16 rendered PDF / Word files
 		fileSvc.EntityPermissions[k] = v
 	}
+	breachSvc := wiring.Breach(notifySvc, fileSvc, riverClient, auditSvc, keyring, docsSvc)
+	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                // BRE-12 evidence
+	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read" // BRE-10 recipient lists
+	fileSvc.EntityPermissions[breach.PDPCEntityType] = "breach.notification.read"          // BRE-09 filing evidence
 
 	// Public consent forms (BP-01): tenant and principal from the public key, then the same Idempotency + Tx chain.
 	r.Group(func(g chi.Router) {

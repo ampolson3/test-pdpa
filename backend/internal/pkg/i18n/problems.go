@@ -259,6 +259,14 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "ยังไม่ได้บันทึกการแจ้ง สคส.",
 		En: "The PDPC notice has not been recorded",
 	},
+	"breach.subject_notice_missing": {
+		Th: "ต้องแจ้งเจ้าของข้อมูลให้เสร็จก่อน",
+		En: "The data subject notice has not finished sending",
+	},
+	"breach.bad_document": {
+		Th: "ต้องเป็นแบบแจ้ง สคส. ที่เผยแพร่แล้ว",
+		En: "Not a published PDPC notification form",
+	},
 	"breach.notice_not_required": {
 		Th: "เหตุนี้ไม่ได้ตัดสินให้แจ้งเจ้าของข้อมูล",
 		En: "Data subjects are not to be notified for this incident",

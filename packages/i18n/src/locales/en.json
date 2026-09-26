@@ -1050,7 +1050,8 @@
       "timeline": "Timeline",
       "assessment": "Risk assessment",
       "evidence": "Evidence",
-      "notices": "Data subject notices"
+      "notices": "Data subject notices",
+      "pdpc": "PDPC"
     },
     "actions": {
       "takeUp": "Take it up (I'm the owner)",
@@ -1147,7 +1148,38 @@
         "failed": "Failed"
       }
     },
-    "nav": "Data breaches"
+    "nav": "Data breaches",
+    "pdpc": {
+      "tab": "PDPC notification",
+      "title": "PDPC filing rounds",
+      "intro": "The system prepares the PDPC notification form; you file it through the PDPC's own channel, then record the result here.",
+      "empty": "No rounds recorded yet",
+      "new": "Record a round",
+      "type": "Type",
+      "type_initial": "Initial",
+      "type_supplementary": "Supplementary",
+      "type_final": "Final",
+      "document": "Notification document (from the document composer)",
+      "documentNone": "— choose a document —",
+      "documentEmpty": "No published PDPC notification form yet",
+      "createDocument": "Create a new PDPC notification form",
+      "version": "Published version",
+      "submittedAt": "Filed at",
+      "submissionRef": "PDPC receipt / reference number",
+      "evidence": "Filing evidence (optional)",
+      "lateReason": "Reason for the delay",
+      "lateReasonHint": "Required when filed more than 72 hours after awareness",
+      "record": "Record",
+      "sequence": "Round {no}",
+      "late": "Late",
+      "onTime": "On time",
+      "recordedBy": "Recorded by {name}",
+      "confirmedBy": "Confirmed by {name}",
+      "unconfirmed": "Awaiting confirmation",
+      "confirm": "Confirm the record",
+      "downloadEvidence": "Download evidence",
+      "error": "The action failed"
+    }
   },
   "docs": {
     "nav": {

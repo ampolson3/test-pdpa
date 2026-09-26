@@ -1664,6 +1664,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/breach/incidents/{id}/pdpc-notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** PDPC filing rounds of an incident, oldest first (BRE-09) */
+        get: operations["breachListPDPCNotifications"];
+        put?: never;
+        /**
+         * Record a round of filing the PDPC notice (BRE-08/09): the system prepares the document (PLT-16 pdpc_form), the person files it through the PDPC’s own channel, then records the result here
+         * @description A round filed more than 72 hours after awareness needs late_reason (BRE-08). A second person must confirm the round (breachConfirmPDPCNotification) before it counts toward leaving "notifying" (ST-03).
+         */
+        post: operations["breachRecordPDPCNotification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/pdpc-notifications/{id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm a filing round was recorded correctly (If-Match); whoever recorded it can’t confirm it */
+        post: operations["breachConfirmPDPCNotification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/platform/documents/types": {
         parameters: {
             query?: never;
@@ -3328,6 +3366,25 @@ export interface components {
             status: "draft" | "published" | "retired";
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
+        };
+        BreachPDPCNotification: {
+            id: components["schemas"]["Uuid"];
+            incident_id: components["schemas"]["Uuid"];
+            sequence_no: number;
+            /** @enum {string} */
+            notification_type: "initial" | "supplementary" | "final";
+            document_version_id: components["schemas"]["Uuid"];
+            submitted_at: components["schemas"]["Timestamp"];
+            submission_ref?: string;
+            is_late: boolean;
+            late_reason?: string;
+            evidence_file_id?: components["schemas"]["Uuid"];
+            created_by?: components["schemas"]["Uuid"];
+            created_by_name?: string;
+            approved_by?: components["schemas"]["Uuid"];
+            approved_by_name?: string;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
         };
         ConsentSubmission: {
             collection_point_code: string;
@@ -7619,6 +7676,115 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BreachNotice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachListPDPCNotifications: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachPDPCNotification"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachRecordPDPCNotification: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    notification_type: "initial" | "supplementary" | "final";
+                    document_version_id: components["schemas"]["Uuid"];
+                    submitted_at: components["schemas"]["Timestamp"];
+                    /** @description The PDPC’s own receipt / reference number */
+                    submission_ref?: string;
+                    evidence_file_id?: components["schemas"]["Uuid"];
+                    late_reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachPDPCNotification"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachConfirmPDPCNotification: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachPDPCNotification"];
                 };
             };
             401: components["responses"]["Unauthorized"];

@@ -7,6 +7,8 @@ import { Button } from "@pdpa/ui";
 import { FormRenderer, type FormSchema, type Language, type Scoring } from "@pdpa/form-renderer";
 import {
   createApiClient,
+  fileDownloadHref,
+  useDocuments,
   useFileStatus,
   useForm,
   useForms,
@@ -15,12 +17,16 @@ import {
   useIncidentEvidence,
   useIncidentMutations,
   useIncidentNotices,
+  useIncidentPDPCNotifications,
   useIncidentTimeline,
   useNoticeMutations,
   useNoticeRecipients,
+  usePDPCNotificationMutations,
+  usePublishedDocumentVersions,
   type BreachIncident,
   type BreachNotice,
   type BreachNoticeVars,
+  type BreachPDPCNotification,
   type BreachTimelineItem,
 } from "@pdpa/api-client";
 import { FileUploader } from "@/components/file-uploader";
@@ -29,7 +35,7 @@ import type { ErrorCode, FieldError } from "@pdpa/form-renderer";
 import { Link } from "@/i18n/routing";
 import { Clock, RiskBadge, StatusBadge, field, input, problemText, useWhen } from "../shared";
 
-type Tab = "assessment" | "timeline" | "evidence" | "notices";
+type Tab = "assessment" | "timeline" | "evidence" | "notices" | "pdpc";
 
 /** Answer errors of a 422 breach.invalid problem (fields "answers.<question>"), as the renderer takes them. */
 function answerErrors(e: unknown): FieldError[] | undefined {
@@ -74,7 +80,7 @@ export function IncidentContent({ id, meId }: { id: string; meId: string }) {
       </header>
       <Actions incident={inc} meId={meId} />
       <nav className="flex flex-wrap gap-2" role="tablist">
-        {(["timeline", "assessment", "evidence", "notices"] as Tab[]).map((k) => (
+        {(["timeline", "assessment", "evidence", "notices", "pdpc"] as Tab[]).map((k) => (
           <button key={k} role="tab" aria-selected={tab === k} className={`rounded-md px-3 py-1.5 ${tab === k ? "bg-slate-900 text-white" : "bg-white ring-1 ring-slate-200"}`} onClick={() => setTab(k)} data-testid={`tab-${k}`}>
             {t(`tabs.${k}`)}
           </button>
@@ -84,6 +90,7 @@ export function IncidentContent({ id, meId }: { id: string; meId: string }) {
       {tab === "assessment" && <Assessment incident={inc} />}
       {tab === "evidence" && <Evidence incident={inc} />}
       {tab === "notices" && <Notices incident={inc} />}
+      {tab === "pdpc" && <PDPCPanel incident={inc} />}
     </main>
   );
 }
@@ -409,5 +416,136 @@ function NoticeCard({ notice, incidentId }: { notice: BreachNotice; incidentId: 
         </table>
       )}
     </div>
+  );
+}
+
+function PDPCPanel({ incident }: { incident: BreachIncident }) {
+  const t = useTranslations("breach.pdpc");
+  const tb = useTranslations("breach");
+  const when = useWhen();
+  const canRead = usePermission("breach.notification.read");
+  const canCreate = usePermission("breach.notification.create");
+  const canConfirm = usePermission("breach.notification.approve");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const list = useIncidentPDPCNotifications(client, incident.id, canRead || canCreate);
+  const m = usePDPCNotificationMutations(client, incident.id);
+  const docs = useDocuments(client, { doc_type: "pdpc_form" });
+  const documents = docs.data?.pages.flatMap((p) => p.data) ?? [];
+  const [docId, setDocId] = useState("");
+  const versions = usePublishedDocumentVersions(client, docId);
+  const published = versions.data ?? [];
+  const [versionId, setVersionId] = useState("");
+  const [type, setType] = useState<BreachPDPCNotification["notification_type"]>("initial");
+  const [submittedAt, setSubmittedAt] = useState(() => new Date().toISOString().slice(0, 16));
+  const [ref, setRef] = useState("");
+  const [lateReason, setLateReason] = useState("");
+  const [fileId, setFileId] = useState<string>();
+  const fileStatus = useFileStatus(client, fileId);
+  const evidenceClean = !fileId || fileStatus.data?.av_status === "clean";
+
+  if (!canRead && !canCreate) return <p className="text-slate-600">{tb("forbidden")}</p>;
+
+  const version = versionId || published[published.length - 1]?.id || "";
+
+  return (
+    <section className="space-y-3">
+      <p className="text-slate-600">{t("intro")}</p>
+      {canCreate && incident.status !== "closed" && (
+        <form
+          className="space-y-2 rounded-md border border-slate-200 bg-white p-4"
+          data-testid="pdpc-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            m.record.mutate(
+              {
+                notification_type: type,
+                document_version_id: version,
+                submitted_at: new Date(submittedAt).toISOString(),
+                submission_ref: ref || undefined,
+                evidence_file_id: fileId,
+                late_reason: lateReason || undefined,
+              },
+              { onSuccess: () => { setRef(""); setLateReason(""); setFileId(undefined); } },
+            );
+          }}
+        >
+          <h2 className="font-semibold">{t("new")}</h2>
+          <div className="grid gap-2 md:grid-cols-2">
+            <label className="space-y-1">
+              <span>{t("type")}</span>
+              <select className={input} value={type} onChange={(e) => setType(e.target.value as typeof type)}>
+                {(["initial", "supplementary", "final"] as const).map((x) => <option key={x} value={x}>{t(`type_${x}`)}</option>)}
+              </select>
+            </label>
+            <label className="space-y-1">
+              <span>{t("submittedAt")}</span>
+              <input type="datetime-local" className={input} required value={submittedAt} onChange={(e) => setSubmittedAt(e.target.value)} />
+            </label>
+            <label className="space-y-1 md:col-span-2">
+              <span>{t("document")}</span>
+              {documents.length === 0 ? (
+                <p className="text-amber-700">{t("documentEmpty")}</p>
+              ) : (
+                <select className={input} required value={docId} onChange={(e) => { setDocId(e.target.value); setVersionId(""); }}>
+                  <option value="">{t("documentNone")}</option>
+                  {documents.map((d) => <option key={d.id} value={d.id}>{d.title}</option>)}
+                </select>
+              )}
+              <Link className="text-xs text-sky-700 underline" href="/documents">{t("createDocument")}</Link>
+            </label>
+            {docId && published.length > 1 && (
+              <label className="space-y-1">
+                <span>{t("version")}</span>
+                <select className={input} value={version} onChange={(e) => setVersionId(e.target.value)}>
+                  {published.map((v) => <option key={v.id} value={v.id}>{`v${v.version}`}</option>)}
+                </select>
+              </label>
+            )}
+            <label className="space-y-1">
+              <span>{t("submissionRef")}</span>
+              <input className={input} maxLength={60} value={ref} onChange={(e) => setRef(e.target.value)} />
+            </label>
+            <label className="space-y-1 md:col-span-2">
+              <span>{t("lateReason")}</span>
+              <textarea className={input} rows={2} maxLength={4000} value={lateReason} onChange={(e) => setLateReason(e.target.value)} placeholder={t("lateReasonHint")} />
+            </label>
+            <div className="space-y-1 md:col-span-2">
+              <span>{t("evidence")}</span>
+              <FileUploader onUploaded={(f) => setFileId(f.id)} />
+            </div>
+          </div>
+          {m.record.isError && <p className="text-red-700" role="alert">{t("error")}: {problemText(m.record.error)}</p>}
+          <Button type="submit" disabled={m.record.isPending || !docId || !version || !evidenceClean} data-testid="pdpc-record">{t("record")}</Button>
+        </form>
+      )}
+      {list.data?.length === 0 && <p className="text-slate-500">{t("empty")}</p>}
+      <ul className="space-y-2">
+        {list.data?.map((n) => (
+          <li key={n.id} className="space-y-1 rounded-md border border-slate-200 bg-white p-3" data-testid="pdpc-round">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold">{t("sequence", { no: n.sequence_no })}</span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{t(`type_${n.notification_type}`)}</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs ${n.is_late ? "bg-amber-100 text-amber-900" : "bg-emerald-50 text-emerald-800"}`}>
+                {n.is_late ? t("late") : t("onTime")}
+              </span>
+              {n.approved_by ? (
+                <span className="text-xs text-slate-500">{t("confirmedBy", { name: n.approved_by_name ?? "" })}</span>
+              ) : (
+                <span className="rounded-full bg-rose-50 px-2 py-0.5 text-xs text-rose-800">{t("unconfirmed")}</span>
+              )}
+            </div>
+            <p className="text-xs text-slate-500">{t("recordedBy", { name: n.created_by_name ?? "" })} · {when(n.submitted_at)}{n.submission_ref ? ` · ${n.submission_ref}` : ""}</p>
+            {n.late_reason && <p className="text-slate-700">{n.late_reason}</p>}
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              {n.evidence_file_id && <a className="text-sky-700 underline" href={fileDownloadHref("/api/bff", n.evidence_file_id)}>{t("downloadEvidence")}</a>}
+              {!n.approved_by && canConfirm && (
+                <Button variant="secondary" onClick={() => m.confirm.mutate(n)} disabled={m.confirm.isPending} data-testid="pdpc-confirm">{t("confirm")}</Button>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+      {m.confirm.isError && <p className="text-red-700" role="alert">{t("error")}: {problemText(m.confirm.error)}</p>}
+    </section>
   );
 }

@@ -21,6 +21,7 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/crypto"
+	docsservice "pdpa-platform/internal/platform/docs"
 	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/forms"
@@ -48,19 +49,21 @@ const (
 )
 
 var (
-	ErrNotFound          = errors.New("breach: not found")
-	ErrForbidden         = errors.New("breach: forbidden")
-	ErrVersionMismatch   = errors.New("breach: version mismatch")
-	ErrInvalidTransition = errors.New("breach: invalid transition")
-	ErrInvalidRequest    = errors.New("breach: invalid request")
-	ErrClosed            = errors.New("breach: incident is closed")
-	ErrNoAssessment      = errors.New("breach: no risk assessment")
-	ErrDecisionTooWeak   = errors.New("breach: decision is weaker than the assessed risk requires")
-	ErrPDPCNoticeMissing = errors.New("breach: the PDPC notice has not been recorded")
-	ErrNoticeNotRequired = errors.New("breach: data subjects are not to be notified for this incident")
-	ErrSelfApproval      = errors.New("breach: the maker of a notice can't approve it")
-	ErrBadForm           = errors.New("breach: form is not a published breach assessment with none/low/high bands")
-	ErrFileNotUsable     = errors.New("breach: file not usable")
+	ErrNotFound             = errors.New("breach: not found")
+	ErrForbidden            = errors.New("breach: forbidden")
+	ErrVersionMismatch      = errors.New("breach: version mismatch")
+	ErrInvalidTransition    = errors.New("breach: invalid transition")
+	ErrInvalidRequest       = errors.New("breach: invalid request")
+	ErrClosed               = errors.New("breach: incident is closed")
+	ErrNoAssessment         = errors.New("breach: no risk assessment")
+	ErrDecisionTooWeak      = errors.New("breach: decision is weaker than the assessed risk requires")
+	ErrPDPCNoticeMissing    = errors.New("breach: the PDPC notice has not been recorded")
+	ErrSubjectNoticeMissing = errors.New("breach: the decision includes the data subjects, but their notice has not finished sending")
+	ErrNoticeNotRequired    = errors.New("breach: data subjects are not to be notified for this incident")
+	ErrSelfApproval         = errors.New("breach: the maker of a notice can't approve it")
+	ErrBadForm              = errors.New("breach: form is not a published breach assessment with none/low/high bands")
+	ErrFileNotUsable        = errors.New("breach: file not usable")
+	ErrBadDocument          = errors.New("breach: not a published PDPC notification form")
 )
 
 // FieldError is one problem of a request, by field or CSV line (codes the UI localizes).
@@ -88,12 +91,20 @@ type Files interface {
 	AttachSystem(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error
 }
 
+// Docs is what the breach module reads from the document composer (PLT-16, BRE-09): confirming that a document
+// version cited on a PDPC filing round is a published pdpc_form document, visible under RLS.
+type Docs interface {
+	Get(ctx context.Context, id uuid.UUID) (docsservice.Document, error)
+	PublishedVersionOf(ctx context.Context, versionID uuid.UUID) (docsservice.PublishedVersion, uuid.UUID, error)
+}
+
 // Service runs the breach module for the tenant of the transaction in ctx.
 type Service struct {
 	Events  *events.Publisher
 	Notify  *notify.Service
 	Forms   *forms.Service
 	Files   Files
+	Docs    Docs
 	Keyring *crypto.Keyring
 	Audit   *audit.Service
 	Org     Org

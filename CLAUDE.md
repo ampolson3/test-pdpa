@@ -370,7 +370,7 @@ for customer sites, `/api/v1` + webhooks (CON-16 needs ORG-16/PLT-15), self-serv
 (CON-11), region pinning. Known gap: the `/public/v1` validator accepts only `th`/`en` in Accept-Language, so a
 browser calling the API directly (future SDK) would get 400 — the portal sends the locale itself.
 
-### BRE breach (`docs/modules/BRE.md`) — BRE-02/05/06/07/10/12/13 done; BRE-08/09 wait on Q-23
+### BRE breach (`docs/modules/BRE.md`) — BRE-02/05/06/07/08/09/10/12/13 done
 `internal/breach/{store,service,http}` (+ `breachtest` fixture). Incidents `BR-YYYY-NNNN` with an owner (migration 00036)
 move on ST-03 through `Transition` / `Decide` only; closing needs `breach.incident.approve` + a reason. The 72-hour clock
 is pure functions in `service/deadlines.go` (`PDPCDue`, `Checkpoints`, `ToSchedule`, `ClockAt`, `LateReasonRequired`) —
@@ -381,13 +381,31 @@ Risk assessment = a published PLT-06 form of the new type `breach` whose bands a
 what the risk requires. Timeline rows are append-only tokens (`status:a:b`, `deadline:66`, …) the UI localizes, plus any
 human reason. Evidence = the caller's clean upload + SHA-256. Data-subject notices: CSV → encrypted recipients (batch
 INSERT with `unnest` — **COPY is refused on RLS tables**), maker-checker send, 1000-per-job hand-off to PLT-04, per-person
-delivery via new `notify.Service.Statuses`; the `breach.subject_notice` template is a marked DRAFT (rule 8). Recording the
-PDPC notice needs `pdpc_notifications.document_version_id` (PLT-16) — until decided (decisions Q-23) notifying →
-remediating is 409 `breach.pdpc_notice_missing`. New `iamservice.UsersWithRole`. Tests: deadline unit tests, service
-acceptance (register + alerts, reminders/escalation with an injected clock, assessment/decision/timeline, 10,000
-notices tracked per person, evidence/search/access, two-tenant isolation), HTTP contract, Chromium E2E of BP-07 (20/20).
-UI `/incidents`, `/incidents/{id}`. Local stack note: `.env` points S3 at MinIO :9000 and SMTP at :1025; with the
-Homebrew-style local services use S3 127.0.0.1:8333 (bucket pdpa-files-test), clamd :3310 and an empty SMTP_ADDR.
+delivery via new `notify.Service.Statuses`; the `breach.subject_notice` template is a marked DRAFT (rule 8). New
+`iamservice.UsersWithRole`. Tests: deadline unit tests, service acceptance (register + alerts, reminders/escalation
+with an injected clock, assessment/decision/timeline, 10,000 notices tracked per person, evidence/search/access,
+two-tenant isolation), HTTP contract, Chromium E2E of BP-07 (20/20). UI `/incidents`, `/incidents/{id}`. Local
+stack note: `.env` points S3 at MinIO :9000 and SMTP at :1025; with the Homebrew-style local services use S3
+127.0.0.1:8333 (bucket pdpa-files-test), clamd :3310 and an empty SMTP_ADDR.
+
+**BRE-08/09** (`internal/breach/service/pdpc.go`, once PLT-16 existed, decisions Q-23 resolved): `breach.pdpc_notifications`
+rows are filing rounds (initial/supplementary/final, sequence per incident) citing a *published* `pdpc_form`
+document version — checked through `docs.Service` (`Docs` interface, rule 9: breach never reads PLT-16's store
+directly), which also proves the version is visible under RLS (rule 1). `submitted_at` is when the person actually
+filed with the PDPC through its own channel (may be in the past, never future); `LateReasonRequired` (already
+written for BRE-07) makes `late_reason` mandatory once that's past the 72-hour window — the 15-day outer limit
+stays an open question (decisions Q-07) so it's flagged, not hard-rejected. A second person confirms the round
+(`breach.notification.approve`, maker-checker like subject notices, `ErrSelfApproval`); `notifying → remediating`
+now checks the real guard from `docs/states/ST-03.md` instead of always refusing: a confirmed round, and — when
+the decision includes the data subjects — their notice must have finished sending too (`ErrSubjectNoticeMissing`,
+checked directly against `breach.subject_notifications`, not through its own read permission — an internal
+precondition, not a report). `wiring.Breach` takes the document composer now (`nil` in the worker: BRE-09 recording
+is admin-only). UI: an "แจ้ง สคส." tab on the incident page — pick a published `pdpc_form` document (with a
+shortcut to the document composer to create one), record the round, evidence upload, and confirm. Tests: service
+acceptance (recorded → still blocked until confirmed → unblocks; late without a reason refused; the data-subject
+guard), HTTP contract, Chromium E2E driving the whole chain including a real second-DPO confirmation (14/14). Found
+by the E2E: `usePublishedDocumentVersions` had no `enabled` guard, so mounting the picker before a document was
+chosen fired a request with an empty id (400) on every page load — fixed.
 
 ### PLT-16 Document composer (`docs/modules/PLT.md#plt-16`) — done
 `internal/platform/docs` (+ `render/`, `http/`, `docstest/`) and `apps/admin` `/documents*`, chosen ahead of BRE-08/09

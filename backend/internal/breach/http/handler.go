@@ -288,6 +288,86 @@ func (h *Strict) BreachAddEvidence(ctx context.Context, req BreachAddEvidenceReq
 	return BreachAddEvidence201JSONResponse(w), nil
 }
 
+// ---- PDPC filing rounds (BRE-08/09) ----
+
+func pdpcMap(n breach.PDPCNotification) map[string]any {
+	m := map[string]any{"id": n.ID, "incident_id": n.IncidentID, "sequence_no": n.SequenceNo, "notification_type": n.NotificationType,
+		"document_version_id": n.DocumentVersionID, "submitted_at": n.SubmittedAt.UTC(), "is_late": n.IsLate, "row_version": n.RowVersion,
+		"created_at": n.CreatedAt.UTC()}
+	if n.SubmissionRef != "" {
+		m["submission_ref"] = n.SubmissionRef
+	}
+	if n.LateReason != "" {
+		m["late_reason"] = n.LateReason
+	}
+	if n.EvidenceFileID != nil {
+		m["evidence_file_id"] = n.EvidenceFileID
+	}
+	if n.CreatedBy != nil {
+		m["created_by"], m["created_by_name"] = n.CreatedBy, n.CreatedByName
+	}
+	if n.ApprovedBy != nil {
+		m["approved_by"], m["approved_by_name"] = n.ApprovedBy, n.ApprovedByName
+	}
+	return m
+}
+
+func (h *Strict) BreachListPDPCNotifications(ctx context.Context, req BreachListPDPCNotificationsRequestObject) (BreachListPDPCNotificationsResponseObject, error) {
+	list, err := h.svc.ListPDPCNotifications(ctx, req.Id)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	out := BreachListPDPCNotifications200JSONResponse{Data: make([]BreachPDPCNotification, 0, len(list))}
+	for _, n := range list {
+		var w BreachPDPCNotification
+		if err := convert(pdpcMap(n), &w); err != nil {
+			return nil, err
+		}
+		out.Data = append(out.Data, w)
+	}
+	return out, nil
+}
+
+func (h *Strict) BreachRecordPDPCNotification(ctx context.Context, req BreachRecordPDPCNotificationRequestObject) (BreachRecordPDPCNotificationResponseObject, error) {
+	b := req.Body
+	var evidence *uuid.UUID
+	if b.EvidenceFileId != nil {
+		evidence = b.EvidenceFileId
+	}
+	ref, late := "", ""
+	if b.SubmissionRef != nil {
+		ref = *b.SubmissionRef
+	}
+	if b.LateReason != nil {
+		late = *b.LateReason
+	}
+	n, err := h.svc.CreatePDPCNotification(ctx, req.Id, string(b.NotificationType), b.DocumentVersionId, b.SubmittedAt, ref, evidence, late)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	var w BreachPDPCNotification
+	if err := convert(pdpcMap(n), &w); err != nil {
+		return nil, err
+	}
+	return BreachRecordPDPCNotification201JSONResponse{Body: w, Headers: BreachRecordPDPCNotification201ResponseHeaders{ETag: etag(n.RowVersion)}}, nil
+}
+
+func (h *Strict) BreachConfirmPDPCNotification(ctx context.Context, req BreachConfirmPDPCNotificationRequestObject) (BreachConfirmPDPCNotificationResponseObject, error) {
+	v, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	n, err := h.svc.ConfirmPDPCNotification(ctx, req.Id, v)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	var w BreachPDPCNotification
+	if err := convert(pdpcMap(n), &w); err != nil {
+		return nil, err
+	}
+	return BreachConfirmPDPCNotification200JSONResponse{Body: w, Headers: BreachConfirmPDPCNotification200ResponseHeaders{ETag: etag(n.RowVersion)}}, nil
+}
+
 // ---- notices ----
 
 func noticeVars(v BreachNoticeVars) breach.NoticeVars {
@@ -519,6 +599,10 @@ func ToProblem(err error) error {
 		return httpx.Problem{Status: http.StatusConflict, Code: "breach.no_assessment", Title: "Assess the risk first"}
 	case errors.Is(err, breach.ErrPDPCNoticeMissing):
 		return httpx.Problem{Status: http.StatusConflict, Code: "breach.pdpc_notice_missing", Title: "The PDPC notice has not been recorded"}
+	case errors.Is(err, breach.ErrSubjectNoticeMissing):
+		return httpx.Problem{Status: http.StatusConflict, Code: "breach.subject_notice_missing", Title: "The data subject notice has not finished sending"}
+	case errors.Is(err, breach.ErrBadDocument):
+		return httpx.UnprocessableEntity("breach.bad_document", "Not a published PDPC notification form")
 	case errors.Is(err, breach.ErrNoticeNotRequired):
 		return httpx.Problem{Status: http.StatusConflict, Code: "breach.notice_not_required", Title: "Data subjects are not to be notified"}
 	case errors.Is(err, breach.ErrDecisionTooWeak):

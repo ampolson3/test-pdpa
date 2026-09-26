@@ -24,3 +24,6 @@ output-options:
     - breachListRecipients
     - breachLoadRecipients
     - breachSendNotice
+    - breachListPDPCNotifications
+    - breachRecordPDPCNotification
+    - breachConfirmPDPCNotification

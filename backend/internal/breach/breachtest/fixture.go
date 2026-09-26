@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"net"
+	"slices"
 	"os"
 	"testing"
 	"time"
@@ -23,11 +24,14 @@ import (
 	"pdpa-platform/internal/pkg/dbtest"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/crypto"
+	"pdpa-platform/internal/platform/docs"
+	"pdpa-platform/internal/platform/docs/render"
 	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/forms"
 	"pdpa-platform/internal/platform/jobs"
 	"pdpa-platform/internal/platform/notify"
+	"pdpa-platform/internal/platform/versioning"
 	"pdpa-platform/internal/wiring"
 )
 
@@ -48,6 +52,8 @@ type Fixture struct {
 	Svc              *breach.Service
 	Files            *files.Service
 	Forms            *forms.Service
+	Docs             *docs.Service
+	Versioning       *versioning.Service
 	Notify           *notify.Service
 	scan             *files.Scanner
 	store            *files.S3Store
@@ -125,7 +131,10 @@ func Setup(t *testing.T) *Fixture {
 	f.Files = &files.Service{Store: store, River: client, Config: files.DefaultConfig()}
 	f.scan = &files.Scanner{Store: store, AV: &files.Clamd{Addr: clamd}, Audit: audit.New()}
 	f.Forms = wiring.Forms(f.Notify, audit.New())
-	f.Svc = &breach.Service{Events: &events.Publisher{River: client}, Notify: f.Notify, Forms: f.Forms, Files: f.Files, Keyring: keyring,
+	f.Versioning = wiring.Versioning(f.Notify, audit.New())
+	f.Docs = wiring.Docs(f.Versioning, f.Files, client, audit.New(), render.PDFRenderer(nil))
+	f.Docs.RegisterVersioning()
+	f.Svc = &breach.Service{Events: &events.Publisher{River: client}, Notify: f.Notify, Forms: f.Forms, Files: f.Files, Docs: f.Docs, Keyring: keyring,
 		Audit: audit.New(), Org: &orgservice.Service{}, River: client, Now: func() time.Time { return f.Clock }}
 	t.Cleanup(func() { f.cleanup(t) })
 	return f
@@ -150,9 +159,11 @@ func (f *Fixture) cleanup(t *testing.T) {
 		})
 		_ = pdb.WithTenantTx(context.Background(), f.Owner, tn.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
-			for _, q := range []string{`DELETE FROM breach.notification_recipients`, `DELETE FROM breach.subject_notifications`, `DELETE FROM breach.evidence`,
-				`DELETE FROM breach.assessments`, `DELETE FROM breach.timeline_events`, `DELETE FROM breach.incidents`, `DELETE FROM platform.form_submissions`,
-				`UPDATE platform.form_definitions SET current_version_id = NULL`, `DELETE FROM platform.form_versions`, `DELETE FROM platform.form_definitions`,
+			for _, q := range []string{`DELETE FROM breach.pdpc_notifications`, `DELETE FROM breach.notification_recipients`, `DELETE FROM breach.subject_notifications`,
+				`DELETE FROM breach.evidence`, `DELETE FROM breach.assessments`, `DELETE FROM breach.timeline_events`, `DELETE FROM breach.incidents`,
+				`DELETE FROM platform.form_submissions`, `UPDATE platform.form_definitions SET current_version_id = NULL`, `DELETE FROM platform.form_versions`,
+				`DELETE FROM platform.form_definitions`, `UPDATE platform.documents SET current_version_id = NULL`, `DELETE FROM platform.document_versions`,
+				`DELETE FROM platform.documents`, `DELETE FROM platform.approvals`, `DELETE FROM platform.record_versions`,
 				`DELETE FROM platform.files`, `DELETE FROM platform.notifications`, `DELETE FROM platform.outbox_events`, `DELETE FROM platform.audit_log`,
 				`DELETE FROM platform.tenant_keys`, `DELETE FROM iam.role_assignments`, `DELETE FROM org.legal_entities`} {
 				if _, err := tx.Exec(ctx, q); err != nil {
@@ -176,12 +187,25 @@ func (f *Fixture) As(t *testing.T, user uuid.UUID, perms []string, fn func(ctx c
 
 // Try is As returning the error.
 func (f *Fixture) Try(user uuid.UUID, perms []string, fn func(ctx context.Context) error) error {
+	return f.TryRole(user, nil, perms, fn)
+}
+
+// AsRole is As with the caller's roles too (needed for PLT-08 approval: the versioning service checks role
+// membership, not just permissions).
+func (f *Fixture) AsRole(t *testing.T, user uuid.UUID, roles, perms []string, fn func(ctx context.Context) error) {
+	t.Helper()
+	if err := f.TryRole(user, roles, perms, fn); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func (f *Fixture) TryRole(user uuid.UUID, roles, perms []string, fn func(ctx context.Context) error) error {
 	tenant := f.A
 	if user == f.B.UserID {
 		tenant = f.B
 	}
 	return pdb.WithTenantTx(context.Background(), f.App, tenant.ID.String(), user.String(), func(ctx context.Context) error {
-		return fn(authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: user.String(), Permissions: perms}))
+		return fn(authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: user.String(), Roles: roles, Permissions: perms}))
 	})
 }
 
@@ -210,6 +234,62 @@ func (f *Fixture) Upload(t *testing.T, user uuid.UUID, name string, content []by
 }
 
 func score(v float64) *float64 { return &v }
+
+// PDPCForm publishes a pdpc_form document (BRE-09): a maker (breach.notification.create) drafts it, a second DPO
+// approves and publishes it (PLT-08 maker-checker), and returns its published document_version_id, ready to cite
+// on a PDPCNotification filing round.
+func (f *Fixture) PDPCForm(t *testing.T, title string) uuid.UUID {
+	t.Helper()
+	var doc docs.Document
+	f.AsRole(t, f.DPO, []string{"DPO"}, DPO, func(ctx context.Context) error {
+		var err error
+		if doc, err = f.Docs.Create(ctx, docs.CreateInput{DocType: "pdpc_form", Title: title, LegalEntityID: &f.EntityA}); err != nil {
+			return err
+		}
+		doc, err = f.Docs.SaveDraft(ctx, doc.ID, doc.RowVersion, docs.Draft{Title: title,
+			Content: render.Content{"th": render.Node{Type: "doc", Content: []render.Node{
+				{Type: "heading", Attrs: map[string]any{"level": 1}, Content: []render.Node{{Type: "text", Text: "แบบแจ้งเหตุละเมิดข้อมูลส่วนบุคคล"}}},
+				{Type: "paragraph", Content: []render.Node{{Type: "text", Text: "รายละเอียดเหตุละเมิดและมาตรการเยียวยา"}}},
+			}}}})
+		return err
+	})
+	var v versioning.Version
+	f.AsRole(t, f.DPO, []string{"DPO"}, DPO, func(ctx context.Context) error {
+		vs, err := f.Versioning.List(ctx, docs.EntityType("pdpc_form"), doc.ID)
+		if err != nil {
+			return err
+		}
+		v, err = f.Versioning.Submit(ctx, vs[0].ID, vs[0].RowVersion)
+		return err
+	})
+	f.AsRole(t, f.DPO2, []string{"DPO"}, DPO, func(ctx context.Context) error {
+		inbox, err := f.Versioning.Inbox(ctx)
+		if err != nil {
+			return err
+		}
+		i := slices.IndexFunc(inbox, func(it versioning.InboxItem) bool { return it.VersionID == v.ID })
+		if i < 0 {
+			t.Fatalf("not in the DPO's inbox: %+v", inbox)
+		}
+		v, err = f.Versioning.Decide(ctx, inbox[i].ID, inbox[i].RowVersion, "approved", "")
+		return err
+	})
+	f.AsRole(t, f.DPO2, []string{"DPO"}, DPO, func(ctx context.Context) error {
+		var err error
+		v, err = f.Versioning.Publish(ctx, v.ID, v.RowVersion)
+		return err
+	})
+	var out uuid.UUID
+	f.AsRole(t, f.DPO, []string{"DPO"}, DPO, func(ctx context.Context) error {
+		d, err := f.Docs.Get(ctx, doc.ID)
+		if err != nil {
+			return err
+		}
+		out = *d.CurrentVersionID
+		return nil
+	})
+	return out
+}
 
 // AssessmentForm publishes a breach assessment form (as the DPO): data sensitivity, volume, encryption — bands
 // none (< 3), low (3–7), high (8+).

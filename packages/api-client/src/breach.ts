@@ -10,6 +10,7 @@ export type BreachEvidence = components["schemas"]["BreachEvidence"];
 export type BreachNotice = components["schemas"]["BreachNotice"];
 export type BreachNoticeVars = components["schemas"]["BreachNoticeVars"];
 export type BreachRecipient = components["schemas"]["BreachRecipient"];
+export type BreachPDPCNotification = components["schemas"]["BreachPDPCNotification"];
 export type BreachFilter = { status?: BreachIncident["status"]; risk?: "none" | "low" | "high"; q?: string; open_only?: boolean };
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
@@ -215,6 +216,50 @@ export function useNoticeMutations(client: ApiClient, incidentId: string) {
         const { data, error } = await client.POST("/admin/v1/breach/notices/{id}/send", {
           params: { path: { id: notice.id }, header: ifMatch(notice.row_version) },
         });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+  };
+}
+
+/** PDPC filing rounds of an incident (BRE-08/09), oldest first. */
+export function useIncidentPDPCNotifications(client: ApiClient, id: string, enabled = true) {
+  return useQuery({
+    queryKey: [...incidentKey(id), "pdpc"],
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/breach/incidents/{id}/pdpc-notifications", { params: { path: { id } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** Record a filing round (maker) and confirm one (a second person, maker-checker). */
+export function usePDPCNotificationMutations(client: ApiClient, incidentId: string) {
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: incidentKey(incidentId) });
+  return {
+    record: useMutation({
+      mutationFn: async (v: {
+        notification_type: "initial" | "supplementary" | "final";
+        document_version_id: string;
+        submitted_at: string;
+        submission_ref?: string;
+        evidence_file_id?: string;
+        late_reason?: string;
+      }) => {
+        const { data, error } = await client.POST("/admin/v1/breach/incidents/{id}/pdpc-notifications", { params: { path: { id: incidentId } }, body: v });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    confirm: useMutation({
+      mutationFn: async (n: BreachPDPCNotification) => {
+        const { data, error } = await client.POST("/admin/v1/breach/pdpc-notifications/{id}/confirm", { params: { path: { id: n.id }, header: ifMatch(n.row_version) } });
         if (error) throw error;
         return data;
       },

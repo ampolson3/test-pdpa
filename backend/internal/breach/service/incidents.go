@@ -457,7 +457,9 @@ func samePtr(a, b *uuid.UUID) bool {
 // optionally assigning an owner), confirm it (triage → assessing), close a non-breach (triage → closed) or a finished
 // one (remediating → closed) with a reason — closing needs breach.incident.approve —, or reopen the assessment on new
 // facts (remediating → assessing, with a reason). assessing → notifying / remediating is the notification decision
-// (Decide); notifying → remediating needs the recorded PDPC notice (BRE-09, not built yet).
+// (Decide); notifying → remediating needs a confirmed PDPC filing round (BRE-09) and, when the decision includes
+// the data subjects, a finished subject notice too (ST-03: "ออกจาก notifying ต้องมี pdpc_notifications (และ
+// subject_notifications ถ้า decision รวมเจ้าของข้อมูล)").
 func (s *Service) Transition(ctx context.Context, id uuid.UUID, version int32, to, reason string, owner *uuid.UUID) (Incident, error) {
 	if !has(ctx, PermUpdate) {
 		return Incident{}, ErrForbidden
@@ -478,7 +480,9 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, version int32, t
 	case cur.Status == StatusAssessing:
 		return Incident{}, ErrInvalidTransition // through Decide
 	case cur.Status == StatusNotifying && to == StatusRemediating:
-		return Incident{}, ErrPDPCNoticeMissing
+		if err := s.checkNotifyingExit(ctx, cur); err != nil {
+			return Incident{}, err
+		}
 	case to == StatusClosed && !has(ctx, PermApprove):
 		return Incident{}, ErrForbidden
 	case (to == StatusClosed || (cur.Status == StatusRemediating && to == StatusAssessing)) && reason == "":
@@ -521,6 +525,31 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, version int32, t
 		return Incident{}, err
 	}
 	return s.Get(ctx, id)
+}
+
+// checkNotifyingExit is ST-03's guard for leaving "notifying" (queried directly, not through the notices' own
+// read permission — this is an internal precondition, not a report the caller asked to see).
+func (s *Service) checkNotifyingExit(ctx context.Context, cur Incident) error {
+	ok, err := s.pdpcRecorded(ctx, cur.ID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrPDPCNoticeMissing
+	}
+	if cur.Decision != DecisionPDPCAndSubjects {
+		return nil
+	}
+	rows, err := breachstore.New(pdb.MustTxFromContext(ctx)).ListSubjectNotifications(ctx, cur.ID)
+	if err != nil {
+		return err
+	}
+	for _, r := range rows {
+		if r.Status == "done" {
+			return nil
+		}
+	}
+	return ErrSubjectNoticeMissing
 }
 
 // TimelineItem is one entry of an incident's timeline. Automatic entries carry a token (e.g. "status:triage:assessing",

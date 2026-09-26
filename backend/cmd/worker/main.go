@@ -94,7 +94,7 @@ func run() error {
 
 	notifySvc := &notify.Service{Keyring: &crypto.Keyring{KEK: kek}, River: inserter, Quiet: notify.DefaultQuietHours()}
 	river.AddWorker(workers, &workflow.Ticker{Service: wiring.Workflow(notifySvc, inserter, auditservice.New())})
-	breachSvc := wiring.Breach(notifySvc, fileStore(store, inserter), inserter, auditservice.New(), notifySvc.Keyring)
+	breachSvc := wiring.Breach(notifySvc, fileStore(store, inserter), inserter, auditservice.New(), notifySvc.Keyring, nil) // BRE-09 recording is admin-only
 	river.AddWorker(workers, &breach.TimerWorker{Service: breachSvc})
 	river.AddWorker(workers, &breach.NoticeWorker{Service: breachSvc})
 	// PLT-16: PDF / Word of published documents (Gotenberg via GOTENBERG_URL, or a local Chromium via CHROMIUM_PATH).

@@ -300,6 +300,8 @@
 
 **Acceptance criteria:** แบบแจ้งที่ล่าช้าส่งไม่ได้ถ้าไม่มีเหตุผล
 
+**Implementation (BRE-08):** `LateReasonRequired(awareAt, submittedAt)` (`service/deadlines.go`, เขียนไว้ตั้งแต่ BRE-07) — ยื่นเกิน 72 ชม. นับแต่ทราบเหตุ ต้องกรอก `late_reason` มิฉะนั้น 422 `breach.invalid` (`late_reason: required`) · `is_late` คำนวณจากค่านี้ เก็บคู่กับ `late_reason` ในแต่ละรอบการแจ้ง (`breach.pdpc_notifications`, ดู BRE-09) · กรอบ 15 วันยังไม่บังคับเป็น hard limit (การตีความยังรอฝ่ายกฎหมาย — decisions Q-07); ตอนนี้เป็นแค่ธง `is_late` ให้ผู้ใช้เห็น
+
 <a id="bre-09"></a>
 ### BRE-09 แบบแจ้ง สคส. และแจ้งเพิ่มเติมเป็นระยะ
 
@@ -322,6 +324,8 @@
 **Acceptance criteria:** แบบแจ้งมีหัวข้อครบตามประกาศและเก็บหลักฐานการยื่นทุกรอบ
 
 **หมายเหตุ:** ระบบเตรียมเอกสาร ผู้ใช้ยื่นผ่านช่องทางของ สคส.
+
+**Implementation (BRE-09):** `internal/breach/service/pdpc.go` — เอกสารแบบแจ้ง (ครบหัวข้อตามประกาศ) สร้างผ่านตัวสร้างเอกสาร PLT-16 เองในฐานะเอกสารประเภท `pdpc_form` (permission `breach.notification.*`, อนุมัติโดย DPO ผ่าน PLT-08) · `breach.pdpc_notifications` แต่ละแถวคือหนึ่งรอบการยื่น (`sequence_no` ต่อเหตุ, `notification_type` = `initial` / `supplementary` / `final`) อ้างอิง `document_version_id` ของเวอร์ชันที่**เผยแพร่แล้ว**เท่านั้น (ตรวจผ่าน `docs.Service` ซึ่งพิสูจน์ด้วยว่าแถวนั้นมองเห็นได้ภายใต้ RLS, rule 1) · เก็บ `submitted_at` (เวลาที่ยื่นจริงผ่านช่องทางของ สคส., ห้ามเป็นอนาคต), `submission_ref` (เลขที่รับจาก สคส.), `evidence_file_id` (ไฟล์หลักฐานการยื่น, ไม่บังคับ), `is_late` / `late_reason` (BRE-08) · ต้องมีคนที่สองยืนยัน (`breach.notification.approve`, maker-checker แบบเดียวกับการแจ้งเจ้าของข้อมูล — ผู้บันทึกยืนยันเองไม่ได้) ก่อนจะนับเป็นการแจ้งที่สมบูรณ์ · ออกจาก `notifying` (ST-03) ต้องมีรอบที่ยืนยันแล้วอย่างน้อยหนึ่งรอบ **และ** ถ้าการตัดสินใจรวมเจ้าของข้อมูลด้วย ต้องมีการแจ้งเจ้าของข้อมูลที่ส่งเสร็จแล้วด้วย (`breach.subject_notice_missing`) · API `/incidents/{id}/pdpc-notifications`, `/pdpc-notifications/{id}/confirm` · หน้าจอ: แท็บ "แจ้ง สคส." ในหน้าเหตุละเมิด — เลือกเอกสารที่เผยแพร่แล้ว (มีทางลัดไปสร้างใหม่ที่ตัวสร้างเอกสาร) บันทึกรอบ อัปโหลดหลักฐาน และยืนยัน
 
 <a id="bre-10"></a>
 ### BRE-10 แจ้งเจ้าของข้อมูลเมื่อความเสี่ยงสูง
