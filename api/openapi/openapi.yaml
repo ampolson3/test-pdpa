@@ -4958,6 +4958,888 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/documents/types:
+    get:
+      operationId: platformListDocumentTypes
+      tags:
+      - platform
+      summary: Document types the caller can read, what else they may do with each, and the merge fields (PLT-16)
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentTypesInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /admin/v1/platform/documents:
+    get:
+      operationId: platformListDocuments
+      tags:
+      - platform
+      summary: Documents of the types the caller can read, most recently changed first
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: doc_type
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - notice
+          - policy
+          - dpa
+          - dsa
+          - dsar_letter
+          - pdpc_form
+          - breach_letter
+          - report
+          - other
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+        description: Title contains
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DocumentSummary'
+                  next_cursor:
+                    type:
+                    - string
+                    - 'null'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: platformCreateDocument
+      tags:
+      - platform
+      summary: Start a document, empty or from a published template (the type’s create permission)
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - doc_type
+              - title
+              additionalProperties: false
+              properties:
+                doc_type:
+                  type: string
+                  enum:
+                  - notice
+                  - policy
+                  - dpa
+                  - dsa
+                  - dsar_letter
+                  - pdpc_form
+                  - breach_letter
+                  - report
+                  - other
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                legal_entity_id:
+                  $ref: '#/components/schemas/Uuid'
+                template_id:
+                  $ref: '#/components/schemas/Uuid'
+      responses:
+        '201':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/documents/{id}:
+    get:
+      operationId: platformGetDocument
+      tags:
+      - platform
+      summary: A document with its newest version’s content and what it still lacks to be published
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/documents/{id}/draft:
+    put:
+      operationId: platformSaveDocumentDraft
+      tags:
+      - platform
+      summary: Save the draft (If-Match on the document); after a published version this starts the next one
+      description: Submitting, approving and publishing the draft go through the PLT-08 version endpoints (record type document_<doc_type>).
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentDraft'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/documents/{id}/published:
+    get:
+      operationId: platformListPublishedDocumentVersions
+      tags:
+      - platform
+      summary: Published versions with their rendered PDF / Word files per language (download through platform files)
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PublishedDocumentVersion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/platform/documents/{id}/export:
+    get:
+      operationId: platformExportDocument
+      tags:
+      - platform
+      summary: 'Render a version (default: the newest) as PDF or Word'
+      description: A version that isn’t published carries a DRAFT banner; a published one is rendered from its frozen content.
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      - name: version_id
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/Uuid'
+        description: A PLT-08 version of the document
+      - name: language
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - th
+          - en
+      - name: format
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - pdf
+          - docx
+      responses:
+        '200':
+          description: The file
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/documents/{id}/compare:
+    get:
+      operationId: platformCompareDocumentVersions
+      tags:
+      - platform
+      summary: Compare two versions of a document block by block, with character-level changes inside edited blocks
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      - name: from
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      - name: to
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      - name: language
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - th
+          - en
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentComparison'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/document-clauses:
+    get:
+      operationId: platformListClauses
+      tags:
+      - platform
+      summary: 'The clause library: the latest version of each clause (document editors see published ones)'
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: category
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 60
+      - name: applies_to
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - notice
+          - policy
+          - dpa
+          - dsa
+          - dsar_letter
+          - pdpc_form
+          - breach_letter
+          - report
+          - other
+      - name: published_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DocumentClause'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: platformCreateClause
+      tags:
+      - platform
+      summary: Add a clause to the library as a draft
+      x-permission: agreement.clause.create
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentClauseInput'
+      responses:
+        '201':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentClause'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/document-clauses/{id}:
+    get:
+      operationId: platformGetClause
+      tags:
+      - platform
+      summary: A clause version with the history of its code
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentClauseDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: platformUpdateClause
+      tags:
+      - platform
+      summary: Edit the draft, or start the next version from the published one (If-Match)
+      x-permission: agreement.clause.update
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentClauseInput'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentClause'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/document-clauses/{id}/publish:
+    post:
+      operationId: platformPublishClause
+      tags:
+      - platform
+      summary: Publish a draft clause version; the previous version is retired (If-Match)
+      x-permission: agreement.clause.publish
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentClause'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/document-clauses/{id}/retire:
+    post:
+      operationId: platformRetireClause
+      tags:
+      - platform
+      summary: Withdraw a published clause from new documents (If-Match)
+      x-permission: agreement.clause.publish
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentClause'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/document-templates:
+    get:
+      operationId: platformListDocumentTemplates
+      tags:
+      - platform
+      summary: Templates of the types the caller can see (creators see published ones)
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: doc_type
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - notice
+          - policy
+          - dpa
+          - dsa
+          - dsar_letter
+          - pdpc_form
+          - breach_letter
+          - report
+          - other
+      - name: published_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DocumentTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: platformCreateDocumentTemplate
+      tags:
+      - platform
+      summary: Add a template as a draft (the type’s template permission)
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - doc_type
+              - code
+              - name
+              - content
+              additionalProperties: false
+              properties:
+                doc_type:
+                  type: string
+                  enum:
+                  - notice
+                  - policy
+                  - dpa
+                  - dsa
+                  - dsar_letter
+                  - pdpc_form
+                  - breach_letter
+                  - report
+                  - other
+                code:
+                  type: string
+                  pattern: ^[a-z][a-z0-9_.-]{1,79}$
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                content:
+                  $ref: '#/components/schemas/DocumentContent'
+      responses:
+        '201':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/document-templates/{id}:
+    get:
+      operationId: platformGetDocumentTemplate
+      tags:
+      - platform
+      summary: A template version
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: platformUpdateDocumentTemplate
+      tags:
+      - platform
+      summary: Edit the draft, or start the next version from the published one (If-Match)
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - name
+              - content
+              additionalProperties: false
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 300
+                content:
+                  $ref: '#/components/schemas/DocumentContent'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/document-templates/{id}/publish:
+    post:
+      operationId: platformPublishDocumentTemplate
+      tags:
+      - platform
+      summary: 'Release a draft template (the type’s publish permission: its wording is legal text)'
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /public/v1/collection-points/{key}:
     get:
       operationId: consentGetPublicCollectionPoint
@@ -7732,6 +8614,511 @@ components:
           $ref: '#/components/schemas/Timestamp'
         error:
           type: string
+    DocumentContent:
+      type: object
+      required:
+      - th
+      additionalProperties: false
+      description: The body per language
+      properties:
+        th:
+          type: object
+          description: A ProseMirror doc node (TipTap JSON); validated by the server
+          additionalProperties: true
+        en:
+          type: object
+          description: A ProseMirror doc node (TipTap JSON); validated by the server
+          additionalProperties: true
+    DocumentTypesInfo:
+      type: object
+      required:
+      - types
+      - fields
+      - can_manage_clauses
+      properties:
+        types:
+          type: array
+          items:
+            type: object
+            required:
+            - doc_type
+            - entity_type
+            - can_create
+            - can_update
+            - can_publish
+            - can_read_templates
+            - can_write_templates
+            properties:
+              doc_type:
+                type: string
+                enum:
+                - notice
+                - policy
+                - dpa
+                - dsa
+                - dsar_letter
+                - pdpc_form
+                - breach_letter
+                - report
+                - other
+              entity_type:
+                type: string
+                description: PLT-08 record type of its documents
+              can_create:
+                type: boolean
+              can_update:
+                type: boolean
+              can_publish:
+                type: boolean
+              can_read_templates:
+                type: boolean
+              can_write_templates:
+                type: boolean
+        fields:
+          type: array
+          items:
+            type: object
+            required:
+            - key
+            - source
+            - label
+            properties:
+              key:
+                type: string
+              source:
+                type: string
+                enum:
+                - org
+                - document
+              label:
+                type: object
+                required:
+                - th
+                - en
+                properties:
+                  th:
+                    type: string
+                  en:
+                    type: string
+        can_manage_clauses:
+          type: boolean
+    DocumentSummary:
+      type: object
+      required:
+      - id
+      - doc_type
+      - title
+      - status
+      - row_version
+      - created_at
+      - updated_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        doc_type:
+          type: string
+          enum:
+          - notice
+          - policy
+          - dpa
+          - dsa
+          - dsar_letter
+          - pdpc_form
+          - breach_letter
+          - report
+          - other
+        title:
+          type: string
+        legal_entity_id:
+          $ref: '#/components/schemas/Uuid'
+        template_id:
+          $ref: '#/components/schemas/Uuid'
+        status:
+          type: string
+          enum:
+          - draft
+          - published
+        current_version_id:
+          $ref: '#/components/schemas/Uuid'
+        row_version:
+          type: integer
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    DocumentDraft:
+      type: object
+      required:
+      - title
+      - content
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        legal_entity_id:
+          $ref: '#/components/schemas/Uuid'
+        content:
+          $ref: '#/components/schemas/DocumentContent'
+        change_summary:
+          type: string
+          maxLength: 2000
+        effective_from:
+          type: string
+          format: date
+    Document:
+      allOf:
+      - $ref: '#/components/schemas/DocumentSummary'
+      - type: object
+        properties:
+          entity_type:
+            type: string
+          latest:
+            type: object
+            required:
+            - id
+            - version
+            - status
+            - row_version
+            properties:
+              id:
+                $ref: '#/components/schemas/Uuid'
+              version:
+                type: integer
+              status:
+                type: string
+                enum:
+                - draft
+                - in_review
+                - approved
+                - published
+                - superseded
+              row_version:
+                type: integer
+          draft:
+            $ref: '#/components/schemas/DocumentDraft'
+          missing:
+            type: object
+            required:
+            - fields
+            - clauses
+            description: What the newest version still lacks to be published
+            properties:
+              fields:
+                type: array
+                items:
+                  type: string
+              clauses:
+                type: array
+                items:
+                  type: string
+    PublishedDocumentVersion:
+      type: object
+      required:
+      - id
+      - version
+      - languages
+      - render_status
+      - files
+      - created_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        version:
+          type: integer
+        languages:
+          type: array
+          items:
+            type: string
+            enum:
+            - th
+            - en
+        render_status:
+          type: string
+          enum:
+          - pending
+          - done
+          - failed
+        files:
+          type: array
+          items:
+            type: object
+            required:
+            - language
+            - format
+            - file_id
+            properties:
+              language:
+                type: string
+                enum:
+                - th
+                - en
+              format:
+                type: string
+                enum:
+                - pdf
+                - docx
+              file_id:
+                $ref: '#/components/schemas/Uuid'
+        change_summary:
+          type: string
+        effective_from:
+          type: string
+          format: date
+        approved_by:
+          $ref: '#/components/schemas/Uuid'
+        approved_at:
+          $ref: '#/components/schemas/Timestamp'
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+    DocumentComparison:
+      type: object
+      required:
+      - from
+      - to
+      - changes
+      - summary
+      properties:
+        from:
+          type: object
+          required:
+          - id
+          - version
+          - status
+          properties:
+            id:
+              $ref: '#/components/schemas/Uuid'
+            version:
+              type: integer
+            status:
+              type: string
+        to:
+          type: object
+          required:
+          - id
+          - version
+          - status
+          properties:
+            id:
+              $ref: '#/components/schemas/Uuid'
+            version:
+              type: integer
+            status:
+              type: string
+        changes:
+          type: array
+          items:
+            type: object
+            required:
+            - op
+            - kind
+            properties:
+              op:
+                type: string
+                enum:
+                - equal
+                - insert
+                - delete
+                - change
+              kind:
+                type: string
+                description: heading1-3, paragraph, clause, rule
+              before:
+                type: string
+              after:
+                type: string
+              segments:
+                type: array
+                items:
+                  type: object
+                  required:
+                  - op
+                  - text
+                  properties:
+                    op:
+                      type: string
+                      enum:
+                      - equal
+                      - insert
+                      - delete
+                    text:
+                      type: string
+        summary:
+          type: object
+          additionalProperties:
+            type: integer
+    DocumentClauseBody:
+      type: object
+      required:
+      - title
+      - doc
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        doc:
+          type: object
+          description: A ProseMirror doc node (TipTap JSON); validated by the server
+          additionalProperties: true
+    DocumentClauseInput:
+      type: object
+      required:
+      - category
+      - body
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          pattern: ^[a-z][a-z0-9_.-]{1,79}$
+          description: Required when creating; ignored when editing
+        category:
+          type: string
+          minLength: 1
+          maxLength: 60
+        body:
+          type: object
+          required:
+          - th
+          additionalProperties: false
+          properties:
+            th:
+              $ref: '#/components/schemas/DocumentClauseBody'
+            en:
+              $ref: '#/components/schemas/DocumentClauseBody'
+        legal_ref:
+          type: string
+          maxLength: 500
+        applies_to:
+          type: array
+          items:
+            type: string
+            enum:
+            - notice
+            - policy
+            - dpa
+            - dsa
+            - dsar_letter
+            - pdpc_form
+            - breach_letter
+            - report
+            - other
+        is_mandatory:
+          type: boolean
+    DocumentClause:
+      type: object
+      required:
+      - id
+      - global
+      - code
+      - category
+      - body
+      - applies_to
+      - is_mandatory
+      - version
+      - status
+      - row_version
+      - updated_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        global:
+          type: boolean
+          description: A platform clause (read-only)
+        code:
+          type: string
+        category:
+          type: string
+        body:
+          type: object
+          required:
+          - th
+          properties:
+            th:
+              $ref: '#/components/schemas/DocumentClauseBody'
+            en:
+              $ref: '#/components/schemas/DocumentClauseBody'
+        legal_ref:
+          type: string
+        applies_to:
+          type: array
+          items:
+            type: string
+        is_mandatory:
+          type: boolean
+        version:
+          type: integer
+        status:
+          type: string
+          enum:
+          - draft
+          - published
+          - retired
+        row_version:
+          type: integer
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    DocumentClauseDetail:
+      allOf:
+      - $ref: '#/components/schemas/DocumentClause'
+      - type: object
+        required:
+        - versions
+        properties:
+          versions:
+            type: array
+            items:
+              $ref: '#/components/schemas/DocumentClause'
+    DocumentTemplate:
+      type: object
+      required:
+      - id
+      - global
+      - doc_type
+      - code
+      - name
+      - content
+      - version
+      - status
+      - row_version
+      - updated_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        global:
+          type: boolean
+        doc_type:
+          type: string
+          enum:
+          - notice
+          - policy
+          - dpa
+          - dsa
+          - dsar_letter
+          - pdpc_form
+          - breach_letter
+          - report
+          - other
+        code:
+          type: string
+        name:
+          type: string
+        content:
+          $ref: '#/components/schemas/DocumentContent'
+        version:
+          type: integer
+        status:
+          type: string
+          enum:
+          - draft
+          - published
+          - retired
+        row_version:
+          type: integer
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
     ConsentSubmission:
       type: object
       required: [collection_point_code, subject, decisions]

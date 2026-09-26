@@ -17,6 +17,48 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for FormConditionOp.
+const (
+	Answered    FormConditionOp = "answered"
+	Eq          FormConditionOp = "eq"
+	Gt          FormConditionOp = "gt"
+	Gte         FormConditionOp = "gte"
+	In          FormConditionOp = "in"
+	Lt          FormConditionOp = "lt"
+	Lte         FormConditionOp = "lte"
+	Neq         FormConditionOp = "neq"
+	NotAnswered FormConditionOp = "not_answered"
+	NotIn       FormConditionOp = "not_in"
+)
+
+// Valid indicates whether the value is a known member of the FormConditionOp enum.
+func (e FormConditionOp) Valid() bool {
+	switch e {
+	case Answered:
+		return true
+	case Eq:
+		return true
+	case Gt:
+		return true
+	case Gte:
+		return true
+	case In:
+		return true
+	case Lt:
+		return true
+	case Lte:
+		return true
+	case Neq:
+		return true
+	case NotAnswered:
+		return true
+	case NotIn:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for NotificationChannel.
 const (
 	Email NotificationChannel = "email"
@@ -290,6 +332,18 @@ type FieldError struct {
 	Field   string  `json:"field"`
 	Message *string `json:"message,omitempty"`
 }
+
+// FormCondition Show when an earlier question's answer compares true (question + op + value), or all/any of nested conditions
+type FormCondition struct {
+	All      *[]FormCondition `json:"all,omitempty"`
+	Any      *[]FormCondition `json:"any,omitempty"`
+	Op       *FormConditionOp `json:"op,omitempty"`
+	Question *string          `json:"question,omitempty"`
+	Value    interface{}      `json:"value,omitempty"`
+}
+
+// FormConditionOp defines model for FormCondition.Op.
+type FormConditionOp string
 
 // Inbox defines model for Inbox.
 type Inbox struct {

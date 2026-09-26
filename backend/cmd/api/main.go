@@ -44,6 +44,8 @@ import (
 	"pdpa-platform/internal/platform/collab"
 	collabhttp "pdpa-platform/internal/platform/collab/http"
 	"pdpa-platform/internal/platform/crypto"
+	docshttp "pdpa-platform/internal/platform/docs/http"
+	"pdpa-platform/internal/platform/docs/render"
 	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/files"
 	fileshttp "pdpa-platform/internal/platform/files/http"
@@ -221,6 +223,11 @@ func run() error {
 	breachSvc := wiring.Breach(notifySvc, fileSvc, riverClient, auditSvc, keyring)
 	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                // BRE-12 evidence
 	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read" // BRE-10 recipient lists
+	docsSvc := wiring.Docs(versioningSvc, fileSvc, riverClient, auditSvc, render.FromEnv())
+	docsSvc.RegisterVersioning()
+	for k, v := range docsSvc.FilePermissions() { // PLT-16 rendered PDF / Word files
+		fileSvc.EntityPermissions[k] = v
+	}
 
 	// Public consent forms (BP-01): tenant and principal from the public key, then the same Idempotency + Tx chain.
 	r.Group(func(g chi.Router) {
@@ -299,6 +306,11 @@ func run() error {
 			[]breachhttp.StrictMiddlewareFunc{authz.StrictMiddleware[breachhttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			breachhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		breachhttp.HandlerWithOptions(strictBreach, breachhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictDocs := docshttp.NewStrictHandlerWithOptions(docshttp.NewStrict(docsSvc),
+			[]docshttp.StrictMiddlewareFunc{authz.StrictMiddleware[docshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			docshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		docshttp.HandlerWithOptions(strictDocs, docshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictNotify := notifyhttp.NewStrictHandlerWithOptions(notifyhttp.NewStrict(notifySvc),
 			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission)},

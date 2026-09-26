@@ -21,6 +21,8 @@ import (
 	auditjobs "pdpa-platform/internal/platform/audit/jobs"
 	auditservice "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/crypto"
+	"pdpa-platform/internal/platform/docs"
+	"pdpa-platform/internal/platform/docs/render"
 	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/importer"
@@ -95,6 +97,8 @@ func run() error {
 	breachSvc := wiring.Breach(notifySvc, fileStore(store, inserter), inserter, auditservice.New(), notifySvc.Keyring)
 	river.AddWorker(workers, &breach.TimerWorker{Service: breachSvc})
 	river.AddWorker(workers, &breach.NoticeWorker{Service: breachSvc})
+	// PLT-16: PDF / Word of published documents (Gotenberg via GOTENBERG_URL, or a local Chromium via CHROMIUM_PATH).
+	river.AddWorker(workers, &docs.Renderer{Service: wiring.Docs(nil, fileStore(store, inserter), inserter, auditservice.New(), render.FromEnv()), Logger: slog.Default()})
 
 	river.AddWorker(workers, &notify.Deliverer{
 		Service: notifySvc,

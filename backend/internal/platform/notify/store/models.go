@@ -2640,6 +2640,7 @@ type PlatformDocument struct {
 	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy        pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion       int32              `db:"row_version" json:"row_version"`
+	LegalEntityID    pgtype.UUID        `db:"legal_entity_id" json:"legal_entity_id"`
 }
 
 // เวอร์ชันของเอกสาร (ProseMirror JSON + ไฟล์ที่ render)
@@ -2661,6 +2662,9 @@ type PlatformDocumentVersion struct {
 	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy     pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion    int32              `db:"row_version" json:"row_version"`
+	PdfEnFileID   pgtype.UUID        `db:"pdf_en_file_id" json:"pdf_en_file_id"`
+	DocxEnFileID  pgtype.UUID        `db:"docx_en_file_id" json:"docx_en_file_id"`
+	RenderStatus  string             `db:"render_status" json:"render_status"`
 }
 
 // งานส่งออกแบบ async (ศูนย์ดาวน์โหลด)

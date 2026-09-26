@@ -209,6 +209,31 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "ข้อมูลไม่ถูกต้อง",
 		En: "Invalid consent request",
 	},
+	// PLT-16 document composer
+	"docs.incomplete": {
+		Th: "เอกสารยังไม่ครบ (merge field หรือข้อความสัญญาที่ยังไม่มีค่า)",
+		En: "The document is incomplete (merge fields or clauses without a value)",
+	},
+	"docs.unknown_type": {
+		Th: "ยังไม่มีโมดูลที่ใช้เอกสารประเภทนี้",
+		En: "No module offers this document type",
+	},
+	"docs.invalid": {
+		Th: "ข้อมูลเอกสารไม่ถูกต้อง",
+		En: "Invalid document data",
+	},
+	"docs.invalid_state": {
+		Th: "ทำรายการนี้ในสถานะปัจจุบันไม่ได้",
+		En: "Not allowed in the current state",
+	},
+	"docs.code_taken": {
+		Th: "รหัสนี้ถูกใช้แล้ว",
+		En: "Code already used",
+	},
+	"docs.no_renderer": {
+		Th: "ยังไม่ได้ตั้งค่าการสร้างไฟล์ PDF",
+		En: "PDF rendering is not configured",
+	},
 	// BRE breach
 	"breach.invalid": {
 		Th: "ข้อมูลเหตุละเมิดไม่ถูกต้อง",

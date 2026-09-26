@@ -32,6 +32,7 @@ gen:
 	cd backend/internal/consent/http && oapi-codegen -config oapi-codegen.yaml -o consent.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/consent/publichttp && oapi-codegen -config oapi-codegen.yaml -o public.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/breach/http && oapi-codegen -config oapi-codegen.yaml -o breach.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/docs/http && oapi-codegen -config oapi-codegen.yaml -o docs.gen.go ../../../../../api/openapi/openapi.yaml
 	pnpm gen:api-client
 	cd backend && go build ./...
 

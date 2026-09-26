@@ -1664,6 +1664,255 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/platform/documents/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Document types the caller can read, what else they may do with each, and the merge fields (PLT-16) */
+        get: operations["platformListDocumentTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Documents of the types the caller can read, most recently changed first */
+        get: operations["platformListDocuments"];
+        put?: never;
+        /** Start a document, empty or from a published template (the type’s create permission) */
+        post: operations["platformCreateDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A document with its newest version’s content and what it still lacks to be published */
+        get: operations["platformGetDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents/{id}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save the draft (If-Match on the document); after a published version this starts the next one
+         * @description Submitting, approving and publishing the draft go through the PLT-08 version endpoints (record type document_<doc_type>).
+         */
+        put: operations["platformSaveDocumentDraft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents/{id}/published": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Published versions with their rendered PDF / Word files per language (download through platform files) */
+        get: operations["platformListPublishedDocumentVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents/{id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Render a version (default: the newest) as PDF or Word
+         * @description A version that isn’t published carries a DRAFT banner; a published one is rendered from its frozen content.
+         */
+        get: operations["platformExportDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents/{id}/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compare two versions of a document block by block, with character-level changes inside edited blocks */
+        get: operations["platformCompareDocumentVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-clauses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The clause library: the latest version of each clause (document editors see published ones) */
+        get: operations["platformListClauses"];
+        put?: never;
+        /** Add a clause to the library as a draft */
+        post: operations["platformCreateClause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-clauses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A clause version with the history of its code */
+        get: operations["platformGetClause"];
+        /** Edit the draft, or start the next version from the published one (If-Match) */
+        put: operations["platformUpdateClause"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-clauses/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a draft clause version; the previous version is retired (If-Match) */
+        post: operations["platformPublishClause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-clauses/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw a published clause from new documents (If-Match) */
+        post: operations["platformRetireClause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Templates of the types the caller can see (creators see published ones) */
+        get: operations["platformListDocumentTemplates"];
+        put?: never;
+        /** Add a template as a draft (the type’s template permission) */
+        post: operations["platformCreateDocumentTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A template version */
+        get: operations["platformGetDocumentTemplate"];
+        /** Edit the draft, or start the next version from the published one (If-Match) */
+        put: operations["platformUpdateDocumentTemplate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-templates/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Release a draft template (the type’s publish permission: its wording is legal text) */
+        post: operations["platformPublishDocumentTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/v1/collection-points/{key}": {
         parameters: {
             query?: never;
@@ -2904,6 +3153,181 @@ export interface components {
             attempts?: number;
             sent_at?: components["schemas"]["Timestamp"];
             error?: string;
+        };
+        /** @description The body per language */
+        DocumentContent: {
+            /** @description A ProseMirror doc node (TipTap JSON); validated by the server */
+            th: {
+                [key: string]: unknown;
+            };
+            /** @description A ProseMirror doc node (TipTap JSON); validated by the server */
+            en?: {
+                [key: string]: unknown;
+            };
+        };
+        DocumentTypesInfo: {
+            types: {
+                /** @enum {string} */
+                doc_type: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+                /** @description PLT-08 record type of its documents */
+                entity_type: string;
+                can_create: boolean;
+                can_update: boolean;
+                can_publish: boolean;
+                can_read_templates: boolean;
+                can_write_templates: boolean;
+            }[];
+            fields: {
+                key: string;
+                /** @enum {string} */
+                source: "org" | "document";
+                label: {
+                    th: string;
+                    en: string;
+                };
+            }[];
+            can_manage_clauses: boolean;
+        };
+        DocumentSummary: {
+            id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            doc_type: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+            title: string;
+            legal_entity_id?: components["schemas"]["Uuid"];
+            template_id?: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "draft" | "published";
+            current_version_id?: components["schemas"]["Uuid"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        DocumentDraft: {
+            title: string;
+            legal_entity_id?: components["schemas"]["Uuid"];
+            content: components["schemas"]["DocumentContent"];
+            change_summary?: string;
+            /** Format: date */
+            effective_from?: string;
+        };
+        Document: components["schemas"]["DocumentSummary"] & {
+            entity_type?: string;
+            latest?: {
+                id: components["schemas"]["Uuid"];
+                version: number;
+                /** @enum {string} */
+                status: "draft" | "in_review" | "approved" | "published" | "superseded";
+                row_version: number;
+            };
+            draft?: components["schemas"]["DocumentDraft"];
+            /** @description What the newest version still lacks to be published */
+            missing?: {
+                fields: string[];
+                clauses: string[];
+            };
+        };
+        PublishedDocumentVersion: {
+            id: components["schemas"]["Uuid"];
+            version: number;
+            languages: ("th" | "en")[];
+            /** @enum {string} */
+            render_status: "pending" | "done" | "failed";
+            files: {
+                /** @enum {string} */
+                language: "th" | "en";
+                /** @enum {string} */
+                format: "pdf" | "docx";
+                file_id: components["schemas"]["Uuid"];
+            }[];
+            change_summary?: string;
+            /** Format: date */
+            effective_from?: string;
+            approved_by?: components["schemas"]["Uuid"];
+            approved_at?: components["schemas"]["Timestamp"];
+            created_at: components["schemas"]["Timestamp"];
+        };
+        DocumentComparison: {
+            from: {
+                id: components["schemas"]["Uuid"];
+                version: number;
+                status: string;
+            };
+            to: {
+                id: components["schemas"]["Uuid"];
+                version: number;
+                status: string;
+            };
+            changes: {
+                /** @enum {string} */
+                op: "equal" | "insert" | "delete" | "change";
+                /** @description heading1-3, paragraph, clause, rule */
+                kind: string;
+                before?: string;
+                after?: string;
+                segments?: {
+                    /** @enum {string} */
+                    op: "equal" | "insert" | "delete";
+                    text: string;
+                }[];
+            }[];
+            summary: {
+                [key: string]: number;
+            };
+        };
+        DocumentClauseBody: {
+            title: string;
+            /** @description A ProseMirror doc node (TipTap JSON); validated by the server */
+            doc: {
+                [key: string]: unknown;
+            };
+        };
+        DocumentClauseInput: {
+            /** @description Required when creating; ignored when editing */
+            code?: string;
+            category: string;
+            body: {
+                th: components["schemas"]["DocumentClauseBody"];
+                en?: components["schemas"]["DocumentClauseBody"];
+            };
+            legal_ref?: string;
+            applies_to?: ("notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other")[];
+            is_mandatory?: boolean;
+        };
+        DocumentClause: {
+            id: components["schemas"]["Uuid"];
+            /** @description A platform clause (read-only) */
+            global: boolean;
+            code: string;
+            category: string;
+            body: {
+                th: components["schemas"]["DocumentClauseBody"];
+                en?: components["schemas"]["DocumentClauseBody"];
+            };
+            legal_ref?: string;
+            applies_to: string[];
+            is_mandatory: boolean;
+            version: number;
+            /** @enum {string} */
+            status: "draft" | "published" | "retired";
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        DocumentClauseDetail: components["schemas"]["DocumentClause"] & {
+            versions: components["schemas"]["DocumentClause"][];
+        };
+        DocumentTemplate: {
+            id: components["schemas"]["Uuid"];
+            global: boolean;
+            /** @enum {string} */
+            doc_type: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+            code: string;
+            name: string;
+            content: components["schemas"]["DocumentContent"];
+            version: number;
+            /** @enum {string} */
+            status: "draft" | "published" | "retired";
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
         };
         ConsentSubmission: {
             collection_point_code: string;
@@ -7195,6 +7619,644 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BreachNotice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListDocumentTypes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTypesInfo"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformListDocuments: {
+        parameters: {
+            query?: {
+                doc_type?: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+                /** @description Title contains */
+                q?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DocumentSummary"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformCreateDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    doc_type: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+                    title: string;
+                    legal_entity_id?: components["schemas"]["Uuid"];
+                    template_id?: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformSaveDocumentDraft: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentDraft"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListPublishedDocumentVersions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PublishedDocumentVersion"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformExportDocument: {
+        parameters: {
+            query: {
+                /** @description A PLT-08 version of the document */
+                version_id?: components["schemas"]["Uuid"];
+                language: "th" | "en";
+                format: "pdf" | "docx";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The file */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformCompareDocumentVersions: {
+        parameters: {
+            query: {
+                from: components["schemas"]["Uuid"];
+                to: components["schemas"]["Uuid"];
+                language: "th" | "en";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentComparison"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformListClauses: {
+        parameters: {
+            query?: {
+                category?: string;
+                applies_to?: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+                published_only?: boolean;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DocumentClause"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformCreateClause: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentClauseInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentClause"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetClause: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentClauseDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformUpdateClause: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentClauseInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentClause"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformPublishClause: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentClause"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformRetireClause: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentClause"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListDocumentTemplates: {
+        parameters: {
+            query?: {
+                doc_type?: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+                published_only?: boolean;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DocumentTemplate"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformCreateDocumentTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    doc_type: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+                    code: string;
+                    name: string;
+                    content: components["schemas"]["DocumentContent"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetDocumentTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTemplate"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformUpdateDocumentTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    content: components["schemas"]["DocumentContent"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformPublishDocumentTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTemplate"];
                 };
             };
             401: components["responses"]["Unauthorized"];
