@@ -38,6 +38,11 @@ export function DashboardContent({ me }: { me: Me }) {
         </section>
       </Can>
 
+      <section>
+        <h2 className="text-sm font-medium text-slate-500">{t("documents")}</h2>
+        <Link className="text-sm text-sky-700 underline" href="/documents">{t("documents")}</Link>
+      </section>
+
       <Can permission="consent.record.read">
         <ConsentLinks />
       </Can>

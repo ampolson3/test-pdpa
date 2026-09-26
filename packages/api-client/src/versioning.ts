@@ -63,6 +63,8 @@ export function useVersionMutations(client: ApiClient) {
     void qc.invalidateQueries({ queryKey: ["platform", "versions"] });
     void qc.invalidateQueries({ queryKey: ["platform", "record-versions"] });
     void qc.invalidateQueries({ queryKey: ["platform", "my-approvals"] });
+    // Records whose module reacts to publishing (e.g. PLT-16 documents render their files) show the result at once.
+    void qc.invalidateQueries({ queryKey: ["docs"] });
   };
   const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
   return {

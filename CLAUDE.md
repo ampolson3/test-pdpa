@@ -389,6 +389,31 @@ notices tracked per person, evidence/search/access, two-tenant isolation), HTTP 
 UI `/incidents`, `/incidents/{id}`. Local stack note: `.env` points S3 at MinIO :9000 and SMTP at :1025; with the
 Homebrew-style local services use S3 127.0.0.1:8333 (bucket pdpa-files-test), clamd :3310 and an empty SMTP_ADDR.
 
+### PLT-16 Document composer (`docs/modules/PLT.md#plt-16`) — done
+`internal/platform/docs` (+ `render/`, `http/`, `docstest/`) and `apps/admin` `/documents*`, chosen ahead of BRE-08/09
+(decisions Q-23) so recording the PDPC notice has something to point at. Content is ProseMirror JSON per language
+(`{th, en}`, allow-listed nodes incl. `mergeField` and `clause`), edited with TipTap. Documents are PLT-08 records,
+one type per owning module (notice/policy → `notice.document.*`, dpa/dsa → `agreement.{dpa,dsa}.*`, dsar_letter →
+`dsar.request.*`, pdpc_form/breach_letter → `breach.notification.*`; `internal/wiring.Docs`), one DPO approval step.
+Publishing freezes the text, every merge field's current value (org fields via `orgservice.MergeFields`) and every
+cited clause's text into an immutable `document_versions` row (migration 00037), then `docs.render` produces PDF +
+Word per language: DOCX is hand-written OOXML (byte-exact Thai, no shaping), PDF via Gotenberg or a local Chromium,
+both with the Sarabun font (OFL) embedded. Clause library and templates are draft → published → retired per code
+(`agreement.clause.*`; a template's wording needs the type's own publish permission — legal text, rule 8). Compare
+is block-level LCS with inline segments; an unpublished export carries a DRAFT banner. Tests: acceptance (Thai
+Word text byte-exact incl. resolved fields/clause/date, PDF valid with the font embedded, two versions compare),
+access/isolation, clause versioning, templates, HTTP contract, Chromium E2E (19/19: clause library → compose
+Thai+English → draft export → submit → second DPO approves → publish → worker renders → Word exact in both
+languages → edit → compare → English UI). Two real bugs the Go unit tests missed (no bilingual-clause fixture, no
+mouse-driven toolbar) but the E2E caught: `docs.clauseTexts` decoded an English clause body into a *shallow copy*
+of the Thai struct, so the shared `render.Node.Content` slice let the English decode silently overwrite the Thai
+paragraphs (regression test added); and every TipTap toolbar button/select moved DOM focus before its `focus()`
+call (which runs on the next animation frame), losing the next keystrokes — fixed by focusing synchronously.
+Known, not fixable from here: Chromium's headless PDF export (Gotenberg too, same engine) writes an unreliable
+text-layer for Thai combining marks — confirmed with a minimal reproduction outside this app that the *rendered*
+PDF is pixel-correct, only extraction is lossy — so "correct characters" is verified via DOCX (byte-exact) and the
+PDF only for validity + embedded font. Not done: portal/`/api/v1` use, version retention/archival.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

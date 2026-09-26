@@ -370,15 +370,18 @@ func (s *Service) clauseTexts(ctx context.Context, refs []string) (map[string]ma
 		if !slices.Contains(refs, ref) {
 			continue
 		}
-		var th clauseText
+		// th and en are decoded into separate zero values: en := th (a shallow copy) would share th.Doc.Content's
+		// backing array, and decoding BodyEn into that copy would silently overwrite th's paragraphs too.
+		var th, en clauseText
 		if err := json.Unmarshal(r.BodyTh, &th); err != nil {
 			return nil, err
 		}
-		en := th
 		if len(r.BodyEn) > 0 {
 			if err := json.Unmarshal(r.BodyEn, &en); err != nil {
 				return nil, err
 			}
+		} else {
+			en = th // no English body: fall back to the Thai text, in a clause nothing will decode into again
 		}
 		out["th"][ref], out["en"][ref] = th, en
 	}

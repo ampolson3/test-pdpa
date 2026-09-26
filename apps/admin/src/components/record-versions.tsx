@@ -25,7 +25,14 @@ export function VersionStatus({ status }: { status: RecordVersion["status"] }) {
  * approval steps, submit / publish where allowed (the server decides), and a comparison of any two.
  * Modules mount it next to their editor; saving drafts stays in the module's own form.
  */
-export function RecordVersions({ entityType, entityId, canEdit, canPublish }: { entityType: string; entityId: string; canEdit: boolean; canPublish: boolean }) {
+export function RecordVersions({ entityType, entityId, canEdit, canPublish, compare: canCompare = true }: {
+  entityType: string;
+  entityId: string;
+  canEdit: boolean;
+  canPublish: boolean;
+  /** false when the module shows its own comparison (e.g. documents compare the text, not the JSON). */
+  compare?: boolean;
+}) {
   const t = useTranslations("versions");
   const locale = useLocale() as Locale;
   const client = useMemo(() => createApiClient("/api/bff"), []);
@@ -58,7 +65,7 @@ export function RecordVersions({ entityType, entityId, canEdit, canPublish }: { 
               <span className="flex gap-2">
                 {canEdit && v.status === "draft" && <Button onClick={() => m.submit.mutate(v)} disabled={busy}>{t("submit")}</Button>}
                 {canPublish && v.status === "approved" && <Button onClick={() => m.publish.mutate(v)} disabled={busy}>{t("publish")}</Button>}
-                {list.data.length > 1 && (
+                {canCompare && list.data.length > 1 && (
                   <Button variant="secondary" onClick={() => setCompare({ from: list.data.find((x) => x.id !== v.id && x.version < v.version)?.id ?? list.data.find((x) => x.id !== v.id)?.id, to: v.id })}>{t("compare")}</Button>
                 )}
               </span>

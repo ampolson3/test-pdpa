@@ -436,10 +436,12 @@ snapshot และ diff ของ record ที่มีเวอร์ชัน
 | `template_id` | `uuid` |  |  | FK → [platform.templates](#platform-templates) |  |
 | `status` | `text` | ✓ | 'draft' |  | ค่า: `draft`, `in_review`, `approved`, `published`, `archived` |
 | `current_version_id` | `uuid` |  |  |  |  |
+| `legal_entity_id` | `uuid` |  |  | FK → [org.legal_entities](org.md#org-legal-entities) | migration 00037 — whose details fill org_* merge fields |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_documents_updated`
 - PK: `(id)`
-- Index: `platform.documents (tenant_id, entity_type)` · `platform.documents (tenant_id, entity_id)` · `platform.documents (tenant_id, template_id)`
+- Index: `platform.documents (tenant_id, entity_type)` · `platform.documents (tenant_id, entity_id)` · `platform.documents (tenant_id, template_id)` · `platform.documents (tenant_id, legal_entity_id)` (00037) · `platform.documents (tenant_id, doc_type, updated_at DESC, id)` (00037)
+- PLT-16 uses only `draft` / `published` of the `status` enum (draft → in_review → approved run at the PLT-08 version level, `platform.record_versions.status`, not here); `archived` is unused so far.
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `platform.document_versions.document_id`, `notice.notices.document_id`, `agreement.agreements.document_id`, `gov.policies.document_id`
 
@@ -467,6 +469,8 @@ snapshot และ diff ของ record ที่มีเวอร์ชัน
 - PK: `(id)`
 - Unique: `uq_document_versions_document_id_version_no UNIQUE (document_id, version_no)`
 - Index: `platform.document_versions (tenant_id, document_id)` · `platform.document_versions (tenant_id, pdf_file_id)` · `platform.document_versions (tenant_id, docx_file_id)` · `platform.document_versions (tenant_id, approved_by)`
+- `content` (migration 00037 columns aside) holds the *frozen* snapshot published: `{title, content: {th,en}, fields: {th:{key:value}, en:{...}}, clauses: {th:{"code@version":{title,doc}}, en:{...}}, record_version_id}` — every merge field value and cited clause text as of publish, so later organization or clause-library changes never alter a published version.
+- migration 00037 added `pdf_en_file_id` / `docx_en_file_id` (English render alongside the Thai `pdf_file_id` / `docx_file_id`) and `render_status` (`pending` → `done` | `failed`, the `docs.render` job)
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `notice.notice_versions.document_version_id`, `dsar.communications.document_version_id`, `breach.pdpc_notifications.document_version_id`, `agreement.downloads.document_version_id`
 

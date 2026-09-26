@@ -508,6 +508,55 @@
 
 **หมายเหตุ:** ต้องเสร็จใน 2 sprint แรกของ P1; ใช้ร่วมประกาศ, หนังสือตอบคำขอ, แบบแจ้ง สคส., DPA, DSA
 
+### PLT-16 Document composer — done
+`internal/platform/docs` (+ `render/`, `http/`, `docstest/`) and `apps/admin` `/documents*`. Content is ProseMirror
+JSON per language (`{th, en}`), an allow-listed node set (paragraph/heading 1-3/lists/blockquote/rule/clause/
+mergeField, TipTap on the frontend with custom `mergeField` and `clause` node views). Documents are PLT-08 records,
+one type per module (`document_<type>`: notice/policy → `notice.document.*`, dpa → `agreement.dpa.*`, dsa →
+`agreement.dsa.*`, dsar_letter → `dsar.request.*`, pdpc_form/breach_letter → `breach.notification.*`), one DPO
+approval step; `internal/wiring.Docs` registers the types (report/other have no owning module yet, not offered).
+Publishing (`OnPublish`) freezes the text, every merge field's *current* value (org fields via
+`orgservice.MergeFields`, more sources as modules exist) and every cited clause version's text into an immutable
+`platform.document_versions` row, then enqueues `docs.render` (PLT-10) to produce PDF + Word per language via
+`files.SaveGenerated`. Clause library and templates are both draft → published → retired per code (`agreement.
+clause.*`; templates use the owning type's template permission, publishing needs the type's own publish permission
+since template wording is legal text, rule 8). Compare is block-level LCS with character-level segments inside a
+changed block (Thai has no word spaces); an unpublished version's export carries a DRAFT banner. Migration 00037
+(documents.legal_entity_id, English render columns + render_status, one-draft-per-code indexes).
+Renderer: `render.PDFRenderer` — Gotenberg (`GOTENBERG_URL`) in production, or a local headless Chromium
+(`CHROMIUM_PATH`) for this environment; DOCX is hand-written OOXML (no HTML round-trip) with Sarabun set as
+`rFonts`/`lang bidi=th-TH`; both embed the Sarabun font (OFL) so Thai renders with no font installed on the host.
+Tests: acceptance (a Thai document's Word text is byte-exact incl. the resolved merge fields, expanded clause and
+Buddhist-era date; its PDF is valid with the font embedded; comparing two versions), validation, access + two-tenant
+isolation, clause versioning (citing an older version keeps its text after a newer one publishes), templates, HTTP
+contract through the real validator (401/403/404/409/412/422/428). A Chromium E2E against the real api/worker/next
+stack (19/19): clause library → compose Thai+English with merge fields and a clause → draft export shows DRAFT →
+submit → second DPO approves → publish → worker renders → Word text exact in both languages, PDF valid → edit →
+compare v1→v2 → English UI.
+Found and fixed by the E2E, not by the Go unit tests (whose fixtures never used a bilingual clause or a mouse-driven
+toolbar): `docs.clauseTexts` decoded a clause's English body into `en := th`, a *shallow copy* of the Thai struct —
+since `render.Node.Content` is a slice, decoding into the copy reused its shared backing array and silently
+overwrote the Thai paragraphs with the English ones (title stayed correct, being a plain string; only the body was
+corrupted) — a document in Thai citing a bilingual clause rendered the clause's English text. Fixed by decoding into
+independent zero values; a regression test (`TestClauseBilingualTextNotAliased`) confirms it fails without the fix.
+Also: TipTap's `focus()` runs on the next animation frame, so clicking any toolbar button or the merge-field/clause
+`<select>` moved DOM focus there first and lost the next keystrokes typed immediately after — fixed by focusing the
+editor's DOM synchronously before every toolbar command. And the LCS backtrack in `render.Compare`/`Inline` picked
+insert over delete on ties, splitting a same-kind edit into `delete`+`insert` instead of one `change` with inline
+segments — fixed to prefer delete on ties, and `Inline` now folds 1-2 character equal runs between changes (a lone
+Thai vowel/tone mark two words happen to share) into the surrounding change, so a replaced word reads as one
+deletion and one insertion instead of a dozen tiny ones.
+Known limitation, not fixable from this code: Chromium's headless PDF export (also Gotenberg, same engine) writes
+an unreliable ToUnicode (text-layer) mapping for Thai combining-mark sequences — confirmed with a minimal,
+single-font, single-weight reproduction outside this app: the *visual* PDF (screenshotted) is pixel-correct, only
+programmatic text *extraction* (pdf.js) reorders or drops characters. The Go unit test and the E2E therefore check
+the PDF's validity and embedded font, not its extracted text; the acceptance criterion's "correct characters" rests
+on DOCX, which writes raw Unicode with no shaping and is checked byte-exact.
+Not done: portal / `/api/v1` use (no consumer yet); retention or archival of superseded versions; a schema
+migration tool for the ProseMirror content format if it needs to change; re-rendering a version whose renderer
+config changed after the fact (rule 5 status/audit/outbox timing does not apply here — a version's files are
+produced once, by its own publish).
+
 <a id="plt-17"></a>
 ### PLT-17 Public portal framework
 

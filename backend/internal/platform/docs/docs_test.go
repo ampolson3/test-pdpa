@@ -213,6 +213,54 @@ func TestAcceptance_ThaiExportAndCompare(t *testing.T) {
 	})
 }
 
+// A clause with a distinct English body must not leak into the Thai rendering: the shared decode path
+// (docs.clauseTexts) once shallow-copied the Thai struct and decoded English into the copy, silently
+// overwriting the Thai paragraph text through their shared slice.
+func TestClauseBilingualTextNotAliased(t *testing.T) {
+	f := docstest.Setup(t)
+	var c docs.Clause
+	f.As(t, f.Law, nil, docstest.Legal, func(ctx context.Context) error {
+		var err error
+		if c, err = f.Svc.CreateClause(ctx, docs.ClauseInput{Code: "bilingual.retention", Category: "retention", AppliesTo: []string{"notice"},
+			Body: map[string]docs.ClauseBody{
+				"th": {Title: "หัวข้อไทย", Doc: Doc(P("ข้อความภาษาไทย"))},
+				"en": {Title: "English title", Doc: Doc(P("English text"))},
+			}}); err != nil {
+			return err
+		}
+		c, err = f.Svc.PublishClause(ctx, c.ID, c.RowVersion)
+		return err
+	})
+	var doc docs.Document
+	f.As(t, f.Priv, nil, docstest.Privacy, func(ctx context.Context) error {
+		var err error
+		if doc, err = f.Svc.Create(ctx, docs.CreateInput{DocType: "notice", Title: "t"}); err != nil {
+			return err
+		}
+		doc, err = f.Svc.SaveDraft(ctx, doc.ID, doc.RowVersion, docs.Draft{Title: "t",
+			Content: render.Content{"th": Doc(ClauseRef("bilingual.retention", 1)), "en": Doc(ClauseRef("bilingual.retention", 1))}})
+		return err
+	})
+	f.As(t, f.Priv, nil, docstest.Privacy, func(ctx context.Context) error {
+		th, _, err := f.Svc.Export(ctx, doc.ID, nil, "th", "html")
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(string(th), "ข้อความภาษาไทย") || strings.Contains(string(th), "English text") {
+			t.Fatalf("thai export carries the wrong clause body: %s", th)
+		}
+		en, _, err := f.Svc.Export(ctx, doc.ID, nil, "en", "html")
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(string(en), "English text") {
+			t.Fatalf("english export missing its own clause body: %s", en)
+		}
+		return nil
+	})
+}
+
+
 func TestPublishNeedsEveryField(t *testing.T) {
 	f := docstest.Setup(t)
 	var doc docs.Document
