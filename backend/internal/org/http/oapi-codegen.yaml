@@ -5,6 +5,8 @@ generate:
   models: true
 output-options:
   include-operation-ids:
+    - orgGetSettings
+    - orgUpdateSettings
     - orgListCalendars
     - orgCreateCalendar
     - orgUpdateCalendar

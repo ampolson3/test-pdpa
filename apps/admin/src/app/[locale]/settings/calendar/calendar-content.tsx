@@ -11,9 +11,13 @@ import {
   useCalendars,
   useHolidayMutations,
   useHolidays,
+  useOrgSettings,
   useSaveCalendar,
+  useSaveOrgSettings,
   type BusinessCalendar,
+  type OrgSettings,
 } from "@pdpa/api-client";
+import { FileUploader } from "@/components/file-uploader";
 
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 7] as const; // ISO: 1 = Monday … 7 = Sunday
 const HOLIDAY_IMPORT = "org.holiday";
@@ -56,7 +60,9 @@ export function CalendarContent() {
   const saveError = save.error ? (problemCode(save.error) === "org.duplicate_calendar_name" ? t("duplicateName") : problemCode(save.error) === "org.invalid_calendar" ? t("invalid") : t("saveError")) : null;
 
   return (
-    <main className="mx-auto grid max-w-6xl gap-6 p-8 lg:grid-cols-[1fr_2fr]">
+    <main className="mx-auto max-w-6xl space-y-8 p-8">
+      <GeneralSettings canUpdate={canUpdate} />
+      <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
       <section className="space-y-3">
         <header className="flex items-center justify-between">
           <h1 className="text-xl font-semibold">{t("title")}</h1>
@@ -135,6 +141,7 @@ export function CalendarContent() {
         )}
         {current && !draft && <Holidays key={current.id} calendar={current} canUpdate={canUpdate} locale={locale} />}
       </section>
+      </div>
     </main>
   );
 }
@@ -227,5 +234,84 @@ function Holidays({ calendar, canUpdate, locale }: { calendar: BusinessCalendar;
         </div>
       )}
     </div>
+  );
+}
+
+type SettingsDraft = { rowVersion: number; language: "th" | "en"; dateEra: "BE" | "CE"; logoFileId?: string; themeColor: string; accentColor: string };
+
+function fromSettings(s: OrgSettings): SettingsDraft {
+  return {
+    rowVersion: s.row_version,
+    language: (s.default_language as "th" | "en") ?? "th",
+    dateEra: (s.date_era as "BE" | "CE") ?? "BE",
+    logoFileId: s.branding?.logo_file_id,
+    themeColor: s.branding?.theme_color ?? "",
+    accentColor: s.branding?.accent_color ?? "",
+  };
+}
+
+function GeneralSettings({ canUpdate }: { canUpdate: boolean }) {
+  const t = useTranslations("calendar.general");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const settings = useOrgSettings(client);
+  const save = useSaveOrgSettings(client);
+  const [draft, setDraft] = useState<SettingsDraft | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  const form = draft ?? (settings.data ? fromSettings(settings.data) : null);
+  const set = (p: Partial<SettingsDraft>) => { setSaved(false); if (form) setDraft({ ...form, ...p }); };
+
+  if (settings.isPending) return <p className="text-slate-500">{t("loading")}</p>;
+  if (settings.isError || !form) return <p className="text-red-700">{t("loadError")}</p>;
+
+  const submit = () => {
+    save.mutate(
+      {
+        rowVersion: form.rowVersion,
+        input: {
+          default_language: form.language,
+          date_era: form.dateEra,
+          branding: { logo_file_id: form.logoFileId, theme_color: form.themeColor || undefined, accent_color: form.accentColor || undefined },
+        },
+      },
+      { onSuccess: () => { setDraft(null); setSaved(true); } },
+    );
+  };
+  const saveError = save.error ? (problemCode(save.error) === "org.invalid_settings" ? t("invalid") : t("saveError", { detail: problemCode(save.error) ?? "" })) : null;
+
+  return (
+    <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 text-sm sm:grid-cols-2" disabled={!canUpdate}>
+      <legend className="px-1 font-semibold">{t("title")}</legend>
+      <p className="text-slate-600 sm:col-span-2">{t("intro")}</p>
+      <label>
+        <span className="block text-slate-600">{t("language")}</span>
+        <select className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1" value={form.language} onChange={(e) => set({ language: e.target.value as "th" | "en" })}>
+          <option value="th">{t("th")}</option>
+          <option value="en">{t("en")}</option>
+        </select>
+      </label>
+      <label>
+        <span className="block text-slate-600">{t("dateEra")}</span>
+        <select className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1" value={form.dateEra} onChange={(e) => set({ dateEra: e.target.value as "BE" | "CE" })}>
+          <option value="BE">{t("BE")}</option>
+          <option value="CE">{t("CE")}</option>
+        </select>
+      </label>
+      <label>
+        <span className="block text-slate-600">{t("themeColor")}</span>
+        <input type="color" className="mt-1 h-9 w-full rounded-md border border-slate-300" value={form.themeColor || "#0b5fff"} onChange={(e) => set({ themeColor: e.target.value })} />
+      </label>
+      <label>
+        <span className="block text-slate-600">{t("accentColor")}</span>
+        <input type="color" className="mt-1 h-9 w-full rounded-md border border-slate-300" value={form.accentColor || "#0b5fff"} onChange={(e) => set({ accentColor: e.target.value })} />
+      </label>
+      <div className="sm:col-span-2">
+        <span className="block text-slate-600">{t("logo")}{form.logoFileId && <span className="ml-2 text-emerald-700">· {t("logoSet")}</span>}</span>
+        {canUpdate && <FileUploader accept=".png,.jpg,.jpeg" hint={t("logoLimits")} onUploaded={(f) => set({ logoFileId: f.id })} />}
+      </div>
+      {saveError && <p className="text-red-700 sm:col-span-2" role="alert">{saveError}</p>}
+      {saved && <p className="text-emerald-800 sm:col-span-2" role="status">{t("saved")}</p>}
+      {canUpdate && <Button onClick={submit} disabled={save.isPending}>{t("save")}</Button>}
+    </fieldset>
   );
 }

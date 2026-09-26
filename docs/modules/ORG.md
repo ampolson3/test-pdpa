@@ -131,6 +131,13 @@
 
 **หมายเหตุ:** ดึงเข้า P0 เพราะกระทบ data model ทุกโมดูล
 
+**สถานะ (decisions Q-24):** เลื่อนไว้ก่อน — acceptance criterion บังคับ data scope ต่อผู้ใช้ ซึ่งเป็นงานของ permission
+engine (IAM-02, ยัง blocked อยู่ที่ Keycloak/IAM-01, Q-18) ไม่ใช่ของ ORG โดยตรง ระดับข้อมูลพร้อมแล้ว:
+`org.legal_entities.parent_id` (ORG-01) รองรับบริษัทแม่/บริษัทในเครือ และทุกตารางธุรกิจมีคอลัมน์ `legal_entity_id`
+มาตั้งแต่ baseline migration (00006–00018) — ขาดแค่ชั้นบังคับสิทธิ์ (`iam.role_assignments.legal_entity_id` มีคอลัมน์
+แล้วแต่ยังไม่มี service ให้กำหนด และ AuthZ ยังไม่อ่านค่านี้) กับ DPO ร่วมของกลุ่ม (ต้องมีโมดูล DPO ก่อน) ทำต่อเมื่อ IAM-02
+เสร็จ
+
 <a id="org-04"></a>
 ### ORG-04 โครงสร้างหน่วยงานแบบลำดับชั้น
 
@@ -200,7 +207,9 @@
 
 **หมายเหตุ:** ดึงเข้า P0 เพราะ SLA engine ต้องใช้ปฏิทิน
 
-**Implementation (ORG-20 — ส่วนปฏิทิน):** `backend/internal/org` — ปฏิทินวันทำการหลายชุดต่อ tenant (ชื่อ, เขตเวลา IANA, วันทำการ ISO 1–7) ปฏิทินแรกเป็นปฏิทินหลักอัตโนมัติ ย้ายปฏิทินหลักได้ (ซิงก์ `org.org_settings.default_calendar_id`) · วันหยุด: ผู้ดูแลกรอกเองหรือนำเข้า CSV/Excel ผ่าน PLT-14 (import type `org.holiday`: วันที่ YYYY-MM-DD / ว/ด/ปปปป รับปี พ.ศ. / เซลล์วันที่ Excel, ชื่อวันหยุด, ชื่อปฏิทิน — ว่าง = ปฏิทินหลัก) ไม่มีข้อมูลวันหยุดตั้งต้น · module อื่นอ่านผ่าน interface `orgservice.Calendars.BusinessCalendar` แล้วคำนวณด้วย `internal/pkg/bizcal` (ข้ามวันหยุดประจำสัปดาห์ + วันหยุด ตามเขตเวลาของปฏิทิน; tenant ที่ยังไม่มีปฏิทิน = จันทร์–ศุกร์ Asia/Bangkok ไม่มีวันหยุด) · API `/admin/v1/org/calendars` (GET `org.settings.read`, POST/PATCH `org.settings.update` — ORGADMIN ไม่มี `create` จึงใช้ `update` สำหรับการเพิ่มปฏิทิน), `/admin/v1/org/calendars/{id}/holidays[/{date}]` · migration 00027 (ปฏิทินหลักได้หนึ่งเดียว, ชื่อไม่ซ้ำ) · หน้าจอ `/settings/calendar` · ยังไม่ทำ: ภาษา โลโก้ ธีม และ template แจ้งเตือนของ ORG-20 (template อยู่ที่ PLT-04 แล้ว)
+**Implementation (ORG-20 — ส่วนปฏิทิน):** `backend/internal/org` — ปฏิทินวันทำการหลายชุดต่อ tenant (ชื่อ, เขตเวลา IANA, วันทำการ ISO 1–7) ปฏิทินแรกเป็นปฏิทินหลักอัตโนมัติ ย้ายปฏิทินหลักได้ (ซิงก์ `org.org_settings.default_calendar_id`) · วันหยุด: ผู้ดูแลกรอกเองหรือนำเข้า CSV/Excel ผ่าน PLT-14 (import type `org.holiday`: วันที่ YYYY-MM-DD / ว/ด/ปปปป รับปี พ.ศ. / เซลล์วันที่ Excel, ชื่อวันหยุด, ชื่อปฏิทิน — ว่าง = ปฏิทินหลัก) ไม่มีข้อมูลวันหยุดตั้งต้น · module อื่นอ่านผ่าน interface `orgservice.Calendars.BusinessCalendar` แล้วคำนวณด้วย `internal/pkg/bizcal` (ข้ามวันหยุดประจำสัปดาห์ + วันหยุด ตามเขตเวลาของปฏิทิน; tenant ที่ยังไม่มีปฏิทิน = จันทร์–ศุกร์ Asia/Bangkok ไม่มีวันหยุด) · API `/admin/v1/org/calendars` (GET `org.settings.read`, POST/PATCH `org.settings.update` — ORGADMIN ไม่มี `create` จึงใช้ `update` สำหรับการเพิ่มปฏิทิน), `/admin/v1/org/calendars/{id}/holidays[/{date}]` · migration 00027 (ปฏิทินหลักได้หนึ่งเดียว, ชื่อไม่ซ้ำ) · หน้าจอ `/settings/calendar`
+
+**Implementation (ORG-20 — ภาษา โลโก้ ธีม):** `backend/internal/org/service/settings.go` — ค่าตั้งค่าองค์กรอีกครึ่งหนึ่งของ `org.org_settings` (คนละคอลัมน์จากปฏิทิน แต่แถวเดียวกัน): `default_language` (th/en), `date_era` (BE/CE), `branding` jsonb ({logo_file_id, theme_color, accent_color}) — ทั้งสามยังไม่มีผู้ใช้งานจริงในระบบ (locale ของ UI มาจาก path `/[locale]/…` และ `Accept-Language` อยู่แล้ว per PLT-03; ธีมยังไม่มีหน้าจอไหนอ่าน) แต่ค่าพร้อมให้ future feature อ่านโดยไม่ต้อง migration ใหม่ · โลโก้ = ไฟล์ PLT-09 ของผู้ใช้เอง (PNG/JPEG, สแกนผ่านแล้ว) ผูกด้วย `Service.Files` แบบเดียวกับโลโก้นิติบุคคลของ ORG-01 (`OrgSettingsEntityType = "org_settings"`, ดาวน์โหลดด้วย `org.settings.read`) · ยังไม่มีแถวสำหรับ tenant ที่ไม่เคยบันทึก = อ่านเป็นค่าตั้งต้น (th, BE, row_version 0) เหมือนปฏิทินที่ยังไม่มีของ tenant ใหม่ — บันทึกครั้งแรกส่ง `If-Match: "0"` ได้ทันที (upsert เดียวตรวจ row_version ด้วย) · API `GET/PUT /admin/v1/org/settings` (ETag/If-Match, 422 `org.invalid_settings` เมื่อค่าที่ผ่าน schema แล้วยังผิดกฎ, 422 `org.logo_not_usable`) · หน้าจอ: ส่วน "ตั้งค่าทั่วไป" บน `/settings/calendar` (ฟอร์มเดียวกับที่ ORG-20's frontend note เขียนว่า "หน้าตั้งค่าองค์กร + ปฏิทินวันหยุด" — สองฟีเจอร์ย่อยของ ORG-20 จึงอยู่หน้าเดียวกัน) · ทดสอบ: unit (ค่าตั้งต้น, บันทึกจริง, version ค้าง, โลโก้ต้องเป็นไฟล์สะอาดของผู้อัปโหลดเอง, แยก tenant), contract (401/403/428/412/400 schema) — งานทั้งสองส่วนของ ORG-20 จึงเสร็จแล้ว
 
 <a id="org-06"></a>
 ### ORG-06 ทะเบียนหน่วยงานภายนอก

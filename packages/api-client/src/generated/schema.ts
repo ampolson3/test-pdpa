@@ -1132,6 +1132,24 @@ export interface paths {
         patch: operations["orgUpdateMasterData"];
         trace?: never;
     };
+    "/admin/v1/org/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Default language, date era and branding for the tenant (ORG-20) */
+        get: operations["orgGetSettings"];
+        /** Change the tenant's default language, date era and branding */
+        put: operations["orgUpdateSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/org/calendars": {
         parameters: {
             query?: never;
@@ -2581,6 +2599,43 @@ export interface components {
             /** Format: date */
             date: string;
             name: string;
+        };
+        /**
+         * @example {
+         *       "theme_color": "#0B5FFF"
+         *     }
+         */
+        OrgBranding: {
+            logo_file_id?: components["schemas"]["Uuid"];
+            theme_color?: string;
+            accent_color?: string;
+        };
+        /**
+         * @example {
+         *       "default_language": "th",
+         *       "date_era": "BE",
+         *       "branding": {
+         *         "theme_color": "#0B5FFF"
+         *       }
+         *     }
+         */
+        OrgSettingsInput: {
+            /** @enum {string} */
+            default_language: "th" | "en";
+            /** @enum {string} */
+            date_era: "BE" | "CE";
+            branding?: components["schemas"]["OrgBranding"];
+        };
+        OrgSettings: {
+            /** @enum {string} */
+            default_language: "th" | "en";
+            /** @enum {string} */
+            date_era: "BE" | "CE";
+            branding: components["schemas"]["OrgBranding"];
+            /** @description 0 means the tenant has never saved settings yet — these are the defaults */
+            row_version: number;
+            /** @description Absent when row_version is 0 */
+            updated_at?: components["schemas"]["Timestamp"];
         };
         ImportJob: {
             id: components["schemas"]["Uuid"];
@@ -6217,6 +6272,68 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgGetSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settings, or the defaults if the tenant never saved any */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgUpdateSettings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrgSettingsInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];

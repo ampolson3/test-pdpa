@@ -39,6 +39,7 @@ export {
   type BusinessCalendarInput,
   type Holiday,
 } from "./calendars";
+export { useOrgSettings, useSaveOrgSettings, type OrgSettings, type OrgSettingsInput } from "./settings";
 export {
   useWorkflowDefinitions,
   useSaveWorkflowDefinition,

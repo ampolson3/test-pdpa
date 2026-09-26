@@ -3124,6 +3124,70 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/org/settings:
+    get:
+      operationId: orgGetSettings
+      tags: [org]
+      summary: Default language, date era and branding for the tenant (ORG-20)
+      x-permission: org.settings.read
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Settings, or the defaults if the tenant never saved any
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      operationId: orgUpdateSettings
+      tags: [org]
+      summary: Change the tenant's default language, date era and branding
+      x-permission: org.settings.update
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrgSettingsInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrgSettings'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/org/calendars:
     get:
       operationId: orgListCalendars
@@ -7239,6 +7303,54 @@ components:
           format: date
         name:
           type: string
+    OrgBranding:
+      type: object
+      properties:
+        logo_file_id:
+          $ref: '#/components/schemas/Uuid'
+        theme_color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+        accent_color:
+          type: string
+          pattern: '^#[0-9a-fA-F]{6}$'
+      example:
+        theme_color: '#0B5FFF'
+    OrgSettingsInput:
+      type: object
+      required: [default_language, date_era]
+      properties:
+        default_language:
+          type: string
+          enum: [th, en]
+        date_era:
+          type: string
+          enum: [BE, CE]
+        branding:
+          $ref: '#/components/schemas/OrgBranding'
+      example:
+        default_language: th
+        date_era: BE
+        branding:
+          theme_color: '#0B5FFF'
+    OrgSettings:
+      type: object
+      required: [default_language, date_era, branding, row_version]
+      properties:
+        default_language:
+          type: string
+          enum: [th, en]
+        date_era:
+          type: string
+          enum: [BE, CE]
+        branding:
+          $ref: '#/components/schemas/OrgBranding'
+        row_version:
+          type: integer
+          description: 0 means the tenant has never saved settings yet — these are the defaults
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+          description: Absent when row_version is 0
     ImportJob:
       type: object
       required: [id, import_type, status, headers, suggested, mapping, columns, has_error_report, row_version, created_at, updated_at]

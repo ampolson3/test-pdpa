@@ -152,6 +152,34 @@ func TestCalendarEndpoints_Contract(t *testing.T) {
 	admin, dpo := tenant.UserID, other
 	cal := map[string]any{"name": "HQ", "timezone": "Asia/Bangkok", "workdays": []int{1, 2, 3, 4, 5}}
 
+	// ORG-20 org settings (language, date era, branding) — before any calendar exists, so a tenant with
+	// no saved settings yet still reads as the defaults (creating the first calendar also touches this
+	// same row to record the default calendar, so this must run first).
+	if code, _ := do("GET", "/admin/v1/org/settings", nil, nil, nil); code != 401 {
+		t.Errorf("settings, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", "/admin/v1/org/settings", &dpo, nil, nil); code != 200 || !strings.Contains(body, `"row_version":0`) || !strings.Contains(body, `"default_language":"th"`) {
+		t.Errorf("settings defaults: %d %s", code, body)
+	}
+	if code, _ := do("PUT", "/admin/v1/org/settings", &dpo, map[string]any{"default_language": "en", "date_era": "CE"}, map[string]string{"If-Match": `"0"`}); code != 403 {
+		t.Errorf("update settings with read permission only: %d, want 403", code)
+	}
+	if code, _ := do("PUT", "/admin/v1/org/settings", &admin, map[string]any{"default_language": "en", "date_era": "CE"}, nil); code != 428 {
+		t.Errorf("update settings without If-Match: %d, want 428", code)
+	}
+	if code, _ := do("PUT", "/admin/v1/org/settings", &admin, map[string]any{"default_language": "fr", "date_era": "CE"}, map[string]string{"If-Match": `"0"`}); code != 400 {
+		t.Errorf("bad language: %d, want 400 (schema)", code)
+	}
+	if code, body := do("PUT", "/admin/v1/org/settings", &admin, map[string]any{"default_language": "en", "date_era": "CE", "branding": map[string]any{"theme_color": "#0B5FFF"}}, map[string]string{"If-Match": `"9"`}); code != 412 {
+		t.Errorf("stale If-Match: %d %s, want 412", code, body)
+	}
+	if code, body := do("PUT", "/admin/v1/org/settings", &admin, map[string]any{"default_language": "en", "date_era": "CE", "branding": map[string]any{"theme_color": "#0B5FFF"}}, map[string]string{"If-Match": `"0"`}); code != 200 || !strings.Contains(body, `"row_version":1`) || !strings.Contains(body, `"theme_color":"#0B5FFF"`) {
+		t.Errorf("update settings: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/org/settings", &dpo, nil, nil); code != 200 || !strings.Contains(body, `"default_language":"en"`) {
+		t.Errorf("settings after update: %d %s", code, body)
+	}
+
 	if code, _ := do("GET", "/admin/v1/org/calendars", nil, nil, nil); code != 401 {
 		t.Errorf("no principal: %d, want 401", code)
 	}

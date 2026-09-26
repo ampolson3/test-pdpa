@@ -249,9 +249,9 @@ State machine `PLT-14` in `docs/states/state-machines.yaml`; `files` gained trus
 with the error report (acceptance, ~15 s), rollback on a failing row, Excel, mapping rules and transitions, access and
 two-tenant isolation, infected file, HTTP contract (401/403/404/400/422/428).
 
-### ORG-20 Organization settings (`docs/modules/ORG.md#org-20`) — calendar part done, rest pending
-Only the business calendar was built (user's choice: PLT-05 needs it; language/logo/theme later).
-`internal/org/{store,service,http}` — the first business module: several calendars per tenant (name, IANA zone, ISO
+### ORG-20 Organization settings (`docs/modules/ORG.md#org-20`) — done
+The business calendar was built first (user's choice: PLT-05 needed it); language/logo/theme followed later in
+the same pass. `internal/org/{store,service,http}` — the first business module: several calendars per tenant (name, IANA zone, ISO
 workdays 1–7), the first one becomes the default, moving the default keeps `org_settings.default_calendar_id` in step
 (migration 00027: one default per tenant, unique names). Holidays are entered by the admin or imported (PLT-14 type
 `org.holiday`, registered in `internal/wiring`; `importer.ParseDate` accepts ISO, D/M/YYYY with Buddhist-era years and
@@ -263,6 +263,21 @@ Frontend `/settings/calendar` (calendar form, holidays by year in BE/CE, `Import
 (weekends, Songkran, zone boundary, custom weeks, runaway guard), service (default/validation/audit, acceptance: due
 date skips the tenant's holidays, two-tenant isolation, holiday import type), HTTP contract, Chromium E2E incl. a real
 CSV import with an error report (15/15).
+
+**Language/logo/theme:** `internal/org/service/settings.go` — the other half of the same `org.org_settings` row
+(different columns than the calendar's `default_calendar_id`): `default_language` (th/en), `date_era` (BE/CE),
+`branding` jsonb (`logo_file_id`, `theme_color`, `accent_color`). Nothing reads these yet (the UI's own locale
+already comes from the `/[locale]/…` path and `Accept-Language`, per PLT-03; no screen consumes the theme colors
+yet) but the values are ready for a future feature without another migration. The logo is the caller's own clean
+PLT-09 upload, attached the same way as ORG-01's legal-entity logo (`OrgSettingsEntityType = "org_settings"`,
+downloads with `org.settings.read`). A tenant that never saved settings reads as the defaults (th, BE, row_version
+0) — the same pattern as a tenant with no calendar yet — so the first save just sends `If-Match: "0"`; the upsert
+query's `WHERE row_version = $n` still catches a stale write. `GET/PUT /admin/v1/org/settings` (ETag/If-Match,
+422 `org.invalid_settings` for schema-legal-but-business-invalid values, 422 `org.logo_not_usable`). UI: a
+"General settings" section added to the same `/settings/calendar` page (ORG-20's own frontend note already
+called for "an org settings page + the holiday calendar" as one deliverable). Tests: unit (defaults, real save,
+stale version, logo must be the uploader's own clean file, tenant isolation), HTTP contract (401/403/428/412/400
+schema, run before any calendar exists in the test so the defaults are real defaults).
 
 ### PLT-05 Workflow & SLA engine (`docs/modules/PLT.md#plt-05`) — done (no module uses it yet)
 `internal/platform/workflow` (+ `http/`, `store/`). **The definition JSON format was designed here (no SA spec

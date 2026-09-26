@@ -46,6 +46,8 @@ func entityTypeOf(action string) string {
 		return OrgUnitType
 	case strings.HasPrefix(action, "org.master_data."):
 		return MasterDataEntityType
+	case strings.HasPrefix(action, "org.settings."):
+		return OrgSettingsEntityType
 	}
 	return CalendarEntityType
 }
