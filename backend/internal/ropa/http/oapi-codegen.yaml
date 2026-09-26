@@ -9,3 +9,7 @@ output-options:
     - ropaCreateAsset
     - ropaGetAsset
     - ropaUpdateAsset
+    - ropaListDataInventory
+    - ropaCreateDataInventoryItem
+    - ropaGetDataInventoryItem
+    - ropaUpdateDataInventoryItem

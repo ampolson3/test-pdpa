@@ -40,6 +40,7 @@ var (
 type Org interface {
 	GetOrgUnit(ctx context.Context, id uuid.UUID) (orgservice.OrgUnit, error)
 	GetExternalParty(ctx context.Context, id uuid.UUID) (orgservice.ExternalParty, error)
+	GetMaster(ctx context.Context, kind string, id uuid.UUID) (orgservice.MasterItem, error)
 }
 
 type Service struct {

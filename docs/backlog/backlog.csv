@@ -92,7 +92,7 @@ PNG-12,PNG,ประกาศแบบหลายชั้นและป้า
 PNG-15,PNG,แจ้งเตือนทบทวนตามรอบ,Periodic review reminder,Should,P3,กำกับ,ม.23,SCHED DPO,S,XS,N,3,1,0.5,0,1.4,PLT-10,BP-04,docs/modules/PNG.md#png-15,เจ้าของประกาศได้รับงานทบทวนตามรอบ,todo
 PNG-16,PNG,สร้างนโยบายความเป็นส่วนตัวและนโยบายคุกกี้,Privacy & cookie policy generator,Should,P3,เอกสารอื่น,ม.23,LEGAL,M,S,N,5,3,1.0,0,2.8,"PNG-01, CON-05",BP-04,docs/modules/PNG.md#png-16,นโยบายที่สร้างอ้างถึงประกาศและตารางคุกกี้เวอร์ชันล่าสุด,todo
 PNG-13,PNG,ลิงก์เอกสารอ้างอิงในประกาศ,Linked documents,Nice,P4,เนื้อหา,แนวปฏิบัติตลาด,LEGAL,XS,S,N,1,3,0.5,0,1.4,PNG-08,BP-04,docs/modules/PNG.md#png-13,ลิงก์แสดงตามรูปแบบที่ตั้ง,todo
-ROPA-01,ROPA,ทะเบียนข้อมูลส่วนบุคคล,Personal data inventory,Must,P1,ทะเบียน,ม.39,OWNER IT,M,M,Y,5,5,1.2,2.0,3.5,ORG-07,BP-05,docs/modules/ROPA.md#ropa-01,ข้อมูลอ่อนไหวถูกระบุและกรองได้ทุกหน่วยงาน,todo
+ROPA-01,ROPA,ทะเบียนข้อมูลส่วนบุคคล,Personal data inventory,Must,P1,ทะเบียน,ม.39,OWNER IT,M,M,Y,5,5,1.2,2.0,3.5,ORG-07,BP-05,docs/modules/ROPA.md#ropa-01,ข้อมูลอ่อนไหวถูกระบุและกรองได้ทุกหน่วยงาน,done
 ROPA-02,ROPA,ทะเบียนระบบและทรัพย์สิน,System / asset register,Must,P1,ทะเบียน,"ม.37(1), ม.39",IT,M,M,Y,5,5,1.2,2.0,3.5,ORG-06,BP-05,docs/modules/ROPA.md#ropa-02,กิจกรรมอ้างถึงระบบจากทะเบียนเดียวกัน,done
 ROPA-03,ROPA,RoPA ของผู้ควบคุมข้อมูล,RoPA – controller,Must,P1,บันทึกรายการ,ม.39,OWNER DPO,L,L,Y,10,10,2.4,4.0,7.0,"ROPA-01, ROPA-02, PLT-06",BP-05,docs/modules/ROPA.md#ropa-03,กิจกรรมที่ขาดหัวข้อบังคับแสดงสถานะ 'ไม่ครบ' พร้อมรายการที่ขาด,todo
 ROPA-04,ROPA,RoPA ของผู้ประมวลผลข้อมูล,RoPA – processor,Must,P1,บันทึกรายการ,ม.40(3); ประกาศ สคส. RoPA ผู้ประมวลผล พ.ศ. 2565,OWNER DPO,M,M,N,5,5,1.2,0,3.5,ROPA-03,BP-05,docs/modules/ROPA.md#ropa-04,ส่งออก RoPA ผู้ประมวลผลได้ครบหัวข้อตามประกาศ,todo

@@ -6579,6 +6579,182 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/data-inventory:
+    get:
+      operationId: ropaListDataInventory
+      tags: [ropa]
+      summary: The tenant's personal data inventory (ROPA-01) — what data, in which asset, how sensitive
+      x-permission: ropa.inventory.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: asset_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: org_unit_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: data_category_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: sensitive_only
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Sensitive data (s.26) only, across every department (the acceptance criterion)
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DataInventoryItem'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: ropaCreateDataInventoryItem
+      tags: [ropa]
+      summary: Record a kind of personal data held in an asset
+      x-permission: ropa.inventory.create
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataInventoryItemInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataInventoryItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/data-inventory/{id}:
+    get:
+      operationId: ropaGetDataInventoryItem
+      tags: [ropa]
+      summary: One data inventory entry
+      x-permission: ropa.inventory.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataInventoryItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: ropaUpdateDataInventoryItem
+      tags: [ropa]
+      summary: Change a data inventory entry
+      x-permission: ropa.inventory.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataInventoryItemInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataInventoryItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
 components:
   securitySchemes:
     adminJwt:
@@ -7778,6 +7954,38 @@ components:
         hosting_type: {$ref: '#/components/schemas/AssetHostingType'}
         classification: {$ref: '#/components/schemas/AssetClassification'}
         status: {type: string, enum: [active, retired]}
+        row_version: {type: integer}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
+    DataInventorySource:
+      type: string
+      enum: [direct, indirect, derived]
+    DataInventoryItemInput:
+      type: object
+      required: [asset_id, data_category_id]
+      properties:
+        asset_id: {$ref: '#/components/schemas/Uuid'}
+        data_category_id: {$ref: '#/components/schemas/Uuid'}
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        source: {$ref: '#/components/schemas/DataInventorySource'}
+        location_detail: {type: string, maxLength: 500}
+    DataInventoryItem:
+      type: object
+      required: [id, asset_id, data_category_id, is_sensitive, category_name_th, row_version, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        asset_id: {$ref: '#/components/schemas/Uuid'}
+        data_category_id: {$ref: '#/components/schemas/Uuid'}
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        source: {$ref: '#/components/schemas/DataInventorySource'}
+        location_detail: {type: string}
+        is_sensitive:
+          type: boolean
+          description: From the data category (ORG-07, PDPA s.26) — the acceptance criterion's sensitive-data flag
+        sensitive_type: {type: string}
+        category_name_th: {type: string}
+        category_name_en: {type: string}
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
     BusinessCalendarInput:

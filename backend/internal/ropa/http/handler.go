@@ -150,24 +150,32 @@ func parseETag(h string) (int32, error) {
 	return int32(v), err
 }
 
-func encodeAssetCursor(c ropaservice.AssetCursor) string {
-	return base64.RawURLEncoding.EncodeToString([]byte(c.CreatedAt.Format(time.RFC3339Nano) + "|" + c.ID.String()))
+// encodeCursor/decodeCursor are shared by every (created_at, id) keyset-paginated list in this module.
+func encodeCursor(at time.Time, id uuid.UUID) string {
+	return base64.RawURLEncoding.EncodeToString([]byte(at.Format(time.RFC3339Nano) + "|" + id.String()))
 }
 
-func decodeAssetCursor(s string) (ropaservice.AssetCursor, error) {
+func decodeCursor(s string) (time.Time, uuid.UUID, error) {
 	b, err := base64.RawURLEncoding.DecodeString(s)
 	if err != nil {
-		return ropaservice.AssetCursor{}, err
+		return time.Time{}, uuid.UUID{}, err
 	}
 	ts, id, ok := strings.Cut(string(b), "|")
 	if !ok {
-		return ropaservice.AssetCursor{}, errors.New("cursor")
+		return time.Time{}, uuid.UUID{}, errors.New("cursor")
 	}
 	t, err := time.Parse(time.RFC3339Nano, ts)
 	if err != nil {
-		return ropaservice.AssetCursor{}, err
+		return time.Time{}, uuid.UUID{}, err
 	}
 	u, err := uuid.Parse(id)
+	return t, u, err
+}
+
+func encodeAssetCursor(c ropaservice.AssetCursor) string { return encodeCursor(c.CreatedAt, c.ID) }
+
+func decodeAssetCursor(s string) (ropaservice.AssetCursor, error) {
+	t, u, err := decodeCursor(s)
 	return ropaservice.AssetCursor{CreatedAt: t, ID: u}, err
 }
 
@@ -178,7 +186,7 @@ func problem(err error) error {
 	case errors.Is(err, ropaservice.ErrVersionMismatch):
 		return httpx.VersionMismatch()
 	case errors.Is(err, ropaservice.ErrInvalid):
-		return httpx.UnprocessableEntity("ropa.invalid_asset", err.Error())
+		return httpx.UnprocessableEntity("ropa.invalid_input", err.Error())
 	}
 	return err
 }

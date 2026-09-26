@@ -2118,6 +2118,42 @@ export interface paths {
         patch: operations["ropaUpdateAsset"];
         trace?: never;
     };
+    "/admin/v1/ropa/data-inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's personal data inventory (ROPA-01) — what data, in which asset, how sensitive */
+        get: operations["ropaListDataInventory"];
+        put?: never;
+        /** Record a kind of personal data held in an asset */
+        post: operations["ropaCreateDataInventoryItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/data-inventory/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One data inventory entry */
+        get: operations["ropaGetDataInventoryItem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a data inventory entry */
+        patch: operations["ropaUpdateDataInventoryItem"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2764,6 +2800,32 @@ export interface components {
             classification?: components["schemas"]["AssetClassification"];
             /** @enum {string} */
             status: "active" | "retired";
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        DataInventorySource: "direct" | "indirect" | "derived";
+        DataInventoryItemInput: {
+            asset_id: components["schemas"]["Uuid"];
+            data_category_id: components["schemas"]["Uuid"];
+            org_unit_id?: components["schemas"]["Uuid"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            source?: components["schemas"]["DataInventorySource"];
+            location_detail?: string;
+        };
+        DataInventoryItem: {
+            id: components["schemas"]["Uuid"];
+            asset_id: components["schemas"]["Uuid"];
+            data_category_id: components["schemas"]["Uuid"];
+            org_unit_id?: components["schemas"]["Uuid"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            source?: components["schemas"]["DataInventorySource"];
+            location_detail?: string;
+            /** @description From the data category (ORG-07, PDPA s.26) — the acceptance criterion's sensitive-data flag */
+            is_sensitive: boolean;
+            sensitive_type?: string;
+            category_name_th: string;
+            category_name_en?: string;
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
         };
@@ -9177,6 +9239,142 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Asset"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaListDataInventory: {
+        parameters: {
+            query?: {
+                asset_id?: components["schemas"]["Uuid"];
+                org_unit_id?: components["schemas"]["Uuid"];
+                data_category_id?: components["schemas"]["Uuid"];
+                /** @description Sensitive data (s.26) only, across every department (the acceptance criterion) */
+                sensitive_only?: boolean;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DataInventoryItem"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaCreateDataInventoryItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataInventoryItemInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataInventoryItem"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaGetDataInventoryItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataInventoryItem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaUpdateDataInventoryItem: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataInventoryItemInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataInventoryItem"];
                 };
             };
             400: components["responses"]["BadRequest"];

@@ -196,7 +196,7 @@ func (s *Service) CreateMaster(ctx context.Context, kind string, it MasterItem) 
 
 // UpdateMaster changes a tenant entry (If-Match version); the code identifies it and doesn't change.
 func (s *Service) UpdateMaster(ctx context.Context, kind string, id uuid.UUID, version int32, it MasterItem) (MasterItem, error) {
-	before, err := s.masterItem(ctx, kind, id)
+	before, err := s.GetMaster(ctx, kind, id)
 	if err != nil {
 		return MasterItem{}, err
 	}
@@ -237,7 +237,7 @@ func (s *Service) UpdateMaster(ctx context.Context, kind string, id uuid.UUID, v
 
 // DeleteMaster removes a tenant entry nothing refers to.
 func (s *Service) DeleteMaster(ctx context.Context, kind string, id uuid.UUID, version int32) error {
-	before, err := s.masterItem(ctx, kind, id)
+	before, err := s.GetMaster(ctx, kind, id)
 	if err != nil {
 		return err
 	}
@@ -271,7 +271,10 @@ func (s *Service) DeleteMaster(ctx context.Context, kind string, id uuid.UUID, v
 	return s.audit(ctx, "org.master_data.delete", id, masterAudit(kind, before), nil)
 }
 
-func (s *Service) masterItem(ctx context.Context, kind string, id uuid.UUID) (MasterItem, error) {
+// GetMaster reads one master-data item (default or the tenant's own) under RLS — exported for other
+// modules (rule 9) to verify a data_category_id etc. they're about to store is real and see its flags
+// (e.g. is_sensitive) before writing it (FKs bypass RLS).
+func (s *Service) GetMaster(ctx context.Context, kind string, id uuid.UUID) (MasterItem, error) {
 	if !editableKind(kind) {
 		if kind == KindLawfulBases || kind == KindCountries {
 			return MasterItem{}, ErrReadOnly
@@ -309,7 +312,7 @@ func (s *Service) checkParent(ctx context.Context, kind string, parent, self *uu
 	if kind != KindDataCategories || (self != nil && *parent == *self) {
 		return fmt.Errorf("%w: parent", ErrInvalid)
 	}
-	if _, err := s.masterItem(ctx, kind, *parent); err != nil {
+	if _, err := s.GetMaster(ctx, kind, *parent); err != nil {
 		return fmt.Errorf("%w: parent", ErrInvalid)
 	}
 	return nil

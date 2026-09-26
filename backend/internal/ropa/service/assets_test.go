@@ -31,7 +31,9 @@ func setup(t *testing.T, suffix string) env {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.data_inventory`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.assets`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.data_categories WHERE tenant_id IS NOT NULL`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.external_parties`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.org_units`)
 			_, _ = tx.Exec(ctx, `UPDATE org.legal_entities SET parent_id = NULL`)

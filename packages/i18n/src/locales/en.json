@@ -633,6 +633,43 @@
       "saveError": "Couldn't save: {detail}"
     }
   },
+  "dataInventory": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view the personal data inventory.",
+    "title": "Personal data inventory",
+    "intro": "The kinds of personal data each system holds — general or sensitive (s.26) category, source, and who's responsible — feeds into RoPA.",
+    "newItem": "Add entry",
+    "sensitiveOnly": "Sensitive data only (every department)",
+    "filterUnit": "Department",
+    "allUnits": "All departments",
+    "loading": "Loading…",
+    "loadError": "Couldn't load the data. Please try again.",
+    "empty": "No entries in the inventory yet.",
+    "more": "Load more",
+    "edit": "Edit",
+    "sensitiveTag": "Sensitive",
+    "sources": {
+      "direct": "Collected directly from the data subject",
+      "indirect": "Received from another source",
+      "derived": "Derived from processing/analysis"
+    },
+    "form": {
+      "details": "Details",
+      "asset": "System",
+      "dataCategory": "Data category",
+      "legalEntity": "Legal entity (to pick a unit)",
+      "orgUnit": "Responsible unit",
+      "source": "Source",
+      "locationDetail": "Storage location detail",
+      "choose": "Choose…",
+      "none": "None",
+      "sensitiveTag": "sensitive",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Saved.",
+      "saveError": "Couldn't save: {detail}"
+    }
+  },
   "masterData": {
     "signInRequired": "Please sign in.",
     "forbidden": "You don't have permission to view master data.",

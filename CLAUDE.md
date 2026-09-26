@@ -483,6 +483,28 @@ is visible under the caller's RLS first (rule 1) via org's own exported service 
 no field for owner_user_id yet — no user directory UI exists until IAM-01/ORG-09). Tests: unit (validation,
 the three FK-visibility checks, update, two-tenant isolation), HTTP contract (401/403/400 schema/422/412/428).
 
+### ROPA-01 Personal data inventory (`docs/modules/ROPA.md#ropa-01`) — done
+`internal/ropa/service/inventory.go` (`ropa.inventory.*`, shared with ROPA-02) — CRUD on `ropa.data_inventory`,
+already fully specified in the baseline migrations (asset_id/data_category_id NOT NULL, org_unit_id/
+owner_user_id/discovered_by_finding_id nullable) — no new migration. The acceptance criterion's sensitive-data
+flag comes straight from ORG-07's `org.data_categories.is_sensitive` (no new column): `ListDataInventory`'s
+query joins it in the same transaction (its RLS already allows global defaults + the tenant's own rows), so
+every row carries `is_sensitive`/`sensitive_type`/`category_name_*` without a second round trip.
+`sensitive_only=true` on `GET /admin/v1/ropa/data-inventory` searches every department at once (no
+`org_unit_id` filter applied) — the literal "filterable across every department"; an `org_unit_id` filter
+narrows to one department when wanted. Duplicate detection isn't part of this acceptance criterion, so unlike
+ORG-06 there's no dedupe step. FK visibility checks follow the ROPA-02 pattern: `asset_id` through
+`Service.GetAsset` (same package), `data_category_id` through a newly exported `orgservice.GetMaster` (was a
+private `masterItem()` helper — same "export what another module needs" move as ROPA-02's `GetOrgUnit`),
+`org_unit_id`/`owner_user_id` reusing the exact same checks ROPA-02 already has. `discovered_by_finding_id`
+(FK to `dataflow.discovery_findings`) is left alone — the `dataflow` module (automated discovery scans)
+doesn't exist yet, so there's nothing to link to; add it when that module ships. API
+`/admin/v1/ropa/data-inventory` (cursor pagination), `/{id}`. UI `/ropa/data-inventory` (sensitive-only
+toggle, department filter, form with an asset/category/unit picker — the sensitive flag shows inline next to
+each category option and as a badge on sensitive rows). Tests: unit (validation, the four FK-visibility
+checks, update, the acceptance criterion directly — two departments each with a sensitive entry, confirming
+`sensitive_only` returns both — two-tenant isolation), HTTP contract (401/403/400 schema/422/412/428).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

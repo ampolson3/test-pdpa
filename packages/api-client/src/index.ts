@@ -51,6 +51,13 @@ export {
 } from "./parties";
 export { useAssets, useSaveAsset, type Asset, type AssetInput, type AssetType } from "./assets";
 export {
+  useDataInventory,
+  useSaveDataInventoryItem,
+  type DataInventoryItem,
+  type DataInventoryItemInput,
+  type DataInventorySource,
+} from "./inventory";
+export {
   useWorkflowDefinitions,
   useSaveWorkflowDefinition,
   useGroupSearch,

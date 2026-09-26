@@ -135,6 +135,27 @@
 
 **Acceptance criteria:** ข้อมูลอ่อนไหวถูกระบุและกรองได้ทุกหน่วยงาน
 
+**Implementation (ROPA-01):** `backend/internal/ropa/service/inventory.go` (`ropa.inventory.*`, shared with
+ROPA-02) — CRUD on `ropa.data_inventory`, already fully specified in the baseline migrations (asset_id/
+data_category_id NOT NULL, org_unit_id/owner_user_id/discovered_by_finding_id nullable) — no new migration.
+The acceptance criterion's sensitive-data flag comes straight from ORG-07's `org.data_categories.is_sensitive`
+(no new column): `ListDataInventory`'s query joins it in the same transaction (its RLS already allows global
+defaults + the tenant's own rows), so every row carries `is_sensitive`/`sensitive_type`/`category_name_*`
+without a second round trip. `sensitive_only=true` on `GET /admin/v1/ropa/data-inventory` searches every
+department at once (no `org_unit_id` filter applied) — the literal "filterable across every department"; an
+`org_unit_id` filter narrows to one department when wanted. Duplicate detection isn't part of this
+acceptance criterion, so unlike ORG-06 there's no dedupe step. FK visibility checks follow the ROPA-02
+pattern: `asset_id` through `Service.GetAsset` (same package), `data_category_id` through a newly exported
+`orgservice.GetMaster` (was a private `masterItem()` helper — same "export what another module needs" move as
+ROPA-02's `GetOrgUnit`), `org_unit_id`/`owner_user_id` reusing the exact same checks ROPA-02 already has.
+`discovered_by_finding_id` (FK to `dataflow.discovery_findings`) is left alone — the `dataflow` module (automated
+discovery scans) doesn't exist yet, so there's nothing to link to; add it when that module ships. API
+`/admin/v1/ropa/data-inventory` (cursor pagination), `/{id}`. UI `/ropa/data-inventory` (sensitive-only
+toggle, department filter, form with an asset/category/unit picker — the sensitive flag shows inline next to
+each category option and as a badge on sensitive rows). Tests: unit (validation, the four FK-visibility
+checks, update, the acceptance criterion directly — two departments each with a sensitive entry, confirming
+`sensitive_only` returns both — two-tenant isolation), HTTP contract (401/403/400 schema/422/412/428).
+
 <a id="ropa-02"></a>
 ### ROPA-02 ทะเบียนระบบและทรัพย์สิน
 

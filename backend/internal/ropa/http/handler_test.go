@@ -48,6 +48,7 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.data_inventory`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.assets`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.external_parties`)
 			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
@@ -159,7 +160,7 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	if code, _ := do("POST", "/admin/v1/ropa/assets", &admin, map[string]any{"name": "x", "asset_type": "bogus"}, nil); code != 400 {
 		t.Errorf("bad asset_type: %d, want 400 (schema)", code)
 	}
-	if code, body := do("POST", "/admin/v1/ropa/assets", &admin, map[string]any{"name": "x", "asset_type": "application", "org_unit_id": uuid.New()}, nil); code != 422 || !strings.Contains(body, "ropa.invalid_asset") {
+	if code, body := do("POST", "/admin/v1/ropa/assets", &admin, map[string]any{"name": "x", "asset_type": "application", "org_unit_id": uuid.New()}, nil); code != 422 || !strings.Contains(body, "ropa.invalid_input") {
 		t.Errorf("unknown org unit: %d %s, want 422", code, body)
 	}
 	code, body := do("POST", "/admin/v1/ropa/assets", &admin, asset, nil)
@@ -186,5 +187,37 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", "/admin/v1/ropa/assets?q=HRIS", &viewer, nil, nil); code != 200 || !strings.Contains(body, `"name":"ระบบ HRIS`) {
 		t.Errorf("search: %d %s", code, body)
+	}
+
+	// ROPA-01 data inventory
+	var sensitiveCategory uuid.UUID
+	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		return pdb.MustTxFromContext(ctx).QueryRow(ctx, `SELECT id FROM org.data_categories WHERE is_sensitive AND (tenant_id IS NULL) LIMIT 1`).Scan(&sensitiveCategory)
+	})
+	if sensitiveCategory == uuid.Nil {
+		t.Fatal("expected a sensitive default data category to be seeded (ORG-07)")
+	}
+	invBase := "/admin/v1/ropa/data-inventory"
+	if code, _ := do("GET", invBase, nil, nil, nil); code != 401 {
+		t.Errorf("inventory, no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", invBase, &viewer, map[string]any{"asset_id": created.Id, "data_category_id": sensitiveCategory}, nil); code != 403 {
+		t.Errorf("create inventory item with read permission only: %d, want 403", code)
+	}
+	code, body = do("POST", invBase, &admin, map[string]any{"asset_id": created.Id, "data_category_id": sensitiveCategory, "source": "direct"}, nil)
+	if code != 201 || !strings.Contains(body, `"is_sensitive":true`) {
+		t.Fatalf("create inventory item: %d %s", code, body)
+	}
+	var invItem ropahttp.DataInventoryItem
+	_ = json.Unmarshal([]byte(body), &invItem)
+	invURL := invBase + "/" + invItem.Id.String()
+	if code, _ := do("PATCH", invURL, &admin, map[string]any{"asset_id": created.Id, "data_category_id": sensitiveCategory}, nil); code != 428 {
+		t.Errorf("update inventory item without If-Match: %d, want 428", code)
+	}
+	if code, body := do("GET", invBase+"?sensitive_only=true", &viewer, nil, nil); code != 200 || !strings.Contains(body, invItem.Id.String()) {
+		t.Errorf("sensitive_only filter: %d %s", code, body)
+	}
+	if code, _ := do("GET", invBase+"/"+uuid.New().String(), &admin, nil, nil); code != 404 {
+		t.Errorf("unknown inventory item: %d, want 404", code)
 	}
 }
