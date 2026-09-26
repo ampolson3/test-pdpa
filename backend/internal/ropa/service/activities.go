@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	iamservice "pdpa-platform/internal/iam/service"
+	orgservice "pdpa-platform/internal/org/service"
 	pdb "pdpa-platform/internal/pkg/db"
 	ropastore "pdpa-platform/internal/ropa/store"
 )
@@ -466,8 +467,14 @@ func (s *Service) AddActivityPurpose(ctx context.Context, p ActivityPurpose) (Ac
 			return ActivityPurpose{}, fmt.Errorf("%w: purpose_id", ErrInvalid)
 		}
 	}
-	if err := s.validLawfulBasis(ctx, p.LawfulBasisCode); err != nil {
+	basis, err := s.validLawfulBasis(ctx, p.LawfulBasisCode)
+	if err != nil {
 		return ActivityPurpose{}, err
+	}
+	// ROPA-06: a purpose relying on the consent lawful basis must already point at a real Purpose
+	// in the consent module before it can be saved at all — not just flagged at submit time.
+	if basis.RequiresConsent && p.ConsentPurposeID == nil {
+		return ActivityPurpose{}, fmt.Errorf("%w: consent_purpose_id", ErrInvalid)
 	}
 	if p.ConsentPurposeID != nil {
 		if s.Consent == nil {
@@ -779,17 +786,17 @@ func (s *Service) recompute(ctx context.Context, activityID uuid.UUID) (int, []s
 
 // validLawfulBasis checks a code against ORG-07's small lawful-bases list — that master-data kind is
 // keyed by code, not id, so unlike GetMaster's by-id lookups this scans ListMaster's ~13 rows.
-func (s *Service) validLawfulBasis(ctx context.Context, code string) error {
+func (s *Service) validLawfulBasis(ctx context.Context, code string) (orgservice.MasterItem, error) {
 	items, err := s.Org.ListMaster(ctx, "lawful_bases")
 	if err != nil {
-		return err
+		return orgservice.MasterItem{}, err
 	}
 	for _, it := range items {
 		if it.Code == code {
-			return nil
+			return it, nil
 		}
 	}
-	return fmt.Errorf("%w: lawful_basis_code", ErrInvalid)
+	return orgservice.MasterItem{}, fmt.Errorf("%w: lawful_basis_code", ErrInvalid)
 }
 
 func activityAudit(a Activity) map[string]any {

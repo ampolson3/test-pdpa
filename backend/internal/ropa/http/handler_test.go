@@ -303,4 +303,16 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	if code, body := do("GET", actURL, &admin, nil, nil); code != 200 || strings.Contains(body, `"transfer_basis"`) {
 		t.Errorf("transfer_basis should clear once logged: %d %s", code, body)
 	}
+
+	// ROPA-06 lawful basis mapping: a consent-basis purpose needs a Purpose link before it can be saved.
+	var consentBasisCode string
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		return pdb.MustTxFromContext(ctx).QueryRow(ctx, `SELECT code FROM org.lawful_bases WHERE requires_consent LIMIT 1`).Scan(&consentBasisCode)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	purposesBase := actURL + "/purposes"
+	if code, body := do("POST", purposesBase, &admin, map[string]any{"purpose_text": "การตลาด", "lawful_basis_code": consentBasisCode}, nil); code != 422 || !strings.Contains(body, "ropa.invalid_input") {
+		t.Errorf("consent-basis purpose without a Purpose link: %d %s, want 422 ropa.invalid_input", code, body)
+	}
 }

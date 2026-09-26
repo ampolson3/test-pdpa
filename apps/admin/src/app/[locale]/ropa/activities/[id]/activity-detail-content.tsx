@@ -167,19 +167,26 @@ export function ActivityDetailContent({ id }: { id: string }) {
             <input className={INPUT} placeholder={t("form.purposeText")} value={purposeDraft.purpose_text} onChange={(e) => setPurposeDraft({ ...purposeDraft, purpose_text: e.target.value })} />
             <select className={INPUT} value={purposeDraft.lawful_basis_code} onChange={(e) => setPurposeDraft({ ...purposeDraft, lawful_basis_code: e.target.value })}>
               <option value="">{t("form.chooseLawfulBasis")}</option>
-              {lawfulBases.data?.map((b) => <option key={b.code} value={b.code}>{b.code} — {b.name_th}</option>)}
+              {lawfulBases.data?.map((b) => <option key={b.code} value={b.code}>{b.code} — {b.name_th}{b.requires_consent ? ` (${t("form.requiresConsentTag")})` : ""}</option>)}
             </select>
             <select className={INPUT} value={purposeDraft.consent_purpose_id} onChange={(e) => setPurposeDraft({ ...purposeDraft, consent_purpose_id: e.target.value })}>
               <option value="">{t("form.noConsentPurpose")}</option>
               {consentPurposes.data?.map((p) => <option key={p.id} value={p.id}>{p.code}</option>)}
             </select>
-            <div className="sm:col-span-3">
-              <Button
-                onClick={() => m.addPurpose.mutate({ purpose_text: purposeDraft.purpose_text, lawful_basis_code: purposeDraft.lawful_basis_code, consent_purpose_id: purposeDraft.consent_purpose_id || undefined },
-                  { onSuccess: () => setPurposeDraft({ purpose_text: "", lawful_basis_code: "", consent_purpose_id: "" }) })}
-                disabled={m.addPurpose.isPending || !purposeDraft.purpose_text || !purposeDraft.lawful_basis_code}
-              >{t("add")}</Button>
-            </div>
+            {(() => {
+              const requiresConsent = lawfulBases.data?.find((b) => b.code === purposeDraft.lawful_basis_code)?.requires_consent ?? false;
+              const missingConsentPurpose = requiresConsent && !purposeDraft.consent_purpose_id;
+              return (
+                <div className="sm:col-span-3">
+                  {missingConsentPurpose && <p className="mb-2 text-amber-800">{t("form.requiresConsentHint")}</p>}
+                  <Button
+                    onClick={() => m.addPurpose.mutate({ purpose_text: purposeDraft.purpose_text, lawful_basis_code: purposeDraft.lawful_basis_code, consent_purpose_id: purposeDraft.consent_purpose_id || undefined },
+                      { onSuccess: () => setPurposeDraft({ purpose_text: "", lawful_basis_code: "", consent_purpose_id: "" }) })}
+                    disabled={m.addPurpose.isPending || !purposeDraft.purpose_text || !purposeDraft.lawful_basis_code || missingConsentPurpose}
+                  >{t("add")}</Button>
+                </div>
+              );
+            })()}
           </div>
         )}
       </section>

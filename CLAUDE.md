@@ -573,6 +573,28 @@ transfer basis, a recipient outside the activity refused — the acceptance crit
 recipient with no transfer flags `transfer_basis`, adding one clears it, deleting the only one brings it back —
 two-tenant isolation), HTTP contract (401/403/400 schema/422).
 
+### ROPA-06 Lawful basis mapping (`docs/modules/ROPA.md#ropa-06`) — done
+`internal/ropa/service/activities.go`'s `AddActivityPurpose` (`ropa.activity.*`, shared with ROPA-03) — no new
+migration, no new endpoint: ROPA-03 already built `activity_purposes` with `lawful_basis_code` and an optional
+`consent_purpose_id`, already validated the code exists (`validLawfulBasis`) and that a given
+`consent_purpose_id` is a real, visible `consent.purposes` row. What was missing is this feature's own rule:
+`validLawfulBasis` now returns the matched `org.lawful_bases` row (not just a bool), and when its
+`requires_consent` flag is set, `consent_purpose_id` becomes mandatory — refused with `ErrInvalid` at save
+time, before the row is ever written, not just flagged later as an incomplete item. This is stricter and
+narrower than ROPA-03's own `sensitive_consent` completeness check: that one only fires when the activity's
+*data* is sensitive and only blocks `/submit`; this one fires whenever the *lawful basis itself* is consent
+(e.g. ordinary non-sensitive marketing) and blocks the write immediately — the two are independent and can
+both apply to the same purpose. Not built: "แสดงสถิติความยินยอม" (surfacing consent statistics) from the
+module doc's backend note — no screen in this pass needs aggregate consent numbers, and serving one would need
+a materially different query (counts, not a single row) than the FK check already in place; add it when a
+screen actually asks.
+
+UI: the lawful-basis picker tags each consent-requiring code inline, and the Add button for a new purpose is
+disabled with a hint until a Purpose is chosen for those codes — a client-side mirror, not a replacement for
+the service-side rule. Tests: unit (a consent-basis purpose without a link is refused; with one it saves and
+round-trips; the shared `lawfulBasisCode` test helper now explicitly picks a non-consent code so earlier tests
+don't trip this new rule by accident), HTTP contract (422 `ropa.invalid_input`).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

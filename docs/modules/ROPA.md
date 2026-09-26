@@ -318,6 +318,29 @@ with the itemized list, two-tenant isolation), HTTP contract (401/403/400 schema
 
 **Acceptance criteria:** วัตถุประสงค์ที่ใช้ฐานความยินยอมต้องผูก Purpose ก่อนบันทึก
 
+**Implementation (ROPA-06):** `backend/internal/ropa/service/activities.go`'s `AddActivityPurpose` (`ropa.activity.*`,
+shared with ROPA-03) — no new migration, no new endpoint: ROPA-03 already built `activity_purposes` with
+`lawful_basis_code` and an optional `consent_purpose_id`, and already validated the lawful basis code exists
+(`validLawfulBasis`) and that a given `consent_purpose_id`, if set, is a real, visible `consent.purposes` row.
+What was missing is this feature's own rule: `validLawfulBasis` now returns the matched `org.lawful_bases` row
+(not just a bool), and when its `requires_consent` flag is set, `consent_purpose_id` becomes mandatory — refused
+with `ErrInvalid` **at save time**, before the row is ever written, not just flagged later as an incomplete item.
+This is a stricter, narrower rule than ROPA-03's own `sensitive_consent` completeness check: that one only
+fires when the activity's *data* is sensitive (`org.data_categories.is_sensitive`) and only blocks `/submit`;
+this one fires whenever the *lawful basis itself* is consent (`org.lawful_bases.requires_consent`, e.g. for
+ordinary non-sensitive marketing use cases) and blocks the write immediately. The two checks are independent
+and can both apply to the same purpose. "แสดงสถิติความยินยอม" (surfacing consent statistics) from the module
+doc's backend note isn't built — no screen in this pass needed aggregate consent numbers, and the
+`consentservice.GetPurpose` call already used for the FK check would need a materially different query
+(counts, not a single row) to serve one; add it when a screen actually asks for those numbers.
+
+UI: the lawful-basis picker on the activity detail page now tags each consent-requiring code inline, and the
+Add button for a new purpose is disabled with an inline hint until a Purpose is chosen for those codes — a
+client-side mirror of the same rule, not a replacement for it (the service still enforces it as the source of
+truth). Tests: unit (a consent-basis purpose without a link is refused; the same purpose with one saves and the
+link round-trips; existing tests' shared `lawfulBasisCode` helper now explicitly picks a non-consent code so
+they don't accidentally trip this new rule), HTTP contract (422 `ropa.invalid_input` for the missing-link case).
+
 <a id="ropa-07"></a>
 ### ROPA-07 ระยะเวลาเก็บรักษาและวิธีทำลาย
 

@@ -12,16 +12,38 @@ import (
 	ropaservice "pdpa-platform/internal/ropa/service"
 )
 
+// lawfulBasisCode returns a code that does NOT require consent evidence (ROPA-06), so callers that
+// don't care about that rule can use it without also stubbing a consent purpose.
 func lawfulBasisCode(t *testing.T, ctx context.Context, org *orgservice.Service) string {
 	t.Helper()
 	items, err := org.ListMaster(ctx, "lawful_bases")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(items) == 0 {
-		t.Fatal("expected lawful bases to be seeded (ORG-07)")
+	for _, it := range items {
+		if !it.RequiresConsent {
+			return it.Code
+		}
 	}
-	return items[0].Code
+	t.Fatal("expected at least one non-consent lawful basis to be seeded (ORG-07)")
+	return ""
+}
+
+// consentLawfulBasisCode returns a code that DOES require consent evidence (ROPA-06's own acceptance
+// criterion), i.e. org.lawful_bases.requires_consent — the seeded 'CONSENT' code.
+func consentLawfulBasisCode(t *testing.T, ctx context.Context, org *orgservice.Service) string {
+	t.Helper()
+	items, err := org.ListMaster(ctx, "lawful_bases")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, it := range items {
+		if it.RequiresConsent {
+			return it.Code
+		}
+	}
+	t.Fatal("expected at least one consent-requiring lawful basis to be seeded (ORG-07)")
+	return ""
 }
 
 // insertConsentPurpose stubs a minimal consent.purposes row (bypassing the consent service's own
@@ -330,6 +352,44 @@ func TestActivities_SensitiveDataNeedsConsentEvidence(t *testing.T) {
 			if m == "sensitive_consent" {
 				t.Errorf("sensitive_consent should clear once a purpose carries consent evidence: %v", got.MissingItems)
 			}
+		}
+		return nil
+	})
+}
+
+// TestActivities_ConsentLawfulBasisNeedsPurpose is ROPA-06's acceptance criterion: a purpose that
+// relies on the consent lawful basis must already point at a real Purpose in the consent module
+// before it can be saved at all — regardless of whether the underlying data is sensitive.
+func TestActivities_ConsentLawfulBasisNeedsPurpose(t *testing.T) {
+	e := setup(t, "ropaactconsentbasis")
+	var le orgservice.LegalEntity
+	var unit orgservice.OrgUnit
+	var consentBasis string
+	var activity ropaservice.Activity
+	e.in(t, func(ctx context.Context) error {
+		var err error
+		if le, err = e.org.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ตัวอย่าง จำกัด", IsController: true}, 0); err != nil {
+			return err
+		}
+		if unit, err = e.org.CreateOrgUnit(ctx, orgservice.OrgUnit{LegalEntityID: le.ID, Code: "MKT", NameTh: "MKT", UnitType: "department"}); err != nil {
+			return err
+		}
+		consentBasis = consentLawfulBasisCode(t, ctx, e.org)
+		activity, err = e.svc.SaveActivity(ctx, ropaservice.Activity{LegalEntityID: le.ID, OrgUnitID: unit.ID, Code: "MKT-01", Name: "การตลาดทางอีเมล", Role: "controller"}, 0)
+		return err
+	})
+
+	e.in(t, func(ctx context.Context) error {
+		if _, err := e.svc.AddActivityPurpose(ctx, ropaservice.ActivityPurpose{ActivityID: activity.ID, PurposeText: "ส่งอีเมลการตลาด", LawfulBasisCode: consentBasis}); !errors.Is(err, ropaservice.ErrInvalid) {
+			t.Errorf("consent-basis purpose without a Purpose link: %v, want ErrInvalid", err)
+		}
+		consentPurpose := insertConsentPurpose(t, ctx, le.ID, consentBasis)
+		created, err := e.svc.AddActivityPurpose(ctx, ropaservice.ActivityPurpose{ActivityID: activity.ID, PurposeText: "ส่งอีเมลการตลาด", LawfulBasisCode: consentBasis, ConsentPurposeID: &consentPurpose})
+		if err != nil {
+			return err
+		}
+		if created.ConsentPurposeID == nil || *created.ConsentPurposeID != consentPurpose {
+			t.Errorf("consent purpose link did not stick: %+v", created)
 		}
 		return nil
 	})

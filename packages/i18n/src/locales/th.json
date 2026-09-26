@@ -747,6 +747,8 @@
       "purposeText": "วัตถุประสงค์",
       "chooseLawfulBasis": "เลือกฐานทางกฎหมาย…",
       "noConsentPurpose": "ไม่ผูกกับความยินยอม",
+      "requiresConsentTag": "ต้องมีความยินยอม",
+      "requiresConsentHint": "ฐานทางกฎหมายนี้ต้องผูกกับ Purpose ในระบบความยินยอมก่อนจึงจะบันทึกได้",
       "dataCategory": "หมวดข้อมูล",
       "subjectType": "กลุ่มเจ้าของข้อมูล",
       "source": "แหล่งที่มา",

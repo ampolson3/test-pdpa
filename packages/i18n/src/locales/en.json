@@ -747,6 +747,8 @@
       "purposeText": "Purpose",
       "chooseLawfulBasis": "Choose a lawful basis…",
       "noConsentPurpose": "Not linked to consent",
+      "requiresConsentTag": "requires consent",
+      "requiresConsentHint": "This lawful basis needs a Purpose from the consent module linked before it can be saved.",
       "dataCategory": "Data category",
       "subjectType": "Data subject group",
       "source": "Source",
