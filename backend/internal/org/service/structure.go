@@ -351,7 +351,7 @@ func (s *Service) CreateOrgUnit(ctx context.Context, u OrgUnit) (OrgUnit, error)
 	}
 	path := label(id)
 	if u.ParentID != nil {
-		parent, err := s.unit(ctx, *u.ParentID)
+		parent, err := s.GetOrgUnit(ctx, *u.ParentID)
 		if err != nil || parent.LegalEntityID != u.LegalEntityID || parent.Status != "active" {
 			return OrgUnit{}, fmt.Errorf("%w: parent", ErrInvalid)
 		}
@@ -379,7 +379,7 @@ func (s *Service) UpdateOrgUnit(ctx context.Context, id uuid.UUID, version int32
 	if err := u.normalize(); err != nil {
 		return OrgUnit{}, err
 	}
-	before, err := s.unit(ctx, id)
+	before, err := s.GetOrgUnit(ctx, id)
 	if err != nil {
 		return OrgUnit{}, err
 	}
@@ -423,7 +423,7 @@ func (s *Service) MoveOrgUnit(ctx context.Context, id uuid.UUID, version int32, 
 	}
 	newPath := label(u.ID)
 	if parentID != nil {
-		parent, err := s.unit(ctx, *parentID)
+		parent, err := s.GetOrgUnit(ctx, *parentID)
 		if err != nil || parent.LegalEntityID != u.LegalEntityID || parent.Status != "active" {
 			return OrgUnit{}, fmt.Errorf("%w: parent", ErrInvalid)
 		}
@@ -438,7 +438,7 @@ func (s *Service) MoveOrgUnit(ctx context.Context, id uuid.UUID, version int32, 
 	if err := q.SetOrgUnitParent(ctx, orgstore.SetOrgUnitParentParams{ID: u.ID, ParentID: pgUUID(parentID)}); err != nil {
 		return OrgUnit{}, err
 	}
-	out, err := s.unit(ctx, id)
+	out, err := s.GetOrgUnit(ctx, id)
 	if err != nil {
 		return OrgUnit{}, err
 	}
@@ -448,7 +448,7 @@ func (s *Service) MoveOrgUnit(ctx context.Context, id uuid.UUID, version int32, 
 // CloseOrgUnit closes a unit that has no active units below it; it stays in the tree for history.
 func (s *Service) CloseOrgUnit(ctx context.Context, id uuid.UUID, version int32) (OrgUnit, error) {
 	q := orgstore.New(pdb.MustTxFromContext(ctx))
-	if _, err := s.unit(ctx, id); err != nil {
+	if _, err := s.GetOrgUnit(ctx, id); err != nil {
 		return OrgUnit{}, err
 	}
 	n, err := q.CountActiveChildren(ctx, pgtype.UUID{Bytes: id, Valid: true})
@@ -475,7 +475,9 @@ func (s *Service) UnitWithin(ctx context.Context, unit, scope uuid.UUID, include
 	return orgstore.New(pdb.MustTxFromContext(ctx)).UnitWithin(ctx, orgstore.UnitWithinParams{UnitID: unit, ScopeID: scope, IncludeDescendants: includeDescendants})
 }
 
-func (s *Service) unit(ctx context.Context, id uuid.UUID) (OrgUnit, error) {
+// GetOrgUnit reads under the RLS of the transaction in ctx — exported for other modules (rule 9) to
+// verify an org_unit_id they're about to store is real and visible before writing it (FKs bypass RLS).
+func (s *Service) GetOrgUnit(ctx context.Context, id uuid.UUID) (OrgUnit, error) {
 	r, err := orgstore.New(pdb.MustTxFromContext(ctx)).GetOrgUnit(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return OrgUnit{}, ErrNotFound

@@ -2082,6 +2082,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's asset register (ROPA-02) — systems, applications, databases, ... */
+        get: operations["ropaListAssets"];
+        put?: never;
+        /** Register an asset */
+        post: operations["ropaCreateAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/assets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One asset */
+        get: operations["ropaGetAsset"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change an asset's details */
+        patch: operations["ropaUpdateAsset"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2688,6 +2724,48 @@ export interface components {
         };
         ExternalPartyMergeInput: {
             target_id: components["schemas"]["Uuid"];
+        };
+        /** @enum {string} */
+        AssetType: "application" | "database" | "file_share" | "saas" | "paper" | "device" | "other";
+        /** @enum {string} */
+        AssetHostingType: "on_prem" | "cloud" | "hybrid";
+        /** @enum {string} */
+        AssetClassification: "public" | "internal" | "confidential" | "restricted";
+        /**
+         * @example {
+         *       "name": "ระบบ HRIS",
+         *       "asset_type": "application",
+         *       "hosting_country_code": "TH",
+         *       "hosting_type": "cloud"
+         *     }
+         */
+        AssetInput: {
+            name: string;
+            asset_type: components["schemas"]["AssetType"];
+            org_unit_id?: components["schemas"]["Uuid"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            provider_party_id?: components["schemas"]["Uuid"];
+            /** @description ISO 3166-1 alpha-2 */
+            hosting_country_code?: string;
+            hosting_type?: components["schemas"]["AssetHostingType"];
+            classification?: components["schemas"]["AssetClassification"];
+            /** @enum {string} */
+            status?: "active" | "retired";
+        };
+        Asset: {
+            id: components["schemas"]["Uuid"];
+            name: string;
+            asset_type: components["schemas"]["AssetType"];
+            org_unit_id?: components["schemas"]["Uuid"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            provider_party_id?: components["schemas"]["Uuid"];
+            hosting_country_code?: string;
+            hosting_type?: components["schemas"]["AssetHostingType"];
+            classification?: components["schemas"]["AssetClassification"];
+            /** @enum {string} */
+            status: "active" | "retired";
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
         };
         /**
          * @example {
@@ -8972,6 +9050,142 @@ export interface operations {
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    ropaListAssets: {
+        parameters: {
+            query?: {
+                asset_type?: components["schemas"]["AssetType"];
+                org_unit_id?: components["schemas"]["Uuid"];
+                status?: "active" | "retired";
+                /** @description Name contains */
+                q?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Asset"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaCreateAsset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaGetAsset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaUpdateAsset: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
 }

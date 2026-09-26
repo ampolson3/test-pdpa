@@ -59,6 +59,8 @@ import (
 	"pdpa-platform/internal/platform/publickeys"
 	versioninghttp "pdpa-platform/internal/platform/versioning/http"
 	workflowhttp "pdpa-platform/internal/platform/workflow/http"
+	ropahttp "pdpa-platform/internal/ropa/http"
+	ropaservice "pdpa-platform/internal/ropa/service"
 	"pdpa-platform/internal/wiring"
 )
 
@@ -209,12 +211,13 @@ func run() error {
 		},
 	})
 	fileSvc.EntityPermissions = collabSvc.FilePermissions()
-	fileSvc.EntityPermissions[orgservice.LegalEntityType] = "org.structure.read" // ORG-01 logos
+	fileSvc.EntityPermissions[orgservice.LegalEntityType] = "org.structure.read"      // ORG-01 logos
 	fileSvc.EntityPermissions[orgservice.OrgSettingsEntityType] = "org.settings.read" // ORG-20 branding logo
 
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
+	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc}
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
 	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
 	formsSvc := wiring.Forms(notifySvc, auditSvc)
@@ -298,6 +301,11 @@ func run() error {
 			[]orghttp.StrictMiddlewareFunc{authz.StrictMiddleware[orghttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			orghttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		orghttp.HandlerWithOptions(strictOrg, orghttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictRopa := ropahttp.NewStrictHandlerWithOptions(ropahttp.NewStrict(ropaSvc),
+			[]ropahttp.StrictMiddlewareFunc{authz.StrictMiddleware[ropahttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			ropahttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		ropahttp.HandlerWithOptions(strictRopa, ropahttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictConsent := consenthttp.NewStrictHandlerWithOptions(consenthttp.NewStrict(consentSvc),
 			[]consenthttp.StrictMiddlewareFunc{authz.StrictMiddleware[consenthttp.StrictHandlerFunc](authzCache, requiredPermission)},

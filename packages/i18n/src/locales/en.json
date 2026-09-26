@@ -579,6 +579,60 @@
     "mergeInto": "Merge into…",
     "mergeError": "Couldn't merge. Please try again."
   },
+  "assets": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view the system/asset register.",
+    "title": "System & asset register",
+    "intro": "Systems, applications, databases and providers that store or process personal data — RoPA processing activities point at systems from this same registry.",
+    "newAsset": "Add system",
+    "filterType": "Type",
+    "allTypes": "All types",
+    "search": "Search",
+    "searchHint": "System name",
+    "loading": "Loading…",
+    "loadError": "Couldn't load the data. Please try again.",
+    "empty": "No systems in the register yet.",
+    "more": "Load more",
+    "retired": "retired",
+    "edit": "Edit",
+    "types": {
+      "application": "Application",
+      "database": "Database",
+      "file_share": "File share",
+      "saas": "SaaS",
+      "paper": "Paper records",
+      "device": "Device",
+      "other": "Other"
+    },
+    "hosting": {
+      "on_prem": "On-premise",
+      "cloud": "Cloud",
+      "hybrid": "Hybrid"
+    },
+    "classification": {
+      "public": "Public",
+      "internal": "Internal",
+      "confidential": "Confidential",
+      "restricted": "Restricted"
+    },
+    "form": {
+      "details": "Details",
+      "name": "System name",
+      "assetType": "Type",
+      "legalEntity": "Legal entity (to pick a unit)",
+      "orgUnit": "Responsible unit",
+      "provider": "Provider",
+      "hostingCountry": "Server hosting country (2 letters)",
+      "hostingType": "Hosting type",
+      "classification": "Classification",
+      "none": "None",
+      "active": "Active",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Saved.",
+      "saveError": "Couldn't save: {detail}"
+    }
+  },
   "masterData": {
     "signInRequired": "Please sign in.",
     "forbidden": "You don't have permission to view master data.",

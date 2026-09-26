@@ -156,6 +156,23 @@
 
 **Acceptance criteria:** กิจกรรมอ้างถึงระบบจากทะเบียนเดียวกัน
 
+**Implementation (ROPA-02):** `backend/internal/ropa` — the first ropa-schema module built (`ropa.inventory.*`,
+a permission code already shared with ROPA-01's future data inventory). CRUD on `ropa.assets`, which the
+baseline migrations already had (asset_type, org_unit_id/owner_user_id/provider_party_id/hosting_country_code
+all real FKs) — no new migration needed. Built ahead of ROPA-01 even though the backlog's `depends_on` only
+lists ORG-07 for it: `ropa.data_inventory.asset_id` is a NOT NULL FK to `ropa.assets`, so ROPA-01 cannot be
+built first — this asset register has to exist before there is anything for a data-inventory row to point at.
+`org_unit_id` and `provider_party_id` are FKs that bypass RLS, so `SaveAsset` verifies each is visible under
+the caller's RLS before writing it (rule 1) through org's own exported service (`orgservice.Service.GetOrgUnit`
+— newly exported, was a private `unit()` helper — and the already-exported `GetExternalParty`, rule 9);
+`owner_user_id` is checked through `iamservice.Names`, the same cross-module helper BRE already uses.
+`hosting_country_code`'s FK violation is mapped to a friendly 422 the same way ORG-06 does for its own country
+code. API `/admin/v1/ropa/assets` (cursor pagination, same shape as ORG-06/PLT-16's lists), `/{id}`. UI
+`/ropa/assets` (list + filter + form; the org-unit picker needs a legal entity chosen first, same two-step
+pattern as `/settings/organization`; owner_user_id has no field yet — no user directory UI exists until
+IAM-01/ORG-09). Tests: unit (validation, FK visibility checks for org_unit_id/provider_party_id/owner_user_id,
+update, two-tenant isolation), HTTP contract (401/403/400 schema/422/412/428).
+
 <a id="ropa-03"></a>
 ### ROPA-03 RoPA ของผู้ควบคุมข้อมูล
 

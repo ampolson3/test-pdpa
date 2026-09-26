@@ -458,14 +458,30 @@ parties that share one for the admin to review and merge — creating an exact-n
 refused outright, since same-name-different-company is a real case. `MergeExternalParty` needs
 `org.party.delete` (a permanent status change, not a plain update), refuses merging into self, and
 refuses touching an already-merged record on either side. Not done, deliberately: reassigning FKs from
-other schemas when merging — nothing writes a real row referencing `org.external_parties` yet (RoPA,
-DSAR, Vendor and Agreement aren't built; even `breach.incidents.processor_party_id`, which already has
-the column, is never set) so there's nothing to reassign today — the first module that does must follow
-`merged_into_id` itself. API `/admin/v1/org/external-parties` (cursor pagination, same shape as PLT-16's
-document list), `/external-parties/duplicates`, `/external-parties/{id}/merge`. UI
-`/settings/external-parties` (list + form + a duplicates panel with a merge-into picker). Tests: unit
-(validation, update, merge rules, duplicate detection matches the normalization exactly, two-tenant
-isolation), HTTP contract (401/403/400 schema/412/428).
+other schemas when merging — at the time this was built nothing wrote a real row referencing
+`org.external_parties` yet; **ROPA-02 now does** (`ropa.assets.provider_party_id`), so a merge no longer
+reassigns that reference automatically — the first ROPA-02 UI screen that lets someone act on a merged
+provider must follow `merged_into_id` itself until this gets real cross-schema reassignment. API
+`/admin/v1/org/external-parties` (cursor pagination, same shape as PLT-16's document list),
+`/external-parties/duplicates`, `/external-parties/{id}/merge`. UI `/settings/external-parties` (list +
+form + a duplicates panel with a merge-into picker). Tests: unit (validation, update, merge rules,
+duplicate detection matches the normalization exactly, two-tenant isolation), HTTP contract
+(401/403/400 schema/412/428).
+
+### ROPA-02 System / asset register (`docs/modules/ROPA.md#ropa-02`) — done
+`internal/ropa` — the first module on the `ropa` schema (`ropa.inventory.*`, a permission code shared with
+ROPA-01's future data inventory). CRUD on `ropa.assets`, already fully specified in the baseline migrations
+(asset_type, org_unit_id/owner_user_id/provider_party_id/hosting_country_code all real FKs) — no new
+migration. Built ahead of ROPA-01 despite the backlog listing only ORG-07 as ROPA-01's dependency:
+`ropa.data_inventory.asset_id` is a NOT NULL FK to `ropa.assets`, so the data inventory literally cannot be
+built before this exists. `org_unit_id` and `provider_party_id` bypass RLS as FKs, so `SaveAsset` checks each
+is visible under the caller's RLS first (rule 1) via org's own exported service — `orgservice.GetOrgUnit`
+(newly exported; was a private `unit()` helper) and the already-exported `GetExternalParty` (rule 9);
+`owner_user_id` goes through `iamservice.Names`, the same cross-module helper BRE already uses. API
+`/admin/v1/ropa/assets` (cursor pagination, same shape as ORG-06/PLT-16's lists), `/{id}`. UI `/ropa/assets`
+(the org-unit picker needs a legal entity chosen first, same two-step pattern as `/settings/organization`;
+no field for owner_user_id yet — no user directory UI exists until IAM-01/ORG-09). Tests: unit (validation,
+the three FK-visibility checks, update, two-tenant isolation), HTTP contract (401/403/400 schema/422/412/428).
 
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.

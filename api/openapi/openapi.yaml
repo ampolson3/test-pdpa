@@ -21,6 +21,8 @@ tags:
     description: Breach register, 72-hour clock, risk assessment, notices (backend/internal/breach)
   - name: org
     description: Organization — business calendars and holidays so far (backend/internal/org)
+  - name: ropa
+    description: Record of Processing Activities — the asset register so far (backend/internal/ropa)
   - name: platform
     description: Platform services — background jobs, files, notifications, ... (backend/internal/platform/<service>)
 paths:
@@ -6399,6 +6401,184 @@ paths:
           $ref: '#/components/responses/PreconditionRequired'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /admin/v1/ropa/assets:
+    get:
+      operationId: ropaListAssets
+      tags: [ropa]
+      summary: The tenant's asset register (ROPA-02) — systems, applications, databases, ...
+      x-permission: ropa.inventory.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: asset_type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AssetType'
+        - name: org_unit_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, retired]
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+          description: Name contains
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Asset'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: ropaCreateAsset
+      tags: [ropa]
+      summary: Register an asset
+      x-permission: ropa.inventory.create
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssetInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/assets/{id}:
+    get:
+      operationId: ropaGetAsset
+      tags: [ropa]
+      summary: One asset
+      x-permission: ropa.inventory.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: ropaUpdateAsset
+      tags: [ropa]
+      summary: Change an asset's details
+      x-permission: ropa.inventory.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssetInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
 components:
   securitySchemes:
     adminJwt:
@@ -7557,6 +7737,49 @@ components:
       required: [target_id]
       properties:
         target_id: {$ref: '#/components/schemas/Uuid'}
+    AssetType:
+      type: string
+      enum: [application, database, file_share, saas, paper, device, other]
+    AssetHostingType:
+      type: string
+      enum: [on_prem, cloud, hybrid]
+    AssetClassification:
+      type: string
+      enum: [public, internal, confidential, restricted]
+    AssetInput:
+      type: object
+      required: [name, asset_type]
+      properties:
+        name: {type: string, maxLength: 300}
+        asset_type: {$ref: '#/components/schemas/AssetType'}
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        provider_party_id: {$ref: '#/components/schemas/Uuid'}
+        hosting_country_code: {type: string, minLength: 2, maxLength: 2, description: ISO 3166-1 alpha-2}
+        hosting_type: {$ref: '#/components/schemas/AssetHostingType'}
+        classification: {$ref: '#/components/schemas/AssetClassification'}
+        status: {type: string, enum: [active, retired]}
+      example:
+        name: ระบบ HRIS
+        asset_type: application
+        hosting_country_code: TH
+        hosting_type: cloud
+    Asset:
+      type: object
+      required: [id, name, asset_type, status, row_version, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string}
+        asset_type: {$ref: '#/components/schemas/AssetType'}
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        provider_party_id: {$ref: '#/components/schemas/Uuid'}
+        hosting_country_code: {type: string}
+        hosting_type: {$ref: '#/components/schemas/AssetHostingType'}
+        classification: {$ref: '#/components/schemas/AssetClassification'}
+        status: {type: string, enum: [active, retired]}
+        row_version: {type: integer}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
     BusinessCalendarInput:
       type: object
       required: [name, timezone, workdays]
