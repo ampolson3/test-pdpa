@@ -6755,6 +6755,635 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/activities:
+    get:
+      operationId: ropaListActivities
+      tags: [ropa]
+      summary: The tenant's RoPA (ROPA-03) — processing activities under ม.39
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: org_unit_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ActivityStatus'
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+          description: Name or code contains
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProcessingActivity'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: ropaCreateActivity
+      tags: [ropa]
+      summary: Start a processing activity (draft)
+      x-permission: ropa.activity.create
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessingActivityInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingActivity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/activities/{id}:
+    get:
+      operationId: ropaGetActivity
+      tags: [ropa]
+      summary: One processing activity, with its computed completeness and missing ม.39 items
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingActivity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: ropaUpdateActivity
+      tags: [ropa]
+      summary: Change a processing activity's core fields
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessingActivityInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingActivity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/activities/{id}/submit:
+    post:
+      operationId: ropaSubmitActivity
+      tags: [ropa]
+      summary: Submit a draft for approval (BP-05) — refused with the missing-item list while incomplete
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Now pending_approval
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingActivity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          description: Missing mandatory ม.39 items
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/activities/{id}/purposes:
+    get:
+      operationId: ropaListActivityPurposes
+      tags: [ropa]
+      summary: An activity's purposes and lawful bases
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityPurpose'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: ropaAddActivityPurpose
+      tags: [ropa]
+      summary: Add a purpose to an activity
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityPurposeInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityPurpose'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/activities/{id}/purposes/{purposeId}:
+    delete:
+      operationId: ropaDeleteActivityPurpose
+      tags: [ropa]
+      summary: Remove a purpose from an activity
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: purposeId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/activities/{id}/data:
+    get:
+      operationId: ropaListActivityData
+      tags: [ropa]
+      summary: An activity's data categories (ม.39 "ข้อมูลที่เก็บ")
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityData'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: ropaAddActivityData
+      tags: [ropa]
+      summary: Add a data category to an activity
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityDataInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityData'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/activities/{id}/data/{dataId}:
+    delete:
+      operationId: ropaDeleteActivityData
+      tags: [ropa]
+      summary: Remove a data category from an activity
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: dataId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/activities/{id}/retention-rules:
+    get:
+      operationId: ropaListRetentionRules
+      tags: [ropa]
+      summary: An activity's retention rules (ม.39 "ระยะเวลาเก็บรักษา")
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RetentionRule'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: ropaAddRetentionRule
+      tags: [ropa]
+      summary: Add a retention rule to an activity
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetentionRuleInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionRule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/activities/{id}/retention-rules/{ruleId}:
+    delete:
+      operationId: ropaDeleteRetentionRule
+      tags: [ropa]
+      summary: Remove a retention rule from an activity
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/activities/{id}/recipients:
+    get:
+      operationId: ropaListActivityRecipients
+      tags: [ropa]
+      summary: An activity's recipients / disclosures (ม.27)
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityRecipient'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: ropaAddActivityRecipient
+      tags: [ropa]
+      summary: Add a recipient to an activity
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityRecipientInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRecipient'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/activities/{id}/recipients/{recipientId}:
+    delete:
+      operationId: ropaDeleteActivityRecipient
+      tags: [ropa]
+      summary: Remove a recipient from an activity
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: recipientId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     adminJwt:
@@ -7988,6 +8617,158 @@ components:
         category_name_en: {type: string}
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
+    ActivityRole:
+      type: string
+      enum: [controller, processor]
+    ActivityStatus:
+      type: string
+      enum: [draft, pending_approval, active, under_review, ended]
+    ProcessingActivityInput:
+      type: object
+      required: [legal_entity_id, org_unit_id, code, name, role]
+      properties:
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        code: {type: string, maxLength: 40}
+        name: {type: string, maxLength: 300}
+        description: {type: string}
+        role: {$ref: '#/components/schemas/ActivityRole'}
+        controller_party_id: {$ref: '#/components/schemas/Uuid'}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        rights_and_access: {type: string, maxLength: 4000}
+      example:
+        legal_entity_id: 00000000-0000-0000-0000-000000000000
+        org_unit_id: 00000000-0000-0000-0000-000000000000
+        code: HR-01
+        name: การจ่ายเงินเดือนพนักงาน
+        role: controller
+    ProcessingActivity:
+      type: object
+      required: [id, legal_entity_id, org_unit_id, code, name, role, status, completeness, row_version, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        code: {type: string}
+        name: {type: string}
+        description: {type: string}
+        role: {$ref: '#/components/schemas/ActivityRole'}
+        controller_party_id: {$ref: '#/components/schemas/Uuid'}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        rights_and_access: {type: string}
+        status: {$ref: '#/components/schemas/ActivityStatus'}
+        completeness:
+          type: integer
+          description: Percentage of the ม.39 mandatory items that are in place
+        missing_items:
+          type: array
+          description: Which ม.39 items are still missing — the acceptance criterion (only set by GET one activity)
+          items:
+            type: string
+            enum: [data, purpose, controller, retention, rights_access, recipient_basis, sensitive_consent]
+        row_version: {type: integer}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
+    ActivityPurposeInput:
+      type: object
+      required: [purpose_text, lawful_basis_code]
+      properties:
+        purpose_id: {$ref: '#/components/schemas/Uuid'}
+        purpose_text: {type: string}
+        lawful_basis_code: {type: string, maxLength: 20}
+        consent_purpose_id: {$ref: '#/components/schemas/Uuid'}
+    ActivityPurpose:
+      type: object
+      required: [id, activity_id, purpose_text, lawful_basis_code, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        purpose_id: {$ref: '#/components/schemas/Uuid'}
+        purpose_text: {type: string}
+        lawful_basis_code: {type: string}
+        consent_purpose_id: {$ref: '#/components/schemas/Uuid'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    ActivityDataSource:
+      type: string
+      enum: [direct, indirect]
+    ActivityVolumeBand:
+      type: string
+      enum: [lt_1k, 1k_10k, 10k_100k, gt_100k]
+    ActivityDataInput:
+      type: object
+      required: [data_category_id, subject_type_id, source]
+      properties:
+        data_category_id: {$ref: '#/components/schemas/Uuid'}
+        subject_type_id: {$ref: '#/components/schemas/Uuid'}
+        source: {$ref: '#/components/schemas/ActivityDataSource'}
+        source_party_id: {$ref: '#/components/schemas/Uuid'}
+        volume_band: {$ref: '#/components/schemas/ActivityVolumeBand'}
+    ActivityData:
+      type: object
+      required: [id, activity_id, data_category_id, subject_type_id, source, is_sensitive, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        data_category_id: {$ref: '#/components/schemas/Uuid'}
+        subject_type_id: {$ref: '#/components/schemas/Uuid'}
+        source: {$ref: '#/components/schemas/ActivityDataSource'}
+        source_party_id: {$ref: '#/components/schemas/Uuid'}
+        is_sensitive: {type: boolean}
+        volume_band: {$ref: '#/components/schemas/ActivityVolumeBand'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    ActivityDisposalMethod:
+      type: string
+      enum: [delete, destroy, anonymize, return]
+    RetentionRuleInput:
+      type: object
+      required: [retention_basis, trigger_event, disposal_method]
+      properties:
+        data_category_id: {$ref: '#/components/schemas/Uuid'}
+        retention_months: {type: integer, minimum: 1}
+        retention_basis: {type: string}
+        trigger_event: {type: string, maxLength: 60}
+        disposal_method: {$ref: '#/components/schemas/ActivityDisposalMethod'}
+    RetentionRule:
+      type: object
+      required: [id, activity_id, retention_basis, trigger_event, disposal_method, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        data_category_id: {$ref: '#/components/schemas/Uuid'}
+        retention_months: {type: integer}
+        retention_basis: {type: string}
+        trigger_event: {type: string}
+        disposal_method: {$ref: '#/components/schemas/ActivityDisposalMethod'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    ActivityRecipientRole:
+      type: string
+      enum: [processor, controller, joint_controller, government]
+    ActivityRecipientInput:
+      type: object
+      required: [party_id, recipient_role]
+      properties:
+        party_id: {$ref: '#/components/schemas/Uuid'}
+        recipient_role: {$ref: '#/components/schemas/ActivityRecipientRole'}
+        disclosure_basis: {type: string, maxLength: 40}
+        data_category_ids:
+          type: array
+          items: {$ref: '#/components/schemas/Uuid'}
+    ActivityRecipient:
+      type: object
+      required: [id, activity_id, party_id, recipient_role, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        party_id: {$ref: '#/components/schemas/Uuid'}
+        recipient_role: {$ref: '#/components/schemas/ActivityRecipientRole'}
+        disclosure_basis: {type: string}
+        data_category_ids:
+          type: array
+          items: {$ref: '#/components/schemas/Uuid'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
     BusinessCalendarInput:
       type: object
       required: [name, timezone, workdays]

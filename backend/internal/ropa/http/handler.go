@@ -180,11 +180,20 @@ func decodeAssetCursor(s string) (ropaservice.AssetCursor, error) {
 }
 
 func problem(err error) error {
+	var inc *ropaservice.IncompleteError
 	switch {
+	case errors.As(err, &inc):
+		p := httpx.Problem{Status: 422, Code: "ropa.activity_incomplete", Title: "The activity is missing mandatory items"}
+		for _, m := range inc.Missing {
+			p.Errors = append(p.Errors, httpx.FieldError{Field: m, Code: "missing_item"})
+		}
+		return p
 	case errors.Is(err, ropaservice.ErrNotFound):
 		return httpx.NotFound()
 	case errors.Is(err, ropaservice.ErrVersionMismatch):
 		return httpx.VersionMismatch()
+	case errors.Is(err, ropaservice.ErrInvalidTransition):
+		return httpx.InvalidTransition("ropa")
 	case errors.Is(err, ropaservice.ErrInvalid):
 		return httpx.UnprocessableEntity("ropa.invalid_input", err.Error())
 	}

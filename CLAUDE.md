@@ -505,6 +505,49 @@ each category option and as a badge on sensitive rows). Tests: unit (validation,
 checks, update, the acceptance criterion directly — two departments each with a sensitive entry, confirming
 `sensitive_only` returns both — two-tenant isolation), HTTP contract (401/403/400 schema/422/412/428).
 
+### ROPA-03 RoPA of the controller (`docs/modules/ROPA.md#ropa-03`) — done
+`internal/ropa/service/activities.go` (`ropa.activity.*`, permission codes already seeded in the baseline
+migrations, migration 00019) — CRUD on `ropa.processing_activities` plus four child tables (`activity_purposes`,
+`activity_data`, `retention_rules`, `activity_recipients`), all already fully specified in the baseline
+migrations — no new migration. Deliberately scoped to exactly this feature's acceptance criterion and BP-05
+rules 1–2, not the full ม.39 checklist: full ST-05 approval (`pending_approval` → `active`) is ROPA-13's job
+(versioning & approval via PLT-08 — a separate Should feature this one doesn't depend on); country-adequacy
+transfer checks on top of the recipients table built here are ROPA-08's; retention-policy automation is
+ROPA-07's; security-control linking (`activity_controls` → `risk.controls`) and DSAR-linked rejections
+(`activity_rejections` → `dsar.requests`) are left alone entirely, since neither the risk-control library nor
+the DSAR module exists yet — same reasoning as ROPA-01's deferred `discovered_by_finding_id`.
+
+Completeness (the acceptance criterion) is computed live on every `GetActivity`, never persisted from a plain
+read — only from mutations — against 5 fixed items (data, purpose, controller, retention, rights_and_access;
+"controller" only applies when `role=processor` and `controller_party_id` is unset) plus two conditional ones
+counted in the missing-item list but not the score denominator: a recipient missing `disclosure_basis`, and
+sensitive data (`activity_data.is_sensitive`, from ORG-07 as in ROPA-01) with no purpose carrying
+`consent_purpose_id` (BP-05 rule 2's explicit-consent evidence — checked via a newly exported
+`consentservice.GetPurpose`, the first cross-module read from `ropa` into `consent`, rule 9). `POST …/submit`
+(draft/under_review → pending_approval, ST-05) refuses with the itemized list (`ropa.activity_incomplete`, 422,
+the same `FieldError` pattern as PLT-16's `docs.incomplete`) while anything is missing, and 409
+`ropa.invalid_transition` from any other status.
+
+Two real bugs found while testing: (1) persisting the completeness score ran through the table's ordinary
+`row_version`-bumping trigger, so a plain `GetActivity` — no user edit — silently invalidated the caller's ETag;
+fixed by making the completeness computation itself pure and persisting only from mutation paths (`SaveActivity`
+and each child add/delete), which already legitimately bump the version. (2) A duplicate `code` hit the table's
+real unique constraint and aborted the whole request transaction (no savepoint), corrupting every later
+statement in the same tx until commit failed with pgx's `ErrTxCommitRollback` — fixed by wrapping the
+insert/update in `pdb.Savepoint`, the same pattern `org.SaveLegalEntity` already uses for its own
+unique-constraint check (a pattern worth reaching for by default whenever a write can hit a real DB constraint,
+not just Go-level validation).
+
+API `/admin/v1/ropa/activities` (cursor pagination), `/{id}`, `/{id}/submit`, and one list+create+delete triple
+per child table (`/purposes`, `/data`, `/retention-rules`, `/recipients` — no per-row update; editing a child is
+delete+recreate, keeping the sub-resource surface small). UI `/ropa/activities` (list with a completeness badge)
+and `/ropa/activities/{id}` (core-field form, missing-items banner, one section per child table with inline
+add/remove, submit button — editable only while `status=draft`). Tests: unit (validation, all four
+FK-visibility checks, the acceptance criterion directly — an activity missing items shows them and clears them
+one at a time as each is filled in — processor-needs-controller, sensitive-data-needs-consent-evidence, submit
+blocked while incomplete with the itemized list, two-tenant isolation), HTTP contract (401/403/400
+schema/422/428).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	consentservice "pdpa-platform/internal/consent/service"
 	iamservice "pdpa-platform/internal/iam/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
@@ -36,16 +37,27 @@ var (
 )
 
 // Org is what ropa reads from the organization module (rule 9): visibility checks for FKs that bypass
-// RLS (rule 1), before writing an org_unit_id or provider_party_id onto an asset.
+// RLS (rule 1), before writing an org_unit_id or provider_party_id onto an asset, plus ROPA-03's
+// activity fields (legal_entity_id, lawful_basis_code — the latter keyed by code, not id, so it's
+// checked by scanning ListMaster's small "lawful_bases" kind rather than a by-id GetMaster lookup).
 type Org interface {
 	GetOrgUnit(ctx context.Context, id uuid.UUID) (orgservice.OrgUnit, error)
 	GetExternalParty(ctx context.Context, id uuid.UUID) (orgservice.ExternalParty, error)
 	GetMaster(ctx context.Context, kind string, id uuid.UUID) (orgservice.MasterItem, error)
+	GetLegalEntity(ctx context.Context, id uuid.UUID) (orgservice.LegalEntity, error)
+	ListMaster(ctx context.Context, kind string) ([]orgservice.MasterItem, error)
+}
+
+// Consent is what ropa reads from the consent module (rule 9): ROPA-03's evidence, when an activity
+// processes sensitive data, that a purpose carries explicit consent (BP-05 rule 2).
+type Consent interface {
+	GetPurpose(ctx context.Context, id uuid.UUID) (consentservice.Purpose, error)
 }
 
 type Service struct {
-	Audit *audit.Service
-	Org   Org
+	Audit   *audit.Service
+	Org     Org
+	Consent Consent
 }
 
 // Asset is a system, application, database or other place personal data lives — ROPA-02's registry

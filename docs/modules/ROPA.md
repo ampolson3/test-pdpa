@@ -215,6 +215,46 @@ update, two-tenant isolation), HTTP contract (401/403/400 schema/422/412/428).
 
 **Acceptance criteria:** กิจกรรมที่ขาดหัวข้อบังคับแสดงสถานะ 'ไม่ครบ' พร้อมรายการที่ขาด
 
+**Implementation (ROPA-03):** `backend/internal/ropa/service/activities.go` (`ropa.activity.*`, permission codes already
+seeded in the baseline migrations) — CRUD on `ropa.processing_activities` plus four child tables
+(`activity_purposes`, `activity_data`, `retention_rules`, `activity_recipients`), all already fully specified
+in the baseline migrations — no new migration. Scoped to exactly this feature's acceptance criterion and BP-05
+rules 1–2: full ST-05 approval (`pending_approval` → `active`) is ROPA-13's job (versioning & approval, PLT-08,
+a separate Should feature this doesn't depend on); recipients/transfers with country-adequacy checks is ROPA-08's
+job (this builds the recipients table generically, ROPA-08 adds transfers on top); retention policy automation is
+ROPA-07's; security-control linking (`activity_controls` → `risk.controls`) and DSAR-linked rejections
+(`activity_rejections` → `dsar.requests`) are deferred entirely — neither the risk-control library nor the DSAR
+module exists yet (same "don't build against tables nothing can populate" reasoning as ROPA-01's
+`discovered_by_finding_id`).
+
+Completeness (the acceptance criterion) is computed live on every `GetActivity` — never persisted from a plain
+read, only from mutations (see below) — against 5 fixed items (data, purpose, controller, retention,
+rights_and_access; "controller" only applies when `role=processor` and no `controller_party_id`) plus two
+conditional ones counted in the missing-item list but not the score denominator: a recipient missing
+`disclosure_basis`, and sensitive data (`activity_data.is_sensitive`, from ORG-07 as in ROPA-01) with no purpose
+carrying `consent_purpose_id` (BP-05 rule 2's explicit-consent evidence — checked via a newly exported
+`consentservice.GetPurpose`, the first cross-module read from `ropa` into `consent`). `POST …/submit` (draft/
+under_review → pending_approval, ST-05) refuses with the itemized list (`ropa.activity_incomplete`, 422, same
+`FieldError` pattern as PLT-16's `docs.incomplete`) while anything is missing, and 409 `ropa.invalid_transition`
+from any other status.
+
+Real bug found and fixed while testing: `SetActivityCompleteness`'s UPDATE ran through the table's ordinary
+`row_version`-bumping trigger, so a plain `GetActivity` (no user edit) silently invalidated the caller's ETag —
+fixed by making the completeness computation pure and persisting it only from mutation paths (`SaveActivity`,
+and each child add/delete), which already legitimately bump the version. Second bug: a duplicate `code` hit the
+table's real unique constraint and aborted the whole request transaction (no savepoint), corrupting every later
+statement in the same tx until commit failed with `ErrTxCommitRollback` — fixed by wrapping the insert/update in
+`pdb.Savepoint`, the same pattern `org.SaveLegalEntity` already uses for its own unique-constraint check.
+
+API `/admin/v1/ropa/activities` (cursor pagination), `/{id}`, `/{id}/submit`, and one list+create+delete triple
+per child table (`/purposes`, `/data`, `/retention-rules`, `/recipients` — no per-row update; editing a child is
+delete+recreate, keeping the sub-resource surface small). UI `/ropa/activities` (list with a completeness badge)
+and `/ropa/activities/{id}` (core-field form, missing-items banner, one section per child table with inline
+add/remove, submit button — editable only while `status=draft`). Tests: unit (validation, all four FK-visibility
+checks, the acceptance criterion — an activity missing items shows them and clears them one at a time as each is
+filled in — processor-needs-controller, sensitive-data-needs-consent-evidence, submit blocked while incomplete
+with the itemized list, two-tenant isolation), HTTP contract (401/403/400 schema/422/428).
+
 <a id="ropa-04"></a>
 ### ROPA-04 RoPA ของผู้ประมวลผลข้อมูล
 

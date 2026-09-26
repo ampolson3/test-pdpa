@@ -48,9 +48,16 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_recipients`)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.retention_rules`)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_data`)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_purposes`)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.processing_activities`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.data_inventory`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.assets`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.external_parties`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.org_units`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
 			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
 			return err
 		})
@@ -72,8 +79,9 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 		}
 	}
 	other := uuid.New()
-	grants := map[string][]string{tenant.UserID.String(): {"ropa.inventory.read", "ropa.inventory.create", "ropa.inventory.update"},
-		other.String(): {"ropa.inventory.read"}}
+	grants := map[string][]string{tenant.UserID.String(): {"ropa.inventory.read", "ropa.inventory.create", "ropa.inventory.update",
+		"ropa.activity.read", "ropa.activity.create", "ropa.activity.update"},
+		other.String(): {"ropa.inventory.read", "ropa.activity.read"}}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
 	})
@@ -219,5 +227,50 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("GET", invBase+"/"+uuid.New().String(), &admin, nil, nil); code != 404 {
 		t.Errorf("unknown inventory item: %d, want 404", code)
+	}
+
+	// ROPA-03 processing activities
+	var legalEntityID, orgUnitID uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		le, err := orgSvc.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ทดสอบ จำกัด", IsController: true}, 0)
+		if err != nil {
+			return err
+		}
+		legalEntityID = le.ID
+		unit, err := orgSvc.CreateOrgUnit(ctx, orgservice.OrgUnit{LegalEntityID: le.ID, Code: "HR", NameTh: "HR", UnitType: "department"})
+		if err != nil {
+			return err
+		}
+		orgUnitID = unit.ID
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	actBase := "/admin/v1/ropa/activities"
+	activity := map[string]any{"legal_entity_id": legalEntityID, "org_unit_id": orgUnitID, "code": "HR-01", "name": "การจ่ายเงินเดือน", "role": "controller"}
+	if code, _ := do("GET", actBase, nil, nil, nil); code != 401 {
+		t.Errorf("activities, no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", actBase, &viewer, activity, nil); code != 403 {
+		t.Errorf("create activity with read permission only: %d, want 403", code)
+	}
+	code, body = do("POST", actBase, &admin, activity, nil)
+	if code != 201 || !strings.Contains(body, `"status":"draft"`) {
+		t.Fatalf("create activity: %d %s", code, body)
+	}
+	var act ropahttp.ProcessingActivity
+	_ = json.Unmarshal([]byte(body), &act)
+	actURL := actBase + "/" + act.Id.String()
+	if code, _ := do("PATCH", actURL, &admin, activity, nil); code != 428 {
+		t.Errorf("update activity without If-Match: %d, want 428", code)
+	}
+	if code, body := do("GET", actURL, &viewer, nil, nil); code != 200 || !strings.Contains(body, `"missing_items":["data","purpose","retention","rights_access"]`) {
+		t.Errorf("get activity, missing items: %d %s", code, body)
+	}
+	if code, body := do("POST", actURL+"/submit", &admin, nil, map[string]string{"If-Match": `"1"`}); code != 422 || !strings.Contains(body, "ropa.activity_incomplete") {
+		t.Errorf("submit while incomplete: %d %s, want 422 ropa.activity_incomplete", code, body)
+	}
+	if code, _ := do("GET", actBase+"/"+uuid.New().String(), &admin, nil, nil); code != 404 {
+		t.Errorf("unknown activity: %d, want 404", code)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	consentservice "pdpa-platform/internal/consent/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
@@ -17,10 +18,11 @@ import (
 )
 
 type env struct {
-	app    *pgxpool.Pool
-	tenant dbtest.Tenant
-	svc    *ropaservice.Service
-	org    *orgservice.Service
+	app     *pgxpool.Pool
+	tenant  dbtest.Tenant
+	svc     *ropaservice.Service
+	org     *orgservice.Service
+	consent *consentservice.Service
 }
 
 func setup(t *testing.T, suffix string) env {
@@ -31,6 +33,12 @@ func setup(t *testing.T, suffix string) env {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_recipients`)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.retention_rules`)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_data`)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_purposes`)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.processing_activities`)
+			_, _ = tx.Exec(ctx, `DELETE FROM consent.purposes`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.data_inventory`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.assets`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.data_categories WHERE tenant_id IS NOT NULL`)
@@ -43,7 +51,8 @@ func setup(t *testing.T, suffix string) env {
 		})
 	})
 	org := &orgservice.Service{Audit: audit.New()}
-	return env{app: app, tenant: tenant, svc: &ropaservice.Service{Audit: audit.New(), Org: org}, org: org}
+	consent := &consentservice.Service{Audit: audit.New()}
+	return env{app: app, tenant: tenant, svc: &ropaservice.Service{Audit: audit.New(), Org: org, Consent: consent}, org: org, consent: consent}
 }
 
 // in runs fn as the tenant's admin in one transaction (as the Tx middleware would).

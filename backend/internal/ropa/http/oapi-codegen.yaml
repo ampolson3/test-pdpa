@@ -13,3 +13,20 @@ output-options:
     - ropaCreateDataInventoryItem
     - ropaGetDataInventoryItem
     - ropaUpdateDataInventoryItem
+    - ropaListActivities
+    - ropaCreateActivity
+    - ropaGetActivity
+    - ropaUpdateActivity
+    - ropaSubmitActivity
+    - ropaListActivityPurposes
+    - ropaAddActivityPurpose
+    - ropaDeleteActivityPurpose
+    - ropaListActivityData
+    - ropaAddActivityData
+    - ropaDeleteActivityData
+    - ropaListRetentionRules
+    - ropaAddRetentionRule
+    - ropaDeleteRetentionRule
+    - ropaListActivityRecipients
+    - ropaAddActivityRecipient
+    - ropaDeleteActivityRecipient
