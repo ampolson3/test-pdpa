@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.31.1
 
-package collabstore
+package breachstore
 
 import (
 	"net/netip"

@@ -16,6 +16,7 @@ import (
 
 	"github.com/riverqueue/river"
 
+	breach "pdpa-platform/internal/breach/service"
 	pdb "pdpa-platform/internal/pkg/db"
 	auditjobs "pdpa-platform/internal/platform/audit/jobs"
 	auditservice "pdpa-platform/internal/platform/audit/service"
@@ -91,6 +92,9 @@ func run() error {
 
 	notifySvc := &notify.Service{Keyring: &crypto.Keyring{KEK: kek}, River: inserter, Quiet: notify.DefaultQuietHours()}
 	river.AddWorker(workers, &workflow.Ticker{Service: wiring.Workflow(notifySvc, inserter, auditservice.New())})
+	breachSvc := wiring.Breach(notifySvc, fileStore(store, inserter), inserter, auditservice.New(), notifySvc.Keyring)
+	river.AddWorker(workers, &breach.TimerWorker{Service: breachSvc})
+	river.AddWorker(workers, &breach.NoticeWorker{Service: breachSvc})
 
 	river.AddWorker(workers, &notify.Deliverer{
 		Service: notifySvc,

@@ -1463,6 +1463,207 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/breach/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search the breach register (BRE-13), newest awareness first
+         * @description Holders of breach.incident.read see every incident; people who may only report (breach.incident.create) see the ones they reported.
+         */
+        get: operations["breachListIncidents"];
+        put?: never;
+        /** Record an incident: the PDPC notice falls due 72 hours after awareness (BRE-02, BRE-07) */
+        post: operations["breachCreateIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An incident with its 72-hour clock */
+        get: operations["breachGetIncident"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the facts of an open incident (If-Match); moving aware_at needs breach.incident.approve and a reason */
+        patch: operations["breachUpdateIncident"];
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move an incident along ST-03 (take up, confirm, close, reopen the assessment)
+         * @description assessing → notifying / remediating is the notification decision (breachDecideIncident); notifying → remediating needs the recorded PDPC notice (BRE-09). Closing needs breach.incident.approve and a reason.
+         */
+        post: operations["breachTransitionIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Risk assessments of an incident, newest first */
+        get: operations["breachListAssessments"];
+        put?: never;
+        /** Assess the risk on a published breach form (BRE-05): the band gives the risk level, each answer its contribution */
+        post: operations["breachAssessIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide who must be notified, with a reason (BRE-06); never less than the assessed risk requires */
+        post: operations["breachDecideIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The incident timeline: every status change, decision, alert and note with its time and who (BRE-12) */
+        get: operations["breachGetTimeline"];
+        put?: never;
+        /** Add a note to the timeline (insert-only) */
+        post: operations["breachAddNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Evidence files with their SHA-256 */
+        get: operations["breachListEvidence"];
+        put?: never;
+        /** Keep one of your clean uploads as evidence (BRE-12) */
+        post: operations["breachAddEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/notices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Notices to data subjects of an incident (BRE-10) */
+        get: operations["breachListNotices"];
+        put?: never;
+        /** Draft a notice to the affected data subjects (decision must include them) */
+        post: operations["breachCreateNotice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/notices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A notice with its delivery counts */
+        get: operations["breachGetNotice"];
+        /** Change a draft notice’s content (If-Match) */
+        put: operations["breachUpdateNotice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/notices/{id}/recipients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recipients by CSV line, addresses masked, with each message’s delivery status */
+        get: operations["breachListRecipients"];
+        put?: never;
+        /** Replace a draft’s recipients with an uploaded CSV (column address/email/phone, optional language) */
+        post: operations["breachLoadRecipients"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/notices/{id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve and send a notice (If-Match); whoever drafted it can’t approve it */
+        post: operations["breachSendNotice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/v1/collection-points/{key}": {
         parameters: {
             query?: never;
@@ -2541,6 +2742,165 @@ export interface components {
             identifier_encryption: "aes-256-gcm";
             /** @enum {string} */
             key_management: "openbao_transit" | "local_development";
+        };
+        BreachClock: {
+            due_at: components["schemas"]["Timestamp"];
+            /** @description Last moment for a late notice with its reason (15 days, decisions Q-07) */
+            late_by: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            state: "on_track" | "due_soon" | "overdue" | "stopped";
+            hours_elapsed: number;
+        };
+        BreachIncidentInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            reported_via: "employee_form" | "email" | "phone" | "system";
+            title: string;
+            description: string;
+            breach_types: ("confidentiality" | "integrity" | "availability")[];
+            incident_type?: string;
+            occurred_at?: components["schemas"]["Timestamp"];
+            aware_at: components["schemas"]["Timestamp"];
+            contained_at?: components["schemas"]["Timestamp"];
+            affected_subjects?: number;
+            affected_category_ids?: components["schemas"]["Uuid"][];
+            owner_user_id?: components["schemas"]["Uuid"];
+            is_drill?: boolean;
+        };
+        BreachIncidentUpdate: {
+            title: string;
+            description: string;
+            breach_types: ("confidentiality" | "integrity" | "availability")[];
+            incident_type?: string;
+            occurred_at?: components["schemas"]["Timestamp"];
+            aware_at: components["schemas"]["Timestamp"];
+            contained_at?: components["schemas"]["Timestamp"];
+            affected_subjects?: number;
+            affected_category_ids?: components["schemas"]["Uuid"][];
+            owner_user_id?: components["schemas"]["Uuid"];
+            aware_at_reason?: string;
+        };
+        BreachIncident: {
+            id: components["schemas"]["Uuid"];
+            incident_no: string;
+            legal_entity_id: components["schemas"]["Uuid"];
+            reported_via: string;
+            reporter_user_id?: components["schemas"]["Uuid"];
+            reporter_name?: string;
+            title: string;
+            description: string;
+            breach_types: string[];
+            incident_type?: string;
+            occurred_at?: components["schemas"]["Timestamp"];
+            aware_at: components["schemas"]["Timestamp"];
+            contained_at?: components["schemas"]["Timestamp"];
+            affected_subjects?: number | null;
+            affected_category_ids: components["schemas"]["Uuid"][];
+            /** @enum {string} */
+            risk_level?: "none" | "low" | "high";
+            /** @enum {string} */
+            decision?: "no_notification" | "notify_pdpc" | "notify_pdpc_and_subjects";
+            decision_reason?: string;
+            decided_by?: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "reported" | "triage" | "assessing" | "notifying" | "remediating" | "closed";
+            owner_user_id?: components["schemas"]["Uuid"];
+            owner_name?: string;
+            close_reason?: string;
+            is_drill: boolean;
+            clock: components["schemas"]["BreachClock"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        BreachTimelineItem: {
+            id: components["schemas"]["Uuid"];
+            occurred_at: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            type: "decision" | "action" | "communication" | "system" | "note";
+            /** @description Automatic entries: what happened, e.g. status:triage:assessing, deadline:24, decision:notify_pdpc:low (localized by the UI) */
+            token?: string;
+            /** @description A note, or the reason given with an automatic entry */
+            text?: string;
+            actor_id?: components["schemas"]["Uuid"];
+            actor_name?: string;
+            auto: boolean;
+        };
+        BreachAssessment: {
+            id: components["schemas"]["Uuid"];
+            form_submission_id: components["schemas"]["Uuid"];
+            score: number;
+            /** @enum {string} */
+            risk_level: "none" | "low" | "high";
+            factors: {
+                question: string;
+                label: {
+                    [key: string]: string;
+                };
+                answer?: unknown;
+                points: number;
+            }[];
+            assessed_by: components["schemas"]["Uuid"];
+            assessed_by_name?: string;
+            assessed_at: components["schemas"]["Timestamp"];
+        };
+        BreachEvidence: {
+            id: components["schemas"]["Uuid"];
+            file_id: components["schemas"]["Uuid"];
+            file_name?: string;
+            sha256?: string;
+            size_bytes?: number;
+            av_status?: string;
+            description?: string;
+            collected_by?: components["schemas"]["Uuid"];
+            collected_by_name?: string;
+            collected_at: components["schemas"]["Timestamp"];
+        };
+        BreachNoticeVars: {
+            organization: string;
+            summary: string;
+            remedy: string;
+            contact: string;
+        };
+        BreachNotice: {
+            id: components["schemas"]["Uuid"];
+            incident_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            channel: "email" | "sms";
+            template_code: string;
+            variables: components["schemas"]["BreachNoticeVars"];
+            total: number;
+            /** @description Handed to the notification service */
+            handed: number;
+            /** @description Could not be handed over */
+            failed: number;
+            /** @enum {string} */
+            status: "draft" | "sending" | "done" | "failed";
+            /** @description Handed-over messages by delivery status (queued / sent / failed) */
+            delivery: {
+                [key: string]: number;
+            };
+            started_at?: components["schemas"]["Timestamp"];
+            completed_at?: components["schemas"]["Timestamp"];
+            created_by?: components["schemas"]["Uuid"];
+            created_by_name?: string;
+            approved_by?: components["schemas"]["Uuid"];
+            approved_by_name?: string;
+            approved_at?: components["schemas"]["Timestamp"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        BreachRecipient: {
+            id: components["schemas"]["Uuid"];
+            line: number;
+            masked: string;
+            language: string;
+            /** @enum {string} */
+            status: "queued" | "sent" | "failed";
+            delivery?: string;
+            attempts?: number;
+            sent_at?: components["schemas"]["Timestamp"];
+            error?: string;
         };
         ConsentSubmission: {
             collection_point_code: string;
@@ -6152,6 +6512,694 @@ export interface operations {
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    breachListIncidents: {
+        parameters: {
+            query?: {
+                status?: "reported" | "triage" | "assessing" | "notifying" | "remediating" | "closed";
+                risk?: "none" | "low" | "high";
+                owner_id?: components["schemas"]["Uuid"];
+                /** @description Incident number, title or description contains */
+                q?: string;
+                /** @description Aware at or after */
+                from?: components["schemas"]["Timestamp"];
+                /** @description Aware before */
+                to?: components["schemas"]["Timestamp"];
+                open_only?: boolean;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachIncident"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    breachCreateIncident: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreachIncidentInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachIncident"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachGetIncident: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachIncident"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachUpdateIncident: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreachIncidentUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachIncident"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachTransitionIncident: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    to: "triage" | "assessing" | "notifying" | "remediating" | "closed";
+                    reason?: string;
+                    owner_user_id?: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachIncident"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachListAssessments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachAssessment"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachAssessIncident: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    form_id: components["schemas"]["Uuid"];
+                    answers: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachAssessment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachDecideIncident: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    decision: "no_notification" | "notify_pdpc" | "notify_pdpc_and_subjects";
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachIncident"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachGetTimeline: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachTimelineItem"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachAddNote: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    text: string;
+                    occurred_at?: components["schemas"]["Timestamp"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachListEvidence: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachEvidence"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachAddEvidence: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    file_id: components["schemas"]["Uuid"];
+                    description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachEvidence"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachListNotices: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachNotice"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachCreateNotice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    channel: "email" | "sms";
+                    variables: components["schemas"]["BreachNoticeVars"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachNotice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachGetNotice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachNotice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachUpdateNotice: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    variables: components["schemas"]["BreachNoticeVars"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachNotice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachListRecipients: {
+        parameters: {
+            query?: {
+                status?: "queued" | "sent" | "failed";
+                after_line?: number;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachRecipient"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachLoadRecipients: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    file_id: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachNotice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachSendNotice: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachNotice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     consentGetPublicCollectionPoint: {

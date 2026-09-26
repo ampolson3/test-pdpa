@@ -327,7 +327,7 @@ func TestPermissionsByFormType(t *testing.T) {
 		if _, err := f.svc.CreateForm(ctx, "x", "x", "assessment", f.draft); !errors.Is(err, forms.ErrForbidden) {
 			t.Errorf("create assessment with dsar permissions: %v", err)
 		}
-		if _, err := f.svc.CreateForm(ctx, "x", "x", "breach", f.draft); !errors.Is(err, forms.ErrUnknownType) {
+		if _, err := f.svc.CreateForm(ctx, "x", "x", "intake", f.draft); !errors.Is(err, forms.ErrUnknownType) {
 			t.Errorf("unregistered type: %v", err)
 		}
 		if _, err := f.svc.GetForm(ctx, form.ID); !errors.Is(err, forms.ErrNotFound) {

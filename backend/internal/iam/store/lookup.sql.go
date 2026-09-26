@@ -66,6 +66,37 @@ func (q *Queries) ActiveUserNames(ctx context.Context, ids []uuid.UUID) ([]Activ
 	return items, nil
 }
 
+const activeUsersWithRole = `-- name: ActiveUsersWithRole :many
+SELECT DISTINCT u.id FROM iam.users u
+JOIN iam.role_assignments ra ON ra.user_id = u.id
+    OR ra.group_id IN (SELECT gm.group_id FROM iam.group_members gm WHERE gm.user_id = u.id)
+JOIN iam.roles r ON r.id = ra.role_id
+WHERE r.code = $1 AND u.status = 'active'
+  AND ra.valid_from <= now() AND (ra.valid_to IS NULL OR ra.valid_to > now())
+ORDER BY u.id
+`
+
+// Active users holding a role tenant-wide, directly or through a group (who to alert about a breach, BRE-07).
+func (q *Queries) ActiveUsersWithRole(ctx context.Context, roleCode string) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, activeUsersWithRole, roleCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const groupIDsOfUser = `-- name: GroupIDsOfUser :many
 SELECT group_id FROM iam.group_members WHERE user_id = $1
 `

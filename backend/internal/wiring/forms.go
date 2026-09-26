@@ -20,5 +20,9 @@ func Forms(n *notify.Service, a *audit.Service) *forms.Service {
 	// Consent forms are answered by data subjects through the public API (forms.Service.Record), never here.
 	s.Register("consent", forms.Policy{Read: "consent.collectionpoint.read", Create: "consent.collectionpoint.create",
 		Update: "consent.collectionpoint.update", Publish: "consent.collectionpoint.publish"})
+	// Breach risk assessments (BRE-05): the DPO designs and publishes them; the incident team answers them through the
+	// breach module (forms.Service.Record), with bands none / low / high.
+	s.Register("breach", forms.Policy{Read: "breach.incident.read", Create: "breach.incident.approve",
+		Update: "breach.incident.approve", Publish: "breach.incident.approve", Respond: "breach.incident.update"})
 	return s
 }

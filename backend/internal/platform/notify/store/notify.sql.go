@@ -484,6 +484,43 @@ func (q *Queries) MarkRead(ctx context.Context, arg MarkReadParams) (int64, erro
 	return result.RowsAffected(), nil
 }
 
+const notificationStatuses = `-- name: NotificationStatuses :many
+SELECT id, status, attempts, sent_at FROM platform.notifications WHERE id = ANY ($1::uuid[])
+`
+
+type NotificationStatusesRow struct {
+	ID       uuid.UUID          `db:"id" json:"id"`
+	Status   string             `db:"status" json:"status"`
+	Attempts int32              `db:"attempts" json:"attempts"`
+	SentAt   pgtype.Timestamptz `db:"sent_at" json:"sent_at"`
+}
+
+// Delivery status of messages a module handed over (e.g. a breach notice to 10,000 people, BRE-10).
+func (q *Queries) NotificationStatuses(ctx context.Context, ids []uuid.UUID) ([]NotificationStatusesRow, error) {
+	rows, err := q.db.Query(ctx, notificationStatuses, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []NotificationStatusesRow
+	for rows.Next() {
+		var i NotificationStatusesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Status,
+			&i.Attempts,
+			&i.SentAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const resolveTemplate = `-- name: ResolveTemplate :one
 SELECT id, tenant_id, code, channel, language, subject, body, variables
 FROM platform.notification_templates

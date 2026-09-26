@@ -209,6 +209,47 @@ var problemTitles = map[string]map[Lang]string{
 		Th: "ข้อมูลไม่ถูกต้อง",
 		En: "Invalid consent request",
 	},
+	// BRE breach
+	"breach.invalid": {
+		Th: "ข้อมูลเหตุละเมิดไม่ถูกต้อง",
+		En: "Invalid breach data",
+	},
+	"breach.self_approval": {
+		Th: "ผู้จัดทำหนังสือแจ้งอนุมัติเองไม่ได้",
+		En: "The maker of a notice can't approve it",
+	},
+	"breach.invalid_transition": {
+		Th: "เปลี่ยนสถานะเหตุละเมิดนี้ไม่ได้",
+		En: "Invalid breach status change",
+	},
+	"breach.closed": {
+		Th: "เหตุนี้ปิดแล้ว แก้ไขไม่ได้",
+		En: "The incident is closed",
+	},
+	"breach.no_assessment": {
+		Th: "ต้องประเมินความเสี่ยงก่อน",
+		En: "Assess the risk first",
+	},
+	"breach.pdpc_notice_missing": {
+		Th: "ยังไม่ได้บันทึกการแจ้ง สคส.",
+		En: "The PDPC notice has not been recorded",
+	},
+	"breach.notice_not_required": {
+		Th: "เหตุนี้ไม่ได้ตัดสินให้แจ้งเจ้าของข้อมูล",
+		En: "Data subjects are not to be notified for this incident",
+	},
+	"breach.decision_too_weak": {
+		Th: "การตัดสินต้องไม่น้อยกว่าที่ระดับความเสี่ยงกำหนด",
+		En: "The decision is weaker than the assessed risk requires",
+	},
+	"breach.bad_form": {
+		Th: "แบบประเมินต้องเป็นแบบประเมินเหตุละเมิดที่เผยแพร่แล้ว และมีระดับ none / low / high",
+		En: "Not a published breach assessment form with none/low/high bands",
+	},
+	"breach.file_not_usable": {
+		Th: "ใช้ไฟล์นี้ไม่ได้ (ไม่พบ ไม่ใช่ไฟล์ของคุณ ยังไม่ผ่านการตรวจไวรัส หรือถูกใช้แล้ว)",
+		En: "File not found, not yours, not clean or already used",
+	},
 	// PLT-14 import
 	"import.invalid_mapping": {
 		Th: "การจับคู่คอลัมน์ไม่ถูกต้อง",

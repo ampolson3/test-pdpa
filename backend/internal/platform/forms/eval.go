@@ -352,3 +352,28 @@ func matches(answer, value any) bool {
 }
 
 func round(f float64) float64 { return math.Round(f*100) / 100 }
+
+// Contribution is how much one answered question added to a score — the "why" behind a result (e.g. the factors
+// of a breach risk assessment, BRE-05).
+type Contribution struct {
+	Question string  `json:"question"`
+	Label    Text    `json:"label"`
+	Answer   any     `json:"answer"`
+	Points   float64 `json:"points"`
+}
+
+// Contributions lists, in form order, every answered question of a result (res.Answers holds only visible, valid
+// answers) with the points it added.
+func Contributions(s Schema, answers Answers) []Contribution {
+	out := []Contribution{}
+	for _, sec := range s.Sections {
+		for _, q := range sec.Questions {
+			v, ok := answers[q.Key]
+			if !ok {
+				continue
+			}
+			out = append(out, Contribution{Question: q.Key, Label: q.Label, Answer: v, Points: round(score(q, v))})
+		}
+	}
+	return out
+}

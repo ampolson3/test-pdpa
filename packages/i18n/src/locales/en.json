@@ -571,7 +571,8 @@
       "assessment": "Assessment",
       "questionnaire": "RoPA questionnaire",
       "dsar": "Rights request form",
-      "consent": "Consent form"
+      "consent": "Consent form",
+      "breach": "Breach risk assessment"
     },
     "status": {
       "draft": "Draft",

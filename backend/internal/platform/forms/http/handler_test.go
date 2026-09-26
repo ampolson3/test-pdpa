@@ -193,7 +193,7 @@ func TestFormEndpoints_Contract(t *testing.T) {
 	if code, body := do("POST", "/admin/v1/platform/forms", &alice, dup, nil); code != 422 || !strings.Contains(body, "forms.invalid_schema") {
 		t.Errorf("duplicate keys: %d %s, want 422", code, body)
 	}
-	if code, body := do("POST", "/admin/v1/platform/forms", &dsarUser, map[string]any{"code": "x", "name": "x", "form_type": "breach", "draft": map[string]any{"schema": fx.Schema}}, nil); code != 422 || !strings.Contains(body, "forms.unknown_type") {
+	if code, body := do("POST", "/admin/v1/platform/forms", &dsarUser, map[string]any{"code": "x", "name": "x", "form_type": "intake", "draft": map[string]any{"schema": fx.Schema}}, nil); code != 422 || !strings.Contains(body, "forms.unknown_type") {
 		t.Errorf("unregistered type: %d %s, want 422", code, body)
 	}
 	code, body := do("POST", "/admin/v1/platform/forms", &alice, create, nil)

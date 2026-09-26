@@ -21,6 +21,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
+	breachhttp "pdpa-platform/internal/breach/http"
+	breach "pdpa-platform/internal/breach/service"
 	consenthttp "pdpa-platform/internal/consent/http"
 	consentpublichttp "pdpa-platform/internal/consent/publichttp"
 	consentservice "pdpa-platform/internal/consent/service"
@@ -216,6 +218,9 @@ func run() error {
 	consentSvc := &consentservice.Service{Versioning: versioningSvc, Events: &events.Publisher{River: riverClient},
 		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc}
 	consentSvc.RegisterVersioning()
+	breachSvc := wiring.Breach(notifySvc, fileSvc, riverClient, auditSvc, keyring)
+	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                // BRE-12 evidence
+	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read" // BRE-10 recipient lists
 
 	// Public consent forms (BP-01): tenant and principal from the public key, then the same Idempotency + Tx chain.
 	r.Group(func(g chi.Router) {
@@ -289,6 +294,11 @@ func run() error {
 			[]consenthttp.StrictMiddlewareFunc{authz.StrictMiddleware[consenthttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			consenthttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		consenthttp.HandlerWithOptions(strictConsent, consenthttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictBreach := breachhttp.NewStrictHandlerWithOptions(breachhttp.NewStrict(breachSvc),
+			[]breachhttp.StrictMiddlewareFunc{authz.StrictMiddleware[breachhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			breachhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		breachhttp.HandlerWithOptions(strictBreach, breachhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictNotify := notifyhttp.NewStrictHandlerWithOptions(notifyhttp.NewStrict(notifySvc),
 			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission)},

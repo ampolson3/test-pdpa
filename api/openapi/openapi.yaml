@@ -17,6 +17,8 @@ tags:
     description: Users, roles, permissions, sessions (backend/internal/iam)
   - name: consent
     description: Purposes, collection points, consent transactions (backend/internal/consent)
+  - name: breach
+    description: Breach register, 72-hour clock, risk assessment, notices (backend/internal/breach)
   - name: org
     description: Organization — business calendars and holidays so far (backend/internal/org)
   - name: platform
@@ -4009,6 +4011,953 @@ paths:
           $ref: '#/components/responses/PreconditionRequired'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /admin/v1/breach/incidents:
+    get:
+      operationId: breachListIncidents
+      tags:
+      - breach
+      summary: Search the breach register (BRE-13), newest awareness first
+      description: Holders of breach.incident.read see every incident; people who may only report (breach.incident.create) see the ones they reported.
+      x-permission: authenticated
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - reported
+          - triage
+          - assessing
+          - notifying
+          - remediating
+          - closed
+      - name: risk
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - none
+          - low
+          - high
+      - name: owner_id
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+        description: Incident number, title or description contains
+      - name: from
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/Timestamp'
+        description: Aware at or after
+      - name: to
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/Timestamp'
+        description: Aware before
+      - name: open_only
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BreachIncident'
+                  next_cursor:
+                    type:
+                    - string
+                    - 'null'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: breachCreateIncident
+      tags:
+      - breach
+      summary: 'Record an incident: the PDPC notice falls due 72 hours after awareness (BRE-02, BRE-07)'
+      x-permission: breach.incident.create
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BreachIncidentInput'
+      responses:
+        '201':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachIncident'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/breach/incidents/{id}:
+    get:
+      operationId: breachGetIncident
+      tags:
+      - breach
+      summary: An incident with its 72-hour clock
+      x-permission: authenticated
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachIncident'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: breachUpdateIncident
+      tags:
+      - breach
+      summary: Update the facts of an open incident (If-Match); moving aware_at needs breach.incident.approve and a reason
+      x-permission: breach.incident.update
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BreachIncidentUpdate'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachIncident'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/breach/incidents/{id}/transitions:
+    post:
+      operationId: breachTransitionIncident
+      tags:
+      - breach
+      summary: Move an incident along ST-03 (take up, confirm, close, reopen the assessment)
+      description: assessing → notifying / remediating is the notification decision (breachDecideIncident); notifying → remediating needs the recorded PDPC notice (BRE-09). Closing needs breach.incident.approve
+        and a reason.
+      x-permission: breach.incident.update
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - to
+              additionalProperties: false
+              properties:
+                to:
+                  type: string
+                  enum:
+                  - triage
+                  - assessing
+                  - notifying
+                  - remediating
+                  - closed
+                reason:
+                  type: string
+                  maxLength: 4000
+                owner_user_id:
+                  $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachIncident'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/breach/incidents/{id}/assessments:
+    get:
+      operationId: breachListAssessments
+      tags:
+      - breach
+      summary: Risk assessments of an incident, newest first
+      x-permission: authenticated
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BreachAssessment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: breachAssessIncident
+      tags:
+      - breach
+      summary: 'Assess the risk on a published breach form (BRE-05): the band gives the risk level, each answer its contribution'
+      x-permission: breach.incident.update
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - form_id
+              - answers
+              additionalProperties: false
+              properties:
+                form_id:
+                  $ref: '#/components/schemas/Uuid'
+                answers:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachAssessment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/breach/incidents/{id}/decision:
+    post:
+      operationId: breachDecideIncident
+      tags:
+      - breach
+      summary: Decide who must be notified, with a reason (BRE-06); never less than the assessed risk requires
+      x-permission: breach.incident.approve
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - decision
+              - reason
+              additionalProperties: false
+              properties:
+                decision:
+                  type: string
+                  enum:
+                  - no_notification
+                  - notify_pdpc
+                  - notify_pdpc_and_subjects
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 4000
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachIncident'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/breach/incidents/{id}/timeline:
+    get:
+      operationId: breachGetTimeline
+      tags:
+      - breach
+      summary: 'The incident timeline: every status change, decision, alert and note with its time and who (BRE-12)'
+      x-permission: authenticated
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BreachTimelineItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: breachAddNote
+      tags:
+      - breach
+      summary: Add a note to the timeline (insert-only)
+      x-permission: breach.incident.update
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - text
+              additionalProperties: false
+              properties:
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 4000
+                occurred_at:
+                  $ref: '#/components/schemas/Timestamp'
+      responses:
+        '204':
+          description: OK
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/breach/incidents/{id}/evidence:
+    get:
+      operationId: breachListEvidence
+      tags:
+      - breach
+      summary: Evidence files with their SHA-256
+      x-permission: authenticated
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BreachEvidence'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: breachAddEvidence
+      tags:
+      - breach
+      summary: Keep one of your clean uploads as evidence (BRE-12)
+      x-permission: breach.incident.update
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - file_id
+              additionalProperties: false
+              properties:
+                file_id:
+                  $ref: '#/components/schemas/Uuid'
+                description:
+                  type: string
+                  maxLength: 2000
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachEvidence'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/breach/incidents/{id}/notices:
+    get:
+      operationId: breachListNotices
+      tags:
+      - breach
+      summary: Notices to data subjects of an incident (BRE-10)
+      x-permission: authenticated
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BreachNotice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: breachCreateNotice
+      tags:
+      - breach
+      summary: Draft a notice to the affected data subjects (decision must include them)
+      x-permission: breach.notification.create
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - channel
+              - variables
+              additionalProperties: false
+              properties:
+                channel:
+                  type: string
+                  enum:
+                  - email
+                  - sms
+                variables:
+                  $ref: '#/components/schemas/BreachNoticeVars'
+      responses:
+        '201':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachNotice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/breach/notices/{id}:
+    get:
+      operationId: breachGetNotice
+      tags:
+      - breach
+      summary: A notice with its delivery counts
+      x-permission: authenticated
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachNotice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: breachUpdateNotice
+      tags:
+      - breach
+      summary: Change a draft notice’s content (If-Match)
+      x-permission: breach.notification.update
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - variables
+              additionalProperties: false
+              properties:
+                variables:
+                  $ref: '#/components/schemas/BreachNoticeVars'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachNotice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/breach/notices/{id}/recipients:
+    get:
+      operationId: breachListRecipients
+      tags:
+      - breach
+      summary: Recipients by CSV line, addresses masked, with each message’s delivery status
+      x-permission: authenticated
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - queued
+          - sent
+          - failed
+      - name: after_line
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BreachRecipient'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: breachLoadRecipients
+      tags:
+      - breach
+      summary: Replace a draft’s recipients with an uploaded CSV (column address/email/phone, optional language)
+      x-permission: breach.notification.update
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - file_id
+              additionalProperties: false
+              properties:
+                file_id:
+                  $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachNotice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/breach/notices/{id}/send:
+    post:
+      operationId: breachSendNotice
+      tags:
+      - breach
+      summary: Approve and send a notice (If-Match); whoever drafted it can’t approve it
+      x-permission: breach.notification.approve
+      x-module: breach
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - $ref: '#/components/parameters/IfMatch'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachNotice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /public/v1/collection-points/{key}:
     get:
       operationId: consentGetPublicCollectionPoint
@@ -6325,6 +7274,458 @@ components:
           enum:
           - openbao_transit
           - local_development
+    BreachClock:
+      type: object
+      required:
+      - due_at
+      - late_by
+      - state
+      - hours_elapsed
+      properties:
+        due_at:
+          $ref: '#/components/schemas/Timestamp'
+        late_by:
+          allOf:
+          - $ref: '#/components/schemas/Timestamp'
+          description: Last moment for a late notice with its reason (15 days, decisions Q-07)
+        state:
+          type: string
+          enum:
+          - on_track
+          - due_soon
+          - overdue
+          - stopped
+        hours_elapsed:
+          type: number
+    BreachIncidentInput:
+      type: object
+      required:
+      - legal_entity_id
+      - reported_via
+      - title
+      - description
+      - breach_types
+      - aware_at
+      additionalProperties: false
+      properties:
+        legal_entity_id:
+          $ref: '#/components/schemas/Uuid'
+        reported_via:
+          type: string
+          enum:
+          - employee_form
+          - email
+          - phone
+          - system
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        description:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        breach_types:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum:
+            - confidentiality
+            - integrity
+            - availability
+        incident_type:
+          type: string
+          maxLength: 40
+        occurred_at:
+          $ref: '#/components/schemas/Timestamp'
+        aware_at:
+          $ref: '#/components/schemas/Timestamp'
+        contained_at:
+          $ref: '#/components/schemas/Timestamp'
+        affected_subjects:
+          type: integer
+          minimum: 0
+        affected_category_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        owner_user_id:
+          $ref: '#/components/schemas/Uuid'
+        is_drill:
+          type: boolean
+    BreachIncidentUpdate:
+      type: object
+      required:
+      - title
+      - description
+      - breach_types
+      - aware_at
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 300
+        description:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        breach_types:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum:
+            - confidentiality
+            - integrity
+            - availability
+        incident_type:
+          type: string
+          maxLength: 40
+        occurred_at:
+          $ref: '#/components/schemas/Timestamp'
+        aware_at:
+          $ref: '#/components/schemas/Timestamp'
+        contained_at:
+          $ref: '#/components/schemas/Timestamp'
+        affected_subjects:
+          type: integer
+          minimum: 0
+        affected_category_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        owner_user_id:
+          $ref: '#/components/schemas/Uuid'
+        aware_at_reason:
+          type: string
+          maxLength: 4000
+    BreachIncident:
+      type: object
+      required:
+      - id
+      - incident_no
+      - legal_entity_id
+      - reported_via
+      - title
+      - description
+      - breach_types
+      - aware_at
+      - affected_category_ids
+      - status
+      - is_drill
+      - clock
+      - row_version
+      - created_at
+      - updated_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        incident_no:
+          type: string
+        legal_entity_id:
+          $ref: '#/components/schemas/Uuid'
+        reported_via:
+          type: string
+        reporter_user_id:
+          $ref: '#/components/schemas/Uuid'
+        reporter_name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        breach_types:
+          type: array
+          items:
+            type: string
+        incident_type:
+          type: string
+        occurred_at:
+          $ref: '#/components/schemas/Timestamp'
+        aware_at:
+          $ref: '#/components/schemas/Timestamp'
+        contained_at:
+          $ref: '#/components/schemas/Timestamp'
+        affected_subjects:
+          type:
+          - integer
+          - 'null'
+        affected_category_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        risk_level:
+          type: string
+          enum:
+          - none
+          - low
+          - high
+        decision:
+          type: string
+          enum:
+          - no_notification
+          - notify_pdpc
+          - notify_pdpc_and_subjects
+        decision_reason:
+          type: string
+        decided_by:
+          $ref: '#/components/schemas/Uuid'
+        status:
+          type: string
+          enum:
+          - reported
+          - triage
+          - assessing
+          - notifying
+          - remediating
+          - closed
+        owner_user_id:
+          $ref: '#/components/schemas/Uuid'
+        owner_name:
+          type: string
+        close_reason:
+          type: string
+        is_drill:
+          type: boolean
+        clock:
+          $ref: '#/components/schemas/BreachClock'
+        row_version:
+          type: integer
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    BreachTimelineItem:
+      type: object
+      required:
+      - id
+      - occurred_at
+      - type
+      - auto
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        occurred_at:
+          $ref: '#/components/schemas/Timestamp'
+        type:
+          type: string
+          enum:
+          - decision
+          - action
+          - communication
+          - system
+          - note
+        token:
+          type: string
+          description: 'Automatic entries: what happened, e.g. status:triage:assessing, deadline:24, decision:notify_pdpc:low (localized by the UI)'
+        text:
+          type: string
+          description: A note, or the reason given with an automatic entry
+        actor_id:
+          $ref: '#/components/schemas/Uuid'
+        actor_name:
+          type: string
+        auto:
+          type: boolean
+    BreachAssessment:
+      type: object
+      required:
+      - id
+      - form_submission_id
+      - score
+      - risk_level
+      - factors
+      - assessed_by
+      - assessed_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        form_submission_id:
+          $ref: '#/components/schemas/Uuid'
+        score:
+          type: number
+        risk_level:
+          type: string
+          enum:
+          - none
+          - low
+          - high
+        factors:
+          type: array
+          items:
+            type: object
+            required:
+            - question
+            - label
+            - points
+            properties:
+              question:
+                type: string
+              label:
+                type: object
+                additionalProperties:
+                  type: string
+              answer: {}
+              points:
+                type: number
+        assessed_by:
+          $ref: '#/components/schemas/Uuid'
+        assessed_by_name:
+          type: string
+        assessed_at:
+          $ref: '#/components/schemas/Timestamp'
+    BreachEvidence:
+      type: object
+      required:
+      - id
+      - file_id
+      - collected_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        file_id:
+          $ref: '#/components/schemas/Uuid'
+        file_name:
+          type: string
+        sha256:
+          type: string
+        size_bytes:
+          type: integer
+        av_status:
+          type: string
+        description:
+          type: string
+        collected_by:
+          $ref: '#/components/schemas/Uuid'
+        collected_by_name:
+          type: string
+        collected_at:
+          $ref: '#/components/schemas/Timestamp'
+    BreachNoticeVars:
+      type: object
+      required:
+      - organization
+      - summary
+      - remedy
+      - contact
+      additionalProperties: false
+      properties:
+        organization:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        remedy:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        contact:
+          type: string
+          minLength: 1
+          maxLength: 2000
+    BreachNotice:
+      type: object
+      required:
+      - id
+      - incident_id
+      - channel
+      - template_code
+      - variables
+      - total
+      - handed
+      - failed
+      - status
+      - delivery
+      - row_version
+      - created_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        incident_id:
+          $ref: '#/components/schemas/Uuid'
+        channel:
+          type: string
+          enum:
+          - email
+          - sms
+        template_code:
+          type: string
+        variables:
+          $ref: '#/components/schemas/BreachNoticeVars'
+        total:
+          type: integer
+        handed:
+          type: integer
+          description: Handed to the notification service
+        failed:
+          type: integer
+          description: Could not be handed over
+        status:
+          type: string
+          enum:
+          - draft
+          - sending
+          - done
+          - failed
+        delivery:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Handed-over messages by delivery status (queued / sent / failed)
+        started_at:
+          $ref: '#/components/schemas/Timestamp'
+        completed_at:
+          $ref: '#/components/schemas/Timestamp'
+        created_by:
+          $ref: '#/components/schemas/Uuid'
+        created_by_name:
+          type: string
+        approved_by:
+          $ref: '#/components/schemas/Uuid'
+        approved_by_name:
+          type: string
+        approved_at:
+          $ref: '#/components/schemas/Timestamp'
+        row_version:
+          type: integer
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+    BreachRecipient:
+      type: object
+      required:
+      - id
+      - line
+      - masked
+      - language
+      - status
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        line:
+          type: integer
+        masked:
+          type: string
+        language:
+          type: string
+        status:
+          type: string
+          enum:
+          - queued
+          - sent
+          - failed
+        delivery:
+          type: string
+        attempts:
+          type: integer
+        sent_at:
+          $ref: '#/components/schemas/Timestamp'
+        error:
+          type: string
     ConsentSubmission:
       type: object
       required: [collection_point_code, subject, decisions]

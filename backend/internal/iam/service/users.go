@@ -112,3 +112,13 @@ func AllNames(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error
 	}
 	return out, nil
 }
+
+// UsersWithRole returns the active users holding a role (by code, e.g. "DPO") in the tenant, directly or
+// through a group.
+func UsersWithRole(ctx context.Context, roleCode string) ([]uuid.UUID, error) {
+	ids, err := iamstore.New(pdb.MustTxFromContext(ctx)).ActiveUsersWithRole(ctx, roleCode)
+	if err != nil {
+		return nil, fmt.Errorf("iam: users with role: %w", err)
+	}
+	return ids, nil
+}

@@ -91,3 +91,7 @@ WHERE channel = 'in_app' AND recipient_user_id = @user_id AND status = 'sent';
 -- In-app: "delivered" = seen by its recipient (only the recipient can mark it).
 UPDATE platform.notifications SET status = 'delivered', row_version = row_version + 1
 WHERE id = @id AND channel = 'in_app' AND recipient_user_id = @user_id AND status = 'sent';
+
+-- name: NotificationStatuses :many
+-- Delivery status of messages a module handed over (e.g. a breach notice to 10,000 people, BRE-10).
+SELECT id, status, attempts, sent_at FROM platform.notifications WHERE id = ANY (@ids::uuid[]);

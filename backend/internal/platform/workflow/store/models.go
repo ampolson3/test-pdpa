@@ -380,6 +380,8 @@ type BreachIncident struct {
 	UpdatedAt          pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy          pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion         int32              `db:"row_version" json:"row_version"`
+	OwnerUserID        pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	CloseReason        *string            `db:"close_reason" json:"close_reason"`
 }
 
 // ระบบ / กิจกรรมที่เกี่ยวข้องกับเหตุ
@@ -406,6 +408,9 @@ type BreachNotificationRecipient struct {
 	Status                string             `db:"status" json:"status"`
 	SentAt                pgtype.Timestamptz `db:"sent_at" json:"sent_at"`
 	Error                 *string            `db:"error" json:"error"`
+	NotificationID        pgtype.UUID        `db:"notification_id" json:"notification_id"`
+	Language              string             `db:"language" json:"language"`
+	LineNo                *int32             `db:"line_no" json:"line_no"`
 }
 
 // การแจ้ง สคส. (ฉบับเบื้องต้น / เพิ่มเติม / สุดท้าย)
@@ -515,6 +520,10 @@ type BreachSubjectNotification struct {
 	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy       pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion      int32              `db:"row_version" json:"row_version"`
+	Variables       []byte             `db:"variables" json:"variables"`
+	TemplateCode    string             `db:"template_code" json:"template_code"`
+	ApprovedBy      pgtype.UUID        `db:"approved_by" json:"approved_by"`
+	ApprovedAt      pgtype.Timestamptz `db:"approved_at" json:"approved_at"`
 }
 
 // ลำดับเหตุการณ์และการตัดสินใจ

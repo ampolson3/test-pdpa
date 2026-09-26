@@ -221,3 +221,32 @@ func parseVariables(raw []byte) []string {
 	_ = json.Unmarshal(raw, &out)
 	return out
 }
+
+// Status is where one message stands: queued, sent or failed, and how many attempts it took.
+type Status struct {
+	Status   string
+	Attempts int32
+	SentAt   *time.Time
+}
+
+// Statuses returns the delivery status of messages by id (for a module that handed them over with Send and
+// tracks each recipient). Ids of other tenants' messages are simply missing.
+func (s *Service) Statuses(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]Status, error) {
+	out := map[uuid.UUID]Status{}
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := notifystore.New(pdb.MustTxFromContext(ctx)).NotificationStatuses(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range rows {
+		st := Status{Status: r.Status, Attempts: r.Attempts}
+		if r.SentAt.Valid {
+			t := r.SentAt.Time
+			st.SentAt = &t
+		}
+		out[r.ID] = st
+	}
+	return out, nil
+}
