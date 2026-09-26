@@ -7384,6 +7384,109 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/activities/{id}/transfers:
+    get:
+      operationId: ropaListActivityTransfers
+      tags: [ropa]
+      summary: An activity's cross-border transfers (ROPA-08, ม.28/29)
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityTransfer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: ropaAddActivityTransfer
+      tags: [ropa]
+      summary: Log a cross-border transfer with its legal mechanism
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityTransferInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityTransfer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/activities/{id}/transfers/{transferId}:
+    delete:
+      operationId: ropaDeleteActivityTransfer
+      tags: [ropa]
+      summary: Remove a transfer from an activity
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: transferId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     adminJwt:
@@ -8665,7 +8768,7 @@ components:
           description: Which ม.39 items are still missing — the acceptance criterion (only set by GET one activity)
           items:
             type: string
-            enum: [data, purpose, controller, retention, rights_access, recipient_basis, sensitive_consent]
+            enum: [data, purpose, controller, retention, rights_access, recipient_basis, sensitive_consent, transfer_basis]
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
     ActivityPurposeInput:
@@ -8767,6 +8870,29 @@ components:
         data_category_ids:
           type: array
           items: {$ref: '#/components/schemas/Uuid'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    ActivityTransferBasis:
+      type: string
+      enum: [adequacy, bcr, standard_clauses, certification, exemption, consent]
+    ActivityTransferInput:
+      type: object
+      required: [country_code, transfer_basis]
+      properties:
+        recipient_id: {$ref: '#/components/schemas/Uuid'}
+        country_code: {type: string, minLength: 2, maxLength: 2, description: ISO 3166-1 alpha-2}
+        transfer_basis: {$ref: '#/components/schemas/ActivityTransferBasis'}
+        safeguards: {type: string}
+    ActivityTransfer:
+      type: object
+      required: [id, activity_id, country_code, transfer_basis, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        recipient_id: {$ref: '#/components/schemas/Uuid'}
+        country_code: {type: string}
+        transfer_basis: {$ref: '#/components/schemas/ActivityTransferBasis'}
+        safeguards: {type: string}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
     BusinessCalendarInput:

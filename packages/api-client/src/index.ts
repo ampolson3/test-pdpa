@@ -64,6 +64,7 @@ export {
   useActivityData,
   useRetentionRules,
   useActivityRecipients,
+  useActivityTransfers,
   useActivityMutations,
   type ProcessingActivity,
   type ProcessingActivityInput,
@@ -81,6 +82,9 @@ export {
   type ActivityRecipient,
   type ActivityRecipientInput,
   type ActivityRecipientRole,
+  type ActivityTransfer,
+  type ActivityTransferInput,
+  type ActivityTransferBasis,
 } from "./activities";
 export {
   useWorkflowDefinitions,

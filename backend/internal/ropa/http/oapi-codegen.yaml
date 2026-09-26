@@ -30,3 +30,6 @@ output-options:
     - ropaListActivityRecipients
     - ropaAddActivityRecipient
     - ropaDeleteActivityRecipient
+    - ropaListActivityTransfers
+    - ropaAddActivityTransfer
+    - ropaDeleteActivityTransfer

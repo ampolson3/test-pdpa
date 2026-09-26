@@ -709,11 +709,20 @@
     "volumeBands": { "lt_1k": "Under 1,000", "1k_10k": "1,000–10,000", "10k_100k": "10,000–100,000", "gt_100k": "Over 100,000" },
     "disposalMethods": { "delete": "Delete", "destroy": "Destroy", "anonymize": "Anonymize", "return": "Return" },
     "recipientRoles": { "processor": "Processor", "controller": "Controller", "joint_controller": "Joint controller", "government": "Government body" },
+    "transferBases": {
+      "adequacy": "Destination country has an adequate standard",
+      "bcr": "Certified group Binding Corporate Rules",
+      "standard_clauses": "Standard contractual clauses",
+      "certification": "Certification",
+      "exemption": "Statutory exemption",
+      "consent": "Consent informed of the inadequate standard"
+    },
     "sections": {
       "purposes": "Purposes and lawful bases",
       "data": "Data collected",
       "retention": "Retention and disposal",
-      "recipients": "Recipients and disclosures"
+      "recipients": "Recipients and disclosures",
+      "transfers": "Cross-border transfers"
     },
     "missingItems": {
       "data": "No data categories yet",
@@ -722,7 +731,8 @@
       "retention": "No retention rule yet",
       "rights_access": "Rights and access not described yet",
       "recipient_basis": "Some recipients are missing a disclosure basis",
-      "sensitive_consent": "Sensitive data but no purpose linked to explicit consent"
+      "sensitive_consent": "Sensitive data but no purpose linked to explicit consent",
+      "transfer_basis": "A foreign recipient has no logged transfer and legal basis"
     },
     "form": {
       "details": "Details",
@@ -748,6 +758,10 @@
       "party": "External party",
       "recipientRole": "Recipient role",
       "disclosureBasis": "Disclosure basis",
+      "noRecipient": "Not tied to a specific recipient",
+      "country": "Destination country",
+      "transferBasis": "Transfer basis",
+      "safeguards": "Safeguards / mechanism evidence",
       "save": "Save",
       "cancel": "Cancel",
       "saveError": "Couldn't save: {detail}"

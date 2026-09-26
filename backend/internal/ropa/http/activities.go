@@ -219,6 +219,43 @@ func (h *Strict) RopaDeleteActivityRecipient(ctx context.Context, req RopaDelete
 	return RopaDeleteActivityRecipient204Response{}, nil
 }
 
+func (h *Strict) RopaListActivityTransfers(ctx context.Context, req RopaListActivityTransfersRequestObject) (RopaListActivityTransfersResponseObject, error) {
+	list, err := h.svc.ListActivityTransfers(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := RopaListActivityTransfers200JSONResponse{Data: make([]ActivityTransfer, 0, len(list))}
+	for _, t := range list {
+		resp.Data = append(resp.Data, toTransferWire(t))
+	}
+	return resp, nil
+}
+
+func (h *Strict) RopaAddActivityTransfer(ctx context.Context, req RopaAddActivityTransferRequestObject) (RopaAddActivityTransferResponseObject, error) {
+	b := *req.Body
+	tr := ropaservice.ActivityTransfer{ActivityID: req.Id, RecipientID: b.RecipientId, CountryCode: b.CountryCode, TransferBasis: string(b.TransferBasis)}
+	if b.Safeguards != nil {
+		tr.Safeguards = *b.Safeguards
+	}
+	out, err := h.svc.AddActivityTransfer(ctx, tr)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RopaAddActivityTransfer201JSONResponse(toTransferWire(out)), nil
+}
+
+func (h *Strict) RopaDeleteActivityTransfer(ctx context.Context, req RopaDeleteActivityTransferRequestObject) (RopaDeleteActivityTransferResponseObject, error) {
+	if err := h.svc.DeleteActivityTransfer(ctx, req.Id, req.TransferId); err != nil {
+		return nil, problem(err)
+	}
+	return RopaDeleteActivityTransfer204Response{}, nil
+}
+
+func toTransferWire(tr ropaservice.ActivityTransfer) ActivityTransfer {
+	return ActivityTransfer{Id: tr.ID, ActivityId: tr.ActivityID, RecipientId: tr.RecipientID, CountryCode: tr.CountryCode,
+		TransferBasis: ActivityTransferBasis(tr.TransferBasis), Safeguards: ptr(tr.Safeguards), RowVersion: int(tr.RowVersion), CreatedAt: tr.CreatedAt.UTC()}
+}
+
 func toActivityInput(b ProcessingActivityInput) ropaservice.Activity {
 	a := ropaservice.Activity{LegalEntityID: b.LegalEntityId, OrgUnitID: b.OrgUnitId, Code: b.Code, Name: b.Name,
 		Role: string(b.Role), ControllerPartyID: b.ControllerPartyId, OwnerUserID: b.OwnerUserId}

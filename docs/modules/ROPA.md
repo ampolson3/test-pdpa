@@ -360,6 +360,34 @@ with the itemized list, two-tenant isolation), HTTP contract (401/403/400 schema
 
 **Acceptance criteria:** การโอนที่ไม่มีฐานการโอนถูกเตือน
 
+**Implementation (ROPA-08):** `backend/internal/ropa/service/transfers.go` (`ropa.activity.*`, shared with ROPA-03)
+— CRUD on `ropa.activity_transfers`, already fully specified in the baseline migrations — no new migration.
+Recipients themselves (`activity_recipients`, with `disclosure_basis` for ม.27's consent-exempt disclosures)
+were already built in ROPA-03 (documented there as "generic now, ROPA-08 adds transfers on top"); this feature
+adds only the transfer half: `country_code` (validated against ORG-07's countries list — a new `Org.ListMaster`
+lookup follows the exact `validLawfulBasis` pattern ROPA-03 already established for `lawful_basis_code`, since
+both are code-keyed, not id-keyed), `transfer_basis` (ม.28/29's six mechanisms), `safeguards` free text, and an
+optional link to one of the activity's own recipients (checked by scanning `ListActivityRecipients`, not a new
+FK-visibility query).
+
+Since `transfer_basis` is a NOT NULL enum column, an actual transfer row can never lack a basis — the acceptance
+criterion ("a transfer without a basis is warned") is about the *implicit* transfer that isn't logged at all:
+`docs/legal/pdpa-rules.md`'s ม.28 row is explicit that every real transfer in the RoPA needs its country and
+mechanism recorded. So `completeness()` (ROPA-03's live, non-persisted check) gained one more conditional item:
+for each recipient, look up its party's `country_code` via the already-shared `Org.GetExternalParty`, and if
+that's a real country other than `TH` with no `activity_transfers` row referencing that recipient, flag
+`transfer_basis` (once per activity, same one-flag-not-one-per-row pattern as `recipient_basis`) — it blocks
+`/submit` exactly like ROPA-03's other conditional items. A party with an empty `country_code` (not required at
+ORG-06) is treated as domestic rather than guessed at.
+
+API `/admin/v1/ropa/activities/{id}/transfers` (list+create) and `/{transferId}` (delete) — same
+list+create+delete shape as ROPA-03's other child tables, no per-row update. UI: a "การโอนข้อมูลไปต่างประเทศ"
+section on the activity detail page (country/basis/safeguards + an optional recipient picker scoped to the
+activity's own recipients). Tests: unit (validation — bad country code, unknown country, bad transfer basis,
+a recipient from another activity refused — the acceptance criterion directly: a foreign recipient with no
+transfer flags `transfer_basis`, adding one clears it, deleting the only one brings it back — two-tenant
+isolation), HTTP contract (401/403/400 schema/422).
+
 <a id="ropa-09"></a>
 ### ROPA-09 มาตรการความปลอดภัยต่อกิจกรรม
 

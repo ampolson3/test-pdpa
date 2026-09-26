@@ -11,6 +11,7 @@ import {
   useActivityData,
   useRetentionRules,
   useActivityRecipients,
+  useActivityTransfers,
   useActivityMutations,
   useLegalEntities,
   useOrgUnits,
@@ -22,6 +23,7 @@ import {
   type ActivityVolumeBand,
   type ActivityDisposalMethod,
   type ActivityRecipientRole,
+  type ActivityTransferBasis,
 } from "@pdpa/api-client";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
@@ -30,6 +32,7 @@ const SOURCES: ActivityDataSource[] = ["direct", "indirect"];
 const VOLUMES: ActivityVolumeBand[] = ["lt_1k", "1k_10k", "10k_100k", "gt_100k"];
 const DISPOSALS: ActivityDisposalMethod[] = ["delete", "destroy", "anonymize", "return"];
 const RECIPIENT_ROLES: ActivityRecipientRole[] = ["processor", "controller", "joint_controller", "government"];
+const TRANSFER_BASES: ActivityTransferBasis[] = ["adequacy", "bcr", "standard_clauses", "certification", "exemption", "consent"];
 
 function detail(e: unknown): string {
   return typeof e === "object" && e !== null ? [(e as { title?: string }).title, (e as { detail?: string }).detail].filter(Boolean).join(" — ") : "";
@@ -46,6 +49,7 @@ export function ActivityDetailContent({ id }: { id: string }) {
   const data = useActivityData(client, id);
   const retention = useRetentionRules(client, id);
   const recipients = useActivityRecipients(client, id);
+  const transfers = useActivityTransfers(client, id);
   const m = useActivityMutations(client, id);
 
   const [legalEntityId, setLegalEntityId] = useState<string>();
@@ -54,6 +58,7 @@ export function ActivityDetailContent({ id }: { id: string }) {
   const categories = useMasterData(client, "data_categories");
   const subjectTypes = useMasterData(client, "data_subject_types");
   const lawfulBases = useMasterData(client, "lawful_bases");
+  const countries = useMasterData(client, "countries");
   const parties = useExternalParties(client);
   const consentPurposes = useConsentPurposes(client);
 
@@ -62,6 +67,7 @@ export function ActivityDetailContent({ id }: { id: string }) {
   const [dataDraft, setDataDraft] = useState({ data_category_id: "", subject_type_id: "", source: "" as ActivityDataSource | "", volume_band: "" as ActivityVolumeBand | "" });
   const [retentionDraft, setRetentionDraft] = useState({ data_category_id: "", retention_months: "", retention_basis: "", trigger_event: "", disposal_method: "" as ActivityDisposalMethod | "" });
   const [recipientDraft, setRecipientDraft] = useState({ party_id: "", recipient_role: "" as ActivityRecipientRole | "", disclosure_basis: "" });
+  const [transferDraft, setTransferDraft] = useState({ recipient_id: "", country_code: "", transfer_basis: "" as ActivityTransferBasis | "", safeguards: "" });
 
   if (!canRead) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
   if (activity.isPending) return <main className="mx-auto max-w-5xl p-8 text-slate-500">{t("loading")}</main>;
@@ -284,6 +290,44 @@ export function ActivityDetailContent({ id }: { id: string }) {
                 onClick={() => m.addRecipient.mutate({ party_id: recipientDraft.party_id, recipient_role: recipientDraft.recipient_role as ActivityRecipientRole, disclosure_basis: recipientDraft.disclosure_basis || undefined },
                   { onSuccess: () => setRecipientDraft({ party_id: "", recipient_role: "", disclosure_basis: "" }) })}
                 disabled={m.addRecipient.isPending || !recipientDraft.party_id || !recipientDraft.recipient_role}
+              >{t("add")}</Button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4" data-testid="transfers-section">
+        <h2 className="font-semibold">{t("sections.transfers")}</h2>
+        <ul className="divide-y divide-slate-100">
+          {transfers.data?.map((tr) => (
+            <li key={tr.id} className="flex items-center justify-between py-2">
+              <span>
+                {countries.data?.find((c) => c.code === tr.country_code)?.name_th ?? tr.country_code} — {t(`transferBases.${tr.transfer_basis}`)}
+              </span>
+              {editable && <button className="text-red-700 underline" onClick={() => m.deleteTransfer.mutate(tr.id)}>{t("remove")}</button>}
+            </li>
+          ))}
+        </ul>
+        {editable && (
+          <div className="grid gap-2 sm:grid-cols-4">
+            <select className={INPUT} value={transferDraft.recipient_id} onChange={(e) => setTransferDraft({ ...transferDraft, recipient_id: e.target.value })}>
+              <option value="">{t("form.noRecipient")}</option>
+              {recipients.data?.map((r) => <option key={r.id} value={r.id}>{parties.data?.pages?.flatMap((p) => p.data).find((p) => p.id === r.party_id)?.name_th ?? r.party_id}</option>)}
+            </select>
+            <select className={INPUT} value={transferDraft.country_code} onChange={(e) => setTransferDraft({ ...transferDraft, country_code: e.target.value })}>
+              <option value="">{t("form.country")}</option>
+              {countries.data?.map((c) => <option key={c.code} value={c.code}>{c.name_th}</option>)}
+            </select>
+            <select className={INPUT} value={transferDraft.transfer_basis} onChange={(e) => setTransferDraft({ ...transferDraft, transfer_basis: e.target.value as ActivityTransferBasis })}>
+              <option value="">{t("form.transferBasis")}</option>
+              {TRANSFER_BASES.map((b) => <option key={b} value={b}>{t(`transferBases.${b}`)}</option>)}
+            </select>
+            <input className={INPUT} placeholder={t("form.safeguards")} value={transferDraft.safeguards} onChange={(e) => setTransferDraft({ ...transferDraft, safeguards: e.target.value })} />
+            <div className="sm:col-span-4">
+              <Button
+                onClick={() => m.addTransfer.mutate({ recipient_id: transferDraft.recipient_id || undefined, country_code: transferDraft.country_code, transfer_basis: transferDraft.transfer_basis as ActivityTransferBasis, safeguards: transferDraft.safeguards || undefined },
+                  { onSuccess: () => setTransferDraft({ recipient_id: "", country_code: "", transfer_basis: "", safeguards: "" }) })}
+                disabled={m.addTransfer.isPending || !transferDraft.country_code || !transferDraft.transfer_basis}
               >{t("add")}</Button>
             </div>
           </div>

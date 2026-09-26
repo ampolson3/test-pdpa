@@ -2347,6 +2347,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/activities/{id}/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An activity's cross-border transfers (ROPA-08, ม.28/29) */
+        get: operations["ropaListActivityTransfers"];
+        put?: never;
+        /** Log a cross-border transfer with its legal mechanism */
+        post: operations["ropaAddActivityTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/transfers/{transferId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a transfer from an activity */
+        delete: operations["ropaDeleteActivityTransfer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3061,7 +3096,7 @@ export interface components {
             /** @description Percentage of the ม.39 mandatory items that are in place */
             completeness: number;
             /** @description Which ม.39 items are still missing — the acceptance criterion (only set by GET one activity) */
-            missing_items?: ("data" | "purpose" | "controller" | "retention" | "rights_access" | "recipient_basis" | "sensitive_consent")[];
+            missing_items?: ("data" | "purpose" | "controller" | "retention" | "rights_access" | "recipient_basis" | "sensitive_consent" | "transfer_basis")[];
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
         };
@@ -3139,6 +3174,25 @@ export interface components {
             recipient_role: components["schemas"]["ActivityRecipientRole"];
             disclosure_basis?: string;
             data_category_ids?: components["schemas"]["Uuid"][];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        ActivityTransferBasis: "adequacy" | "bcr" | "standard_clauses" | "certification" | "exemption" | "consent";
+        ActivityTransferInput: {
+            recipient_id?: components["schemas"]["Uuid"];
+            /** @description ISO 3166-1 alpha-2 */
+            country_code: string;
+            transfer_basis: components["schemas"]["ActivityTransferBasis"];
+            safeguards?: string;
+        };
+        ActivityTransfer: {
+            id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            recipient_id?: components["schemas"]["Uuid"];
+            country_code: string;
+            transfer_basis: components["schemas"]["ActivityTransferBasis"];
+            safeguards?: string;
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
         };
@@ -10224,6 +10278,97 @@ export interface operations {
             path: {
                 id: components["schemas"]["Uuid"];
                 recipientId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaListActivityTransfers: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ActivityTransfer"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaAddActivityTransfer: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityTransferInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityTransfer"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaDeleteActivityTransfer: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                transferId: components["schemas"]["Uuid"];
             };
             cookie?: never;
         };

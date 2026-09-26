@@ -548,6 +548,31 @@ one at a time as each is filled in — processor-needs-controller, sensitive-dat
 blocked while incomplete with the itemized list, two-tenant isolation), HTTP contract (401/403/400
 schema/422/428).
 
+### ROPA-08 Recipients & cross-border transfers (`docs/modules/ROPA.md#ropa-08`) — done
+`internal/ropa/service/transfers.go` (`ropa.activity.*`, shared with ROPA-03) — CRUD on `ropa.activity_transfers`,
+already fully specified in the baseline migrations — no new migration. Recipients themselves
+(`activity_recipients`, `disclosure_basis` for ม.27) were already built generically in ROPA-03 (documented
+there as the piece ROPA-08 would extend); this feature adds only the transfer half: `country_code` (validated
+against ORG-07's countries via a new `Org.ListMaster` scan, the exact `validLawfulBasis` pattern ROPA-03
+already set — both are code-keyed, not id-keyed), `transfer_basis` (ม.28/29's six mechanisms), `safeguards`,
+and an optional link to one of the activity's own recipients (checked against `ListActivityRecipients`, no new
+FK-visibility query needed).
+
+`transfer_basis` is a NOT NULL enum column, so an actual row can never lack a basis — the acceptance criterion
+("a transfer without a basis is warned") is about the *implicit* transfer that was never logged at all
+(`docs/legal/pdpa-rules.md`'s ม.28 row: every real transfer in the RoPA needs its country and mechanism
+recorded). So ROPA-03's `completeness()` gained one more conditional item: for each recipient, resolve its
+party's `country_code` via the already-shared `Org.GetExternalParty`, and flag `transfer_basis` once per
+activity if any real foreign country (not `TH`, not blank) has no `activity_transfers` row referencing that
+recipient — it blocks `/submit` exactly like ROPA-03's other conditional items.
+
+API `/admin/v1/ropa/activities/{id}/transfers` (list+create) and `/{transferId}` (delete) — same shape as
+ROPA-03's other child tables. UI: a transfers section on the activity detail page (country/basis/safeguards +
+an optional recipient picker scoped to the activity). Tests: unit (validation — bad/unknown country code, bad
+transfer basis, a recipient outside the activity refused — the acceptance criterion directly: a foreign
+recipient with no transfer flags `transfer_basis`, adding one clears it, deleting the only one brings it back —
+two-tenant isolation), HTTP contract (401/403/400 schema/422).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

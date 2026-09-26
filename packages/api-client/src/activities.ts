@@ -17,6 +17,9 @@ export type RetentionRuleInput = components["schemas"]["RetentionRuleInput"];
 export type ActivityRecipient = components["schemas"]["ActivityRecipient"];
 export type ActivityRecipientInput = components["schemas"]["ActivityRecipientInput"];
 export type ActivityRecipientRole = components["schemas"]["ActivityRecipientRole"];
+export type ActivityTransfer = components["schemas"]["ActivityTransfer"];
+export type ActivityTransferInput = components["schemas"]["ActivityTransferInput"];
+export type ActivityTransferBasis = components["schemas"]["ActivityTransferBasis"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const activitiesKey = ["ropa", "activities"] as const;
@@ -93,6 +96,18 @@ export function useActivityRecipients(client: ApiClient, id: string | undefined)
     enabled: !!id,
     queryFn: async () => {
       const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/recipients", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+export function useActivityTransfers(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...activityKey(id ?? ""), "transfers"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/transfers", { params: { path: { id: id! } } });
       if (error) throw error;
       return data.data;
     },
@@ -189,6 +204,21 @@ export function useActivityMutations(client: ApiClient, id?: string) {
     deleteRecipient: useMutation({
       mutationFn: async (recipientId: string) => {
         const { error } = await client.DELETE("/admin/v1/ropa/activities/{id}/recipients/{recipientId}", { params: { path: { id: id!, recipientId } } });
+        if (error) throw error;
+      },
+      onSuccess: refresh,
+    }),
+    addTransfer: useMutation({
+      mutationFn: async (body: ActivityTransferInput) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/transfers", { params: { path: { id: id! } }, body });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    deleteTransfer: useMutation({
+      mutationFn: async (transferId: string) => {
+        const { error } = await client.DELETE("/admin/v1/ropa/activities/{id}/transfers/{transferId}", { params: { path: { id: id!, transferId } } });
         if (error) throw error;
       },
       onSuccess: refresh,

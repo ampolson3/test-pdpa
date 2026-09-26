@@ -399,6 +399,31 @@ func (s *Service) completeness(ctx context.Context, a Activity) (int, []string, 
 		}
 	}
 
+	// ROPA-08 (ม.28/29): a recipient outside Thailand is a cross-border transfer that needs its own
+	// logged mechanism (ropa.activity_transfers) — one uncovered foreign recipient is enough to warn.
+	if len(recipients) > 0 {
+		transfers, err := q.ListActivityTransfers(ctx, a.ID)
+		if err != nil {
+			return 0, nil, err
+		}
+		covered := make(map[uuid.UUID]bool, len(transfers))
+		for _, t := range transfers {
+			if t.RecipientID.Valid {
+				covered[uuid.UUID(t.RecipientID.Bytes)] = true
+			}
+		}
+		for _, r := range recipients {
+			party, err := s.Org.GetExternalParty(ctx, r.PartyID)
+			if err != nil {
+				return 0, nil, err
+			}
+			if party.CountryCode != "" && party.CountryCode != "TH" && !covered[r.ID] {
+				missing = append(missing, "transfer_basis")
+				break
+			}
+		}
+	}
+
 	score := int(math.Round(100 * float64(satisfied) / float64(checks)))
 	return score, missing, nil
 }

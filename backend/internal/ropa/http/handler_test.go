@@ -48,6 +48,7 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_transfers`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_recipients`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.retention_rules`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_data`)
@@ -272,5 +273,34 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("GET", actBase+"/"+uuid.New().String(), &admin, nil, nil); code != 404 {
 		t.Errorf("unknown activity: %d, want 404", code)
+	}
+
+	// ROPA-08 cross-border transfers
+	var foreignPartyID uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		party, err := orgSvc.SaveExternalParty(ctx, orgservice.ExternalParty{PartyType: "processor", NameTh: "ผู้ให้บริการต่างประเทศ", CountryCode: "US"}, 0)
+		foreignPartyID = party.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	code, body = do("POST", actURL+"/recipients", &admin, map[string]any{"party_id": foreignPartyID, "recipient_role": "processor", "disclosure_basis": "สัญญา"}, nil)
+	if code != 201 {
+		t.Fatalf("create recipient: %d %s", code, body)
+	}
+	var recipient ropahttp.ActivityRecipient
+	_ = json.Unmarshal([]byte(body), &recipient)
+	if code, body := do("GET", actURL, &admin, nil, nil); code != 200 || !strings.Contains(body, `"transfer_basis"`) {
+		t.Errorf("foreign recipient without a transfer should warn: %d %s", code, body)
+	}
+	transferBase := actURL + "/transfers"
+	if code, _ := do("GET", transferBase, nil, nil, nil); code != 401 {
+		t.Errorf("transfers, no principal: %d, want 401", code)
+	}
+	if code, body := do("POST", transferBase, &admin, map[string]any{"recipient_id": recipient.Id, "country_code": "US", "transfer_basis": "standard_clauses"}, nil); code != 201 || !strings.Contains(body, `"country_code":"US"`) {
+		t.Errorf("create transfer: %d %s", code, body)
+	}
+	if code, body := do("GET", actURL, &admin, nil, nil); code != 200 || strings.Contains(body, `"transfer_basis"`) {
+		t.Errorf("transfer_basis should clear once logged: %d %s", code, body)
 	}
 }
