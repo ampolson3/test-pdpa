@@ -1,0 +1,16 @@
+package: collabhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - platformListComments
+    - platformCreateComment
+    - platformListAttachments
+    - platformAttachFile
+    - platformListActivity
+    - platformUpdateComment
+    - platformDeleteComment
+    - platformResolveComment
+    - platformSearchMentionableUsers

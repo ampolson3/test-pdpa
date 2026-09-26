@@ -241,6 +241,17 @@ permissions:
     AUDIT:
     - read
     - export
+- code: admin.job
+  category: Administration
+  name: งานเบื้องหลัง (background job)
+  epics:
+  - PLT
+  note: 'PLT-10 · ดูได้เฉพาะ job ของ tenant ตนเอง (river_job ไม่มี RLS — กรองด้วย args.tenant_id ใน query) · SUPER ดูข้าม tenant ผ่าน /provider/v1 เท่านั้น · seed: migration 00021'
+  grants:
+    SUPER:
+    - read
+    ORGADMIN:
+    - read
 - code: admin.accessreview
   category: Administration
   name: ทบทวนสิทธิ์
@@ -273,6 +284,23 @@ permissions:
     - execute
     ORGADMIN:
     - execute
+- code: admin.workflow
+  category: Administration
+  name: นิยาม workflow และ SLA
+  epics:
+  - PLT
+  note: 'PLT-05 · นิยาม workflow / SLA ของ tenant (บันทึกแล้วเป็นเวอร์ชันใหม่ งานที่เริ่มแล้วใช้เวอร์ชันเดิม) · การทำงานกับ instance / task ใช้สิทธิ์ของ record เจ้าของ หรือเป็นผู้ได้รับมอบหมาย · seed: migration 00028'
+  grants:
+    SUPER:
+    - create
+    - read
+    - update
+    ORGADMIN:
+    - create
+    - read
+    - update
+    DPO:
+    - read
 - code: admin.notification
   category: Administration
   name: Template แจ้งเตือน

@@ -61,3 +61,22 @@ func WithTenantTx(ctx context.Context, pool *pgxpool.Pool, tenantID, userID stri
 
 	return fn(context.WithValue(ctx, txCtxKey{}, tx))
 }
+
+// Savepoint runs fn inside a savepoint of the transaction already in ctx (opened by WithTenantTx):
+// an error from fn rolls back only fn's writes and the outer transaction carries on. It is the
+// only way to nest a transaction, so work that must isolate one item's failure from the rest of
+// a batch — the outbox dispatcher, for one — still never begins a transaction of its own.
+func Savepoint(ctx context.Context, fn func(ctx context.Context) error) (err error) {
+	sp, err := MustTxFromContext(ctx).Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("db: savepoint: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = sp.Rollback(ctx)
+			return
+		}
+		err = sp.Commit(ctx)
+	}()
+	return fn(context.WithValue(ctx, txCtxKey{}, sp))
+}

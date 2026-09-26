@@ -1,4 +1,4 @@
-.PHONY: dev dev-stop gen migrate migrate-down test test-int e2e lint
+.PHONY: dev dev-stop gen migrate migrate-down test test-int e2e lint dev-env dev-seed run-api run-worker run-web
 
 # Local stack: postgres, valkey, minio, keycloak, gotenberg, clamav, mailpit — then the Go API,
 # worker and Next.js apps against it. Run `make migrate` once the stack is healthy and before the
@@ -17,18 +17,56 @@ dev-stop:
 # paths (docs/architecture/code-structure.md's Codegen table) to fail on drift.
 gen:
 	cd backend/db && sqlc generate
+	cd backend && go generate ./internal/platform/events
 	cd backend/internal/iam/http && oapi-codegen -config oapi-codegen.yaml -o me.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/jobs/http && oapi-codegen -config oapi-codegen.yaml -o jobs.gen.go ../../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/files/http && oapi-codegen -config oapi-codegen.yaml -o files.gen.go ../../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/notify/http && oapi-codegen -config oapi-codegen.yaml -o notify.gen.go ../../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/collab/http && oapi-codegen -config oapi-codegen.yaml -o collab.gen.go ../../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/importer/http && oapi-codegen -config oapi-codegen.yaml -o importer.gen.go ../../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/workflow/http && oapi-codegen -config oapi-codegen.yaml -o workflow.gen.go ../../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/versioning/http && oapi-codegen -config oapi-codegen.yaml -o versioning.gen.go ../../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/audit/http && oapi-codegen -config oapi-codegen.yaml -o audit.gen.go ../../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/forms/http && oapi-codegen -config oapi-codegen.yaml -o forms.gen.go ../../../../../api/openapi/openapi.yaml
+	cd backend/internal/org/http && oapi-codegen -config oapi-codegen.yaml -o org.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/ropa/http && oapi-codegen -config oapi-codegen.yaml -o ropa.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/consent/http && oapi-codegen -config oapi-codegen.yaml -o consent.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/consent/publichttp && oapi-codegen -config oapi-codegen.yaml -o public.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/breach/http && oapi-codegen -config oapi-codegen.yaml -o breach.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/docs/http && oapi-codegen -config oapi-codegen.yaml -o docs.gen.go ../../../../../api/openapi/openapi.yaml
+	cd backend/internal/notice/http && oapi-codegen -config oapi-codegen.yaml -o notice.gen.go ../../../../api/openapi/openapi.yaml
 	pnpm gen:api-client
 	cd backend && go build ./...
 
+# Every target below reads the repository's .env (see .env.example / make dev-env).
+LOAD_ENV = set -a; [ -f .env ] && . ./.env; set +a;
+
 migrate:
-	cd backend && go run ./cmd/migrate
+	$(LOAD_ENV) cd backend && go run ./cmd/migrate -grants ../deploy/db/10-grants.sql
 
 migrate-down:
-	cd backend && go run ./cmd/migrate -down
+	$(LOAD_ENV) cd backend && go run ./cmd/migrate -down -grants ../deploy/db/10-grants.sql
 
+# --- running locally without Docker / Keycloak (README.md § รันบนเครื่องตัวเอง) ---
+dev-env:
+	./scripts/dev-env.sh
+
+dev-seed:
+	$(LOAD_ENV) cd backend && go run ./cmd/devseed
+
+run-api:
+	$(LOAD_ENV) cd backend && go build -o bin/api ./cmd/api && cd .. && backend/bin/api
+
+run-worker:
+	$(LOAD_ENV) cd backend && go build -o bin/worker ./cmd/worker && cd .. && backend/bin/worker
+
+run-web:
+	pnpm --filter @pdpa/admin dev
+
+# -p 1: the integration tests share one database, and River workers started by one package's tests would
+# otherwise pick up (and fail, as an unknown kind) jobs another package enqueued on the same queue.
 test:
-	cd backend && go test -race ./...
+	cd backend && go test -race -p 1 ./...
 	pnpm -r test
 
 # testcontainers-go: spins up its own Postgres + Valkey, needs Docker.

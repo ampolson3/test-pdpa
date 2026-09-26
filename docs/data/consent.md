@@ -74,6 +74,9 @@ Purpose: วัตถุประสงค์ที่ขอความยิ�
 | `double_opt_in` | `boolean` | ✓ | false |  |  |
 | `status` | `text` | ✓ | 'draft' |  | ค่า: `draft`, `active`, `retired` |
 | `current_version_id` | `uuid` |  |  |  |  |
+| `description_th` | `text` |  |  |  | คำอธิบายที่แสดงบนฟอร์ม (migration 00034) |
+| `description_en` | `text` |  |  |  | (00034) |
+| `data_category_codes` | `text[]` | ✓ | '{}' |  | รหัสหมวดข้อมูล ORG-07 ที่วัตถุประสงค์ใช้ — มีหมวดอ่อนไหว = `is_sensitive` + ต้องยินยอมโดยชัดแจ้ง (CON-10, 00034) |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_purposes_updated`
 - PK: `(id)`
@@ -99,6 +102,8 @@ Purpose: วัตถุประสงค์ที่ขอความยิ�
 | `requires_reconsent` | `boolean` | ✓ | false |  |  |
 | `published_at` | `timestamptz` |  |  |  |  |
 | `approved_by` | `uuid` |  |  | FK → [iam.users](iam.md#iam-users) |  |
+| `explicit_text_th` | `text` |  |  |  | ข้อความยินยอมโดยชัดแจ้งของวัตถุประสงค์ที่อ่อนไหว (ม.26, CON-10, 00034) |
+| `explicit_text_en` | `text` |  |  |  | (00034) |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_purpose_versions_updated`
 - PK: `(id)`
@@ -165,6 +170,11 @@ Collection Point: จุดเก็บความยินยอม
 | `age_gate` | `boolean` | ✓ | false |  |  |
 | `qr_token` | `varchar(64)` |  |  | UQ |  |
 | `status` | `text` | ✓ | 'draft' |  | ค่า: `draft`, `active`, `retired` |
+| `public_key` | `varchar(64)` |  |  |  | คีย์ใน [platform.public_keys](platform.md#platform-public-keys) ที่ออกเมื่อ publish ครั้งแรก, ใช้ในลิงก์ฟอร์มและ `X-Public-Key` (CON-09, 00034) |
+| `allowed_origins` | `text[]` | ✓ | '{}' |  | origin ที่ใช้คีย์ได้ (ว่าง = ทุกที่); คัดลอกไปที่ `platform.public_keys` (00034) |
+| `publish_checklist` | `jsonb` |  |  |  | checklist ม.19 ที่ผู้ publish ยืนยัน (00034) |
+| `published_at` | `timestamptz` |  |  |  | (00034) |
+| `published_by` | `uuid` |  |  | FK → [iam.users](iam.md#iam-users) | (00034) |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_collection_points_updated`
 - PK: `(id)`

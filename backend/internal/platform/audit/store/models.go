@@ -380,6 +380,8 @@ type BreachIncident struct {
 	UpdatedAt          pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy          pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion         int32              `db:"row_version" json:"row_version"`
+	OwnerUserID        pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	CloseReason        *string            `db:"close_reason" json:"close_reason"`
 }
 
 // ระบบ / กิจกรรมที่เกี่ยวข้องกับเหตุ
@@ -406,6 +408,9 @@ type BreachNotificationRecipient struct {
 	Status                string             `db:"status" json:"status"`
 	SentAt                pgtype.Timestamptz `db:"sent_at" json:"sent_at"`
 	Error                 *string            `db:"error" json:"error"`
+	NotificationID        pgtype.UUID        `db:"notification_id" json:"notification_id"`
+	Language              string             `db:"language" json:"language"`
+	LineNo                *int32             `db:"line_no" json:"line_no"`
 }
 
 // การแจ้ง สคส. (ฉบับเบื้องต้น / เพิ่มเติม / สุดท้าย)
@@ -515,6 +520,10 @@ type BreachSubjectNotification struct {
 	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy       pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion      int32              `db:"row_version" json:"row_version"`
+	Variables       []byte             `db:"variables" json:"variables"`
+	TemplateCode    string             `db:"template_code" json:"template_code"`
+	ApprovedBy      pgtype.UUID        `db:"approved_by" json:"approved_by"`
+	ApprovedAt      pgtype.Timestamptz `db:"approved_at" json:"approved_at"`
 }
 
 // ลำดับเหตุการณ์และการตัดสินใจ
@@ -586,6 +595,11 @@ type ConsentCollectionPoint struct {
 	UpdatedAt          pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy          pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion         int32              `db:"row_version" json:"row_version"`
+	PublicKey          *string            `db:"public_key" json:"public_key"`
+	AllowedOrigins     []string           `db:"allowed_origins" json:"allowed_origins"`
+	PublishChecklist   []byte             `db:"publish_checklist" json:"publish_checklist"`
+	PublishedAt        pgtype.Timestamptz `db:"published_at" json:"published_at"`
+	PublishedBy        pgtype.UUID        `db:"published_by" json:"published_by"`
 }
 
 // Purpose ที่แสดงใน Collection Point
@@ -756,25 +770,28 @@ type ConsentGuardianApproval struct {
 
 // Purpose: วัตถุประสงค์ที่ขอความยินยอม
 type ConsentPurpose struct {
-	ID               uuid.UUID          `db:"id" json:"id"`
-	TenantID         uuid.UUID          `db:"tenant_id" json:"tenant_id"`
-	Code             string             `db:"code" json:"code"`
-	NameTh           string             `db:"name_th" json:"name_th"`
-	NameEn           *string            `db:"name_en" json:"name_en"`
-	LegalEntityID    uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
-	LawfulBasisCode  string             `db:"lawful_basis_code" json:"lawful_basis_code"`
-	IsSensitive      bool               `db:"is_sensitive" json:"is_sensitive"`
-	RequiresExplicit bool               `db:"requires_explicit" json:"requires_explicit"`
-	MinAge           *int16             `db:"min_age" json:"min_age"`
-	LifespanDays     *int32             `db:"lifespan_days" json:"lifespan_days"`
-	DoubleOptIn      bool               `db:"double_opt_in" json:"double_opt_in"`
-	Status           string             `db:"status" json:"status"`
-	CurrentVersionID pgtype.UUID        `db:"current_version_id" json:"current_version_id"`
-	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	CreatedBy        pgtype.UUID        `db:"created_by" json:"created_by"`
-	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	UpdatedBy        pgtype.UUID        `db:"updated_by" json:"updated_by"`
-	RowVersion       int32              `db:"row_version" json:"row_version"`
+	ID                uuid.UUID          `db:"id" json:"id"`
+	TenantID          uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	Code              string             `db:"code" json:"code"`
+	NameTh            string             `db:"name_th" json:"name_th"`
+	NameEn            *string            `db:"name_en" json:"name_en"`
+	LegalEntityID     uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	LawfulBasisCode   string             `db:"lawful_basis_code" json:"lawful_basis_code"`
+	IsSensitive       bool               `db:"is_sensitive" json:"is_sensitive"`
+	RequiresExplicit  bool               `db:"requires_explicit" json:"requires_explicit"`
+	MinAge            *int16             `db:"min_age" json:"min_age"`
+	LifespanDays      *int32             `db:"lifespan_days" json:"lifespan_days"`
+	DoubleOptIn       bool               `db:"double_opt_in" json:"double_opt_in"`
+	Status            string             `db:"status" json:"status"`
+	CurrentVersionID  pgtype.UUID        `db:"current_version_id" json:"current_version_id"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy         pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy         pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion        int32              `db:"row_version" json:"row_version"`
+	DataCategoryCodes []string           `db:"data_category_codes" json:"data_category_codes"`
+	DescriptionTh     *string            `db:"description_th" json:"description_th"`
+	DescriptionEn     *string            `db:"description_en" json:"description_en"`
 }
 
 // Data Element ที่ใช้ในแต่ละ Purpose
@@ -819,6 +836,8 @@ type ConsentPurposeVersion struct {
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy         pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
+	ExplicitTextTh    *string            `db:"explicit_text_th" json:"explicit_text_th"`
+	ExplicitTextEn    *string            `db:"explicit_text_en" json:"explicit_text_en"`
 }
 
 // รายการที่สถานะไม่ตรงกัน
@@ -2344,6 +2363,7 @@ type OrgExternalParty struct {
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy      pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion     int32              `db:"row_version" json:"row_version"`
+	MergedIntoID   pgtype.UUID        `db:"merged_into_id" json:"merged_into_id"`
 }
 
 // วันหยุดในปฏิทิน
@@ -2498,6 +2518,19 @@ type PlatformApproval struct {
 	RowVersion      int32              `db:"row_version" json:"row_version"`
 }
 
+// หลักฐานการลบ partition ของ audit_log ที่พ้นระยะเก็บ: hash สุดท้ายที่ถูกลบต่อ tenant (append-only)
+type PlatformAuditChainAnchor struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	TenantID       uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	PartitionName  string             `db:"partition_name" json:"partition_name"`
+	DroppedThrough pgtype.Timestamptz `db:"dropped_through" json:"dropped_through"`
+	LastID         int64              `db:"last_id" json:"last_id"`
+	LastOccurredAt pgtype.Timestamptz `db:"last_occurred_at" json:"last_occurred_at"`
+	LastHash       string             `db:"last_hash" json:"last_hash"`
+	RowsDropped    int64              `db:"rows_dropped" json:"rows_dropped"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 // audit log แบบ append-only + hash chain (partition รายเดือน)
 type PlatformAuditLog struct {
 	ID         int64              `db:"id" json:"id"`
@@ -2608,6 +2641,7 @@ type PlatformDocument struct {
 	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy        pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion       int32              `db:"row_version" json:"row_version"`
+	LegalEntityID    pgtype.UUID        `db:"legal_entity_id" json:"legal_entity_id"`
 }
 
 // เวอร์ชันของเอกสาร (ProseMirror JSON + ไฟล์ที่ render)
@@ -2629,6 +2663,9 @@ type PlatformDocumentVersion struct {
 	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy     pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion    int32              `db:"row_version" json:"row_version"`
+	PdfEnFileID   pgtype.UUID        `db:"pdf_en_file_id" json:"pdf_en_file_id"`
+	DocxEnFileID  pgtype.UUID        `db:"docx_en_file_id" json:"docx_en_file_id"`
+	RenderStatus  string             `db:"render_status" json:"render_status"`
 }
 
 // งานส่งออกแบบ async (ศูนย์ดาวน์โหลด)
@@ -2687,6 +2724,21 @@ type PlatformFormDefinition struct {
 	RowVersion       int32              `db:"row_version" json:"row_version"`
 }
 
+type PlatformFormSectionAssignment struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	TenantID       uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	SubmissionID   uuid.UUID          `db:"submission_id" json:"submission_id"`
+	SectionKey     string             `db:"section_key" json:"section_key"`
+	AssigneeUserID uuid.UUID          `db:"assignee_user_id" json:"assignee_user_id"`
+	Status         string             `db:"status" json:"status"`
+	CompletedAt    pgtype.Timestamptz `db:"completed_at" json:"completed_at"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy      pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy      pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion     int32              `db:"row_version" json:"row_version"`
+}
+
 // คำตอบของฟอร์ม
 type PlatformFormSubmission struct {
 	ID              uuid.UUID          `db:"id" json:"id"`
@@ -2704,6 +2756,8 @@ type PlatformFormSubmission struct {
 	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy       pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion      int32              `db:"row_version" json:"row_version"`
+	Status          string             `db:"status" json:"status"`
+	Result          []byte             `db:"result" json:"result"`
 }
 
 // เวอร์ชันของฟอร์ม (schema JSON)
@@ -2850,6 +2904,7 @@ type PlatformSlaTimer struct {
 	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy   pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion  int32              `db:"row_version" json:"row_version"`
+	PausedAt    pgtype.Timestamptz `db:"paused_at" json:"paused_at"`
 }
 
 // template เอกสาร / ข้อความ (กลางและของ tenant)
@@ -2889,6 +2944,23 @@ type PlatformTenant struct {
 	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy     pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion    int32              `db:"row_version" json:"row_version"`
+}
+
+// กุญแจข้อมูล (DEK / blind index key) ต่อ tenant ที่ห่อด้วย KEK ใน OpenBao Transit — ห้ามลบ (PLT-13)
+type PlatformTenantKey struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	TenantID   uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	Purpose    string             `db:"purpose" json:"purpose"`
+	DataClass  string             `db:"data_class" json:"data_class"`
+	Version    int32              `db:"version" json:"version"`
+	WrappedKey []byte             `db:"wrapped_key" json:"wrapped_key"`
+	KekRef     string             `db:"kek_ref" json:"kek_ref"`
+	Status     string             `db:"status" json:"status"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy  pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy  pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion int32              `db:"row_version" json:"row_version"`
 }
 
 // โมดูลที่เปิดใช้ต่อ tenant (license)

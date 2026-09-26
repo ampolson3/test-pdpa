@@ -220,6 +220,8 @@
 
 **Acceptance criteria:** ส่งล้มเหลวมี retry อัตโนมัติ และตรวจสถานะรายข้อความได้
 
+**Implementation (PLT-04):** `backend/internal/platform/notify` — `Service.Send` (ใน tx ของผู้เรียก, เข้ารหัสผู้รับ + ตัวแปรด้วย PLT-13, normalize ที่อยู่, quiet hours 21:00–08:00 สำหรับ SMS/LINE ที่ไม่เร่งด่วน — ค่า config) · job `notify.deliver` บันทึกทุกครั้งที่ล้มเหลว (error ตัดที่อยู่/เบอร์ออก) แล้วตั้งรอบถัดไป 1m · 5m · 30m · 2h · 6h จากนั้น `failed` · state machine `PLT-04` ใน `docs/states/state-machines.yaml` · SMTP จริง, SMS / LINE เป็น mock ตาม decisions Q-03 · API: `/admin/v1/platform/notification-templates` (CRUD + ETag/If-Match + preview, `admin.notification.*`), `/admin/v1/platform/notifications` (สถานะรายข้อความ, `admin.notification.read`), `/admin/v1/platform/inbox` (+ `/stream` SSE, `/{id}/read`) · หน้าจอ: `/settings/notification-templates`, `/settings/notifications`, กระดิ่งใน header · migration 00025
+
 <a id="plt-05"></a>
 ### PLT-05 Workflow & SLA engine
 
@@ -242,6 +244,8 @@
 **Acceptance criteria:** นับ SLA ถูกต้องเมื่อข้ามวันหยุด และแจ้งเตือนก่อนครบกำหนดตามที่ตั้ง (unit test ครอบคลุมกรณีข้ามวันหยุด)
 
 **หมายเหตุ:** บริการกลางที่ DSAR, Breach, DPIA, Vendor และ Tasks ใช้
+
+**Implementation (PLT-05):** `backend/internal/platform/workflow` — **รูปแบบนิยาม (JSON ใน `workflow_definitions.definition`) ออกแบบใน feature นี้ — ยังไม่มีเอกสาร SA กำหนดไว้ ควรให้ทีมทบทวน:** `initial`, `states[]` (`key`, `label{th,en}`, `terminal`, `pause_sla`, `task{title, assignee_user_id | assignee_group_id, due}`), `transitions[]` (`from`, `to`, `label`), `sla` (`code`, `mode` calendar_days/business_days/hours, `amount`, `calendar_id`, `remind_before[]` หน่วยเดียวกับ SLA, `escalate_user_ids`, `escalate_group_id`) · บันทึกแต่ละครั้งเป็นเวอร์ชันใหม่ (instance ที่เริ่มแล้วใช้เวอร์ชันเดิม) · tenant override นิยามกลางได้ · module เริ่ม instance ด้วย `workflow.Service.Start` ใน tx ของตน และลงทะเบียน `Policy{ReadPermission, WritePermission, OnSLA, OnTransition}` ใน `internal/wiring.Workflow` (ใช้ร่วม api + worker) — module ส่ง event ของตนเอง (เช่น `dsar.sla_warning`) จาก hook ตามกฎ events.yaml · สิทธิ์: ผู้รับงาน (ตรง/ผ่านกลุ่ม) หรือผู้ถือสิทธิ์ของ record · ส่งต่อได้เฉพาะผู้รับงานของขั้นปัจจุบันหรือผู้มีสิทธิ์แก้ไข · สมาชิกกลุ่ม "รับงาน" ได้ · ฟังก์ชันกำหนดเวลา `DueAt` / `ReminderTimes` / `Resume` (pure, ทดสอบด้วยเวลาที่กำหนดเอง) ใช้ปฏิทิน ORG-20 ผ่าน interface `Calendars` + `internal/pkg/bizcal` · หยุดนับ SLA ในขั้นที่ `pause_sla` (decisions Q-06: DSAR หยุดเฉพาะ awaiting_info) — เมื่อกลับมานับ due เลื่อนตามเวลาที่หยุด (วันทำการ: ตามจำนวนวันทำการที่หยุดไป) · job `workflow.sla_tick` นัดด้วย River ScheduledAt ณ เวลาเตือนและ due → แจ้งเตือน in-app (PLT-04, template กลาง `workflow.task_assigned` / `workflow.sla_reminder` / `workflow.sla_breached`) + audit + hook · ป้าย SLA: on_track → at_risk (ส่งการเตือนแล้ว) → overdue / paused / done · API `/admin/v1/platform/workflow-definitions` (+ `/{id}/versions`, `admin.workflow.*` migration 00028), `/workflow-instances/{id}` (+ `/transitions`), `/my-tasks`, `/workflow-tasks/{id}`, `/assignable-groups` · หน้าจอ: `/tasks` (กระดานงาน + แผง workflow: ป้าย SLA, ปุ่มส่งต่อพร้อมความเห็น, งาน, ไทม์ไลน์), `/settings/workflows` (ฟอร์มตั้งค่า) · component `WorkflowPanel` / `SlaBadge` ให้ module ใช้แสดง workflow ของ record · ยังไม่มี module ใดเริ่ม workflow (DSAR / Breach จะเป็นผู้ใช้รายแรก) · ความเห็นแบบ thread ใช้ PLT-07 ที่ record ของ module
 
 <a id="plt-06"></a>
 ### PLT-06 Form & assessment engine
@@ -266,6 +270,8 @@
 
 **หมายเหตุ:** ใช้ร่วม: ฟอร์มความยินยอม, คำขอใช้สิทธิ, แจ้งเหตุ, DPIA, คู่ค้า, RoPA, checklist
 
+**Implementation (PLT-06):** `backend/internal/platform/forms` + `packages/form-renderer` — **รูปแบบ schema / scoring (JSON ใน `form_versions.schema` / `.scoring`) ออกแบบใน feature นี้ — ยังไม่มีเอกสาร SA กำหนดไว้ ควรให้ทีมทบทวน:** `sections[]` (`key`, `title{th,en}`, `description`, `visible_if`, `questions[]`) · คำถาม `key`, `type` (`text` `textarea` `number` `date` `email` `single_choice` `multi_choice` `yes_no`), `label`, `help`, `required`, `options[]{value, label, score}`, `min`/`max` (ตัวเลข), `max_length` (ข้อความ, ค่าเริ่มต้น 2000), `weight` (ค่าเริ่มต้น 1), `visible_if` · เงื่อนไข = `{question, op, value}` (`eq` `neq` `in` `not_in` `gt` `gte` `lt` `lte` `answered` `not_answered`; กับ multi_choice `eq`/`in` = "มีตัวเลือกนี้") หรือ `{all:[…]}` / `{any:[…]}` ซ้อนได้ 5 ชั้น และอ้างได้เฉพาะคำถามที่อยู่ก่อนหน้า (visibility ไม่วนลูป) · คะแนน = Σ คะแนนตัวเลือกที่ตอบ × `weight` ของคำถามที่แสดง; `scoring.bands[]{key, label, min, max?}` เรียงจากน้อยไปมากไม่ทับกัน · คำตอบของคำถามที่ถูกซ่อนถูกตัดทิ้ง · ตัวประเมิน Go (`forms.Evaluate`) และ TypeScript (`evaluate` ใน `@pdpa/form-renderer`) ต้องให้ผลตรงกับ `packages/form-renderer/src/fixtures/engine-cases.json` (ทดสอบทั้งสองฝั่ง) · **สิทธิ์ตามประเภทฟอร์ม** (ไม่มี permission ใหม่): module ลงทะเบียน `forms.Policy{Read, Create, Update, Publish, Respond}` ใน `internal/wiring.Forms` — ตอนนี้ `assessment` → `assessment.template.*` / ตอบ `assessment.dpia.create`, `questionnaire` → `ropa.template.*` / `ropa.activity.update`, `dsar` → `dsar.form.*` / `dsar.request.create`, `consent` → `consent.collectionpoint.*` (ไม่ตอบใน admin; module บันทึกคำตอบจากภายนอกด้วย `Record`) · ประเภทที่ยังไม่มี module (`breach`, `intake`, `quiz`) สร้างไม่ได้ · เวอร์ชัน: ร่างได้ครั้งละ 1 (แก้ด้วย If-Match), เผยแพร่แล้วแก้ไม่ได้ การแก้ = ร่างเวอร์ชันใหม่, คำตอบที่เริ่มแล้วคงใช้เวอร์ชันเดิม · คำตอบ: ร่าง (บันทึกได้ทีละส่วน ตรวจเฉพาะคำตอบที่ให้มา) → ส่ง (ตรวจคำถามบังคับที่แสดงอยู่, คิดคะแนน, เก็บ `result`) · **มอบหมายรายส่วน:** เจ้าของคำตอบมอบส่วนให้ผู้ใช้ใน tenant (แจ้งเตือน in-app `form.section_assigned`), ผู้รับตอบได้เฉพาะส่วนนั้นแม้ไม่มีสิทธิ์ของโมดูล แล้วส่งคืน (`done`); เจ้าของส่งได้เมื่อทุกส่วนเสร็จ · state machine `PLT-06#form` / `PLT-06#response` / `PLT-06#assignment` · migration 00032 · API `/admin/v1/platform/form-types`, `/forms` (+ `/{id}`, `/{id}/versions`, `/{id}/draft`, `/{id}/publish`, `/{id}/responses`), `/form-responses/{id}` (+ `/answers`, `/assignments/{section}`, `/sections/{section}/complete`, `/submit`), `/my-form-sections` (ทั้งหมด `authenticated`; สิทธิ์ตรวจใน service) · 422 `forms.invalid_answers` มี `errors[]{field, code}` · frontend: `FormRenderer` (react-hook-form + zod ที่เรียกตัวประเมินเดียวกัน) ใช้ร่วมทุกโมดูล, หน้า `/forms` (รายการ + ส่วนที่รอตอบ), `/forms/{id}` (builder ลากวางด้วย dnd-kit รวมคีย์บอร์ด, ตั้งค่าคำถาม/ตัวเลือก/เงื่อนไข/ระดับคะแนน, preview ไทย/อังกฤษพร้อมคะแนนสด), `/form-responses/{id}` · ยังไม่ทำ: ใช้ใน portal (ยังไม่มี feature ของ portal), เลิกใช้ฟอร์ม (`retired`), ฟอร์มกลางของ provider
+
 <a id="plt-07"></a>
 ### PLT-07 ความเห็น ไฟล์แนบ และไทม์ไลน์กิจกรรม
 
@@ -286,6 +292,8 @@
 **Frontend (Next.js):** component ความเห็น / ไฟล์แนบ / ไทม์ไลน์ ใช้ร่วมทุกโมดูล
 
 **Acceptance criteria:** ทุกโมดูลใช้ component เดียวกัน และการ mention ส่งแจ้งเตือน
+
+**Implementation (PLT-07):** `backend/internal/platform/collab` — module เจ้าของลงทะเบียนประเภท record (`collab.Service.Register(type, Policy{ReadPermission, WritePermission, Exists})`); ประเภทที่ไม่ลงทะเบียนถูกปฏิเสธ · ความเห็น + ตอบกลับ (1 ชั้น) + @mention (`@[ชื่อ](user-id)`, เฉพาะผู้ใช้ active ของ tenant) → แจ้งเตือน in-app ผ่าน PLT-04 (template กลาง `collab.mention` / `collab.reply`, migration 00026) · แก้ / ลบเฉพาะของตน (If-Match; ลบไม่ได้ถ้ามีคำตอบ) · ปิดประเด็น · ไฟล์แนบ = ไฟล์ PLT-09 ที่ผูกกับ record (ดาวน์โหลดด้วยสิทธิ์อ่าน record) · ประวัติ = audit log ของ record · API `/admin/v1/platform/records/{entityType}/{entityId}/{comments|attachments|activity}`, `/admin/v1/platform/comments/{id}`, `/admin/v1/platform/mentionable-users` · frontend: `apps/admin/src/components/record-collaboration.tsx` (ใช้ตัวเดียวทุกโมดูล) · ผู้ใช้รายแรก: `notification_template` (หน้าแก้ template)
 
 <a id="plt-08"></a>
 ### PLT-08 เวอร์ชันและการอนุมัติ
@@ -308,6 +316,8 @@
 
 **Acceptance criteria:** record ที่เผยแพร่แล้วแก้ไม่ได้ต้องสร้างเวอร์ชันใหม่; ผู้สร้างอนุมัติงานของตนเองไม่ได้
 
+**Implementation (PLT-08):** `backend/internal/platform/versioning` บนตาราง `platform.record_versions` + `platform.approvals` — module ลงทะเบียนประเภท record ใน `internal/wiring.Versioning` (`Policy{ReadPermission, EditPermission, PublishPermission, Steps[]{Role}, Title, OnPublish}`; ต้องมีอย่างน้อย 1 ขั้น) และบันทึกร่างจาก service ของตนด้วย `SaveDraft` · ร่าง → รอตรวจ (`Submit` เปิดขั้นอนุมัติตามลำดับ, บันทึก diff เทียบฉบับเผยแพร่) → อนุมัติ (ครบทุกขั้น) → เผยแพร่ (`Publish`: ฉบับเดิม superseded + hook `OnPublish` ใน tx เดียว) · ส่งกลับ / ไม่อนุมัติต้องมีเหตุผล → กลับเป็นร่าง (ขั้นที่เหลือถูกยกเลิก) · ฉบับเผยแพร่ไม่ถูกแก้ การเปลี่ยนแปลงสร้างเวอร์ชันใหม่ · ขณะรอตรวจ/อนุมัติแล้วแก้ร่างไม่ได้ (409 `versioning.locked`) · **maker-checker:** ผู้จัดทำ ผู้ส่งขออนุมัติ และผู้ที่อนุมัติขั้นก่อนหน้า อนุมัติไม่ได้ (403 `versioning.self_approval`); ขั้นถัดไปรอขั้นก่อนหน้า · ผู้อนุมัติ = ผู้มี role ของขั้น · แจ้งผู้ส่งผ่าน PLT-04 (`approval.approved` / `approval.returned` / `approval.rejected`, migration 00029 ซึ่งเพิ่ม unique index: เวอร์ชันเปิดได้ 1 และเผยแพร่ได้ 1 ต่อ record) · diff = รายการ JSON path + ค่าเดิม/ใหม่ (`versioning.Diff`) · state machine `PLT-08#version` / `PLT-08#approval` · API `/admin/v1/platform/records/{type}/{id}/versions`, `/record-versions/{id}` (+ `/compare`, `/submit`, `/publish`), `/approvals/{id}/decision`, `/my-approvals` · frontend: `RecordVersions` (แถบสถานะ + ประวัติ + เปรียบเทียบ), `VersionDiff`, หน้า `/approvals` (กล่องงานรออนุมัติ) · ยังไม่มี module ใดลงทะเบียน (ผู้ใช้รายแรก: ประกาศ / RoPA / นโยบาย) · ยังไม่ผูกกับ PLT-05 workflow
+
 <a id="plt-09"></a>
 ### PLT-09 จัดเก็บไฟล์และสแกนไวรัส
 
@@ -328,6 +338,8 @@
 **Frontend (Next.js):** component อัปโหลด / ดาวน์โหลด (ลากวาง, progress)
 
 **Acceptance criteria:** ไฟล์ติดไวรัสถูกปฏิเสธ และลิงก์ดาวน์โหลดหมดอายุตามเวลาที่ตั้ง
+
+**Implementation (PLT-09):** `backend/internal/platform/files` — `POST /admin/v1/platform/files` (multipart) · `GET /admin/v1/platform/files/{id}` · `GET …/{id}/download` → 302 signed URL (x-permission `authenticated`; สิทธิ์เห็นไฟล์: ผู้อัปโหลดขณะยังไม่ผูก, หลังผูกใช้ permission ที่ module เจ้าของลงทะเบียนต่อ entity type — ไม่ลงทะเบียน = ดาวน์โหลดไม่ได้) · job `files.scan` (clamd INSTREAM) และ `files.expire` · ค่าเริ่มต้น (config): 25 MB, PDF/PNG/JPEG/DOCX/XLSX/PPTX/CSV/TXT, ลิงก์ 5 นาที, orphan 24 ชม. · frontend: `@pdpa/ui` `FileDropzone`/`ProgressBar`, `apps/admin` `FileUploader`, BFF ส่ง body แบบ stream + ส่ง redirect กลับ + ตรวจ Origin (CSRF) · ทดสอบกับ SeaweedFS (S3 + SigV4) และ clamd จริง
 
 <a id="plt-10"></a>
 ### PLT-10 Background jobs และ scheduler
@@ -350,6 +362,8 @@
 
 **Acceptance criteria:** job ที่ล้มเหลวมี retry และแจ้งเตือน; ไม่มี job ซ้ำเมื่อรันหลาย instance
 
+**Implementation (PLT-10):** `backend/internal/platform/jobs` (กฎดู `docs/architecture/code-structure.md`) · หน้าจอ admin `/settings/jobs` ← `GET /admin/v1/platform/jobs` (`platformListJobs`, `x-permission: admin.job.read` — ORGADMIN, SUPER; migration 00021) แสดงเฉพาะ job ของ tenant ตนเอง (กรองด้วย `args.tenant_id` เพราะ `river_job` ไม่มี RLS) · SUPER ดูข้าม tenant ผ่าน `/provider/v1` ภายหลัง · การแจ้งเตือนเมื่อ job ล้มเหลว = log `alert=job_discarded` + metric `pdpa.jobs.discarded` (ส่งถึงคนผ่าน PLT-04 เมื่อสร้างแล้ว)
+
 <a id="plt-11"></a>
 ### PLT-11 Domain events และ outbox
 
@@ -370,6 +384,8 @@
 **Frontend (Next.js):** -
 
 **Acceptance criteria:** event ไม่สูญหายเมื่อระบบล่มกลางคัน (at-least-once + idempotent consumer)
+
+**Implementation (PLT-11):** `backend/internal/platform/events` — `Publisher` (outbox + enqueue ใน tx ของ request), `Dispatcher` (`outbox.dispatch`), `Sweeper` (`outbox.sweep` ทุก 1 นาที), catalog สร้างจาก `docs/architecture/events.yaml` · migration 00022 (index สำหรับ dispatcher + unique delivery) · รายละเอียดใน `docs/architecture/integration.md` § Outbox → webhook · การส่ง HTTP + HMAC (`webhook.deliver`) อยู่ใน PLT-15 · NATS ยังไม่ทำ
 
 **หมายเหตุ:** ใช้เชื่อมโมดูลกัน เช่น ROPA-19, DSAR-21, DFG-02
 
@@ -398,6 +414,8 @@
 
 **หมายเหตุ:** หน้าดู log คือ ORG-19
 
+**Implementation (PLT-12):** `backend/internal/platform/audit` — hash chain ต่อ tenant ครอบทุกคอลัมน์, advisory lock กัน chain แตกกิ่ง, `Verify` + job `audit.verify` รายวัน, `Changes` (JSON diff), request audit บันทึก IP + user agent · migration 00023 (index ของ chain) · **retention 5 ปี** (decisions D-22, migration 00033): job `audit.retention` รายวันเรียก `platform.drop_expired_audit_partitions()` ลบทั้ง partition รายเดือนที่พ้น 60 เดือน (ฟังก์ชันปฏิเสธค่าต่ำกว่า 60; `AUDIT_RETENTION_MONTHS` ตั้งให้นานขึ้นได้เท่านั้น) และบันทึก hash สุดท้ายที่ลบต่อ tenant ใน `platform.audit_chain_anchors` (append-only) — Verify และแถวใหม่ต่อ chain จาก anchor ล่าสุด, anchor ปลอมถูกตรวจพบ · **IP จริงหลัง load balancer** (D-23): `TRUSTED_PROXIES` + `internal/pkg/clientip` อ่าน `X-Forwarded-For` เฉพาะจาก proxy ที่เชื่อถือ ใช้ทั้ง audit และ rate limit
+
 <a id="plt-13"></a>
 ### PLT-13 เข้ารหัสข้อมูลส่วนบุคคลระดับฟิลด์
 
@@ -418,6 +436,8 @@
 **Frontend (Next.js):** -
 
 **Acceptance criteria:** identifier ในฐานข้อมูลอ่านไม่ออกถ้าไม่มี key แต่ยังค้นหาแบบตรงตัวได้
+
+**Implementation (PLT-13):** `backend/internal/platform/crypto` + ตาราง `platform.tenant_keys` (migration 00024) · รายละเอียดใน `docs/architecture/security.md` § ลำดับชั้นกุญแจ และ `docs/data/platform.md#platform-tenant-keys` · ทดสอบกับ OpenBao Transit จริง (dev server) และ LocalKEK
 
 <a id="plt-14"></a>
 ### PLT-14 Import framework (Excel / CSV)
@@ -441,6 +461,8 @@
 **Acceptance criteria:** นำเข้า 50,000 แถวได้ และได้ไฟล์รายงานแถวที่ผิดพร้อมเหตุผล
 
 **หมายเหตุ:** ใช้ร่วม ORG-08, ORG-09, ROPA-18, CON-22
+
+**Implementation (PLT-14):** `backend/internal/platform/importer` — module เจ้าของลงทะเบียนประเภทการนำเข้าใน `internal/wiring.ImportTypes()` (`importer.Type{Permission, Columns, Validate, Apply}`; ประเภทที่ไม่ลงทะเบียนถูกปฏิเสธ, สิทธิ์ตรวจตาม `Permission` ของประเภท) · ขั้นตอน async ด้วย PLT-10: `import.prepare` (รอผลสแกนไวรัส PLT-09, อ่านหัวคอลัมน์, เสนอ mapping จากชื่อ/alias) → ผู้ใช้ map คอลัมน์ → `import.validate` (dry-run ทุกแถว ไม่เขียนข้อมูล, รายงาน CSV `line,column,error` — ไม่มีค่าของเซลล์ — เก็บเป็นไฟล์ PLT-09) → ยืนยัน → `import.apply` (แถวที่ผ่านทั้งหมดใน savepoint เดียว; แถวใดล้มเหลว = rollback ทั้งหมด, สถานะ `failed`) · CSV (UTF-8 BOM, `,`/`;`) และ XLSX (sheet แรก, excelize แบบ stream) · timeout 30 นาทีต่อขั้น · state machine `PLT-14` ใน `docs/states/state-machines.yaml` · API `/admin/v1/platform/imports` (+ `/{id}`, `/{id}/mapping` PUT + If-Match, `/{id}/confirm` + If-Match, `/{id}/errors` → 302) · frontend: `apps/admin/src/components/import-wizard.tsx` (อัปโหลด → map → ตรวจ → ยืนยัน) + `@pdpa/api-client` `useImport` · ทดสอบ 50,000 แถว (ผ่านใน ~15 วินาที) พร้อมรายงานแถวผิด · ผู้ใช้รายแรก: นำเข้าวันหยุด (ORG-20)
 
 <a id="plt-15"></a>
 ### PLT-15 Public API, webhook และ developer portal
@@ -485,6 +507,55 @@
 **Acceptance criteria:** เอกสารภาษาไทยส่งออก PDF / Word ได้ตัวอักษรถูกต้อง และเปรียบเทียบสองเวอร์ชันได้
 
 **หมายเหตุ:** ต้องเสร็จใน 2 sprint แรกของ P1; ใช้ร่วมประกาศ, หนังสือตอบคำขอ, แบบแจ้ง สคส., DPA, DSA
+
+### PLT-16 Document composer — done
+`internal/platform/docs` (+ `render/`, `http/`, `docstest/`) and `apps/admin` `/documents*`. Content is ProseMirror
+JSON per language (`{th, en}`), an allow-listed node set (paragraph/heading 1-3/lists/blockquote/rule/clause/
+mergeField, TipTap on the frontend with custom `mergeField` and `clause` node views). Documents are PLT-08 records,
+one type per module (`document_<type>`: notice/policy → `notice.document.*`, dpa → `agreement.dpa.*`, dsa →
+`agreement.dsa.*`, dsar_letter → `dsar.request.*`, pdpc_form/breach_letter → `breach.notification.*`), one DPO
+approval step; `internal/wiring.Docs` registers the types (report/other have no owning module yet, not offered).
+Publishing (`OnPublish`) freezes the text, every merge field's *current* value (org fields via
+`orgservice.MergeFields`, more sources as modules exist) and every cited clause version's text into an immutable
+`platform.document_versions` row, then enqueues `docs.render` (PLT-10) to produce PDF + Word per language via
+`files.SaveGenerated`. Clause library and templates are both draft → published → retired per code (`agreement.
+clause.*`; templates use the owning type's template permission, publishing needs the type's own publish permission
+since template wording is legal text, rule 8). Compare is block-level LCS with character-level segments inside a
+changed block (Thai has no word spaces); an unpublished version's export carries a DRAFT banner. Migration 00037
+(documents.legal_entity_id, English render columns + render_status, one-draft-per-code indexes).
+Renderer: `render.PDFRenderer` — Gotenberg (`GOTENBERG_URL`) in production, or a local headless Chromium
+(`CHROMIUM_PATH`) for this environment; DOCX is hand-written OOXML (no HTML round-trip) with Sarabun set as
+`rFonts`/`lang bidi=th-TH`; both embed the Sarabun font (OFL) so Thai renders with no font installed on the host.
+Tests: acceptance (a Thai document's Word text is byte-exact incl. the resolved merge fields, expanded clause and
+Buddhist-era date; its PDF is valid with the font embedded; comparing two versions), validation, access + two-tenant
+isolation, clause versioning (citing an older version keeps its text after a newer one publishes), templates, HTTP
+contract through the real validator (401/403/404/409/412/422/428). A Chromium E2E against the real api/worker/next
+stack (19/19): clause library → compose Thai+English with merge fields and a clause → draft export shows DRAFT →
+submit → second DPO approves → publish → worker renders → Word text exact in both languages, PDF valid → edit →
+compare v1→v2 → English UI.
+Found and fixed by the E2E, not by the Go unit tests (whose fixtures never used a bilingual clause or a mouse-driven
+toolbar): `docs.clauseTexts` decoded a clause's English body into `en := th`, a *shallow copy* of the Thai struct —
+since `render.Node.Content` is a slice, decoding into the copy reused its shared backing array and silently
+overwrote the Thai paragraphs with the English ones (title stayed correct, being a plain string; only the body was
+corrupted) — a document in Thai citing a bilingual clause rendered the clause's English text. Fixed by decoding into
+independent zero values; a regression test (`TestClauseBilingualTextNotAliased`) confirms it fails without the fix.
+Also: TipTap's `focus()` runs on the next animation frame, so clicking any toolbar button or the merge-field/clause
+`<select>` moved DOM focus there first and lost the next keystrokes typed immediately after — fixed by focusing the
+editor's DOM synchronously before every toolbar command. And the LCS backtrack in `render.Compare`/`Inline` picked
+insert over delete on ties, splitting a same-kind edit into `delete`+`insert` instead of one `change` with inline
+segments — fixed to prefer delete on ties, and `Inline` now folds 1-2 character equal runs between changes (a lone
+Thai vowel/tone mark two words happen to share) into the surrounding change, so a replaced word reads as one
+deletion and one insertion instead of a dozen tiny ones.
+Known limitation, not fixable from this code: Chromium's headless PDF export (also Gotenberg, same engine) writes
+an unreliable ToUnicode (text-layer) mapping for Thai combining-mark sequences — confirmed with a minimal,
+single-font, single-weight reproduction outside this app: the *visual* PDF (screenshotted) is pixel-correct, only
+programmatic text *extraction* (pdf.js) reorders or drops characters. The Go unit test and the E2E therefore check
+the PDF's validity and embedded font, not its extracted text; the acceptance criterion's "correct characters" rests
+on DOCX, which writes raw Unicode with no shaping and is checked byte-exact.
+Not done: portal / `/api/v1` use (no consumer yet); retention or archival of superseded versions; a schema
+migration tool for the ProseMirror content format if it needs to change; re-rendering a version whose renderer
+config changed after the fact (rule 5 status/audit/outbox timing does not apply here — a version's files are
+produced once, by its own publish).
 
 <a id="plt-17"></a>
 ### PLT-17 Public portal framework

@@ -11,6 +11,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"pdpa-platform/internal/pkg/clientip"
 	"pdpa-platform/internal/pkg/httpx"
 )
 
@@ -52,8 +53,13 @@ func (l *Limiter) Allow(ctx context.Context, key string) (allowed bool, retryAft
 // known, inside the AuthZ or a module's own handler.
 func (l *Limiter) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
+		// The client address clientip.Middleware resolved (trusted proxies, D-23), else the TCP peer.
+		var ip string
+		if a, ok := clientip.From(r.Context()); ok {
+			ip = a.String()
+		} else if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+			ip = host
+		} else {
 			ip = r.RemoteAddr
 		}
 

@@ -91,11 +91,14 @@
 | Blind index key | HMAC-SHA256 key แยกต่อ tenant · ใช้ค้นหาแบบตรงตัวโดยไม่ถอดรหัส (normalize ก่อน: lower-case อีเมล, E.164 เบอร์โทร) |
 | ลบ tenant | ทำลาย KEK = crypto-shredding |
 
+โค้ด (PLT-13): `backend/internal/platform/crypto` — `Keyring.Encrypt/Decrypt(ctx, class, column, …)`, `BlindIndex(ctx, kind, value)`, `RotateDEK`, `RotateKEK` (rotate Transit key + rewrap DEK ทั้งหมดของ tenant) · KEK = `crypto.Transit` (OpenBao, key `tenant-<uuid>` ต่อ tenant) · `LocalKEK` สำหรับ dev/test เท่านั้น · DEK cache ในหน่วยความจำ 5 นาที · ตาราง `platform.tenant_keys` · ยังไม่ทำ: หมุน blind index key (ต้อง reindex ทุกแถว), job re-encrypt ข้อมูลด้วย DEK ใหม่, การหมุน KEK ตามรอบ 12 เดือน (ops สั่ง `RotateKEK`)
+
 ## PII ในโค้ดและ log
 
 - ห้าม log ค่า PII / token / OTP / secret — log ได้เฉพาะ id, subject_ref, request_id · middleware redaction + linter ตรวจ key ต้องห้าม (email, phone, national_id, name ฯลฯ)
 - response ของ admin คืนค่า identifier แบบ mask ตาม `iam.field_masking_rules` เป็นค่าเริ่มต้น · ค่าเต็มผ่าน endpoint unmask ที่ต้องมี `pii.unmask.execute` + เหตุผล + step-up MFA
 - ไฟล์ export / แพ็กเกจ DSAR เข้ารหัสและหมดอายุ · ดาวน์โหลดผ่าน signed URL อายุสั้น (SEQ-07)
+- ไฟล์อัปโหลด (PLT-09): ตรวจขนาด + ชนิดจากเนื้อหา · ClamAV ก่อนดาวน์โหลด · signed URL บังคับ `Content-Disposition: attachment` · BFF ปฏิเสธคำขอเปลี่ยนแปลงข้อมูลที่ `Origin` ไม่ใช่ของแอป (CSRF) · API จำกัด body 1 MiB (upload: ขนาดไฟล์สูงสุด + 1 MiB)
 - webhook payload ส่ง `subject_ref` แทน PII — ปลายทางเรียก API กลับเมื่อจำเป็น
 - AI gateway ต้อง mask PII ก่อนส่ง LLM และเก็บ log prompt / token ต่อ tenant
 - ข้อมูลใน dev / sit เป็นข้อมูลสังเคราะห์ · uat ใช้ข้อมูลที่ผ่าน masking (`gov.masking_jobs`) เท่านั้น
@@ -106,6 +109,7 @@
 - เปลี่ยน role / scope / สิทธิ์ชั่วคราว / break-glass · export · unmask · ลบ · อนุมัติ / ปฏิเสธ / publish
 - platform.audit_log: actor_type, actor_id, action, entity_type, entity_id, before/after (mask PII), ip, user_agent, prev_hash → hash
 - ห้าม UPDATE / DELETE (สิทธิ์ DB + test) · ส่งต่อ SIEM ได้ · เก็บตามนโยบายองค์กร (ข้อมูลจราจรทางคอมพิวเตอร์อย่างน้อย 90 วัน)
+- โค้ด (PLT-12): `audit.Service.Write` (ใช้ `audit.Changes` ลด before/after เหลือเฉพาะฟิลด์ที่เปลี่ยน) · `Verify` + job `audit.verify` รายวัน · รายละเอียด hash ใน `docs/data/platform.md#platform-audit-log` · ยังไม่ทำ: ลบ partition ตามระยะเวลาเก็บ (รอกำหนดนโยบาย) และ IP จริงหลัง load balancer (ต้องกำหนด trusted proxy)
 
 ## Threat model
 

@@ -24,6 +24,2021 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/platform/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Background jobs of the current tenant (PLT-10 job-status page)
+         * @description Lists River jobs whose args carry the caller's tenant_id — newest first. Platform-wide jobs
+         *     (no tenant_id) are never listed here; the provider console will show those. Finished jobs are
+         *     kept 24 hours (completed), 24 hours (cancelled) or 7 days (discarded) before River removes them.
+         */
+        get: operations["platformListJobs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a file (PLT-09)
+         * @description Stores the file and queues its ClamAV scan; the file is downloadable only once `av_status` is `clean`.
+         *     Size and type are checked against the file's content, not the declared type. An upload that is not
+         *     attached to a record by the owning module within 24 hours is deleted. Only the uploader can see an
+         *     unattached file.
+         */
+        post: operations["platformUploadFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/files/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** File metadata and scan status */
+        get: operations["platformGetFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/files/{id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Redirect to a short-lived signed download URL (SEQ-07)
+         * @description 302 to a pre-signed object-storage URL that expires after 5 minutes (configurable) and always downloads
+         *     as an attachment. 409 while the scan is pending (`files.scan_pending`), for an infected file
+         *     (`files.infected`) or a failed scan (`files.scan_failed`). Visibility: the uploader while unattached;
+         *     once attached, users holding the permission the owning module registered for that record type.
+         */
+        get: operations["platformDownloadFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/notification-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Notification templates visible to the tenant (its own and the platform's global ones) */
+        get: operations["platformListNotificationTemplates"];
+        put?: never;
+        /** Create a tenant template (or override a global one with the same code, channel and language) */
+        post: operations["platformCreateNotificationTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/notification-templates/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Render a template with sample values (declared variables not given show as {name}) */
+        post: operations["platformPreviewNotificationTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/notification-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One template */
+        get: operations["platformGetNotificationTemplate"];
+        put?: never;
+        post?: never;
+        /** Delete a tenant template */
+        delete: operations["platformDeleteNotificationTemplate"];
+        options?: never;
+        head?: never;
+        /** Change subject, body and variables of a tenant template (global templates are read-only) */
+        patch: operations["platformUpdateNotificationTemplate"];
+        trace?: never;
+    };
+    "/admin/v1/platform/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Delivery log — status of every message, newest first (PLT-04)
+         * @description Recipients are masked; message text and variables are never returned.
+         */
+        get: operations["platformListNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/notifications/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Delivery status of one message */
+        get: operations["platformGetNotification"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user's in-app notifications and unread count (the bell) */
+        get: operations["platformGetInbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/inbox/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Server-sent events with the unread count whenever it changes
+         * @description `text/event-stream`; each event is `event: unread` with data `{"unread": <n>}`, sent on connect and on
+         *     every change (checked every few seconds), plus a comment line as keep-alive. Reconnect with EventSource.
+         */
+        get: operations["platformStreamInbox"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/inbox/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark one of the user's own in-app notifications read */
+        post: operations["platformMarkInboxRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/records/{entityType}/{entityId}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Comments of a record, oldest first (PLT-07)
+         * @description Allowed when the record type is registered by its module and the caller holds that module's read (list) or write (post) permission for it — deny by default (PLT-07).
+         */
+        get: operations["platformListComments"];
+        put?: never;
+        /** Comment on a record, or reply (parent_id); @mentions notify their users */
+        post: operations["platformCreateComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/records/{entityType}/{entityId}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Files attached to a record */
+        get: operations["platformListAttachments"];
+        put?: never;
+        /** Attach a file the caller uploaded (POST /admin/v1/platform/files) to a record */
+        post: operations["platformAttachFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/records/{entityType}/{entityId}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Activity timeline of a record (its audit trail), newest first */
+        get: operations["platformListActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/comments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete your own comment (not one with replies) */
+        delete: operations["platformDeleteComment"];
+        options?: never;
+        head?: never;
+        /** Edit your own comment */
+        patch: operations["platformUpdateComment"];
+        trace?: never;
+    };
+    "/admin/v1/platform/comments/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a comment thread resolved, or open it again */
+        post: operations["platformResolveComment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/mentionable-users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active users of the tenant matching a name prefix, for the @mention picker (names only) */
+        get: operations["platformSearchMentionableUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/workflow-definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The newest version of each workflow the tenant uses (its own before global ones) */
+        get: operations["platformListWorkflowDefinitions"];
+        put?: never;
+        /** Create version 1 of a new workflow (PLT-05) */
+        post: operations["platformCreateWorkflowDefinition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/workflow-definitions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One version of a workflow definition */
+        get: operations["platformGetWorkflowDefinition"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/workflow-definitions/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save the next version of a workflow (or the tenant's own version of a global one); running instances keep theirs */
+        post: operations["platformSaveWorkflowVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/assignable-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Groups whose name starts with q, for assigning workflow tasks */
+        get: operations["platformSearchAssignableGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/workflow-instances/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A workflow with its tasks, SLA timers, timeline and the transitions the caller may take
+         * @description Visible to the people assigned its tasks (directly or through a group) and to holders of the record's permissions.
+         */
+        get: operations["platformGetWorkflowInstance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/workflow-instances/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move the workflow to another state (completes the current task) */
+        post: operations["platformTransitionWorkflow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/my-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's open workflow tasks — assigned to them or to one of their groups (unclaimed) */
+        get: operations["platformListMyTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/workflow-tasks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Claim, start or reassign a task
+         * @description A member of the task's group may claim it (assign it to themselves); its assignee may start it; holders of the record's write permission may reassign it.
+         */
+        patch: operations["platformUpdateWorkflowTask"];
+        trace?: never;
+    };
+    "/admin/v1/platform/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search the tenant's audit trail, newest first (ORG-19) */
+        get: operations["platformSearchAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/audit-log/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export matching entries as CSV (at most 50,000 rows; the export itself is audited) */
+        get: operations["platformExportAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/audit-log/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replay the tenant's hash chain now and report the first broken row, if any */
+        post: operations["platformVerifyAuditLog"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/records/{entityType}/{entityId}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A record's versions, newest first (PLT-08)
+         * @description Needs the read permission the record's module registered (or its edit / publish permission, or an approver role).
+         */
+        get: operations["platformListRecordVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/record-versions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One version with its snapshot, diff and approval steps */
+        get: operations["platformGetRecordVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/record-versions/{id}/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Field-by-field changes from this version to another version of the same record */
+        get: operations["platformCompareRecordVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/record-versions/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a draft for approval (opens one step per approval level) */
+        post: operations["platformSubmitRecordVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/record-versions/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish an approved version (the previous published version is superseded) */
+        post: operations["platformPublishRecordVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/approvals/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve, return or reject the current approval step (maker-checker enforced) */
+        post: operations["platformDecideApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/my-approvals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Approvals waiting on the caller (their roles, the current level, not their own work) */
+        get: operations["platformListMyApprovals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/form-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Form types the caller may read, with what they may do (PLT-06; permissions come from the owning module) */
+        get: operations["platformListFormTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/forms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Forms of the types the caller may read */
+        get: operations["platformListForms"];
+        put?: never;
+        /** Create a form with its first draft version (the form type's create permission) */
+        post: operations["platformCreateForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/forms/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A form with all its versions, newest first */
+        get: operations["platformGetForm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/forms/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a new draft version after the latest one was published (the form type's update permission) */
+        post: operations["platformCreateFormDraft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/forms/{id}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save the form's draft version (If-Match = the draft version's ETag) */
+        put: operations["platformSaveFormDraft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/forms/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish the draft version (If-Match = its ETag); new responses use it, running ones keep theirs */
+        post: operations["platformPublishForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/forms/{id}/responses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Responses to a form (the form type's read permission), newest first */
+        get: operations["platformListFormResponses"];
+        put?: never;
+        /** Start a draft response to the published version (the form type's respond permission) */
+        post: operations["platformStartFormResponse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/form-responses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A response (owner, assignee of a section, or holder of the respond permission) */
+        get: operations["platformGetFormResponse"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/form-responses/{id}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Merge answers into a draft response (null clears one); 422 with errors[] names invalid answers */
+        patch: operations["platformSaveFormAnswers"];
+        trace?: never;
+    };
+    "/admin/v1/platform/form-responses/{id}/assignments/{section}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Give a section to a user to answer, or take it back with null (response owner only) */
+        put: operations["platformAssignFormSection"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/form-responses/{id}/sections/{section}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hand an assigned section back as done (its visible required questions must be answered) */
+        post: operations["platformCompleteFormSection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/form-responses/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Validate, score and freeze a response (owner; every assigned section done) */
+        post: operations["platformSubmitFormResponse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/my-form-sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Form sections waiting for the caller to answer */
+        get: operations["platformListMyFormSections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent imports of the types the caller may run (PLT-14) */
+        get: operations["platformListImports"];
+        put?: never;
+        /**
+         * Start an import of an uploaded file (upload first with POST /admin/v1/platform/files)
+         * @description Each import type requires its own permission (e.g. the holiday import needs org.calendar.update); checked in the service.
+         */
+        post: operations["platformCreateImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/imports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An import's status, headers, mapping and counts */
+        get: operations["platformGetImport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/imports/{id}/mapping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Map file headers to columns and validate every row (dry run) */
+        put: operations["platformSetImportMapping"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/imports/{id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import the rows that passed validation (all or nothing) */
+        post: operations["platformConfirmImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/imports/{id}/errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Redirect to the error report (CSV — line, column, reason; never the cell values) */
+        get: operations["platformDownloadImportErrors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/legal-entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's legal entities (ORG-01) */
+        get: operations["orgListLegalEntities"];
+        put?: never;
+        /** Add a legal entity */
+        post: operations["orgCreateLegalEntity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/legal-entities/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One legal entity */
+        get: operations["orgGetLegalEntity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a legal entity (all editable fields) */
+        patch: operations["orgUpdateLegalEntity"];
+        trace?: never;
+    };
+    "/admin/v1/org/units": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The org-unit tree in path order (parents before children) (ORG-04) */
+        get: operations["orgListUnits"];
+        put?: never;
+        /** Add a unit under a parent (or as a root of its legal entity) */
+        post: operations["orgCreateUnit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/units/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename or recode a unit */
+        patch: operations["orgUpdateUnit"];
+        trace?: never;
+    };
+    "/admin/v1/org/units/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a unit and everything below it under another parent of the same legal entity (null = root) */
+        post: operations["orgMoveUnit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/units/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a unit with no active units below it (kept for history) */
+        post: operations["orgCloseUnit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/external-parties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's external parties (ORG-06) — processors, recipients, government bodies, … */
+        get: operations["orgListExternalParties"];
+        put?: never;
+        /** Register an external party */
+        post: operations["orgCreateExternalParty"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/external-parties/duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active parties whose normalized name + country match another active party, grouped for merging */
+        get: operations["orgListDuplicateExternalParties"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/external-parties/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One external party */
+        get: operations["orgGetExternalParty"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change an external party's details */
+        patch: operations["orgUpdateExternalParty"];
+        trace?: never;
+    };
+    "/admin/v1/org/external-parties/{id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge a duplicate party into another one — the source becomes inactive and points at the target */
+        post: operations["orgMergeExternalParty"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/master-data/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One kind of master data — the platform defaults (read-only) then the tenant's own (ORG-07) */
+        get: operations["orgListMasterData"];
+        put?: never;
+        /** Add a tenant entry (data categories, data subject types and processing purposes only) */
+        post: operations["orgCreateMasterData"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/master-data/{kind}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a tenant entry nothing refers to */
+        delete: operations["orgDeleteMasterData"];
+        options?: never;
+        head?: never;
+        /** Change a tenant entry (the code stays; defaults are read-only) */
+        patch: operations["orgUpdateMasterData"];
+        trace?: never;
+    };
+    "/admin/v1/org/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Default language, date era and branding for the tenant (ORG-20) */
+        get: operations["orgGetSettings"];
+        /** Change the tenant's default language, date era and branding */
+        put: operations["orgUpdateSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/calendars": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's business calendars (workdays and time zone used to count SLAs) */
+        get: operations["orgListCalendars"];
+        put?: never;
+        /** Add a calendar (the tenant's first calendar becomes its default) */
+        post: operations["orgCreateCalendar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/calendars/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a calendar's name, time zone or workdays, or make it the default */
+        patch: operations["orgUpdateCalendar"];
+        trace?: never;
+    };
+    "/admin/v1/org/calendars/{id}/holidays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Holidays of a calendar, optionally of one year (Gregorian) */
+        get: operations["orgListHolidays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/org/calendars/{id}/holidays/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Add a holiday, or rename the holiday on that date */
+        put: operations["orgPutHoliday"];
+        post?: never;
+        /** Remove a holiday */
+        delete: operations["orgDeleteHoliday"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/purposes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Purposes with their live version (CON-12) */
+        get: operations["consentListPurposes"];
+        put?: never;
+        /** Create a purpose with its first draft; it goes live once a DPO approves and it is published (PLT-08) */
+        post: operations["consentCreatePurpose"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/purposes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A purpose with its published versions */
+        get: operations["consentGetPurpose"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/purposes/{id}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save the draft of the next version (then submit it for approval through the record-versions endpoints) */
+        put: operations["consentSavePurposeDraft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/purposes/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take a purpose out of use (refused while an active collection point shows it) */
+        post: operations["consentRetirePurpose"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/collection-points": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Collection points (CON-09) */
+        get: operations["consentListCollectionPoints"];
+        put?: never;
+        /** Create a draft collection point */
+        post: operations["consentCreateCollectionPoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/collection-points/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A collection point with its purposes */
+        get: operations["consentGetCollectionPoint"];
+        /** Save a collection point (If-Match); a live one must still pass the publish checks */
+        put: operations["consentUpdateCollectionPoint"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/collection-points/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish after the s.19 / s.26 checks; issues the public key used by links, QR codes and forms */
+        post: operations["consentPublishCollectionPoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/collection-points/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire a collection point; its public key stops working */
+        post: operations["consentRetireCollectionPoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Most recently active data subjects (identifiers masked) */
+        get: operations["consentListSubjects"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/subjects/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Find the data subject an identifier belongs to (exact match by blind index; POST keeps the identifier out of URLs) */
+        post: operations["consentSearchSubjects"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/subjects/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A data subject profile: status per purpose and full history (CON-15) */
+        get: operations["consentGetSubject"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/subjects/{id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recompute the subject's receipt chain and report the first receipt that doesn't match */
+        post: operations["consentVerifySubject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record decisions for a data subject as staff (counter, call centre) — including withdrawal with a reason (CON-13) */
+        post: operations["consentRecordOnBehalf"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Where consent data is stored and how identifiers are protected (CON-17) */
+        get: operations["consentGetSettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/consents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a data subject's decisions from a published collection point (BP-01)
+         * @description The collection point's public key (X-Public-Key) names the tenant. Every purpose the form shows must be decided (nothing pre-ticked); withdrawing needs the verified preference centre. Replaying an Idempotency-Key returns the first result.
+         */
+        post: operations["consentSubmitPublicConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search the breach register (BRE-13), newest awareness first
+         * @description Holders of breach.incident.read see every incident; people who may only report (breach.incident.create) see the ones they reported.
+         */
+        get: operations["breachListIncidents"];
+        put?: never;
+        /** Record an incident: the PDPC notice falls due 72 hours after awareness (BRE-02, BRE-07) */
+        post: operations["breachCreateIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An incident with its 72-hour clock */
+        get: operations["breachGetIncident"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the facts of an open incident (If-Match); moving aware_at needs breach.incident.approve and a reason */
+        patch: operations["breachUpdateIncident"];
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move an incident along ST-03 (take up, confirm, close, reopen the assessment)
+         * @description assessing → notifying / remediating is the notification decision (breachDecideIncident); notifying → remediating needs the recorded PDPC notice (BRE-09). Closing needs breach.incident.approve and a reason.
+         */
+        post: operations["breachTransitionIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Risk assessments of an incident, newest first */
+        get: operations["breachListAssessments"];
+        put?: never;
+        /** Assess the risk on a published breach form (BRE-05): the band gives the risk level, each answer its contribution */
+        post: operations["breachAssessIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide who must be notified, with a reason (BRE-06); never less than the assessed risk requires */
+        post: operations["breachDecideIncident"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The incident timeline: every status change, decision, alert and note with its time and who (BRE-12) */
+        get: operations["breachGetTimeline"];
+        put?: never;
+        /** Add a note to the timeline (insert-only) */
+        post: operations["breachAddNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Evidence files with their SHA-256 */
+        get: operations["breachListEvidence"];
+        put?: never;
+        /** Keep one of your clean uploads as evidence (BRE-12) */
+        post: operations["breachAddEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/notices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Notices to data subjects of an incident (BRE-10) */
+        get: operations["breachListNotices"];
+        put?: never;
+        /** Draft a notice to the affected data subjects (decision must include them) */
+        post: operations["breachCreateNotice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/notices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A notice with its delivery counts */
+        get: operations["breachGetNotice"];
+        /** Change a draft notice’s content (If-Match) */
+        put: operations["breachUpdateNotice"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/notices/{id}/recipients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recipients by CSV line, addresses masked, with each message’s delivery status */
+        get: operations["breachListRecipients"];
+        put?: never;
+        /** Replace a draft’s recipients with an uploaded CSV (column address/email/phone, optional language) */
+        post: operations["breachLoadRecipients"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/notices/{id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve and send a notice (If-Match); whoever drafted it can’t approve it */
+        post: operations["breachSendNotice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/incidents/{id}/pdpc-notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** PDPC filing rounds of an incident, oldest first (BRE-09) */
+        get: operations["breachListPDPCNotifications"];
+        put?: never;
+        /**
+         * Record a round of filing the PDPC notice (BRE-08/09): the system prepares the document (PLT-16 pdpc_form), the person files it through the PDPC’s own channel, then records the result here
+         * @description A round filed more than 72 hours after awareness needs late_reason (BRE-08). A second person must confirm the round (breachConfirmPDPCNotification) before it counts toward leaving "notifying" (ST-03).
+         */
+        post: operations["breachRecordPDPCNotification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/pdpc-notifications/{id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm a filing round was recorded correctly (If-Match); whoever recorded it can’t confirm it */
+        post: operations["breachConfirmPDPCNotification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents/types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Document types the caller can read, what else they may do with each, and the merge fields (PLT-16) */
+        get: operations["platformListDocumentTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Documents of the types the caller can read, most recently changed first */
+        get: operations["platformListDocuments"];
+        put?: never;
+        /** Start a document, empty or from a published template (the type’s create permission) */
+        post: operations["platformCreateDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A document with its newest version’s content and what it still lacks to be published */
+        get: operations["platformGetDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents/{id}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Save the draft (If-Match on the document); after a published version this starts the next one
+         * @description Submitting, approving and publishing the draft go through the PLT-08 version endpoints (record type document_<doc_type>).
+         */
+        put: operations["platformSaveDocumentDraft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents/{id}/published": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Published versions with their rendered PDF / Word files per language (download through platform files) */
+        get: operations["platformListPublishedDocumentVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents/{id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Render a version (default: the newest) as PDF or Word
+         * @description A version that isn’t published carries a DRAFT banner; a published one is rendered from its frozen content.
+         */
+        get: operations["platformExportDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/documents/{id}/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compare two versions of a document block by block, with character-level changes inside edited blocks */
+        get: operations["platformCompareDocumentVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-clauses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The clause library: the latest version of each clause (document editors see published ones) */
+        get: operations["platformListClauses"];
+        put?: never;
+        /** Add a clause to the library as a draft */
+        post: operations["platformCreateClause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-clauses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A clause version with the history of its code */
+        get: operations["platformGetClause"];
+        /** Edit the draft, or start the next version from the published one (If-Match) */
+        put: operations["platformUpdateClause"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-clauses/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a draft clause version; the previous version is retired (If-Match) */
+        post: operations["platformPublishClause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-clauses/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw a published clause from new documents (If-Match) */
+        post: operations["platformRetireClause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Templates of the types the caller can see (creators see published ones) */
+        get: operations["platformListDocumentTemplates"];
+        put?: never;
+        /** Add a template as a draft (the type’s template permission) */
+        post: operations["platformCreateDocumentTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A template version */
+        get: operations["platformGetDocumentTemplate"];
+        /** Edit the draft, or start the next version from the published one (If-Match) */
+        put: operations["platformUpdateDocumentTemplate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/document-templates/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Release a draft template (the type’s publish permission: its wording is legal text) */
+        post: operations["platformPublishDocumentTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/v1/collection-points/{key}": {
         parameters: {
             query?: never;
@@ -67,10 +2082,1427 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's asset register (ROPA-02) — systems, applications, databases, ... */
+        get: operations["ropaListAssets"];
+        put?: never;
+        /** Register an asset */
+        post: operations["ropaCreateAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/assets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One asset */
+        get: operations["ropaGetAsset"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change an asset's details */
+        patch: operations["ropaUpdateAsset"];
+        trace?: never;
+    };
+    "/admin/v1/ropa/data-inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's personal data inventory (ROPA-01) — what data, in which asset, how sensitive */
+        get: operations["ropaListDataInventory"];
+        put?: never;
+        /** Record a kind of personal data held in an asset */
+        post: operations["ropaCreateDataInventoryItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/data-inventory/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One data inventory entry */
+        get: operations["ropaGetDataInventoryItem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a data inventory entry */
+        patch: operations["ropaUpdateDataInventoryItem"];
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's RoPA (ROPA-03) — processing activities under ม.39 */
+        get: operations["ropaListActivities"];
+        put?: never;
+        /** Start a processing activity (draft) */
+        post: operations["ropaCreateActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One processing activity, with its computed completeness and missing ม.39 items */
+        get: operations["ropaGetActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a processing activity's core fields */
+        patch: operations["ropaUpdateActivity"];
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit a draft for approval (BP-05) — refused with the missing-item list while incomplete */
+        post: operations["ropaSubmitActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/purposes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An activity's purposes and lawful bases */
+        get: operations["ropaListActivityPurposes"];
+        put?: never;
+        /** Add a purpose to an activity */
+        post: operations["ropaAddActivityPurpose"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/purposes/{purposeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a purpose from an activity */
+        delete: operations["ropaDeleteActivityPurpose"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An activity's data categories (ม.39 "ข้อมูลที่เก็บ") */
+        get: operations["ropaListActivityData"];
+        put?: never;
+        /** Add a data category to an activity */
+        post: operations["ropaAddActivityData"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/data/{dataId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a data category from an activity */
+        delete: operations["ropaDeleteActivityData"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/retention-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An activity's retention rules (ม.39 "ระยะเวลาเก็บรักษา") */
+        get: operations["ropaListRetentionRules"];
+        put?: never;
+        /** Add a retention rule to an activity */
+        post: operations["ropaAddRetentionRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/retention-rules/{ruleId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a retention rule from an activity */
+        delete: operations["ropaDeleteRetentionRule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/recipients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An activity's recipients / disclosures (ม.27) */
+        get: operations["ropaListActivityRecipients"];
+        put?: never;
+        /** Add a recipient to an activity */
+        post: operations["ropaAddActivityRecipient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/recipients/{recipientId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a recipient from an activity */
+        delete: operations["ropaDeleteActivityRecipient"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/transfers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An activity's cross-border transfers (ROPA-08, ม.28/29) */
+        get: operations["ropaListActivityTransfers"];
+        put?: never;
+        /** Log a cross-border transfer with its legal mechanism */
+        post: operations["ropaAddActivityTransfer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/transfers/{transferId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a transfer from an activity */
+        delete: operations["ropaDeleteActivityTransfer"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/notices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's privacy notices / policies (PNG-01) */
+        get: operations["noticeListNotices"];
+        put?: never;
+        /** Wizard-generate a notice draft — RoPA activities' purposes/lawful basis/data/retention/recipients/transfers, ORG-07 master data and the legal entity's contact are assembled into a PLT-16 document (BP-04 steps t1-t2) */
+        post: operations["noticeCreateNotice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/notices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One notice, with the RoPA activities it covers */
+        get: operations["noticeGetNotice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Text by language; th is required */
+        FormText: {
+            th: string;
+            en?: string;
+        };
+        /** @description Show when an earlier question's answer compares true (question + op + value), or all/any of nested conditions */
+        FormCondition: {
+            question?: string;
+            /** @enum {string} */
+            op?: "eq" | "neq" | "in" | "not_in" | "gt" | "gte" | "lt" | "lte" | "answered" | "not_answered";
+            value?: unknown;
+            all?: components["schemas"]["FormCondition"][];
+            any?: components["schemas"]["FormCondition"][];
+        };
+        /** @description A choice; label is required except on yes_no questions (whose options only carry scores) */
+        FormOption: {
+            value: string;
+            label?: components["schemas"]["FormText"];
+            score?: number;
+        };
+        FormQuestion: {
+            key: string;
+            /** @enum {string} */
+            type: "text" | "textarea" | "number" | "date" | "email" | "single_choice" | "multi_choice" | "yes_no";
+            label: components["schemas"]["FormText"];
+            help?: components["schemas"]["FormText"];
+            required?: boolean;
+            options?: components["schemas"]["FormOption"][];
+            min?: number;
+            max?: number;
+            max_length?: number;
+            weight?: number;
+            visible_if?: components["schemas"]["FormCondition"];
+        };
+        FormSection: {
+            key: string;
+            title: components["schemas"]["FormText"];
+            description?: components["schemas"]["FormText"];
+            visible_if?: components["schemas"]["FormCondition"];
+            questions: components["schemas"]["FormQuestion"][];
+        };
+        /** @description A form's content (PLT-06 format, docs/modules/PLT.md#plt-06) */
+        FormSchema: {
+            sections: components["schemas"]["FormSection"][];
+        };
+        FormScoring: {
+            bands: {
+                key: string;
+                label: components["schemas"]["FormText"];
+                min: number;
+                max?: number;
+            }[];
+        };
+        FormDraft: {
+            schema: components["schemas"]["FormSchema"];
+            scoring?: components["schemas"]["FormScoring"];
+            languages?: ("th" | "en")[];
+        };
+        FormTypeInfo: {
+            form_type: string;
+            can_create: boolean;
+            can_update: boolean;
+            can_publish: boolean;
+            can_respond: boolean;
+        };
+        FormSummary: {
+            id: components["schemas"]["Uuid"];
+            /** @description A platform form every tenant can use (read-only here) */
+            global: boolean;
+            code: string;
+            name: string;
+            form_type: string;
+            /** @enum {string} */
+            status: "draft" | "published" | "retired";
+            current_version_id?: components["schemas"]["Uuid"];
+            latest_version: number;
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        FormVersion: {
+            id: components["schemas"]["Uuid"];
+            form_id: components["schemas"]["Uuid"];
+            version: number;
+            schema: components["schemas"]["FormSchema"];
+            scoring?: components["schemas"]["FormScoring"];
+            languages: string[];
+            published_at?: components["schemas"]["Timestamp"];
+            /** @description The draft's ETag value (If-Match for saving and publishing it) */
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        Form: components["schemas"]["FormSummary"] & {
+            versions: components["schemas"]["FormVersion"][];
+        };
+        /** @description Answers by question key (string, number, or an array of option values for multi_choice) */
+        FormAnswers: {
+            [key: string]: unknown;
+        };
+        FormResult: {
+            visible: string[];
+            answers: components["schemas"]["FormAnswers"];
+            errors: {
+                question: string;
+                /** @enum {string} */
+                code: "required" | "invalid_type" | "invalid_option" | "out_of_range" | "too_long" | "invalid_date" | "invalid_email" | "unknown_question";
+            }[];
+            score: number;
+            max_score: number;
+            band?: string;
+        };
+        FormSectionAssignment: {
+            id: components["schemas"]["Uuid"];
+            section: string;
+            assignee_user_id: components["schemas"]["Uuid"];
+            assignee_name: string;
+            /** @enum {string} */
+            status: "open" | "done";
+            completed_at?: components["schemas"]["Timestamp"];
+            row_version: number;
+        };
+        FormResponseSummary: {
+            id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "draft" | "submitted";
+            owner_id?: components["schemas"]["Uuid"];
+            owner_name?: string;
+            submitted_at?: components["schemas"]["Timestamp"];
+            row_version: number;
+            result: components["schemas"]["FormResult"];
+        };
+        FormResponse: components["schemas"]["FormResponseSummary"] & {
+            form: components["schemas"]["FormSummary"];
+            version: components["schemas"]["FormVersion"];
+            entity_type?: string;
+            entity_id?: components["schemas"]["Uuid"];
+            answers: components["schemas"]["FormAnswers"];
+            assignments: components["schemas"]["FormSectionAssignment"][];
+            /** @description Sections the caller may answer now */
+            can_answer: string[];
+            is_owner: boolean;
+        };
+        FormSectionAssignmentItem: {
+            response_id: components["schemas"]["Uuid"];
+            form_id: components["schemas"]["Uuid"];
+            form_name: string;
+            form_type: string;
+            section: string;
+            section_title: components["schemas"]["FormText"];
+            created_at: components["schemas"]["Timestamp"];
+        };
+        VersionChange: {
+            /** @description JSON path, e.g. `purposes[1]` or `contact.email`; `$` for the whole document */
+            path: string;
+            before?: unknown;
+            after?: unknown;
+        };
+        ApprovalStep: {
+            id: components["schemas"]["Uuid"];
+            step: number;
+            role: string;
+            requested_by: components["schemas"]["Uuid"];
+            requester_name?: string;
+            approver_id?: components["schemas"]["Uuid"];
+            approver_name?: string;
+            /** @enum {string} */
+            decision: "pending" | "approved" | "rejected" | "returned";
+            reason?: string;
+            decided_at?: components["schemas"]["Timestamp"];
+            row_version: number;
+        };
+        RecordVersion: {
+            id: components["schemas"]["Uuid"];
+            entity_type: string;
+            entity_id: components["schemas"]["Uuid"];
+            version: number;
+            snapshot: unknown;
+            /** @description Changes against the version published when this one was submitted */
+            diff: components["schemas"]["VersionChange"][];
+            /** @enum {string} */
+            status: "draft" | "in_review" | "approved" | "published" | "superseded";
+            author_id?: components["schemas"]["Uuid"];
+            author_name?: string;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+            row_version: number;
+            approvals: components["schemas"]["ApprovalStep"][];
+        };
+        ApprovalInboxItem: components["schemas"]["ApprovalStep"] & {
+            version_id: components["schemas"]["Uuid"];
+            entity_type: string;
+            entity_id: components["schemas"]["Uuid"];
+            version: number;
+            title?: string;
+            author_name?: string;
+        };
+        AuditEntry: {
+            /** Format: int64 */
+            id: number;
+            occurred_at: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            actor_type: "user" | "api_client" | "guest" | "data_subject" | "system";
+            actor_id?: components["schemas"]["Uuid"];
+            actor_name?: string;
+            action: string;
+            entity_type?: string;
+            entity_id?: components["schemas"]["Uuid"];
+            /** @description For entity_type user — whose record changed */
+            entity_name?: string;
+            before?: unknown;
+            after?: unknown;
+            ip?: string;
+            user_agent?: string;
+        };
+        LocalizedText: {
+            th: string;
+            en?: string;
+        };
+        NamedRef: {
+            id: components["schemas"]["Uuid"];
+            name: string;
+        };
+        WorkflowDuration: {
+            /** @enum {string} */
+            mode: "calendar_days" | "business_days" | "hours";
+            amount: number;
+        };
+        WorkflowState: {
+            key: string;
+            label: components["schemas"]["LocalizedText"];
+            terminal?: boolean;
+            /** @description The SLA clock stops while the instance is in this state */
+            pause_sla?: boolean;
+            /** @description Work opened on entering the state, for exactly one of a user or a group */
+            task?: {
+                title: components["schemas"]["LocalizedText"];
+                assignee_user_id?: components["schemas"]["Uuid"];
+                assignee_group_id?: components["schemas"]["Uuid"];
+                due?: components["schemas"]["WorkflowDuration"];
+            };
+        };
+        WorkflowTransition: {
+            from: string;
+            to: string;
+            label?: components["schemas"]["LocalizedText"];
+        };
+        WorkflowSLA: {
+            code: string;
+            /** @enum {string} */
+            mode: "calendar_days" | "business_days" | "hours";
+            amount: number;
+            calendar_id?: components["schemas"]["Uuid"];
+            /** @description Remind this long before the due time, in the SLA's unit (e.g. [10, 5] on 30 days = day 20 and 25) */
+            remind_before?: number[];
+            escalate_user_ids?: components["schemas"]["Uuid"][];
+            escalate_group_id?: components["schemas"]["Uuid"];
+        };
+        WorkflowDefinitionBody: {
+            initial: string;
+            states: components["schemas"]["WorkflowState"][];
+            transitions: components["schemas"]["WorkflowTransition"][];
+            sla?: components["schemas"]["WorkflowSLA"];
+        };
+        /**
+         * @example {
+         *       "code": "dsar_access",
+         *       "name": "คำขอเข้าถึงข้อมูล",
+         *       "entity_type": "dsar_request",
+         *       "definition": {
+         *         "initial": "review",
+         *         "states": [
+         *           {
+         *             "key": "review",
+         *             "label": {
+         *               "th": "ตรวจสอบคำขอ",
+         *               "en": "Review"
+         *             },
+         *             "task": {
+         *               "title": {
+         *                 "th": "ตรวจสอบคำขอ"
+         *               },
+         *               "assignee_group_id": "01925f3c-7b8e-7c3a-9d51-2f0c6e1a4b77"
+         *             }
+         *           },
+         *           {
+         *             "key": "awaiting_info",
+         *             "label": {
+         *               "th": "รอข้อมูลเพิ่มเติม"
+         *             },
+         *             "pause_sla": true
+         *           },
+         *           {
+         *             "key": "done",
+         *             "label": {
+         *               "th": "เสร็จสิ้น"
+         *             },
+         *             "terminal": true
+         *           }
+         *         ],
+         *         "transitions": [
+         *           {
+         *             "from": "review",
+         *             "to": "awaiting_info"
+         *           },
+         *           {
+         *             "from": "awaiting_info",
+         *             "to": "review"
+         *           },
+         *           {
+         *             "from": "review",
+         *             "to": "done"
+         *           }
+         *         ],
+         *         "sla": {
+         *           "code": "response",
+         *           "mode": "calendar_days",
+         *           "amount": 30,
+         *           "remind_before": [
+         *             10,
+         *             5
+         *           ]
+         *         }
+         *       }
+         *     }
+         */
+        WorkflowDefinitionInput: {
+            /** @description Ignored when saving a new version (the version keeps its workflow's code) */
+            code: string;
+            name: string;
+            /** @description The kind of record the workflow runs for, e.g. dsar_request */
+            entity_type: string;
+            definition: components["schemas"]["WorkflowDefinitionBody"];
+        };
+        WorkflowDefinition: {
+            id: components["schemas"]["Uuid"];
+            /** @description Provided by the platform; saving a version creates the tenant's own */
+            global: boolean;
+            code: string;
+            name: string;
+            entity_type: string;
+            version: number;
+            definition: components["schemas"]["WorkflowDefinitionBody"];
+            active: boolean;
+            /** @description Display names of the users and groups the definition refers to, by id */
+            names?: {
+                [key: string]: string;
+            };
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        WorkflowTask: {
+            id: components["schemas"]["Uuid"];
+            instance_id: components["schemas"]["Uuid"];
+            state: string;
+            title: components["schemas"]["LocalizedText"];
+            assignee_user_id?: components["schemas"]["Uuid"];
+            assignee_name?: string;
+            assignee_group_id?: components["schemas"]["Uuid"];
+            group_name?: string;
+            /** @enum {string} */
+            status: "open" | "in_progress" | "done" | "cancelled";
+            due_at?: components["schemas"]["Timestamp"];
+            completed_at?: components["schemas"]["Timestamp"];
+            outcome?: string;
+            comment?: string;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        MyTask: components["schemas"]["WorkflowTask"] & {
+            entity_type: string;
+            entity_id: components["schemas"]["Uuid"];
+            workflow_name: string;
+            workflow_code: string;
+            state_label: components["schemas"]["LocalizedText"];
+            sla_status: components["schemas"]["SlaStatus"];
+            sla_due_at?: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        SlaStatus: "on_track" | "at_risk" | "overdue" | "paused" | "done";
+        SlaTimer: {
+            code: string;
+            /** @enum {string} */
+            mode: "calendar_days" | "business_days" | "hours";
+            started_at: components["schemas"]["Timestamp"];
+            due_at: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            status: "running" | "met" | "breached" | "stopped";
+            paused: boolean;
+            stopped_at?: components["schemas"]["Timestamp"];
+            reminders: {
+                at: components["schemas"]["Timestamp"];
+                sent: boolean;
+            }[];
+        };
+        WorkflowInstance: {
+            id: components["schemas"]["Uuid"];
+            workflow: {
+                id: components["schemas"]["Uuid"];
+                code: string;
+                name: string;
+                version: number;
+                definition: components["schemas"]["WorkflowDefinitionBody"];
+            };
+            entity_type: string;
+            entity_id: components["schemas"]["Uuid"];
+            state: string;
+            started_at: components["schemas"]["Timestamp"];
+            completed_at?: components["schemas"]["Timestamp"];
+            sla_status: components["schemas"]["SlaStatus"];
+            row_version: number;
+            tasks: components["schemas"]["WorkflowTask"][];
+            timers: components["schemas"]["SlaTimer"][];
+            history: {
+                at: components["schemas"]["Timestamp"];
+                actor_name?: string;
+                action: string;
+                before?: {
+                    [key: string]: unknown;
+                };
+                after?: {
+                    [key: string]: unknown;
+                };
+            }[];
+            /** @description The moves the caller may make now */
+            transitions: components["schemas"]["WorkflowTransition"][];
+        };
+        /** @enum {string} */
+        MasterDataKind: "data_categories" | "data_subject_types" | "processing_purposes" | "lawful_bases" | "countries";
+        MasterDataInput: {
+            /** @description Ignored on update (the code identifies the entry) */
+            code: string;
+            name_th: string;
+            name_en?: string;
+            /** @description data_categories: sensitive data under PDPA s.26 */
+            is_sensitive?: boolean;
+            sensitive_type?: string;
+            parent_id?: components["schemas"]["Uuid"];
+            /** @description data_subject_types: e.g. minors */
+            is_vulnerable?: boolean;
+            /** @description processing_purposes */
+            category?: string;
+        };
+        MasterDataItem: {
+            id?: components["schemas"]["Uuid"];
+            code: string;
+            name_th: string;
+            name_en?: string;
+            /** @description A platform default (a draft pending legal review, decisions.md Q-20); read-only */
+            global: boolean;
+            row_version?: number;
+            is_sensitive?: boolean;
+            sensitive_type?: string;
+            parent_id?: components["schemas"]["Uuid"];
+            is_vulnerable?: boolean;
+            category?: string;
+            section_ref?: string;
+            for_sensitive?: boolean;
+            requires_consent?: boolean;
+            requires_lia?: boolean;
+            /** @enum {string} */
+            adequacy_status?: "adequate" | "not_adequate" | "unknown";
+            region?: string;
+        };
+        Address: {
+            line1?: string;
+            line2?: string;
+            subdistrict?: string;
+            district?: string;
+            province?: string;
+            postal_code?: string;
+            country_code?: string;
+        };
+        /**
+         * @example {
+         *       "name_th": "บริษัท ตัวอย่าง จำกัด",
+         *       "name_en": "Example Co., Ltd.",
+         *       "registration_no": "0-1055-56123-45-6",
+         *       "address": {
+         *         "line1": "99 ถนนสุขุมวิท",
+         *         "district": "วัฒนา",
+         *         "province": "กรุงเทพมหานคร",
+         *         "postal_code": "10110"
+         *       },
+         *       "contact_email": "dpo@example.co.th",
+         *       "is_controller": true
+         *     }
+         */
+        LegalEntityInput: {
+            parent_id?: components["schemas"]["Uuid"];
+            name_th: string;
+            name_en?: string;
+            /** @description 13-digit juristic registration number (dashes and spaces ignored; check digit verified) */
+            registration_no?: string;
+            tax_id?: string;
+            address?: components["schemas"]["Address"];
+            contact_email?: string;
+            contact_phone?: string;
+            /** @description A clean PNG or JPEG the caller uploaded (POST /admin/v1/platform/files) */
+            logo_file_id?: components["schemas"]["Uuid"];
+            is_controller?: boolean;
+            is_processor?: boolean;
+            /** @enum {string} */
+            status?: "active" | "inactive";
+        };
+        LegalEntity: {
+            id: components["schemas"]["Uuid"];
+            parent_id?: components["schemas"]["Uuid"];
+            name_th: string;
+            name_en?: string;
+            registration_no?: string;
+            tax_id?: string;
+            address: components["schemas"]["Address"];
+            contact_email?: string;
+            contact_phone?: string;
+            logo_file_id?: components["schemas"]["Uuid"];
+            is_controller: boolean;
+            is_processor: boolean;
+            /** @enum {string} */
+            status: "active" | "inactive";
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        OrgUnitType: "group" | "company" | "division" | "department" | "branch" | "team";
+        OrgUnitInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            parent_id?: components["schemas"]["Uuid"];
+            code: string;
+            name_th: string;
+            name_en?: string;
+            unit_type: components["schemas"]["OrgUnitType"];
+        };
+        OrgUnit: {
+            id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            parent_id?: components["schemas"]["Uuid"];
+            /** @description 1 for a root unit */
+            depth: number;
+            code: string;
+            name_th: string;
+            name_en?: string;
+            unit_type: components["schemas"]["OrgUnitType"];
+            /** @enum {string} */
+            status: "active" | "closed";
+            closed_at?: components["schemas"]["Timestamp"];
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        ExternalPartyType: "processor" | "recipient" | "controller" | "joint_controller" | "government" | "other";
+        ExternalPartyContact: {
+            name?: string;
+            /** Format: email */
+            email?: string;
+            phone?: string;
+        };
+        /**
+         * @example {
+         *       "party_type": "processor",
+         *       "name_th": "บริษัท ผู้ประมวลผล จำกัด",
+         *       "country_code": "TH"
+         *     }
+         */
+        ExternalPartyInput: {
+            party_type: components["schemas"]["ExternalPartyType"];
+            name_th: string;
+            name_en?: string;
+            registration_no?: string;
+            /** @description ISO 3166-1 alpha-2 */
+            country_code: string;
+            contact?: components["schemas"]["ExternalPartyContact"];
+            website?: string;
+            /** @enum {string} */
+            status?: "active" | "inactive";
+        };
+        ExternalParty: {
+            id: components["schemas"]["Uuid"];
+            party_type: components["schemas"]["ExternalPartyType"];
+            name_th: string;
+            name_en?: string;
+            registration_no?: string;
+            country_code: string;
+            contact?: components["schemas"]["ExternalPartyContact"];
+            website?: string;
+            /** @enum {string} */
+            status: "active" | "inactive";
+            merged_into_id?: components["schemas"]["Uuid"];
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        ExternalPartyDuplicate: {
+            id: components["schemas"]["Uuid"];
+            party_type: components["schemas"]["ExternalPartyType"];
+            name_th: string;
+            name_en?: string;
+            country_code: string;
+        };
+        ExternalPartyDuplicateGroup: {
+            dedupe_key: string;
+            parties: components["schemas"]["ExternalPartyDuplicate"][];
+        };
+        ExternalPartyMergeInput: {
+            target_id: components["schemas"]["Uuid"];
+        };
+        /** @enum {string} */
+        AssetType: "application" | "database" | "file_share" | "saas" | "paper" | "device" | "other";
+        /** @enum {string} */
+        AssetHostingType: "on_prem" | "cloud" | "hybrid";
+        /** @enum {string} */
+        AssetClassification: "public" | "internal" | "confidential" | "restricted";
+        /**
+         * @example {
+         *       "name": "ระบบ HRIS",
+         *       "asset_type": "application",
+         *       "hosting_country_code": "TH",
+         *       "hosting_type": "cloud"
+         *     }
+         */
+        AssetInput: {
+            name: string;
+            asset_type: components["schemas"]["AssetType"];
+            org_unit_id?: components["schemas"]["Uuid"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            provider_party_id?: components["schemas"]["Uuid"];
+            /** @description ISO 3166-1 alpha-2 */
+            hosting_country_code?: string;
+            hosting_type?: components["schemas"]["AssetHostingType"];
+            classification?: components["schemas"]["AssetClassification"];
+            /** @enum {string} */
+            status?: "active" | "retired";
+        };
+        Asset: {
+            id: components["schemas"]["Uuid"];
+            name: string;
+            asset_type: components["schemas"]["AssetType"];
+            org_unit_id?: components["schemas"]["Uuid"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            provider_party_id?: components["schemas"]["Uuid"];
+            hosting_country_code?: string;
+            hosting_type?: components["schemas"]["AssetHostingType"];
+            classification?: components["schemas"]["AssetClassification"];
+            /** @enum {string} */
+            status: "active" | "retired";
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        DataInventorySource: "direct" | "indirect" | "derived";
+        DataInventoryItemInput: {
+            asset_id: components["schemas"]["Uuid"];
+            data_category_id: components["schemas"]["Uuid"];
+            org_unit_id?: components["schemas"]["Uuid"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            source?: components["schemas"]["DataInventorySource"];
+            location_detail?: string;
+        };
+        DataInventoryItem: {
+            id: components["schemas"]["Uuid"];
+            asset_id: components["schemas"]["Uuid"];
+            data_category_id: components["schemas"]["Uuid"];
+            org_unit_id?: components["schemas"]["Uuid"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            source?: components["schemas"]["DataInventorySource"];
+            location_detail?: string;
+            /** @description From the data category (ORG-07, PDPA s.26) — the acceptance criterion's sensitive-data flag */
+            is_sensitive: boolean;
+            sensitive_type?: string;
+            category_name_th: string;
+            category_name_en?: string;
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        ActivityRole: "controller" | "processor";
+        /** @enum {string} */
+        ActivityStatus: "draft" | "pending_approval" | "active" | "under_review" | "ended";
+        /**
+         * @example {
+         *       "legal_entity_id": "00000000-0000-0000-0000-000000000000",
+         *       "org_unit_id": "00000000-0000-0000-0000-000000000000",
+         *       "code": "HR-01",
+         *       "name": "การจ่ายเงินเดือนพนักงาน",
+         *       "role": "controller"
+         *     }
+         */
+        ProcessingActivityInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            org_unit_id: components["schemas"]["Uuid"];
+            code: string;
+            name: string;
+            description?: string;
+            role: components["schemas"]["ActivityRole"];
+            controller_party_id?: components["schemas"]["Uuid"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            rights_and_access?: string;
+        };
+        ProcessingActivity: {
+            id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            org_unit_id: components["schemas"]["Uuid"];
+            code: string;
+            name: string;
+            description?: string;
+            role: components["schemas"]["ActivityRole"];
+            controller_party_id?: components["schemas"]["Uuid"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            rights_and_access?: string;
+            status: components["schemas"]["ActivityStatus"];
+            /** @description Percentage of the ม.39 mandatory items that are in place */
+            completeness: number;
+            /** @description Which ม.39 items are still missing — the acceptance criterion (only set by GET one activity) */
+            missing_items?: ("data" | "purpose" | "controller" | "retention" | "rights_access" | "recipient_basis" | "sensitive_consent" | "transfer_basis")[];
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        ActivityPurposeInput: {
+            purpose_id?: components["schemas"]["Uuid"];
+            purpose_text: string;
+            lawful_basis_code: string;
+            consent_purpose_id?: components["schemas"]["Uuid"];
+        };
+        ActivityPurpose: {
+            id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            purpose_id?: components["schemas"]["Uuid"];
+            purpose_text: string;
+            lawful_basis_code: string;
+            consent_purpose_id?: components["schemas"]["Uuid"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        ActivityDataSource: "direct" | "indirect";
+        /** @enum {string} */
+        ActivityVolumeBand: "lt_1k" | "1k_10k" | "10k_100k" | "gt_100k";
+        ActivityDataInput: {
+            data_category_id: components["schemas"]["Uuid"];
+            subject_type_id: components["schemas"]["Uuid"];
+            source: components["schemas"]["ActivityDataSource"];
+            source_party_id?: components["schemas"]["Uuid"];
+            volume_band?: components["schemas"]["ActivityVolumeBand"];
+        };
+        ActivityData: {
+            id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            data_category_id: components["schemas"]["Uuid"];
+            subject_type_id: components["schemas"]["Uuid"];
+            source: components["schemas"]["ActivityDataSource"];
+            source_party_id?: components["schemas"]["Uuid"];
+            is_sensitive: boolean;
+            volume_band?: components["schemas"]["ActivityVolumeBand"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        ActivityDisposalMethod: "delete" | "destroy" | "anonymize" | "return";
+        RetentionRuleInput: {
+            data_category_id?: components["schemas"]["Uuid"];
+            retention_months?: number;
+            retention_basis: string;
+            trigger_event: string;
+            disposal_method: components["schemas"]["ActivityDisposalMethod"];
+        };
+        RetentionRule: {
+            id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            data_category_id?: components["schemas"]["Uuid"];
+            retention_months?: number;
+            retention_basis: string;
+            trigger_event: string;
+            disposal_method: components["schemas"]["ActivityDisposalMethod"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        ActivityRecipientRole: "processor" | "controller" | "joint_controller" | "government";
+        ActivityRecipientInput: {
+            party_id: components["schemas"]["Uuid"];
+            recipient_role: components["schemas"]["ActivityRecipientRole"];
+            disclosure_basis?: string;
+            data_category_ids?: components["schemas"]["Uuid"][];
+        };
+        ActivityRecipient: {
+            id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            party_id: components["schemas"]["Uuid"];
+            recipient_role: components["schemas"]["ActivityRecipientRole"];
+            disclosure_basis?: string;
+            data_category_ids?: components["schemas"]["Uuid"][];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        ActivityTransferBasis: "adequacy" | "bcr" | "standard_clauses" | "certification" | "exemption" | "consent";
+        ActivityTransferInput: {
+            recipient_id?: components["schemas"]["Uuid"];
+            /** @description ISO 3166-1 alpha-2 */
+            country_code: string;
+            transfer_basis: components["schemas"]["ActivityTransferBasis"];
+            safeguards?: string;
+        };
+        ActivityTransfer: {
+            id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            recipient_id?: components["schemas"]["Uuid"];
+            country_code: string;
+            transfer_basis: components["schemas"]["ActivityTransferBasis"];
+            safeguards?: string;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        NoticeType: "privacy_notice" | "privacy_policy" | "cookie_policy" | "cctv" | "layered_short" | "employee";
+        /** @enum {string} */
+        NoticeStatus: "draft" | "in_review" | "published" | "retired";
+        /**
+         * @example {
+         *       "legal_entity_id": "00000000-0000-0000-0000-000000000000",
+         *       "notice_type": "privacy_notice",
+         *       "title": "ประกาศความเป็นส่วนตัวสำหรับลูกค้า",
+         *       "slug": "customer-privacy-notice",
+         *       "activity_ids": []
+         *     }
+         */
+        NoticeWizardInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            subject_type_id?: components["schemas"]["Uuid"];
+            notice_type: components["schemas"]["NoticeType"];
+            title: string;
+            slug: string;
+            /**
+             * @description RoPA processing activities (ROPA-03/06/07/08) whose purposes, lawful basis, data, retention, recipients and transfers are assembled into the draft (BP-04 t2)
+             * @default []
+             */
+            activity_ids: components["schemas"]["Uuid"][];
+        };
+        Notice: {
+            id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            subject_type_id?: components["schemas"]["Uuid"];
+            notice_type: components["schemas"]["NoticeType"];
+            title: string;
+            slug: string;
+            /** @description The PLT-16 document holding this notice's content — edit it at /admin/v1/platform/documents/{document_id} */
+            document_id: components["schemas"]["Uuid"];
+            status: components["schemas"]["NoticeStatus"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            review_cycle_months: number;
+            activity_ids?: components["schemas"]["Uuid"][];
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * @example {
+         *       "name": "ปฏิทินสำนักงานใหญ่",
+         *       "timezone": "Asia/Bangkok",
+         *       "workdays": [
+         *         1,
+         *         2,
+         *         3,
+         *         4,
+         *         5
+         *       ],
+         *       "is_default": true
+         *     }
+         */
+        BusinessCalendarInput: {
+            name: string;
+            /** @description IANA time zone the calendar's days are counted in */
+            timezone: string;
+            /** @description ISO weekdays that are working days (1 = Monday … 7 = Sunday) */
+            workdays: number[];
+            /** @description Make this the tenant's default calendar (true only — the default moves, it is never cleared) */
+            is_default?: boolean;
+        };
+        BusinessCalendar: {
+            id: components["schemas"]["Uuid"];
+            name: string;
+            timezone: string;
+            workdays: number[];
+            is_default: boolean;
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        Holiday: {
+            /** Format: date */
+            date: string;
+            name: string;
+        };
+        /**
+         * @example {
+         *       "theme_color": "#0B5FFF"
+         *     }
+         */
+        OrgBranding: {
+            logo_file_id?: components["schemas"]["Uuid"];
+            theme_color?: string;
+            accent_color?: string;
+        };
+        /**
+         * @example {
+         *       "default_language": "th",
+         *       "date_era": "BE",
+         *       "branding": {
+         *         "theme_color": "#0B5FFF"
+         *       }
+         *     }
+         */
+        OrgSettingsInput: {
+            /** @enum {string} */
+            default_language: "th" | "en";
+            /** @enum {string} */
+            date_era: "BE" | "CE";
+            branding?: components["schemas"]["OrgBranding"];
+        };
+        OrgSettings: {
+            /** @enum {string} */
+            default_language: "th" | "en";
+            /** @enum {string} */
+            date_era: "BE" | "CE";
+            branding: components["schemas"]["OrgBranding"];
+            /** @description 0 means the tenant has never saved settings yet — these are the defaults */
+            row_version: number;
+            /** @description Absent when row_version is 0 */
+            updated_at?: components["schemas"]["Timestamp"];
+        };
+        ImportJob: {
+            id: components["schemas"]["Uuid"];
+            import_type: string;
+            /** @enum {string} */
+            status: "queued" | "validating" | "ready" | "importing" | "done" | "failed";
+            /** @description Header row of the file (empty until the file has been scanned and read) */
+            headers: string[];
+            suggested: {
+                [key: string]: string;
+            };
+            mapping: {
+                [key: string]: string;
+            };
+            columns: {
+                key: string;
+                label: {
+                    [key: string]: string;
+                };
+                required: boolean;
+            }[];
+            total_rows?: number | null;
+            valid_rows?: number | null;
+            error_rows?: number | null;
+            has_error_report: boolean;
+            /** @description file_rejected, file_unreadable, no_header_row, apply_failed_line_<n> */
+            failure?: string;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        Comment: {
+            id: components["schemas"]["Uuid"];
+            parent_id?: components["schemas"]["Uuid"] | null;
+            author_id: components["schemas"]["Uuid"];
+            author_name: string;
+            body: string;
+            mentions: components["schemas"]["Uuid"][];
+            resolved: boolean;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        Attachment: {
+            id: components["schemas"]["Uuid"];
+            file_name: string;
+            mime_type: string;
+            /** Format: int64 */
+            size_bytes: number;
+            /** @enum {string} */
+            av_status: "pending" | "clean" | "infected" | "error";
+            uploader_name?: string;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        Activity: {
+            /** Format: int64 */
+            id: number;
+            occurred_at: components["schemas"]["Timestamp"];
+            actor_type: string;
+            actor_name?: string;
+            action: string;
+            before?: Record<string, never> | null;
+            after?: Record<string, never> | null;
+        };
+        /** @enum {string} */
+        NotificationChannel: "email" | "sms" | "line" | "in_app";
+        /** @enum {string} */
+        NotificationStatus: "queued" | "sent" | "delivered" | "failed" | "cancelled";
+        NotificationTemplateInput: {
+            code: string;
+            channel: components["schemas"]["NotificationChannel"];
+            /** @enum {string} */
+            language: "th" | "en";
+            subject?: string;
+            /** @description text/template syntax, e.g. {{.request_no}}; every variable used must be declared */
+            body: string;
+            variables?: string[];
+        };
+        NotificationTemplate: {
+            id: components["schemas"]["Uuid"];
+            /** @description A platform template (read-only for tenants; override it by creating your own) */
+            global: boolean;
+            code: string;
+            channel: components["schemas"]["NotificationChannel"];
+            language: string;
+            subject?: string;
+            body: string;
+            variables: string[];
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        NotificationDelivery: {
+            id: components["schemas"]["Uuid"];
+            template_code?: string;
+            channel: components["schemas"]["NotificationChannel"];
+            recipient_user_id?: components["schemas"]["Uuid"] | null;
+            /** @description Masked address, e.g. so****@example.co.th (empty for user recipients) */
+            recipient_masked?: string;
+            status: components["schemas"]["NotificationStatus"];
+            attempts: number;
+            provider_message_id?: string;
+            sent_at?: components["schemas"]["Timestamp"] | null;
+            /** @description Last failure, with addresses and numbers removed */
+            error?: string;
+            entity_type?: string;
+            entity_id?: components["schemas"]["Uuid"] | null;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        Inbox: {
+            unread: number;
+            items: {
+                id: components["schemas"]["Uuid"];
+                title: string;
+                body: string;
+                read: boolean;
+                created_at: components["schemas"]["Timestamp"];
+            }[];
+        };
+        StoredFile: {
+            id: components["schemas"]["Uuid"];
+            file_name: string;
+            mime_type: string;
+            /** Format: int64 */
+            size_bytes: number;
+            sha256: string;
+            /** @enum {string} */
+            av_status: "pending" | "clean" | "infected" | "error";
+            entity_type?: string | null;
+            entity_id?: components["schemas"]["Uuid"] | null;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * @description River job state
+         * @enum {string}
+         */
+        JobState: "available" | "cancelled" | "completed" | "discarded" | "pending" | "retryable" | "running" | "scheduled";
+        /** @description One background job. Args are not exposed — they carry identifiers only. */
+        Job: {
+            /** Format: int64 */
+            id: number;
+            kind: string;
+            queue: string;
+            state: components["schemas"]["JobState"];
+            /** @description Attempts made so far */
+            attempt: number;
+            max_attempts: number;
+            created_at: components["schemas"]["Timestamp"];
+            scheduled_at: components["schemas"]["Timestamp"];
+            attempted_at?: components["schemas"]["Timestamp"] | null;
+            finalized_at?: components["schemas"]["Timestamp"] | null;
+            /** @description Message of the most recent failed attempt (truncated), null if none */
+            last_error?: string | null;
+        };
+        JobList: {
+            data: components["schemas"]["Job"][];
+            next_cursor: string | null;
+        };
         /**
          * Format: uuid
          * @description UUIDv7 generated by the API
@@ -156,6 +3588,11 @@ export interface components {
             text: string;
             is_sensitive: boolean;
             requires_explicit: boolean;
+            /** @description Must be consented to to continue (never a sensitive purpose) */
+            required?: boolean;
+            description?: string;
+            /** @description Statement shown with a sensitive purpose's own checkbox (s.26) */
+            explicit_text?: string;
             min_age?: number | null;
             preferences?: {
                 code: string;
@@ -174,6 +3611,544 @@ export interface components {
             type: "email" | "phone" | "national_id" | "customer_id" | "passport" | "line_uid" | "other";
             /** @description Normalized by the API (lower-case e-mail, E.164 phone) before blind indexing. Never logged. */
             value: string;
+        };
+        ConsentText: {
+            th: string;
+            en?: string;
+        };
+        ConsentPreference: {
+            code: string;
+            name: components["schemas"]["ConsentText"];
+            /** @enum {string} */
+            type: "channel" | "topic" | "frequency" | "other";
+            options: {
+                value: string;
+                label: components["schemas"]["ConsentText"];
+            }[];
+        };
+        /** @description What a purpose version says (the draft snapshot approved through PLT-08) */
+        PurposeContent: {
+            name: components["schemas"]["ConsentText"];
+            description?: components["schemas"]["ConsentText"];
+            consent_text: components["schemas"]["ConsentText"];
+            /** @description Required when a data category is sensitive (s.26): the statement shown with its own checkbox */
+            explicit_text?: components["schemas"]["ConsentText"];
+            data_category_codes?: string[];
+            min_age?: number | null;
+            lifespan_days?: number | null;
+            /** @enum {string} */
+            change_type?: "minor" | "material";
+            requires_reconsent?: boolean;
+            preferences?: components["schemas"]["ConsentPreference"][];
+        };
+        PurposeVersionInfo: {
+            id: components["schemas"]["Uuid"];
+            version: number;
+            consent_text: components["schemas"]["ConsentText"];
+            explicit_text?: components["schemas"]["ConsentText"];
+            /** @enum {string} */
+            change_type: "initial" | "minor" | "material";
+            requires_reconsent: boolean;
+            published_at: components["schemas"]["Timestamp"];
+        };
+        ConsentPurpose: {
+            id: components["schemas"]["Uuid"];
+            code: string;
+            legal_entity_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "draft" | "active" | "retired";
+            is_sensitive: boolean;
+            requires_explicit: boolean;
+            lawful_basis: string;
+            current_version?: number | null;
+            live: components["schemas"]["PurposeContent"];
+            versions: components["schemas"]["PurposeVersionInfo"][];
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        PurposeDraftSaved: {
+            version_id: components["schemas"]["Uuid"];
+            version: number;
+            status: string;
+            row_version: number;
+        };
+        /** @description s.19 attestation made when publishing */
+        ConsentChecklist: {
+            separate_text: boolean;
+            not_bundled: boolean;
+            plain_language: boolean;
+            withdrawal_info: boolean;
+        };
+        CollectionPointInput: {
+            name: string;
+            /** @enum {string} */
+            channel: "web" | "app" | "pos" | "call_center" | "kiosk" | "paper" | "line" | "api";
+            legal_entity_id: components["schemas"]["Uuid"];
+            allowed_origins?: string[];
+            purposes: {
+                purpose_id: components["schemas"]["Uuid"];
+                required: boolean;
+            }[];
+        };
+        ConsentCollectionPoint: {
+            id: components["schemas"]["Uuid"];
+            code: string;
+            name: string;
+            channel: string;
+            legal_entity_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "draft" | "active" | "retired";
+            /** @description Issued on the first publish; used by links, QR codes and forms */
+            public_key?: string;
+            allowed_origins: string[];
+            checklist?: components["schemas"]["ConsentChecklist"];
+            published_at?: components["schemas"]["Timestamp"];
+            purposes: {
+                purpose_id: components["schemas"]["Uuid"];
+                code: string;
+                name: components["schemas"]["ConsentText"];
+                status: string;
+                is_sensitive: boolean;
+                required: boolean;
+                current_version?: number | null;
+            }[];
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        ConsentSubjectSummary: {
+            id: components["schemas"]["Uuid"];
+            key: string;
+            identifiers: {
+                type: string;
+                masked: string;
+                primary: boolean;
+                verified: boolean;
+            }[];
+            last_activity_at?: components["schemas"]["Timestamp"];
+            created_at: components["schemas"]["Timestamp"];
+        };
+        ConsentSubjectProfile: components["schemas"]["ConsentSubjectSummary"] & {
+            statuses: {
+                purpose_id: components["schemas"]["Uuid"];
+                purpose_code: string;
+                purpose_name: components["schemas"]["ConsentText"];
+                is_sensitive: boolean;
+                /** @enum {string} */
+                status: "ACTIVE" | "NOT_GIVEN" | "WITHDRAWN" | "EXPIRED" | "PENDING";
+                version: number;
+                current_version?: number | null;
+                needs_reconsent: boolean;
+                preferences?: Record<string, never> | null;
+                expires_at?: components["schemas"]["Timestamp"];
+                updated_at: components["schemas"]["Timestamp"];
+            }[];
+            history: {
+                id: components["schemas"]["Uuid"];
+                occurred_at: components["schemas"]["Timestamp"];
+                type: string;
+                purpose_code: string;
+                purpose_name: components["schemas"]["ConsentText"];
+                version: number;
+                preferences?: Record<string, never> | null;
+                reason_code?: string;
+                expires_at?: components["schemas"]["Timestamp"];
+                source: string;
+                receipt_no: string;
+                channel: string;
+                collection_point: string;
+                captured_by?: string;
+            }[];
+        };
+        ConsentVerifyResult: {
+            ok: boolean;
+            checked: number;
+            /** @description Receipt number of the first receipt that fails */
+            broken_at?: string;
+            /** @enum {string} */
+            reason?: "hash_mismatch" | "prev_hash_mismatch";
+        };
+        ConsentDecisionInput: {
+            purpose_code: string;
+            purpose_version_no: number;
+            /** @enum {string} */
+            decision: "CONSENTED" | "NOT_CONSENTED" | "WITHDRAWN";
+            preferences?: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            reason_code?: "no_longer_interested" | "too_many_messages" | "privacy_concern" | "service_ended" | "other";
+        };
+        ConsentRecordInput: {
+            collection_point_id: components["schemas"]["Uuid"];
+            subject_id?: components["schemas"]["Uuid"];
+            identifiers?: components["schemas"]["SubjectIdentifier"][];
+            decisions: components["schemas"]["ConsentDecisionInput"][];
+            /** @enum {string} */
+            language?: "th" | "en";
+        };
+        ConsentSettings: {
+            /** @description ISO country code of where consent data is stored */
+            data_region: string;
+            /** @enum {string} */
+            identifier_encryption: "aes-256-gcm";
+            /** @enum {string} */
+            key_management: "openbao_transit" | "local_development";
+        };
+        BreachClock: {
+            due_at: components["schemas"]["Timestamp"];
+            /** @description Last moment for a late notice with its reason (15 days, decisions Q-07) */
+            late_by: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            state: "on_track" | "due_soon" | "overdue" | "stopped";
+            hours_elapsed: number;
+        };
+        BreachIncidentInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            reported_via: "employee_form" | "email" | "phone" | "system";
+            title: string;
+            description: string;
+            breach_types: ("confidentiality" | "integrity" | "availability")[];
+            incident_type?: string;
+            occurred_at?: components["schemas"]["Timestamp"];
+            aware_at: components["schemas"]["Timestamp"];
+            contained_at?: components["schemas"]["Timestamp"];
+            affected_subjects?: number;
+            affected_category_ids?: components["schemas"]["Uuid"][];
+            owner_user_id?: components["schemas"]["Uuid"];
+            is_drill?: boolean;
+        };
+        BreachIncidentUpdate: {
+            title: string;
+            description: string;
+            breach_types: ("confidentiality" | "integrity" | "availability")[];
+            incident_type?: string;
+            occurred_at?: components["schemas"]["Timestamp"];
+            aware_at: components["schemas"]["Timestamp"];
+            contained_at?: components["schemas"]["Timestamp"];
+            affected_subjects?: number;
+            affected_category_ids?: components["schemas"]["Uuid"][];
+            owner_user_id?: components["schemas"]["Uuid"];
+            aware_at_reason?: string;
+        };
+        BreachIncident: {
+            id: components["schemas"]["Uuid"];
+            incident_no: string;
+            legal_entity_id: components["schemas"]["Uuid"];
+            reported_via: string;
+            reporter_user_id?: components["schemas"]["Uuid"];
+            reporter_name?: string;
+            title: string;
+            description: string;
+            breach_types: string[];
+            incident_type?: string;
+            occurred_at?: components["schemas"]["Timestamp"];
+            aware_at: components["schemas"]["Timestamp"];
+            contained_at?: components["schemas"]["Timestamp"];
+            affected_subjects?: number | null;
+            affected_category_ids: components["schemas"]["Uuid"][];
+            /** @enum {string} */
+            risk_level?: "none" | "low" | "high";
+            /** @enum {string} */
+            decision?: "no_notification" | "notify_pdpc" | "notify_pdpc_and_subjects";
+            decision_reason?: string;
+            decided_by?: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "reported" | "triage" | "assessing" | "notifying" | "remediating" | "closed";
+            owner_user_id?: components["schemas"]["Uuid"];
+            owner_name?: string;
+            close_reason?: string;
+            is_drill: boolean;
+            clock: components["schemas"]["BreachClock"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        BreachTimelineItem: {
+            id: components["schemas"]["Uuid"];
+            occurred_at: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            type: "decision" | "action" | "communication" | "system" | "note";
+            /** @description Automatic entries: what happened, e.g. status:triage:assessing, deadline:24, decision:notify_pdpc:low (localized by the UI) */
+            token?: string;
+            /** @description A note, or the reason given with an automatic entry */
+            text?: string;
+            actor_id?: components["schemas"]["Uuid"];
+            actor_name?: string;
+            auto: boolean;
+        };
+        BreachAssessment: {
+            id: components["schemas"]["Uuid"];
+            form_submission_id: components["schemas"]["Uuid"];
+            score: number;
+            /** @enum {string} */
+            risk_level: "none" | "low" | "high";
+            factors: {
+                question: string;
+                label: {
+                    [key: string]: string;
+                };
+                answer?: unknown;
+                answer_labels?: {
+                    [key: string]: string;
+                }[];
+                points: number;
+            }[];
+            assessed_by: components["schemas"]["Uuid"];
+            assessed_by_name?: string;
+            assessed_at: components["schemas"]["Timestamp"];
+        };
+        BreachEvidence: {
+            id: components["schemas"]["Uuid"];
+            file_id: components["schemas"]["Uuid"];
+            file_name?: string;
+            sha256?: string;
+            size_bytes?: number;
+            av_status?: string;
+            description?: string;
+            collected_by?: components["schemas"]["Uuid"];
+            collected_by_name?: string;
+            collected_at: components["schemas"]["Timestamp"];
+        };
+        BreachNoticeVars: {
+            organization: string;
+            summary: string;
+            remedy: string;
+            contact: string;
+        };
+        BreachNotice: {
+            id: components["schemas"]["Uuid"];
+            incident_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            channel: "email" | "sms";
+            template_code: string;
+            variables: components["schemas"]["BreachNoticeVars"];
+            total: number;
+            /** @description Handed to the notification service */
+            handed: number;
+            /** @description Could not be handed over */
+            failed: number;
+            /** @enum {string} */
+            status: "draft" | "sending" | "done" | "failed";
+            /** @description Handed-over messages by delivery status (queued / sent / failed) */
+            delivery: {
+                [key: string]: number;
+            };
+            started_at?: components["schemas"]["Timestamp"];
+            completed_at?: components["schemas"]["Timestamp"];
+            created_by?: components["schemas"]["Uuid"];
+            created_by_name?: string;
+            approved_by?: components["schemas"]["Uuid"];
+            approved_by_name?: string;
+            approved_at?: components["schemas"]["Timestamp"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        BreachRecipient: {
+            id: components["schemas"]["Uuid"];
+            line: number;
+            masked: string;
+            language: string;
+            /** @enum {string} */
+            status: "queued" | "sent" | "failed";
+            delivery?: string;
+            attempts?: number;
+            sent_at?: components["schemas"]["Timestamp"];
+            error?: string;
+        };
+        /** @description The body per language */
+        DocumentContent: {
+            /** @description A ProseMirror doc node (TipTap JSON); validated by the server */
+            th: {
+                [key: string]: unknown;
+            };
+            /** @description A ProseMirror doc node (TipTap JSON); validated by the server */
+            en?: {
+                [key: string]: unknown;
+            };
+        };
+        DocumentTypesInfo: {
+            types: {
+                /** @enum {string} */
+                doc_type: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+                /** @description PLT-08 record type of its documents */
+                entity_type: string;
+                can_create: boolean;
+                can_update: boolean;
+                can_publish: boolean;
+                can_read_templates: boolean;
+                can_write_templates: boolean;
+            }[];
+            fields: {
+                key: string;
+                /** @enum {string} */
+                source: "org" | "document";
+                label: {
+                    th: string;
+                    en: string;
+                };
+            }[];
+            can_manage_clauses: boolean;
+        };
+        DocumentSummary: {
+            id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            doc_type: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+            title: string;
+            legal_entity_id?: components["schemas"]["Uuid"];
+            template_id?: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "draft" | "published";
+            current_version_id?: components["schemas"]["Uuid"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        DocumentDraft: {
+            title: string;
+            legal_entity_id?: components["schemas"]["Uuid"];
+            content: components["schemas"]["DocumentContent"];
+            change_summary?: string;
+            /** Format: date */
+            effective_from?: string;
+        };
+        Document: components["schemas"]["DocumentSummary"] & {
+            entity_type?: string;
+            latest?: {
+                id: components["schemas"]["Uuid"];
+                version: number;
+                /** @enum {string} */
+                status: "draft" | "in_review" | "approved" | "published" | "superseded";
+                row_version: number;
+            };
+            draft?: components["schemas"]["DocumentDraft"];
+            /** @description What the newest version still lacks to be published */
+            missing?: {
+                fields: string[];
+                clauses: string[];
+            };
+        };
+        PublishedDocumentVersion: {
+            id: components["schemas"]["Uuid"];
+            version: number;
+            languages: ("th" | "en")[];
+            /** @enum {string} */
+            render_status: "pending" | "done" | "failed";
+            files: {
+                /** @enum {string} */
+                language: "th" | "en";
+                /** @enum {string} */
+                format: "pdf" | "docx";
+                file_id: components["schemas"]["Uuid"];
+            }[];
+            change_summary?: string;
+            /** Format: date */
+            effective_from?: string;
+            approved_by?: components["schemas"]["Uuid"];
+            approved_at?: components["schemas"]["Timestamp"];
+            created_at: components["schemas"]["Timestamp"];
+        };
+        DocumentComparison: {
+            from: {
+                id: components["schemas"]["Uuid"];
+                version: number;
+                status: string;
+            };
+            to: {
+                id: components["schemas"]["Uuid"];
+                version: number;
+                status: string;
+            };
+            changes: {
+                /** @enum {string} */
+                op: "equal" | "insert" | "delete" | "change";
+                /** @description heading1-3, paragraph, clause, rule */
+                kind: string;
+                before?: string;
+                after?: string;
+                segments?: {
+                    /** @enum {string} */
+                    op: "equal" | "insert" | "delete";
+                    text: string;
+                }[];
+            }[];
+            summary: {
+                [key: string]: number;
+            };
+        };
+        DocumentClauseBody: {
+            title: string;
+            /** @description A ProseMirror doc node (TipTap JSON); validated by the server */
+            doc: {
+                [key: string]: unknown;
+            };
+        };
+        DocumentClauseInput: {
+            /** @description Required when creating; ignored when editing */
+            code?: string;
+            category: string;
+            body: {
+                th: components["schemas"]["DocumentClauseBody"];
+                en?: components["schemas"]["DocumentClauseBody"];
+            };
+            legal_ref?: string;
+            applies_to?: ("notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other")[];
+            is_mandatory?: boolean;
+        };
+        DocumentClause: {
+            id: components["schemas"]["Uuid"];
+            /** @description A platform clause (read-only) */
+            global: boolean;
+            code: string;
+            category: string;
+            body: {
+                th: components["schemas"]["DocumentClauseBody"];
+                en?: components["schemas"]["DocumentClauseBody"];
+            };
+            legal_ref?: string;
+            applies_to: string[];
+            is_mandatory: boolean;
+            version: number;
+            /** @enum {string} */
+            status: "draft" | "published" | "retired";
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        DocumentClauseDetail: components["schemas"]["DocumentClause"] & {
+            versions: components["schemas"]["DocumentClause"][];
+        };
+        DocumentTemplate: {
+            id: components["schemas"]["Uuid"];
+            global: boolean;
+            /** @enum {string} */
+            doc_type: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+            code: string;
+            name: string;
+            content: components["schemas"]["DocumentContent"];
+            version: number;
+            /** @enum {string} */
+            status: "draft" | "published" | "retired";
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        BreachPDPCNotification: {
+            id: components["schemas"]["Uuid"];
+            incident_id: components["schemas"]["Uuid"];
+            sequence_no: number;
+            /** @enum {string} */
+            notification_type: "initial" | "supplementary" | "final";
+            document_version_id: components["schemas"]["Uuid"];
+            submitted_at: components["schemas"]["Timestamp"];
+            submission_ref?: string;
+            is_late: boolean;
+            late_reason?: string;
+            evidence_file_id?: components["schemas"]["Uuid"];
+            created_by?: components["schemas"]["Uuid"];
+            created_by_name?: string;
+            approved_by?: components["schemas"]["Uuid"];
+            approved_by_name?: string;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
         };
         ConsentSubmission: {
             collection_point_code: string;
@@ -295,6 +4270,9 @@ export interface components {
         };
     };
     parameters: {
+        /** @description Record type registered by its module (e.g. notification_template, dsar_request) */
+        EntityType: string;
+        EntityId: components["schemas"]["Uuid"];
         /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
         IdempotencyKey: string;
         /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
@@ -374,6 +4352,5113 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformListJobs: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from `next_cursor` of the previous page */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Only jobs in these states */
+                state?: components["schemas"]["JobState"][];
+                /** @description Only jobs of this kind (e.g. `outbox.dispatch`) */
+                kind?: string;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of jobs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "data": [
+                     *         {
+                     *           "id": 18342,
+                     *           "kind": "outbox.dispatch",
+                     *           "queue": "default",
+                     *           "state": "retryable",
+                     *           "attempt": 2,
+                     *           "max_attempts": 25,
+                     *           "created_at": "2026-09-25T03:15:00Z",
+                     *           "scheduled_at": "2026-09-25T03:15:17Z",
+                     *           "attempted_at": "2026-09-25T03:15:01Z",
+                     *           "finalized_at": null,
+                     *           "last_error": "webhook endpoint returned 503"
+                     *         }
+                     *       ],
+                     *       "next_cursor": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["JobList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformUploadFile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Stored; scan pending */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "01925f3c-7b8e-7c3a-9d51-2f0c6e1a4b99",
+                     *       "file_name": "หนังสือมอบอำนาจ.pdf",
+                     *       "mime_type": "application/pdf",
+                     *       "size_bytes": 182044,
+                     *       "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                     *       "av_status": "pending",
+                     *       "created_at": "2026-09-25T03:15:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["StoredFile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description File larger than the configured limit (`files.too_large`) */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description File type not allowed (`files.type_not_allowed`) */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    platformGetFile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoredFile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformDownloadFile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed URL */
+            302: {
+                headers: {
+                    Location: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    platformListNotificationTemplates: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["NotificationTemplate"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformCreateNotificationTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "code": "dsar.received",
+                 *       "channel": "email",
+                 *       "language": "th",
+                 *       "subject": "ได้รับคำขอ {{.request_no}}",
+                 *       "body": "เรียน {{.name}} เราได้รับคำขอ {{.request_no}} แล้ว",
+                 *       "variables": [
+                 *         "name",
+                 *         "request_no"
+                 *       ]
+                 *     }
+                 */
+                "application/json": components["schemas"]["NotificationTemplateInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformPreviewNotificationTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    subject?: string;
+                    body: string;
+                    variables?: string[];
+                    values?: {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Rendered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        subject?: string;
+                        body: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetNotificationTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The template */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationTemplate"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformDeleteNotificationTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformUpdateNotificationTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    subject?: string;
+                    body: string;
+                    variables?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationTemplate"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListNotifications: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from `next_cursor` of the previous page */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                status?: components["schemas"]["NotificationStatus"];
+                channel?: components["schemas"]["NotificationChannel"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["NotificationDelivery"][];
+                        next_cursor: string | null;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformGetNotification: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The message's status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationDelivery"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformGetInbox: {
+        parameters: {
+            query?: {
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inbox */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Inbox"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformStreamInbox: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event stream */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformMarkInboxRead: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Marked read */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformListComments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                /** @description Record type registered by its module (e.g. notification_template, dsar_request) */
+                entityType: components["parameters"]["EntityType"];
+                entityId: components["parameters"]["EntityId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Comment"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformCreateComment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                /** @description Record type registered by its module (e.g. notification_template, dsar_request) */
+                entityType: components["parameters"]["EntityType"];
+                entityId: components["parameters"]["EntityId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Mentions are written as @[Display name](user-id) */
+                    body: string;
+                    parent_id?: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformListAttachments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                /** @description Record type registered by its module (e.g. notification_template, dsar_request) */
+                entityType: components["parameters"]["EntityType"];
+                entityId: components["parameters"]["EntityId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Attachment"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformAttachFile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                /** @description Record type registered by its module (e.g. notification_template, dsar_request) */
+                entityType: components["parameters"]["EntityType"];
+                entityId: components["parameters"]["EntityId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    file_id: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformListActivity: {
+        parameters: {
+            query?: {
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                /** @description Record type registered by its module (e.g. notification_template, dsar_request) */
+                entityType: components["parameters"]["EntityType"];
+                entityId: components["parameters"]["EntityId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Activity"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformDeleteComment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformUpdateComment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    body: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformResolveComment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    resolved: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformSearchMentionableUsers: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: {
+                            id: components["schemas"]["Uuid"];
+                            display_name: string;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformListWorkflowDefinitions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Definitions by code */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["WorkflowDefinition"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformCreateWorkflowDefinition: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowDefinitionInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowDefinition"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetWorkflowDefinition: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The definition */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowDefinition"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformSaveWorkflowVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowDefinitionInput"];
+            };
+        };
+        responses: {
+            /** @description The new version */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowDefinition"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformSearchAssignableGroups: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Up to 10 groups */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["NamedRef"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformGetWorkflowInstance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The instance */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowInstance"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformTransitionWorkflow: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "to": "approval",
+                 *       "comment": "ตรวจแล้ว ครบถ้วน"
+                 *     }
+                 */
+                "application/json": {
+                    to: string;
+                    comment?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The instance after the move */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowInstance"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListMyTasks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Open tasks, soonest due first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["MyTask"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformUpdateWorkflowTask: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    assignee_user_id?: components["schemas"]["Uuid"];
+                    assignee_group_id?: components["schemas"]["Uuid"];
+                    /** @enum {string} */
+                    status?: "open" | "in_progress";
+                };
+            };
+        };
+        responses: {
+            /** @description The task */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowTask"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformSearchAuditLog: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from `next_cursor` of the previous page */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                actor_id?: components["schemas"]["Uuid"];
+                entity_type?: string;
+                entity_id?: components["schemas"]["Uuid"];
+                /** @description Start of the action, e.g. `iam.` for one module */
+                action_prefix?: string;
+                from?: components["schemas"]["Timestamp"];
+                to?: components["schemas"]["Timestamp"];
+                /** @description changes = business actions (default) · requests = one row per API request · all */
+                kind?: "changes" | "requests" | "all";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AuditEntry"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformExportAuditLog: {
+        parameters: {
+            query?: {
+                actor_id?: components["schemas"]["Uuid"];
+                entity_type?: string;
+                entity_id?: components["schemas"]["Uuid"];
+                /** @description Start of the action, e.g. `iam.` for one module */
+                action_prefix?: string;
+                from?: components["schemas"]["Timestamp"];
+                to?: components["schemas"]["Timestamp"];
+                /** @description changes = business actions (default) · requests = one row per API request · all */
+                kind?: "changes" | "requests" | "all";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV (UTF-8 with BOM), newest first */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformVerifyAuditLog: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ok: boolean;
+                        checked: number;
+                        /** Format: int64 */
+                        broken_at_id?: number;
+                        /** @enum {string} */
+                        reason?: "hash_mismatch" | "prev_hash_mismatch";
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformListRecordVersions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                /** @description Record type registered by its module (e.g. notification_template, dsar_request) */
+                entityType: components["parameters"]["EntityType"];
+                entityId: components["parameters"]["EntityId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RecordVersion"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformGetRecordVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The version */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordVersion"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformCompareRecordVersions: {
+        parameters: {
+            query: {
+                with: components["schemas"]["Uuid"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Changes (JSON paths with the values before and after) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        changes: components["schemas"]["VersionChange"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformSubmitRecordVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The version, now in review */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordVersion"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformPublishRecordVersion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The published version */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordVersion"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformDecideApproval: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "decision": "returned",
+                 *       "reason": "แก้ข้อ 3 ให้ระบุระยะเวลาเก็บรักษา"
+                 *     }
+                 */
+                "application/json": {
+                    /** @enum {string} */
+                    decision: "approved" | "returned" | "rejected";
+                    /** @description Required to return or reject */
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The version after the decision */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordVersion"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListMyApprovals: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending approvals, oldest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ApprovalInboxItem"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformListFormTypes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Form types */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["FormTypeInfo"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformListForms: {
+        parameters: {
+            query?: {
+                form_type?: string;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Forms */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["FormSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformCreateForm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    code: string;
+                    name: string;
+                    form_type: string;
+                    draft: components["schemas"]["FormDraft"];
+                };
+            };
+        };
+        responses: {
+            /** @description The form */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Form"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetForm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The form */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Form"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformCreateFormDraft: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FormDraft"];
+            };
+        };
+        responses: {
+            /** @description The new draft; its ETag is what saving and publishing it need */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormVersion"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformSaveFormDraft: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FormDraft"];
+            };
+        };
+        responses: {
+            /** @description The saved draft */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormVersion"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformPublishForm: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The form */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Form"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListFormResponses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Responses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["FormResponseSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformStartFormResponse: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    entity_type?: string;
+                    entity_id?: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description The response */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    platformGetFormResponse: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The response */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformSaveFormAnswers: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    answers: components["schemas"]["FormAnswers"];
+                };
+            };
+        };
+        responses: {
+            /** @description The response */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformAssignFormSection: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                section: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    assignee_user_id: components["schemas"]["Uuid"] | null;
+                };
+            };
+        };
+        responses: {
+            /** @description The response */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformCompleteFormSection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                section: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The response */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformSubmitFormResponse: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The submitted response with its score */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListMyFormSections: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Open assignments, oldest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["FormSectionAssignmentItem"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformListImports: {
+        parameters: {
+            query?: {
+                import_type?: string;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Imports */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ImportJob"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformCreateImport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    import_type: string;
+                    file_id: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description Created; the file is scanned and its header row read next */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJob"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetImport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The import */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJob"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformSetImportMapping: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description column key → header text in the file */
+                    columns: {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Validation queued */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJob"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformConfirmImport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Import queued */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportJob"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformDownloadImportErrors: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Signed URL */
+            302: {
+                headers: {
+                    Location: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    orgListLegalEntities: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Legal entities, active first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["LegalEntity"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgCreateLegalEntity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalEntityInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalEntity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    orgGetLegalEntity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The legal entity */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalEntity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    orgUpdateLegalEntity: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegalEntityInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalEntity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgListUnits: {
+        parameters: {
+            query?: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+                include_closed?: boolean;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Units */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["OrgUnit"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgCreateUnit: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrgUnitInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgUnit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    orgUpdateUnit: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    code: string;
+                    name_th: string;
+                    name_en?: string;
+                    unit_type: components["schemas"]["OrgUnitType"];
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgUnit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgMoveUnit: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    parent_id: components["schemas"]["Uuid"] | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Moved */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgUnit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgCloseUnit: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Closed */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgUnit"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgListExternalParties: {
+        parameters: {
+            query?: {
+                party_type?: components["schemas"]["ExternalPartyType"];
+                country_code?: string;
+                /** @description Name or registration number contains */
+                q?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ExternalParty"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgCreateExternalParty: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExternalPartyInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalParty"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    orgListDuplicateExternalParties: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ExternalPartyDuplicateGroup"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgGetExternalParty: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalParty"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    orgUpdateExternalParty: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExternalPartyInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalParty"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgMergeExternalParty: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExternalPartyMergeInput"];
+            };
+        };
+        responses: {
+            /** @description Merged */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalParty"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgListMasterData: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                kind: components["schemas"]["MasterDataKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["MasterDataItem"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgCreateMasterData: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                kind: components["schemas"]["MasterDataKind"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MasterDataInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterDataItem"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    orgDeleteMasterData: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                kind: components["schemas"]["MasterDataKind"];
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgUpdateMasterData: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                kind: components["schemas"]["MasterDataKind"];
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MasterDataInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MasterDataItem"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgGetSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Settings, or the defaults if the tenant never saved any */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgUpdateSettings: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrgSettingsInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgSettings"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgListCalendars: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Calendars, the default first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BusinessCalendar"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    orgCreateCalendar: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BusinessCalendarInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessCalendar"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    orgUpdateCalendar: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BusinessCalendarInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BusinessCalendar"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    orgListHolidays: {
+        parameters: {
+            query?: {
+                year?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Holidays in date order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Holiday"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    orgPutHoliday: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "วันสงกรานต์"
+                 *     }
+                 */
+                "application/json": {
+                    name: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The holiday */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Holiday"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    orgDeleteHoliday: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    consentListPurposes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ConsentPurpose"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    consentCreatePurpose: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    code: string;
+                    legal_entity_id: components["schemas"]["Uuid"];
+                    content: components["schemas"]["PurposeContent"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentPurpose"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    consentGetPurpose: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentPurpose"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    consentSavePurposeDraft: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurposeContent"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurposeDraftSaved"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    consentRetirePurpose: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentPurpose"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    consentListCollectionPoints: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ConsentCollectionPoint"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    consentCreateCollectionPoint: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionPointInput"] & {
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentCollectionPoint"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    consentGetCollectionPoint: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentCollectionPoint"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    consentUpdateCollectionPoint: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CollectionPointInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentCollectionPoint"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    consentPublishCollectionPoint: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentChecklist"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentCollectionPoint"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    consentRetireCollectionPoint: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentCollectionPoint"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    consentListSubjects: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ConsentSubjectSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    consentSearchSubjects: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    identifier: components["schemas"]["SubjectIdentifier"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ConsentSubjectSummary"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    consentGetSubject: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentSubjectProfile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    consentVerifySubject: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentVerifyResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    consentRecordOnBehalf: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsentRecordInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    consentGetSettings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentSettings"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    consentSubmitPublicConsent: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                "X-Public-Key": string;
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    subject: {
+                        identifiers: components["schemas"]["SubjectIdentifier"][];
+                    };
+                    decisions: components["schemas"]["ConsentDecisionInput"][];
+                    /** @enum {string} */
+                    language?: "th" | "en";
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    breachListIncidents: {
+        parameters: {
+            query?: {
+                status?: "reported" | "triage" | "assessing" | "notifying" | "remediating" | "closed";
+                risk?: "none" | "low" | "high";
+                owner_id?: components["schemas"]["Uuid"];
+                /** @description Incident number, title or description contains */
+                q?: string;
+                /** @description Aware at or after */
+                from?: components["schemas"]["Timestamp"];
+                /** @description Aware before */
+                to?: components["schemas"]["Timestamp"];
+                open_only?: boolean;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachIncident"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    breachCreateIncident: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreachIncidentInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachIncident"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachGetIncident: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachIncident"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachUpdateIncident: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreachIncidentUpdate"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachIncident"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachTransitionIncident: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    to: "triage" | "assessing" | "notifying" | "remediating" | "closed";
+                    reason?: string;
+                    owner_user_id?: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachIncident"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachListAssessments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachAssessment"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachAssessIncident: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    form_id: components["schemas"]["Uuid"];
+                    answers: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachAssessment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachDecideIncident: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    decision: "no_notification" | "notify_pdpc" | "notify_pdpc_and_subjects";
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachIncident"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachGetTimeline: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachTimelineItem"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachAddNote: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    text: string;
+                    occurred_at?: components["schemas"]["Timestamp"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachListEvidence: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachEvidence"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachAddEvidence: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    file_id: components["schemas"]["Uuid"];
+                    description?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachEvidence"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachListNotices: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachNotice"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachCreateNotice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    channel: "email" | "sms";
+                    variables: components["schemas"]["BreachNoticeVars"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachNotice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachGetNotice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachNotice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachUpdateNotice: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    variables: components["schemas"]["BreachNoticeVars"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachNotice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachListRecipients: {
+        parameters: {
+            query?: {
+                status?: "queued" | "sent" | "failed";
+                after_line?: number;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachRecipient"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachLoadRecipients: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    file_id: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachNotice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachSendNotice: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachNotice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachListPDPCNotifications: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachPDPCNotification"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachRecordPDPCNotification: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    notification_type: "initial" | "supplementary" | "final";
+                    document_version_id: components["schemas"]["Uuid"];
+                    submitted_at: components["schemas"]["Timestamp"];
+                    /** @description The PDPC’s own receipt / reference number */
+                    submission_ref?: string;
+                    evidence_file_id?: components["schemas"]["Uuid"];
+                    late_reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachPDPCNotification"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachConfirmPDPCNotification: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachPDPCNotification"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListDocumentTypes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTypesInfo"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformListDocuments: {
+        parameters: {
+            query?: {
+                doc_type?: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+                /** @description Title contains */
+                q?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DocumentSummary"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformCreateDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    doc_type: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+                    title: string;
+                    legal_entity_id?: components["schemas"]["Uuid"];
+                    template_id?: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformSaveDocumentDraft: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentDraft"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListPublishedDocumentVersions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PublishedDocumentVersion"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformExportDocument: {
+        parameters: {
+            query: {
+                /** @description A PLT-08 version of the document */
+                version_id?: components["schemas"]["Uuid"];
+                language: "th" | "en";
+                format: "pdf" | "docx";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The file */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformCompareDocumentVersions: {
+        parameters: {
+            query: {
+                from: components["schemas"]["Uuid"];
+                to: components["schemas"]["Uuid"];
+                language: "th" | "en";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentComparison"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformListClauses: {
+        parameters: {
+            query?: {
+                category?: string;
+                applies_to?: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+                published_only?: boolean;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DocumentClause"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformCreateClause: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentClauseInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentClause"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetClause: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentClauseDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformUpdateClause: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentClauseInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentClause"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformPublishClause: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentClause"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformRetireClause: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentClause"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformListDocumentTemplates: {
+        parameters: {
+            query?: {
+                doc_type?: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+                published_only?: boolean;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DocumentTemplate"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    platformCreateDocumentTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    doc_type: "notice" | "policy" | "dpa" | "dsa" | "dsar_letter" | "pdpc_form" | "breach_letter" | "report" | "other";
+                    code: string;
+                    name: string;
+                    content: components["schemas"]["DocumentContent"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetDocumentTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTemplate"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformUpdateDocumentTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    content: components["schemas"]["DocumentContent"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformPublishDocumentTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTemplate"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     consentGetPublicCollectionPoint: {
@@ -470,6 +9555,1005 @@ export interface operations {
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    ropaListAssets: {
+        parameters: {
+            query?: {
+                asset_type?: components["schemas"]["AssetType"];
+                org_unit_id?: components["schemas"]["Uuid"];
+                status?: "active" | "retired";
+                /** @description Name contains */
+                q?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Asset"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaCreateAsset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaGetAsset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaUpdateAsset: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaListDataInventory: {
+        parameters: {
+            query?: {
+                asset_id?: components["schemas"]["Uuid"];
+                org_unit_id?: components["schemas"]["Uuid"];
+                data_category_id?: components["schemas"]["Uuid"];
+                /** @description Sensitive data (s.26) only, across every department (the acceptance criterion) */
+                sensitive_only?: boolean;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DataInventoryItem"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaCreateDataInventoryItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataInventoryItemInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataInventoryItem"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaGetDataInventoryItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataInventoryItem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaUpdateDataInventoryItem: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataInventoryItemInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataInventoryItem"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaListActivities: {
+        parameters: {
+            query?: {
+                org_unit_id?: components["schemas"]["Uuid"];
+                status?: components["schemas"]["ActivityStatus"];
+                /** @description Name or code contains */
+                q?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ProcessingActivity"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaCreateActivity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcessingActivityInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingActivity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaGetActivity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingActivity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaUpdateActivity: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcessingActivityInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingActivity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaSubmitActivity: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Now pending_approval */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingActivity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            /** @description Missing mandatory ม.39 items */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaListActivityPurposes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ActivityPurpose"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaAddActivityPurpose: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityPurposeInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityPurpose"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaDeleteActivityPurpose: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                purposeId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaListActivityData: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ActivityData"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaAddActivityData: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityDataInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityData"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaDeleteActivityData: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                dataId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaListRetentionRules: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RetentionRule"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaAddRetentionRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetentionRuleInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetentionRule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaDeleteRetentionRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                ruleId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaListActivityRecipients: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ActivityRecipient"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaAddActivityRecipient: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityRecipientInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityRecipient"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaDeleteActivityRecipient: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                recipientId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaListActivityTransfers: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ActivityTransfer"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaAddActivityTransfer: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityTransferInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityTransfer"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaDeleteActivityTransfer: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                transferId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    noticeListNotices: {
+        parameters: {
+            query?: {
+                notice_type?: components["schemas"]["NoticeType"];
+                status?: components["schemas"]["NoticeStatus"];
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Notice"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    noticeCreateNotice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoticeWizardInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    noticeGetNotice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

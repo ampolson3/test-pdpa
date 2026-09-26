@@ -58,6 +58,7 @@
 - header: `X-Event-Id`, `X-Event-Type`, `X-Signature: t=<unix>,v1=<hex HMAC-SHA256(secret, t + '.' + body)>` · secret อยู่ใน OpenBao (`webhook_subscriptions.secret_ref`)
 - retry: 1 นาที → 5 นาที → 30 นาที → 2 ชม. → 6 ชม. → 24 ชม. แล้ว `dead` + แจ้งเตือน + เข้าคิว reconcile · replay ด้วยมือต้องมี `admin.apiclient.update` และถูก audit (ST-07)
 - ผู้รับต้อง idempotent ตาม `X-Event-Id` และปฏิเสธ timestamp เก่ากว่า 5 นาที
+- โค้ด (PLT-11, `backend/internal/platform/events`): `Publisher.Publish(ctx, Event)` ตรวจชื่อ event และฟิลด์ `data` กับ catalog (`catalog.gen.go` สร้างจาก `events.yaml` ด้วย `go generate` — มี test กัน drift) แล้วเขียน outbox + enqueue `outbox.dispatch` (unique ต่อ tenant) ใน tx เดียวกัน · `Dispatcher` ส่ง event ให้ subscriber ภายใน (`Registry.Subscribe`, ลงทะเบียนใน `cmd/worker`) + สร้าง `webhook_deliveries` (pending) + ตั้ง `published_at` ใน savepoint ต่อ event · event ที่ล้มเหลว: ไม่ publish, `attempts`+1, event ถัดไปของ aggregate เดียวกันถูกกันไว้ (รักษาลำดับ) ส่วน aggregate อื่นไปต่อ · ลองใหม่ทุกรอบ sweeper (1 นาที) · log WARN แต่ละครั้ง และ ERROR `alert=outbox_event_stuck` เมื่อ attempts ≥ 5 · at-least-once: subscriber ต้อง idempotent ตาม `Event.ID` (ถ้าเขียนเฉพาะใน tx ที่ได้รับจะได้ผลนี้อัตโนมัติ) · NATS JetStream ยังไม่ทำ (ทางเลือกตาม ADR)
 - breaking change ของ payload → เพิ่ม `version` ใหม่ และคงเวอร์ชันเดิมอย่างน้อย 12 เดือน
 
 ## Event catalog
@@ -110,6 +111,8 @@
 
 ## Background jobs (River)
 
+กฎร่วมของทุก job (PLT-10, `internal/platform/jobs`): 1 `WithTenantTx` ต่อ job จาก `tenant_id` ใน args · retry ตาม River ค่าเริ่มต้น (exponential attempt⁴ วินาที สูงสุด 25 ครั้ง) · ทุกครั้งที่ล้มเหลว log WARN + metric `pdpa.jobs.failed`; ครั้งสุดท้าย (หมดจำนวนครั้งหรือถูก cancel) log ERROR `alert=job_discarded` + metric `pdpa.jobs.discarded` สำหรับตั้ง alert · periodic job enqueue โดย leader เท่านั้น (ไม่ซ้ำเมื่อรันหลาย instance) · SIGTERM → soft stop รอ job ที่กำลังรัน `WORKER_SOFT_STOP_TIMEOUT` (ค่าเริ่มต้น 25s) แล้วจึง cancel
+
 | job | module | รอบ | หน้าที่ | อ้างอิง |
 |---|---|---|---|---|
 | `outbox.dispatch` | platform | enqueue ใน tx เดียวกับ outbox (args: tenant_id) + sweeper รายนาที | อ่าน outbox_events ของ tenant (FOR UPDATE SKIP LOCKED) → สร้าง webhook_deliveries | SEQ-04 |
@@ -119,6 +122,7 @@
 | `consent.reconcile` | consent | ตามรอบ / หลัง webhook dead | เทียบสถานะกับระบบปลายทาง → consent.mismatch_found | BP-02 |
 | `cookie.scan` | cookie | ตามรอบของโดเมน / สั่งเอง | scanner (chromedp) crawl เว็บ → cookie.scan_completed | BP-03 |
 | `notice.indirect_due` | notice | รายวัน | แจ้งเตือนก่อนครบ 30 วันของการแจ้งตาม ม.25 | BP-04 |
+| `workflow.sla_tick` | platform | River ScheduledAt ณ เวลาเตือนแต่ละครั้งและ due_at ของ timer (PLT-05) | ส่งการเตือนที่ถึงเวลา / ทำเครื่องหมายเกินกำหนด + ส่งเรื่องต่อ แล้วนัด tick ถัดไป · idempotent (tick ซ้ำ/ค้างหลังหยุดนับไม่ทำอะไร) · module รับผลผ่าน hook `OnSLA` เพื่อส่ง event ของตน | PLT-05 |
 | `dsar.sla_timer` | dsar | รายชั่วโมง | ตรวจ due_at → dsar.sla_warning / escalate | BP-06 |
 | `breach.sla_timer` | breach | T+24 / 48 / 66 ชม. | เตือนก่อนครบ 72 ชม. นับจาก aware_at | BP-07 / SEQ-06 |
 | `retention.sweep` | gov | River cron 02:00 | หา record ที่ครบ retention → retention.due | BP-11 |

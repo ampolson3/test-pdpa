@@ -132,6 +132,42 @@
 
 **หมายเหตุ:** OneTrust ไม่มี wizard (จุดต่าง)
 
+**Implementation (PNG-01):** `backend/internal/notice` — the first module on the `notice` schema
+(`notice.document.{read,create,update}`, `notice.template.*`, already seeded in the baseline permission
+migration in anticipation of PLT-16's own "notice" document type — no new migration). A notice
+(`notice.notices`) is a thin wrapper — legal entity, subject type, slug, ST-04 status — around a PLT-16
+document (`document_id`, NOT NULL): `CreateWizard` is the whole wizard in one call — legal entity, notice
+type, title, slug and the RoPA processing activities (ROPA-03/06/07/08) it covers — composing the document's
+first draft (`docs.Service.Create` + `SaveDraft`) from data the platform already has, rather than a generic
+conditional Q&A engine (which would duplicate PLT-06's forms engine for no acceptance-criterion benefit):
+for each linked activity, `ListActivityPurposes` (+ ORG-07 lawful basis names), `ListActivityData` (+ data
+category names), `ListRetentionRules`, `ListActivityRecipients` and `ListActivityTransfers` (+ ORG-07 country
+names) are turned into ม.23 sections (purposes/basis, data collected, retention, recipients/transfers), plus a
+fixed rights-of-the-data-subject section and a DPO-contact section built from `mergeField` nodes
+(`org_name_th`/`org_email`/`org_phone`/`org_address`) resolved from the legal entity (ORG-01) the same way
+every other PLT-16 document resolves them. A topic nothing was linked for becomes a bracketed placeholder
+("[โปรดระบุ...]") rather than blocking creation — the acceptance criterion is a *complete* draft within 30
+minutes, not a *finished* one; filling in a placeholder, the ม.23 completeness gate (PNG-02), industry/subject
+templates (PNG-03/PNG-11), DPO approval (PNG-14) and publish (PNG-08) are all sibling features layered on top
+of the same PLT-16 document, not rebuilt here. `notice.notices.status` starts and stays `draft` (ST-04's
+`[*] → draft`) — PNG-01 only ever produces that one transition; the rest of ST-04 is built when PNG-02/08/14
+are. The slug is typed by the caller, not transliterated from the (often Thai) title — kept simple since
+`^[a-z0-9-]+$` is validated and enforced unique per tenant (`uq_notices_slug`) via a `pdb.Savepoint`-wrapped
+insert (the established pattern for catching a real unique-constraint violation without aborting the request
+transaction). API `/admin/v1/notices` (cursor pagination, same shape as ORG-06/PLT-16/ROPA-02's lists),
+`GET /{id}` (includes `activity_ids` via `notice_activity_links`) — editing the composed content itself,
+after creation, is PLT-16's own `/admin/v1/platform/documents/{document_id}/draft` (no new endpoint). UI
+`/notices`: a wizard form (legal entity, notice type, title, slug, an activity checklist) that on success
+routes straight to the PLT-16 document editor page for the freshly composed draft. Tests: unit (the draft
+contains every ม.23 topic when an activity is linked — the derived purpose/retention/recipient/transfer text
+verified verbatim, not just "non-empty" — and placeholders when none is, validation, duplicate slug, two-tenant
+isolation of both the legal entity and the activity FK), HTTP contract (401/403/400/422). Not done, deliberately:
+`notice.wizard_templates` (subject-type/industry-driven starter templates and question sets — PNG-03/PNG-11's
+job, not PNG-01's, per the module's own «extend» relationships), the ม.23 checklist gate (PNG-02), re-flagging
+notices when a linked RoPA activity later changes (PNG-10 — a distinct event-driven feature, not part of the
+one-time wizard compose), DPO approval and publish (PNG-14/PNG-08), portal/`/public/v1` hosting and
+acknowledgements (no portal feature yet).
+
 <a id="png-02"></a>
 ### PNG-02 ตรวจเนื้อหาครบตาม ม.23
 

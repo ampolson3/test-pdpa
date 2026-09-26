@@ -106,6 +106,8 @@
 
 **Acceptance criteria:** ข้อมูลองค์กรแสดงถูกต้องในประกาศและเอกสารที่สร้าง
 
+**Implementation (ORG-01):** `backend/internal/org/service/structure.go` — CRUD นิติบุคคล (`org.structure.*`): ชื่อ TH/EN, เลขทะเบียน/ผู้เสียภาษี 13 หลักตรวจ check digit (ตัด - และช่องว่าง, ซ้ำในองค์กรไม่ได้ — migration 00030), ที่อยู่ (jsonb: line1, subdistrict, district, province, postal_code 5 หลักเมื่อเป็น TH, country_code), อีเมล/โทรศัพท์ติดต่อ, บริษัทแม่ (กันวน), ผู้ควบคุม/ผู้ประมวลผล, สถานะ · โลโก้ = ไฟล์ PNG/JPEG ของผู้ใช้ที่ผ่านการสแกน ผูกผ่าน PLT-09 (`files` entity `legal_entity`, ดาวน์โหลดด้วย `org.structure.read`) · `MergeFields` ให้ค่าตัวแปรเอกสาร (`org_name_th`, `org_name_en`, `org_registration_no`, `org_tax_id`, `org_address`, `org_email`, `org_phone`) สำหรับ composer ในอนาคต · API `/admin/v1/org/legal-entities` · หน้าจอ `/settings/organization` · ยังไม่ทำ: ผู้แทนในไทย (`representative`, ORG-03)
+
 <a id="org-02"></a>
 ### ORG-02 หลายนิติบุคคลและบริษัทในเครือ
 
@@ -129,6 +131,13 @@
 
 **หมายเหตุ:** ดึงเข้า P0 เพราะกระทบ data model ทุกโมดูล
 
+**สถานะ (decisions Q-24):** เลื่อนไว้ก่อน — acceptance criterion บังคับ data scope ต่อผู้ใช้ ซึ่งเป็นงานของ permission
+engine (IAM-02, ยัง blocked อยู่ที่ Keycloak/IAM-01, Q-18) ไม่ใช่ของ ORG โดยตรง ระดับข้อมูลพร้อมแล้ว:
+`org.legal_entities.parent_id` (ORG-01) รองรับบริษัทแม่/บริษัทในเครือ และทุกตารางธุรกิจมีคอลัมน์ `legal_entity_id`
+มาตั้งแต่ baseline migration (00006–00018) — ขาดแค่ชั้นบังคับสิทธิ์ (`iam.role_assignments.legal_entity_id` มีคอลัมน์
+แล้วแต่ยังไม่มี service ให้กำหนด และ AuthZ ยังไม่อ่านค่านี้) กับ DPO ร่วมของกลุ่ม (ต้องมีโมดูล DPO ก่อน) ทำต่อเมื่อ IAM-02
+เสร็จ
+
 <a id="org-04"></a>
 ### ORG-04 โครงสร้างหน่วยงานแบบลำดับชั้น
 
@@ -150,6 +159,8 @@
 
 **Acceptance criteria:** ย้ายแผนกแล้ว scope ของผู้ใช้และข้อมูลปรับตามทันที
 
+**Implementation (ORG-04):** tree บน ltree (`org_units.path` = ลำดับ label `u<id>`; GiST index, migration 00030) · เพิ่มใต้หน่วยงานของนิติบุคคลเดียวกัน, แก้ชื่อ/รหัส/ประเภท, ย้ายพร้อมหน่วยงานย่อยทั้งหมดในคำสั่งเดียว (กันย้ายไปใต้ตัวเอง), ปิดหน่วยงานได้เมื่อไม่มีหน่วยงานย่อยที่เปิดอยู่ (เก็บไว้เป็นประวัติ) — ทุกการเปลี่ยนแปลงลง audit · `UnitWithin(unit, scope, includeDescendants)` ตรวจกับ tree ปัจจุบัน จึงให้ผลใหม่ทันทีหลังย้าย (acceptance; ใช้โดย data scope ของ IAM-02 / ORG-11 เมื่อสร้าง) · ยังไม่ส่ง event เพราะ `events.yaml` ไม่มี event ของ org — เพิ่มเมื่อมีผู้รับ · หน้าจอ tree ลากวาง + เมนูย้าย + ค้นหา (แสดงผลที่พบพร้อมหน่วยงานแม่)
+
 <a id="org-07"></a>
 ### ORG-07 ข้อมูลตั้งต้นกลาง (Master data)
 
@@ -170,6 +181,8 @@
 **Frontend (Next.js):** หน้าจัดการ master data แยกหมวด
 
 **Acceptance criteria:** แก้ที่เดียวมีผลทุกโมดูล และ tenant ใหม่ได้ชุดค่าเริ่มต้นครบ
+
+**Implementation (ORG-07):** `backend/internal/org/service/masterdata.go` — ค่าตั้งต้นกลาง (แถว `tenant_id NULL` / ตาราง global) seed ใน migration 00031: ฐานทางกฎหมาย 13 รายการ (ม.19/24(1)–(6)/26 พร้อม flag ต้องขอความยินยอม / ต้องทำ LIA / สำหรับข้อมูลอ่อนไหว), หมวดข้อมูล 19 (อ่อนไหวตาม ม.26 10 หมวด), กลุ่มเจ้าของข้อมูล 9 (ผู้เยาว์ = กลุ่มเปราะบาง), วัตถุประสงค์ 10, ประเทศ 249 (ISO 3166-1 ชื่อไทย/อังกฤษจาก CLDR, adequacy = `unknown`) — **เป็นร่างรอฝ่ายกฎหมายตรวจ (decisions Q-20)** หน้าจอแสดงป้ายเตือน · tenant ใหม่เห็นชุดนี้ทันทีโดยไม่ต้อง provision · tenant เพิ่ม/แก้/ลบรายการของตนเองได้ (หมวดข้อมูล กลุ่มเจ้าของข้อมูล วัตถุประสงค์; รหัสซ้ำค่าตั้งต้นไม่ได้; ลบได้เมื่อไม่มีการอ้างถึง) ค่าตั้งต้น ฐานกฎหมาย และประเทศแก้ไม่ได้ · module อ้างถึงด้วย id จึงแก้ที่เดียวมีผลทุกที่ · API `/admin/v1/org/master-data/{kind}` (`org.masterdata.*`) · หน้าจอ `/settings/master-data` · ยังไม่ทำ: ระยะเวลาเก็บรักษา (Q-09: กรอกใน RoPA ต่อกิจกรรม ไม่มีค่ากลาง), SUPER แก้ค่ากลางผ่าน provider console (ยังไม่มี `/provider/v1`)
 
 <a id="org-20"></a>
 ### ORG-20 ตั้งค่าองค์กร
@@ -194,6 +207,10 @@
 
 **หมายเหตุ:** ดึงเข้า P0 เพราะ SLA engine ต้องใช้ปฏิทิน
 
+**Implementation (ORG-20 — ส่วนปฏิทิน):** `backend/internal/org` — ปฏิทินวันทำการหลายชุดต่อ tenant (ชื่อ, เขตเวลา IANA, วันทำการ ISO 1–7) ปฏิทินแรกเป็นปฏิทินหลักอัตโนมัติ ย้ายปฏิทินหลักได้ (ซิงก์ `org.org_settings.default_calendar_id`) · วันหยุด: ผู้ดูแลกรอกเองหรือนำเข้า CSV/Excel ผ่าน PLT-14 (import type `org.holiday`: วันที่ YYYY-MM-DD / ว/ด/ปปปป รับปี พ.ศ. / เซลล์วันที่ Excel, ชื่อวันหยุด, ชื่อปฏิทิน — ว่าง = ปฏิทินหลัก) ไม่มีข้อมูลวันหยุดตั้งต้น · module อื่นอ่านผ่าน interface `orgservice.Calendars.BusinessCalendar` แล้วคำนวณด้วย `internal/pkg/bizcal` (ข้ามวันหยุดประจำสัปดาห์ + วันหยุด ตามเขตเวลาของปฏิทิน; tenant ที่ยังไม่มีปฏิทิน = จันทร์–ศุกร์ Asia/Bangkok ไม่มีวันหยุด) · API `/admin/v1/org/calendars` (GET `org.settings.read`, POST/PATCH `org.settings.update` — ORGADMIN ไม่มี `create` จึงใช้ `update` สำหรับการเพิ่มปฏิทิน), `/admin/v1/org/calendars/{id}/holidays[/{date}]` · migration 00027 (ปฏิทินหลักได้หนึ่งเดียว, ชื่อไม่ซ้ำ) · หน้าจอ `/settings/calendar`
+
+**Implementation (ORG-20 — ภาษา โลโก้ ธีม):** `backend/internal/org/service/settings.go` — ค่าตั้งค่าองค์กรอีกครึ่งหนึ่งของ `org.org_settings` (คนละคอลัมน์จากปฏิทิน แต่แถวเดียวกัน): `default_language` (th/en), `date_era` (BE/CE), `branding` jsonb ({logo_file_id, theme_color, accent_color}) — ทั้งสามยังไม่มีผู้ใช้งานจริงในระบบ (locale ของ UI มาจาก path `/[locale]/…` และ `Accept-Language` อยู่แล้ว per PLT-03; ธีมยังไม่มีหน้าจอไหนอ่าน) แต่ค่าพร้อมให้ future feature อ่านโดยไม่ต้อง migration ใหม่ · โลโก้ = ไฟล์ PLT-09 ของผู้ใช้เอง (PNG/JPEG, สแกนผ่านแล้ว) ผูกด้วย `Service.Files` แบบเดียวกับโลโก้นิติบุคคลของ ORG-01 (`OrgSettingsEntityType = "org_settings"`, ดาวน์โหลดด้วย `org.settings.read`) · ยังไม่มีแถวสำหรับ tenant ที่ไม่เคยบันทึก = อ่านเป็นค่าตั้งต้น (th, BE, row_version 0) เหมือนปฏิทินที่ยังไม่มีของ tenant ใหม่ — บันทึกครั้งแรกส่ง `If-Match: "0"` ได้ทันที (upsert เดียวตรวจ row_version ด้วย) · API `GET/PUT /admin/v1/org/settings` (ETag/If-Match, 422 `org.invalid_settings` เมื่อค่าที่ผ่าน schema แล้วยังผิดกฎ, 422 `org.logo_not_usable`) · หน้าจอ: ส่วน "ตั้งค่าทั่วไป" บน `/settings/calendar` (ฟอร์มเดียวกับที่ ORG-20's frontend note เขียนว่า "หน้าตั้งค่าองค์กร + ปฏิทินวันหยุด" — สองฟีเจอร์ย่อยของ ORG-20 จึงอยู่หน้าเดียวกัน) · ทดสอบ: unit (ค่าตั้งต้น, บันทึกจริง, version ค้าง, โลโก้ต้องเป็นไฟล์สะอาดของผู้อัปโหลดเอง, แยก tenant), contract (401/403/428/412/400 schema) — งานทั้งสองส่วนของ ORG-20 จึงเสร็จแล้ว
+
 <a id="org-06"></a>
 ### ORG-06 ทะเบียนหน่วยงานภายนอก
 
@@ -214,6 +231,23 @@
 **Frontend (Next.js):** หน้ารายการ + ฟอร์ม + รวมรายการซ้ำ
 
 **Acceptance criteria:** หน่วยงานภายนอกหนึ่งรายมี record เดียวที่ทุกโมดูลอ้างถึง
+
+**Implementation (ORG-06):** `backend/internal/org/service/parties.go` (`org.party.*`) — CRUD หน่วยงานภายนอกบน
+`org.external_parties` ที่มีอยู่แล้วในฐานความรู้ (baseline migration 00004: `party_type`, ประเทศเป็น FK ไป
+`org.countries`, `contact` jsonb, `dedupe_key`) เพิ่มแค่คอลัมน์ `merged_into_id` (migration 00038) สำหรับ "รวม
+รายการซ้ำ" — รวมแล้ว record เดิมไม่ถูกลบ แค่ปิดใช้งาน (`status='inactive'`) และชี้ไปที่ record ที่รอด เพื่อให้
+ทุกโมดูลที่เคยอ้างถึง id เดิมยังหาเจอ (acceptance) · **ตรวจรายการซ้ำ:** `dedupe_key` คำนวณอัตโนมัติจากชื่อ
+(ตัดช่องว่าง/เครื่องหมายวรรคตอน, lowercase) + รหัสประเทศ ไม่บล็อกการสร้างซ้ำ (ชื่อซ้ำกันอาจเป็นคนละบริษัทจริง ๆ
+ก็ได้) แต่มี endpoint แยก `/duplicates` ให้ผู้ใช้ตรวจและเลือกรวมเอง — `MergeExternalParty` (permission
+`org.party.delete`, สูงกว่า `update` เพราะเปลี่ยนสถานะถาวร) ปฏิเสธการรวมเข้าตัวเอง, การรวมสอง record ที่ถูกรวม
+ไปแล้ว (`ErrPartyMerged`), และห้ามแก้ไข record ที่ถูกรวมไปแล้ว · **ยังไม่ทำ (ตามที่มีจริงตอนนี้ ไม่ใช่แบบ
+เก็งอนาคต):** โอน FK ข้าม schema เมื่อรวม — ยังไม่มีโมดูลไหน (RoPA, DSAR, Vendor, Agreement) เขียนแถวจริงที่
+อ้างถึง `org.external_parties` (แม้แต่ `breach.incidents.processor_party_id` ที่มีคอลัมน์อยู่แล้วก็ยังไม่มีจุด
+ไหนตั้งค่า) จึงไม่มีข้อมูลข้ามโมดูลให้โอนตอนนี้ — เมื่อโมดูลแรกเริ่มเขียนค่านี้จริง ต้องตาม `merged_into_id`
+เอง · API `/admin/v1/org/external-parties` (cursor pagination แบบเดียวกับ PLT-16's documents),
+`/external-parties/duplicates`, `/external-parties/{id}/merge` · หน้าจอ `/settings/external-parties`
+(รายการ + ฟอร์ม + แผงตรวจรายการซ้ำ) · ทดสอบ: unit (validation, update/merge/duplicate-detection ตรงตาม
+acceptance, isolation), HTTP contract (401/403/400 schema/412/428)
 
 <a id="org-05"></a>
 ### ORG-05 ผู้ประสานงาน PDPA ประจำหน่วยงาน

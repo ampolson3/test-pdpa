@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -17,19 +18,52 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
+	breachhttp "pdpa-platform/internal/breach/http"
+	breach "pdpa-platform/internal/breach/service"
+	consenthttp "pdpa-platform/internal/consent/http"
+	consentpublichttp "pdpa-platform/internal/consent/publichttp"
+	consentservice "pdpa-platform/internal/consent/service"
 	iamhttp "pdpa-platform/internal/iam/http"
 	iamservice "pdpa-platform/internal/iam/service"
+	noticehttp "pdpa-platform/internal/notice/http"
+	noticeservice "pdpa-platform/internal/notice/service"
+	orghttp "pdpa-platform/internal/org/http"
+	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authn"
 	"pdpa-platform/internal/pkg/authz"
+	"pdpa-platform/internal/pkg/clientip"
 	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/idempotency"
 	"pdpa-platform/internal/pkg/otelx"
 	"pdpa-platform/internal/pkg/ratelimit"
 	"pdpa-platform/internal/pkg/validate"
+	audithttp "pdpa-platform/internal/platform/audit/http"
 	auditservice "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/collab"
+	collabhttp "pdpa-platform/internal/platform/collab/http"
+	"pdpa-platform/internal/platform/crypto"
+	docshttp "pdpa-platform/internal/platform/docs/http"
+	"pdpa-platform/internal/platform/docs/render"
+	"pdpa-platform/internal/platform/events"
+	"pdpa-platform/internal/platform/files"
+	fileshttp "pdpa-platform/internal/platform/files/http"
+	formshttp "pdpa-platform/internal/platform/forms/http"
+	"pdpa-platform/internal/platform/importer"
+	importerhttp "pdpa-platform/internal/platform/importer/http"
+	"pdpa-platform/internal/platform/jobs"
+	jobshttp "pdpa-platform/internal/platform/jobs/http"
+	"pdpa-platform/internal/platform/notify"
+	notifyhttp "pdpa-platform/internal/platform/notify/http"
+	"pdpa-platform/internal/platform/publickeys"
+	versioninghttp "pdpa-platform/internal/platform/versioning/http"
+	workflowhttp "pdpa-platform/internal/platform/workflow/http"
+	ropahttp "pdpa-platform/internal/ropa/http"
+	ropaservice "pdpa-platform/internal/ropa/service"
+	"pdpa-platform/internal/wiring"
 )
 
 func main() {
@@ -86,6 +120,10 @@ func run() error {
 	jwks := authn.NewJWKS(cfg.OIDCJWKSURL)
 	verifier := authn.NewVerifier(jwks, cfg.OIDCIssuer)
 	limiter := ratelimit.New(rdb, 100, time.Minute)
+	clientIP, err := clientip.Parse(cfg.TrustedProxies)
+	if err != nil {
+		return err
+	}
 	idemMw := idempotency.New(rdb)
 
 	r := chi.NewRouter()
@@ -96,18 +134,28 @@ func run() error {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.CORSAllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE"},
-		AllowedHeaders:   []string{"Authorization", "Content-Type", "Idempotency-Key", "If-Match", "Accept-Language"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type", "Idempotency-Key", "If-Match", "Accept-Language", "X-Public-Key"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+	r.Use(clientIP.Middleware) // before the rate limiter and the request audit, which key on the client address
 	r.Use(limiter.Middleware)
+	r.Use(maxBody(files.DefaultConfig().MaxBytes))
 	// Structural request validation isn't one of the 13 named middlewares in
 	// docs/architecture/code-structure.md, but oapi-codegen's strict server assumes the request
 	// already matches the spec by the time a handler runs, so it sits here, before AuthN.
 	r.Use(validateMw)
-	r.Use(verifier.Middleware)         // AuthN (#7) — every mounted route today requires adminJwt
-	r.Use(idemMw.Handler)              // Idempotency (#10)
-	r.Use(auditSvc.TxMiddleware(pool)) // Tx (#11) + Audit (#13)
+	// AuthN (#7) — every route but /public/v1, whose tenant comes from a public key (publickeys.Middleware).
+	r.Use(func(next http.Handler) http.Handler {
+		authn := verifier.Middleware(next)
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/public/v1/") {
+				next.ServeHTTP(w, r)
+				return
+			}
+			authn.ServeHTTP(w, r)
+		})
+	})
 	// AuthZ (#9) is NOT here: chi.RouteContext(ctx).RoutePattern() is empty for anything mounted
 	// with r.Use() (only populated once the mux is dispatching to the matched route), so it runs
 	// as an oapi-codegen strict middleware instead, keyed by operationId — see
@@ -116,23 +164,177 @@ func run() error {
 	// that's fine because AuthZ's cache loader always opens its own separate read-only transaction
 	// regardless of when it's called, so it never touches the request's own transaction.
 
-	strictOpts := iamhttp.StrictHTTPServerOptions{
-		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
-			httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
-		},
-		ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
-			httpx.WriteProblem(w, r, httpx.Internal())
-		},
+	requestError := func(w http.ResponseWriter, r *http.Request, err error) {
+		httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
 	}
-	strictMiddlewares := []iamhttp.StrictMiddlewareFunc{
-		authz.StrictMiddleware[iamhttp.StrictHandlerFunc](authzCache, requiredPermission),
+	// A handler may return an httpx.Problem as its error to have it written (and localized) here;
+	// anything else is an internal error whose details never reach the client.
+	responseError := func(w http.ResponseWriter, r *http.Request, err error) {
+		var p httpx.Problem
+		if errors.As(err, &p) {
+			httpx.WriteProblem(w, r, p)
+			return
+		}
+		// Logged so a 500 can be traced (request_id is in the client's problem too). Handler errors come
+		// from our own code and the database driver; they carry no request data (CLAUDE.md rule 3).
+		slog.ErrorContext(r.Context(), "handler error", "request_id", middleware.GetReqID(r.Context()), "path", r.URL.Path, "error", err.Error())
+		httpx.WriteProblem(w, r, httpx.Internal())
 	}
-	strictIam := iamhttp.NewStrictHandlerWithOptions(iamhttp.NewStrict(iamSvc), strictMiddlewares, strictOpts)
-	iamhttp.HandlerWithOptions(strictIam, iamhttp.ChiServerOptions{
-		BaseRouter: r,
-		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
-			httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+
+	// Insert-only River client: enqueues jobs on the request transaction (jobs.Enqueue) and lists
+	// them for the job-status page; cmd/worker is the only process that works them.
+	riverClient, err := jobs.NewInsertClient(pool)
+	if err != nil {
+		return err
+	}
+	kek, err := crypto.KEKFromEnv()
+	if err != nil {
+		return err
+	}
+	keyring := &crypto.Keyring{KEK: kek}
+	notifySvc := &notify.Service{Keyring: keyring, River: riverClient, Quiet: notify.DefaultQuietHours()}
+	store, err := files.NewS3Store(files.S3ConfigFromEnv())
+	if err != nil {
+		return err
+	}
+	fileSvc := &files.Service{Store: store, River: riverClient, Config: files.DefaultConfig()}
+
+	// Record types that take comments, attachments and an activity feed (PLT-07). Each module registers
+	// its own here as it is built; attachments of a record are downloadable with its read permission.
+	collabSvc := &collab.Service{Notify: notifySvc, Files: fileSvc, Audit: auditSvc}
+	collabSvc.Register("notification_template", collab.Policy{
+		ReadPermission: "admin.notification.read", WritePermission: "admin.notification.update",
+		Exists: func(ctx context.Context, id uuid.UUID) (bool, error) {
+			_, err := notifySvc.GetTemplate(ctx, id)
+			if errors.Is(err, notify.ErrNotFound) {
+				return false, nil
+			}
+			return err == nil, err
 		},
+	})
+	fileSvc.EntityPermissions = collabSvc.FilePermissions()
+	fileSvc.EntityPermissions[orgservice.LegalEntityType] = "org.structure.read"      // ORG-01 logos
+	fileSvc.EntityPermissions[orgservice.OrgSettingsEntityType] = "org.settings.read" // ORG-20 branding logo
+
+	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
+	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
+	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
+	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc}
+	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
+	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
+	formsSvc := wiring.Forms(notifySvc, auditSvc)
+	consentSvc := &consentservice.Service{Versioning: versioningSvc, Events: &events.Publisher{River: riverClient},
+		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc}
+	consentSvc.RegisterVersioning()
+	ropaSvc.Consent = consentSvc // ROPA-03: evidence of explicit consent for sensitive-data purposes
+	docsSvc := wiring.Docs(versioningSvc, fileSvc, riverClient, auditSvc, render.FromEnv())
+	docsSvc.RegisterVersioning()
+	for k, v := range docsSvc.FilePermissions() { // PLT-16 rendered PDF / Word files
+		fileSvc.EntityPermissions[k] = v
+	}
+	breachSvc := wiring.Breach(notifySvc, fileSvc, riverClient, auditSvc, keyring, docsSvc)
+	noticeSvc := &noticeservice.Service{Audit: auditSvc, Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc}
+	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                // BRE-12 evidence
+	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read" // BRE-10 recipient lists
+	fileSvc.EntityPermissions[breach.PDPCEntityType] = "breach.notification.read"          // BRE-09 filing evidence
+
+	// Public consent forms (BP-01): tenant and principal from the public key, then the same Idempotency + Tx chain.
+	r.Group(func(g chi.Router) {
+		g.Use(publickeys.Middleware(pool))
+		g.Use(idemMw.Handler)
+		g.Use(auditSvc.TxMiddleware(pool))
+		strictPublic := consentpublichttp.NewStrictHandlerWithOptions(consentpublichttp.NewStrict(consentSvc),
+			[]consentpublichttp.StrictMiddlewareFunc{consentpublichttp.RequestInfo},
+			consentpublichttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		consentpublichttp.HandlerWithOptions(strictPublic, consentpublichttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+	})
+
+	// The inbox stream (SSE) is the one route outside Idempotency + Tx: the Tx middleware buffers the
+	// response until COMMIT, which a stream never reaches. It opens a short transaction per check itself.
+	r.Method(http.MethodGet, "/admin/v1/platform/inbox/stream", &notifyhttp.Stream{Service: notifySvc, Pool: pool})
+
+	r.Group(func(g chi.Router) {
+		g.Use(idemMw.Handler)              // Idempotency (#10)
+		g.Use(auditSvc.TxMiddleware(pool)) // Tx (#11) + Audit (#13)
+
+		strictIam := iamhttp.NewStrictHandlerWithOptions(iamhttp.NewStrict(iamSvc),
+			[]iamhttp.StrictMiddlewareFunc{authz.StrictMiddleware[iamhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			iamhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		iamhttp.HandlerWithOptions(strictIam, iamhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictFiles := fileshttp.NewStrictHandlerWithOptions(fileshttp.NewStrict(fileSvc),
+			[]fileshttp.StrictMiddlewareFunc{authz.StrictMiddleware[fileshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			fileshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		fileshttp.HandlerWithOptions(strictFiles, fileshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictJobs := jobshttp.NewStrictHandlerWithOptions(jobshttp.NewStrict(riverClient),
+			[]jobshttp.StrictMiddlewareFunc{authz.StrictMiddleware[jobshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			jobshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		jobshttp.HandlerWithOptions(strictJobs, jobshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictCollab := collabhttp.NewStrictHandlerWithOptions(collabhttp.NewStrict(collabSvc),
+			[]collabhttp.StrictMiddlewareFunc{authz.StrictMiddleware[collabhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			collabhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		collabhttp.HandlerWithOptions(strictCollab, collabhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictImports := importerhttp.NewStrictHandlerWithOptions(importerhttp.NewStrict(importSvc),
+			[]importerhttp.StrictMiddlewareFunc{authz.StrictMiddleware[importerhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			importerhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		importerhttp.HandlerWithOptions(strictImports, importerhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictVersioning := versioninghttp.NewStrictHandlerWithOptions(versioninghttp.NewStrict(versioningSvc),
+			[]versioninghttp.StrictMiddlewareFunc{authz.StrictMiddleware[versioninghttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			versioninghttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		versioninghttp.HandlerWithOptions(strictVersioning, versioninghttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+		strictForms := formshttp.NewStrictHandlerWithOptions(formshttp.NewStrict(formsSvc),
+			[]formshttp.StrictMiddlewareFunc{authz.StrictMiddleware[formshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			formshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		formshttp.HandlerWithOptions(strictForms, formshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictAudit := audithttp.NewStrictHandlerWithOptions(audithttp.NewStrict(auditSvc),
+			[]audithttp.StrictMiddlewareFunc{authz.StrictMiddleware[audithttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			audithttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		audithttp.HandlerWithOptions(strictAudit, audithttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictWorkflow := workflowhttp.NewStrictHandlerWithOptions(workflowhttp.NewStrict(workflowSvc),
+			[]workflowhttp.StrictMiddlewareFunc{authz.StrictMiddleware[workflowhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			workflowhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		workflowhttp.HandlerWithOptions(strictWorkflow, workflowhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictOrg := orghttp.NewStrictHandlerWithOptions(orghttp.NewStrict(orgSvc),
+			[]orghttp.StrictMiddlewareFunc{authz.StrictMiddleware[orghttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			orghttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		orghttp.HandlerWithOptions(strictOrg, orghttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictRopa := ropahttp.NewStrictHandlerWithOptions(ropahttp.NewStrict(ropaSvc),
+			[]ropahttp.StrictMiddlewareFunc{authz.StrictMiddleware[ropahttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			ropahttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		ropahttp.HandlerWithOptions(strictRopa, ropahttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictConsent := consenthttp.NewStrictHandlerWithOptions(consenthttp.NewStrict(consentSvc),
+			[]consenthttp.StrictMiddlewareFunc{authz.StrictMiddleware[consenthttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			consenthttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		consenthttp.HandlerWithOptions(strictConsent, consenthttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictBreach := breachhttp.NewStrictHandlerWithOptions(breachhttp.NewStrict(breachSvc),
+			[]breachhttp.StrictMiddlewareFunc{authz.StrictMiddleware[breachhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			breachhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		breachhttp.HandlerWithOptions(strictBreach, breachhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictDocs := docshttp.NewStrictHandlerWithOptions(docshttp.NewStrict(docsSvc),
+			[]docshttp.StrictMiddlewareFunc{authz.StrictMiddleware[docshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			docshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		docshttp.HandlerWithOptions(strictDocs, docshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictNotice := noticehttp.NewStrictHandlerWithOptions(noticehttp.NewStrict(noticeSvc),
+			[]noticehttp.StrictMiddlewareFunc{authz.StrictMiddleware[noticehttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			noticehttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		noticehttp.HandlerWithOptions(strictNotice, noticehttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictNotify := notifyhttp.NewStrictHandlerWithOptions(notifyhttp.NewStrict(notifySvc),
+			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			notifyhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		notifyhttp.HandlerWithOptions(strictNotify, notifyhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 	})
 
 	srv := &http.Server{
