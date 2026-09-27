@@ -28,6 +28,8 @@ import (
 	consentservice "pdpa-platform/internal/consent/service"
 	dpohttp "pdpa-platform/internal/dpo/http"
 	dposervice "pdpa-platform/internal/dpo/service"
+	dsarhttp "pdpa-platform/internal/dsar/http"
+	dsarservice "pdpa-platform/internal/dsar/service"
 	iamhttp "pdpa-platform/internal/iam/http"
 	iamservice "pdpa-platform/internal/iam/service"
 	noticehttp "pdpa-platform/internal/notice/http"
@@ -247,6 +249,7 @@ func run() error {
 	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                // BRE-12 evidence
 	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read" // BRE-10 recipient lists
 	fileSvc.EntityPermissions[breach.PDPCEntityType] = "breach.notification.read"          // BRE-09 filing evidence
+	dsarSvc := &dsarservice.Service{Audit: auditSvc, Org: orgSvc, Docs: docsSvc, Keyring: keyring}
 
 	// Public consent forms (BP-01): tenant and principal from the public key, then the same Idempotency + Tx chain.
 	r.Group(func(g chi.Router) {
@@ -345,6 +348,10 @@ func run() error {
 			[]noticehttp.StrictMiddlewareFunc{authz.StrictMiddleware[noticehttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			noticehttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		noticehttp.HandlerWithOptions(strictNotice, noticehttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+		strictDsar := dsarhttp.NewStrictHandlerWithOptions(dsarhttp.NewStrict(dsarSvc),
+			[]dsarhttp.StrictMiddlewareFunc{authz.StrictMiddleware[dsarhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			dsarhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		dsarhttp.HandlerWithOptions(strictDsar, dsarhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictNotify := notifyhttp.NewStrictHandlerWithOptions(notifyhttp.NewStrict(notifySvc),
 			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission)},

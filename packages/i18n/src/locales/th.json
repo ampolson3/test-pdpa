@@ -1777,5 +1777,72 @@
       "hide": "ซ่อน",
       "saveError": "บันทึกไม่สำเร็จ: {detail}"
     }
+  },
+  "dsarRequests": {
+    "title": "คำขอใช้สิทธิของเจ้าของข้อมูล (DSAR)",
+    "intro": "รับคำขอใช้สิทธิและติดตามสถานะตามรอบ 30 วัน",
+    "signInRequired": "กรุณาเข้าสู่ระบบ",
+    "forbidden": "คุณไม่มีสิทธิ์เข้าถึงหน้านี้",
+    "newRequest": "รับคำขอใหม่",
+    "loading": "กำลังโหลด...",
+    "loadError": "โหลดข้อมูลไม่สำเร็จ",
+    "empty": "ยังไม่มีคำขอ",
+    "more": "โหลดเพิ่มเติม",
+    "filterStatus": "กรองตามสถานะ",
+    "allStatuses": "ทุกสถานะ",
+    "dueBy": "ครบกำหนด",
+    "statusLabel": "สถานะ",
+    "takeAction": "ดำเนินการ",
+    "openLetter": "เปิดหนังสือตอบกลับที่สร้างขึ้น",
+    "form": {
+      "title": "แบบรับคำขอ",
+      "choose": "โปรดเลือก",
+      "requestType": "ประเภทสิทธิ",
+      "legalEntity": "นิติบุคคล",
+      "channel": "ช่องทาง",
+      "requesterName": "ชื่อผู้ยื่นคำขอ",
+      "requesterContact": "ช่องทางติดต่อผู้ยื่นคำขอ",
+      "contactKind": "ประเภทช่องทางติดต่อ",
+      "requestNo": "เลขที่คำขอ",
+      "nextStatus": "เปลี่ยนสถานะเป็น",
+      "outcome": "ผลการพิจารณา",
+      "rejectionReason": "เหตุผลการปฏิเสธ",
+      "save": "บันทึก",
+      "cancel": "ยกเลิก",
+      "hide": "ซ่อน",
+      "saveError": "บันทึกไม่สำเร็จ: {detail}"
+    },
+    "channels": {
+      "web": "เว็บไซต์",
+      "email": "อีเมล",
+      "phone": "โทรศัพท์",
+      "branch": "สาขา",
+      "letter": "จดหมาย",
+      "line": "LINE",
+      "api": "API"
+    },
+    "contactKinds": {
+      "email": "อีเมล",
+      "phone": "โทรศัพท์",
+      "national_id": "เลขบัตรประชาชน",
+      "customer_id": "รหัสลูกค้า",
+      "passport": "พาสปอร์ต",
+      "line_uid": "LINE UID",
+      "other": "อื่นๆ"
+    },
+    "statuses": {
+      "received": "รับคำขอแล้ว",
+      "verifying": "กำลังยืนยันตัวตน",
+      "in_review": "กำลังคัดกรอง",
+      "in_progress": "กำลังดำเนินการ",
+      "awaiting_info": "รอข้อมูลเพิ่มเติม",
+      "completed": "ดำเนินการแล้ว",
+      "rejected": "ปฏิเสธ",
+      "withdrawn": "ผู้ขอยกเลิก"
+    },
+    "outcomes": {
+      "fulfilled": "ดำเนินการครบถ้วน",
+      "partially_fulfilled": "ดำเนินการบางส่วน"
+    }
   }
 }

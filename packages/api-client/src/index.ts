@@ -259,3 +259,18 @@ export {
   type DpoSecurityAssessment,
   type DpoRemediationTask,
 } from "./dpo";
+export {
+  useDsarRequestTypes,
+  useDsarRequests,
+  useDsarRequest,
+  useDsarRequestMutations,
+  type DsarRequestType,
+  type DsarRequest,
+  type DsarRequestStatus,
+  type DsarRequestChannel,
+  type DsarOutcome,
+  type DsarContactKind,
+  type DsarRequestInput,
+  type DsarTransitionInput,
+  type DsarTransitionResult,
+} from "./dsar";

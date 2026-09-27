@@ -1531,6 +1531,7 @@ type DsarRequestType struct {
 	UpdatedAt            pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy            pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion           int32              `db:"row_version" json:"row_version"`
+	NameEn               *string            `db:"name_en" json:"name_en"`
 }
 
 // ผลค้นหาข้อมูลข้ามระบบ (เข้ารหัส ลบเมื่อปิดคำขอ)

@@ -318,6 +318,55 @@
 
 **Acceptance criteria:** หนังสือตอบถูกสร้างอัตโนมัติตามประเภทสิทธิและผลการพิจารณา
 
+**Implementation:** `internal/dsar` — the first module on the `dsar` schema. Building the acceptance criterion
+needed a real `dsar.requests` row with a status/outcome to generate from, so this pass also carries the
+minimal slice of DSAR-01/02/06/07/08/11's job DSAR-13 depends on — creating a request and moving it through
+ST-02's real transition graph — deliberately scoped no further: full intake channels, identity verification,
+the workflow/subtask engine, business-day SLA countdown and the reject-with-reason UI are sibling features
+layered on top later (the same "build the minimal slice a feature needs, not its whole dependency" move ROPA-01
+made ahead of ROPA-02). `dsar.request_types` and `platform.templates`/the `dsar_letter` PLT-16 document type
+(`dsar.request.*` permissions) were all already fully specified in the baseline migrations and
+`internal/wiring.Docs` — this pass only seeds data (migration 00043: the 9 fixed right-type rows, plus an
+`ALTER TABLE ... ADD COLUMN name_en` since the baseline only carried a Thai name and the letter is bilingual)
+and 6 DRAFT response-letter template rows (`platform.templates`, `template_type = 'dsar_response'`) — one per
+*purpose* (result / rejection / request_info, the module doc's own "ดำเนินการแล้ว / ปฏิเสธ / ขอข้อมูลเพิ่ม"),
+not per (type × purpose): `{{request_type_name}}` is substituted with the request's own type name at
+generation time, so one body correctly reads as being about access for an access request and erasure for an
+erasure request without 27 near-duplicate bodies to keep in sync — flagged DRAFT per rule 8, same pattern as
+ORG-07/ROPA-09/PNG-03.
+
+`Service.Transition` encodes ST-02's full 8-state, 17-edge graph (`docs/states/state-machines.yaml#ST-02`)
+even though this feature only exercises a subset of it — cheap to encode correctly once, so DSAR-06/08/11
+build on a real machine later instead of reinventing one; no verification, subtask-completeness or
+SLA-overdue guard is enforced on the intermediate edges yet (those modules don't exist), only the two
+data-carrying guards this feature needs (`outcome` required to enter `completed`, a reason required to enter
+`rejected`). Entering `awaiting_info`/`completed`/`rejected` auto-generates the matching response letter — a
+PLT-16 `dsar_letter` document draft, composed from the purpose's template with the requester's name (decrypted
+via PLT-13, `Keyring.Decrypt` — the same class/context pattern CON-13's identifiers already established),
+request number and type name substituted in as plain text (not PLT-16's `mergeField` mechanism, which only
+resolves org/DPO fields live at every render — these values are specific to this one immutable letter
+instance). The generated document is still just a draft: DPO reviews and edits it before ever sending it
+("เลือก template + แก้ก่อนส่ง") through PLT-16's own existing approve/publish flow — actually recording that a
+letter was sent (`dsar.communications`) is left to whichever later feature owns delivery tracking, the same
+"leave the FK to build the real thing later" move ROPA-01 made for `discovered_by_finding_id`.
+
+`due_at` is `received_at` plus the request type's `sla_days` as *calendar* days — a placeholder; the real
+business-day countdown (Songkran-aware, like every other deadline in this codebase) is DSAR-07's job.
+Permissions reuse the already-seeded `dsar.request.*` (no new codes): `read`/`create`/`execute` gate the three
+endpoints, and the letter-generation step inside `Transition` additionally needs `dsar.request.update` (the
+`dsar_letter` document type's own `Create`/`Update` permission per `internal/wiring/docs.go`) since it's really
+PLT-16's document-composer write happening underneath. API: `GET /admin/v1/dsar/request-types`,
+`GET/POST /admin/v1/dsar/requests`, `GET /admin/v1/dsar/requests/{id}`,
+`POST /admin/v1/dsar/requests/{id}/transition` (ETag/If-Match; 409 `dsar.invalid_transition` for a graph edge
+that doesn't exist, 422 `dsar.invalid_input` for a missing outcome/reason). UI `/requests`: an intake form,
+a status-filtered list with the SLA due date, and an inline action panel per request (next-status picker +
+outcome/rejection-reason fields) that links straight to the generated letter's document editor when one is
+produced. Tests: unit (`ListRequestTypes` covers all 9 codes, `CreateRequest` validation and numbering, the
+acceptance criterion directly — completing/rejecting a request generates a letter carrying the decrypted
+requester name, the request's own type name and its request number in both languages — a rejected letter
+carries the reason, an invalid ST-02 edge refused, two-tenant isolation), HTTP contract
+(401/403/400/404/409/412/422/428).
+
 <a id="dsar-14"></a>
 ### DSAR-14 ส่งข้อมูลให้เจ้าของข้อมูลอย่างปลอดภัย
 

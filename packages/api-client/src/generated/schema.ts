@@ -1790,6 +1790,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/request-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The 9 fixed DSAR right types (dsar.requests.request_type_id), for the request form's picker */
+        get: operations["dsarListRequestTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's DSAR requests (ST-02) */
+        get: operations["dsarListRequests"];
+        put?: never;
+        /** Receive a DSAR request (the minimal slice of DSAR-01/02 that DSAR-13 needs — a full intake form/channel is a sibling feature) */
+        post: operations["dsarCreateRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One DSAR request */
+        get: operations["dsarGetRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/requests/{id}/transition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a request along ST-02 (If-Match). Entering awaiting_info/completed/rejected auto-generates the matching response letter draft (DSAR-13) — the caller also needs dsar.request.update for that document-composer write. */
+        post: operations["dsarTransitionRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/platform/documents/types": {
         parameters: {
             query?: never;
@@ -3577,6 +3646,66 @@ export interface components {
             activity_id: components["schemas"]["Uuid"];
             control_id: components["schemas"]["Uuid"];
             description?: string;
+        };
+        DsarRequestType: {
+            id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            code: "access" | "portability" | "objection" | "erasure" | "restriction" | "rectification" | "withdraw_consent" | "complaint" | "inquiry";
+            name_th: string;
+            name_en?: string;
+            legal_ref?: string;
+            sla_days: number;
+        };
+        /** @enum {string} */
+        DsarRequestChannel: "web" | "email" | "phone" | "branch" | "letter" | "line" | "api";
+        /** @enum {string} */
+        DsarRequestStatus: "received" | "verifying" | "in_review" | "in_progress" | "awaiting_info" | "completed" | "rejected" | "withdrawn";
+        /** @enum {string} */
+        DsarOutcome: "fulfilled" | "partially_fulfilled" | "rejected" | "withdrawn";
+        /** @enum {string} */
+        DsarContactKind: "email" | "phone" | "national_id" | "customer_id" | "passport" | "line_uid" | "other";
+        DsarRequestInput: {
+            request_type_id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            channel: components["schemas"]["DsarRequestChannel"];
+            /** @default false */
+            on_behalf: boolean;
+            requester_name: string;
+            requester_contact: string;
+            contact_kind: components["schemas"]["DsarContactKind"];
+        };
+        DsarRequest: {
+            id: components["schemas"]["Uuid"];
+            request_no: string;
+            request_type_id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            channel: components["schemas"]["DsarRequestChannel"];
+            on_behalf: boolean;
+            status: components["schemas"]["DsarRequestStatus"];
+            /** Format: date-time */
+            received_at: string;
+            /** Format: date-time */
+            due_at: string;
+            /** Format: date-time */
+            verified_at?: string | null;
+            /** Format: date-time */
+            closed_at?: string | null;
+            outcome?: components["schemas"]["DsarOutcome"] | null;
+            rejection_reason_code?: string | null;
+            assignee_user_id?: components["schemas"]["Uuid"] | null;
+            row_version: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        DsarTransitionInput: {
+            to: components["schemas"]["DsarRequestStatus"];
+            outcome?: components["schemas"]["DsarOutcome"];
+            rejection_reason_code?: string;
+        };
+        DsarTransitionResult: {
+            request: components["schemas"]["DsarRequest"];
+            /** @description The generated response-letter document's id (PLT-16), when this transition produced one */
+            document_id?: components["schemas"]["Uuid"] | null;
         };
         /** @enum {string} */
         NoticeType: "privacy_notice" | "privacy_policy" | "cookie_policy" | "cctv" | "layered_short" | "employee";
@@ -9205,6 +9334,166 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dsarListRequestTypes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarRequestType"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dsarListRequests: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["DsarRequestStatus"];
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarRequest"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dsarCreateRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarRequestInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarRequest"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarGetRequest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dsarTransitionRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarTransitionInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarTransitionResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
         };
     };

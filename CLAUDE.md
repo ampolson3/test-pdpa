@@ -855,6 +855,53 @@ the acceptance criterion directly — picking a group produces an immediate draf
 sample text and DRAFT marker in both languages, unknown group refused, group+activity_ids together refused),
 HTTP contract (200 list, 201 create, 422 unknown group).
 
+### DSAR-13 Response letter templates (`docs/modules/DSAR.md#dsar-13`) — done
+`internal/dsar` — the first module on the `dsar` schema. The acceptance criterion needed a real `dsar.requests`
+row with a status/outcome to generate a letter from, so this pass also carries the minimal slice of
+DSAR-01/02/06/07/08/11's job DSAR-13 depends on — creating a request and moving it through ST-02's real
+transition graph — deliberately scoped no further: full intake channels, identity verification, the
+workflow/subtask engine, business-day SLA countdown and the reject-with-reason UI are sibling features layered
+on top later (the same "build the minimal slice a feature needs" move ROPA-01 made ahead of ROPA-02).
+`dsar.request_types`, `dsar.requests` and the `dsar_letter` PLT-16 document type (`dsar.request.*` permissions,
+`Approver: DPO`) were all already fully specified in the baseline migrations and `internal/wiring/docs.go` — this
+pass only seeds data (migration 00043: the 9 fixed right-type rows, plus `ALTER TABLE ... ADD COLUMN name_en`
+since the baseline only carried a Thai name and the letter is bilingual) and 6 DRAFT response-letter templates
+(`platform.templates`, `template_type = 'dsar_response'`) — one per *purpose* (result / rejection /
+request_info, the module doc's own "ดำเนินการแล้ว / ปฏิเสธ / ขอข้อมูลเพิ่ม"), not per (type × purpose):
+`{{request_type_name}}` is substituted with the request's own type name at generation time, so one body reads
+correctly for every right type without 27 near-duplicate bodies to keep in sync — flagged DRAFT per rule 8,
+same pattern as ORG-07/ROPA-09/PNG-03.
+
+`Service.Transition` encodes ST-02's full 8-state, 17-edge graph (`docs/states/state-machines.yaml#ST-02`,
+newly added) even though this feature only exercises a subset — cheap to encode correctly once, so DSAR-06/08/11
+build on a real machine later instead of reinventing one; only the two data-carrying guards this feature needs
+are enforced (`outcome` required to enter `completed`, a reason required to enter `rejected`) — no verification,
+subtask-completeness or SLA-overdue guard yet, since those modules don't exist. Entering
+`awaiting_info`/`completed`/`rejected` auto-generates the matching response letter: a PLT-16 `dsar_letter`
+document draft composed from the purpose's template with the requester's name (decrypted via PLT-13,
+`Keyring.Decrypt` — the same class/context pattern CON-13's identifiers already established), request number
+and type name substituted in as plain text (not PLT-16's `mergeField` mechanism, which only resolves org/DPO
+fields live at every render — these values are specific to this one immutable letter instance). The generated
+document is still just a draft: DPO reviews and edits it before ever sending it ("เลือก template + แก้ก่อนส่ง")
+through PLT-16's own existing approve/publish flow — actually recording that a letter was sent
+(`dsar.communications`) is left to whichever later feature owns delivery tracking, the same "leave the FK to
+build the real thing later" move ROPA-01 made for `discovered_by_finding_id`.
+
+`due_at` is `received_at` plus the request type's `sla_days` as *calendar* days — a placeholder; the real
+business-day countdown is DSAR-07's job. Permissions reuse the already-seeded `dsar.request.*` (no new codes):
+`read`/`create`/`execute` gate the three endpoints, and letter generation inside `Transition` additionally
+needs `dsar.request.update` (the `dsar_letter` type's own `Create`/`Update` permission), since it's really
+PLT-16's document-composer write happening underneath. API: `GET /admin/v1/dsar/request-types`,
+`GET/POST /admin/v1/dsar/requests`, `GET /admin/v1/dsar/requests/{id}`,
+`POST /admin/v1/dsar/requests/{id}/transition` (ETag/If-Match; 409 `dsar.invalid_transition` for a graph edge
+that doesn't exist, 422 `dsar.invalid_input` for a missing outcome/reason). UI `/requests`: an intake form, a
+status-filtered list with the SLA due date, and an inline action panel per request (next-status picker +
+outcome/rejection-reason fields) linking straight to the generated letter's document editor. Tests: unit
+(`ListRequestTypes` covers all 9 codes, `CreateRequest` validation and numbering, the acceptance criterion
+directly — completing/rejecting a request generates a letter carrying the decrypted requester name, the
+request's own type name and its request number in both languages — a rejected letter carries the reason, an
+invalid ST-02 edge refused, two-tenant isolation), HTTP contract (401/403/400/404/409/412/422/428).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

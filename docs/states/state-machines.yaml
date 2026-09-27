@@ -1042,3 +1042,112 @@ machines:
     event: notify
     guard: method ระบุ · evidence_file_id เป็นไฟล์ของผู้ใช้เองที่ยังไม่ผูกกับรายการอื่น
     action: แนบไฟล์หลักฐาน (AttachSystem) · audit
+- machine: ST-02
+  title: DSAR request (docs/states/ST-02.md)
+  column: dsar.requests.status
+  states:
+  - received
+  - verifying
+  - in_review
+  - in_progress
+  - awaiting_info
+  - completed
+  - rejected
+  - withdrawn
+  initial:
+  - received
+  terminal:
+  - completed
+  - rejected
+  - withdrawn
+  transitions:
+  - from: received
+    to: verifying
+    trigger: ส่ง OTP / ขอเอกสาร
+    event: transition
+    guard: null
+    action: audit
+  - from: verifying
+    to: in_review
+    trigger: ยืนยันสำเร็จ
+    event: transition
+    guard: null
+    action: audit
+  - from: in_review
+    to: in_progress
+    trigger: รับดำเนินการ / สร้าง subtasks
+    event: transition
+    guard: null
+    action: audit
+  - from: in_progress
+    to: completed
+    trigger: subtask ครบ + DPO อนุมัติ / ส่งผล
+    event: transition
+    guard: outcome ระบุ (fulfilled หรือ partially_fulfilled)
+    action: สร้างหนังสือตอบผล (DSAR-13, purpose=result) · audit
+  - from: verifying
+    to: awaiting_info
+    trigger: ขอเอกสารเพิ่ม
+    event: transition
+    guard: null
+    action: สร้างหนังสือขอข้อมูลเพิ่ม (DSAR-13, purpose=request_info) · audit
+  - from: in_review
+    to: awaiting_info
+    trigger: ขอข้อมูลเพิ่ม
+    event: transition
+    guard: null
+    action: สร้างหนังสือขอข้อมูลเพิ่ม (DSAR-13, purpose=request_info) · audit
+  - from: awaiting_info
+    to: in_review
+    trigger: ได้รับข้อมูล
+    event: transition
+    guard: null
+    action: audit
+  - from: in_progress
+    to: awaiting_info
+    trigger: ขอข้อมูลเพิ่ม
+    event: transition
+    guard: null
+    action: สร้างหนังสือขอข้อมูลเพิ่ม (DSAR-13, purpose=request_info) · audit
+  - from: in_review
+    to: rejected
+    trigger: เข้าเหตุปฏิเสธ / บันทึกเหตุผล
+    event: transition
+    guard: rejection_reason_code ระบุ
+    action: สร้างหนังสือปฏิเสธ (DSAR-13, purpose=rejection) · audit
+  - from: awaiting_info
+    to: rejected
+    trigger: ไม่ได้รับข้อมูลภายในกำหนด
+    event: transition
+    guard: rejection_reason_code ระบุ
+    action: สร้างหนังสือปฏิเสธ (DSAR-13, purpose=rejection) · audit
+  - from: received
+    to: withdrawn
+    trigger: ผู้ขอยกเลิก
+    event: transition
+    guard: null
+    action: audit
+  - from: verifying
+    to: withdrawn
+    trigger: ผู้ขอยกเลิก
+    event: transition
+    guard: null
+    action: audit
+  - from: in_review
+    to: withdrawn
+    trigger: ผู้ขอยกเลิก
+    event: transition
+    guard: null
+    action: audit
+  - from: in_progress
+    to: withdrawn
+    trigger: ผู้ขอยกเลิก
+    event: transition
+    guard: null
+    action: audit
+  - from: awaiting_info
+    to: withdrawn
+    trigger: ผู้ขอยกเลิก
+    event: transition
+    guard: null
+    action: audit

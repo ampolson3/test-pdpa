@@ -144,7 +144,7 @@ DSAR-06,DSAR,ยืนยันตัวตนผู้ยื่นคำขอ,
 DSAR-07,DSAR,นับเวลา SLA 30 วัน,SLA tracking (30 days),Must,P1,ดำเนินการ,ม.30 วรรคสาม,SCHED DPO,S,S,N,3,3,0.7,0,2.1,PLT-05,BP-06,docs/modules/DSAR.md#dsar-07,คำขอที่เหลือ 7 วันถูกแจ้งเตือนผู้รับผิดชอบและ DPO,todo
 DSAR-08,DSAR,Workflow และงานย่อย,Workflow & subtasks,Must,P1,ดำเนินการ,แนวปฏิบัติตลาด,DPO IT,L,M,Y,10,5,1.8,2.0,5.2,PLT-05,BP-06,docs/modules/DSAR.md#dsar-08,คำขอเดินครบทุกขั้นตอนและปิดได้เมื่อ subtask เสร็จทั้งหมด,todo
 DSAR-11,DSAR,ปฏิเสธคำขอพร้อมเหตุผล,Rejection with reason,Must,P1,ดำเนินการ,"ม.30, ม.39(7)",DPO,S,S,N,3,3,0.7,0,2.1,DSAR-13,BP-06,docs/modules/DSAR.md#dsar-11,การปฏิเสธต้องมีเหตุผลและผู้อนุมัติ และถูกบันทึกเข้า RoPA อัตโนมัติ,todo
-DSAR-13,DSAR,template หนังสือตอบกลับ,Response templates,Must,P1,ตอบกลับ,แนวปฏิบัติตลาด,DPO,S,S,N,3,3,0.7,0,2.1,PLT-16,BP-06,docs/modules/DSAR.md#dsar-13,หนังสือตอบถูกสร้างอัตโนมัติตามประเภทสิทธิและผลการพิจารณา,todo
+DSAR-13,DSAR,template หนังสือตอบกลับ,Response templates,Must,P1,ตอบกลับ,แนวปฏิบัติตลาด,DPO,S,S,N,3,3,0.7,0,2.1,PLT-16,BP-06,docs/modules/DSAR.md#dsar-13,หนังสือตอบถูกสร้างอัตโนมัติตามประเภทสิทธิและผลการพิจารณา,done
 DSAR-14,DSAR,ส่งข้อมูลให้เจ้าของข้อมูลอย่างปลอดภัย,Secure delivery,Must,P1,ตอบกลับ,ม.37(1),DS DPO,M,S,N,5,3,1.0,0,2.8,"PLT-09, PLT-17",BP-06,docs/modules/DSAR.md#dsar-14,ลิงก์หมดอายุตามที่ตั้งและมี log การดาวน์โหลด,todo
 DSAR-15,DSAR,ส่งออกข้อมูลแบบอ่านได้ด้วยเครื่อง,Portability export,Must,P1,ตอบกลับ,ม.31,DS DPO,M,XS,N,5,1,0.7,0,2.1,DSAR-14,BP-06,docs/modules/DSAR.md#dsar-15,ไฟล์ portability เปิดอ่านด้วยเครื่องได้และตรงกับข้อมูลในระบบ,todo
 DSAR-17,DSAR,ประวัติและสืบค้นคำขอ,Request history & search,Must,P1,ติดตาม,ม.39(7),DPO,S,M,N,3,5,1.0,0,2.8,PLT-07,BP-06,docs/modules/DSAR.md#dsar-17,ค้นหาคำขอย้อนหลังด้วยเลขคำขอหรืออีเมลได้,todo

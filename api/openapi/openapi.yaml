@@ -5424,6 +5424,197 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dsar/request-types:
+    get:
+      operationId: dsarListRequestTypes
+      tags: [dsar]
+      summary: The 9 fixed DSAR right types (dsar.requests.request_type_id), for the request form's picker
+      x-permission: dsar.request.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarRequestType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/dsar/requests:
+    get:
+      operationId: dsarListRequests
+      tags: [dsar]
+      summary: The tenant's DSAR requests (ST-02)
+      x-permission: dsar.request.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/DsarRequestStatus'
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarRequest'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: dsarCreateRequest
+      tags: [dsar]
+      summary: Receive a DSAR request (the minimal slice of DSAR-01/02 that DSAR-13 needs — a full intake form/channel is a sibling feature)
+      x-permission: dsar.request.create
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarRequestInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/requests/{id}:
+    get:
+      operationId: dsarGetRequest
+      tags: [dsar]
+      summary: One DSAR request
+      x-permission: dsar.request.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/dsar/requests/{id}/transition:
+    post:
+      operationId: dsarTransitionRequest
+      tags: [dsar]
+      summary: Move a request along ST-02 (If-Match). Entering awaiting_info/completed/rejected auto-generates the matching response letter draft (DSAR-13) — the caller also needs dsar.request.update for that document-composer write.
+      x-permission: dsar.request.execute
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarTransitionInput'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarTransitionResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/platform/documents/types:
     get:
       operationId: platformListDocumentTypes
@@ -9824,6 +10015,84 @@ components:
         activity_id: {$ref: '#/components/schemas/Uuid'}
         control_id: {$ref: '#/components/schemas/Uuid'}
         description: {type: string}
+    DsarRequestType:
+      type: object
+      required: [id, code, name_th, sla_days]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        code:
+          type: string
+          enum: [access, portability, objection, erasure, restriction, rectification, withdraw_consent, complaint, inquiry]
+        name_th: {type: string}
+        name_en: {type: string}
+        legal_ref: {type: string}
+        sla_days: {type: integer}
+    DsarRequestChannel:
+      type: string
+      enum: [web, email, phone, branch, letter, line, api]
+    DsarRequestStatus:
+      type: string
+      enum: [received, verifying, in_review, in_progress, awaiting_info, completed, rejected, withdrawn]
+    DsarOutcome:
+      type: string
+      enum: [fulfilled, partially_fulfilled, rejected, withdrawn]
+    DsarContactKind:
+      type: string
+      enum: [email, phone, national_id, customer_id, passport, line_uid, other]
+    DsarRequestInput:
+      type: object
+      required: [request_type_id, legal_entity_id, channel, requester_name, requester_contact, contact_kind]
+      properties:
+        request_type_id: {$ref: '#/components/schemas/Uuid'}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        channel: {$ref: '#/components/schemas/DsarRequestChannel'}
+        on_behalf: {type: boolean, default: false}
+        requester_name: {type: string, minLength: 1, maxLength: 300}
+        requester_contact: {type: string, minLength: 1, maxLength: 300}
+        contact_kind: {$ref: '#/components/schemas/DsarContactKind'}
+    DsarRequest:
+      type: object
+      required: [id, request_no, request_type_id, legal_entity_id, channel, on_behalf, status, received_at, due_at, row_version, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        request_no: {type: string}
+        request_type_id: {$ref: '#/components/schemas/Uuid'}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        channel: {$ref: '#/components/schemas/DsarRequestChannel'}
+        on_behalf: {type: boolean}
+        status: {$ref: '#/components/schemas/DsarRequestStatus'}
+        received_at: {type: string, format: date-time}
+        due_at: {type: string, format: date-time}
+        verified_at: {type: [string, 'null'], format: date-time}
+        closed_at: {type: [string, 'null'], format: date-time}
+        outcome:
+          oneOf:
+            - $ref: '#/components/schemas/DsarOutcome'
+            - type: 'null'
+        rejection_reason_code: {type: [string, 'null']}
+        assignee_user_id:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        row_version: {type: integer}
+        updated_at: {type: string, format: date-time}
+    DsarTransitionInput:
+      type: object
+      required: [to]
+      properties:
+        to: {$ref: '#/components/schemas/DsarRequestStatus'}
+        outcome: {$ref: '#/components/schemas/DsarOutcome'}
+        rejection_reason_code: {type: string}
+    DsarTransitionResult:
+      type: object
+      required: [request]
+      properties:
+        request: {$ref: '#/components/schemas/DsarRequest'}
+        document_id:
+          description: The generated response-letter document's id (PLT-16), when this transition produced one
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
     NoticeType:
       type: string
       enum: [privacy_notice, privacy_policy, cookie_policy, cctv, layered_short, employee]

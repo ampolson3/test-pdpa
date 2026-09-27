@@ -1777,5 +1777,72 @@
       "hide": "Hide",
       "saveError": "Save failed: {detail}"
     }
+  },
+  "dsarRequests": {
+    "title": "Data Subject Access Requests (DSAR)",
+    "intro": "Receive right-to-access requests and track their 30-day SLA",
+    "signInRequired": "Please sign in",
+    "forbidden": "You don't have access to this page",
+    "newRequest": "New request",
+    "loading": "Loading...",
+    "loadError": "Failed to load",
+    "empty": "No requests yet",
+    "more": "Load more",
+    "filterStatus": "Filter by status",
+    "allStatuses": "All statuses",
+    "dueBy": "Due by",
+    "statusLabel": "Status",
+    "takeAction": "Take action",
+    "openLetter": "Open the generated response letter",
+    "form": {
+      "title": "Intake form",
+      "choose": "Choose",
+      "requestType": "Right type",
+      "legalEntity": "Legal entity",
+      "channel": "Channel",
+      "requesterName": "Requester's name",
+      "requesterContact": "Requester's contact",
+      "contactKind": "Contact kind",
+      "requestNo": "Request no.",
+      "nextStatus": "Move to status",
+      "outcome": "Outcome",
+      "rejectionReason": "Rejection reason",
+      "save": "Save",
+      "cancel": "Cancel",
+      "hide": "Hide",
+      "saveError": "Save failed: {detail}"
+    },
+    "channels": {
+      "web": "Web",
+      "email": "Email",
+      "phone": "Phone",
+      "branch": "Branch",
+      "letter": "Letter",
+      "line": "LINE",
+      "api": "API"
+    },
+    "contactKinds": {
+      "email": "Email",
+      "phone": "Phone",
+      "national_id": "National ID",
+      "customer_id": "Customer ID",
+      "passport": "Passport",
+      "line_uid": "LINE UID",
+      "other": "Other"
+    },
+    "statuses": {
+      "received": "Received",
+      "verifying": "Verifying",
+      "in_review": "In review",
+      "in_progress": "In progress",
+      "awaiting_info": "Awaiting info",
+      "completed": "Completed",
+      "rejected": "Rejected",
+      "withdrawn": "Withdrawn"
+    },
+    "outcomes": {
+      "fulfilled": "Fulfilled",
+      "partially_fulfilled": "Partially fulfilled"
+    }
   }
 }
