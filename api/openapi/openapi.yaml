@@ -7924,6 +7924,34 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/notices/template-groups:
+    get:
+      operationId: noticeListTemplateGroups
+      tags: [notice]
+      summary: PNG-03's 8 data-subject groups that have a starter template (for the wizard's picker)
+      x-permission: notice.document.read
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/notices:
     get:
       operationId: noticeListNotices
@@ -9813,10 +9841,13 @@ components:
         slug: {type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9-]+$'}
         activity_ids:
           type: array
-          description: RoPA processing activities (ROPA-03/06/07/08) whose purposes, lawful basis, data, retention, recipients and transfers are assembled into the draft (BP-04 t2)
+          description: RoPA processing activities (ROPA-03/06/07/08) whose purposes, lawful basis, data, retention, recipients and transfers are assembled into the draft (BP-04 t2). Mutually exclusive with template_group.
           items:
             $ref: '#/components/schemas/Uuid'
           default: []
+        template_group:
+          type: string
+          description: PNG-03 starter template group (see GET /admin/v1/notices/template-groups) — its DRAFT sample content becomes the draft instead of composing from activity_ids. Mutually exclusive with activity_ids.
       example:
         legal_entity_id: 00000000-0000-0000-0000-000000000000
         notice_type: privacy_notice

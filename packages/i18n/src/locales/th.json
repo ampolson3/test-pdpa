@@ -894,7 +894,11 @@
       "noActivities": "ยังไม่มีกิจกรรมการประมวลผลในระบบ",
       "choose": "เลือก…",
       "cancel": "ยกเลิก",
-      "saveError": "สร้างร่างไม่สำเร็จ: {detail}"
+      "saveError": "สร้างร่างไม่สำเร็จ: {detail}",
+      "templateGroup": "แม่แบบตามกลุ่มเจ้าของข้อมูล (PNG-03)",
+      "templateGroupHint": "เลือกกลุ่มเพื่อสร้างร่างประกาศจากแม่แบบตัวอย่างทันที (ต้องได้รับการทบทวนโดยฝ่ายกฎหมาย/DPO)",
+      "noTemplateGroup": "ไม่ใช้แม่แบบ",
+      "activitiesDisabledByTemplate": "ปิดใช้งานเนื่องจากเลือกแม่แบบตามกลุ่มแล้ว"
     },
     "checklist": {
       "title": "ครบตาม ม.23",
@@ -911,7 +915,17 @@
     "translation": {
       "stale": "ฉบับภาษาอังกฤษยังไม่ได้อัปเดตตามเนื้อหาภาษาไทยล่าสุด — publish ไม่ได้จนกว่าจะแก้ไขฉบับแปลให้ตรงกัน"
     },
-    "indirectCollectionsLink": "การแจ้งกรณีเก็บข้อมูลจากแหล่งอื่น (ม.25)"
+    "indirectCollectionsLink": "การแจ้งกรณีเก็บข้อมูลจากแหล่งอื่น (ม.25)",
+    "templateGroups": {
+      "customer": "ลูกค้า",
+      "employee": "พนักงาน",
+      "job_applicant": "ผู้สมัครงาน",
+      "vendor": "คู่ค้า",
+      "visitor": "ผู้มาติดต่อ",
+      "cctv": "กล้องวงจรปิด (CCTV)",
+      "shareholder": "ผู้ถือหุ้น",
+      "member": "สมาชิก"
+    }
   },
   "masterData": {
     "signInRequired": "กรุณาเข้าสู่ระบบ",

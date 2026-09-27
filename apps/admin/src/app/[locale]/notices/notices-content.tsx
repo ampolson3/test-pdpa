@@ -12,6 +12,7 @@ import {
   useNotices,
   useNoticeChecklist,
   useNoticeTranslationStatus,
+  useTemplateGroups,
   type ApiClient,
   type NoticeType,
 } from "@pdpa/api-client";
@@ -25,8 +26,8 @@ function detail(e: unknown): string {
   return typeof e === "object" && e !== null ? [(e as { title?: string }).title, (e as { detail?: string }).detail].filter(Boolean).join(" — ") : "";
 }
 
-type Draft = { legal_entity_id: string; notice_type: NoticeType | ""; title: string; slug: string; activity_ids: string[] };
-const blank: Draft = { legal_entity_id: "", notice_type: "", title: "", slug: "", activity_ids: [] };
+type Draft = { legal_entity_id: string; notice_type: NoticeType | ""; title: string; slug: string; activity_ids: string[]; template_group: string };
+const blank: Draft = { legal_entity_id: "", notice_type: "", title: "", slug: "", activity_ids: [], template_group: "" };
 
 /** PNG-02/PNG-05: the ม.23 checklist and translation-sync status for one notice — expanded inline under its row. */
 function ChecklistPanel({ client, noticeId }: { client: ApiClient; noticeId: string }) {
@@ -67,6 +68,7 @@ export function NoticesContent() {
   const wizard = useCreateNoticeWizard(client);
   const entities = useLegalEntities(client);
   const activities = useActivities(client, {});
+  const templateGroups = useTemplateGroups(client);
 
   if (!canRead) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
 
@@ -78,7 +80,11 @@ export function NoticesContent() {
   const submit = () => {
     if (!draft || !draft.notice_type || !slugValid) return;
     wizard.mutate(
-      { legal_entity_id: draft.legal_entity_id, notice_type: draft.notice_type, title: draft.title, slug: draft.slug, activity_ids: draft.activity_ids },
+      {
+        legal_entity_id: draft.legal_entity_id, notice_type: draft.notice_type, title: draft.title, slug: draft.slug,
+        activity_ids: draft.template_group ? [] : draft.activity_ids,
+        template_group: draft.template_group || undefined,
+      },
       { onSuccess: (n) => { setDraft(null); router.push(`/documents/${n!.document_id}`); } },
     );
   };
@@ -125,14 +131,21 @@ export function NoticesContent() {
               aria-invalid={!slugValid} placeholder="employee-privacy-notice" />
             {!slugValid && <span className="text-xs text-red-700">{t("form.slugInvalid")}</span>}
           </label>
+          <label className="sm:col-span-2"><span className="block text-slate-600">{t("form.templateGroup")}</span>
+            <p className="mb-1 text-xs text-slate-500">{t("form.templateGroupHint")}</p>
+            <select className={INPUT} value={draft.template_group} onChange={(e) => set({ template_group: e.target.value })} data-testid="template-group-picker">
+              <option value="">{t("form.noTemplateGroup")}</option>
+              {(templateGroups.data ?? []).map((g) => <option key={g} value={g}>{t(`templateGroups.${g}`)}</option>)}
+            </select>
+          </label>
           <div className="sm:col-span-2">
             <span className="block text-slate-600">{t("form.activities")}</span>
-            <p className="mb-1 text-xs text-slate-500">{t("form.activitiesHint")}</p>
-            <div className="max-h-48 space-y-1 overflow-auto rounded-md border border-slate-200 p-2" data-testid="activity-picker">
+            <p className="mb-1 text-xs text-slate-500">{draft.template_group ? t("form.activitiesDisabledByTemplate") : t("form.activitiesHint")}</p>
+            <div className="max-h-48 space-y-1 overflow-auto rounded-md border border-slate-200 p-2 aria-disabled:opacity-50" aria-disabled={!!draft.template_group} data-testid="activity-picker">
               {activityRows.length === 0 && <p className="text-slate-500">{t("form.noActivities")}</p>}
               {activityRows.map((a) => (
                 <label key={a.id} className="flex items-center gap-2">
-                  <input type="checkbox" checked={draft.activity_ids.includes(a.id)} onChange={() => toggleActivity(a.id)} />
+                  <input type="checkbox" disabled={!!draft.template_group} checked={draft.activity_ids.includes(a.id)} onChange={() => toggleActivity(a.id)} />
                   <span>{a.code} — {a.name}</span>
                 </label>
               ))}

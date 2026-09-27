@@ -5,6 +5,7 @@ generate:
   models: true
 output-options:
   include-operation-ids:
+    - noticeListTemplateGroups
     - noticeListNotices
     - noticeCreateNotice
     - noticeGetNotice

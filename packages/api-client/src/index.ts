@@ -99,6 +99,7 @@ export {
   useNoticeChecklist,
   useNoticeTranslationStatus,
   useCreateNoticeWizard,
+  useTemplateGroups,
   useIndirectCollections,
   useIndirectCollection,
   useIndirectCollectionMutations,

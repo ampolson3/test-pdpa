@@ -2522,6 +2522,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/notices/template-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** PNG-03's 8 data-subject groups that have a starter template (for the wizard's picker) */
+        get: operations["noticeListTemplateGroups"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/notices": {
         parameters: {
             query?: never;
@@ -3581,10 +3598,12 @@ export interface components {
             title: string;
             slug: string;
             /**
-             * @description RoPA processing activities (ROPA-03/06/07/08) whose purposes, lawful basis, data, retention, recipients and transfers are assembled into the draft (BP-04 t2)
+             * @description RoPA processing activities (ROPA-03/06/07/08) whose purposes, lawful basis, data, retention, recipients and transfers are assembled into the draft (BP-04 t2). Mutually exclusive with template_group.
              * @default []
              */
             activity_ids: components["schemas"]["Uuid"][];
+            /** @description PNG-03 starter template group (see GET /admin/v1/notices/template-groups) — its DRAFT sample content becomes the draft instead of composing from activity_ids. Mutually exclusive with activity_ids. */
+            template_group?: string;
         };
         Notice: {
             id: components["schemas"]["Uuid"];
@@ -11199,6 +11218,33 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    noticeListTemplateGroups: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: string[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     noticeListNotices: {

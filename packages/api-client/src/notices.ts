@@ -46,6 +46,18 @@ export function useNotice(client: ApiClient, id: string | undefined) {
   });
 }
 
+/** GET /admin/v1/notices/template-groups (PNG-03) — the data-subject groups with a starter template. */
+export function useTemplateGroups(client: ApiClient) {
+  return useQuery({
+    queryKey: ["notice", "template-groups"] as const,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/notices/template-groups", {});
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
 /** GET /admin/v1/notices/{id}/checklist (PNG-02) — the six ม.23 mandatory topics and whether each is filled in. */
 export function useNoticeChecklist(client: ApiClient, id: string | undefined) {
   return useQuery({

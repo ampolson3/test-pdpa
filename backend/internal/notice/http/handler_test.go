@@ -227,6 +227,21 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 		t.Errorf("checklist, unknown notice: %d, want 404", code)
 	}
 
+	// PNG-03 template groups + wizard.
+	if code, _ := do("GET", "/admin/v1/notices/template-groups", nil, nil); code != 401 {
+		t.Errorf("template-groups, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", "/admin/v1/notices/template-groups", &viewer, nil); code != 200 || !strings.Contains(body, `"employee"`) {
+		t.Errorf("template-groups: %d %s", code, body)
+	}
+	tplWiz := map[string]any{"legal_entity_id": legalEntity, "notice_type": "employee", "title": "ประกาศพนักงาน", "slug": "employee-template", "template_group": "employee"}
+	if code, body := do("POST", "/admin/v1/notices", &admin, tplWiz); code != 201 || !strings.Contains(body, `"status":"draft"`) {
+		t.Errorf("create from template group: %d %s", code, body)
+	}
+	if code, body := do("POST", "/admin/v1/notices", &admin, map[string]any{"legal_entity_id": legalEntity, "notice_type": "employee", "title": "x", "slug": "bad-group", "template_group": "not_a_group"}); code != 422 || !strings.Contains(body, "notice.invalid_input") {
+		t.Errorf("unknown template_group: %d %s, want 422", code, body)
+	}
+
 	// PNG-05 translation status.
 	translationStatus := item + "/translation-status"
 	if code, _ := do("GET", translationStatus, nil, nil); code != 401 {

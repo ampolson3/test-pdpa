@@ -820,6 +820,31 @@ event still alerting at once, validation, the acceptance criterion directly — 
 checkpoint, still closable afterwards with evidence, a stale tick is harmless — two-tenant isolation),
 HTTP contract (401/403/201/200/404/412/428/422).
 
+### PNG-03 Templates by data subject group (`docs/modules/PNG.md#png-03`) — done
+T15 (the backlog dependency) resolves via `docs/decisions.md` Q-14: seed DRAFT sample content pending legal
+review — the same move ORG-07 (Q-20) and ROPA-09 (Q-25) already made. `platform.templates` and
+`notice.wizard_templates` were both already fully specified in the baseline migrations (00002/00007) with the
+same global (`tenant_id NULL`) + tenant-override RLS pattern as ORG-07's master data, so this needed no schema
+migration, only seed data: migration 00042 seeds 8 groups (customer, employee, job_applicant, vendor, visitor,
+cctv, shareholder, member) × th/en = 16 `platform.templates` rows (`template_type = 'notice_wizard'`), each a
+full ม.23-topic-coded ProseMirror document — the exact shape `compose.go`'s `docNode` already produces, so a
+template-sourced draft is PNG-02's checklist-compatible from the start — with bracketed placeholders for
+group-specific detail and a `[ร่าง — ...]`/`[DRAFT — ...]` opening paragraph (rule 8), plus one linking
+`notice.wizard_templates` row per (group, language). `WizardInput` gained `TemplateGroup string`, mutually
+exclusive with `ActivityIDs` (`ErrInvalid` if both are set); `notice.Service.templateContent`
+(`internal/notice/service/templates.go`) loads and JSON-decodes both languages' stored `render.Node` trees, and
+`CreateWizard` uses it instead of `compose()` when a group is picked — everything downstream (document
+creation, PLT-16 draft save, notice row) is identical to PNG-01's existing path. `ListTemplateGroups` (backed
+by the real table, not a hardcoded list) drives the picker; `TemplateGroups` in Go is only the fixed 8-code
+list the UI's th/en keys are built against — the table has no display-name column. API: `GET
+/admin/v1/notices/template-groups` (`notice.document.read`) and `template_group` on `NoticeWizardInput`. UI: a
+group `<select>` on the existing `/notices` wizard form that disables the activity picker when a group is
+chosen (client-side mirror of the exclusivity rule); picking a group and submitting routes straight to the
+composed draft exactly like the RoPA-activity path already did. Tests: unit (`ListTemplateGroups` covers all 8,
+the acceptance criterion directly — picking a group produces an immediate draft carrying that group's own
+sample text and DRAFT marker in both languages, unknown group refused, group+activity_ids together refused),
+HTTP contract (200 list, 201 create, 422 unknown group).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

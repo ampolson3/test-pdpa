@@ -16,6 +16,7 @@ import (
 	noticestore "pdpa-platform/internal/notice/store"
 	pdb "pdpa-platform/internal/pkg/db"
 	docsservice "pdpa-platform/internal/platform/docs"
+	"pdpa-platform/internal/platform/docs/render"
 )
 
 var noticeTypes = []string{"privacy_notice", "privacy_policy", "cookie_policy", "cctv", "layered_short", "employee"}
@@ -56,9 +57,10 @@ type NoticeFilter struct {
 
 const noticePageSize = 50
 
-// WizardInput is PNG-01's wizard: the user picks a legal entity, notice type and the RoPA processing activities
-// it covers (BP-04 t1) — compose (BP-04 t2) then assembles the draft from what those activities, ORG-07 master
-// data and the legal entity already record.
+// WizardInput is PNG-01's wizard: the user picks a legal entity, notice type and either the RoPA processing
+// activities it covers (BP-04 t1, compose from real activity data) or a PNG-03 starter template group
+// (canned DRAFT sample text for one of the 8 fixed data-subject groups) — the two content sources are
+// mutually exclusive; picking neither still composes an all-placeholder draft, same as PNG-01 always did.
 type WizardInput struct {
 	LegalEntityID uuid.UUID
 	SubjectTypeID *uuid.UUID
@@ -66,6 +68,7 @@ type WizardInput struct {
 	Title         string
 	Slug          string
 	ActivityIDs   []uuid.UUID
+	TemplateGroup string
 }
 
 func (s *Service) ListNotices(ctx context.Context, f NoticeFilter) ([]Notice, *NoticeCursor, error) {
@@ -143,7 +146,16 @@ func (s *Service) CreateWizard(ctx context.Context, in WizardInput) (Notice, err
 		}
 	}
 
-	content, err := s.compose(ctx, legalEntity, in.ActivityIDs)
+	if in.TemplateGroup != "" && len(in.ActivityIDs) > 0 {
+		return Notice{}, fmt.Errorf("%w: template_group and activity_ids are mutually exclusive", ErrInvalid)
+	}
+
+	var content render.Content
+	if in.TemplateGroup != "" {
+		content, err = s.templateContent(ctx, in.TemplateGroup)
+	} else {
+		content, err = s.compose(ctx, legalEntity, in.ActivityIDs)
+	}
 	if err != nil {
 		return Notice{}, err
 	}

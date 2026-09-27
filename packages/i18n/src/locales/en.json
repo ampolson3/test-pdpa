@@ -894,7 +894,11 @@
       "noActivities": "No processing activities recorded yet",
       "choose": "Choose…",
       "cancel": "Cancel",
-      "saveError": "Couldn't generate the draft: {detail}"
+      "saveError": "Couldn't generate the draft: {detail}",
+      "templateGroup": "Starter template by data-subject group (PNG-03)",
+      "templateGroupHint": "Pick a group to generate a draft immediately from its sample template (must be reviewed by Legal/DPO)",
+      "noTemplateGroup": "No template",
+      "activitiesDisabledByTemplate": "Disabled because a template group is selected"
     },
     "checklist": {
       "title": "s.23 checklist",
@@ -911,7 +915,17 @@
     "translation": {
       "stale": "The English version hasn't been updated to match the latest Thai content — not publishable until the translation is brought in sync"
     },
-    "indirectCollectionsLink": "Indirect-collection notices (ม.25)"
+    "indirectCollectionsLink": "Indirect-collection notices (ม.25)",
+    "templateGroups": {
+      "customer": "Customer",
+      "employee": "Employee",
+      "job_applicant": "Job applicant",
+      "vendor": "Vendor / partner",
+      "visitor": "Visitor",
+      "cctv": "CCTV",
+      "shareholder": "Shareholder",
+      "member": "Member"
+    }
   },
   "masterData": {
     "signInRequired": "Please sign in.",

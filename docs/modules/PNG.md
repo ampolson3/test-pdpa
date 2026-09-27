@@ -246,6 +246,32 @@ review round once edited; that is existing PLT-08 behaviour, not something to wo
 
 **Acceptance criteria:** เลือก template แล้วได้ร่างประกาศของกลุ่มนั้นทันที
 
+**Implementation:** T15 resolves via `docs/decisions.md` Q-14 ("ระบบให้กลไก + ข้อความตัวอย่างที่ติดป้าย DRAFT") — the
+same "seed DRAFT sample content, flag for legal review" move ORG-07 (Q-20) and ROPA-09 (Q-25) already made.
+`platform.templates` and `notice.wizard_templates` were both already fully specified in the baseline migrations
+(00002/00007) with the same global (`tenant_id NULL`) + tenant-override RLS pattern as ORG-07's master data — no
+schema migration needed, only seed data (migration 00042): 8 groups (customer, employee, job_applicant, vendor,
+visitor, cctv, shareholder, member) × th/en = 16 `platform.templates` rows (`template_type = 'notice_wizard'`),
+each a full ม.23-topic-coded ProseMirror document (same shape PNG-01's `compose()` produces — every heading
+carries the `topic` attr PNG-02's checklist keys off, so a template-sourced draft is checklist-compatible from
+the start) with bracketed placeholders for anything group-specific and an opening `[ร่าง — ...]`/`[DRAFT — ...]`
+paragraph (CLAUDE.md rule 8), plus a linking `notice.wizard_templates` row per (group, language). `WizardInput`
+gained `TemplateGroup string`, mutually exclusive with `ActivityIDs` (refused with `ErrInvalid` if both are set —
+the two content sources don't merge); `notice.Service.templateContent` (`internal/notice/service/templates.go`)
+loads and JSON-decodes both languages' stored `render.Node` trees directly (no conversion needed, since the seed
+data already matches `compose.go`'s own output shape) and `CreateWizard` uses it in place of `compose()` when a
+group is picked — everything downstream (document creation, PLT-16 draft save, notice row, activity linking —
+skipped when there's no activity) is identical to PNG-01's existing path. `ListTemplateGroups` (backed by
+`notice.wizard_templates`, not a hardcoded list) drives the picker; `TemplateGroups` in Go is only the fixed
+8-code list the UI's i18n keys are built against. API: `GET /admin/v1/notices/template-groups`
+(`notice.document.read`) and `template_group` added to `NoticeWizardInput`. UI: a group `<select>` on the same
+wizard form (`/notices`) that, when chosen, disables the activity picker (client-side mirror of the
+mutual-exclusivity rule) — picking a group and submitting routes straight to the composed draft exactly like the
+RoPA-activity path already did. Tests: unit (`ListTemplateGroups` covers all 8, the acceptance criterion directly
+— picking a group produces an immediate draft carrying that group's own sample text and DRAFT marker in both
+languages, unknown group refused, group+activity_ids together refused), HTTP contract (200 list, 201 create,
+422 unknown group).
+
 <a id="png-04"></a>
 ### PNG-04 ประกาศกรณีเก็บจากแหล่งอื่น
 

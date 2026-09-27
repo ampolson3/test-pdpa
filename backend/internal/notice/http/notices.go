@@ -58,11 +58,22 @@ func (h *Strict) NoticeListNotices(ctx context.Context, req NoticeListNoticesReq
 	return resp, nil
 }
 
+func (h *Strict) NoticeListTemplateGroups(ctx context.Context, req NoticeListTemplateGroupsRequestObject) (NoticeListTemplateGroupsResponseObject, error) {
+	groups, err := h.svc.ListTemplateGroups(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return NoticeListTemplateGroups200JSONResponse{Data: groups}, nil
+}
+
 func (h *Strict) NoticeCreateNotice(ctx context.Context, req NoticeCreateNoticeRequestObject) (NoticeCreateNoticeResponseObject, error) {
 	b := *req.Body
 	in := noticeservice.WizardInput{LegalEntityID: b.LegalEntityId, SubjectTypeID: b.SubjectTypeId, NoticeType: string(b.NoticeType), Title: b.Title, Slug: b.Slug}
 	if b.ActivityIds != nil {
 		in.ActivityIDs = *b.ActivityIds
+	}
+	if b.TemplateGroup != nil {
+		in.TemplateGroup = *b.TemplateGroup
 	}
 	n, err := h.svc.CreateWizard(ctx, in)
 	if err != nil {
