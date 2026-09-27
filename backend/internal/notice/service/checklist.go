@@ -124,31 +124,35 @@ func (s *Service) GetChecklist(ctx context.Context, noticeID uuid.UUID) ([]Check
 }
 
 // CheckPublishable is docs.Service's per-type publish gate for "notice" documents (wired with SetValidate in
-// cmd/api/main.go, once both docs.Service and this service exist) — PNG-02's actual enforcement point: it
-// blocks PLT-08's publish transition, in the same request transaction, whenever a ม.23 topic is still missing.
-// Configurable per CLAUDE.md's "implement the listed default as configuration" (no decisions.md entry exists
-// for this — it's a tunable, not a legally-relevant behaviour): EnforceChecklist, default true.
-func (s *Service) CheckPublishable(ctx context.Context, documentID uuid.UUID, d docsservice.Draft) error {
-	if !s.EnforceChecklist {
-		return nil
-	}
+// cmd/api/main.go, once both docs.Service and this service exist) — PNG-02's and PNG-05's enforcement point:
+// it blocks PLT-08's publish transition, in the same request transaction, whenever a ม.23 topic is still
+// missing (PNG-02) or the English translation wasn't updated along with a Thai content change (PNG-05). Both
+// gates are configurable per CLAUDE.md's "implement the listed default as configuration" (no decisions.md
+// entry exists for either — tunables, not legally-relevant behaviour): EnforceChecklist / EnforceTranslationSync,
+// default true.
+func (s *Service) CheckPublishable(ctx context.Context, documentID uuid.UUID, d docsservice.Draft, previous *docsservice.Draft) error {
 	q := noticestore.New(pdb.MustTxFromContext(ctx))
 	_, err := q.GetNoticeByDocumentID(ctx, documentID)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil // not a notice-backed document (e.g. a future "policy" type) — nothing for PNG-02 to check
+		return nil // not a notice-backed document (e.g. a future "policy" type) — nothing for PNG-02/PNG-05 to check
 	}
 	if err != nil {
 		return err
 	}
-	items := Checklist(d.Content)
-	var missing []string
-	for _, it := range items {
-		if !it.Complete {
-			missing = append(missing, it.Code)
+	if s.EnforceChecklist {
+		items := Checklist(d.Content)
+		var missing []string
+		for _, it := range items {
+			if !it.Complete {
+				missing = append(missing, it.Code)
+			}
+		}
+		if len(missing) > 0 {
+			return &ErrChecklistIncomplete{Missing: missing}
 		}
 	}
-	if len(missing) > 0 {
-		return &ErrChecklistIncomplete{Missing: missing}
+	if s.EnforceTranslationSync && previous != nil && StaleTranslation(d.Content, previous.Content) {
+		return &ErrTranslationStale{}
 	}
 	return nil
 }

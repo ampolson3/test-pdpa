@@ -113,6 +113,29 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Document, error) 
 	return s.Get(ctx, id)
 }
 
+// PublishedContent returns the document's currently published content (nil, false if it has never been
+// published) — the read-side counterpart of previousPublished, for a per-type read endpoint that wants to
+// show what a draft would be compared against at its next publish (e.g. PNG-05's translation-status check),
+// without waiting for an actual publish attempt.
+func (s *Service) PublishedContent(ctx context.Context, id uuid.UUID) (render.Content, bool, error) {
+	doc, err := s.Get(ctx, id)
+	if err != nil {
+		return nil, false, err
+	}
+	if doc.CurrentVersionID == nil {
+		return nil, false, nil
+	}
+	r, err := docsstore.New(pdb.MustTxFromContext(ctx)).GetDocumentVersion(ctx, *doc.CurrentVersionID)
+	if err != nil {
+		return nil, false, err
+	}
+	var f frozen
+	if err := json.Unmarshal(r.Content, &f); err != nil {
+		return nil, false, err
+	}
+	return f.Content, true, nil
+}
+
 // Get returns a document the caller may read, with its newest version.
 func (s *Service) Get(ctx context.Context, id uuid.UUID) (Document, error) {
 	r, err := docsstore.New(pdb.MustTxFromContext(ctx)).GetDocument(ctx, id)
@@ -415,7 +438,11 @@ func (s *Service) publish(ctx context.Context, docType string, id uuid.UUID, sna
 		return m
 	}
 	if v := s.validator(docType); v != nil {
-		if err := v(ctx, id, d); err != nil {
+		previous, err := s.previousPublished(ctx, docType, id, pub.No)
+		if err != nil {
+			return err
+		}
+		if err := v(ctx, id, d, previous); err != nil {
 			return err
 		}
 	}
@@ -476,6 +503,29 @@ func (s *Service) publish(ctx context.Context, docType string, id uuid.UUID, sna
 		return err
 	}
 	return s.audit(ctx, "platform.document.publish", EntityType(docType), id, nil, map[string]any{"version": pub.No, "document_version_id": vid, "languages": langs})
+}
+
+// previousPublished returns the draft this version supersedes (nil on a document's first publish, when there's
+// nothing yet to compare against) — the content a per-type Validate hook needs to detect what changed between
+// consecutive published versions (PNG-05's translation-sync check).
+func (s *Service) previousPublished(ctx context.Context, docType string, id uuid.UUID, publishedNo int32) (*Draft, error) {
+	if publishedNo <= 1 {
+		return nil, nil
+	}
+	versions, err := s.Versioning.List(ctx, EntityType(docType), id)
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range versions {
+		if v.No == publishedNo-1 {
+			var d Draft
+			if err := json.Unmarshal(v.Snapshot, &d); err != nil {
+				return nil, err
+			}
+			return &d, nil
+		}
+	}
+	return nil, nil
 }
 
 // title names a document in the approval inbox.

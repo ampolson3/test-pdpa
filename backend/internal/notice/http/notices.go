@@ -79,6 +79,14 @@ func (h *Strict) NoticeGetNotice(ctx context.Context, req NoticeGetNoticeRequest
 	return NoticeGetNotice200JSONResponse{Body: toNoticeWire(n), Headers: NoticeGetNotice200ResponseHeaders{ETag: etag(n.RowVersion)}}, nil
 }
 
+func (h *Strict) NoticeGetTranslationStatus(ctx context.Context, req NoticeGetTranslationStatusRequestObject) (NoticeGetTranslationStatusResponseObject, error) {
+	stale, err := h.svc.GetTranslationStatus(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return NoticeGetTranslationStatus200JSONResponse{Stale: stale}, nil
+}
+
 func (h *Strict) NoticeGetChecklist(ctx context.Context, req NoticeGetChecklistRequestObject) (NoticeGetChecklistResponseObject, error) {
 	items, err := h.svc.GetChecklist(ctx, req.Id)
 	if err != nil {

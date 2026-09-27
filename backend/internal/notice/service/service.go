@@ -19,6 +19,7 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
 	docsservice "pdpa-platform/internal/platform/docs"
+	"pdpa-platform/internal/platform/docs/render"
 	ropaservice "pdpa-platform/internal/ropa/service"
 )
 
@@ -57,6 +58,7 @@ type Docs interface {
 	Create(ctx context.Context, in docsservice.CreateInput) (docsservice.Document, error)
 	SaveDraft(ctx context.Context, id uuid.UUID, rowVersion int32, d docsservice.Draft) (docsservice.Document, error)
 	Get(ctx context.Context, id uuid.UUID) (docsservice.Document, error)
+	PublishedContent(ctx context.Context, id uuid.UUID) (render.Content, bool, error)
 }
 
 type Service struct {
@@ -67,6 +69,8 @@ type Service struct {
 	// EnforceChecklist gates PNG-02's ม.23 checklist at publish time (CheckPublishable) — configurable per
 	// CLAUDE.md (a tunable, not a legally-relevant behaviour with a decisions.md entry); default true.
 	EnforceChecklist bool
+	// EnforceTranslationSync gates PNG-05's translation-sync check at publish time; default true.
+	EnforceTranslationSync bool
 }
 
 func (s *Service) audit(ctx context.Context, action string, id uuid.UUID, before, after any) error {

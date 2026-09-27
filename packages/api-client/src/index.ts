@@ -90,6 +90,7 @@ export {
   useNotices,
   useNotice,
   useNoticeChecklist,
+  useNoticeTranslationStatus,
   useCreateNoticeWizard,
   type Notice,
   type NoticeType,

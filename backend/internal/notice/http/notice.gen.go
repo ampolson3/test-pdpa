@@ -233,6 +233,24 @@ func (e NoticeGetChecklistParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for NoticeGetTranslationStatusParamsAcceptLanguage.
+const (
+	NoticeGetTranslationStatusParamsAcceptLanguageEn NoticeGetTranslationStatusParamsAcceptLanguage = "en"
+	NoticeGetTranslationStatusParamsAcceptLanguageTh NoticeGetTranslationStatusParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the NoticeGetTranslationStatusParamsAcceptLanguage enum.
+func (e NoticeGetTranslationStatusParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case NoticeGetTranslationStatusParamsAcceptLanguageEn:
+		return true
+	case NoticeGetTranslationStatusParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // FieldError defines model for FieldError.
 type FieldError struct {
 	Code    string  `json:"code"`
@@ -388,6 +406,15 @@ type NoticeGetChecklistParams struct {
 // NoticeGetChecklistParamsAcceptLanguage defines parameters for NoticeGetChecklist.
 type NoticeGetChecklistParamsAcceptLanguage string
 
+// NoticeGetTranslationStatusParams defines parameters for NoticeGetTranslationStatus.
+type NoticeGetTranslationStatusParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *NoticeGetTranslationStatusParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// NoticeGetTranslationStatusParamsAcceptLanguage defines parameters for NoticeGetTranslationStatus.
+type NoticeGetTranslationStatusParamsAcceptLanguage string
+
 // NoticeCreateNoticeJSONRequestBody defines body for NoticeCreateNotice for application/json ContentType.
 type NoticeCreateNoticeJSONRequestBody = NoticeWizardInput
 
@@ -405,6 +432,9 @@ type ServerInterface interface {
 	// NoticeGetChecklist The six ม.23 mandatory topics and whether each is filled in (PNG-02) — a notice's document can't be published while any is missing
 	// (GET /admin/v1/notices/{id}/checklist)
 	NoticeGetChecklist(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetChecklistParams)
+	// NoticeGetTranslationStatus Whether the notice's English content still matches its latest Thai content (PNG-05) — a notice's document can't be published while the translation is stale
+	// (GET /admin/v1/notices/{id}/translation-status)
+	NoticeGetTranslationStatus(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetTranslationStatusParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -432,6 +462,12 @@ func (_ Unimplemented) NoticeGetNotice(w http.ResponseWriter, r *http.Request, i
 // NoticeGetChecklist The six ม.23 mandatory topics and whether each is filled in (PNG-02) — a notice's document can't be published while any is missing
 // (GET /admin/v1/notices/{id}/checklist)
 func (_ Unimplemented) NoticeGetChecklist(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetChecklistParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// NoticeGetTranslationStatus Whether the notice's English content still matches its latest Thai content (PNG-05) — a notice's document can't be published while the translation is stale
+// (GET /admin/v1/notices/{id}/translation-status)
+func (_ Unimplemented) NoticeGetTranslationStatus(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetTranslationStatusParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -678,6 +714,56 @@ func (siw *ServerInterfaceWrapper) NoticeGetChecklist(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// NoticeGetTranslationStatus operation middleware
+func (siw *ServerInterfaceWrapper) NoticeGetTranslationStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params NoticeGetTranslationStatusParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage NoticeGetTranslationStatusParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.NoticeGetTranslationStatus(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -802,6 +888,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/notices/{id}/checklist", wrapper.NoticeGetChecklist)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/notices/{id}/translation-status", wrapper.NoticeGetTranslationStatus)
 	})
 
 	return r
@@ -1125,6 +1214,80 @@ func (response NoticeGetChecklist404ApplicationProblemPlusJSONResponse) VisitNot
 	return err
 }
 
+type NoticeGetTranslationStatusRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params NoticeGetTranslationStatusParams
+}
+
+type NoticeGetTranslationStatusResponseObject interface {
+	VisitNoticeGetTranslationStatusResponse(w http.ResponseWriter) error
+}
+
+type NoticeGetTranslationStatus200JSONResponse struct {
+	// Stale The Thai content changed since the last published version but the English content did not
+	Stale bool `json:"stale"`
+}
+
+func (response NoticeGetTranslationStatus200JSONResponse) VisitNoticeGetTranslationStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetTranslationStatus401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeGetTranslationStatus401ApplicationProblemPlusJSONResponse) VisitNoticeGetTranslationStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetTranslationStatus403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeGetTranslationStatus403ApplicationProblemPlusJSONResponse) VisitNoticeGetTranslationStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetTranslationStatus404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeGetTranslationStatus404ApplicationProblemPlusJSONResponse) VisitNoticeGetTranslationStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// NoticeListNotices The tenant's privacy notices / policies (PNG-01)
@@ -1139,6 +1302,9 @@ type StrictServerInterface interface {
 	// NoticeGetChecklist The six ม.23 mandatory topics and whether each is filled in (PNG-02) — a notice's document can't be published while any is missing
 	// (GET /admin/v1/notices/{id}/checklist)
 	NoticeGetChecklist(ctx context.Context, request NoticeGetChecklistRequestObject) (NoticeGetChecklistResponseObject, error)
+	// NoticeGetTranslationStatus Whether the notice's English content still matches its latest Thai content (PNG-05) — a notice's document can't be published while the translation is stale
+	// (GET /admin/v1/notices/{id}/translation-status)
+	NoticeGetTranslationStatus(ctx context.Context, request NoticeGetTranslationStatusRequestObject) (NoticeGetTranslationStatusResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -1286,6 +1452,33 @@ func (sh *strictHandler) NoticeGetChecklist(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(NoticeGetChecklistResponseObject); ok {
 		if err := validResponse.VisitNoticeGetChecklistResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// NoticeGetTranslationStatus operation middleware
+func (sh *strictHandler) NoticeGetTranslationStatus(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetTranslationStatusParams) {
+	var request NoticeGetTranslationStatusRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.NoticeGetTranslationStatus(ctx, request.(NoticeGetTranslationStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "NoticeGetTranslationStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(NoticeGetTranslationStatusResponseObject); ok {
+		if err := validResponse.VisitNoticeGetTranslationStatusResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

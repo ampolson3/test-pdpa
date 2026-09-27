@@ -823,6 +823,9 @@
       "recipients": "Recipients of data",
       "contact": "Contact details of the controller and DPO",
       "rights": "Data subject rights"
+    },
+    "translation": {
+      "stale": "The English version hasn't been updated to match the latest Thai content — not publishable until the translation is brought in sync"
     }
   },
   "masterData": {

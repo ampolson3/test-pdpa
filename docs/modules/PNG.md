@@ -290,6 +290,34 @@ review round once edited; that is existing PLT-08 behaviour, not something to wo
 
 **Acceptance criteria:** publish ไม่ได้ถ้าฉบับแปลยังไม่อัปเดตตามเวอร์ชันล่าสุด (ตั้งค่าได้)
 
+**Implementation (PNG-05):** "เนื้อหาคู่ขนานหลายภาษาใน composer" and "สลับภาษาใน editor และ preview" were already
+built generically by PLT-01/PLT-16 (`render.Content{"th","en"}`; the document editor already switches between
+th/en for both editing and preview) — PNG-01's wizard already composes both languages side by side. This
+feature's actual new work is only the acceptance criterion itself: a second publish-time gate, reusing the
+exact `docs.Service.SetValidate` hook PNG-02 added (no new hook mechanism), extended with one thing PNG-02
+didn't need — the *previous* published version's content, so the check has something to diff against. `docs.Service`
+gained `previousPublished` (fetches the version being superseded, if any, via the existing `s.Versioning.List`)
+and the `Validate` hook signature grew a `previous *Draft` parameter (nil on a document's first publish);
+`docsSvc.SetValidate`'s only caller (notice) was updated, so this was a safe, non-breaking-in-practice signature
+change. `notice.Service.CheckPublishable` (already PNG-02's gate) now also runs `StaleTranslation(current, previous)`:
+stale only when both versions carry English content, the Thai section changed, and the English section did not —
+adding English for the first time or removing it entirely is never itself flagged, since neither is "an update
+the translation missed". Blocks with `ErrTranslationStale` (422 `versioning.invalid_request`, same reporting
+pattern as `ErrChecklistIncomplete`). Configurable per "(ตั้งค่าได้)": `Service.EnforceTranslationSync` (default
+true, `NOTICE_TRANSLATION_SYNC_ENFORCE=false` to turn off) — a tunable, no `docs/decisions.md` entry needed.
+Read-side: `docs.Service.PublishedContent` (new, generic — reads a document's currently published frozen
+content) backs `GET /admin/v1/notices/{id}/translation-status`, so the UI can show the same staleness signal
+before anyone actually attempts to submit/publish. Not built, deliberately: "เพิ่มภาษาแรงงานต่างชาติ" (a third,
+migrant-worker language) — `render.Content`'s language validation is hard-coded to exactly `th`/`en` throughout
+PLT-16 (`Validate()`, `FormatDate`, the DOCX/PDF renderers, the editor's language tabs); adding a third language
+is a cross-cutting PLT-16 change with no other feature asking for it yet, well beyond this feature's literal
+acceptance criterion, which only mentions the TH/EN pair. UI: the same expandable checklist panel from PNG-02
+(`/notices`) now also shows a translation-stale warning when applicable. Tests: unit (`StaleTranslation`
+directly — stale only on Thai-changed/English-unchanged, every other combination not stale), integration
+through the real PLT-08 submit → DPO approve → publish chain (a second version with an untouched translation is
+blocked; one with both languages updated together publishes), the read-side status check before/after a
+publish, HTTP contract.
+
 <a id="png-06"></a>
 ### PNG-06 จัดการเวอร์ชัน
 

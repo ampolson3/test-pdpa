@@ -233,7 +233,8 @@ func run() error {
 		fileSvc.EntityPermissions[k] = v
 	}
 	breachSvc := wiring.Breach(notifySvc, fileSvc, riverClient, auditSvc, keyring, docsSvc)
-	noticeSvc := &noticeservice.Service{Audit: auditSvc, Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc, EnforceChecklist: os.Getenv("NOTICE_CHECKLIST_ENFORCE") != "false"}
+	noticeSvc := &noticeservice.Service{Audit: auditSvc, Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc,
+		EnforceChecklist: os.Getenv("NOTICE_CHECKLIST_ENFORCE") != "false", EnforceTranslationSync: os.Getenv("NOTICE_TRANSLATION_SYNC_ENFORCE") != "false"}
 	docsSvc.SetValidate("notice", noticeSvc.CheckPublishable) // PNG-02: ม.23 checklist gates the notice's document publish
 	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                // BRE-12 evidence
 	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read" // BRE-10 recipient lists

@@ -70,7 +70,7 @@ func setup(t *testing.T, suffix string) env {
 	versioningSvc := wiring.Versioning(nil, audit.New())
 	docsSvc := wiring.Docs(versioningSvc, nil, client, audit.New(), nil)
 	docsSvc.RegisterVersioning()
-	svc := &noticeservice.Service{Audit: audit.New(), Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc, EnforceChecklist: true}
+	svc := &noticeservice.Service{Audit: audit.New(), Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc, EnforceChecklist: true, EnforceTranslationSync: true}
 	docsSvc.SetValidate("notice", svc.CheckPublishable)
 
 	var dpo uuid.UUID

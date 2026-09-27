@@ -243,16 +243,28 @@ func TestPublish_BlockedThenAllowed(t *testing.T) {
 }
 
 // TestCheckPublishable_ConfigurableOff: EnforceChecklist=false (the tunable's non-default) skips the gate
-// entirely — publish succeeds even with placeholders left. Exercises CheckPublishable directly rather than
-// the full submit/approve/publish chain, since that's all this particular behaviour touches.
+// entirely — publish succeeds even with placeholders left. Exercises CheckPublishable directly against a real
+// notice's document rather than the full submit/approve/publish chain, since that's all this particular
+// behaviour touches.
 func TestCheckPublishable_ConfigurableOff(t *testing.T) {
 	e := setup(t, "pngchecklistoff")
 	e.svc.EnforceChecklist = false
+	var le orgservice.LegalEntity
+	var n noticeservice.Notice
+	e.in(t, func(ctx context.Context) error {
+		var err error
+		le, err = e.org.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ทดสอบ จำกัด", IsController: true}, 0)
+		if err != nil {
+			return err
+		}
+		n, err = e.svc.CreateWizard(ctx, noticeservice.WizardInput{LegalEntityID: le.ID, NoticeType: "privacy_notice", Title: "x", Slug: "checklist-off"})
+		return err
+	})
 	incomplete := render.Content{"th": {Type: "doc", Content: []render.Node{
 		heading(noticeservice.TopicPurposeBasis, "วัตถุประสงค์"), para("[โปรดระบุวัตถุประสงค์และฐานทางกฎหมาย]"),
 	}}}
 	e.in(t, func(ctx context.Context) error {
-		if err := e.svc.CheckPublishable(ctx, uuid.New(), docsservice.Draft{Content: incomplete}); err != nil {
+		if err := e.svc.CheckPublishable(ctx, n.DocumentID, docsservice.Draft{Content: incomplete}, nil); err != nil {
 			t.Errorf("expected no error with EnforceChecklist=false, got %v", err)
 		}
 		return nil

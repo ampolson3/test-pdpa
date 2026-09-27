@@ -651,6 +651,30 @@ refuses anything but the open draft) — recovering means a fresh review round o
 blocked one in place; the test proves the gate with two independent notices rather than working around that
 (existing PLT-08 behaviour, not something for this feature to fix).
 
+### PNG-05 TH/EN notices (`docs/modules/PNG.md#png-05`) — done
+Bilingual content and the editor's language switch were already generic PLT-16/PNG-01 work; this feature's real
+scope is just its acceptance criterion — a second publish-time gate reusing PNG-02's exact
+`docs.Service.SetValidate` hook, extended with what PNG-02 didn't need: the *previous* published version's
+content to diff against. `docs.Service` gained `previousPublished` (walks `s.Versioning.List` for the version
+being superseded, nil on a first publish) and `PublishedContent` (the read-side twin, for the UI); the
+`Validate` hook signature grew a `previous *Draft` parameter — its only caller (notice) was updated in the same
+change, so this was a safe signature change with no other module affected. `notice.Service.CheckPublishable`
+now also runs the new `StaleTranslation(current, previous)`: stale only when both versions carry English
+content, the Thai section changed, and the English section did not — adding English for the first time or
+dropping it entirely is never itself flagged, since neither is "an update the translation missed". Blocks with
+`ErrTranslationStale` (422 `versioning.invalid_request`, same reporting pattern as `ErrChecklistIncomplete`).
+Configurable per "(ตั้งค่าได้)": `Service.EnforceTranslationSync` (default true, `NOTICE_TRANSLATION_SYNC_ENFORCE=false`),
+no `docs/decisions.md` entry needed (a tunable, not legally-relevant behaviour). `GET
+/admin/v1/notices/{id}/translation-status` exposes the same check for the UI ahead of any actual publish
+attempt. Not built: a third (migrant-worker) UI language — `render.Content`'s language handling is hard-coded
+to exactly th/en across PLT-16 (validation, date formatting, both renderers, the editor's tabs); adding one is
+a cross-cutting PLT-16 change no other feature needs yet, and well beyond this feature's literal acceptance
+criterion. Tests: unit (`StaleTranslation` — stale only on Thai-changed/English-unchanged, every other
+combination not stale), integration through the real PLT-08 submit → DPO approve → publish chain (blocked when
+only Thai changed; allowed when both languages were updated together — two independent notices, matching
+PNG-02's own pattern for a gate that locks a version at "approved" once it blocks), the read-side status check,
+HTTP contract.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

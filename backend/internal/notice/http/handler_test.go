@@ -211,4 +211,16 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 	if code, _ := do("GET", "/admin/v1/notices/"+uuid.New().String()+"/checklist", &admin, nil); code != 404 {
 		t.Errorf("checklist, unknown notice: %d, want 404", code)
 	}
+
+	// PNG-05 translation status.
+	translationStatus := item + "/translation-status"
+	if code, _ := do("GET", translationStatus, nil, nil); code != 401 {
+		t.Errorf("translation-status, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", translationStatus, &viewer, nil); code != 200 || !strings.Contains(body, `"stale":false`) {
+		t.Errorf("translation-status: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/notices/"+uuid.New().String()+"/translation-status", &admin, nil); code != 404 {
+		t.Errorf("translation-status, unknown notice: %d, want 404", code)
+	}
 }

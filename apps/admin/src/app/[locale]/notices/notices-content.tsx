@@ -11,6 +11,7 @@ import {
   useLegalEntities,
   useNotices,
   useNoticeChecklist,
+  useNoticeTranslationStatus,
   type ApiClient,
   type NoticeType,
 } from "@pdpa/api-client";
@@ -27,23 +28,29 @@ function detail(e: unknown): string {
 type Draft = { legal_entity_id: string; notice_type: NoticeType | ""; title: string; slug: string; activity_ids: string[] };
 const blank: Draft = { legal_entity_id: "", notice_type: "", title: "", slug: "", activity_ids: [] };
 
-/** PNG-02: the ม.23 checklist for one notice — expanded inline under its row. */
+/** PNG-02/PNG-05: the ม.23 checklist and translation-sync status for one notice — expanded inline under its row. */
 function ChecklistPanel({ client, noticeId }: { client: ApiClient; noticeId: string }) {
   const t = useTranslations("notices");
   const checklist = useNoticeChecklist(client, noticeId);
+  const translation = useNoticeTranslationStatus(client, noticeId);
   if (checklist.isPending) return <p className="text-slate-500">{t("loading")}</p>;
   if (checklist.isError) return <p className="text-red-700">{t("loadError")}</p>;
   const missing = (checklist.data ?? []).filter((i) => !i.complete);
   return (
-    <ul className="grid gap-1 sm:grid-cols-2" data-testid="checklist-panel">
-      {(checklist.data ?? []).map((item) => (
-        <li key={item.code} className="flex items-center gap-2">
-          <span className={item.complete ? "text-emerald-700" : "text-amber-700"}>{item.complete ? "✓" : "✗"}</span>
-          <span>{t(`checklist.${item.code}`)}</span>
-        </li>
-      ))}
-      {missing.length === 0 && <li className="text-emerald-700 sm:col-span-2">{t("checklist.complete")}</li>}
-    </ul>
+    <div className="space-y-2" data-testid="checklist-panel">
+      <ul className="grid gap-1 sm:grid-cols-2">
+        {(checklist.data ?? []).map((item) => (
+          <li key={item.code} className="flex items-center gap-2">
+            <span className={item.complete ? "text-emerald-700" : "text-amber-700"}>{item.complete ? "✓" : "✗"}</span>
+            <span>{t(`checklist.${item.code}`)}</span>
+          </li>
+        ))}
+        {missing.length === 0 && <li className="text-emerald-700 sm:col-span-2">{t("checklist.complete")}</li>}
+      </ul>
+      {translation.data === true && (
+        <p className="rounded bg-amber-100 px-2 py-1 text-amber-800" data-testid="translation-stale">{t("translation.stale")}</p>
+      )}
+    </div>
   );
 }
 

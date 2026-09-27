@@ -7641,6 +7641,40 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/notices/{id}/translation-status:
+    get:
+      operationId: noticeGetTranslationStatus
+      tags: [notice]
+      summary: Whether the notice's English content still matches its latest Thai content (PNG-05) — a notice's document can't be published while the translation is stale
+      x-permission: notice.document.read
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [stale]
+                properties:
+                  stale:
+                    type: boolean
+                    description: The Thai content changed since the last published version but the English content did not
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     adminJwt:

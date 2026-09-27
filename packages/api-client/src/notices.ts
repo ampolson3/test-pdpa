@@ -52,6 +52,19 @@ export function useNoticeChecklist(client: ApiClient, id: string | undefined) {
   });
 }
 
+/** GET /admin/v1/notices/{id}/translation-status (PNG-05) — whether the English content is stale relative to the current Thai draft. */
+export function useNoticeTranslationStatus(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...noticeKey(id ?? ""), "translation-status"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/notices/{id}/translation-status", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data.stale;
+    },
+  });
+}
+
 /** POST /admin/v1/notices — the wizard itself: composes a draft document from the linked RoPA activities. */
 export function useCreateNoticeWizard(client: ApiClient) {
   const qc = useQueryClient();
