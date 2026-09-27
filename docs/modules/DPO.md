@@ -213,6 +213,32 @@ too), HTTP contract (401/403/400 schema/422/412/428).
 
 **หมายเหตุ:** OneTrust ต้องนำเข้า framework เอง
 
+**Implementation (DPO-09):** the checklist itself is an ordinary PLT-06 form the DPO authors and publishes
+(a new module-agnostic form type, `"security"` — `internal/wiring/forms.go` registers it with
+`dpo.risk.*` permissions, since a failed control reads as a risk-register-adjacent finding, not a new
+permission code; `platform.form_definitions.form_type`'s CHECK constraint widened by migration 00039 rather
+than reusing the unclaimed `'quiz'` value, for clarity). SEC/DPO submit a completed run in one call —
+`internal/dpo/service/assessment.go`'s `Assess` — via `forms.Service.Record` (BRE-05's exact pattern:
+bypasses the draft/section-assignment UI flow, for a form filled in one atomic step) against a specific
+published form version, refusing with `ErrBadForm` if that form isn't type `"security"` or has no published
+version. The score/band (`forms.Result`) and every question's answer (`forms.Contributions`) are stored in a
+new `dpo.security_assessments` row (migration 00039, mirrors `breach.assessments`' shape: score, result,
+factors jsonb, form_submission_id). The acceptance criterion — a failed item auto-opens remediation work —
+is computed by walking the form's schema directly (not `Contribution.Points`, which would misfire on any
+non-yes_no question): every `yes_no` question answered `"no"` opens one `dpo.tasks` row
+(`source_type = 'risk'`, no enum widening needed; numbered `SEC-<year>-NNNN` with the same
+per-tenant-per-year advisory-lock pattern `breach.incidents.incident_no` already uses), linked back to the
+assessment. API `/admin/v1/dpo/security-assessments` (cursor pagination, list + create) and `/{id}`. UI: a
+"Security assessments" section on `/settings/dpo` (`FormRenderer` against the published form, score badge,
+expandable factor table, remediation-task list). Tests: unit (pass/fail scoring, task auto-creation and
+round-trip via `GetAssessment`, validation — unknown legal entity, unknown/unpublished form,
+non-`"security"`-type form, missing required answer — two-tenant isolation), HTTP contract
+(401/403/201/200/404/422). Found while writing the tests (a re-confirmed forms-package gotcha, not new to
+this feature): `forms.Service.CreateForm`/`Publish` both return via `GetForm`, which folds a missing *Read*
+permission into `ErrNotFound` rather than `ErrForbidden` — so any fixture granting only Create/Update/Publish
+for a form type fails opaquely; test grants for `"security"` (and the cross-type rejection test's
+`"questionnaire"` fixture) now include Read.
+
 <a id="dpo-02"></a>
 ### DPO-02 ประเมินหน้าที่ต้องแต่งตั้ง DPO
 

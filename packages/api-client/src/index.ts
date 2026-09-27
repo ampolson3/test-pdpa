@@ -235,7 +235,12 @@ export {
   useAppointments,
   useAppointment,
   useAppointmentMutations,
+  useAssessments,
+  useAssessment,
+  useRecordAssessment,
   type DpoAppointment,
   type DpoAppointmentInput,
   type DpoType,
+  type DpoSecurityAssessment,
+  type DpoRemediationTask,
 } from "./dpo";

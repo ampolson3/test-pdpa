@@ -617,6 +617,17 @@
       "cancel": "Cancel",
       "edit": "Edit",
       "saveError": "Couldn't save: {detail}"
+    },
+    "assessments": {
+      "title": "Security-measures assessment",
+      "intro": "Per the PDPC's notice on security measures for data controllers (พ.ศ. 2565) — every failed item automatically opens a remediation task",
+      "noForm": "No published checklist yet (create and publish one on the forms page)",
+      "submit": "Record the assessment",
+      "empty": "No assessments yet",
+      "score": "Score {score}",
+      "item": "Item",
+      "answer": "Answer",
+      "tasks": "Remediation tasks opened automatically"
     }
   },
   "assets": {

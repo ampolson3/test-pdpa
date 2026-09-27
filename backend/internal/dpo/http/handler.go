@@ -1,5 +1,6 @@
-// Package dpohttp holds the dpo module's admin endpoints (DPO-01 appointment register so far). Types in
-// dpo.gen.go are generated from api/openapi/openapi.yaml by oapi-codegen (see oapi-codegen.yaml).
+// Package dpohttp holds the dpo module's admin endpoints (DPO-01 appointment register, DPO-09 security
+// assessments). Types in dpo.gen.go are generated from api/openapi/openapi.yaml by oapi-codegen (see
+// oapi-codegen.yaml).
 package dpohttp
 
 import (
@@ -80,6 +81,7 @@ func decodeAppointmentCursor(s string) (dposervice.AppointmentCursor, error) {
 }
 
 func problem(err error) error {
+	var ve *dposervice.ValidationError
 	switch {
 	case errors.Is(err, dposervice.ErrNotFound):
 		return httpx.NotFound()
@@ -87,6 +89,14 @@ func problem(err error) error {
 		return httpx.VersionMismatch()
 	case errors.Is(err, dposervice.ErrFileNotUsable):
 		return httpx.Problem{Status: 422, Code: "dpo.file_not_usable", Title: "The file isn't usable (already attached, still scanning or infected)"}
+	case errors.Is(err, dposervice.ErrBadForm):
+		return httpx.Problem{Status: 422, Code: "dpo.bad_form", Title: "Not a published security-assessment form"}
+	case errors.As(err, &ve):
+		p := httpx.Problem{Status: 422, Code: "dpo.invalid_input", Title: "Invalid input"}
+		for _, f := range ve.Fields {
+			p.Errors = append(p.Errors, httpx.FieldError{Field: f.Field, Code: f.Code})
+		}
+		return p
 	case errors.Is(err, dposervice.ErrInvalid):
 		msg := err.Error()
 		field := ""

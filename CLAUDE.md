@@ -732,6 +732,38 @@ proving `fieldValues` actually merges the dpo source in (a stub, no database nee
 has no equivalent unit test, only the existing Chromium-based E2E; this closes that gap for the new source
 too), HTTP contract (401/403/400 schema/422/412/428).
 
+### DPO-09 Security measures assessment (`docs/modules/DPO.md#dpo-09`) — done
+The checklist itself (ประกาศมาตรการความปลอดภัย พ.ศ. 2565) is an ordinary PLT-06 form the DPO authors and
+publishes, not new logic: `internal/wiring/forms.go` registers a new module-agnostic form type, `"security"`,
+with `dpo.risk.*` permissions (a failed control is a risk-register-adjacent finding — no new permission code)
+— `platform.form_definitions.form_type`'s CHECK constraint widened by migration 00039 rather than reusing the
+unclaimed `'quiz'` value, for clarity. SEC/DPO submit a completed run in one call —
+`internal/dpo/service/assessment.go`'s `Assess` — via `forms.Service.Record` (BRE-05's exact pattern: bypasses
+the draft/section-assignment UI flow, for a form filled in one atomic step) against a specific published form
+version, refusing with `ErrBadForm` when that form isn't type `"security"` or has no published version. The
+score/band (`forms.Result`) and every question's answer (`forms.Contributions`) land in a new
+`dpo.security_assessments` row (migration 00039, mirrors `breach.assessments`' shape: score, result, factors
+jsonb, `form_submission_id`). The acceptance criterion — a failed item auto-opens remediation work — is
+computed by walking the form's schema directly rather than `Contribution.Points` (which would misfire on any
+non-yes_no question): every `yes_no` question answered `"no"` opens one `dpo.tasks` row (`source_type =
+'risk'`, no enum widening needed; numbered `SEC-<year>-NNNN` with the same per-tenant-per-year advisory-lock
+pattern `breach.incidents.incident_no` already uses), linked back to the assessment.
+
+API `/admin/v1/dpo/security-assessments` (cursor pagination, list + create) and `/{id}`. UI: a "Security
+assessments" section on `/settings/dpo`, right after the appointments list — `FormRenderer` against the
+legal entity's published `"security"` form, a score badge, an expandable per-question factor table, and the
+remediation-task list when the run failed anything. Tests: unit (pass/fail scoring, task auto-creation and
+round-trip via `GetAssessment`, validation — unknown legal entity, unknown/unpublished form, a
+non-`"security"`-type form, a missing required answer — two-tenant isolation), HTTP contract
+(401/403/201/200/404/422). Re-confirmed a forms-package gotcha while writing the tests (not new to this
+feature, but easy to trip on again): `forms.Service.CreateForm`/`Publish` both return via `GetForm`, which
+folds a missing *Read* permission into `ErrNotFound` rather than `ErrForbidden` — any fixture granting only
+Create/Update/Publish for a form type fails opaquely with "forms: not found"; test grants for `"security"`
+(and the cross-type-rejection test's `"questionnaire"` fixture) now include Read. Not done: evidence
+attachments per checklist item (the module doc's own description mentions "พร้อมหลักฐาน" but the acceptance
+criterion is only about auto-opened remediation work; PLT-06's `Record` path has no per-question attachment
+slot yet — add one only when a screen actually needs it).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

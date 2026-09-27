@@ -24,5 +24,9 @@ func Forms(n *notify.Service, a *audit.Service) *forms.Service {
 	// breach module (forms.Service.Record), with bands none / low / high.
 	s.Register("breach", forms.Policy{Read: "breach.incident.read", Create: "breach.incident.approve",
 		Update: "breach.incident.approve", Publish: "breach.incident.approve", Respond: "breach.incident.update"})
+	// Security-measures checklists (DPO-09): the DPO designs and publishes them; SEC/DPO record a run through the
+	// dpo module (forms.Service.Record) — dpo.risk.* since a failed item is a risk-register-adjacent finding.
+	s.Register("security", forms.Policy{Read: "dpo.risk.read", Create: "dpo.risk.create",
+		Update: "dpo.risk.update", Publish: "dpo.risk.approve", Respond: "dpo.risk.create"})
 	return s
 }

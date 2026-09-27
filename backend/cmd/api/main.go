@@ -231,6 +231,7 @@ func run() error {
 		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc}
 	consentSvc.RegisterVersioning()
 	ropaSvc.Consent = consentSvc // ROPA-03: evidence of explicit consent for sensitive-data purposes
+	dpoSvc.Forms = formsSvc      // DPO-09: the security-measures checklist
 	docsSvc := wiring.Docs(versioningSvc, fileSvc, riverClient, auditSvc, render.FromEnv())
 	docsSvc.RegisterVersioning()
 	for k, v := range docsSvc.FilePermissions() { // PLT-16 rendered PDF / Word files

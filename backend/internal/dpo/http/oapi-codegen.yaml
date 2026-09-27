@@ -9,3 +9,6 @@ output-options:
     - dpoCreateAppointment
     - dpoGetAppointment
     - dpoUpdateAppointment
+    - dpoListAssessments
+    - dpoRecordAssessment
+    - dpoGetAssessment

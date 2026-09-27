@@ -7675,6 +7675,124 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dpo/security-assessments:
+    get:
+      operationId: dpoListAssessments
+      tags: [dpo]
+      summary: The tenant's security-measures checklist runs (DPO-09, ประกาศมาตรการความปลอดภัย พ.ศ. 2565)
+      x-permission: dpo.risk.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: legal_entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpoSecurityAssessment'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: dpoRecordAssessment
+      tags: [dpo]
+      summary: 'Record a run of a published security-measures checklist (DPO-09): every yes_no item answered "no" automatically opens a remediation task'
+      x-permission: dpo.risk.create
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [legal_entity_id, form_id, answers]
+              additionalProperties: false
+              properties:
+                legal_entity_id:
+                  $ref: '#/components/schemas/Uuid'
+                form_id:
+                  $ref: '#/components/schemas/Uuid'
+                answers:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoSecurityAssessment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpo/security-assessments/{id}:
+    get:
+      operationId: dpoGetAssessment
+      tags: [dpo]
+      summary: One assessment run, with its remediation tasks
+      x-permission: dpo.risk.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoSecurityAssessment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/notices:
     get:
       operationId: noticeListNotices
@@ -9140,6 +9258,49 @@ components:
         ended_at: {type: [string, 'null'], format: date}
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
+    DpoRemediationTask:
+      type: object
+      required: [id, task_no, title, status, priority, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        task_no: {type: string}
+        title: {type: string}
+        description: {type: string}
+        status: {type: string, enum: [created, assigned, in_review, done, closed]}
+        priority: {type: string, enum: [low, medium, high, urgent]}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    DpoSecurityAssessment:
+      type: object
+      required: [id, legal_entity_id, form_submission_id, score, result, factors, assessed_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        form_submission_id: {$ref: '#/components/schemas/Uuid'}
+        score: {type: number}
+        result:
+          type: string
+          description: The checklist's own scoring band, whatever the DPO who authored it named it
+        factors:
+          type: array
+          items:
+            type: object
+            required: [question, label, points]
+            properties:
+              question: {type: string}
+              label: {type: object, additionalProperties: {type: string}}
+              answer: {}
+              answer_labels:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: {type: string}
+              points: {type: number}
+        assessed_by: {$ref: '#/components/schemas/Uuid'}
+        assessed_at: {$ref: '#/components/schemas/Timestamp'}
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/DpoRemediationTask'
     ActivityRole:
       type: string
       enum: [controller, processor]

@@ -1,7 +1,9 @@
-// Package service is the dpo module (DPO-01): the DPO appointment register — internal, external or group
+// Package service is the dpo module: the DPO appointment register (DPO-01) — internal, external or group
 // appointments, the appointment order and any PDPC-notification evidence as PLT-09 uploads, and the current
-// appointment's contact channel exposed to PLT-16 documents as merge fields. It works in the transaction of
-// the context (CLAUDE.md rule 1) and reads other modules only through their services (rule 9).
+// appointment's contact channel exposed to PLT-16 documents as merge fields — and the security-measures
+// checklist (DPO-09) on top of a PLT-06 form, whose failed items automatically open dpo.tasks remediation
+// work. It works in the transaction of the context (CLAUDE.md rule 1) and reads other modules only through
+// their services (rule 9).
 package service
 
 import (
@@ -22,6 +24,7 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/files"
+	"pdpa-platform/internal/platform/forms"
 )
 
 // AppointmentEntityType is the PLT-09 attachment entity for both a signed appointment order and any
@@ -53,6 +56,7 @@ type Service struct {
 	Audit *audit.Service
 	Org   Org
 	Files Files
+	Forms *forms.Service // DPO-09's security-measures checklist (PLT-06); nil until that feature is wired
 }
 
 // Appointment is one DPO appointment (ม.41): internal (an existing iam.users row), external (a named person

@@ -15,6 +15,8 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/pkg/dbtest"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/forms"
+	"pdpa-platform/internal/wiring"
 )
 
 func date(y int, m time.Month, d int) time.Time { return time.Date(y, m, d, 0, 0, 0, 0, time.UTC) }
@@ -24,9 +26,10 @@ type env struct {
 	tenant dbtest.Tenant
 	// user is a real, active iam.users row (dbtest.SeedTenant's own tenant user defaults to status
 	// 'invited', which iamservice.Names — and so an "internal" appointment — doesn't count as usable).
-	user uuid.UUID
-	svc  *dposervice.Service
-	org  *orgservice.Service
+	user  uuid.UUID
+	svc   *dposervice.Service
+	org   *orgservice.Service
+	forms *forms.Service
 }
 
 func setup(t *testing.T, suffix string) env {
@@ -45,6 +48,11 @@ func setup(t *testing.T, suffix string) env {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM dpo.security_assessments`)
+			_, _ = tx.Exec(ctx, `DELETE FROM dpo.tasks`)
+			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_submissions`)
+			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_versions`)
+			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_definitions`)
 			_, _ = tx.Exec(ctx, `DELETE FROM dpo.appointments`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
 			_, _ = tx.Exec(ctx, `DELETE FROM iam.users WHERE id = $1`, user)
@@ -53,15 +61,22 @@ func setup(t *testing.T, suffix string) env {
 		})
 	})
 	org := &orgservice.Service{Audit: audit.New()}
-	return env{app: app, tenant: tenant, user: user, svc: &dposervice.Service{Audit: audit.New(), Org: org}, org: org}
+	formsSvc := wiring.Forms(nil, audit.New())
+	svc := &dposervice.Service{Audit: audit.New(), Org: org, Forms: formsSvc}
+	return env{app: app, tenant: tenant, user: user, svc: svc, org: org, forms: formsSvc}
 }
+
+var securityPerms = []string{"dpo.profile.read", "dpo.profile.create", "dpo.profile.update",
+	"dpo.risk.read", "dpo.risk.create", "dpo.risk.update", "dpo.risk.approve",
+	// only needed by TestAssess_RejectsNonSecurityForm, to publish a form of a different type
+	"ropa.template.read", "ropa.template.create", "ropa.template.update", "ropa.template.publish"}
 
 // in runs fn as the tenant's admin in one transaction (as the Tx middleware would).
 func (e env) in(t *testing.T, fn func(ctx context.Context) error) {
 	t.Helper()
 	err := pdb.WithTenantTx(context.Background(), e.app, e.tenant.ID.String(), e.tenant.UserID.String(), func(ctx context.Context) error {
 		return fn(authz.WithGrants(ctx, authz.Grants{TenantID: e.tenant.ID.String(), UserID: e.tenant.UserID.String(),
-			Permissions: []string{"dpo.profile.read", "dpo.profile.create", "dpo.profile.update"}}))
+			Permissions: securityPerms}))
 	})
 	if err != nil {
 		t.Fatal(err)

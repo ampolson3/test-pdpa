@@ -2435,6 +2435,41 @@ export interface paths {
         patch: operations["dpoUpdateAppointment"];
         trace?: never;
     };
+    "/admin/v1/dpo/security-assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's security-measures checklist runs (DPO-09, ประกาศมาตรการความปลอดภัย พ.ศ. 2565) */
+        get: operations["dpoListAssessments"];
+        put?: never;
+        /** Record a run of a published security-measures checklist (DPO-09): every yes_no item answered "no" automatically opens a remediation task */
+        post: operations["dpoRecordAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpo/security-assessments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One assessment run, with its remediation tasks */
+        get: operations["dpoGetAssessment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/notices": {
         parameters: {
             query?: never;
@@ -3230,6 +3265,39 @@ export interface components {
             ended_at?: string | null;
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
+        };
+        DpoRemediationTask: {
+            id: components["schemas"]["Uuid"];
+            task_no: string;
+            title: string;
+            description?: string;
+            /** @enum {string} */
+            status: "created" | "assigned" | "in_review" | "done" | "closed";
+            /** @enum {string} */
+            priority: "low" | "medium" | "high" | "urgent";
+            created_at: components["schemas"]["Timestamp"];
+        };
+        DpoSecurityAssessment: {
+            id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            form_submission_id: components["schemas"]["Uuid"];
+            score: number;
+            /** @description The checklist's own scoring band, whatever the DPO who authored it named it */
+            result: string;
+            factors: {
+                question: string;
+                label: {
+                    [key: string]: string;
+                };
+                answer?: unknown;
+                answer_labels?: {
+                    [key: string]: string;
+                }[];
+                points: number;
+            }[];
+            assessed_by?: components["schemas"]["Uuid"];
+            assessed_at: components["schemas"]["Timestamp"];
+            tasks?: components["schemas"]["DpoRemediationTask"][];
         };
         /** @enum {string} */
         ActivityRole: "controller" | "processor";
@@ -10763,6 +10831,103 @@ export interface operations {
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dpoListAssessments: {
+        parameters: {
+            query?: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpoSecurityAssessment"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dpoRecordAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    legal_entity_id: components["schemas"]["Uuid"];
+                    form_id: components["schemas"]["Uuid"];
+                    answers: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoSecurityAssessment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpoGetAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoSecurityAssessment"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     noticeListNotices: {

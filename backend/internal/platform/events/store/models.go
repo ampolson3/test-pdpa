@@ -1325,6 +1325,23 @@ type DpoRequirementCheck struct {
 	RowVersion    int32              `db:"row_version" json:"row_version"`
 }
 
+type DpoSecurityAssessment struct {
+	ID               uuid.UUID          `db:"id" json:"id"`
+	TenantID         uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	LegalEntityID    uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	FormSubmissionID uuid.UUID          `db:"form_submission_id" json:"form_submission_id"`
+	Score            pgtype.Numeric     `db:"score" json:"score"`
+	Result           string             `db:"result" json:"result"`
+	Factors          []byte             `db:"factors" json:"factors"`
+	AssessedBy       pgtype.UUID        `db:"assessed_by" json:"assessed_by"`
+	AssessedAt       pgtype.Timestamptz `db:"assessed_at" json:"assessed_at"`
+	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy        pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy        pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion       int32              `db:"row_version" json:"row_version"`
+}
+
 // งาน / ticket 5 สถานะ (สร้างอัตโนมัติจาก gap / DPIA / audit)
 type DpoTask struct {
 	ID             uuid.UUID          `db:"id" json:"id"`

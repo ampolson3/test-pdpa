@@ -24,6 +24,8 @@ import (
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/validate"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/forms"
+	"pdpa-platform/internal/wiring"
 )
 
 func envOr(k, d string) string {
@@ -48,6 +50,11 @@ func TestAppointmentEndpoints_Contract(t *testing.T) {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM dpo.security_assessments`)
+			_, _ = tx.Exec(ctx, `DELETE FROM dpo.tasks`)
+			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_submissions`)
+			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_versions`)
+			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_definitions`)
 			_, _ = tx.Exec(ctx, `DELETE FROM dpo.appointments`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
 			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
@@ -55,14 +62,34 @@ func TestAppointmentEndpoints_Contract(t *testing.T) {
 		})
 	})
 	orgSvc := &orgservice.Service{Audit: audit.New()}
-	svc := &dposervice.Service{Audit: audit.New(), Org: orgSvc}
+	formsSvc := wiring.Forms(nil, audit.New())
+	svc := &dposervice.Service{Audit: audit.New(), Org: orgSvc, Forms: formsSvc}
 
-	var legalEntity uuid.UUID
-	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+	var legalEntity, formID uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
+			Permissions: []string{"org.structure.create", "dpo.risk.read", "dpo.risk.create", "dpo.risk.approve"}})
 		e, err := orgSvc.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ทดสอบ จำกัด", IsController: true}, 0)
 		legalEntity = e.ID
+		if err != nil {
+			return err
+		}
+		score := func(v float64) *float64 { return &v }
+		d := forms.Draft{Languages: []string{"th"}, Schema: forms.Schema{Sections: []forms.Section{{Key: "controls", Title: forms.Text{"th": "s"},
+			Questions: []forms.Question{{Key: "access_control", Type: forms.TypeYesNo, Label: forms.Text{"th": "q"}, Required: true,
+				Options: []forms.Option{{Value: "yes", Score: score(1)}, {Value: "no", Score: score(0)}}}}}}},
+			Scoring: &forms.Scoring{Bands: []forms.Band{{Key: "fail", Label: forms.Text{"th": "ไม่ผ่าน"}, Min: 0, Max: score(0)},
+				{Key: "pass", Label: forms.Text{"th": "ผ่าน"}, Min: 1}}}}
+		form, err := formsSvc.CreateForm(ctx, "sec_http_"+uuid.NewString()[:8], "checklist", "security", d)
+		if err != nil {
+			return err
+		}
+		form, err = formsSvc.Publish(ctx, form.ID, form.LatestVersion)
+		formID = form.ID
 		return err
-	})
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
 	if err != nil {
@@ -78,7 +105,10 @@ func TestAppointmentEndpoints_Contract(t *testing.T) {
 		}
 	}
 	other := uuid.New()
-	grants := map[string][]string{tenant.UserID.String(): {"dpo.profile.read", "dpo.profile.create", "dpo.profile.update"}, other.String(): {"dpo.profile.read"}}
+	grants := map[string][]string{
+		tenant.UserID.String(): {"dpo.profile.read", "dpo.profile.create", "dpo.profile.update", "dpo.risk.read", "dpo.risk.create"},
+		other.String():         {"dpo.profile.read", "dpo.risk.read"},
+	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
 	})
@@ -192,5 +222,37 @@ func TestAppointmentEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", "/admin/v1/dpo/appointments?legal_entity_id="+legalEntity.String(), &viewer, nil, nil); code != 200 || !strings.Contains(body, created.Id.String()) {
 		t.Errorf("list: %d %s", code, body)
+	}
+
+	// DPO-09 security assessments.
+	if code, _ := do("GET", "/admin/v1/dpo/security-assessments", nil, nil, nil); code != 401 {
+		t.Errorf("assessments, no principal: %d, want 401", code)
+	}
+	assess := map[string]any{"legal_entity_id": legalEntity, "form_id": formID, "answers": map[string]any{"access_control": "no"}}
+	if code, _ := do("POST", "/admin/v1/dpo/security-assessments", &viewer, assess, nil); code != 403 {
+		t.Errorf("record with read permission only: %d, want 403", code)
+	}
+	code, body = do("POST", "/admin/v1/dpo/security-assessments", &admin, assess, nil)
+	if code != 201 || !strings.Contains(body, `"result":"fail"`) || !strings.Contains(body, `"tasks"`) {
+		t.Fatalf("record: %d %s", code, body)
+	}
+	var recorded dpohttp.DpoSecurityAssessment
+	_ = json.Unmarshal([]byte(body), &recorded)
+	if code, body := do("GET", "/admin/v1/dpo/security-assessments/"+recorded.Id.String(), &viewer, nil, nil); code != 200 || !strings.Contains(body, `"result":"fail"`) {
+		t.Errorf("get: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/dpo/security-assessments/"+uuid.New().String(), &admin, nil, nil); code != 404 {
+		t.Errorf("unknown assessment: %d, want 404", code)
+	}
+	if code, body := do("GET", "/admin/v1/dpo/security-assessments?legal_entity_id="+legalEntity.String(), &viewer, nil, nil); code != 200 || !strings.Contains(body, recorded.Id.String()) {
+		t.Errorf("list: %d %s", code, body)
+	}
+	if code, body := do("POST", "/admin/v1/dpo/security-assessments", &admin, map[string]any{"legal_entity_id": uuid.New(), "form_id": formID,
+		"answers": map[string]any{"access_control": "yes"}}, nil); code != 422 || !strings.Contains(body, "dpo.invalid_input") {
+		t.Errorf("unknown legal entity: %d %s, want 422", code, body)
+	}
+	if code, body := do("POST", "/admin/v1/dpo/security-assessments", &admin, map[string]any{"legal_entity_id": legalEntity, "form_id": uuid.New(),
+		"answers": map[string]any{"access_control": "yes"}}, nil); code != 422 || !strings.Contains(body, "dpo.bad_form") {
+		t.Errorf("unknown form: %d %s, want 422", code, body)
 	}
 }
