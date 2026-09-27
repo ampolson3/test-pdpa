@@ -22,6 +22,7 @@ import (
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/validate"
 	audit "pdpa-platform/internal/platform/audit/service"
+	riskservice "pdpa-platform/internal/risk/service"
 	ropahttp "pdpa-platform/internal/ropa/http"
 	ropaservice "pdpa-platform/internal/ropa/service"
 )
@@ -48,6 +49,7 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_controls`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_transfers`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_recipients`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.retention_rules`)
@@ -64,7 +66,7 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 		})
 	})
 	orgSvc := &orgservice.Service{Audit: audit.New()}
-	svc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc}
+	svc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: riskservice.New()}
 
 	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
 	if err != nil {
@@ -81,8 +83,8 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	}
 	other := uuid.New()
 	grants := map[string][]string{tenant.UserID.String(): {"ropa.inventory.read", "ropa.inventory.create", "ropa.inventory.update",
-		"ropa.activity.read", "ropa.activity.create", "ropa.activity.update"},
-		other.String(): {"ropa.inventory.read", "ropa.activity.read"}}
+		"ropa.activity.read", "ropa.activity.create", "ropa.activity.update", "ropa.risk.read", "ropa.risk.create", "ropa.risk.delete"},
+		other.String(): {"ropa.inventory.read", "ropa.activity.read", "ropa.risk.read"}}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
 	})
@@ -265,7 +267,7 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	if code, _ := do("PATCH", actURL, &admin, activity, nil); code != 428 {
 		t.Errorf("update activity without If-Match: %d, want 428", code)
 	}
-	if code, body := do("GET", actURL, &viewer, nil, nil); code != 200 || !strings.Contains(body, `"missing_items":["data","purpose","retention","rights_access"]`) {
+	if code, body := do("GET", actURL, &viewer, nil, nil); code != 200 || !strings.Contains(body, `"missing_items":["data","purpose","retention","rights_access","security_controls"]`) {
 		t.Errorf("get activity, missing items: %d %s", code, body)
 	}
 	if code, body := do("POST", actURL+"/submit", &admin, nil, map[string]string{"If-Match": `"1"`}); code != 422 || !strings.Contains(body, "ropa.activity_incomplete") {
@@ -273,6 +275,42 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("GET", actBase+"/"+uuid.New().String(), &admin, nil, nil); code != 404 {
 		t.Errorf("unknown activity: %d, want 404", code)
+	}
+
+	// ROPA-09 security measures (ม.37(1))
+	if code, _ := do("GET", "/admin/v1/ropa/security-controls", nil, nil, nil); code != 401 {
+		t.Errorf("security-controls, no principal: %d, want 401", code)
+	}
+	code, body = do("GET", "/admin/v1/ropa/security-controls", &viewer, nil, nil)
+	if code != 200 || !strings.Contains(body, `"category"`) {
+		t.Fatalf("list security controls: %d %s", code, body)
+	}
+	var catalog struct {
+		Data []ropahttp.SecurityControl `json:"data"`
+	}
+	_ = json.Unmarshal([]byte(body), &catalog)
+	if len(catalog.Data) == 0 {
+		t.Fatal("expected the seeded security-control catalog (migration 00040)")
+	}
+	controlID := catalog.Data[0].Id
+	if code, _ := do("POST", actURL+"/controls", &viewer, map[string]any{"control_id": controlID}, nil); code != 403 {
+		t.Errorf("add control with read-only permission: %d, want 403", code)
+	}
+	code, body = do("POST", actURL+"/controls", &admin, map[string]any{"control_id": controlID, "description": "เข้ารหัสข้อมูล"}, nil)
+	if code != 201 {
+		t.Fatalf("add control: %d %s", code, body)
+	}
+	if code, body := do("GET", actURL+"/controls", &admin, nil, nil); code != 200 || !strings.Contains(body, controlID.String()) {
+		t.Errorf("list activity controls: %d %s", code, body)
+	}
+	if code, body := do("GET", actURL, &admin, nil, nil); code != 200 || strings.Contains(body, `"security_controls"`) {
+		t.Errorf("security_controls should have cleared: %d %s", code, body)
+	}
+	if code, _ := do("POST", actURL+"/controls", &admin, map[string]any{"control_id": uuid.New()}, nil); code != 422 {
+		t.Errorf("add unknown control: %d, want 422", code)
+	}
+	if code, _ := do("DELETE", actURL+"/controls/"+controlID.String(), &admin, nil, nil); code != 204 {
+		t.Errorf("delete control: %d", code)
 	}
 
 	// ROPA-08 cross-border transfers

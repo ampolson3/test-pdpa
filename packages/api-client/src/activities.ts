@@ -20,6 +20,10 @@ export type ActivityRecipientRole = components["schemas"]["ActivityRecipientRole
 export type ActivityTransfer = components["schemas"]["ActivityTransfer"];
 export type ActivityTransferInput = components["schemas"]["ActivityTransferInput"];
 export type ActivityTransferBasis = components["schemas"]["ActivityTransferBasis"];
+export type SecurityControl = components["schemas"]["SecurityControl"];
+export type SecurityControlCategory = components["schemas"]["SecurityControlCategory"];
+export type ActivityControl = components["schemas"]["ActivityControl"];
+export type ActivityControlInput = components["schemas"]["ActivityControlInput"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const activitiesKey = ["ropa", "activities"] as const;
@@ -113,6 +117,30 @@ export function useActivityTransfers(client: ApiClient, id: string | undefined) 
     enabled: !!id,
     queryFn: async () => {
       const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/transfers", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** GET /admin/v1/ropa/security-controls (ROPA-09) — the ม.37(1) catalog, global + this tenant's own. */
+export function useSecurityControls(client: ApiClient) {
+  return useQuery({
+    queryKey: ["ropa", "security-controls"],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/security-controls", {});
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+export function useActivityControls(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...activityKey(id ?? ""), "controls"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/controls", { params: { path: { id: id! } } });
       if (error) throw error;
       return data.data;
     },
@@ -224,6 +252,21 @@ export function useActivityMutations(client: ApiClient, id?: string) {
     deleteTransfer: useMutation({
       mutationFn: async (transferId: string) => {
         const { error } = await client.DELETE("/admin/v1/ropa/activities/{id}/transfers/{transferId}", { params: { path: { id: id!, transferId } } });
+        if (error) throw error;
+      },
+      onSuccess: refresh,
+    }),
+    addControl: useMutation({
+      mutationFn: async (body: ActivityControlInput) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/controls", { params: { path: { id: id! } }, body });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    deleteControl: useMutation({
+      mutationFn: async (controlId: string) => {
+        const { error } = await client.DELETE("/admin/v1/ropa/activities/{id}/controls/{controlId}", { params: { path: { id: id!, controlId } } });
         if (error) throw error;
       },
       onSuccess: refresh,

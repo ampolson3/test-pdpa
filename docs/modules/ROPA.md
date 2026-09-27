@@ -455,6 +455,34 @@ isolation), HTTP contract (401/403/400 schema/422).
 
 **Acceptance criteria:** ทุกกิจกรรมอ้างอิงมาตรการตาม ม.37(1)
 
+**Implementation (ROPA-09):** `ropa.activity_controls` (link to `risk.controls`, both already fully specified
+in the baseline migrations — no new migration for either table) was still empty: no feature owned seeding the
+control catalog, since the full RRA module (risk matrices, control library management) is P2 and not built —
+RRA-06 only *links* controls to risks, never creates the catalog. Rather than block on RRA, migration 00040
+seeds a draft global catalog (`tenant_id NULL`, the same ORG-07 Q-20 visibility pattern) of 12 measures across
+all four ม.37(1) categories the ประกาศมาตรการความปลอดภัย พ.ศ. 2565 covers (organizational, technical, physical,
+access_control) — flagged for legal review (`docs/decisions.md` Q-25, `legal` category left unseeded: no clear
+example in the notice to paraphrase). `internal/risk/service` is the first, deliberately minimal package on the
+`risk` schema — a plain `ListControls`/`GetControl` read, no create/update surface, exactly mirroring ORG-07's
+own read-only master data. `ropa.Service` gained a `Risk` interface (rule 9) and `internal/ropa/service/controls.go`
+(`AddActivityControl`/`DeleteActivityControl`/`ListActivityControls`, the exact `ActivityTransfer` CRUD pattern
+ROPA-08 already set: FK-visibility check via `Risk.GetControl`, `pdb.Savepoint` around the insert so a duplicate
+link — the PK is `(activity_id, control_id)` — doesn't abort the request transaction). The acceptance criterion
+is a sixth core item in ROPA-03's `completeness()` (`security_controls`, unconditional like `data`/`purpose`,
+not one of the conditional recipient/sensitive-data checks) — clears once any control is linked, comes back if
+the last one is removed. Permissions reuse the already-seeded `ropa.risk.*` (baseline migration 00019's "ความ
+เสี่ยงและช่องว่างรายกิจกรรม" — per-activity risk-and-gap items, which this link is one of; no new permission
+code). API `GET /admin/v1/ropa/security-controls` (the catalog, for the picker) and
+`/admin/v1/ropa/activities/{id}/controls` (list+create) / `/{controlId}` (delete) — same shape as ROPA-08's
+transfer endpoints. UI: a "มาตรการความปลอดภัย" section on `/ropa/activities/{id}`, right after transfers — a
+control picker (grouped implicitly by category label) + optional free-text description, list with remove.
+Tests: unit (missing until referenced, unknown control_id refused, duplicate link refused, delete brings the
+missing item back, catalog covers all four seeded categories, two-tenant isolation of the per-activity link —
+the global catalog itself is visible to both tenants, as designed), HTTP contract (401/403/201/200/404/422).
+Existing ROPA-03 tests that asserted an exact "fully complete" activity or an exact missing-items list were
+updated to include `security_controls` alongside the other five core items, since the denominator changed from
+5 to 6.
+
 <a id="ropa-10"></a>
 ### ROPA-10 บันทึกการปฏิเสธคำขอใช้สิทธิ
 

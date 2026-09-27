@@ -21,6 +21,7 @@ import (
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
+	riskservice "pdpa-platform/internal/risk/service"
 	ropastore "pdpa-platform/internal/ropa/store"
 )
 
@@ -54,10 +55,18 @@ type Consent interface {
 	GetPurpose(ctx context.Context, id uuid.UUID) (consentservice.Purpose, error)
 }
 
+// Risk is what ropa reads from the (not yet otherwise built) risk module (rule 9): ROPA-09's ม.37(1)
+// security-measures catalog.
+type Risk interface {
+	ListControls(ctx context.Context) ([]riskservice.Control, error)
+	GetControl(ctx context.Context, id uuid.UUID) (riskservice.Control, error)
+}
+
 type Service struct {
 	Audit   *audit.Service
 	Org     Org
 	Consent Consent
+	Risk    Risk
 }
 
 // Asset is a system, application, database or other place personal data lives — ROPA-02's registry

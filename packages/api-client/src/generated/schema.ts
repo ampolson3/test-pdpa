@@ -2399,6 +2399,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/security-controls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The ม.37(1) security-measures catalog (ROPA-09) */
+        get: operations["ropaListSecurityControls"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/controls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The security measures referenced by an activity (ROPA-09, ม.37(1)) */
+        get: operations["ropaListActivityControls"];
+        put?: never;
+        /** Reference a security measure on an activity */
+        post: operations["ropaAddActivityControl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/controls/{controlId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a security measure from an activity */
+        delete: operations["ropaDeleteActivityControl"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpo/appointments": {
         parameters: {
             query?: never;
@@ -3437,6 +3489,25 @@ export interface components {
             safeguards?: string;
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        SecurityControlCategory: "organizational" | "technical" | "physical" | "access_control" | "legal";
+        SecurityControl: {
+            id: components["schemas"]["Uuid"];
+            code: string;
+            name: string;
+            category: components["schemas"]["SecurityControlCategory"];
+            description?: string;
+            framework_refs: string[];
+        };
+        ActivityControlInput: {
+            control_id: components["schemas"]["Uuid"];
+            description?: string;
+        };
+        ActivityControl: {
+            activity_id: components["schemas"]["Uuid"];
+            control_id: components["schemas"]["Uuid"];
+            description?: string;
         };
         /** @enum {string} */
         NoticeType: "privacy_notice" | "privacy_policy" | "cookie_policy" | "cctv" | "layered_short" | "employee";
@@ -10684,6 +10755,124 @@ export interface operations {
             path: {
                 id: components["schemas"]["Uuid"];
                 transferId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaListSecurityControls: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["SecurityControl"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaListActivityControls: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ActivityControl"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaAddActivityControl: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityControlInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityControl"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaDeleteActivityControl: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                controlId: components["schemas"]["Uuid"];
             };
             cookie?: never;
         };

@@ -12,6 +12,8 @@ import {
   useRetentionRules,
   useActivityRecipients,
   useActivityTransfers,
+  useSecurityControls,
+  useActivityControls,
   useActivityMutations,
   useLegalEntities,
   useOrgUnits,
@@ -50,6 +52,8 @@ export function ActivityDetailContent({ id }: { id: string }) {
   const retention = useRetentionRules(client, id);
   const recipients = useActivityRecipients(client, id);
   const transfers = useActivityTransfers(client, id);
+  const controls = useActivityControls(client, id);
+  const controlCatalog = useSecurityControls(client);
   const m = useActivityMutations(client, id);
 
   const [legalEntityId, setLegalEntityId] = useState<string>();
@@ -68,6 +72,7 @@ export function ActivityDetailContent({ id }: { id: string }) {
   const [retentionDraft, setRetentionDraft] = useState({ data_category_id: "", retention_months: "", retention_basis: "", trigger_event: "", disposal_method: "" as ActivityDisposalMethod | "" });
   const [recipientDraft, setRecipientDraft] = useState({ party_id: "", recipient_role: "" as ActivityRecipientRole | "", disclosure_basis: "" });
   const [transferDraft, setTransferDraft] = useState({ recipient_id: "", country_code: "", transfer_basis: "" as ActivityTransferBasis | "", safeguards: "" });
+  const [controlDraft, setControlDraft] = useState({ control_id: "", description: "" });
 
   if (!canRead) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
   if (activity.isPending) return <main className="mx-auto max-w-5xl p-8 text-slate-500">{t("loading")}</main>;
@@ -337,6 +342,38 @@ export function ActivityDetailContent({ id }: { id: string }) {
                 disabled={m.addTransfer.isPending || !transferDraft.country_code || !transferDraft.transfer_basis}
               >{t("add")}</Button>
             </div>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4" data-testid="controls-section">
+        <h2 className="font-semibold">{t("sections.controls")}</h2>
+        <ul className="divide-y divide-slate-100">
+          {controls.data?.map((c) => {
+            const control = controlCatalog.data?.find((sc) => sc.id === c.control_id);
+            return (
+              <li key={c.control_id} className="flex items-center justify-between py-2">
+                <span>
+                  {control ? `${control.name} (${t(`controlCategories.${control.category}`)})` : c.control_id}
+                  {c.description && <span className="text-slate-500"> — {c.description}</span>}
+                </span>
+                {editable && <button className="text-red-700 underline" onClick={() => m.deleteControl.mutate(c.control_id)}>{t("remove")}</button>}
+              </li>
+            );
+          })}
+        </ul>
+        {editable && (
+          <div className="grid gap-2 sm:grid-cols-3">
+            <select className={INPUT} value={controlDraft.control_id} onChange={(e) => setControlDraft({ ...controlDraft, control_id: e.target.value })}>
+              <option value="">{t("form.securityControl")}</option>
+              {controlCatalog.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <input className={INPUT} placeholder={t("form.controlDescription")} value={controlDraft.description} onChange={(e) => setControlDraft({ ...controlDraft, description: e.target.value })} />
+            <Button
+              onClick={() => m.addControl.mutate({ control_id: controlDraft.control_id, description: controlDraft.description || undefined },
+                { onSuccess: () => setControlDraft({ control_id: "", description: "" }) })}
+              disabled={m.addControl.isPending || !controlDraft.control_id}
+            >{t("add")}</Button>
           </div>
         )}
       </section>

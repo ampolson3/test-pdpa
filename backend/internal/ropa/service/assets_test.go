@@ -14,6 +14,7 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/pkg/dbtest"
 	audit "pdpa-platform/internal/platform/audit/service"
+	riskservice "pdpa-platform/internal/risk/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
 )
 
@@ -23,6 +24,7 @@ type env struct {
 	svc     *ropaservice.Service
 	org     *orgservice.Service
 	consent *consentservice.Service
+	risk    *riskservice.Service
 }
 
 func setup(t *testing.T, suffix string) env {
@@ -33,6 +35,7 @@ func setup(t *testing.T, suffix string) env {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_controls`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_transfers`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_recipients`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.retention_rules`)
@@ -53,7 +56,9 @@ func setup(t *testing.T, suffix string) env {
 	})
 	org := &orgservice.Service{Audit: audit.New()}
 	consent := &consentservice.Service{Audit: audit.New()}
-	return env{app: app, tenant: tenant, svc: &ropaservice.Service{Audit: audit.New(), Org: org, Consent: consent}, org: org, consent: consent}
+	risk := riskservice.New()
+	return env{app: app, tenant: tenant, svc: &ropaservice.Service{Audit: audit.New(), Org: org, Consent: consent, Risk: risk},
+		org: org, consent: consent, risk: risk}
 }
 
 // in runs fn as the tenant's admin in one transaction (as the Tx middleware would).

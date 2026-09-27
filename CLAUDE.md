@@ -764,6 +764,35 @@ attachments per checklist item (the module doc's own description mentions "พ�
 criterion is only about auto-opened remediation work; PLT-06's `Record` path has no per-question attachment
 slot yet — add one only when a screen actually needs it).
 
+### ROPA-09 Security measures per activity (`docs/modules/ROPA.md#ropa-09`) — done
+`ropa.activity_controls` (link to `risk.controls`, both already fully specified in the baseline migrations —
+no new migration for either) was still empty: no feature owned seeding the control catalog itself, since the
+full RRA module (risk matrices, control-library management) is P2 and not started — RRA-06 only *links*
+existing controls to risks, never creates the catalog. Rather than block on RRA, migration 00040 seeds a draft
+global catalog (`tenant_id NULL`, the same ORG-07 Q-20 visibility pattern) of 12 measures covering all four
+ม.37(1) categories the ประกาศมาตรการความปลอดภัย พ.ศ. 2565 names (organizational, technical, physical,
+access_control) — flagged for legal review (`docs/decisions.md` Q-25; `legal` left unseeded, no clear example
+in the notice to paraphrase). `internal/risk/service` is the first, deliberately minimal package on the `risk`
+schema — a plain `ListControls`/`GetControl` read, no create/update surface, mirroring ORG-07's own read-only
+master data exactly. `ropa.Service` gained a `Risk` interface (rule 9) and `internal/ropa/service/controls.go`
+(`AddActivityControl`/`DeleteActivityControl`/`ListActivityControls`) following ROPA-08's own `ActivityTransfer`
+CRUD pattern precisely: FK-visibility check via `Risk.GetControl` (wrapped as `ErrInvalid`, not the raw error),
+`pdb.Savepoint` around the insert since the PK is `(activity_id, control_id)` and a duplicate link must not
+abort the whole request transaction. The acceptance criterion is a sixth core item in ROPA-03's
+`completeness()` (`security_controls`, unconditional like `data`/`purpose`/`retention`, not one of the
+conditional recipient/sensitive-data checks) — clears once any control is linked, reappears if the last one is
+removed. Permissions reuse the already-seeded `ropa.risk.*` (baseline migration 00019's "ความเสี่ยงและช่องว่าง
+รายกิจกรรม" — per-activity risk-and-gap items, which a linked control is one of; no new permission code).
+API `GET /admin/v1/ropa/security-controls` (the catalog, for the picker) and
+`/admin/v1/ropa/activities/{id}/controls` (list+create) / `/{controlId}` (delete) — same shape as ROPA-08's
+transfer endpoints. UI: a security-measures section on `/ropa/activities/{id}`, right after transfers — a
+control picker + optional free-text description, list with remove. Tests: unit (missing until referenced,
+unknown control_id refused, duplicate link refused, delete brings the missing item back, the seeded catalog
+covers all four categories, two-tenant isolation of the per-activity link — the global catalog itself is
+visible to both tenants, by design), HTTP contract (401/403/201/200/404/422). Existing ROPA-03 tests that
+asserted an exact "fully complete" activity or an exact missing-items list were updated for the new 6-item
+denominator (previously 5).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

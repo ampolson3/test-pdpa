@@ -7515,6 +7515,137 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/security-controls:
+    get:
+      operationId: ropaListSecurityControls
+      tags: [ropa]
+      summary: The ม.37(1) security-measures catalog (ROPA-09)
+      x-permission: ropa.risk.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SecurityControl'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/ropa/activities/{id}/controls:
+    get:
+      operationId: ropaListActivityControls
+      tags: [ropa]
+      summary: The security measures referenced by an activity (ROPA-09, ม.37(1))
+      x-permission: ropa.risk.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityControl'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: ropaAddActivityControl
+      tags: [ropa]
+      summary: Reference a security measure on an activity
+      x-permission: ropa.risk.create
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityControlInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityControl'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/activities/{id}/controls/{controlId}:
+    delete:
+      operationId: ropaDeleteActivityControl
+      tags: [ropa]
+      summary: Remove a security measure from an activity
+      x-permission: ropa.risk.delete
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: controlId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/dpo/appointments:
     get:
       operationId: dpoListAppointments
@@ -9476,6 +9607,34 @@ components:
         safeguards: {type: string}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    SecurityControlCategory:
+      type: string
+      enum: [organizational, technical, physical, access_control, legal]
+    SecurityControl:
+      type: object
+      required: [id, code, name, category, framework_refs]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        code: {type: string}
+        name: {type: string}
+        category: {$ref: '#/components/schemas/SecurityControlCategory'}
+        description: {type: string}
+        framework_refs:
+          type: array
+          items: {type: string}
+    ActivityControlInput:
+      type: object
+      required: [control_id]
+      properties:
+        control_id: {$ref: '#/components/schemas/Uuid'}
+        description: {type: string}
+    ActivityControl:
+      type: object
+      required: [activity_id, control_id]
+      properties:
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        control_id: {$ref: '#/components/schemas/Uuid'}
+        description: {type: string}
     NoticeType:
       type: string
       enum: [privacy_notice, privacy_policy, cookie_policy, cctv, layered_short, employee]

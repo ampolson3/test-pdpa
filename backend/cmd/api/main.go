@@ -64,6 +64,7 @@ import (
 	versioninghttp "pdpa-platform/internal/platform/versioning/http"
 	workflowhttp "pdpa-platform/internal/platform/workflow/http"
 	ropahttp "pdpa-platform/internal/ropa/http"
+	riskservice "pdpa-platform/internal/risk/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
 	"pdpa-platform/internal/wiring"
 )
@@ -221,7 +222,8 @@ func run() error {
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
-	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc}
+	riskSvc := riskservice.New() // ROPA-09: the ม.37(1) security-measures catalog (no RRA module yet)
+	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc}
 	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc}
 	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read" // DPO-01 appointment order / PDPC evidence
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)

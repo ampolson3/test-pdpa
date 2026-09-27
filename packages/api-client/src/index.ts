@@ -66,6 +66,8 @@ export {
   useRetentionRules,
   useActivityRecipients,
   useActivityTransfers,
+  useSecurityControls,
+  useActivityControls,
   useActivityMutations,
   type ProcessingActivity,
   type ProcessingActivityInput,
@@ -86,6 +88,10 @@ export {
   type ActivityTransfer,
   type ActivityTransferInput,
   type ActivityTransferBasis,
+  type SecurityControl,
+  type SecurityControlCategory,
+  type ActivityControl,
+  type ActivityControlInput,
 } from "./activities";
 export {
   useNotices,

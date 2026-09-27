@@ -180,7 +180,7 @@ func TestActivities_CompletenessAndMissingItems(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		want := map[string]bool{"data": true, "purpose": true, "retention": true, "rights_access": true}
+		want := map[string]bool{"data": true, "purpose": true, "retention": true, "rights_access": true, "security_controls": true}
 		for _, m := range got.MissingItems {
 			if m == "controller" {
 				t.Errorf("role=controller should never require controller_party_id, got missing item %q", m)
@@ -204,6 +204,16 @@ func TestActivities_CompletenessAndMissingItems(t *testing.T) {
 			return err
 		}
 		if _, err := e.svc.AddRetentionRule(ctx, ropaservice.RetentionRule{ActivityID: activity.ID, RetentionBasis: "กฎหมายแรงงาน", TriggerEvent: "สิ้นสุดการจ้าง", DisposalMethod: "destroy"}); err != nil {
+			return err
+		}
+		controls, err := e.svc.ListControls(ctx)
+		if err != nil {
+			return err
+		}
+		if len(controls) == 0 {
+			t.Fatal("expected security controls to be seeded (ROPA-09, migration 00040)")
+		}
+		if _, err := e.svc.AddActivityControl(ctx, ropaservice.ActivityControl{ActivityID: activity.ID, ControlID: controls[0].ID}); err != nil {
 			return err
 		}
 		// Each Add* above recomputes and persists completeness (a real column, protected by the same

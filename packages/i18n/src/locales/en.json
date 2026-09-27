@@ -749,7 +749,10 @@
     "sensitiveTag": "Sensitive",
     "missingBasis": "No disclosure basis yet",
     "months": "months",
-    "roles": { "controller": "Controller", "processor": "Processor" },
+    "roles": {
+      "controller": "Controller",
+      "processor": "Processor"
+    },
     "statuses": {
       "draft": "Draft",
       "pending_approval": "Pending approval",
@@ -757,10 +760,28 @@
       "under_review": "Under review",
       "ended": "Ended"
     },
-    "dataSources": { "direct": "Collected directly from the data subject", "indirect": "Received from another source" },
-    "volumeBands": { "lt_1k": "Under 1,000", "1k_10k": "1,000–10,000", "10k_100k": "10,000–100,000", "gt_100k": "Over 100,000" },
-    "disposalMethods": { "delete": "Delete", "destroy": "Destroy", "anonymize": "Anonymize", "return": "Return" },
-    "recipientRoles": { "processor": "Processor", "controller": "Controller", "joint_controller": "Joint controller", "government": "Government body" },
+    "dataSources": {
+      "direct": "Collected directly from the data subject",
+      "indirect": "Received from another source"
+    },
+    "volumeBands": {
+      "lt_1k": "Under 1,000",
+      "1k_10k": "1,000–10,000",
+      "10k_100k": "10,000–100,000",
+      "gt_100k": "Over 100,000"
+    },
+    "disposalMethods": {
+      "delete": "Delete",
+      "destroy": "Destroy",
+      "anonymize": "Anonymize",
+      "return": "Return"
+    },
+    "recipientRoles": {
+      "processor": "Processor",
+      "controller": "Controller",
+      "joint_controller": "Joint controller",
+      "government": "Government body"
+    },
     "transferBases": {
       "adequacy": "Destination country has an adequate standard",
       "bcr": "Certified group Binding Corporate Rules",
@@ -774,7 +795,8 @@
       "data": "Data collected",
       "retention": "Retention and disposal",
       "recipients": "Recipients and disclosures",
-      "transfers": "Cross-border transfers"
+      "transfers": "Cross-border transfers",
+      "controls": "Security measures"
     },
     "missingItems": {
       "data": "No data categories yet",
@@ -784,7 +806,8 @@
       "rights_access": "Rights and access not described yet",
       "recipient_basis": "Some recipients are missing a disclosure basis",
       "sensitive_consent": "Sensitive data but no purpose linked to explicit consent",
-      "transfer_basis": "A foreign recipient has no logged transfer and legal basis"
+      "transfer_basis": "A foreign recipient has no logged transfer and legal basis",
+      "security_controls": "No security measure referenced yet (ม.37(1))"
     },
     "form": {
       "details": "Details",
@@ -818,7 +841,16 @@
       "safeguards": "Safeguards / mechanism evidence",
       "save": "Save",
       "cancel": "Cancel",
-      "saveError": "Couldn't save: {detail}"
+      "saveError": "Couldn't save: {detail}",
+      "securityControl": "Select a security measure",
+      "controlDescription": "Description (optional)"
+    },
+    "controlCategories": {
+      "organizational": "Organizational",
+      "technical": "Technical",
+      "physical": "Physical",
+      "access_control": "Access control",
+      "legal": "Legal"
     }
   },
   "notices": {

@@ -371,6 +371,18 @@ func (s *Service) completeness(ctx context.Context, a Activity) (int, []string, 
 		satisfied++
 	}
 
+	// ROPA-09 (ม.37(1)): every activity must reference at least one applied security measure.
+	checks++
+	controls, err := q.ListActivityControls(ctx, a.ID)
+	if err != nil {
+		return 0, nil, err
+	}
+	if len(controls) == 0 {
+		missing = append(missing, "security_controls")
+	} else {
+		satisfied++
+	}
+
 	// Conditional items — legally required when applicable, but their absence (no external
 	// recipients at all, no sensitive data) is itself a valid state, so they don't count toward
 	// the fixed 5-item denominator above; they still block submission when they do apply.
