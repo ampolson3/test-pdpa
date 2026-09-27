@@ -675,6 +675,27 @@ only Thai changed; allowed when both languages were updated together — two ind
 PNG-02's own pattern for a gate that locks a version at "approved" once it blocks), the read-side status check,
 HTTP contract.
 
+### ROPA-04 RoPA of the processor (`docs/modules/ROPA.md#ropa-04`) — done
+`internal/ropa/service/export.go` (`ropa.activity.read`, shared with ROPA-03/06/08 — no new permission or
+migration) — `ExportProcessorActivities` writes every `role='processor'` activity as one CSV row (a new sqlc
+query, `ListProcessorActivities`, code order, no pagination — a tenant's processor RoPA is meant to be filed as
+one document, following ORG-19's own export shape: UTF-8 with BOM, the export itself audited as
+`ropa.activity.export`). The PDPC's actual "ประกาศ RoPA ผู้ประมวลผล พ.ศ. 2565" form text wasn't available to fetch
+from here, so — the same "seed a draft flagged for legal review" move ORG-07 made for its Q-20 master data — the
+column set is a best-effort draft built only from fields ROPA-03/06/08 already model, not any newly invented
+legally-mandated field: code, name, description, the controller's identity (`controller_party_id` via
+`Org.GetExternalParty`), org unit, owner, every data category/subject type the activity's data rows reference
+(via `Org.GetMaster`, deduplicated), retention rules (period, trigger, disposal method), recipients (party name +
+role) and cross-border transfers (country + legal mechanism). Deliberately excludes `lawful_basis_code`: that's
+the *controller's* basis for processing under the controller's own RoPA, not something a processor's ม.40(3)
+record reports about work done on another controller's instructions. `GET
+/admin/v1/ropa/activities/processor-export` (a static path registered ahead of `/{id}` — `text/csv`,
+`Content-Disposition: attachment`, same response shape as ORG-19's audit-log export). UI: an export link next to
+`/ropa/activities`'s own "add activity" button (`processorActivitiesExportHref`, a plain `<a href>` through the
+BFF, same pattern as the audit log's own export link). Tests: unit (the export contains every column and a real
+processor activity's controller/recipient names, never includes a controller-role activity — the acceptance
+criterion), HTTP contract (401 without a principal, 200 with the header row present).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

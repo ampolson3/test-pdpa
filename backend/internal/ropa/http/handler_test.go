@@ -315,4 +315,13 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	if code, body := do("POST", purposesBase, &admin, map[string]any{"purpose_text": "การตลาด", "lawful_basis_code": consentBasisCode}, nil); code != 422 || !strings.Contains(body, "ropa.invalid_input") {
 		t.Errorf("consent-basis purpose without a Purpose link: %d %s, want 422 ropa.invalid_input", code, body)
 	}
+
+	// ROPA-04 processor RoPA export
+	exportURL := actBase + "/processor-export"
+	if code, _ := do("GET", exportURL, nil, nil, nil); code != 401 {
+		t.Errorf("export, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", exportURL, &viewer, nil, nil); code != 200 || !strings.Contains(body, "code,name,description,controller") {
+		t.Errorf("export: %d %s", code, body)
+	}
 }

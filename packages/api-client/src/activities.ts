@@ -25,6 +25,11 @@ const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const activitiesKey = ["ropa", "activities"] as const;
 const activityKey = (id: string) => [...activitiesKey, id] as const;
 
+/** The processor RoPA CSV export URL through the BFF (ROPA-04) — a plain link, the browser downloads it. */
+export function processorActivitiesExportHref(bffBaseUrl: string): string {
+  return `${bffBaseUrl}/admin/v1/ropa/activities/processor-export`;
+}
+
 /** GET /admin/v1/ropa/activities (ROPA-03), newest first. */
 export function useActivities(client: ApiClient, filter: { org_unit_id?: string; status?: ActivityStatus; q?: string } = {}) {
   return useInfiniteQuery({

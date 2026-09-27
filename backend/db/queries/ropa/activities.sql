@@ -16,6 +16,15 @@ SELECT id, legal_entity_id, org_unit_id, code, name, description, role, controll
 FROM ropa.processing_activities
 WHERE id = $1;
 
+-- name: ListProcessorActivities :many
+-- ROPA-04: every processor-role activity, for the export — code order, not paginated (a tenant's
+-- processor RoPA is meant to be printed/filed as one document, same as ORG-19's audit CSV export).
+SELECT id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
+    status, completeness, rights_and_access, row_version, created_at, updated_at
+FROM ropa.processing_activities
+WHERE role = 'processor'
+ORDER BY code;
+
 -- name: InsertActivity :one
 INSERT INTO ropa.processing_activities (id, tenant_id, legal_entity_id, org_unit_id, code, name, description, role,
     controller_party_id, owner_user_id, rights_and_access, created_by, updated_by)

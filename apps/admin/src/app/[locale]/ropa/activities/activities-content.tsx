@@ -6,6 +6,7 @@ import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
 import {
   createApiClient,
+  processorActivitiesExportHref,
   useActivities,
   useActivityMutations,
   useLegalEntities,
@@ -14,6 +15,8 @@ import {
   type ActivityStatus,
 } from "@pdpa/api-client";
 import { Link, useRouter } from "@/i18n/routing";
+
+const BFF = "/api/bff";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
 const STATUSES: ActivityStatus[] = ["draft", "pending_approval", "active", "under_review", "ended"];
@@ -63,7 +66,14 @@ export function ActivitiesContent() {
           <h1 className="text-xl font-semibold">{t("title")}</h1>
           <p className="text-slate-600">{t("intro")}</p>
         </div>
-        {canCreate && <Button onClick={() => { save.reset(); setDraft({ ...blank }); }}>{t("newActivity")}</Button>}
+        <div className="flex gap-2">
+          {canRead && (
+            <a className="rounded-md border border-slate-300 bg-white px-3 py-2 hover:bg-slate-50" href={processorActivitiesExportHref(BFF)}>
+              {t("exportProcessorRopa")}
+            </a>
+          )}
+          {canCreate && <Button onClick={() => { save.reset(); setDraft({ ...blank }); }}>{t("newActivity")}</Button>}
+        </div>
       </header>
 
       <div className="flex flex-wrap items-end gap-3">

@@ -58,6 +58,7 @@ export {
   type DataInventorySource,
 } from "./inventory";
 export {
+  processorActivitiesExportHref,
   useActivities,
   useProcessingActivity,
   useActivityPurposes,

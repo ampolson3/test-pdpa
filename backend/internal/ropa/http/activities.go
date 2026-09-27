@@ -2,6 +2,8 @@ package ropahttp
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	ropaservice "pdpa-platform/internal/ropa/service"
 
@@ -42,6 +44,16 @@ func (h *Strict) RopaListActivities(ctx context.Context, req RopaListActivitiesR
 		resp.NextCursor = &c
 	}
 	return resp, nil
+}
+
+func (h *Strict) RopaExportProcessorActivities(ctx context.Context, _ RopaExportProcessorActivitiesRequestObject) (RopaExportProcessorActivitiesResponseObject, error) {
+	buf, _, err := h.svc.ExportProcessorActivities(ctx)
+	if err != nil {
+		return nil, problem(err)
+	}
+	name := fmt.Sprintf(`attachment; filename="ropa-processor-%s.csv"`, time.Now().UTC().Format("20060102-150405"))
+	return RopaExportProcessorActivities200TextcsvResponse{Body: buf, ContentLength: int64(buf.Len()),
+		Headers: RopaExportProcessorActivities200ResponseHeaders{ContentDisposition: &name}}, nil
 }
 
 func (h *Strict) RopaCreateActivity(ctx context.Context, req RopaCreateActivityRequestObject) (RopaCreateActivityResponseObject, error) {

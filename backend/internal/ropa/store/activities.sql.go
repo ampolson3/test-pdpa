@@ -647,6 +647,70 @@ func (q *Queries) ListActivityRecipients(ctx context.Context, activityID uuid.UU
 	return items, nil
 }
 
+const listProcessorActivities = `-- name: ListProcessorActivities :many
+SELECT id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
+    status, completeness, rights_and_access, row_version, created_at, updated_at
+FROM ropa.processing_activities
+WHERE role = 'processor'
+ORDER BY code
+`
+
+type ListProcessorActivitiesRow struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	LegalEntityID     uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	OrgUnitID         uuid.UUID          `db:"org_unit_id" json:"org_unit_id"`
+	Code              string             `db:"code" json:"code"`
+	Name              string             `db:"name" json:"name"`
+	Description       *string            `db:"description" json:"description"`
+	Role              string             `db:"role" json:"role"`
+	ControllerPartyID pgtype.UUID        `db:"controller_party_id" json:"controller_party_id"`
+	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	Status            string             `db:"status" json:"status"`
+	Completeness      int16              `db:"completeness" json:"completeness"`
+	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	RowVersion        int32              `db:"row_version" json:"row_version"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// ROPA-04: every processor-role activity, for the export — code order, not paginated (a tenant's
+// processor RoPA is meant to be printed/filed as one document, same as ORG-19's audit CSV export).
+func (q *Queries) ListProcessorActivities(ctx context.Context) ([]ListProcessorActivitiesRow, error) {
+	rows, err := q.db.Query(ctx, listProcessorActivities)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListProcessorActivitiesRow
+	for rows.Next() {
+		var i ListProcessorActivitiesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LegalEntityID,
+			&i.OrgUnitID,
+			&i.Code,
+			&i.Name,
+			&i.Description,
+			&i.Role,
+			&i.ControllerPartyID,
+			&i.OwnerUserID,
+			&i.Status,
+			&i.Completeness,
+			&i.RightsAndAccess,
+			&i.RowVersion,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRetentionRules = `-- name: ListRetentionRules :many
 SELECT id, activity_id, data_category_id, retention_months, retention_basis, trigger_event, disposal_method,
     row_version, created_at

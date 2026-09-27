@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -443,6 +444,24 @@ func (e RopaCreateActivityParamsAcceptLanguage) Valid() bool {
 	case RopaCreateActivityParamsAcceptLanguageEn:
 		return true
 	case RopaCreateActivityParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaExportProcessorActivitiesParamsAcceptLanguage.
+const (
+	RopaExportProcessorActivitiesParamsAcceptLanguageEn RopaExportProcessorActivitiesParamsAcceptLanguage = "en"
+	RopaExportProcessorActivitiesParamsAcceptLanguageTh RopaExportProcessorActivitiesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaExportProcessorActivitiesParamsAcceptLanguage enum.
+func (e RopaExportProcessorActivitiesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaExportProcessorActivitiesParamsAcceptLanguageEn:
+		return true
+	case RopaExportProcessorActivitiesParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -1380,6 +1399,15 @@ type RopaCreateActivityParams struct {
 // RopaCreateActivityParamsAcceptLanguage defines parameters for RopaCreateActivity.
 type RopaCreateActivityParamsAcceptLanguage string
 
+// RopaExportProcessorActivitiesParams defines parameters for RopaExportProcessorActivities.
+type RopaExportProcessorActivitiesParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaExportProcessorActivitiesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RopaExportProcessorActivitiesParamsAcceptLanguage defines parameters for RopaExportProcessorActivities.
+type RopaExportProcessorActivitiesParamsAcceptLanguage string
+
 // RopaGetActivityParams defines parameters for RopaGetActivity.
 type RopaGetActivityParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -1688,6 +1716,9 @@ type ServerInterface interface {
 	// RopaCreateActivity Start a processing activity (draft)
 	// (POST /admin/v1/ropa/activities)
 	RopaCreateActivity(w http.ResponseWriter, r *http.Request, params RopaCreateActivityParams)
+	// RopaExportProcessorActivities Export every processor-role activity (ROPA-04, ม.40(3)) as CSV — the export itself is audited
+	// (GET /admin/v1/ropa/activities/processor-export)
+	RopaExportProcessorActivities(w http.ResponseWriter, r *http.Request, params RopaExportProcessorActivitiesParams)
 	// RopaGetActivity One processing activity, with its computed completeness and missing ม.39 items
 	// (GET /admin/v1/ropa/activities/{id})
 	RopaGetActivity(w http.ResponseWriter, r *http.Request, id Uuid, params RopaGetActivityParams)
@@ -1781,6 +1812,12 @@ func (_ Unimplemented) RopaListActivities(w http.ResponseWriter, r *http.Request
 // RopaCreateActivity Start a processing activity (draft)
 // (POST /admin/v1/ropa/activities)
 func (_ Unimplemented) RopaCreateActivity(w http.ResponseWriter, r *http.Request, params RopaCreateActivityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaExportProcessorActivities Export every processor-role activity (ROPA-04, ม.40(3)) as CSV — the export itself is audited
+// (GET /admin/v1/ropa/activities/processor-export)
+func (_ Unimplemented) RopaExportProcessorActivities(w http.ResponseWriter, r *http.Request, params RopaExportProcessorActivitiesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2087,6 +2124,47 @@ func (siw *ServerInterfaceWrapper) RopaCreateActivity(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RopaCreateActivity(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaExportProcessorActivities operation middleware
+func (siw *ServerInterfaceWrapper) RopaExportProcessorActivities(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaExportProcessorActivitiesParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaExportProcessorActivitiesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaExportProcessorActivities(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3797,6 +3875,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/admin/v1/ropa/activities", wrapper.RopaCreateActivity)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/ropa/activities/processor-export", wrapper.RopaExportProcessorActivities)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/ropa/activities/{id}", wrapper.RopaGetActivity)
 	})
 	r.Group(func(r chi.Router) {
@@ -4020,6 +4101,74 @@ func (response RopaCreateActivity422ApplicationProblemPlusJSONResponse) VisitRop
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaExportProcessorActivitiesRequestObject struct {
+	Params RopaExportProcessorActivitiesParams
+}
+
+type RopaExportProcessorActivitiesResponseObject interface {
+	VisitRopaExportProcessorActivitiesResponse(w http.ResponseWriter) error
+}
+
+type RopaExportProcessorActivities200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type RopaExportProcessorActivities200TextcsvResponse struct {
+	Body          io.Reader
+	Headers       RopaExportProcessorActivities200ResponseHeaders
+	ContentLength int64
+}
+
+func (response RopaExportProcessorActivities200TextcsvResponse) VisitRopaExportProcessorActivitiesResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "text/csv")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type RopaExportProcessorActivities401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaExportProcessorActivities401ApplicationProblemPlusJSONResponse) VisitRopaExportProcessorActivitiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaExportProcessorActivities403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaExportProcessorActivities403ApplicationProblemPlusJSONResponse) VisitRopaExportProcessorActivitiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -6379,6 +6528,9 @@ type StrictServerInterface interface {
 	// RopaCreateActivity Start a processing activity (draft)
 	// (POST /admin/v1/ropa/activities)
 	RopaCreateActivity(ctx context.Context, request RopaCreateActivityRequestObject) (RopaCreateActivityResponseObject, error)
+	// RopaExportProcessorActivities Export every processor-role activity (ROPA-04, ม.40(3)) as CSV — the export itself is audited
+	// (GET /admin/v1/ropa/activities/processor-export)
+	RopaExportProcessorActivities(ctx context.Context, request RopaExportProcessorActivitiesRequestObject) (RopaExportProcessorActivitiesResponseObject, error)
 	// RopaGetActivity One processing activity, with its computed completeness and missing ม.39 items
 	// (GET /admin/v1/ropa/activities/{id})
 	RopaGetActivity(ctx context.Context, request RopaGetActivityRequestObject) (RopaGetActivityResponseObject, error)
@@ -6550,6 +6702,32 @@ func (sh *strictHandler) RopaCreateActivity(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RopaCreateActivityResponseObject); ok {
 		if err := validResponse.VisitRopaCreateActivityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaExportProcessorActivities operation middleware
+func (sh *strictHandler) RopaExportProcessorActivities(w http.ResponseWriter, r *http.Request, params RopaExportProcessorActivitiesParams) {
+	var request RopaExportProcessorActivitiesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaExportProcessorActivities(ctx, request.(RopaExportProcessorActivitiesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaExportProcessorActivities")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaExportProcessorActivitiesResponseObject); ok {
+		if err := validResponse.VisitRopaExportProcessorActivitiesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

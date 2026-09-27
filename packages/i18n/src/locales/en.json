@@ -676,6 +676,7 @@
     "title": "RoPA — record of processing activities",
     "intro": "All 8 s.39 items: data collected, purpose, controller, retention, rights and access, recipients, request refusals, and security measures.",
     "newActivity": "Add activity",
+    "exportProcessorRopa": "Export processor RoPA (CSV)",
     "filterStatus": "Status",
     "allStatuses": "All statuses",
     "filterUnit": "Department",

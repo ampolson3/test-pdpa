@@ -6849,6 +6849,32 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/activities/processor-export:
+    get:
+      operationId: ropaExportProcessorActivities
+      tags: [ropa]
+      summary: Export every processor-role activity (ROPA-04, ม.40(3)) as CSV — the export itself is audited
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: CSV (UTF-8 with BOM)
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            text/csv:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/ropa/activities/{id}:
     get:
       operationId: ropaGetActivity

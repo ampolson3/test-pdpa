@@ -276,6 +276,29 @@ with the itemized list, two-tenant isolation), HTTP contract (401/403/400 schema
 
 **Acceptance criteria:** ส่งออก RoPA ผู้ประมวลผลได้ครบหัวข้อตามประกาศ
 
+**Implementation (ROPA-04):** `internal/ropa/service/export.go` (`ropa.activity.read`, shared with
+ROPA-03/06/08 — no new permission or migration) — `ExportProcessorActivities` writes every
+`role='processor'` activity (a new sqlc query, `ListProcessorActivities`, code order — a tenant's
+processor RoPA is meant to be filed as one document, so it isn't paginated, following ORG-19's own CSV
+export shape: UTF-8 with BOM, the export itself audited as `ropa.activity.export`). The PDPC's actual
+"ประกาศ RoPA ผู้ประมวลผล พ.ศ. 2565" form text wasn't available to fetch from here, so — the same "seed a
+draft flagged for legal review" move ORG-07 made for its Q-20 master data — the column set is a
+best-effort draft built only from fields ROPA-03/06/08 already model, not any newly invented
+legally-mandated field: code, name, description, the controller's identity (`controller_party_id` via
+`Org.GetExternalParty`), org unit, owner, every data category and subject type the activity's
+`activity_data` rows reference (via `Org.GetMaster`, deduplicated), its retention rules (period, trigger,
+disposal method), its recipients (party name + role) and its cross-border transfers (country + legal
+mechanism). It deliberately excludes `lawful_basis_code`: that's the *controller's* basis for processing
+under the controller's own RoPA, not something a processor's ม.40(3) record reports about work done on
+another controller's instructions. `GET /admin/v1/ropa/activities/processor-export` (registered as a
+static path ahead of `/{id}` — `text/csv`, `Content-Disposition: attachment`, same response shape as
+ORG-19's audit-log export). UI: an "ส่งออก RoPA ผู้ประมวลผล (CSV)" link next to `/ropa/activities`'s own
+"เพิ่มกิจกรรม" button (`processorActivitiesExportHref`, a plain `<a href>` through the BFF, same pattern
+as the audit log's own export link — the browser downloads it, no separate query hook needed). Tests:
+unit (the export contains every column and a real processor activity's controller/recipient names, and
+never includes a controller-role activity — the acceptance criterion), HTTP contract (401 without a
+principal, 200 with the header row present).
+
 <a id="ropa-05"></a>
 ### ROPA-05 เพิ่มกิจกรรมแบบปกติและแบบมาตรฐาน
 
