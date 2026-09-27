@@ -793,6 +793,33 @@ visible to both tenants, by design), HTTP contract (401/403/201/200/404/422). Ex
 asserted an exact "fully complete" activity or an exact missing-items list were updated for the new 6-item
 denominator (previously 5).
 
+### PNG-04 Indirect collection notice (`docs/modules/PNG.md#png-04`) — done
+`notice.indirect_collections` was already fully specified in the baseline migrations (`notify_due_at date
+NOT NULL`, `status` pending/notified/overdue/exempted, `method`, `notified_at`, `evidence_file_id`) along
+with the `notice.indirect.*` permissions — no new migration or permission code for the table itself.
+`internal/notice/service/indirect.go` follows BRE-07's own deadline pattern (pure, clock-testable
+`Checkpoints`/`ToSchedule` functions + scheduled River jobs) rather than instantiating the generic PLT-05
+workflow engine, even though the backlog lists PLT-05 as a dependency: the engine's task assignee is baked
+into its Definition JSON at the type level, not resolvable per record, and this table has no owner column
+to resolve one from — so `notice.indirect_due` (BP-04's own job name) alerts role DPO by default
+(`iamservice.UsersWithRole`, the same "default recipients until real routing exists" fallback BRE-07 used
+before BRE-04 existed; two new global notification templates in migration 00041). Reminders fire at 20 and
+25 days elapsed, overdue at 30 (ม.25 counts calendar days) — matching PLT-05's own worked reminder example
+almost exactly, just without the engine itself. `RegisterCollection` validates the source party (and an
+optional linked RoPA activity) and computes `notify_due_at`; `RecordNotice` is the acceptance criterion's
+other half — method + evidence (a PLT-09 file, `Files.Get` + `AttachSystem`) close a `pending` or
+`overdue` record as `notified`, and a stale reminder tick afterward is a harmless no-op. `exempted` is in
+the schema and the new `docs/states/state-machines.yaml#PNG-04` machine but reachable by no transition in
+this pass — deliberately deferred, since ม.25's exemption grounds aren't modeled by any column yet.
+
+API `/admin/v1/notices/indirect-collections` (cursor pagination, list + create), `/{id}` (get),
+`/{id}/notify` (ETag/If-Match). UI `/notices/indirect-collections` (linked from `/notices`): a register
+form, a status-filtered list with the due date and a colored status badge, and an inline "record notice"
+panel (method + `FileUploader` evidence). Tests: unit (`Checkpoints`/`ToSchedule` incl. a late-recorded
+event still alerting at once, validation, the acceptance criterion directly — overdue after the 30-day
+checkpoint, still closable afterwards with evidence, a stale tick is harmless — two-tenant isolation),
+HTTP contract (401/403/201/200/404/412/428/422).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

@@ -2591,6 +2591,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/notices/indirect-collections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Personal data obtained from a source other than the data subject, due for notice within 30 days (PNG-04, ม.25) */
+        get: operations["noticeListIndirectCollections"];
+        put?: never;
+        /** Record an indirect-collection event and start its 30-day notice countdown (ม.25) */
+        post: operations["noticeRegisterIndirectCollection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/notices/indirect-collections/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One indirect-collection record */
+        get: operations["noticeGetIndirectCollection"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/notices/indirect-collections/{id}/notify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close the item once the data subject has been notified — the method used plus evidence (PNG-04's acceptance criterion) */
+        post: operations["noticeRecordIndirectNotice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3555,6 +3607,36 @@ export interface components {
         NoticeChecklistItem: {
             code: components["schemas"]["NoticeChecklistItemCode"];
             complete: boolean;
+        };
+        /** @enum {string} */
+        IndirectCollectionMethod: "email" | "sms" | "letter" | "website" | "other";
+        /** @enum {string} */
+        IndirectCollectionStatus: "pending" | "notified" | "overdue" | "exempted";
+        IndirectCollectionInput: {
+            source_party_id: components["schemas"]["Uuid"];
+            activity_id?: components["schemas"]["Uuid"];
+            /** Format: date */
+            obtained_at: string;
+            subject_count?: number;
+        };
+        IndirectCollection: {
+            id: components["schemas"]["Uuid"];
+            source_party_id: components["schemas"]["Uuid"];
+            activity_id?: components["schemas"]["Uuid"];
+            /** Format: date */
+            obtained_at: string;
+            subject_count?: number;
+            /** Format: date */
+            notify_due_at: string;
+            method?: components["schemas"]["IndirectCollectionMethod"];
+            notified_at?: components["schemas"]["Timestamp"];
+            evidence_file_id?: components["schemas"]["Uuid"];
+            status: components["schemas"]["IndirectCollectionStatus"];
+            row_version: number;
+        };
+        RecordIndirectNoticeInput: {
+            method: components["schemas"]["IndirectCollectionMethod"];
+            evidence_file_id: components["schemas"]["Uuid"];
         };
         /**
          * @example {
@@ -11272,6 +11354,138 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    noticeListIndirectCollections: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["IndirectCollectionStatus"];
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["IndirectCollection"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    noticeRegisterIndirectCollection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IndirectCollectionInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndirectCollection"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    noticeGetIndirectCollection: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndirectCollection"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    noticeRecordIndirectNotice: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordIndirectNoticeInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndirectCollection"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
 }

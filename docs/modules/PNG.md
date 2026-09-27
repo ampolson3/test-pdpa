@@ -269,6 +269,34 @@ review round once edited; that is existing PLT-08 behaviour, not something to wo
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
 
+**Implementation (PNG-04):** `notice.indirect_collections` (already fully specified in the baseline
+migrations — `notify_due_at date NOT NULL`, `status` pending/notified/overdue/exempted, `method`,
+`notified_at`, `evidence_file_id` — no new migration) plus the already-seeded `notice.indirect.*`
+permissions (no new permission code). `internal/notice/service/indirect.go` follows BRE-07's exact
+deadline pattern rather than instantiating the generic PLT-05 workflow engine: `Checkpoints`/`ToSchedule`
+are pure, clock-testable functions (reminders at 20 and 25 days elapsed, overdue at 30 — matching
+PLT-05's own worked example for a 30-day SLA) and `notice.indirect_due` River jobs (the exact job name
+BP-04's own sequence already names) fire them. This was a deliberate choice, not a literal use of PLT-05
+itself: the engine's task assignee is baked into its Definition JSON at the *type* level, not resolvable
+per record, and `notice.indirect_collections` has no owner column to resolve one from — so alerts go to
+role DPO (`iamservice.UsersWithRole`, migration 00041's two new global notification templates,
+`notice.indirect_reminder`/`notice.indirect_overdue`), the same "default recipients until real routing
+exists" fallback BRE-07 used before BRE-04. `RegisterCollection` validates the source party (and,
+optionally, a linked RoPA activity) and computes `notify_due_at = obtained_at + 30 calendar days` (ม.25
+counts calendar days, not business days). `RecordNotice` is the acceptance criterion's other half — method
++ evidence (a PLT-09 file, `Files.Get` + `AttachSystem`) close a `pending` or `overdue` record as
+`notified`; a stale `notice.indirect_due` tick after that is a harmless no-op. `exempted` is in the schema
+and the new `docs/states/state-machines.yaml#PNG-04` machine but has no transition into it in this pass —
+deliberately deferred (ม.25's exemption grounds aren't modeled by any column yet; add the transition when
+a screen actually needs it, rather than guessing the UI now). API
+`/admin/v1/notices/indirect-collections` (cursor pagination, list + create) and `/{id}` (get),
+`/{id}/notify` (ETag/If-Match). UI `/notices/indirect-collections` (linked from `/notices`): a register
+form, a status-filtered list with the due date and a colored status badge, and an inline "record notice"
+panel (method + `FileUploader` evidence). Tests: unit (`Checkpoints`/`ToSchedule` incl. a late-recorded
+event still alerting at once, validation, the acceptance criterion directly — overdue after the 30-day
+checkpoint, still closable afterwards with evidence, a stale tick is harmless — two-tenant isolation),
+HTTP contract (401/403/201/200/404/412/428/422).
+
 <a id="png-05"></a>
 ### PNG-05 ประกาศสองภาษา
 

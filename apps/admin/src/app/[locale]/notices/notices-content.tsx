@@ -96,7 +96,10 @@ export function NoticesContent() {
           <h1 className="text-xl font-semibold">{t("title")}</h1>
           <p className="text-slate-600">{t("intro")}</p>
         </div>
-        {canCreate && <Button onClick={() => { wizard.reset(); setDraft({ ...blank }); }} data-testid="new-notice">{t("newNotice")}</Button>}
+        <div className="flex gap-2">
+          <Link className="self-center text-sky-700 underline" href="/notices/indirect-collections">{t("indirectCollectionsLink")}</Link>
+          {canCreate && <Button onClick={() => { wizard.reset(); setDraft({ ...blank }); }} data-testid="new-notice">{t("newNotice")}</Button>}
+        </div>
       </header>
 
       {draft && (

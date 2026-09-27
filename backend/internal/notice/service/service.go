@@ -11,8 +11,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
@@ -20,6 +24,8 @@ import (
 	audit "pdpa-platform/internal/platform/audit/service"
 	docsservice "pdpa-platform/internal/platform/docs"
 	"pdpa-platform/internal/platform/docs/render"
+	"pdpa-platform/internal/platform/files"
+	"pdpa-platform/internal/platform/notify"
 	ropaservice "pdpa-platform/internal/ropa/service"
 )
 
@@ -61,11 +67,26 @@ type Docs interface {
 	PublishedContent(ctx context.Context, id uuid.UUID) (render.Content, bool, error)
 }
 
+// Files is what PNG-04 needs from file storage (PLT-09): the caller's own clean upload as evidence of an
+// indirect-collection notice.
+type Files interface {
+	Get(ctx context.Context, id uuid.UUID) (files.File, error)
+	Open(ctx context.Context, id uuid.UUID) (io.ReadCloser, files.File, error)
+	AttachSystem(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error
+}
+
 type Service struct {
 	Audit *audit.Service
 	Org   Org
 	Ropa  Ropa
 	Docs  Docs
+	Files Files
+	// Notify and River drive PNG-04's 30-day indirect-collection reminders (notice.indirect_due); nil in
+	// contexts that don't need them (e.g. a stub in a test that never registers a collection).
+	Notify *notify.Service
+	River  *river.Client[pgx.Tx]
+	// Now is the clock (injectable for deadline tests); nil means time.Now.
+	Now func() time.Time
 	// EnforceChecklist gates PNG-02's ม.23 checklist at publish time (CheckPublishable) — configurable per
 	// CLAUDE.md (a tunable, not a legally-relevant behaviour with a decisions.md entry); default true.
 	EnforceChecklist bool

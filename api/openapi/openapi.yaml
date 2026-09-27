@@ -8112,6 +8112,167 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/notices/indirect-collections:
+    get:
+      operationId: noticeListIndirectCollections
+      tags: [notice]
+      summary: Personal data obtained from a source other than the data subject, due for notice within 30 days (PNG-04, ม.25)
+      x-permission: notice.indirect.read
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/IndirectCollectionStatus'
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/IndirectCollection'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: noticeRegisterIndirectCollection
+      tags: [notice]
+      summary: Record an indirect-collection event and start its 30-day notice countdown (ม.25)
+      x-permission: notice.indirect.create
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndirectCollectionInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndirectCollection'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/notices/indirect-collections/{id}:
+    get:
+      operationId: noticeGetIndirectCollection
+      tags: [notice]
+      summary: One indirect-collection record
+      x-permission: notice.indirect.read
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndirectCollection'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/notices/indirect-collections/{id}/notify:
+    post:
+      operationId: noticeRecordIndirectNotice
+      tags: [notice]
+      summary: Close the item once the data subject has been notified — the method used plus evidence (PNG-04's acceptance criterion)
+      x-permission: notice.indirect.update
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordIndirectNoticeInput'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndirectCollection'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
 components:
   securitySchemes:
     adminJwt:
@@ -9693,6 +9854,41 @@ components:
       properties:
         code: {$ref: '#/components/schemas/NoticeChecklistItemCode'}
         complete: {type: boolean}
+    IndirectCollectionMethod:
+      type: string
+      enum: [email, sms, letter, website, other]
+    IndirectCollectionStatus:
+      type: string
+      enum: [pending, notified, overdue, exempted]
+    IndirectCollectionInput:
+      type: object
+      required: [source_party_id, obtained_at]
+      properties:
+        source_party_id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        obtained_at: {type: string, format: date}
+        subject_count: {type: integer, minimum: 0}
+    IndirectCollection:
+      type: object
+      required: [id, source_party_id, obtained_at, notify_due_at, status, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        source_party_id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        obtained_at: {type: string, format: date}
+        subject_count: {type: integer}
+        notify_due_at: {type: string, format: date}
+        method: {$ref: '#/components/schemas/IndirectCollectionMethod'}
+        notified_at: {$ref: '#/components/schemas/Timestamp'}
+        evidence_file_id: {$ref: '#/components/schemas/Uuid'}
+        status: {$ref: '#/components/schemas/IndirectCollectionStatus'}
+        row_version: {type: integer}
+    RecordIndirectNoticeInput:
+      type: object
+      required: [method, evidence_file_id]
+      properties:
+        method: {$ref: '#/components/schemas/IndirectCollectionMethod'}
+        evidence_file_id: {$ref: '#/components/schemas/Uuid'}
     BusinessCalendarInput:
       type: object
       required: [name, timezone, workdays]

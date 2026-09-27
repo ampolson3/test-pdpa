@@ -10,3 +10,7 @@ output-options:
     - noticeGetNotice
     - noticeGetChecklist
     - noticeGetTranslationStatus
+    - noticeListIndirectCollections
+    - noticeRegisterIndirectCollection
+    - noticeGetIndirectCollection
+    - noticeRecordIndirectNotice

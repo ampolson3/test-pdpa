@@ -1010,3 +1010,35 @@ machines:
     event: assign
     guard: เป็นเจ้าของ · คำตอบยังเป็น draft
     action: แจ้งผู้รับ (form.section_assigned) · audit
+- machine: PNG-04
+  title: Indirect-collection notice (ม.25)
+  column: notice.indirect_collections.status
+  states:
+  - pending
+  - notified
+  - overdue
+  - exempted
+  initial:
+  - pending
+  terminal:
+  - notified
+  - exempted
+  transitions:
+  - from: pending
+    to: overdue
+    trigger: ครบ 30 วันนับแต่ได้ข้อมูลโดยยังไม่ได้แจ้ง
+    event: notice.indirect_due
+    guard: null
+    action: alert (notice.indirect_overdue → role DPO) · audit
+  - from: pending
+    to: notified
+    trigger: บันทึกวิธีแจ้ง + หลักฐาน
+    event: notify
+    guard: method ระบุ · evidence_file_id เป็นไฟล์ของผู้ใช้เองที่ยังไม่ผูกกับรายการอื่น
+    action: แนบไฟล์หลักฐาน (AttachSystem) · audit
+  - from: overdue
+    to: notified
+    trigger: บันทึกวิธีแจ้ง + หลักฐาน (ล่าช้า)
+    event: notify
+    guard: method ระบุ · evidence_file_id เป็นไฟล์ของผู้ใช้เองที่ยังไม่ผูกกับรายการอื่น
+    action: แนบไฟล์หลักฐาน (AttachSystem) · audit

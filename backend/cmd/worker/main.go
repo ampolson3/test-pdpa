@@ -17,6 +17,7 @@ import (
 	"github.com/riverqueue/river"
 
 	breach "pdpa-platform/internal/breach/service"
+	notice "pdpa-platform/internal/notice/service"
 	pdb "pdpa-platform/internal/pkg/db"
 	auditjobs "pdpa-platform/internal/platform/audit/jobs"
 	auditservice "pdpa-platform/internal/platform/audit/service"
@@ -97,6 +98,8 @@ func run() error {
 	breachSvc := wiring.Breach(notifySvc, fileStore(store, inserter), inserter, auditservice.New(), notifySvc.Keyring, nil) // BRE-09 recording is admin-only
 	river.AddWorker(workers, &breach.TimerWorker{Service: breachSvc})
 	river.AddWorker(workers, &breach.NoticeWorker{Service: breachSvc})
+	noticeSvc := &notice.Service{Notify: notifySvc, River: inserter} // PNG-04: 30-day indirect-collection reminders
+	river.AddWorker(workers, &notice.DueWorker{Service: noticeSvc})
 	// PLT-16: PDF / Word of published documents (Gotenberg via GOTENBERG_URL, or a local Chromium via CHROMIUM_PATH).
 	river.AddWorker(workers, &docs.Renderer{Service: wiring.Docs(nil, fileStore(store, inserter), inserter, auditservice.New(), render.FromEnv()), Logger: slog.Default()})
 

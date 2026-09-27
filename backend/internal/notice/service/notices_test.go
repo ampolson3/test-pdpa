@@ -35,6 +35,7 @@ type env struct {
 }
 
 var noticePermissions = []string{"notice.document.read", "notice.document.create", "notice.document.update",
+	"notice.indirect.read", "notice.indirect.create", "notice.indirect.update",
 	"ropa.activity.read", "ropa.activity.create", "ropa.activity.update", "org.structure.read", "org.structure.update",
 	"org.masterdata.read", "org.party.read", "org.party.create", "org.party.update"}
 
@@ -47,6 +48,7 @@ func setup(t *testing.T, suffix string) env {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
+				`DELETE FROM notice.indirect_collections`, `DELETE FROM platform.files`,
 				`DELETE FROM notice.notice_activity_links`, `DELETE FROM notice.notices`,
 				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM ropa.activity_transfers`, `DELETE FROM ropa.activity_recipients`,
@@ -54,7 +56,7 @@ func setup(t *testing.T, suffix string) env {
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM org.data_categories WHERE tenant_id IS NOT NULL`,
 				`DELETE FROM org.external_parties`, `DELETE FROM org.org_units`,
 				`UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`,
-				`DELETE FROM platform.audit_log`,
+				`DELETE FROM iam.role_assignments`, `DELETE FROM platform.audit_log`,
 			} {
 				_, _ = tx.Exec(ctx, q)
 			}
@@ -75,12 +77,19 @@ func setup(t *testing.T, suffix string) env {
 
 	var dpo uuid.UUID
 	if err := pdb.WithTenantTx(ctx, owner, tenant.ID.String(), "", func(ctx context.Context) error {
-		return pdb.MustTxFromContext(ctx).QueryRow(ctx,
+		tx := pdb.MustTxFromContext(ctx)
+		if err := tx.QueryRow(ctx,
 			`INSERT INTO iam.users (tenant_id, email, display_name, status) VALUES ($1, $2, 'Dee DPO', 'active') RETURNING id`,
-			tenant.ID, uuid.NewString()[:8]+"@notice.example").Scan(&dpo)
+			tenant.ID, uuid.NewString()[:8]+"@notice.example").Scan(&dpo); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO iam.role_assignments (tenant_id, user_id, role_id, scope_type)
+			SELECT $1, $2, id, 'tenant' FROM iam.roles WHERE code = 'DPO' AND tenant_id IS NULL`, tenant.ID, dpo)
+		return err
 	}); err != nil {
 		t.Fatal(err)
 	}
+	svc.Files, svc.Notify, svc.River = nil, nil, client
 	return env{app: app, tenant: tenant, dpo: dpo, svc: svc, org: orgSvc, ropa: ropaSvc, docs: docsSvc, ver: versioningSvc}
 }
 

@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
@@ -52,9 +54,10 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
+				`DELETE FROM notice.indirect_collections`, `DELETE FROM platform.files`,
 				`DELETE FROM notice.notice_activity_links`, `DELETE FROM notice.notices`,
 				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
-				`DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
+				`DELETE FROM org.external_parties`, `DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
 			} {
 				_, _ = tx.Exec(ctx, q)
 			}
@@ -70,12 +73,18 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 	versioningSvc := wiring.Versioning(nil, audit.New())
 	docsSvc := wiring.Docs(versioningSvc, nil, client, audit.New(), nil)
 	docsSvc.RegisterVersioning()
-	svc := &noticeservice.Service{Audit: audit.New(), Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc}
+	svc := &noticeservice.Service{Audit: audit.New(), Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc, River: client}
 
 	var legalEntity uuid.UUID
+	var sourceParty uuid.UUID
 	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
 		e, err := orgSvc.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ทดสอบ จำกัด", IsController: true}, 0)
+		if err != nil {
+			return err
+		}
 		legalEntity = e.ID
+		p, err := orgSvc.SaveExternalParty(ctx, orgservice.ExternalParty{PartyType: "controller", NameTh: "แหล่งข้อมูล", CountryCode: "TH"}, 0)
+		sourceParty = p.ID
 		return err
 	})
 
@@ -93,7 +102,8 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 		}
 	}
 	other := uuid.New()
-	grants := map[string][]string{tenant.UserID.String(): {"notice.document.read", "notice.document.create", "notice.document.update"}, other.String(): {"notice.document.read"}}
+	grants := map[string][]string{tenant.UserID.String(): {"notice.document.read", "notice.document.create", "notice.document.update",
+		"notice.indirect.read", "notice.indirect.create", "notice.indirect.update"}, other.String(): {"notice.document.read", "notice.indirect.read"}}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
 	})
@@ -144,7 +154,7 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 	srv := httptest.NewServer(r)
 	t.Cleanup(srv.Close)
 
-	do := func(method, path string, user *uuid.UUID, body any) (int, string) {
+	do := func(method, path string, user *uuid.UUID, body any, headers ...map[string]string) (int, string) {
 		var buf bytes.Buffer
 		if body != nil {
 			_ = json.NewEncoder(&buf).Encode(body)
@@ -155,6 +165,11 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 		}
 		if user != nil {
 			req.Header.Set("X-Test-User", user.String())
+		}
+		for _, hs := range headers {
+			for k, v := range hs {
+				req.Header.Set(k, v)
+			}
 		}
 		res, err := http.DefaultClient.Do(req)
 		if err != nil {
@@ -223,4 +238,54 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 	if code, _ := do("GET", "/admin/v1/notices/"+uuid.New().String()+"/translation-status", &admin, nil); code != 404 {
 		t.Errorf("translation-status, unknown notice: %d, want 404", code)
 	}
+
+	// PNG-04 indirect-collection notices (ม.25).
+	icBase := "/admin/v1/notices/indirect-collections"
+	if code, _ := do("GET", icBase, nil, nil); code != 401 {
+		t.Errorf("indirect-collections, no principal: %d, want 401", code)
+	}
+	icInput := map[string]any{"source_party_id": sourceParty, "obtained_at": time.Now().UTC().AddDate(0, 0, -1).Format("2006-01-02")}
+	if code, _ := do("POST", icBase, &viewer, icInput); code != 403 {
+		t.Errorf("register with read permission only: %d, want 403", code)
+	}
+	if code, body := do("POST", icBase, &admin, map[string]any{"source_party_id": uuid.New(), "obtained_at": "2020-01-01"}); code != 422 || !strings.Contains(body, "notice.invalid_input") {
+		t.Errorf("unknown source_party_id: %d %s, want 422", code, body)
+	}
+	code, body = do("POST", icBase, &admin, icInput)
+	if code != 201 || !strings.Contains(body, `"status":"pending"`) {
+		t.Fatalf("register indirect collection: %d %s", code, body)
+	}
+	var ic noticehttp.IndirectCollection
+	_ = json.Unmarshal([]byte(body), &ic)
+	icItem := icBase + "/" + ic.Id.String()
+	if code, body := do("GET", icItem, &viewer, nil); code != 200 || !strings.Contains(body, `"status":"pending"`) {
+		t.Errorf("get indirect collection: %d %s", code, body)
+	}
+	if code, _ := do("GET", icBase+"/"+uuid.New().String(), &admin, nil); code != 404 {
+		t.Errorf("unknown indirect collection: %d, want 404", code)
+	}
+	if code, body := do("GET", icBase+"?status=pending", &viewer, nil); code != 200 || !strings.Contains(body, ic.Id.String()) {
+		t.Errorf("list indirect collections: %d %s", code, body)
+	}
+
+	var evidenceFileID uuid.UUID
+	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		evidenceFileID = uuid.New()
+		_, err := pdb.MustTxFromContext(ctx).Exec(ctx, `INSERT INTO platform.files (id, tenant_id, bucket, object_key, file_name, mime_type, size_bytes, sha256)
+			VALUES ($1, current_setting('app.tenant_id')::uuid, 'b', $2, 'evidence.pdf', 'application/pdf', 1, repeat('0', 64))`, evidenceFileID, evidenceFileID.String())
+		return err
+	})
+	notifyURL := icItem + "/notify"
+	notifyInput := map[string]any{"method": "email", "evidence_file_id": evidenceFileID}
+	if code, _ := do("POST", notifyURL, &admin, notifyInput); code != 428 {
+		t.Errorf("record notice without If-Match: %d, want 428", code)
+	}
+	if code, _ := do("POST", notifyURL, &admin, notifyInput, map[string]string{"If-Match": `"99"`}); code != 412 {
+		t.Errorf("record notice with wrong If-Match: %d, want 412", code)
+	}
+	if code, body := do("POST", notifyURL, &admin, notifyInput, map[string]string{"If-Match": etagOf(ic.RowVersion)}); code != 200 || !strings.Contains(body, `"status":"notified"`) {
+		t.Errorf("record notice: %d %s", code, body)
+	}
 }
+
+func etagOf(v int) string { return `"` + strconv.Itoa(v) + `"` }

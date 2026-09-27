@@ -910,7 +910,8 @@
     },
     "translation": {
       "stale": "The English version hasn't been updated to match the latest Thai content — not publishable until the translation is brought in sync"
-    }
+    },
+    "indirectCollectionsLink": "Indirect-collection notices (ม.25)"
   },
   "masterData": {
     "signInRequired": "Please sign in.",
@@ -1721,5 +1722,46 @@
     "loading": "Loading…",
     "loadError": "Could not load",
     "back": "Back"
+  },
+  "indirectCollections": {
+    "signInRequired": "Please sign in",
+    "forbidden": "You don't have access to this page",
+    "title": "Indirect-collection notices",
+    "intro": "Record personal data obtained from a source other than the data subject (ม.25) and track the 30-day notice deadline",
+    "newCollection": "+ Register a new record",
+    "recordNotice": "Record notice",
+    "dueBy": "Due by",
+    "statusLabel": "Status",
+    "filterStatus": "Filter by status",
+    "allStatuses": "All statuses",
+    "loading": "Loading...",
+    "loadError": "Failed to load",
+    "empty": "No records yet",
+    "more": "More",
+    "statuses": {
+      "pending": "Pending",
+      "notified": "Notified",
+      "overdue": "Overdue",
+      "exempted": "Exempted"
+    },
+    "methods": {
+      "email": "Email",
+      "sms": "SMS",
+      "letter": "Letter",
+      "website": "Website",
+      "other": "Other"
+    },
+    "form": {
+      "title": "Register an indirect-collection record",
+      "sourceParty": "Source of the data",
+      "obtainedAt": "Date obtained",
+      "subjectCount": "Approximate subject count",
+      "method": "Notice method",
+      "choose": "Choose",
+      "save": "Save",
+      "cancel": "Cancel",
+      "hide": "Hide",
+      "saveError": "Save failed: {detail}"
+    }
   }
 }
