@@ -26,6 +26,8 @@ import (
 	consenthttp "pdpa-platform/internal/consent/http"
 	consentpublichttp "pdpa-platform/internal/consent/publichttp"
 	consentservice "pdpa-platform/internal/consent/service"
+	dpohttp "pdpa-platform/internal/dpo/http"
+	dposervice "pdpa-platform/internal/dpo/service"
 	iamhttp "pdpa-platform/internal/iam/http"
 	iamservice "pdpa-platform/internal/iam/service"
 	noticehttp "pdpa-platform/internal/notice/http"
@@ -220,6 +222,8 @@ func run() error {
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
 	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc}
+	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc}
+	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read" // DPO-01 appointment order / PDPC evidence
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
 	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
 	formsSvc := wiring.Forms(notifySvc, auditSvc)
@@ -312,6 +316,11 @@ func run() error {
 			[]ropahttp.StrictMiddlewareFunc{authz.StrictMiddleware[ropahttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			ropahttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		ropahttp.HandlerWithOptions(strictRopa, ropahttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictDpo := dpohttp.NewStrictHandlerWithOptions(dpohttp.NewStrict(dpoSvc),
+			[]dpohttp.StrictMiddlewareFunc{authz.StrictMiddleware[dpohttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			dpohttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		dpohttp.HandlerWithOptions(strictDpo, dpohttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictConsent := consenthttp.NewStrictHandlerWithOptions(consenthttp.NewStrict(consentSvc),
 			[]consenthttp.StrictMiddlewareFunc{authz.StrictMiddleware[consenthttp.StrictHandlerFunc](authzCache, requiredPermission)},

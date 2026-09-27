@@ -231,3 +231,11 @@ export {
   type DocumentTemplate,
   type DocType,
 } from "./docs";
+export {
+  useAppointments,
+  useAppointment,
+  useAppointmentMutations,
+  type DpoAppointment,
+  type DpoAppointmentInput,
+  type DpoType,
+} from "./dpo";

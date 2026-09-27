@@ -23,6 +23,8 @@ tags:
     description: Organization — business calendars and holidays so far (backend/internal/org)
   - name: ropa
     description: Record of Processing Activities — the asset register so far (backend/internal/ropa)
+  - name: dpo
+    description: DPO appointment register (backend/internal/dpo)
   - name: platform
     description: Platform services — background jobs, files, notifications, ... (backend/internal/platform/<service>)
 paths:
@@ -7513,6 +7515,166 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dpo/appointments:
+    get:
+      operationId: dpoListAppointments
+      tags: [dpo]
+      summary: The tenant's DPO appointment register (DPO-01, ม.41)
+      x-permission: dpo.profile.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: legal_entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpoAppointment'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: dpoCreateAppointment
+      tags: [dpo]
+      summary: Register a DPO appointment
+      x-permission: dpo.profile.create
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DpoAppointmentInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoAppointment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpo/appointments/{id}:
+    get:
+      operationId: dpoGetAppointment
+      tags: [dpo]
+      summary: One DPO appointment
+      x-permission: dpo.profile.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoAppointment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: dpoUpdateAppointment
+      tags: [dpo]
+      summary: Change a DPO appointment — including the appointment order file, the PDPC-notification date and its evidence file, and ending the appointment
+      x-permission: dpo.profile.update
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DpoAppointmentInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoAppointment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/notices:
     get:
       operationId: noticeListNotices
@@ -8932,6 +9094,50 @@ components:
         sensitive_type: {type: string}
         category_name_th: {type: string}
         category_name_en: {type: string}
+        row_version: {type: integer}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
+    DpoType:
+      type: string
+      enum: [internal, external, group]
+    DpoAppointmentInput:
+      type: object
+      required: [legal_entity_id, dpo_type, contact_email, appointed_at]
+      properties:
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        dpo_type: {$ref: '#/components/schemas/DpoType'}
+        user_id: {$ref: '#/components/schemas/Uuid', description: Required when dpo_type is internal}
+        external_name: {type: string, maxLength: 300, description: Required when dpo_type is external or group}
+        external_company: {type: string, maxLength: 300}
+        contact_email: {type: string, format: email}
+        contact_phone: {type: string, maxLength: 30}
+        appointed_at: {type: string, format: date}
+        appointment_file_id: {$ref: '#/components/schemas/Uuid', description: The caller's own clean PLT-09 upload of the signed appointment order}
+        pdpc_notified_at: {type: string, format: date, nullable: true}
+        pdpc_evidence_file_id: {$ref: '#/components/schemas/Uuid', nullable: true}
+        ended_at: {type: string, format: date, nullable: true}
+      example:
+        legal_entity_id: 00000000-0000-0000-0000-000000000000
+        dpo_type: internal
+        user_id: 00000000-0000-0000-0000-000000000000
+        contact_email: dpo@example.com
+        appointed_at: '2026-01-01'
+    DpoAppointment:
+      type: object
+      required: [id, legal_entity_id, dpo_type, contact_email, appointed_at, row_version, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        dpo_type: {$ref: '#/components/schemas/DpoType'}
+        user_id: {$ref: '#/components/schemas/Uuid'}
+        external_name: {type: string}
+        external_company: {type: string}
+        contact_email: {type: string}
+        contact_phone: {type: string}
+        appointed_at: {type: string, format: date}
+        appointment_file_id: {$ref: '#/components/schemas/Uuid'}
+        pdpc_notified_at: {type: [string, 'null'], format: date}
+        pdpc_evidence_file_id: {$ref: '#/components/schemas/Uuid'}
+        ended_at: {type: [string, 'null'], format: date}
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
     ActivityRole:

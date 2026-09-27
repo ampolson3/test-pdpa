@@ -579,6 +579,46 @@
     "mergeInto": "Merge into…",
     "mergeError": "Couldn't merge. Please try again."
   },
+  "dpo": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view the DPO appointment register.",
+    "title": "DPO appointment register",
+    "intro": "Internal/external DPO details, the appointment order and the latest contact channel — shown automatically on every notice of this legal entity.",
+    "newAppointment": "Add appointment",
+    "chooseEntity": "Choose a legal entity to see its DPO appointments",
+    "loading": "Loading…",
+    "loadError": "Couldn't load data. Please try again.",
+    "empty": "No DPO appointments yet for this legal entity.",
+    "more": "More",
+    "statusLabel": "Status",
+    "current": "Current",
+    "ended": "Ended",
+    "types": {
+      "internal": "Internal DPO",
+      "external": "External DPO",
+      "group": "Group-shared DPO"
+    },
+    "form": {
+      "choose": "— Choose —",
+      "legalEntity": "Legal entity",
+      "newTitle": "Add a DPO appointment",
+      "editTitle": "Edit the DPO appointment",
+      "dpoType": "DPO type",
+      "userId": "User ID (internal)",
+      "userIdHint": "The user's UUID",
+      "externalName": "Name",
+      "externalCompany": "Company / consultancy",
+      "contactEmail": "Contact e-mail",
+      "contactPhone": "Contact phone",
+      "appointedAt": "Appointed on",
+      "endedAt": "Ended on",
+      "appointmentFile": "Appointment order (file)",
+      "save": "Save",
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "saveError": "Couldn't save: {detail}"
+    }
+  },
   "assets": {
     "signInRequired": "Please sign in.",
     "forbidden": "You don't have permission to view the system/asset register.",

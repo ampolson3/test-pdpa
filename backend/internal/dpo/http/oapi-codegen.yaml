@@ -1,0 +1,11 @@
+package: dpohttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - dpoListAppointments
+    - dpoCreateAppointment
+    - dpoGetAppointment
+    - dpoUpdateAppointment

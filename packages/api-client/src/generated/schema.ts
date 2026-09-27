@@ -2399,6 +2399,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpo/appointments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's DPO appointment register (DPO-01, ม.41) */
+        get: operations["dpoListAppointments"];
+        put?: never;
+        /** Register a DPO appointment */
+        post: operations["dpoCreateAppointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpo/appointments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One DPO appointment */
+        get: operations["dpoGetAppointment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a DPO appointment — including the appointment order file, the PDPC-notification date and its evidence file, and ending the appointment */
+        patch: operations["dpoUpdateAppointment"];
+        trace?: never;
+    };
     "/admin/v1/notices": {
         parameters: {
             query?: never;
@@ -3140,6 +3176,58 @@ export interface components {
             sensitive_type?: string;
             category_name_th: string;
             category_name_en?: string;
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        DpoType: "internal" | "external" | "group";
+        /**
+         * @example {
+         *       "legal_entity_id": "00000000-0000-0000-0000-000000000000",
+         *       "dpo_type": "internal",
+         *       "user_id": "00000000-0000-0000-0000-000000000000",
+         *       "contact_email": "dpo@example.com",
+         *       "appointed_at": "2026-01-01"
+         *     }
+         */
+        DpoAppointmentInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            dpo_type: components["schemas"]["DpoType"];
+            /** @description Required when dpo_type is internal */
+            user_id?: components["schemas"]["Uuid"];
+            /** @description Required when dpo_type is external or group */
+            external_name?: string;
+            external_company?: string;
+            /** Format: email */
+            contact_email: string;
+            contact_phone?: string;
+            /** Format: date */
+            appointed_at: string;
+            /** @description The caller's own clean PLT-09 upload of the signed appointment order */
+            appointment_file_id?: components["schemas"]["Uuid"];
+            /** Format: date */
+            pdpc_notified_at?: string | null;
+            pdpc_evidence_file_id?: components["schemas"]["Uuid"];
+            /** Format: date */
+            ended_at?: string | null;
+        };
+        DpoAppointment: {
+            id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            dpo_type: components["schemas"]["DpoType"];
+            user_id?: components["schemas"]["Uuid"];
+            external_name?: string;
+            external_company?: string;
+            contact_email: string;
+            contact_phone?: string;
+            /** Format: date */
+            appointed_at: string;
+            appointment_file_id?: components["schemas"]["Uuid"];
+            /** Format: date */
+            pdpc_notified_at?: string | null;
+            pdpc_evidence_file_id?: components["schemas"]["Uuid"];
+            /** Format: date */
+            ended_at?: string | null;
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
         };
@@ -10543,6 +10631,138 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    dpoListAppointments: {
+        parameters: {
+            query?: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpoAppointment"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dpoCreateAppointment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpoAppointmentInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoAppointment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpoGetAppointment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoAppointment"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpoUpdateAppointment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpoAppointmentInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoAppointment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     noticeListNotices: {

@@ -174,7 +174,7 @@ BRE-14,BRE,รายงานและสถิติเหตุละเมิ
 BRE-15,BRE,วิเคราะห์สาเหตุและบทเรียน,Root cause & lessons learned,Should,P3,ติดตาม,ม.37(1),SEC,S,S,N,3,3,0.7,0,2.1,BRE-02,BP-07,docs/modules/BRE.md#bre-15,มาตรการป้องกันซ้ำถูกติดตามจนเสร็จ,todo
 BRE-16,BRE,ซ้อมรับมือเหตุละเมิด,Breach drill,Nice,P4,ซ้อม,แนวปฏิบัติตลาด,SEC DPO,S,S,N,3,3,0.7,0,2.1,BRE-02,BP-07,docs/modules/BRE.md#bre-16,เหตุซ้อมไม่ปนกับเหตุจริงในรายงาน,todo
 BRE-17,BRE,AI ช่วยประเมินเหตุและร่างรายงาน,AI breach assistant,Nice,P4,AI,แนวโน้มตลาด,DPO LLM,M,S,N,5,3,1.0,0,2.8,PLT-22,BP-07,docs/modules/BRE.md#bre-17,ร่างจาก AI ต้องมีคนยืนยันก่อนใช้,todo
-DPO-01,DPO,ทะเบียนการแต่งตั้งและข้อมูล DPO,DPO appointment & profile,Must,P1,DPO,ม.41,ORGADMIN DPO PDPC,S,S,N,3,3,0.7,0,2.1,ORG-01,,docs/modules/DPO.md#dpo-01,ประกาศทุกฉบับแสดงช่องทางติดต่อ DPO ล่าสุด,todo
+DPO-01,DPO,ทะเบียนการแต่งตั้งและข้อมูล DPO,DPO appointment & profile,Must,P1,DPO,ม.41,ORGADMIN DPO PDPC,S,S,N,3,3,0.7,0,2.1,ORG-01,,docs/modules/DPO.md#dpo-01,ประกาศทุกฉบับแสดงช่องทางติดต่อ DPO ล่าสุด,done
 DPO-04,DPO,แดชบอร์ด DPO,DPO dashboard,Should,P1,งาน DPO,ม.42,DPO,M,M,Y,5,5,1.2,2.0,3.5,PLT-18,,docs/modules/DPO.md#dpo-04,ตัวเลขทุก widget ตรงกับข้อมูลในโมดูล,todo
 DPO-05,DPO,ศูนย์แจ้งเตือนรวม,Notification center,Must,P1,งาน DPO,ม.42,DPO SCHED,M,M,Y,5,5,1.2,2.0,3.5,"PLT-05, PLT-04",,docs/modules/DPO.md#dpo-05,งานใกล้ครบกำหนดจากทุกโมดูลแสดงในหน้าเดียว,todo
 DPO-09,DPO,ประเมินมาตรการความปลอดภัย,Security measures assessment,Must,P1,ประเมิน,ประกาศมาตรการความปลอดภัย พ.ศ. 2565,SEC DPO,M,S,N,5,3,1.0,0,2.8,PLT-06,,docs/modules/DPO.md#dpo-09,ข้อที่ไม่ผ่านสร้างงานแก้ไขอัตโนมัติ,todo

@@ -31,6 +31,9 @@ var Fields = []Field{
 	{"org_address", "org", Text{"ที่อยู่องค์กร", "Organization address"}},
 	{"org_email", "org", Text{"อีเมลติดต่อ", "Contact e-mail"}},
 	{"org_phone", "org", Text{"โทรศัพท์ติดต่อ", "Contact phone"}},
+	{"dpo_name", "dpo", Text{"ชื่อ DPO", "DPO name"}},
+	{"dpo_email", "dpo", Text{"อีเมลติดต่อ DPO", "DPO contact e-mail"}},
+	{"dpo_phone", "dpo", Text{"โทรศัพท์ติดต่อ DPO", "DPO contact phone"}},
 	{"doc_title", "document", Text{"ชื่อเอกสาร", "Document title"}},
 	{"doc_version", "document", Text{"เลขเวอร์ชัน", "Version number"}},
 	{"doc_effective_date", "document", Text{"วันที่มีผล", "Effective date"}},
@@ -72,6 +75,17 @@ func (s *Service) fieldValues(ctx context.Context, title string, legalEntityID *
 			return nil, err
 		}
 		for k, v := range org {
+			if v != "" {
+				base[k] = v
+			}
+		}
+	}
+	if legalEntityID != nil && s.Dpo != nil {
+		dpo, err := s.Dpo.MergeFields(ctx, *legalEntityID)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range dpo {
 			if v != "" {
 				base[k] = v
 			}

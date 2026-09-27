@@ -84,6 +84,13 @@ type OrgFields interface {
 	MergeFields(ctx context.Context, legalEntityID uuid.UUID) (map[string]string, error)
 }
 
+// DpoFields is the DPO module's side of merge fields (DPO-01): the current appointment's contact channel for
+// the document's legal entity, so every document shows it without a template ever hard-coding it (rule 8).
+// Nil when no dpo module is wired (its own binary construction order mirrors Org).
+type DpoFields interface {
+	MergeFields(ctx context.Context, legalEntityID uuid.UUID) (map[string]string, error)
+}
+
 // Service runs the composer for the tenant of the transaction in ctx.
 type Service struct {
 	Versioning *versioning.Service
@@ -91,6 +98,7 @@ type Service struct {
 	River      *river.Client[pgx.Tx]
 	Audit      *audit.Service
 	Org        OrgFields
+	Dpo        DpoFields
 	PDF        render.PDFRenderer // nil: PDFs are not produced (the version's render_status says failed)
 	Now        func() time.Time
 

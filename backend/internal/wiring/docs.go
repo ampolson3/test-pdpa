@@ -4,6 +4,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
 
+	dposervice "pdpa-platform/internal/dpo/service"
 	orgservice "pdpa-platform/internal/org/service"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/docs"
@@ -17,7 +18,8 @@ import (
 // published. report / other have no owning module yet and are not offered. Call RegisterVersioning on the result
 // once the versioning service is built (the API does; the worker only renders).
 func Docs(v *versioning.Service, f *files.Service, r *river.Client[pgx.Tx], a *audit.Service, pdf render.PDFRenderer) *docs.Service {
-	s := &docs.Service{Versioning: v, Files: f, River: r, Audit: a, Org: &orgservice.Service{Audit: a}, PDF: pdf}
+	org := &orgservice.Service{Audit: a}
+	s := &docs.Service{Versioning: v, Files: f, River: r, Audit: a, Org: org, Dpo: &dposervice.Service{Audit: a, Org: org, Files: f}, PDF: pdf}
 	notice := docs.Policy{Read: "notice.document.read", Create: "notice.document.create", Update: "notice.document.update",
 		Publish: "notice.document.publish", Approver: "DPO", TemplateRead: "notice.template.read", TemplateWrite: "notice.template.update"}
 	s.Register("notice", notice)

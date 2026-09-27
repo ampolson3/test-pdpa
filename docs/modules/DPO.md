@@ -108,6 +108,42 @@
 
 **Acceptance criteria:** ประกาศทุกฉบับแสดงช่องทางติดต่อ DPO ล่าสุด
 
+**Implementation (DPO-01):** `internal/dpo` — the first module on the `dpo` schema (`dpo.profile.*`, already
+seeded in the baseline permission migration; no new migration — `dpo.appointments` was already fully
+specified: `dpo_type` internal/external/group, `user_id` for internal, `external_name`/`external_company`
+for external/group, `contact_email`/`contact_phone`, `appointed_at`/`ended_at`, `appointment_file_id` and
+`pdpc_notified_at`/`pdpc_evidence_file_id` for recording the ม.41 filing with the PDPC). `SaveAppointment`
+checks the legal entity is visible under RLS (rule 1, via `orgservice.GetLegalEntity`) and, for an internal
+appointment, that `user_id` is a real active user of the tenant (`iamservice.Names`, the same cross-module
+helper ROPA already uses); a file id (order or evidence) is checked and attached the same way BRE-09's PDPC
+evidence is (`Files.Get` + `AttachSystem`, refused unless it's the caller's own clean, still-unattached
+upload) — but only when it's new or changed from a stored one, since re-checking an id already attached to
+this same appointment would fail the "unattached" test on every plain update. A legal entity's *current*
+appointment is whichever has no `ended_at` yet, most recently appointed (`CurrentAppointment`, a new sqlc
+query) — plain CRUD otherwise, no state machine (the module doc lists no process for this feature).
+
+The acceptance criterion itself is a new extension point on PLT-16, not a screen: `docs.Service` gained a
+second merge-field source alongside `OrgFields` (ORG-01) — `DpoFields` (`Dpo DpoFields` field, same
+`MergeFields(ctx, legalEntityID) (map[string]string, error)` shape) — resolved in `fieldValues` right after
+the organization's own fields, so every document (notices today; DPAs, DSA and PDPC-form letters once those
+document types exist) picks up `dpo_name`/`dpo_email`/`dpo_phone` from the legal entity's current appointment
+without any template ever hard-coding it (rule 8). `dpo.Service.MergeFields` returns nothing when there's no
+current appointment — the draft then shows `[dpo_name]` etc. as an unresolved placeholder and publishing
+refuses it, exactly like any other missing merge field; it never blocks *reading* a document. `wiring.Docs`
+builds the `dpo.Service` itself (mirroring how it already builds its own `orgservice.Service`) so `docs`
+never imports `dpo`'s HTTP layer or vice versa — module boundaries stay one-directional (rule 9: `dpo` reads
+`org`; `docs` reads `dpo` only through the two-method `DpoFields` interface it declares itself).
+
+API `/admin/v1/dpo/appointments` (cursor pagination, same shape as ROPA-04's own list), `/{id}`. UI
+`/settings/dpo`: a legal-entity picker (the same two-step pattern `/settings/organization` and
+`/ropa/activities` use) then the entity's appointments with a create/edit form (`FileUploader` for the
+appointment order), current vs. ended shown as a badge. Tests: unit (validation incl. dpo_type-conditional
+fields, the two FK-visibility checks, update, current-contact resolution as an appointment starts/ends/is
+replaced — the acceptance criterion's core logic — two-tenant isolation), a white-box `docs` package test
+proving `fieldValues` actually merges the dpo source in (with a stub, no database needed — the org source
+has no equivalent unit test, only the existing Chromium-based E2E; this closes that gap for the new source
+too), HTTP contract (401/403/400 schema/422/412/428).
+
 <a id="dpo-04"></a>
 ### DPO-04 แดชบอร์ด DPO
 

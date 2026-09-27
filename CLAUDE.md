@@ -696,6 +696,42 @@ BFF, same pattern as the audit log's own export link). Tests: unit (the export c
 processor activity's controller/recipient names, never includes a controller-role activity — the acceptance
 criterion), HTTP contract (401 without a principal, 200 with the header row present).
 
+### DPO-01 Appointment register (`docs/modules/DPO.md#dpo-01`) — done
+`internal/dpo` — the first module on the `dpo` schema (`dpo.profile.*`, already seeded in the baseline
+permission migration — no new migration: `dpo.appointments` was already fully specified — `dpo_type`
+internal/external/group, `user_id` for internal, `external_name`/`external_company` for external/group,
+`contact_email`/`contact_phone`, `appointed_at`/`ended_at`, `appointment_file_id` and
+`pdpc_notified_at`/`pdpc_evidence_file_id`). `SaveAppointment` checks the legal entity is visible under RLS
+(rule 1, via `orgservice.GetLegalEntity`) and, for an internal appointment, that `user_id` is a real active
+user of the tenant (`iamservice.Names`); a file id (order or evidence) is checked and attached the way
+BRE-09's PDPC evidence already is (`Files.Get` + `AttachSystem`, refused unless it's the caller's own clean,
+still-unattached upload) — but only when it's new or changed from what's stored, since re-checking an id
+already attached to this same appointment would fail the "unattached" test on every plain update. A legal
+entity's *current* appointment is whichever has no `ended_at` yet, most recently appointed
+(`CurrentAppointment`, a new sqlc query) — plain CRUD otherwise, no state machine (the module doc lists no
+process for this feature).
+
+The acceptance criterion is a new PLT-16 extension point, not a screen: `docs.Service` gained a second
+merge-field source alongside `OrgFields` (ORG-01) — `DpoFields` (`Dpo DpoFields`, same
+`MergeFields(ctx, legalEntityID) (map[string]string, error)` shape) — resolved in `fieldValues` right after
+the organization's own fields, so every document (notices today; DPAs/DSA/PDPC-form letters once those
+document types exist) picks up `dpo_name`/`dpo_email`/`dpo_phone` from the legal entity's current appointment
+without any template ever hard-coding it (rule 8). `dpo.Service.MergeFields` returns nothing when there's no
+current appointment — the draft then shows `[dpo_name]` etc. as an unresolved placeholder and publishing
+refuses it, exactly like any other missing merge field. `wiring.Docs` builds the `dpo.Service` itself
+(mirroring how it already builds its own `orgservice.Service`), so `docs` never imports `dpo`'s HTTP layer
+or vice versa — module boundaries stay one-directional (rule 9).
+
+API `/admin/v1/dpo/appointments` (cursor pagination, same shape as ROPA-04's own list), `/{id}`. UI
+`/settings/dpo`: a legal-entity picker (the same two-step pattern `/settings/organization` and
+`/ropa/activities` use) then the entity's appointments with a create/edit form (`FileUploader` for the
+appointment order), current vs. ended shown as a badge. Tests: unit (validation incl. dpo_type-conditional
+fields, the two FK-visibility checks, update, current-contact resolution as an appointment starts/ends/is
+replaced — the acceptance criterion's core logic — two-tenant isolation), a white-box `docs` package test
+proving `fieldValues` actually merges the dpo source in (a stub, no database needed — the org source itself
+has no equivalent unit test, only the existing Chromium-based E2E; this closes that gap for the new source
+too), HTTP contract (401/403/400 schema/422/412/428).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.
