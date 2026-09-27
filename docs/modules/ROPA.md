@@ -385,6 +385,16 @@ they don't accidentally trip this new rule), HTTP contract (422 `ropa.invalid_in
 
 **Acceptance criteria:** ทุกกิจกรรมมีระยะเวลาเก็บและวิธีทำลาย
 
+**Implementation:** already fully built by ROPA-03, not re-implemented here — `ropa.retention_rules`
+(`retention_months`, `retention_basis` as the reason/legal reference, `trigger_event`, `disposal_method`
+validated against `delete`/`destroy`/`anonymize`/`return`) already has full CRUD (`AddRetentionRule`,
+`DeleteRetentionRule`, `ListRetentionRules`), a `/retention-rules` list+create/delete endpoint, a UI section
+on `/ropa/activities/{id}`, and — the acceptance criterion itself — `completeness()`'s unconditional `retention`
+core item, which blocks `/submit` with the itemized `ropa.activity_incomplete` list while any activity has no
+retention rule (`TestActivities_CompletenessAndMissingItems`, `activities_test.go`). Not done: "ส่งต่อ DPX-05"
+(forwarding the retention deadline to the not-yet-built DPX-05) — nothing to forward to yet, same reasoning as
+ROPA-01's deferred `discovered_by_finding_id`; add the hand-off when DPX-05 exists.
+
 <a id="ropa-08"></a>
 ### ROPA-08 ผู้รับข้อมูลและการโอนต่างประเทศ
 

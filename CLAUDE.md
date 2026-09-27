@@ -793,6 +793,16 @@ visible to both tenants, by design), HTTP contract (401/403/201/200/404/422). Ex
 asserted an exact "fully complete" activity or an exact missing-items list were updated for the new 6-item
 denominator (previously 5).
 
+### ROPA-07 Retention & disposal method (`docs/modules/ROPA.md#ropa-07`) — done, no new code
+Already fully built by ROPA-03 itself: `ropa.retention_rules` (`retention_months`, `retention_basis` as the
+reason/legal reference, `trigger_event`, `disposal_method` validated against
+delete/destroy/anonymize/return) already has full CRUD, a `/retention-rules` list+create/delete endpoint, a UI
+section on `/ropa/activities/{id}`, and — the acceptance criterion itself — is one of `completeness()`'s
+unconditional core items, blocking `/submit` with the itemized list while any activity has no retention rule.
+Marked done as documentation only (backlog + module doc), no migration, code or test changes needed. Not done:
+"ส่งต่อ DPX-05" (forwarding the retention deadline) — DPX-05 doesn't exist yet, same reasoning as ROPA-01's
+deferred `discovered_by_finding_id`.
+
 ### PNG-04 Indirect collection notice (`docs/modules/PNG.md#png-04`) — done
 `notice.indirect_collections` was already fully specified in the baseline migrations (`notify_due_at date
 NOT NULL`, `status` pending/notified/overdue/exempted, `method`, `notified_at`, `evidence_file_id`) along
