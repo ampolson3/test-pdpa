@@ -43,7 +43,9 @@ VALUES ($1, NULLIF(current_setting('app.tenant_id', true), '')::uuid, $2, $3, $4
 RETURNING *;
 
 -- name: ListAnswersForAssessment :many
-SELECT * FROM assess.answers WHERE assessment_id = $1 ORDER BY created_at;
+-- section_id IS NULL: DPIA-01's own screening answers, never a later section's (e.g. DPIA-05's necessity
+-- checklist) — Assessment.Factors must stay exactly the screening's own factors.
+SELECT * FROM assess.answers WHERE assessment_id = $1 AND section_id IS NULL ORDER BY created_at;
 
 -- name: GetAssessment :one
 SELECT * FROM assess.assessments WHERE id = $1 AND assessment_type = 'dpia';

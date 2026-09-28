@@ -103,7 +103,7 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	}
 	reader := uuid.New()
 	grants := map[string][]string{
-		tenant.UserID.String(): {"assessment.dpia.read", "assessment.dpia.create", "assessment.template.read", "assessment.template.update",
+		tenant.UserID.String(): {"assessment.dpia.read", "assessment.dpia.create", "assessment.dpia.update", "assessment.template.read", "assessment.template.update",
 			"assessment.template.create", "assessment.template.publish", "assessment.template.delete"},
 		reader.String(): {"assessment.dpia.read", "assessment.template.read"},
 	}
@@ -238,6 +238,25 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("GET", "/admin/v1/dpia/assessments/"+uuid.New().String()+"/description", &admin, nil, nil); code != 404 {
 		t.Errorf("description unknown assessment: %d, want 404", code)
+	}
+
+	// DPIA-05: the necessity/proportionality checklist on the same assessment.
+	necessityAnswers := map[string]any{"minimal_data": "yes", "purpose_specific": "yes", "lawful_basis_appropriate": "yes", "less_invasive_considered": "yes"}
+	if code, _ := do("GET", item+"/necessity", &reader2, nil, nil); code != 404 {
+		t.Errorf("necessity before answering: %d, want 404", code)
+	}
+	if code, _ := do("POST", item+"/necessity", &reader2, map[string]any{"answers": necessityAnswers}, nil); code != 403 {
+		t.Errorf("assess necessity with read-only permission: %d, want 403", code)
+	}
+	if code, body := do("POST", item+"/necessity", &admin, map[string]any{"answers": necessityAnswers}, nil); code != 200 || !strings.Contains(body, `"result":"necessary"`) {
+		t.Errorf("assess necessity: %d %s", code, body)
+	}
+	if code, body := do("GET", item+"/necessity", &reader2, nil, nil); code != 200 || !strings.Contains(body, `"result":"necessary"`) {
+		t.Errorf("get necessity: %d %s", code, body)
+	}
+	flagged := map[string]any{"minimal_data": "no", "purpose_specific": "yes", "lawful_basis_appropriate": "yes", "less_invasive_considered": "yes"}
+	if code, body := do("POST", item+"/necessity", &admin, map[string]any{"answers": flagged}, nil); code != 200 || !strings.Contains(body, `"result":"needs_review"`) || !strings.Contains(body, `"minimal_data"`) {
+		t.Errorf("re-assess necessity: %d %s", code, body)
 	}
 
 	// DPIA-03 template library.

@@ -1234,6 +1234,41 @@ per the module doc's own backend note, since ROPA-02/03 never built any CRUD on 
 gap in ROPA-02's own module doc: "no field for owner_user_id yet" applies the same way here) — nothing exists
 yet to surface; add it once a screen actually writes to that table.
 
+### DPIA-05 ประเมินความจำเป็นและความได้สัดส่วน (`docs/modules/DPIA.md#dpia-05`) — done
+`internal/dpia/service/necessity.go` (+ `http/necessity.go`, migration 00048, `docs/decisions.md` Q-27, no new
+permission code): a 4-question yes/no checklist (ม.22 data minimization, purpose specificity, ม.24/26 lawful-
+basis fit, a less-invasive alternative considered) on the exact same apparatus DPIA-01/02/03 already built —
+`assess.templates` (assessment_type `dpia`, code `dpia_necessity`) wrapping a published PLT-06 form, answered
+through `forms.Evaluate` the same way `Screen` already is. Unlike DPIA-01's screening (which writes answers
+with `section_id NULL`), this checklist's answers are grouped under a real `assess.sections` row
+(`section_code = 'necessity'`) — `assess.sections`/`assess.answers` were already in the baseline schema for
+exactly this multi-section future, unused until now. `ListAnswersForAssessment` (DPIA-01's own factor read)
+gained a `section_id IS NULL` filter to keep necessity answers out of `Assessment.Factors` — proven directly
+by a test that answers necessity and re-reads the screening round, expecting its factor count unchanged.
+
+The conclusion is a plain business rule, not a legal one: "necessary" only once every question reads "yes";
+any other answer lands the question code in `missing` and the result reads "needs_review" — computed by a
+pure `necessityResult(schema, answers)` shared by both the write path (`AssessNecessity`) and the read path
+(`GetNecessity`, which recomputes live from the stored answers rather than trusting a persisted verdict).
+Re-answering (`AssessNecessity` called again) deletes the section's prior answers and inserts fresh ones
+under the same section row (`ResubmitSection` refreshes `submitted_at`) — a redo, not a new round the way
+DPIA-01's own re-screening is, since this checklist has no threshold configuration a fresh round would be
+judged against differently.
+
+Permissions: `assessment.dpia.update` gates `POST .../necessity` (not `.create`, which only DPO holds) — the
+module doc's own actor line lists both OWNER and DPO, and the baseline RBAC seed only grants OWNER `.read`/
+`.update` on `assessment.dpia.*`, matching DPIA-02's own reasoning for why a `.update`-gated action is the
+right one when OWNER must be able to act. `dpiaservice.ErrBadTemplate`'s http-layer message (`handler.go`)
+was widened from "No published DPIA screening template" to "...for this checklist" since the sentinel is now
+shared between DPIA-01's screening and this feature's own necessity template lookup.
+
+API: `GET`/`POST /admin/v1/dpia/assessments/{id}/necessity` — GET 404s before the checklist is ever answered
+(no empty-result placeholder). UI: a checklist panel on `/ropa/activities/{id}`'s DPIA section, right next to
+DPIA-04's own description panel, shown under the same `in_progress` condition. Tests: unit (the acceptance
+criterion directly — all-"yes" reads necessary with nothing missing; any "no" flags exactly that question;
+re-answering replaces rather than duplicates; necessity answers never change the screening round's own
+Factors; reading before answering is `ErrNotFound`; two-tenant isolation), HTTP contract (401/403/200/404).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

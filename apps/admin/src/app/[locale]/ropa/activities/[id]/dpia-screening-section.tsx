@@ -5,7 +5,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
 import { formatDate, type Locale } from "@pdpa/i18n";
-import { type ApiClient, useDpiaAssessmentDescription, useDpiaAssessments, useScreenActivity } from "@pdpa/api-client";
+import { type ApiClient, useAssessNecessity, useDpiaAssessmentDescription, useDpiaAssessments, useDpiaNecessity, useScreenActivity } from "@pdpa/api-client";
+
+const NECESSITY_KEYS = ["minimal_data", "purpose_specific", "lawful_basis_appropriate", "less_invasive_considered"] as const;
 
 const FACTOR_KEYS = ["sensitive_data", "large_scale", "monitoring", "automated_decision", "new_tech", "vulnerable_groups"] as const;
 
@@ -54,7 +56,12 @@ export function DpiaScreeningSection({ client, activityId }: { client: ApiClient
         </ul>
       )}
 
-      {latest && latest.status === "in_progress" && <DpiaDescriptionPanel client={client} assessmentId={latest.id} />}
+      {latest && latest.status === "in_progress" && (
+        <>
+          <DpiaDescriptionPanel client={client} assessmentId={latest.id} />
+          <DpiaNecessityPanel client={client} assessmentId={latest.id} />
+        </>
+      )}
 
       {canScreen && (
         <div className="space-y-2 pt-2">
@@ -159,6 +166,75 @@ function DpiaDescriptionPanel({ client, assessmentId }: { client: ApiClient; ass
           ))}
         </ul>
       </div>
+    </section>
+  );
+}
+
+/** DPIA-05: answer (or re-answer) the necessity/proportionality checklist for the in-progress assessment. */
+function DpiaNecessityPanel({ client, assessmentId }: { client: ApiClient; assessmentId: string }) {
+  const t = useTranslations("dpia");
+  const canAssess = usePermission("assessment.dpia.update");
+  const canRead = usePermission("assessment.dpia.read");
+  const necessity = useDpiaNecessity(client, assessmentId);
+  const assess = useAssessNecessity(client);
+
+  const [answers, setAnswers] = useState<Record<string, "yes" | "no">>(
+    Object.fromEntries(NECESSITY_KEYS.map((k) => [k, "no"])) as Record<string, "yes" | "no">,
+  );
+
+  if (!canRead) return null;
+
+  const notFound = necessity.isError && (necessity.error as { code?: string } | undefined)?.code === "not_found";
+  const otherError = necessity.isError && !notFound;
+
+  return (
+    <section className="space-y-2 rounded-md border border-slate-200 bg-white p-3 text-sm" data-testid="dpia-necessity">
+      <h3 className="font-semibold">{t("necessity.title")}</h3>
+
+      {necessity.isPending ? (
+        <p className="text-slate-500">{t("loading")}</p>
+      ) : necessity.data ? (
+        <div className="space-y-1">
+          <p>
+            <span className={necessity.data.result === "necessary" ? "text-green-700" : "text-amber-700"}>
+              {t(`necessity.results.${necessity.data.result}`)}
+            </span>
+          </p>
+          {necessity.data.missing.length > 0 && (
+            <ul className="list-inside list-disc text-slate-600">
+              {necessity.data.missing.map((k) => (
+                <li key={k}>{t(`necessity.questions.${k}`)}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ) : otherError ? (
+        <p className="text-red-700">{t("loadError")}</p>
+      ) : (
+        <p className="text-slate-500">{t("necessity.notAnswered")}</p>
+      )}
+
+      {canAssess && (
+        <div className="space-y-2 pt-2">
+          <div className="grid gap-2 sm:grid-cols-2">
+            {NECESSITY_KEYS.map((key) => (
+              <label key={key} className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={answers[key] === "yes"}
+                  onChange={(e) => setAnswers({ ...answers, [key]: e.target.checked ? "yes" : "no" })}
+                />
+                <span>{t(`necessity.questions.${key}`)}</span>
+              </label>
+            ))}
+          </div>
+          {assess.isError && <p className="text-red-700">{t("submitError", { detail: detail(assess.error) })}</p>}
+          <Button onClick={() => assess.mutate({ assessmentId, answers })} disabled={assess.isPending}>
+            {t("necessity.submit")}
+          </Button>
+        </div>
+      )}
     </section>
   );
 }

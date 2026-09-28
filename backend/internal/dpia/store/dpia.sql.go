@@ -311,9 +311,11 @@ func (q *Queries) InsertScreeningRule(ctx context.Context, arg InsertScreeningRu
 }
 
 const listAnswersForAssessment = `-- name: ListAnswersForAssessment :many
-SELECT id, tenant_id, assessment_id, section_id, question_code, answer, evidence_file_ids, answered_by, ai_suggested, confirmed_by, created_at, created_by, updated_at, updated_by, row_version FROM assess.answers WHERE assessment_id = $1 ORDER BY created_at
+SELECT id, tenant_id, assessment_id, section_id, question_code, answer, evidence_file_ids, answered_by, ai_suggested, confirmed_by, created_at, created_by, updated_at, updated_by, row_version FROM assess.answers WHERE assessment_id = $1 AND section_id IS NULL ORDER BY created_at
 `
 
+// section_id IS NULL: DPIA-01's own screening answers, never a later section's (e.g. DPIA-05's necessity
+// checklist) — Assessment.Factors must stay exactly the screening's own factors.
 func (q *Queries) ListAnswersForAssessment(ctx context.Context, assessmentID uuid.UUID) ([]AssessAnswer, error) {
 	rows, err := q.db.Query(ctx, listAnswersForAssessment, assessmentID)
 	if err != nil {

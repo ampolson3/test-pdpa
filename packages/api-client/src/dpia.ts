@@ -6,6 +6,7 @@ export type DpiaScreeningRule = components["schemas"]["DpiaScreeningRule"];
 export type DpiaAssessment = components["schemas"]["DpiaAssessment"];
 export type DpiaTemplate = components["schemas"]["DpiaTemplate"];
 export type DpiaActivityDescription = components["schemas"]["DpiaActivityDescription"];
+export type DpiaNecessity = components["schemas"]["DpiaNecessity"];
 
 const rulesKey = ["dpia", "screening-rules"] as const;
 const assessmentsKey = ["dpia", "assessments"] as const;
@@ -89,6 +90,36 @@ export function useDpiaAssessmentDescription(client: ApiClient, id: string | und
       if (error) throw error;
       return data;
     },
+  });
+}
+
+/** GET /admin/v1/dpia/assessments/{id}/necessity (DPIA-05) — the necessity/proportionality checklist. */
+export function useDpiaNecessity(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...assessmentsKey, id ?? "", "necessity"],
+    enabled: !!id,
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/assessments/{id}/necessity", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/dpia/assessments/{id}/necessity (DPIA-05) — answer (or re-answer) the checklist. */
+export function useAssessNecessity(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { assessmentId: string; answers: Record<string, unknown> }) => {
+      const { data, error } = await client.POST("/admin/v1/dpia/assessments/{id}/necessity", {
+        params: { path: { id: v.assessmentId } },
+        body: { answers: v.answers },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "necessity"] }),
   });
 }
 

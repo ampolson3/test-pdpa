@@ -2731,6 +2731,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpia/assessments/{id}/necessity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPIA-05: the assessment's necessity/proportionality checklist and its conclusion */
+        get: operations["dpiaGetNecessity"];
+        put?: never;
+        /** DPIA-05: answer (or re-answer) the necessity/proportionality checklist — ม.22 data minimization, ม.24/26 lawful basis fit, a less invasive alternative considered */
+        post: operations["dpiaAssessNecessity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpia/templates": {
         parameters: {
             query?: never;
@@ -3737,6 +3755,18 @@ export interface components {
                 points: number;
             }[];
             created_at: components["schemas"]["Timestamp"];
+        };
+        /** @description DPIA-05: "necessary" only once every question is answered "yes"; otherwise "needs_review" names the flagged questions. */
+        DpiaNecessity: {
+            assessment_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            result: "necessary" | "needs_review";
+            missing: string[];
+            answers: {
+                question: string;
+                answer: unknown;
+            }[];
+            submitted_at: components["schemas"]["Timestamp"];
         };
         DpiaTemplate: {
             id: components["schemas"]["Uuid"];
@@ -12149,6 +12179,72 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    dpiaGetNecessity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaNecessity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpiaAssessNecessity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    answers: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Answered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaNecessity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     dpiaListTemplates: {

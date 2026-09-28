@@ -231,6 +231,16 @@ writes to that table.
 
 **Acceptance criteria:** ตอบครบแล้วสรุปผลความจำเป็นได้
 
+**สถานะ implementation:** done — see `CLAUDE.md`'s DPIA-05 section for the full implementation note.
+4 yes/no questions (ม.22/24/26, `docs/decisions.md` Q-27) on the same PLT-06/assess.templates apparatus
+DPIA-01/02/03 already use (migration 00048) — answered via `POST /admin/v1/dpia/assessments/{id}/necessity`,
+read via `GET` on the same path (`assessment.dpia.update`/`.read`). "Necessary" only once every question is
+"yes"; any other answer is flagged in `missing` and the result reads "needs_review". Answers persist under
+`assess.sections`/`assess.answers` with a `necessity` section code, kept separate from DPIA-01's own screening
+answers so re-answering never affects `Assessment.Factors`. Re-answering replaces the prior submission (no
+round numbering, unlike DPIA-01's own re-screening). UI: a checklist panel on `/ropa/activities/{id}`'s DPIA
+section, shown alongside DPIA-04's description panel once a round is `in_progress`.
+
 <a id="dpia-06"></a>
 ### DPIA-06 ระบุและให้คะแนนความเสี่ยง
 

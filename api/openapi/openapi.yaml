@@ -8500,6 +8500,79 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dpia/assessments/{id}/necessity:
+    get:
+      operationId: dpiaGetNecessity
+      tags: [dpia]
+      summary: 'DPIA-05: the assessment''s necessity/proportionality checklist and its conclusion'
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaNecessity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dpiaAssessNecessity
+      tags: [dpia]
+      summary: 'DPIA-05: answer (or re-answer) the necessity/proportionality checklist — ม.22 data minimization, ม.24/26 lawful basis fit, a less invasive alternative considered'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answers]
+              additionalProperties: false
+              properties:
+                answers:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Answered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaNecessity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/dpia/templates:
     get:
       operationId: dpiaListTemplates
@@ -10464,6 +10537,27 @@ components:
               answer: {}
               points: {type: number}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    DpiaNecessity:
+      type: object
+      description: 'DPIA-05: "necessary" only once every question is answered "yes"; otherwise "needs_review" names the flagged questions.'
+      required: [assessment_id, result, missing, answers, submitted_at]
+      properties:
+        assessment_id: {$ref: '#/components/schemas/Uuid'}
+        result:
+          type: string
+          enum: [necessary, needs_review]
+        missing:
+          type: array
+          items: {type: string}
+        answers:
+          type: array
+          items:
+            type: object
+            required: [question, answer]
+            properties:
+              question: {type: string}
+              answer: {}
+        submitted_at: {$ref: '#/components/schemas/Timestamp'}
     DpiaTemplate:
       type: object
       required: [id, assessment_type, code, name, form_id, version_no, status, row_version, created_at]
