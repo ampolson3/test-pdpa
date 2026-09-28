@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
 import { createApiClient, useSaveScreeningRules, useScreeningRules } from "@pdpa/api-client";
+import { Link } from "@/i18n/routing";
 
 function detail(e: unknown): string {
   return typeof e === "object" && e !== null ? [(e as { title?: string }).title, (e as { detail?: string }).detail].filter(Boolean).join(" — ") : "";
@@ -39,6 +40,7 @@ export function DpiaSettingsContent() {
     <main className="mx-auto max-w-3xl space-y-4 p-8 text-sm">
       <h1 className="text-xl font-semibold">{t("settings.title")}</h1>
       <p className="text-slate-500">{t("settings.intro")}</p>
+      <Link href="/settings/dpia-templates" className="inline-block text-sm underline">{t("templates.title")}</Link>
       <div className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
         <label className="block">
           {t("settings.minFactors")}

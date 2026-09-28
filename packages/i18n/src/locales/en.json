@@ -663,6 +663,57 @@
       "save": "Save",
       "saveError": "Save failed: {detail}",
       "saved": "Saved — the next screening round will use this threshold"
+    },
+    "templates": {
+      "title": "Template library (DPIA/PIA/LIA/...)",
+      "intro": "Clone a template to adjust its questions, options and scoring without touching the source — edit content on the form builder page",
+      "loading": "Loading...",
+      "loadError": "Failed to load",
+      "empty": "No templates in the library yet",
+      "forbidden": "You don't have access",
+      "filterAll": "All types",
+      "assessmentType": "Assessment type",
+      "code": "Code",
+      "name": "Name",
+      "status": "Status",
+      "version": "Version",
+      "types": {
+        "dpia": "DPIA",
+        "pia": "PIA",
+        "lia": "LIA",
+        "tia": "TIA",
+        "ai": "AI",
+        "security": "Security measures",
+        "maturity": "Maturity",
+        "dpo_check": "DPO check",
+        "sme_check": "SME check",
+        "vendor": "Vendor",
+        "inbound_dpa": "Inbound DPA",
+        "independence": "Independence"
+      },
+      "statusValues": {
+        "draft": "Draft",
+        "published": "Published",
+        "retired": "Retired"
+      },
+      "editContent": "Edit content",
+      "clone": "Clone",
+      "publish": "Publish",
+      "retire": "Retire",
+      "actionError": "Action failed",
+      "create": {
+        "title": "Create a new template",
+        "codeHelp": "lowercase a-z 0-9 _ only",
+        "submit": "Create",
+        "invalid": "This code already exists for this type, or the input is invalid"
+      },
+      "cloneDialog": {
+        "title": "Clone template",
+        "code": "New code",
+        "name": "New name",
+        "submit": "Confirm clone",
+        "cancel": "Cancel"
+      }
     }
   },
   "assets": {

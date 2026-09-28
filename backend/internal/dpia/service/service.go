@@ -12,6 +12,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	ropaservice "pdpa-platform/internal/ropa/service"
@@ -30,8 +31,9 @@ const (
 )
 
 var (
-	ErrNotFound = errors.New("dpia: not found")
-	ErrInvalid  = errors.New("dpia: invalid")
+	ErrNotFound        = errors.New("dpia: not found")
+	ErrInvalid         = errors.New("dpia: invalid")
+	ErrVersionMismatch = errors.New("dpia: version mismatch")
 )
 
 // FieldError is one problem with the request (CLAUDE.md's usual FieldError shape).
@@ -93,4 +95,9 @@ func uuidPtr(v pgtype.UUID) *uuid.UUID {
 	}
 	id := uuid.UUID(v.Bytes)
 	return &id
+}
+
+func isUnique(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }

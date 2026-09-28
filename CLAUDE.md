@@ -1156,6 +1156,52 @@ library beyond this one seeded form, DPIA-04 RoPA prefill into a full assessment
 proportionality, risk scoring, DPO opinion, approval) — sibling features layered on the same `assess.assessments`
 row, not built here, the same layering DSAR-13 used for DSAR-01/02/06/07/08/11.
 
+### DPIA-03 คลัง template แบบประเมิน (`docs/modules/DPIA.md#dpia-03`) — done
+`internal/dpia/service/templates.go` (+ `http/templates.go`, no new migration): the whole feature sits on
+`assess.templates` (already fully specified in the baseline migrations — same table DPIA-01/02's own seeded
+screening template already uses) and the generic PLT-06 form engine (`internal/platform/forms`), both
+already built. DPIA-03 doesn't reimplement form editing — a template's questions/options/scoring are edited
+on PLT-06's own existing `/forms/{id}` builder page, which every `"assessment"`-type form (screening
+included) already uses; this feature's real, narrow scope is the `assess.templates`-level catalog wrapping
+that content: `ListTemplates`/`GetTemplateByID` (list + filter by `assessment_type`), `CreateTemplate` (a
+fresh PLT-06 form + its `assess.templates` wrapper row), `CloneTemplate` (the acceptance criterion), and a
+`PublishTemplate`/`RetireTemplate` lifecycle.
+
+`CloneTemplate` resolves the source form to its current content — published version if it has one, else its
+still-open draft (`latestFormVersion`, a small addition next to DPIA-01/02's own `screeningVersion`, which by
+contrast only ever accepts a *published* version since screening must run against a live, reviewed form) —
+and calls `s.Forms.CreateForm` with that schema/scoring/languages to build a brand-new
+`platform.form_definitions` row from scratch. Because the clone is a different form row from the moment it's
+created, not a reference or a shared draft, editing it afterward through PLT-06's own builder (`SaveDraft`,
+`Publish`) can never reach the source template's own form — proven directly by a test that publishes the
+clone and re-reads the source, expecting its status/version untouched.
+
+`PublishTemplate` leans on the underlying form's own optimistic-concurrency ETag (`forms.Service.Publish`'s
+`draftVersion` parameter, checked against the draft version's own `row_version`) rather than adding a second
+check on the `assess.templates` row — that ETag is already the real precondition for "is this still the
+draft I'm publishing". `RetireTemplate` has no such underlying check to lean on (retiring doesn't touch the
+form at all, only flips `assess.templates.status`), so it gets its own: a dedicated `RetireTemplateRow` sqlc
+query with `WHERE id = $1 AND row_version = $2`, mapped to a new `ErrVersionMismatch` sentinel (412) exactly
+like PLT-08 and other modules' own ETag checks. `RetireTemplate` is gated by `assessment.template.delete` (a
+permanent status change), not `.update` — the same reasoning ORG-06's external-party merge already
+established. Templates created through this feature's API are always tenant-scoped; a `tenant_id NULL`
+global row only ever comes from a migration (ORG-07 Q-20/ROPA-09 Q-25/PNG-03 Q-14/DPIA-01's own Q-26 pattern),
+never from this endpoint.
+
+API: `GET`/`POST /admin/v1/dpia/templates`, `GET /admin/v1/dpia/templates/{id}`,
+`POST /admin/v1/dpia/templates/{id}/clone`, `POST .../publish` (`If-Match`), `POST .../retire` (`If-Match`) —
+all on the already-seeded `assessment.template.*` permissions (`.read`/`.create`/`.publish`/`.delete`), no
+new permission code or migration. UI `/settings/dpia-templates`: a list filtered by `assessment_type` with
+clone/publish/retire actions and a link into PLT-06's own `/forms/{id}` builder for content, plus a create
+form (following `/forms`' own `CreateForm` pattern almost exactly) — linked from `/settings/dpia`. Tests:
+unit (create + list-by-type, unknown assessment_type refused, duplicate code refused — surfaces as the
+underlying PLT-06 form's own code uniqueness, `forms.ErrInvalidRequest`, since CreateTemplate always creates
+a brand-new form with the caller's code and that collision is checked before `assess.templates`' own insert
+is ever attempted — clone independence, publish/retire version-mismatch and success, two-tenant isolation),
+HTTP contract (401/403/201/200/404/412/428). Not done: nothing else in this pass — DPIA-03 is now fully built
+against its one acceptance criterion; the next DPIA feature (DPIA-04 onward) builds on top of a *published*
+template the way DPIA-01/02's screening form already does.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

@@ -56,6 +56,27 @@ func (e DpiaAssessmentStatus) Valid() bool {
 	}
 }
 
+// Defines values for DpiaTemplateStatus.
+const (
+	Draft     DpiaTemplateStatus = "draft"
+	Published DpiaTemplateStatus = "published"
+	Retired   DpiaTemplateStatus = "retired"
+)
+
+// Valid indicates whether the value is a known member of the DpiaTemplateStatus enum.
+func (e DpiaTemplateStatus) Valid() bool {
+	switch e {
+	case Draft:
+		return true
+	case Published:
+		return true
+	case Retired:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for FormConditionOp.
 const (
 	Answered    FormConditionOp = "answered"
@@ -92,6 +113,60 @@ func (e FormConditionOp) Valid() bool {
 	case NotAnswered:
 		return true
 	case NotIn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FormDraftLanguages.
+const (
+	FormDraftLanguagesEn FormDraftLanguages = "en"
+	FormDraftLanguagesTh FormDraftLanguages = "th"
+)
+
+// Valid indicates whether the value is a known member of the FormDraftLanguages enum.
+func (e FormDraftLanguages) Valid() bool {
+	switch e {
+	case FormDraftLanguagesEn:
+		return true
+	case FormDraftLanguagesTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FormQuestionType.
+const (
+	Date         FormQuestionType = "date"
+	Email        FormQuestionType = "email"
+	MultiChoice  FormQuestionType = "multi_choice"
+	Number       FormQuestionType = "number"
+	SingleChoice FormQuestionType = "single_choice"
+	Text         FormQuestionType = "text"
+	Textarea     FormQuestionType = "textarea"
+	YesNo        FormQuestionType = "yes_no"
+)
+
+// Valid indicates whether the value is a known member of the FormQuestionType enum.
+func (e FormQuestionType) Valid() bool {
+	switch e {
+	case Date:
+		return true
+	case Email:
+		return true
+	case MultiChoice:
+		return true
+	case Number:
+		return true
+	case SingleChoice:
+		return true
+	case Text:
+		return true
+	case Textarea:
+		return true
+	case YesNo:
 		return true
 	default:
 		return false
@@ -206,6 +281,114 @@ func (e DpiaSaveScreeningRulesParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for DpiaListTemplatesParamsAcceptLanguage.
+const (
+	DpiaListTemplatesParamsAcceptLanguageEn DpiaListTemplatesParamsAcceptLanguage = "en"
+	DpiaListTemplatesParamsAcceptLanguageTh DpiaListTemplatesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaListTemplatesParamsAcceptLanguage enum.
+func (e DpiaListTemplatesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaListTemplatesParamsAcceptLanguageEn:
+		return true
+	case DpiaListTemplatesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaCreateTemplateParamsAcceptLanguage.
+const (
+	DpiaCreateTemplateParamsAcceptLanguageEn DpiaCreateTemplateParamsAcceptLanguage = "en"
+	DpiaCreateTemplateParamsAcceptLanguageTh DpiaCreateTemplateParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaCreateTemplateParamsAcceptLanguage enum.
+func (e DpiaCreateTemplateParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaCreateTemplateParamsAcceptLanguageEn:
+		return true
+	case DpiaCreateTemplateParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaGetTemplateParamsAcceptLanguage.
+const (
+	DpiaGetTemplateParamsAcceptLanguageEn DpiaGetTemplateParamsAcceptLanguage = "en"
+	DpiaGetTemplateParamsAcceptLanguageTh DpiaGetTemplateParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaGetTemplateParamsAcceptLanguage enum.
+func (e DpiaGetTemplateParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaGetTemplateParamsAcceptLanguageEn:
+		return true
+	case DpiaGetTemplateParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaCloneTemplateParamsAcceptLanguage.
+const (
+	DpiaCloneTemplateParamsAcceptLanguageEn DpiaCloneTemplateParamsAcceptLanguage = "en"
+	DpiaCloneTemplateParamsAcceptLanguageTh DpiaCloneTemplateParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaCloneTemplateParamsAcceptLanguage enum.
+func (e DpiaCloneTemplateParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaCloneTemplateParamsAcceptLanguageEn:
+		return true
+	case DpiaCloneTemplateParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaPublishTemplateParamsAcceptLanguage.
+const (
+	DpiaPublishTemplateParamsAcceptLanguageEn DpiaPublishTemplateParamsAcceptLanguage = "en"
+	DpiaPublishTemplateParamsAcceptLanguageTh DpiaPublishTemplateParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaPublishTemplateParamsAcceptLanguage enum.
+func (e DpiaPublishTemplateParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaPublishTemplateParamsAcceptLanguageEn:
+		return true
+	case DpiaPublishTemplateParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaRetireTemplateParamsAcceptLanguage.
+const (
+	DpiaRetireTemplateParamsAcceptLanguageEn DpiaRetireTemplateParamsAcceptLanguage = "en"
+	DpiaRetireTemplateParamsAcceptLanguageTh DpiaRetireTemplateParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaRetireTemplateParamsAcceptLanguage enum.
+func (e DpiaRetireTemplateParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaRetireTemplateParamsAcceptLanguageEn:
+		return true
+	case DpiaRetireTemplateParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // DpiaAssessment defines model for DpiaAssessment.
 type DpiaAssessment struct {
 	// ActivityId UUIDv7 generated by the API
@@ -244,6 +427,29 @@ type DpiaScreeningRule struct {
 	MinScore   *float32 `json:"min_score,omitempty"`
 }
 
+// DpiaTemplate defines model for DpiaTemplate.
+type DpiaTemplate struct {
+	AssessmentType string `json:"assessment_type"`
+	Code           string `json:"code"`
+
+	// CreatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	CreatedAt Timestamp `json:"created_at"`
+
+	// FormId UUIDv7 generated by the API
+	FormId Uuid `json:"form_id"`
+
+	// Id UUIDv7 generated by the API
+	Id         Uuid               `json:"id"`
+	LegalRefs  *[]string          `json:"legal_refs,omitempty"`
+	Name       string             `json:"name"`
+	RowVersion int                `json:"row_version"`
+	Status     DpiaTemplateStatus `json:"status"`
+	VersionNo  int                `json:"version_no"`
+}
+
+// DpiaTemplateStatus defines model for DpiaTemplate.Status.
+type DpiaTemplateStatus string
+
 // FieldError defines model for FieldError.
 type FieldError struct {
 	Code    string  `json:"code"`
@@ -262,6 +468,86 @@ type FormCondition struct {
 
 // FormConditionOp defines model for FormCondition.Op.
 type FormConditionOp string
+
+// FormDraft defines model for FormDraft.
+type FormDraft struct {
+	Languages *[]FormDraftLanguages `json:"languages,omitempty"`
+
+	// Schema A form's content (PLT-06 format, docs/modules/PLT.md#plt-06)
+	Schema  FormSchema   `json:"schema"`
+	Scoring *FormScoring `json:"scoring,omitempty"`
+}
+
+// FormDraftLanguages defines model for FormDraft.Languages.
+type FormDraftLanguages string
+
+// FormOption A choice; label is required except on yes_no questions (whose options only carry scores)
+type FormOption struct {
+	// Label Text by language; th is required
+	Label *FormText `json:"label,omitempty"`
+	Score *float32  `json:"score,omitempty"`
+	Value string    `json:"value"`
+}
+
+// FormQuestion defines model for FormQuestion.
+type FormQuestion struct {
+	// Help Text by language; th is required
+	Help *FormText `json:"help,omitempty"`
+	Key  string    `json:"key"`
+
+	// Label Text by language; th is required
+	Label     FormText         `json:"label"`
+	Max       *float32         `json:"max,omitempty"`
+	MaxLength *int             `json:"max_length,omitempty"`
+	Min       *float32         `json:"min,omitempty"`
+	Options   *[]FormOption    `json:"options,omitempty"`
+	Required  *bool            `json:"required,omitempty"`
+	Type      FormQuestionType `json:"type"`
+
+	// VisibleIf Show when an earlier question's answer compares true (question + op + value), or all/any of nested conditions
+	VisibleIf *FormCondition `json:"visible_if,omitempty"`
+	Weight    *float32       `json:"weight,omitempty"`
+}
+
+// FormQuestionType defines model for FormQuestion.Type.
+type FormQuestionType string
+
+// FormSchema A form's content (PLT-06 format, docs/modules/PLT.md#plt-06)
+type FormSchema struct {
+	Sections []FormSection `json:"sections"`
+}
+
+// FormScoring defines model for FormScoring.
+type FormScoring struct {
+	Bands []struct {
+		Key string `json:"key"`
+
+		// Label Text by language; th is required
+		Label FormText `json:"label"`
+		Max   *float32 `json:"max,omitempty"`
+		Min   float32  `json:"min"`
+	} `json:"bands"`
+}
+
+// FormSection defines model for FormSection.
+type FormSection struct {
+	// Description Text by language; th is required
+	Description *FormText      `json:"description,omitempty"`
+	Key         string         `json:"key"`
+	Questions   []FormQuestion `json:"questions"`
+
+	// Title Text by language; th is required
+	Title FormText `json:"title"`
+
+	// VisibleIf Show when an earlier question's answer compares true (question + op + value), or all/any of nested conditions
+	VisibleIf *FormCondition `json:"visible_if,omitempty"`
+}
+
+// FormText Text by language; th is required
+type FormText struct {
+	En *string `json:"en,omitempty"`
+	Th string  `json:"th"`
+}
 
 // Problem RFC 9457 problem details with a stable machine-readable `code`
 type Problem struct {
@@ -284,14 +570,26 @@ type Uuid = openapi_types.UUID
 // AcceptLanguage defines model for AcceptLanguage.
 type AcceptLanguage string
 
+// IfMatch defines model for IfMatch.
+type IfMatch = string
+
 // BadRequest RFC 9457 problem details with a stable machine-readable `code`
 type BadRequest = Problem
+
+// Conflict RFC 9457 problem details with a stable machine-readable `code`
+type Conflict = Problem
 
 // Forbidden RFC 9457 problem details with a stable machine-readable `code`
 type Forbidden = Problem
 
 // NotFound RFC 9457 problem details with a stable machine-readable `code`
 type NotFound = Problem
+
+// PreconditionFailed RFC 9457 problem details with a stable machine-readable `code`
+type PreconditionFailed = Problem
+
+// PreconditionRequired RFC 9457 problem details with a stable machine-readable `code`
+type PreconditionRequired = Problem
 
 // Unauthorized RFC 9457 problem details with a stable machine-readable `code`
 type Unauthorized = Problem
@@ -359,11 +657,94 @@ type DpiaSaveScreeningRulesParams struct {
 // DpiaSaveScreeningRulesParamsAcceptLanguage defines parameters for DpiaSaveScreeningRules.
 type DpiaSaveScreeningRulesParamsAcceptLanguage string
 
+// DpiaListTemplatesParams defines parameters for DpiaListTemplates.
+type DpiaListTemplatesParams struct {
+	AssessmentType *string `form:"assessment_type,omitempty" json:"assessment_type,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaListTemplatesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpiaListTemplatesParamsAcceptLanguage defines parameters for DpiaListTemplates.
+type DpiaListTemplatesParamsAcceptLanguage string
+
+// DpiaCreateTemplateJSONBody defines parameters for DpiaCreateTemplate.
+type DpiaCreateTemplateJSONBody struct {
+	AssessmentType string    `json:"assessment_type"`
+	Code           string    `json:"code"`
+	Draft          FormDraft `json:"draft"`
+	LegalRefs      *[]string `json:"legal_refs,omitempty"`
+	Name           string    `json:"name"`
+}
+
+// DpiaCreateTemplateParams defines parameters for DpiaCreateTemplate.
+type DpiaCreateTemplateParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaCreateTemplateParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpiaCreateTemplateParamsAcceptLanguage defines parameters for DpiaCreateTemplate.
+type DpiaCreateTemplateParamsAcceptLanguage string
+
+// DpiaGetTemplateParams defines parameters for DpiaGetTemplate.
+type DpiaGetTemplateParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaGetTemplateParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpiaGetTemplateParamsAcceptLanguage defines parameters for DpiaGetTemplate.
+type DpiaGetTemplateParamsAcceptLanguage string
+
+// DpiaCloneTemplateJSONBody defines parameters for DpiaCloneTemplate.
+type DpiaCloneTemplateJSONBody struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+// DpiaCloneTemplateParams defines parameters for DpiaCloneTemplate.
+type DpiaCloneTemplateParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaCloneTemplateParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpiaCloneTemplateParamsAcceptLanguage defines parameters for DpiaCloneTemplate.
+type DpiaCloneTemplateParamsAcceptLanguage string
+
+// DpiaPublishTemplateParams defines parameters for DpiaPublishTemplate.
+type DpiaPublishTemplateParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaPublishTemplateParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// DpiaPublishTemplateParamsAcceptLanguage defines parameters for DpiaPublishTemplate.
+type DpiaPublishTemplateParamsAcceptLanguage string
+
+// DpiaRetireTemplateParams defines parameters for DpiaRetireTemplate.
+type DpiaRetireTemplateParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaRetireTemplateParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// DpiaRetireTemplateParamsAcceptLanguage defines parameters for DpiaRetireTemplate.
+type DpiaRetireTemplateParamsAcceptLanguage string
+
 // DpiaScreenActivityJSONRequestBody defines body for DpiaScreenActivity for application/json ContentType.
 type DpiaScreenActivityJSONRequestBody DpiaScreenActivityJSONBody
 
 // DpiaSaveScreeningRulesJSONRequestBody defines body for DpiaSaveScreeningRules for application/json ContentType.
 type DpiaSaveScreeningRulesJSONRequestBody DpiaSaveScreeningRulesJSONBody
+
+// DpiaCreateTemplateJSONRequestBody defines body for DpiaCreateTemplate for application/json ContentType.
+type DpiaCreateTemplateJSONRequestBody DpiaCreateTemplateJSONBody
+
+// DpiaCloneTemplateJSONRequestBody defines body for DpiaCloneTemplate for application/json ContentType.
+type DpiaCloneTemplateJSONRequestBody DpiaCloneTemplateJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -382,6 +763,24 @@ type ServerInterface interface {
 	// DpiaSaveScreeningRules Set the DPIA-02 thresholds a screening result is judged against (takes effect on the next screening round)
 	// (PUT /admin/v1/dpia/screening-rules)
 	DpiaSaveScreeningRules(w http.ResponseWriter, r *http.Request, params DpiaSaveScreeningRulesParams)
+	// DpiaListTemplates The template library (DPIA-03): global defaults + the tenant's own, optionally by assessment_type
+	// (GET /admin/v1/dpia/templates)
+	DpiaListTemplates(w http.ResponseWriter, r *http.Request, params DpiaListTemplatesParams)
+	// DpiaCreateTemplate Author a brand-new assessment template (its own PLT-06 form, draft)
+	// (POST /admin/v1/dpia/templates)
+	DpiaCreateTemplate(w http.ResponseWriter, r *http.Request, params DpiaCreateTemplateParams)
+	// DpiaGetTemplate One template
+	// (GET /admin/v1/dpia/templates/{id})
+	DpiaGetTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaGetTemplateParams)
+	// DpiaCloneTemplate Clone a template (DPIA-03): a fully independent copy of its current content — editing the clone never affects the original
+	// (POST /admin/v1/dpia/templates/{id}/clone)
+	DpiaCloneTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaCloneTemplateParams)
+	// DpiaPublishTemplate Publish the template's current draft (If-Match = the form's own ETag) and mark the template live
+	// (POST /admin/v1/dpia/templates/{id}/publish)
+	DpiaPublishTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaPublishTemplateParams)
+	// DpiaRetireTemplate Withdraw a template from use (If-Match = the template's own ETag)
+	// (POST /admin/v1/dpia/templates/{id}/retire)
+	DpiaRetireTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaRetireTemplateParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -415,6 +814,42 @@ func (_ Unimplemented) DpiaGetScreeningRules(w http.ResponseWriter, r *http.Requ
 // DpiaSaveScreeningRules Set the DPIA-02 thresholds a screening result is judged against (takes effect on the next screening round)
 // (PUT /admin/v1/dpia/screening-rules)
 func (_ Unimplemented) DpiaSaveScreeningRules(w http.ResponseWriter, r *http.Request, params DpiaSaveScreeningRulesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpiaListTemplates The template library (DPIA-03): global defaults + the tenant's own, optionally by assessment_type
+// (GET /admin/v1/dpia/templates)
+func (_ Unimplemented) DpiaListTemplates(w http.ResponseWriter, r *http.Request, params DpiaListTemplatesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpiaCreateTemplate Author a brand-new assessment template (its own PLT-06 form, draft)
+// (POST /admin/v1/dpia/templates)
+func (_ Unimplemented) DpiaCreateTemplate(w http.ResponseWriter, r *http.Request, params DpiaCreateTemplateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpiaGetTemplate One template
+// (GET /admin/v1/dpia/templates/{id})
+func (_ Unimplemented) DpiaGetTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaGetTemplateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpiaCloneTemplate Clone a template (DPIA-03): a fully independent copy of its current content — editing the clone never affects the original
+// (POST /admin/v1/dpia/templates/{id}/clone)
+func (_ Unimplemented) DpiaCloneTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaCloneTemplateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpiaPublishTemplate Publish the template's current draft (If-Match = the form's own ETag) and mark the template live
+// (POST /admin/v1/dpia/templates/{id}/publish)
+func (_ Unimplemented) DpiaPublishTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaPublishTemplateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpiaRetireTemplate Withdraw a template from use (If-Match = the template's own ETag)
+// (POST /admin/v1/dpia/templates/{id}/retire)
+func (_ Unimplemented) DpiaRetireTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaRetireTemplateParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -689,6 +1124,347 @@ func (siw *ServerInterfaceWrapper) DpiaSaveScreeningRules(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// DpiaListTemplates operation middleware
+func (siw *ServerInterfaceWrapper) DpiaListTemplates(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaListTemplatesParams
+
+	// ------------- Optional query parameter "assessment_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "assessment_type", r.URL.Query(), &params.AssessmentType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "assessment_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assessment_type", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaListTemplatesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaListTemplates(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpiaCreateTemplate operation middleware
+func (siw *ServerInterfaceWrapper) DpiaCreateTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaCreateTemplateParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaCreateTemplateParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaCreateTemplate(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpiaGetTemplate operation middleware
+func (siw *ServerInterfaceWrapper) DpiaGetTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaGetTemplateParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaGetTemplateParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaGetTemplate(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpiaCloneTemplate operation middleware
+func (siw *ServerInterfaceWrapper) DpiaCloneTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaCloneTemplateParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaCloneTemplateParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaCloneTemplate(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpiaPublishTemplate operation middleware
+func (siw *ServerInterfaceWrapper) DpiaPublishTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaPublishTemplateParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaPublishTemplateParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaPublishTemplate(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpiaRetireTemplate operation middleware
+func (siw *ServerInterfaceWrapper) DpiaRetireTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaRetireTemplateParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaRetireTemplateParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaRetireTemplate(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -817,15 +1593,39 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/dpia/assessments/{id}", wrapper.DpiaGetAssessment)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dpia/templates", wrapper.DpiaListTemplates)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dpia/templates", wrapper.DpiaCreateTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dpia/templates/{id}", wrapper.DpiaGetTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dpia/templates/{id}/clone", wrapper.DpiaCloneTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dpia/templates/{id}/publish", wrapper.DpiaPublishTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dpia/templates/{id}/retire", wrapper.DpiaRetireTemplate)
+	})
 
 	return r
 }
 
 type BadRequestApplicationProblemPlusJSONResponse Problem
 
+type ConflictApplicationProblemPlusJSONResponse Problem
+
 type ForbiddenApplicationProblemPlusJSONResponse Problem
 
 type NotFoundApplicationProblemPlusJSONResponse Problem
+
+type PreconditionFailedApplicationProblemPlusJSONResponse Problem
+
+type PreconditionRequiredApplicationProblemPlusJSONResponse Problem
 
 type UnauthorizedApplicationProblemPlusJSONResponse Problem
 
@@ -1188,6 +1988,578 @@ func (response DpiaSaveScreeningRules422ApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type DpiaListTemplatesRequestObject struct {
+	Params DpiaListTemplatesParams
+}
+
+type DpiaListTemplatesResponseObject interface {
+	VisitDpiaListTemplatesResponse(w http.ResponseWriter) error
+}
+
+type DpiaListTemplates200JSONResponse struct {
+	Data []DpiaTemplate `json:"data"`
+}
+
+func (response DpiaListTemplates200JSONResponse) VisitDpiaListTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaListTemplates401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaListTemplates401ApplicationProblemPlusJSONResponse) VisitDpiaListTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaListTemplates403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaListTemplates403ApplicationProblemPlusJSONResponse) VisitDpiaListTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaCreateTemplateRequestObject struct {
+	Params DpiaCreateTemplateParams
+	Body   *DpiaCreateTemplateJSONRequestBody
+}
+
+type DpiaCreateTemplateResponseObject interface {
+	VisitDpiaCreateTemplateResponse(w http.ResponseWriter) error
+}
+
+type DpiaCreateTemplate201JSONResponse DpiaTemplate
+
+func (response DpiaCreateTemplate201JSONResponse) VisitDpiaCreateTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaCreateTemplate400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaCreateTemplate400ApplicationProblemPlusJSONResponse) VisitDpiaCreateTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaCreateTemplate401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaCreateTemplate401ApplicationProblemPlusJSONResponse) VisitDpiaCreateTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaCreateTemplate403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaCreateTemplate403ApplicationProblemPlusJSONResponse) VisitDpiaCreateTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaCreateTemplate422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaCreateTemplate422ApplicationProblemPlusJSONResponse) VisitDpiaCreateTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaGetTemplateRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DpiaGetTemplateParams
+}
+
+type DpiaGetTemplateResponseObject interface {
+	VisitDpiaGetTemplateResponse(w http.ResponseWriter) error
+}
+
+type DpiaGetTemplate200JSONResponse DpiaTemplate
+
+func (response DpiaGetTemplate200JSONResponse) VisitDpiaGetTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaGetTemplate401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaGetTemplate401ApplicationProblemPlusJSONResponse) VisitDpiaGetTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaGetTemplate403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaGetTemplate403ApplicationProblemPlusJSONResponse) VisitDpiaGetTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaGetTemplate404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaGetTemplate404ApplicationProblemPlusJSONResponse) VisitDpiaGetTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaCloneTemplateRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DpiaCloneTemplateParams
+	Body   *DpiaCloneTemplateJSONRequestBody
+}
+
+type DpiaCloneTemplateResponseObject interface {
+	VisitDpiaCloneTemplateResponse(w http.ResponseWriter) error
+}
+
+type DpiaCloneTemplate201JSONResponse DpiaTemplate
+
+func (response DpiaCloneTemplate201JSONResponse) VisitDpiaCloneTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaCloneTemplate400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaCloneTemplate400ApplicationProblemPlusJSONResponse) VisitDpiaCloneTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaCloneTemplate401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaCloneTemplate401ApplicationProblemPlusJSONResponse) VisitDpiaCloneTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaCloneTemplate403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaCloneTemplate403ApplicationProblemPlusJSONResponse) VisitDpiaCloneTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaCloneTemplate404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaCloneTemplate404ApplicationProblemPlusJSONResponse) VisitDpiaCloneTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaCloneTemplate422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaCloneTemplate422ApplicationProblemPlusJSONResponse) VisitDpiaCloneTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaPublishTemplateRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DpiaPublishTemplateParams
+}
+
+type DpiaPublishTemplateResponseObject interface {
+	VisitDpiaPublishTemplateResponse(w http.ResponseWriter) error
+}
+
+type DpiaPublishTemplate200JSONResponse DpiaTemplate
+
+func (response DpiaPublishTemplate200JSONResponse) VisitDpiaPublishTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaPublishTemplate401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaPublishTemplate401ApplicationProblemPlusJSONResponse) VisitDpiaPublishTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaPublishTemplate403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaPublishTemplate403ApplicationProblemPlusJSONResponse) VisitDpiaPublishTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaPublishTemplate404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaPublishTemplate404ApplicationProblemPlusJSONResponse) VisitDpiaPublishTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaPublishTemplate409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaPublishTemplate409ApplicationProblemPlusJSONResponse) VisitDpiaPublishTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaPublishTemplate412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaPublishTemplate412ApplicationProblemPlusJSONResponse) VisitDpiaPublishTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaPublishTemplate422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaPublishTemplate422ApplicationProblemPlusJSONResponse) VisitDpiaPublishTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaPublishTemplate428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaPublishTemplate428ApplicationProblemPlusJSONResponse) VisitDpiaPublishTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRetireTemplateRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DpiaRetireTemplateParams
+}
+
+type DpiaRetireTemplateResponseObject interface {
+	VisitDpiaRetireTemplateResponse(w http.ResponseWriter) error
+}
+
+type DpiaRetireTemplate200JSONResponse DpiaTemplate
+
+func (response DpiaRetireTemplate200JSONResponse) VisitDpiaRetireTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRetireTemplate401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaRetireTemplate401ApplicationProblemPlusJSONResponse) VisitDpiaRetireTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRetireTemplate403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaRetireTemplate403ApplicationProblemPlusJSONResponse) VisitDpiaRetireTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRetireTemplate404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaRetireTemplate404ApplicationProblemPlusJSONResponse) VisitDpiaRetireTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRetireTemplate409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaRetireTemplate409ApplicationProblemPlusJSONResponse) VisitDpiaRetireTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRetireTemplate412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaRetireTemplate412ApplicationProblemPlusJSONResponse) VisitDpiaRetireTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRetireTemplate428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaRetireTemplate428ApplicationProblemPlusJSONResponse) VisitDpiaRetireTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// DpiaScreenActivity Answer the DPIA screening form for a RoPA processing activity (DPIA-01): the system computes required / recommended / not_required against the tenant's own thresholds (DPIA-02)
@@ -1205,6 +2577,24 @@ type StrictServerInterface interface {
 	// DpiaSaveScreeningRules Set the DPIA-02 thresholds a screening result is judged against (takes effect on the next screening round)
 	// (PUT /admin/v1/dpia/screening-rules)
 	DpiaSaveScreeningRules(ctx context.Context, request DpiaSaveScreeningRulesRequestObject) (DpiaSaveScreeningRulesResponseObject, error)
+	// DpiaListTemplates The template library (DPIA-03): global defaults + the tenant's own, optionally by assessment_type
+	// (GET /admin/v1/dpia/templates)
+	DpiaListTemplates(ctx context.Context, request DpiaListTemplatesRequestObject) (DpiaListTemplatesResponseObject, error)
+	// DpiaCreateTemplate Author a brand-new assessment template (its own PLT-06 form, draft)
+	// (POST /admin/v1/dpia/templates)
+	DpiaCreateTemplate(ctx context.Context, request DpiaCreateTemplateRequestObject) (DpiaCreateTemplateResponseObject, error)
+	// DpiaGetTemplate One template
+	// (GET /admin/v1/dpia/templates/{id})
+	DpiaGetTemplate(ctx context.Context, request DpiaGetTemplateRequestObject) (DpiaGetTemplateResponseObject, error)
+	// DpiaCloneTemplate Clone a template (DPIA-03): a fully independent copy of its current content — editing the clone never affects the original
+	// (POST /admin/v1/dpia/templates/{id}/clone)
+	DpiaCloneTemplate(ctx context.Context, request DpiaCloneTemplateRequestObject) (DpiaCloneTemplateResponseObject, error)
+	// DpiaPublishTemplate Publish the template's current draft (If-Match = the form's own ETag) and mark the template live
+	// (POST /admin/v1/dpia/templates/{id}/publish)
+	DpiaPublishTemplate(ctx context.Context, request DpiaPublishTemplateRequestObject) (DpiaPublishTemplateResponseObject, error)
+	// DpiaRetireTemplate Withdraw a template from use (If-Match = the template's own ETag)
+	// (POST /admin/v1/dpia/templates/{id}/retire)
+	DpiaRetireTemplate(ctx context.Context, request DpiaRetireTemplateRequestObject) (DpiaRetireTemplateResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -1385,6 +2775,180 @@ func (sh *strictHandler) DpiaSaveScreeningRules(w http.ResponseWriter, r *http.R
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DpiaSaveScreeningRulesResponseObject); ok {
 		if err := validResponse.VisitDpiaSaveScreeningRulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpiaListTemplates operation middleware
+func (sh *strictHandler) DpiaListTemplates(w http.ResponseWriter, r *http.Request, params DpiaListTemplatesParams) {
+	var request DpiaListTemplatesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaListTemplates(ctx, request.(DpiaListTemplatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaListTemplates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaListTemplatesResponseObject); ok {
+		if err := validResponse.VisitDpiaListTemplatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpiaCreateTemplate operation middleware
+func (sh *strictHandler) DpiaCreateTemplate(w http.ResponseWriter, r *http.Request, params DpiaCreateTemplateParams) {
+	var request DpiaCreateTemplateRequestObject
+
+	request.Params = params
+
+	var body DpiaCreateTemplateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaCreateTemplate(ctx, request.(DpiaCreateTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaCreateTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaCreateTemplateResponseObject); ok {
+		if err := validResponse.VisitDpiaCreateTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpiaGetTemplate operation middleware
+func (sh *strictHandler) DpiaGetTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaGetTemplateParams) {
+	var request DpiaGetTemplateRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaGetTemplate(ctx, request.(DpiaGetTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaGetTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaGetTemplateResponseObject); ok {
+		if err := validResponse.VisitDpiaGetTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpiaCloneTemplate operation middleware
+func (sh *strictHandler) DpiaCloneTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaCloneTemplateParams) {
+	var request DpiaCloneTemplateRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body DpiaCloneTemplateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaCloneTemplate(ctx, request.(DpiaCloneTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaCloneTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaCloneTemplateResponseObject); ok {
+		if err := validResponse.VisitDpiaCloneTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpiaPublishTemplate operation middleware
+func (sh *strictHandler) DpiaPublishTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaPublishTemplateParams) {
+	var request DpiaPublishTemplateRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaPublishTemplate(ctx, request.(DpiaPublishTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaPublishTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaPublishTemplateResponseObject); ok {
+		if err := validResponse.VisitDpiaPublishTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpiaRetireTemplate operation middleware
+func (sh *strictHandler) DpiaRetireTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaRetireTemplateParams) {
+	var request DpiaRetireTemplateRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaRetireTemplate(ctx, request.(DpiaRetireTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaRetireTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaRetireTemplateResponseObject); ok {
+		if err := validResponse.VisitDpiaRetireTemplateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

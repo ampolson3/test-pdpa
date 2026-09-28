@@ -267,8 +267,15 @@ export {
   useScreenActivity,
   useDpiaAssessments,
   useDpiaAssessment,
+  useDpiaTemplates,
+  useDpiaTemplate,
+  useCreateDpiaTemplate,
+  useCloneDpiaTemplate,
+  usePublishDpiaTemplate,
+  useRetireDpiaTemplate,
   type DpiaScreeningRule,
   type DpiaAssessment,
+  type DpiaTemplate,
 } from "./dpia";
 export {
   useDsarRequestTypes,

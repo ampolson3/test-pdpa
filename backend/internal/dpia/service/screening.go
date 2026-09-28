@@ -59,7 +59,8 @@ type Assessment struct {
 	CreatedAt       time.Time
 }
 
-// screeningVersion resolves the template's form to its current published version.
+// screeningVersion resolves the template's form to its current *published* version — screening must only
+// ever run against a live, reviewed form.
 func (s *Service) screeningVersion(ctx context.Context, formID uuid.UUID) (forms.Version, error) {
 	f, err := s.Forms.GetForm(ctx, formID)
 	if errors.Is(err, forms.ErrNotFound) || errors.Is(err, forms.ErrForbidden) {
@@ -77,6 +78,30 @@ func (s *Service) screeningVersion(ctx context.Context, formID uuid.UUID) (forms
 		}
 	}
 	return forms.Version{}, ErrBadTemplate
+}
+
+// latestFormVersion resolves a form to its current published version if it has one, else its own open draft
+// (PLT-06 keeps at most one unpublished version per form) — used by CloneTemplate, which may clone a
+// template that was never published.
+func (s *Service) latestFormVersion(ctx context.Context, formID uuid.UUID) (forms.Version, error) {
+	f, err := s.Forms.GetForm(ctx, formID)
+	if errors.Is(err, forms.ErrNotFound) || errors.Is(err, forms.ErrForbidden) {
+		return forms.Version{}, ErrBadTemplate
+	}
+	if err != nil {
+		return forms.Version{}, err
+	}
+	if f.CurrentVersionID != nil {
+		for _, v := range f.Versions {
+			if v.ID == *f.CurrentVersionID {
+				return v, nil
+			}
+		}
+	}
+	if len(f.Versions) == 0 {
+		return forms.Version{}, ErrBadTemplate
+	}
+	return f.Versions[len(f.Versions)-1], nil
 }
 
 // Rules returns the tenant's active DPIA-02 thresholds, or the default when none has been saved yet (the

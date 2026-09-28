@@ -1,11 +1,14 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiClient, components } from "./client";
+import type { FormDraft } from "./forms";
 
 export type DpiaScreeningRule = components["schemas"]["DpiaScreeningRule"];
 export type DpiaAssessment = components["schemas"]["DpiaAssessment"];
+export type DpiaTemplate = components["schemas"]["DpiaTemplate"];
 
 const rulesKey = ["dpia", "screening-rules"] as const;
 const assessmentsKey = ["dpia", "assessments"] as const;
+const templatesKey = ["dpia", "templates"] as const;
 
 /** GET /admin/v1/dpia/screening-rules (DPIA-02) — the tenant's own thresholds, or the default. */
 export function useScreeningRules(client: ApiClient) {
@@ -72,5 +75,92 @@ export function useDpiaAssessment(client: ApiClient, id: string | undefined) {
       if (error) throw error;
       return data;
     },
+  });
+}
+
+/** GET /admin/v1/dpia/templates (DPIA-03) — the template library, optionally filtered by assessment_type. */
+export function useDpiaTemplates(client: ApiClient, assessmentType?: string) {
+  return useQuery({
+    queryKey: [...templatesKey, assessmentType ?? ""],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/templates", {
+        params: { query: { assessment_type: assessmentType } },
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useDpiaTemplate(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...templatesKey, "id", id ?? ""],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/templates/{id}", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useCreateDpiaTemplate(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      assessment_type: string;
+      code: string;
+      name: string;
+      legal_refs?: string[];
+      draft: FormDraft;
+    }) => {
+      const { data, error } = await client.POST("/admin/v1/dpia/templates", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: templatesKey }),
+  });
+}
+
+export function useCloneDpiaTemplate(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; code: string; name: string }) => {
+      const { data, error } = await client.POST("/admin/v1/dpia/templates/{id}/clone", {
+        params: { path: { id: v.id } },
+        body: { code: v.code, name: v.name },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: templatesKey }),
+  });
+}
+
+export function usePublishDpiaTemplate(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; ifMatch: string }) => {
+      const { data, error } = await client.POST("/admin/v1/dpia/templates/{id}/publish", {
+        params: { path: { id: v.id }, header: { "If-Match": v.ifMatch } },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: templatesKey }),
+  });
+}
+
+export function useRetireDpiaTemplate(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; ifMatch: string }) => {
+      const { data, error } = await client.POST("/admin/v1/dpia/templates/{id}/retire", {
+        params: { path: { id: v.id }, header: { "If-Match": v.ifMatch } },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: templatesKey }),
   });
 }

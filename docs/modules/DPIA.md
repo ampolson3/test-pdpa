@@ -169,6 +169,17 @@
 
 **Acceptance criteria:** clone template แล้วแก้ได้โดยไม่กระทบต้นฉบับ
 
+**สถานะ implementation:** done — see `CLAUDE.md`'s DPIA-03 section for the full implementation note.
+Built on the already-existing `assess.templates` table and the generic PLT-06 form engine (no new
+migration): a catalog/list of templates by `assessment_type`, `Clone` (copies a source's current form
+content into a brand-new, independent `platform.form_definitions` row — editing the clone afterward
+through PLT-06's own form builder never touches the source), and a `Publish`/`Retire` lifecycle wrapping
+the underlying form's own draft/publish state. API `/admin/v1/dpia/templates` (list, create), `/{id}`
+(get), `/{id}/clone`, `/{id}/publish`, `/{id}/retire` — all on the already-seeded `assessment.template.*`
+permissions. UI `/settings/dpia-templates` (list + filter by type, clone dialog, create form, publish/
+retire actions, links to PLT-06's own `/forms/{id}` builder for editing content), linked from
+`/settings/dpia`.
+
 <a id="dpia-04"></a>
 ### DPIA-04 อธิบายกิจกรรมโดยดึงข้อมูลจาก RoPA
 

@@ -8471,6 +8471,240 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dpia/templates:
+    get:
+      operationId: dpiaListTemplates
+      tags: [dpia]
+      summary: 'The template library (DPIA-03): global defaults + the tenant''s own, optionally by assessment_type'
+      x-permission: assessment.template.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: assessment_type
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpiaTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: dpiaCreateTemplate
+      tags: [dpia]
+      summary: Author a brand-new assessment template (its own PLT-06 form, draft)
+      x-permission: assessment.template.create
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assessment_type, code, name, draft]
+              additionalProperties: false
+              properties:
+                assessment_type:
+                  type: string
+                code:
+                  type: string
+                  pattern: '^[a-z][a-z0-9_]{0,59}$'
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                legal_refs:
+                  type: array
+                  items:
+                    type: string
+                draft:
+                  $ref: '#/components/schemas/FormDraft'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpia/templates/{id}:
+    get:
+      operationId: dpiaGetTemplate
+      tags: [dpia]
+      summary: One template
+      x-permission: assessment.template.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/dpia/templates/{id}/clone:
+    post:
+      operationId: dpiaCloneTemplate
+      tags: [dpia]
+      summary: 'Clone a template (DPIA-03): a fully independent copy of its current content — editing the clone never affects the original'
+      x-permission: assessment.template.create
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, name]
+              additionalProperties: false
+              properties:
+                code:
+                  type: string
+                  pattern: '^[a-z][a-z0-9_]{0,59}$'
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+      responses:
+        '201':
+          description: The clone
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaTemplate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpia/templates/{id}/publish:
+    post:
+      operationId: dpiaPublishTemplate
+      tags: [dpia]
+      summary: Publish the template's current draft (If-Match = the form's own ETag) and mark the template live
+      x-permission: assessment.template.publish
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dpia/templates/{id}/retire:
+    post:
+      operationId: dpiaRetireTemplate
+      tags: [dpia]
+      summary: Withdraw a template from use (If-Match = the template's own ETag)
+      x-permission: assessment.template.delete
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/notices/template-groups:
     get:
       operationId: noticeListTemplateGroups
@@ -10200,6 +10434,24 @@ components:
               question: {type: string}
               answer: {}
               points: {type: number}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    DpiaTemplate:
+      type: object
+      required: [id, assessment_type, code, name, form_id, version_no, status, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        assessment_type: {type: string}
+        code: {type: string}
+        name: {type: string}
+        form_id: {$ref: '#/components/schemas/Uuid'}
+        version_no: {type: integer}
+        legal_refs:
+          type: array
+          items: {type: string}
+        status:
+          type: string
+          enum: [draft, published, retired]
+        row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
     ActivityRole:
       type: string

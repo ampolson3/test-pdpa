@@ -54,6 +54,9 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.answers`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.assessments`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.screening_rules`)
+			_, _ = tx.Exec(ctx, `DELETE FROM assess.templates WHERE tenant_id IS NOT NULL`)
+			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_versions WHERE form_id IN (SELECT id FROM platform.form_definitions WHERE tenant_id IS NOT NULL)`)
+			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_definitions WHERE tenant_id IS NOT NULL`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.processing_activities`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.org_units`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
@@ -100,8 +103,9 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	}
 	reader := uuid.New()
 	grants := map[string][]string{
-		tenant.UserID.String(): {"assessment.dpia.read", "assessment.dpia.create", "assessment.template.read", "assessment.template.update"},
-		reader.String():        {"assessment.dpia.read", "assessment.template.read"},
+		tenant.UserID.String(): {"assessment.dpia.read", "assessment.dpia.create", "assessment.template.read", "assessment.template.update",
+			"assessment.template.create", "assessment.template.publish", "assessment.template.delete"},
+		reader.String(): {"assessment.dpia.read", "assessment.template.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
@@ -223,5 +227,67 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("POST", "/admin/v1/dpia/activities/"+uuid.New().String()+"/screen", &admin, map[string]any{"answers": answers}, nil); code != 422 {
 		t.Errorf("unknown activity: %d, want 422", code)
+	}
+
+	// DPIA-03 template library.
+	draft := map[string]any{"schema": map[string]any{"sections": []map[string]any{
+		{"key": "s1", "title": map[string]any{"th": "หัวข้อ"}, "questions": []map[string]any{
+			{"key": "q1", "type": "yes_no", "label": map[string]any{"th": "คำถาม"}},
+		}},
+	}}}
+	createBody := map[string]any{"assessment_type": "pia", "code": "http_tpl", "name": "HTTP template", "draft": draft}
+
+	if code, _ := do("POST", "/admin/v1/dpia/templates", nil, createBody, nil); code != 401 {
+		t.Errorf("create no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", "/admin/v1/dpia/templates", &reader2, createBody, nil); code != 403 {
+		t.Errorf("create with read-only permission: %d, want 403", code)
+	}
+	code, body = do("POST", "/admin/v1/dpia/templates", &admin, createBody, nil)
+	if code != 201 || !strings.Contains(body, `"status":"draft"`) {
+		t.Fatalf("create template: %d %s", code, body)
+	}
+	var tpl dpiahttp.DpiaTemplate
+	_ = json.Unmarshal([]byte(body), &tpl)
+
+	if code, body = do("GET", "/admin/v1/dpia/templates?assessment_type=pia", &reader2, nil, nil); code != 200 || !strings.Contains(body, tpl.Id.String()) {
+		t.Errorf("list by type: %d %s", code, body)
+	}
+	if code, body = do("GET", "/admin/v1/dpia/templates/"+tpl.Id.String(), &reader2, nil, nil); code != 200 || !strings.Contains(body, `"code":"http_tpl"`) {
+		t.Errorf("get template: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/dpia/templates/"+uuid.New().String(), &admin, nil, nil); code != 404 {
+		t.Errorf("unknown template: %d, want 404", code)
+	}
+
+	cloneBody := map[string]any{"code": "http_tpl_clone", "name": "HTTP template clone"}
+	if code, _ := do("POST", "/admin/v1/dpia/templates/"+tpl.Id.String()+"/clone", &reader2, cloneBody, nil); code != 403 {
+		t.Errorf("clone with read-only permission: %d, want 403", code)
+	}
+	code, body = do("POST", "/admin/v1/dpia/templates/"+tpl.Id.String()+"/clone", &admin, cloneBody, nil)
+	if code != 201 || !strings.Contains(body, `"code":"http_tpl_clone"`) {
+		t.Fatalf("clone template: %d %s", code, body)
+	}
+	var clone dpiahttp.DpiaTemplate
+	_ = json.Unmarshal([]byte(body), &clone)
+	if clone.FormId == tpl.FormId {
+		t.Errorf("clone shares the source's form id")
+	}
+
+	if code, _ := do("POST", "/admin/v1/dpia/templates/"+tpl.Id.String()+"/publish", &admin, nil, nil); code != 428 {
+		t.Errorf("publish without If-Match: %d, want 428", code)
+	}
+	if code, _ := do("POST", "/admin/v1/dpia/templates/"+tpl.Id.String()+"/publish", &admin, nil, map[string]string{"If-Match": `"999"`}); code != 412 {
+		t.Errorf("publish stale If-Match: %d, want 412", code)
+	}
+	if code, body = do("POST", "/admin/v1/dpia/templates/"+tpl.Id.String()+"/publish", &admin, nil, map[string]string{"If-Match": `"1"`}); code != 200 || !strings.Contains(body, `"status":"published"`) {
+		t.Errorf("publish: %d %s", code, body)
+	}
+
+	if code, _ := do("POST", "/admin/v1/dpia/templates/"+clone.Id.String()+"/retire", &reader2, nil, map[string]string{"If-Match": `"1"`}); code != 403 {
+		t.Errorf("retire with read-only permission: %d, want 403", code)
+	}
+	if code, body = do("POST", "/admin/v1/dpia/templates/"+clone.Id.String()+"/retire", &admin, nil, map[string]string{"If-Match": `"1"`}); code != 200 || !strings.Contains(body, `"status":"retired"`) {
+		t.Errorf("retire: %d %s", code, body)
 	}
 }
