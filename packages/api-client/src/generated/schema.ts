@@ -2714,6 +2714,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpia/assessments/{id}/description": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPIA-04: the assessment's processing description, composed live from its RoPA activity */
+        get: operations["dpiaGetAssessmentDescription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpia/templates": {
         parameters: {
             query?: never;
@@ -3733,6 +3750,49 @@ export interface components {
             status: "draft" | "published" | "retired";
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
+        };
+        /** @description DPIA-04: composed live from the assessment's RoPA activity on every read — never persisted, so it always reflects the activity's current data. */
+        DpiaActivityDescription: {
+            activity_id: components["schemas"]["Uuid"];
+            activity_code: string;
+            activity_name: string;
+            activity_description?: string;
+            role: components["schemas"]["ActivityRole"];
+            purposes: {
+                text: string;
+                lawful_basis_code: string;
+                lawful_basis_name_th: string;
+                lawful_basis_name_en?: string;
+            }[];
+            data: {
+                category_name_th: string;
+                category_name_en?: string;
+                subject_type_name_th: string;
+                subject_type_name_en?: string;
+                is_sensitive: boolean;
+                /** @enum {string} */
+                source: "direct" | "indirect";
+            }[];
+            recipients: {
+                party_name_th: string;
+                party_name_en?: string;
+                recipient_role: string;
+                disclosure_basis?: string;
+            }[];
+            transfers: {
+                country_name_th: string;
+                country_name_en?: string;
+                transfer_basis: string;
+                safeguards?: string;
+            }[];
+            retention: {
+                category_name_th?: string;
+                category_name_en?: string;
+                retention_months?: number;
+                retention_basis: string;
+                trigger_event: string;
+                disposal_method: string;
+            }[];
         };
         /** @enum {string} */
         ActivityRole: "controller" | "processor";
@@ -12056,6 +12116,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DpiaAssessment"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpiaGetAssessmentDescription: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaActivityDescription"];
                 };
             };
             401: components["responses"]["Unauthorized"];

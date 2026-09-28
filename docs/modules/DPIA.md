@@ -201,6 +201,15 @@ retire actions, links to PLT-06's own `/forms/{id}` builder for editing content)
 
 **Acceptance criteria:** ข้อมูลที่ดึงจาก RoPA ตรงกับกิจกรรมต้นทาง
 
+**สถานะ implementation:** done — see `CLAUDE.md`'s DPIA-04 section for the full implementation note.
+Composed live from the assessment's linked RoPA activity on every read (purposes, data categories, data
+subject groups, recipients, cross-border transfers, retention) — never persisted, so "sync เมื่อ RoPA เปลี่ยน"
+needs no separate sync step. New `GET /admin/v1/dpia/assessments/{id}/description`
+(`assessment.dpia.read`). UI: an auto-filled description panel on `/ropa/activities/{id}`'s own DPIA
+screening section, shown once a round is `in_progress`. Not done: `ropa.activity_systems` ("ระบบที่ใช้") —
+that link has no CRUD anywhere yet in ROPA-02/03, so there is nothing to surface; add it once a screen
+writes to that table.
+
 <a id="dpia-05"></a>
 ### DPIA-05 ประเมินความจำเป็นและความได้สัดส่วน
 

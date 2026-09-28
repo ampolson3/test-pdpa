@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	orgservice "pdpa-platform/internal/org/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
 
 	"pdpa-platform/internal/pkg/authz"
@@ -46,15 +47,31 @@ func (e *ValidationError) Error() string { return fmt.Sprintf("dpia: invalid: %v
 func (e *ValidationError) Unwrap() error { return ErrInvalid }
 
 // Ropa is what dpia reads from the RoPA module (rule 9): the activity a screening is about must be visible
-// under the caller's own RLS before dpia ever references its id.
+// under the caller's own RLS before dpia ever references its id. DPIA-04's own read-only description
+// (ActivityDescription) needs the same activity's child rows, already exported by ropaservice for its own
+// completeness checks — no new ropa-side code, just a wider interface here.
 type Ropa interface {
 	GetActivity(ctx context.Context, id uuid.UUID) (ropaservice.Activity, error)
+	ListActivityPurposes(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityPurpose, error)
+	ListActivityData(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityData, error)
+	ListActivityRecipients(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityRecipient, error)
+	ListActivityTransfers(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityTransfer, error)
+	ListRetentionRules(ctx context.Context, activityID uuid.UUID) ([]ropaservice.RetentionRule, error)
+}
+
+// Org is what dpia reads from the org module (rule 9): master-data names (lawful basis, data category,
+// subject type, country) and external-party names for DPIA-04's own description.
+type Org interface {
+	GetMaster(ctx context.Context, kind string, id uuid.UUID) (orgservice.MasterItem, error)
+	ListMaster(ctx context.Context, kind string) ([]orgservice.MasterItem, error)
+	GetExternalParty(ctx context.Context, id uuid.UUID) (orgservice.ExternalParty, error)
 }
 
 // Service runs the dpia module for the tenant of the transaction in ctx.
 type Service struct {
 	Forms *forms.Service
 	Ropa  Ropa
+	Org   Org
 	Audit *audit.Service
 }
 

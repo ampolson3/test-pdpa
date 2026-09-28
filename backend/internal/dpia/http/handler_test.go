@@ -67,7 +67,7 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	orgSvc := &orgservice.Service{Audit: audit.New()}
 	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: riskservice.New()}
 	formsSvc := wiring.Forms(nil, audit.New())
-	svc := &dpiaservice.Service{Audit: audit.New(), Forms: formsSvc, Ropa: ropaSvc}
+	svc := &dpiaservice.Service{Audit: audit.New(), Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc}
 
 	var activityID uuid.UUID
 	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
@@ -227,6 +227,17 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("POST", "/admin/v1/dpia/activities/"+uuid.New().String()+"/screen", &admin, map[string]any{"answers": answers}, nil); code != 422 {
 		t.Errorf("unknown activity: %d, want 422", code)
+	}
+
+	// DPIA-04: the description composed live from the same RoPA activity.
+	if code, _ := do("GET", item+"/description", nil, nil, nil); code != 401 {
+		t.Errorf("description no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", item+"/description", &reader2, nil, nil); code != 200 || !strings.Contains(body, `"activity_code":"HTTP-01"`) {
+		t.Errorf("description: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/dpia/assessments/"+uuid.New().String()+"/description", &admin, nil, nil); code != 404 {
+		t.Errorf("description unknown assessment: %d, want 404", code)
 	}
 
 	// DPIA-03 template library.

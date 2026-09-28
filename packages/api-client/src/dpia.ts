@@ -5,6 +5,7 @@ import type { FormDraft } from "./forms";
 export type DpiaScreeningRule = components["schemas"]["DpiaScreeningRule"];
 export type DpiaAssessment = components["schemas"]["DpiaAssessment"];
 export type DpiaTemplate = components["schemas"]["DpiaTemplate"];
+export type DpiaActivityDescription = components["schemas"]["DpiaActivityDescription"];
 
 const rulesKey = ["dpia", "screening-rules"] as const;
 const assessmentsKey = ["dpia", "assessments"] as const;
@@ -72,6 +73,19 @@ export function useDpiaAssessment(client: ApiClient, id: string | undefined) {
     enabled: !!id,
     queryFn: async () => {
       const { data, error } = await client.GET("/admin/v1/dpia/assessments/{id}", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** GET /admin/v1/dpia/assessments/{id}/description (DPIA-04) — composed live from the assessment's RoPA activity. */
+export function useDpiaAssessmentDescription(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...assessmentsKey, id ?? "", "description"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/assessments/{id}/description", { params: { path: { id: id! } } });
       if (error) throw error;
       return data;
     },

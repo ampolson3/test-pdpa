@@ -10,6 +10,7 @@ output-options:
     - dpiaScreenActivity
     - dpiaListAssessments
     - dpiaGetAssessment
+    - dpiaGetAssessmentDescription
     - dpiaListTemplates
     - dpiaCreateTemplate
     - dpiaGetTemplate

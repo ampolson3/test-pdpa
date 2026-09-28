@@ -267,6 +267,7 @@ export {
   useScreenActivity,
   useDpiaAssessments,
   useDpiaAssessment,
+  useDpiaAssessmentDescription,
   useDpiaTemplates,
   useDpiaTemplate,
   useCreateDpiaTemplate,
@@ -275,6 +276,7 @@ export {
   useRetireDpiaTemplate,
   type DpiaScreeningRule,
   type DpiaAssessment,
+  type DpiaActivityDescription,
   type DpiaTemplate,
 } from "./dpia";
 export {

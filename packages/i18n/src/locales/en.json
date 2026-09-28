@@ -714,6 +714,16 @@
         "submit": "Confirm clone",
         "cancel": "Cancel"
       }
+    },
+    "description": {
+      "title": "Processing description (from RoPA)",
+      "purposes": "Purposes and lawful basis",
+      "data": "Data categories and subject groups",
+      "sensitive": "Sensitive",
+      "recipients": "Recipients",
+      "transfers": "Cross-border transfers",
+      "retention": "Retention",
+      "months": "{count} months"
     }
   },
   "assets": {

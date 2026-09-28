@@ -55,7 +55,7 @@ func setup(t *testing.T, suffix string) env {
 	org := &orgservice.Service{Audit: audit.New()}
 	ropa := &ropaservice.Service{Audit: audit.New(), Org: org, Risk: riskservice.New()}
 	formsSvc := wiring.Forms(nil, audit.New())
-	svc := &dpiaservice.Service{Audit: audit.New(), Forms: formsSvc, Ropa: ropa}
+	svc := &dpiaservice.Service{Audit: audit.New(), Forms: formsSvc, Ropa: ropa, Org: org}
 	return env{app: app, tenant: tenant, svc: svc, org: org, ropa: ropa}
 }
 

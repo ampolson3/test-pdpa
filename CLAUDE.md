@@ -1202,6 +1202,38 @@ HTTP contract (401/403/201/200/404/412/428). Not done: nothing else in this pass
 against its one acceptance criterion; the next DPIA feature (DPIA-04 onward) builds on top of a *published*
 template the way DPIA-01/02's screening form already does.
 
+### DPIA-04 อธิบายกิจกรรมโดยดึงข้อมูลจาก RoPA (`docs/modules/DPIA.md#dpia-04`) — done
+`internal/dpia/service/description.go` (+ `http/description.go`, no new migration, no new permission code):
+the acceptance criterion ("ข้อมูลที่ดึงจาก RoPA ตรงกับกิจกรรมต้นทาง") and the backend note's own "sync เมื่อ
+RoPA เปลี่ยน" are the same requirement solved the same way — `Service.ActivityDescription` composes the
+assessment's linked RoPA activity's purposes, data categories, data subject groups, recipients, cross-border
+transfers and retention *live* on every call, and never persists any of it. There is nothing to go stale,
+so there is no separate sync step to build: a plain re-read after the activity changes is already correct.
+
+`dpiaservice.Ropa` (already used by DPIA-01/02's own `GetActivity` check) grew five more methods —
+`ListActivityPurposes`/`ListActivityData`/`ListActivityRecipients`/`ListActivityTransfers`/
+`ListRetentionRules` — and a new `Org` interface (`GetMaster`/`ListMaster`/`GetExternalParty`) was added to
+`Service`, both wider-interface-only changes: every method they name was already exported by `ropaservice`
+and `orgservice` for ROPA-03/06/08's own completeness checks and FK-visibility lookups, so this feature adds
+no new code to either module (rule 9 — dpia reads ropa/org only through their own exported services, never
+their schemas). Lawful-basis/data-category/subject-type/country names are resolved the exact way ROPA-08's
+own `validCountry` already scans `Org.ListMaster` by code; party names via `Org.GetExternalParty`, the same
+call ROPA-03/04's completeness and export already make. The activity itself is never re-checked against RLS
+here — `GetAssessment` (DPIA-01/02's own, tenant-scoped through `assess.assessments`) already proves the
+assessment is the caller's before `ActivityDescription` ever calls `Ropa.GetActivity`, so a cross-tenant
+assessment id fails at that first step with the usual `ErrNotFound`, not a second RLS check.
+
+API: `GET /admin/v1/dpia/assessments/{id}/description` (`assessment.dpia.read`, no ETag — the response is
+never written back). Wire schema follows ROPA-01's own bilingual-name convention (`category_name_th`/`_en`
+pairs, not the earlier DPIA-03 sub-schemas' single localized field) since this is a plain admin JSON
+response, not a bilingual PLT-16 document. UI: a new description panel on `/ropa/activities/{id}`'s existing
+DPIA screening section (`dpia-screening-section.tsx`), shown only once the activity's latest screening round
+is `in_progress` — a `not_required` round has no full DPIA to describe, and a screening round that hasn't
+happened yet has no assessment id to ask for. Not done: `ropa.activity_systems` ("ระบบที่ใช้" — asset links)
+per the module doc's own backend note, since ROPA-02/03 never built any CRUD on that table (a private-note
+gap in ROPA-02's own module doc: "no field for owner_user_id yet" applies the same way here) — nothing exists
+yet to surface; add it once a screen actually writes to that table.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

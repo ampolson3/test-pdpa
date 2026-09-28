@@ -238,7 +238,7 @@ func run() error {
 	consentSvc.RegisterVersioning()
 	ropaSvc.Consent = consentSvc                                                     // ROPA-03: evidence of explicit consent for sensitive-data purposes
 	dpoSvc.Forms = formsSvc                                                          // DPO-09: the security-measures checklist
-	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Ropa: ropaSvc, Audit: auditSvc} // DPIA-01/02: screening on the "assessment" form type
+	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc, Audit: auditSvc} // DPIA-01/02: screening on the "assessment" form type; DPIA-04: RoPA-sourced description
 	docsSvc := wiring.Docs(versioningSvc, fileSvc, riverClient, auditSvc, render.FromEnv())
 	docsSvc.RegisterVersioning()
 	for k, v := range docsSvc.FilePermissions() { // PLT-16 rendered PDF / Word files

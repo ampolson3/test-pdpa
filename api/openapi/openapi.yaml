@@ -8471,6 +8471,35 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dpia/assessments/{id}/description:
+    get:
+      operationId: dpiaGetAssessmentDescription
+      tags: [dpia]
+      summary: 'DPIA-04: the assessment''s processing description, composed live from its RoPA activity'
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaActivityDescription'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/dpia/templates:
     get:
       operationId: dpiaListTemplates
@@ -10453,6 +10482,72 @@ components:
           enum: [draft, published, retired]
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    DpiaActivityDescription:
+      type: object
+      description: 'DPIA-04: composed live from the assessment''s RoPA activity on every read — never persisted, so it always reflects the activity''s current data.'
+      required: [activity_id, activity_code, activity_name, role, purposes, data, recipients, transfers, retention]
+      properties:
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        activity_code: {type: string}
+        activity_name: {type: string}
+        activity_description: {type: string}
+        role: {$ref: '#/components/schemas/ActivityRole'}
+        purposes:
+          type: array
+          items:
+            type: object
+            required: [text, lawful_basis_code, lawful_basis_name_th]
+            properties:
+              text: {type: string}
+              lawful_basis_code: {type: string}
+              lawful_basis_name_th: {type: string}
+              lawful_basis_name_en: {type: string}
+        data:
+          type: array
+          items:
+            type: object
+            required: [category_name_th, subject_type_name_th, is_sensitive, source]
+            properties:
+              category_name_th: {type: string}
+              category_name_en: {type: string}
+              subject_type_name_th: {type: string}
+              subject_type_name_en: {type: string}
+              is_sensitive: {type: boolean}
+              source:
+                type: string
+                enum: [direct, indirect]
+        recipients:
+          type: array
+          items:
+            type: object
+            required: [party_name_th, recipient_role]
+            properties:
+              party_name_th: {type: string}
+              party_name_en: {type: string}
+              recipient_role: {type: string}
+              disclosure_basis: {type: string}
+        transfers:
+          type: array
+          items:
+            type: object
+            required: [country_name_th, transfer_basis]
+            properties:
+              country_name_th: {type: string}
+              country_name_en: {type: string}
+              transfer_basis: {type: string}
+              safeguards: {type: string}
+        retention:
+          type: array
+          items:
+            type: object
+            required: [retention_basis, trigger_event, disposal_method]
+            properties:
+              category_name_th: {type: string}
+              category_name_en: {type: string}
+              retention_months: {type: integer}
+              retention_basis: {type: string}
+              trigger_event: {type: string}
+              disposal_method: {type: string}
     ActivityRole:
       type: string
       enum: [controller, processor]
