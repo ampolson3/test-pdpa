@@ -44,6 +44,9 @@ func (h *Strict) DsarListRequests(ctx context.Context, req DsarListRequestsReque
 		s := string(*req.Params.Status)
 		f.Status = s
 	}
+	if req.Params.Search != nil {
+		f.Search = *req.Params.Search
+	}
 	if req.Params.Limit != nil {
 		f.Limit = *req.Params.Limit
 	}

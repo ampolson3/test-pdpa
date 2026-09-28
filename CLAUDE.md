@@ -941,6 +941,24 @@ the outbox row carries the reason and activity ref — DSAR-11; idempotent redel
 activity+request pair inserts once, unknown activity refused, two-tenant isolation — ROPA-10), HTTP contract
 for both.
 
+### DSAR-17 ประวัติและสืบค้นคำขอ (`docs/modules/DSAR.md#dsar-17`) — done
+No new migration or table: `dsar.requests.requester_blind_index` (already indexed, `ix_dsar_requests_requester_blind_index`)
+was already computed and stored by DSAR-13's `CreateRequest`, just never queried. `dsarstore.ListRequests` gained two
+`sqlc.narg` filters — `request_no` (`ILIKE '%…%'`, case-insensitive substring) and `blind_index` (exact match) — and
+`dsarservice.RequestFilter.Search` decides which one to use in `ListRequests`: a value containing `"@"` is hashed
+through `Keyring.BlindIndex` (never decrypted to search, rule 3) and matched exactly; anything else is matched as a
+request-number fragment. Both are `AND`-composed with the existing `status` filter and cursor pagination unchanged.
+The "history" half of the acceptance criterion (ประวัติการพิจารณา, การแก้ไขทุกครั้ง) needed no new endpoint either:
+`dsar_request` is now a registered PLT-07 record type (`collabSvc.Register("dsar_request", ...)` in `cmd/api/main.go`,
+`Exists` backed by `dsarSvc.GetRequest`) — its comments, attachments and activity feed (which is `platform.audit_log`
+replayed, so it already carries every `Transition` call's before/after and timestamp) come for free from the same
+generic component every other module's records use, per DSAR-13's own dependency on PLT-07. API: `search` query
+param on `GET /admin/v1/dsar/requests`. UI: a search box next to the status filter on `/requests`, and a "ประวัติ"
+toggle per row rendering the shared `RecordCollaboration` component (`entityType="dsar_request"`) — the same pattern
+`/settings/notification-templates` already uses. Tests: unit (search by request-number fragment, by e-mail
+case-insensitively via blind index, a different requester's e-mail never matches, an unknown e-mail returns nothing),
+HTTP contract (200 for both search forms, matching row present/absent as expected).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

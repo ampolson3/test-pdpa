@@ -9398,6 +9398,8 @@ export interface operations {
         parameters: {
             query?: {
                 status?: components["schemas"]["DsarRequestStatus"];
+                /** @description DSAR-17 history search — a request number (substring match) or an e-mail address (exact blind-index match). */
+                search?: string;
                 cursor?: string;
                 limit?: number;
             };

@@ -19,6 +19,7 @@ import {
   type DsarOutcome,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
+import { RecordCollaboration } from "@/components/record-collaboration";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
 const CHANNELS: DsarRequestChannel[] = ["web", "email", "phone", "branch", "letter", "line", "api"];
@@ -50,16 +51,19 @@ const STATUS_STYLE: Record<DsarRequestStatus, string> = {
   withdrawn: "bg-slate-100 text-slate-500",
 };
 
-export function RequestsContent() {
+export function RequestsContent({ currentUserId }: { currentUserId: string }) {
   const t = useTranslations("dsarRequests");
   const locale = useLocale() as Locale;
   const canRead = usePermission("dsar.request.read");
   const canCreate = usePermission("dsar.request.create");
   const canExecute = usePermission("dsar.request.execute");
+  const canUpdate = usePermission("dsar.request.update");
   const client = useMemo(() => createApiClient("/api/bff"), []);
 
   const [statusFilter, setStatusFilter] = useState<DsarRequestStatus | "">("");
-  const list = useDsarRequests(client, { status: statusFilter || undefined });
+  const [search, setSearch] = useState("");
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const list = useDsarRequests(client, { status: statusFilter || undefined, search: search || undefined });
   const types = useDsarRequestTypes(client);
   const entities = useLegalEntities(client);
   const activities = useActivities(client, {});
@@ -155,12 +159,17 @@ export function RequestsContent() {
         </fieldset>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span className="text-slate-600">{t("filterStatus")}</span>
         <select className={INPUT + " w-auto"} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as DsarRequestStatus | "")}>
           <option value="">{t("allStatuses")}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{t(`statuses.${s}`)}</option>)}
         </select>
+        <label className="flex items-center gap-2">
+          <span className="text-slate-600">{t("search.label")}</span>
+          <input className={INPUT + " w-64"} value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder={t("search.placeholder")} data-testid="request-search" />
+        </label>
       </div>
 
       {list.isPending ? <p className="text-slate-500">{t("loading")}</p> : list.isError ? <p className="text-red-700">{t("loadError")}</p> : rows.length === 0 ? (
@@ -179,15 +188,26 @@ export function RequestsContent() {
                   <td className="px-3 py-2">{typeName(r.request_type_id)}</td>
                   <td className="px-3 py-2">{formatDate(r.due_at, locale, { day: "numeric", month: "short", year: "numeric" })}</td>
                   <td className="px-3 py-2"><span className={`rounded px-2 py-0.5 ${STATUS_STYLE[r.status]}`}>{t(`statuses.${r.status}`)}</span></td>
-                  <td className="px-3 py-2">
+                  <td className="px-3 py-2 space-x-3">
                     {canExecute && NEXT_STEPS[r.status].length > 0 && (
                       <button type="button" className="text-sky-700 underline" data-testid={`action-toggle-${r.id}`}
                         onClick={() => { setActionId(actionId === r.id ? null : r.id); setActionDraft({ to: "", outcome: "", rejection_reason_code: "", activity_ids: [] }); }}>
                         {actionId === r.id ? t("form.hide") : t("takeAction")}
                       </button>
                     )}
+                    <button type="button" className="text-sky-700 underline" data-testid={`history-toggle-${r.id}`}
+                      onClick={() => setHistoryId(historyId === r.id ? null : r.id)}>
+                      {historyId === r.id ? t("form.hide") : t("history")}
+                    </button>
                   </td>
                 </tr>
+                {historyId === r.id && (
+                  <tr>
+                    <td colSpan={5} className="bg-slate-50 px-3 py-3">
+                      <RecordCollaboration entityType="dsar_request" entityId={r.id} canWrite={canUpdate} currentUserId={currentUserId} />
+                    </td>
+                  </tr>
+                )}
                 {actionId === r.id && (
                   <tr>
                     <td colSpan={5} className="bg-slate-50 px-3 py-3">

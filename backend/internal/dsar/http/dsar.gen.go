@@ -492,8 +492,11 @@ type DsarListRequestTypesParamsAcceptLanguage string
 // DsarListRequestsParams defines parameters for DsarListRequests.
 type DsarListRequestsParams struct {
 	Status *DsarRequestStatus `form:"status,omitempty" json:"status,omitempty"`
-	Cursor *string            `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit  *int               `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Search DSAR-17 history search — a request number (substring match) or an e-mail address (exact blind-index match).
+	Search *string `form:"search,omitempty" json:"search,omitempty"`
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
 
 	// AcceptLanguage Language of messages and localized fields (default th)
 	AcceptLanguage *DsarListRequestsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
@@ -659,6 +662,19 @@ func (siw *ServerInterfaceWrapper) DsarListRequests(w http.ResponseWriter, r *ht
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "search" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "search", r.URL.Query(), &params.Search, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "search"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "search", Err: err})
 		}
 		return
 	}

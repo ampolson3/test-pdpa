@@ -149,6 +149,71 @@ func TestCreateRequest_ValidatesAndNumbers(t *testing.T) {
 	})
 }
 
+// TestListRequests_SearchesByRequestNoOrEmail is DSAR-17's acceptance criterion: a past request can be found
+// again by its request number (a substring) or by the requester's e-mail (exact blind-index match, never
+// decrypted to search — rule 3), and a search for one requester's e-mail never returns another's request.
+func TestListRequests_SearchesByRequestNoOrEmail(t *testing.T) {
+	e := setup(t, "dsarsearch")
+	var leID, typeID uuid.UUID
+	e.in(t, func(ctx context.Context) error {
+		leID, typeID = seedLegalEntityAndType(t, ctx, e)
+		return nil
+	})
+	var r1, r2 dsarservice.Request
+	e.in(t, func(ctx context.Context) error {
+		var err error
+		r1, err = e.svc.CreateRequest(ctx, dsarservice.CreateRequestInput{RequestTypeID: typeID, LegalEntityID: leID,
+			Channel: "web", RequesterName: "หนึ่ง", RequesterContact: "one@example.com", ContactKind: crypto.KindEmail})
+		if err != nil {
+			return err
+		}
+		r2, err = e.svc.CreateRequest(ctx, dsarservice.CreateRequestInput{RequestTypeID: typeID, LegalEntityID: leID,
+			Channel: "web", RequesterName: "สอง", RequesterContact: "two@example.com", ContactKind: crypto.KindEmail})
+		return err
+	})
+
+	e.in(t, func(ctx context.Context) error {
+		list, _, err := e.svc.ListRequests(ctx, dsarservice.RequestFilter{Search: r1.RequestNo[len(r1.RequestNo)-6:]})
+		if err != nil {
+			return err
+		}
+		if len(list) != 1 || list[0].ID != r1.ID {
+			t.Fatalf("search by request_no fragment: got %d results, want r1", len(list))
+		}
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		list, _, err := e.svc.ListRequests(ctx, dsarservice.RequestFilter{Search: "ONE@example.com"})
+		if err != nil {
+			return err
+		}
+		if len(list) != 1 || list[0].ID != r1.ID {
+			t.Fatalf("search by email (case-insensitive): got %d results, want r1", len(list))
+		}
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		list, _, err := e.svc.ListRequests(ctx, dsarservice.RequestFilter{Search: "two@example.com"})
+		if err != nil {
+			return err
+		}
+		if len(list) != 1 || list[0].ID != r2.ID {
+			t.Fatalf("search by email must not return the other requester's request: got %d results", len(list))
+		}
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		list, _, err := e.svc.ListRequests(ctx, dsarservice.RequestFilter{Search: "nobody@example.com"})
+		if err != nil {
+			return err
+		}
+		if len(list) != 0 {
+			t.Fatalf("search by unknown email: got %d results, want 0", len(list))
+		}
+		return nil
+	})
+}
+
 // TestTransition_ResultLetterGeneratedWithRequesterNameAndType is DSAR-13's acceptance criterion: completing
 // a request immediately produces a response-letter draft whose text carries the request's own type name and
 // the (decrypted) requester's name — both languages.

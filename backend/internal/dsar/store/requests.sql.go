@@ -173,17 +173,21 @@ SELECT id, request_no, request_type_id, legal_entity_id, channel, on_behalf, det
     due_at, verified_at, closed_at, outcome, rejection_reason_code, assignee_user_id, row_version, updated_at
 FROM dsar.requests
 WHERE ($1::text IS NULL OR status = $1)
-  AND ($2::timestamptz IS NULL
-       OR (received_at, id) < ($2::timestamptz, $3::uuid))
+  AND ($2::text IS NULL OR request_no ILIKE '%' || $2::text || '%')
+  AND ($3::bytea IS NULL OR requester_blind_index = $3::bytea)
+  AND ($4::timestamptz IS NULL
+       OR (received_at, id) < ($4::timestamptz, $5::uuid))
 ORDER BY received_at DESC, id DESC
-LIMIT $4
+LIMIT $6
 `
 
 type ListRequestsParams struct {
-	Status   *string            `db:"status" json:"status"`
-	CursorAt pgtype.Timestamptz `db:"cursor_at" json:"cursor_at"`
-	CursorID pgtype.UUID        `db:"cursor_id" json:"cursor_id"`
-	Lim      int32              `db:"lim" json:"lim"`
+	Status     *string            `db:"status" json:"status"`
+	RequestNo  *string            `db:"request_no" json:"request_no"`
+	BlindIndex []byte             `db:"blind_index" json:"blind_index"`
+	CursorAt   pgtype.Timestamptz `db:"cursor_at" json:"cursor_at"`
+	CursorID   pgtype.UUID        `db:"cursor_id" json:"cursor_id"`
+	Lim        int32              `db:"lim" json:"lim"`
 }
 
 type ListRequestsRow struct {
@@ -206,9 +210,14 @@ type ListRequestsRow struct {
 	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+// DSAR-17: request_no is matched as a case-insensitive substring (ม.39(7) "ค้นหาด้วยเลขคำขอ"); an email or
+// other identifier is matched by exact blind index (never decrypted to search — rule 3), computed by the
+// caller before this query runs.
 func (q *Queries) ListRequests(ctx context.Context, arg ListRequestsParams) ([]ListRequestsRow, error) {
 	rows, err := q.db.Query(ctx, listRequests,
 		arg.Status,
+		arg.RequestNo,
+		arg.BlindIndex,
 		arg.CursorAt,
 		arg.CursorID,
 		arg.Lim,

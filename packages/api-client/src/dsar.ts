@@ -27,14 +27,15 @@ export function useDsarRequestTypes(client: ApiClient) {
   });
 }
 
-/** GET /admin/v1/dsar/requests (ST-02), newest first. */
-export function useDsarRequests(client: ApiClient, filter: { status?: DsarRequestStatus } = {}) {
+/** GET /admin/v1/dsar/requests (ST-02), newest first. `search` is DSAR-17's history search: a request number
+ *  (substring) or an e-mail (exact blind-index match). */
+export function useDsarRequests(client: ApiClient, filter: { status?: DsarRequestStatus; search?: string } = {}) {
   return useInfiniteQuery({
     queryKey: [...requestsKey, filter],
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const { data, error } = await client.GET("/admin/v1/dsar/requests", {
-        params: { query: { status: filter.status, cursor: pageParam, limit: 50 } },
+        params: { query: { status: filter.status, search: filter.search || undefined, cursor: pageParam, limit: 50 } },
       });
       if (error) throw error;
       return data;

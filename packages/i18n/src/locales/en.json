@@ -1796,6 +1796,11 @@
     "dueBy": "Due by",
     "statusLabel": "Status",
     "takeAction": "Take action",
+    "history": "History",
+    "search": {
+      "label": "Search",
+      "placeholder": "Request number or e-mail"
+    },
     "openLetter": "Open the generated response letter",
     "form": {
       "title": "Intake form",

@@ -212,6 +212,16 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	if code, body := do("GET", "/admin/v1/dsar/requests", &viewer, nil); code != 200 || !strings.Contains(body, created.RequestNo) {
 		t.Errorf("list: %d %s", code, body)
 	}
+	// DSAR-17: history search by request number (substring) or e-mail (blind index).
+	if code, body := do("GET", "/admin/v1/dsar/requests?search="+created.RequestNo[len(created.RequestNo)-6:], &viewer, nil); code != 200 || !strings.Contains(body, created.RequestNo) {
+		t.Errorf("search by request_no: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/dsar/requests?search=somchai@example.com", &viewer, nil); code != 200 || !strings.Contains(body, created.RequestNo) {
+		t.Errorf("search by email: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/dsar/requests?search=nobody@example.com", &viewer, nil); code != 200 || strings.Contains(body, created.RequestNo) {
+		t.Errorf("search by unknown email: %d %s", code, body)
+	}
 
 	transition := item + "/transition"
 	if code, _ := do("POST", transition, nil, map[string]any{"to": "verifying"}, map[string]string{"If-Match": `"1"`}); code != 401 {

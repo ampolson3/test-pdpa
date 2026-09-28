@@ -1796,6 +1796,11 @@
     "dueBy": "ครบกำหนด",
     "statusLabel": "สถานะ",
     "takeAction": "ดำเนินการ",
+    "history": "ประวัติ",
+    "search": {
+      "label": "ค้นหา",
+      "placeholder": "เลขคำขอหรืออีเมล"
+    },
     "openLetter": "เปิดหนังสือตอบกลับที่สร้างขึ้น",
     "form": {
       "title": "แบบรับคำขอ",

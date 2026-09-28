@@ -5468,6 +5468,13 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/DsarRequestStatus'
+        - name: search
+          in: query
+          required: false
+          description: DSAR-17 history search — a request number (substring match) or an e-mail address (exact blind-index match).
+          schema:
+            type: string
+            maxLength: 200
         - name: cursor
           in: query
           required: false

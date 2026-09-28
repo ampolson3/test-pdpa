@@ -251,6 +251,19 @@ func run() error {
 	fileSvc.EntityPermissions[breach.PDPCEntityType] = "breach.notification.read"          // BRE-09 filing evidence
 	dsarSvc := &dsarservice.Service{Audit: auditSvc, Org: orgSvc, Docs: docsSvc, Ropa: ropaSvc, Keyring: keyring,
 		Events: &events.Publisher{River: riverClient}}
+	// DSAR-17: comments, attachments and an activity feed (PLT-07) on the request itself, so its history is
+	// visible without a bespoke timeline endpoint.
+	collabSvc.Register("dsar_request", collab.Policy{
+		ReadPermission: "dsar.request.read", WritePermission: "dsar.request.update",
+		Exists: func(ctx context.Context, id uuid.UUID) (bool, error) {
+			_, err := dsarSvc.GetRequest(ctx, id)
+			if errors.Is(err, dsarservice.ErrNotFound) {
+				return false, nil
+			}
+			return err == nil, err
+		},
+	})
+	fileSvc.EntityPermissions["dsar_request"] = "dsar.request.read"
 
 	// Public consent forms (BP-01): tenant and principal from the public key, then the same Idempotency + Tx chain.
 	r.Group(func(g chi.Router) {

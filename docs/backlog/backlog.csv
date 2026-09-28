@@ -147,7 +147,7 @@ DSAR-11,DSAR,ปฏิเสธคำขอพร้อมเหตุผล,Rej
 DSAR-13,DSAR,template หนังสือตอบกลับ,Response templates,Must,P1,ตอบกลับ,แนวปฏิบัติตลาด,DPO,S,S,N,3,3,0.7,0,2.1,PLT-16,BP-06,docs/modules/DSAR.md#dsar-13,หนังสือตอบถูกสร้างอัตโนมัติตามประเภทสิทธิและผลการพิจารณา,done
 DSAR-14,DSAR,ส่งข้อมูลให้เจ้าของข้อมูลอย่างปลอดภัย,Secure delivery,Must,P1,ตอบกลับ,ม.37(1),DS DPO,M,S,N,5,3,1.0,0,2.8,"PLT-09, PLT-17",BP-06,docs/modules/DSAR.md#dsar-14,ลิงก์หมดอายุตามที่ตั้งและมี log การดาวน์โหลด,todo
 DSAR-15,DSAR,ส่งออกข้อมูลแบบอ่านได้ด้วยเครื่อง,Portability export,Must,P1,ตอบกลับ,ม.31,DS DPO,M,XS,N,5,1,0.7,0,2.1,DSAR-14,BP-06,docs/modules/DSAR.md#dsar-15,ไฟล์ portability เปิดอ่านด้วยเครื่องได้และตรงกับข้อมูลในระบบ,todo
-DSAR-17,DSAR,ประวัติและสืบค้นคำขอ,Request history & search,Must,P1,ติดตาม,ม.39(7),DPO,S,M,N,3,5,1.0,0,2.8,PLT-07,BP-06,docs/modules/DSAR.md#dsar-17,ค้นหาคำขอย้อนหลังด้วยเลขคำขอหรืออีเมลได้,todo
+DSAR-17,DSAR,ประวัติและสืบค้นคำขอ,Request history & search,Must,P1,ติดตาม,ม.39(7),DPO,S,M,N,3,5,1.0,0,2.8,PLT-07,BP-06,docs/modules/DSAR.md#dsar-17,ค้นหาคำขอย้อนหลังด้วยเลขคำขอหรืออีเมลได้,done
 DSAR-18,DSAR,รายงานและแดชบอร์ดคำขอ,DSR reports & dashboard,Must,P1,ติดตาม,แนวปฏิบัติตลาด,DPO EXEC,S,M,Y,3,5,1.0,2.0,2.8,PLT-18,BP-06,docs/modules/DSAR.md#dsar-18,ตัวเลขใน dashboard ตรงกับรายการคำขอ,todo
 DSAR-05,DSAR,รับเรื่องร้องเรียนและสอบถาม,Complaints & inquiries,Should,P3,รับคำขอ,ม.42,DS DPO,S,S,N,3,3,0.7,0,2.1,DSAR-08,BP-06,docs/modules/DSAR.md#dsar-05,เรื่องร้องเรียนติดตามจนปิดได้เหมือนคำขอ,todo
 DSAR-09,DSAR,ค้นหาข้อมูลของเจ้าของข้อมูลข้ามระบบ,Cross-system data search,Should,P3,ดำเนินการ,ม.30,IT EXT,L,M,N,10,5,1.8,0,5.2,PLT-20,BP-06,docs/modules/DSAR.md#dsar-09,ค้นข้อมูลจากระบบที่เชื่อมได้ในคำสั่งเดียว และผลถูกลบเมื่อปิดคำขอ,todo
