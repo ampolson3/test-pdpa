@@ -10,6 +10,7 @@ export type DsarContactKind = components["schemas"]["DsarContactKind"];
 export type DsarRequestInput = components["schemas"]["DsarRequestInput"];
 export type DsarTransitionInput = components["schemas"]["DsarTransitionInput"];
 export type DsarTransitionResult = components["schemas"]["DsarTransitionResult"];
+export type DsarSlaStatus = components["schemas"]["DsarSlaStatus"];
 
 const requestsKey = ["dsar", "requests"] as const;
 const requestKey = (id: string) => [...requestsKey, id] as const;
@@ -83,5 +84,19 @@ export function useDsarRequestMutations(client: ApiClient) {
       qc.invalidateQueries({ queryKey: requestKey(request.id) });
     },
   });
-  return { create, transition };
+  const assign = useMutation({
+    mutationFn: async ({ request, userId }: { request: DsarRequest; userId: string | null }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/assign", {
+        params: { path: { id: request.id }, header: ifMatch(request.row_version) },
+        body: { assignee_user_id: userId },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, { request }) => {
+      qc.invalidateQueries({ queryKey: requestsKey });
+      qc.invalidateQueries({ queryKey: requestKey(request.id) });
+    },
+  });
+  return { create, transition, assign };
 }

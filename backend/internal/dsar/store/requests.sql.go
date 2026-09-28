@@ -267,6 +267,66 @@ func (q *Queries) LockRequestNumbering(ctx context.Context, year string) error {
 	return err
 }
 
+const updateRequestAssignee = `-- name: UpdateRequestAssignee :one
+UPDATE dsar.requests SET assignee_user_id = $2,
+    updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
+WHERE id = $1 AND row_version = $3
+RETURNING id, request_no, request_type_id, legal_entity_id, channel, on_behalf, details, status, received_at,
+    due_at, verified_at, closed_at, outcome, rejection_reason_code, assignee_user_id, row_version, updated_at
+`
+
+type UpdateRequestAssigneeParams struct {
+	ID             uuid.UUID   `db:"id" json:"id"`
+	AssigneeUserID pgtype.UUID `db:"assignee_user_id" json:"assignee_user_id"`
+	RowVersion     int32       `db:"row_version" json:"row_version"`
+}
+
+type UpdateRequestAssigneeRow struct {
+	ID                  uuid.UUID          `db:"id" json:"id"`
+	RequestNo           string             `db:"request_no" json:"request_no"`
+	RequestTypeID       uuid.UUID          `db:"request_type_id" json:"request_type_id"`
+	LegalEntityID       uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	Channel             string             `db:"channel" json:"channel"`
+	OnBehalf            bool               `db:"on_behalf" json:"on_behalf"`
+	Details             []byte             `db:"details" json:"details"`
+	Status              string             `db:"status" json:"status"`
+	ReceivedAt          pgtype.Timestamptz `db:"received_at" json:"received_at"`
+	DueAt               pgtype.Timestamptz `db:"due_at" json:"due_at"`
+	VerifiedAt          pgtype.Timestamptz `db:"verified_at" json:"verified_at"`
+	ClosedAt            pgtype.Timestamptz `db:"closed_at" json:"closed_at"`
+	Outcome             *string            `db:"outcome" json:"outcome"`
+	RejectionReasonCode *string            `db:"rejection_reason_code" json:"rejection_reason_code"`
+	AssigneeUserID      pgtype.UUID        `db:"assignee_user_id" json:"assignee_user_id"`
+	RowVersion          int32              `db:"row_version" json:"row_version"`
+	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// DSAR-07: who is notified as "the responsible person" alongside role DPO when the SLA reminder fires.
+func (q *Queries) UpdateRequestAssignee(ctx context.Context, arg UpdateRequestAssigneeParams) (UpdateRequestAssigneeRow, error) {
+	row := q.db.QueryRow(ctx, updateRequestAssignee, arg.ID, arg.AssigneeUserID, arg.RowVersion)
+	var i UpdateRequestAssigneeRow
+	err := row.Scan(
+		&i.ID,
+		&i.RequestNo,
+		&i.RequestTypeID,
+		&i.LegalEntityID,
+		&i.Channel,
+		&i.OnBehalf,
+		&i.Details,
+		&i.Status,
+		&i.ReceivedAt,
+		&i.DueAt,
+		&i.VerifiedAt,
+		&i.ClosedAt,
+		&i.Outcome,
+		&i.RejectionReasonCode,
+		&i.AssigneeUserID,
+		&i.RowVersion,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateRequestStatus = `-- name: UpdateRequestStatus :one
 UPDATE dsar.requests SET status = $2, outcome = $3, rejection_reason_code = $4,
     closed_at = CASE WHEN $2 IN ('completed', 'rejected', 'withdrawn') THEN now() ELSE closed_at END,

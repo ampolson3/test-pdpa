@@ -250,7 +250,7 @@ func run() error {
 	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read" // BRE-10 recipient lists
 	fileSvc.EntityPermissions[breach.PDPCEntityType] = "breach.notification.read"          // BRE-09 filing evidence
 	dsarSvc := &dsarservice.Service{Audit: auditSvc, Org: orgSvc, Docs: docsSvc, Ropa: ropaSvc, Keyring: keyring,
-		Events: &events.Publisher{River: riverClient}}
+		Events: &events.Publisher{River: riverClient}, Notify: notifySvc, River: riverClient}
 	// DSAR-17: comments, attachments and an activity feed (PLT-07) on the request itself, so its history is
 	// visible without a bespoke timeline endpoint.
 	collabSvc.Register("dsar_request", collab.Policy{

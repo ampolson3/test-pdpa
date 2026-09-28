@@ -10,3 +10,4 @@ output-options:
     - dsarCreateRequest
     - dsarGetRequest
     - dsarTransitionRequest
+    - dsarAssignRequest

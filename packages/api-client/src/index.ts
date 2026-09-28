@@ -275,4 +275,5 @@ export {
   type DsarRequestInput,
   type DsarTransitionInput,
   type DsarTransitionResult,
+  type DsarSlaStatus,
 } from "./dsar";

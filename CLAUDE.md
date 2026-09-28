@@ -959,6 +959,41 @@ toggle per row rendering the shared `RecordCollaboration` component (`entityType
 case-insensitively via blind index, a different requester's e-mail never matches, an unknown e-mail returns nothing),
 HTTP contract (200 for both search forms, matching row present/absent as expected).
 
+### DSAR-07 นับเวลา SLA 30 วัน (`docs/modules/DSAR.md#dsar-07`) — done
+`due_at` itself needed no change: `docs/legal/pdpa-rules.md`'s ม.30 row already reads "30 วันนับแต่วันที่ได้รับคำขอ"
+with no business-day qualifier, so DSAR-13's calendar-day calculation was already correct — DSAR-07's "SLA 30 วัน
+(PLT-05)" backend note is about the reminder/escalate half, not the deadline math. `dsarservice.SLAStatus(now, dueAt)`
+is a new pure function (on_track / at_risk / overdue, at_risk once ≤10 days remain — generalizing the legal doc's
+own "at_risk วันที่ 20" worked example for the default 30-day type to any `request_types.sla_days` value) — computed
+live in the HTTP layer on every read, never persisted, so it can never go stale. The acceptance criterion itself
+("เหลือ 7 วันถูกแจ้งเตือน") is one River checkpoint per request: `scheduleReminder` (called from `CreateRequest`)
+enqueues `dsar.sla_reminder` at `due_at - 7d`, or immediately if that moment has already passed (the same
+"late-recorded event still alerts at once" rule PNG-04's `ToSchedule` already established) — no need for PLT-04/BRE-07's
+multi-checkpoint list since this feature has only the one. `FireReminder` no-ops for an unknown or already-closed
+(`completed`/`rejected`/`withdrawn`) request, then notifies the assignee (if one is set) plus every user with role
+DPO — the same "default recipients until real per-record routing exists" fallback BRE-07/PNG-04 already use, since
+DSAR-08 (workflow & subtasks, not built) is what will eventually resolve a real per-task assignee. Migration 00045
+seeds `dsar.sla_reminder` (4 rows, th/en × in_app/email, operational text so no DRAFT marker — rule 8 is about text
+shown to a data subject or the PDPC, same reasoning as PNG-04's own templates).
+
+"ผู้รับผิดชอบ" needed a way to actually be set — the column (`assignee_user_id`) already existed but nothing wrote
+to it — so this pass also added the minimal `AssignRequest` (new `UpdateRequestAssignee` sqlc query, FK-checked via
+`iamservice.Names` the same way DPO-01 validates an internal appointment's user) rather than waiting on DSAR-08's
+full workflow/task-claim engine; `dsar.request.update` gates it (no new permission code), consistent with DSAR-13's
+own "it's really a document-composer-adjacent write" reasoning for reusing that code. `cmd/worker` gained its first
+dsar wiring (`dsarservice.ReminderWorker`, `Notify`+`River` fields new on `Service` — `Docs`/`Org`/`Ropa`/`Keyring`
+stay nil there since the reminder path never touches them, the same "worker builds only what its own jobs need"
+pattern `breachSvc`'s `nil` document composer already set). API: `POST /admin/v1/dsar/requests/{id}/assign`
+(ETag/If-Match), `sla_status` added to `DsarRequest`. UI: an SLA badge column and a per-row "มอบหมาย" (assign) toggle
+on `/requests`, reusing PLT-07's own `useMentionSearch` picker for the assignee search (the same component
+`RecordCollaboration`'s @-mention picker already uses, so no new user-search endpoint). Tests: unit (`SLAStatus`
+boundaries, `ReminderAt`, the reminder job is enqueued at the right `scheduled_at` on create, a stale/closed/unknown
+tick no-ops, `AssignRequest` sets/clears/rejects an unknown user, two-tenant isolation via the existing per-package
+harness), HTTP contract (401/428/412/422/200 on `/assign`, `sla_status` present on every response). Not done:
+DSAR-08's real per-task routing (this stays on the DPO-role fallback until that engine exists) and a filtered
+"near/overdue" list view (the badge column already surfaces this at a glance — no screen has asked for a separate
+filtered list yet).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

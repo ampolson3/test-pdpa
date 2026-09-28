@@ -55,6 +55,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 			for _, q := range []string{
 				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
+				`DELETE FROM iam.users WHERE email = 'dsarhttp-assignee@dbtest.example'`,
 			} {
 				_, _ = tx.Exec(ctx, q)
 			}
@@ -82,6 +83,12 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 		}
 		requestTypeID = types[0].ID
 		return nil
+	})
+	var assignee uuid.UUID
+	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		return pdb.MustTxFromContext(ctx).QueryRow(ctx,
+			`INSERT INTO iam.users (tenant_id, email, display_name, status) VALUES (current_setting('app.tenant_id')::uuid, $1, 'Assignee', 'active') RETURNING id`,
+			"dsarhttp-assignee@dbtest.example").Scan(&assignee)
 	})
 
 	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
@@ -222,6 +229,26 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	if code, body := do("GET", "/admin/v1/dsar/requests?search=nobody@example.com", &viewer, nil); code != 200 || strings.Contains(body, created.RequestNo) {
 		t.Errorf("search by unknown email: %d %s", code, body)
 	}
+	if code, body := do("GET", item, &viewer, nil); code != 200 || !strings.Contains(body, `"sla_status"`) {
+		t.Errorf("expected sla_status on the request: %d %s", code, body)
+	}
+
+	assign := item + "/assign"
+	if code, _ := do("POST", assign, nil, map[string]any{"assignee_user_id": assignee}, map[string]string{"If-Match": etagOf(int(created.RowVersion))}); code != 401 {
+		t.Errorf("assign, no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", assign, &admin, map[string]any{"assignee_user_id": assignee}); code != 428 {
+		t.Errorf("assign, no If-Match: %d, want 428", code)
+	}
+	if code, body := do("POST", assign, &admin, map[string]any{"assignee_user_id": assignee}, map[string]string{"If-Match": etagOf(int(created.RowVersion))}); code != 200 || !strings.Contains(body, assignee.String()) {
+		t.Errorf("assign: %d %s", code, body)
+	}
+	if code, body := do("POST", assign, &admin, map[string]any{"assignee_user_id": uuid.New()}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 1)}); code != 422 {
+		t.Errorf("assign unknown user: %d %s, want 422", code, body)
+	}
+	if code, body := do("POST", assign, &admin, map[string]any{}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 1)}); code != 200 || strings.Contains(body, assignee.String()) {
+		t.Errorf("unassign: %d %s", code, body)
+	}
 
 	transition := item + "/transition"
 	if code, _ := do("POST", transition, nil, map[string]any{"to": "verifying"}, map[string]string{"If-Match": `"1"`}); code != 401 {
@@ -233,20 +260,20 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	if code, _ := do("POST", transition, &admin, map[string]any{"to": "verifying"}, map[string]string{"If-Match": `"99"`}); code != 412 {
 		t.Errorf("transition, stale version: %d, want 412", code)
 	}
-	if code, body := do("POST", transition, &admin, map[string]any{"to": "verifying"}, map[string]string{"If-Match": etagOf(int(created.RowVersion))}); code != 200 || !strings.Contains(body, `"status":"verifying"`) {
+	if code, body := do("POST", transition, &admin, map[string]any{"to": "verifying"}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 2)}); code != 200 || !strings.Contains(body, `"status":"verifying"`) {
 		t.Errorf("transition to verifying: %d %s", code, body)
 	}
-	if code, body := do("POST", transition, &admin, map[string]any{"to": "in_review"}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 1)}); code != 200 || !strings.Contains(body, `"status":"in_review"`) {
+	if code, body := do("POST", transition, &admin, map[string]any{"to": "in_review"}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 3)}); code != 200 || !strings.Contains(body, `"status":"in_review"`) {
 		t.Errorf("transition to in_review: %d %s", code, body)
 	}
-	if code, body := do("POST", transition, &admin, map[string]any{"to": "rejected"}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 2)}); code != 422 || !strings.Contains(body, "dsar.invalid_input") {
+	if code, body := do("POST", transition, &admin, map[string]any{"to": "rejected"}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 4)}); code != 422 || !strings.Contains(body, "dsar.invalid_input") {
 		t.Errorf("reject without reason: %d %s, want 422", code, body)
 	}
-	code, body = do("POST", transition, &admin, map[string]any{"to": "rejected", "rejection_reason_code": "ไม่พบข้อมูล"}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 2)})
+	code, body = do("POST", transition, &admin, map[string]any{"to": "rejected", "rejection_reason_code": "ไม่พบข้อมูล"}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 4)})
 	if code != 200 || !strings.Contains(body, `"status":"rejected"`) || !strings.Contains(body, `"document_id"`) {
 		t.Errorf("reject with reason: %d %s", code, body)
 	}
-	if code, body := do("POST", transition, &admin, map[string]any{"to": "completed"}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 3)}); code != 409 || !strings.Contains(body, "dsar.invalid_transition") {
+	if code, body := do("POST", transition, &admin, map[string]any{"to": "completed"}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 5)}); code != 409 || !strings.Contains(body, "dsar.invalid_transition") {
 		t.Errorf("transition from terminal rejected: %d %s, want 409", code, body)
 	}
 }

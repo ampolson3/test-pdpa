@@ -119,6 +119,22 @@ func (h *Strict) DsarTransitionRequest(ctx context.Context, req DsarTransitionRe
 	return DsarTransitionRequest200JSONResponse{Body: result, Headers: DsarTransitionRequest200ResponseHeaders{ETag: etag(r.RowVersion)}}, nil
 }
 
+func (h *Strict) DsarAssignRequest(ctx context.Context, req DsarAssignRequestRequestObject) (DsarAssignRequestResponseObject, error) {
+	v, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	var assignee *uuid.UUID
+	if req.Body != nil {
+		assignee = req.Body.AssigneeUserId
+	}
+	r, err := h.svc.AssignRequest(ctx, req.Id, v, assignee)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return DsarAssignRequest200JSONResponse{Body: toRequestWire(r), Headers: DsarAssignRequest200ResponseHeaders{ETag: etag(r.RowVersion)}}, nil
+}
+
 func toRequestTypeWire(t dsarservice.RequestType) DsarRequestType {
 	w := DsarRequestType{Id: t.ID, Code: DsarRequestTypeCode(t.Code), NameTh: t.NameTh, SlaDays: int(t.SLADays)}
 	if t.NameEn != "" {
@@ -133,8 +149,8 @@ func toRequestTypeWire(t dsarservice.RequestType) DsarRequestType {
 func toRequestWire(r dsarservice.Request) DsarRequest {
 	w := DsarRequest{Id: r.ID, RequestNo: r.RequestNo, RequestTypeId: r.RequestTypeID, LegalEntityId: r.LegalEntityID,
 		Channel: DsarRequestChannel(r.Channel), OnBehalf: r.OnBehalf, Status: DsarRequestStatus(r.Status),
-		ReceivedAt: r.ReceivedAt.UTC(), DueAt: r.DueAt.UTC(), RejectionReasonCode: r.RejectionReasonCode,
-		RowVersion: int(r.RowVersion), UpdatedAt: r.UpdatedAt.UTC()}
+		ReceivedAt: r.ReceivedAt.UTC(), DueAt: r.DueAt.UTC(), SlaStatus: DsarSlaStatus(dsarservice.SLAStatus(time.Now().UTC(), r.DueAt)),
+		RejectionReasonCode: r.RejectionReasonCode, RowVersion: int(r.RowVersion), UpdatedAt: r.UpdatedAt.UTC()}
 	if r.Outcome != nil {
 		o := DsarOutcome(*r.Outcome)
 		w.Outcome = &o

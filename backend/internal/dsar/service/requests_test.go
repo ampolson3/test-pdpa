@@ -48,6 +48,7 @@ func setup(t *testing.T, suffix string) env {
 				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM org.org_units`,
 				`UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
+				`DELETE FROM iam.users WHERE email LIKE 'assignee-%@dbtest.example'`,
 			} {
 				_, _ = tx.Exec(ctx, q)
 			}
@@ -64,7 +65,8 @@ func setup(t *testing.T, suffix string) env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc := &dsarservice.Service{Audit: audit.New(), Org: orgSvc, Docs: docsSvc, Ropa: ropaSvc, Keyring: keyring, Events: &events.Publisher{River: riverClient}}
+	svc := &dsarservice.Service{Audit: audit.New(), Org: orgSvc, Docs: docsSvc, Ropa: ropaSvc, Keyring: keyring,
+		Events: &events.Publisher{River: riverClient}, River: riverClient}
 	return env{app: app, tenant: tenant, svc: svc, org: orgSvc, ropa: ropaSvc, docs: docsSvc}
 }
 

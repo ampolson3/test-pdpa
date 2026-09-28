@@ -12,11 +12,13 @@ import {
   useDsarRequestTypes,
   useDsarRequestMutations,
   useLegalEntities,
+  useMentionSearch,
   type DsarRequest,
   type DsarRequestStatus,
   type DsarRequestChannel,
   type DsarContactKind,
   type DsarOutcome,
+  type DsarSlaStatus,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 import { RecordCollaboration } from "@/components/record-collaboration";
@@ -51,6 +53,32 @@ const STATUS_STYLE: Record<DsarRequestStatus, string> = {
   withdrawn: "bg-slate-100 text-slate-500",
 };
 
+const SLA_STYLE: Record<DsarSlaStatus, string> = {
+  on_track: "bg-emerald-100 text-emerald-800",
+  at_risk: "bg-amber-100 text-amber-800",
+  overdue: "bg-red-100 text-red-800",
+};
+
+function AssigneePicker({ client, onPick }: { client: ReturnType<typeof createApiClient>; onPick: (u: { id: string; display_name: string }) => void }) {
+  const t = useTranslations("dsarRequests");
+  const [q, setQ] = useState("");
+  const matches = useMentionSearch(client, q.length >= 2 ? q : null);
+  return (
+    <div className="relative inline-block">
+      <input className={INPUT + " w-56"} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("form.assigneeSearch")} />
+      {q.length >= 2 && !!matches.data?.length && (
+        <ul className="absolute z-10 w-56 rounded-md border border-slate-200 bg-white text-sm shadow">
+          {matches.data.map((u) => (
+            <li key={u.id}>
+              <button type="button" className="block w-full px-3 py-1.5 text-left hover:bg-slate-50" onClick={() => { onPick(u); setQ(""); }}>{u.display_name}</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export function RequestsContent({ currentUserId }: { currentUserId: string }) {
   const t = useTranslations("dsarRequests");
   const locale = useLocale() as Locale;
@@ -71,6 +99,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
 
   const [draft, setDraft] = useState<{ request_type_id: string; legal_entity_id: string; channel: DsarRequestChannel | ""; requester_name: string; requester_contact: string; contact_kind: DsarContactKind } | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [assignId, setAssignId] = useState<string | null>(null);
   const [actionDraft, setActionDraft] = useState<{ to: DsarRequestStatus | ""; outcome: DsarOutcome | ""; rejection_reason_code: string; activity_ids: string[] }>({ to: "", outcome: "", rejection_reason_code: "", activity_ids: [] });
 
   if (!canRead) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
@@ -178,7 +207,8 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
         <table className="w-full rounded-md border border-slate-200 bg-white" data-testid="requests-list">
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr><th className="px-3 py-2">{t("form.requestNo")}</th><th className="px-3 py-2">{t("form.requestType")}</th>
-              <th className="px-3 py-2">{t("dueBy")}</th><th className="px-3 py-2">{t("statusLabel")}</th><th className="px-3 py-2" /></tr>
+              <th className="px-3 py-2">{t("dueBy")}</th><th className="px-3 py-2">{t("sla.label")}</th>
+              <th className="px-3 py-2">{t("statusLabel")}</th><th className="px-3 py-2" /></tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((r) => (
@@ -187,6 +217,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                   <td className="px-3 py-2 font-mono text-xs">{r.request_no}</td>
                   <td className="px-3 py-2">{typeName(r.request_type_id)}</td>
                   <td className="px-3 py-2">{formatDate(r.due_at, locale, { day: "numeric", month: "short", year: "numeric" })}</td>
+                  <td className="px-3 py-2"><span className={`rounded px-2 py-0.5 ${SLA_STYLE[r.sla_status]}`} data-testid={`sla-${r.id}`}>{t(`sla.${r.sla_status}`)}</span></td>
                   <td className="px-3 py-2"><span className={`rounded px-2 py-0.5 ${STATUS_STYLE[r.status]}`}>{t(`statuses.${r.status}`)}</span></td>
                   <td className="px-3 py-2 space-x-3">
                     {canExecute && NEXT_STEPS[r.status].length > 0 && (
@@ -195,22 +226,43 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                         {actionId === r.id ? t("form.hide") : t("takeAction")}
                       </button>
                     )}
+                    {canUpdate && (
+                      <button type="button" className="text-sky-700 underline" data-testid={`assign-toggle-${r.id}`}
+                        onClick={() => setAssignId(assignId === r.id ? null : r.id)}>
+                        {assignId === r.id ? t("form.hide") : t("form.assign")}
+                      </button>
+                    )}
                     <button type="button" className="text-sky-700 underline" data-testid={`history-toggle-${r.id}`}
                       onClick={() => setHistoryId(historyId === r.id ? null : r.id)}>
                       {historyId === r.id ? t("form.hide") : t("history")}
                     </button>
                   </td>
                 </tr>
+                {assignId === r.id && (
+                  <tr>
+                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-slate-600">
+                          {r.assignee_user_id ? t("form.currentAssignee", { id: r.assignee_user_id.slice(0, 8) }) : t("form.unassigned")}
+                        </span>
+                        <AssigneePicker client={client} onPick={(u) => m.assign.mutate({ request: r, userId: u.id })} />
+                        {r.assignee_user_id && (
+                          <Button variant="secondary" onClick={() => m.assign.mutate({ request: r, userId: null })} disabled={m.assign.isPending}>{t("form.unassign")}</Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )}
                 {historyId === r.id && (
                   <tr>
-                    <td colSpan={5} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
                       <RecordCollaboration entityType="dsar_request" entityId={r.id} canWrite={canUpdate} currentUserId={currentUserId} />
                     </td>
                   </tr>
                 )}
                 {actionId === r.id && (
                   <tr>
-                    <td colSpan={5} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
                       <div className="grid gap-2 sm:grid-cols-3">
                         <select className={INPUT} value={actionDraft.to} onChange={(e) => setActionDraft({ ...actionDraft, to: e.target.value as DsarRequestStatus })}>
                           <option value="">{t("form.nextStatus")}</option>

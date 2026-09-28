@@ -1859,6 +1859,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/requests/{id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set (or clear) the request's responsible person (If-Match) — DSAR-07, notified alongside role DPO when the SLA reminder fires. */
+        post: operations["dsarAssignRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/platform/documents/types": {
         parameters: {
             query?: never;
@@ -3699,6 +3716,11 @@ export interface components {
             requester_contact: string;
             contact_kind: components["schemas"]["DsarContactKind"];
         };
+        /**
+         * @description DSAR-07 — computed live off due_at, never stored — on_track, at_risk (10 days or fewer left) or overdue.
+         * @enum {string}
+         */
+        DsarSlaStatus: "on_track" | "at_risk" | "overdue";
         DsarRequest: {
             id: components["schemas"]["Uuid"];
             request_no: string;
@@ -3711,6 +3733,7 @@ export interface components {
             received_at: string;
             /** Format: date-time */
             due_at: string;
+            sla_status: components["schemas"]["DsarSlaStatus"];
             /** Format: date-time */
             verified_at?: string | null;
             /** Format: date-time */
@@ -3721,6 +3744,10 @@ export interface components {
             row_version: number;
             /** Format: date-time */
             updated_at: string;
+        };
+        DsarAssignInput: {
+            /** @description The responsible person notified alongside role DPO when the SLA reminder fires (DSAR-07). Omit or null to unassign. */
+            assignee_user_id?: components["schemas"]["Uuid"] | null;
         };
         DsarTransitionInput: {
             to: components["schemas"]["DsarRequestStatus"];
@@ -9524,6 +9551,45 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dsarAssignRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarAssignInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarRequest"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];

@@ -129,6 +129,9 @@ func (s *Service) CreateRequest(ctx context.Context, in CreateRequestInput) (Req
 	if err := s.audit(ctx, "dsar.request.create", out.ID, nil, map[string]any{"request_no": out.RequestNo, "request_type_id": out.RequestTypeID, "channel": out.Channel}); err != nil {
 		return Request{}, err
 	}
+	if err := s.scheduleReminder(ctx, out); err != nil {
+		return Request{}, err
+	}
 	return out, nil
 }
 

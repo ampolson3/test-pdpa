@@ -15,6 +15,9 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
+
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
@@ -22,6 +25,7 @@ import (
 	"pdpa-platform/internal/platform/crypto"
 	docsservice "pdpa-platform/internal/platform/docs"
 	"pdpa-platform/internal/platform/events"
+	"pdpa-platform/internal/platform/notify"
 	ropaservice "pdpa-platform/internal/ropa/service"
 )
 
@@ -60,6 +64,10 @@ type Service struct {
 	Ropa    Ropa
 	Keyring *crypto.Keyring
 	Events  *events.Publisher
+	// Notify and River drive DSAR-07's SLA reminder (dsar.sla_reminder); nil in tests that don't need it
+	// (the same optionality PNG-04's indirect-collection reminders use).
+	Notify *notify.Service
+	River  *river.Client[pgx.Tx]
 	// Now is the clock (injectable for tests); nil means time.Now.
 	Now func() time.Time
 }

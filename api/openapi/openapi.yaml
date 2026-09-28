@@ -5622,6 +5622,53 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dsar/requests/{id}/assign:
+    post:
+      operationId: dsarAssignRequest
+      tags: [dsar]
+      summary: Set (or clear) the request's responsible person (If-Match) — DSAR-07, notified alongside role DPO when the SLA reminder fires.
+      x-permission: dsar.request.update
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarAssignInput'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/platform/documents/types:
     get:
       operationId: platformListDocumentTypes
@@ -10101,9 +10148,13 @@ components:
         requester_name: {type: string, minLength: 1, maxLength: 300}
         requester_contact: {type: string, minLength: 1, maxLength: 300}
         contact_kind: {$ref: '#/components/schemas/DsarContactKind'}
+    DsarSlaStatus:
+      type: string
+      description: DSAR-07 — computed live off due_at, never stored — on_track, at_risk (10 days or fewer left) or overdue.
+      enum: [on_track, at_risk, overdue]
     DsarRequest:
       type: object
-      required: [id, request_no, request_type_id, legal_entity_id, channel, on_behalf, status, received_at, due_at, row_version, updated_at]
+      required: [id, request_no, request_type_id, legal_entity_id, channel, on_behalf, status, received_at, due_at, sla_status, row_version, updated_at]
       properties:
         id: {$ref: '#/components/schemas/Uuid'}
         request_no: {type: string}
@@ -10114,6 +10165,7 @@ components:
         status: {$ref: '#/components/schemas/DsarRequestStatus'}
         received_at: {type: string, format: date-time}
         due_at: {type: string, format: date-time}
+        sla_status: {$ref: '#/components/schemas/DsarSlaStatus'}
         verified_at: {type: [string, 'null'], format: date-time}
         closed_at: {type: [string, 'null'], format: date-time}
         outcome:
@@ -10127,6 +10179,14 @@ components:
             - type: 'null'
         row_version: {type: integer}
         updated_at: {type: string, format: date-time}
+    DsarAssignInput:
+      type: object
+      properties:
+        assignee_user_id:
+          description: The responsible person notified alongside role DPO when the SLA reminder fires (DSAR-07). Omit or null to unassign.
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
     DsarTransitionInput:
       type: object
       required: [to]
