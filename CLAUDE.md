@@ -994,6 +994,42 @@ DSAR-08's real per-task routing (this stays on the DPO-role fallback until that 
 "near/overdue" list view (the badge column already surfaces this at a glance — no screen has asked for a separate
 filtered list yet).
 
+### IAM-05 บริการยืนยันตัวตนเจ้าของข้อมูล (`docs/modules/IAM.md#iam-05`) — done (portal use pending a consumer)
+`internal/iam/service/verification.go` — the first feature on `iam.subject_verifications`, already fully
+specified in the baseline migrations (purpose/method CHECK constraints, `otp_hash char(64)`, `attempts`,
+`assurance_level`, `expires_at`), so no new migration for the table itself. `StartVerification` generates a
+random 6-digit code (`crypto/rand`), stores only its SHA-256 hex hash (never the plaintext, rule 3), and sends
+it via PLT-04 (`Urgent: true`, skipping quiet hours — a 5-minute-lived code has no use for them) to the raw
+identifier as a `RecipientAddress` (never persisted); `identifier_blind_index` is computed via the existing
+PLT-13 `Keyring.BlindIndex`. `VerifyOTP` enforces decisions.md D-01 exactly — `OTPExpiry = 5m`,
+`MaxOTPAttempts = 5` — via a pure `SubjectVerification` state machine (pending → verified/failed/expired, no
+new `docs/states/state-machines.yaml` entry since it's a 4-state/3-edge shape entirely local to this one
+table); every call, right or wrong, increments `attempts` and writes a `platform.audit_log` row before
+returning (the acceptance criterion's "บันทึกผลการยืนยันทุกครั้ง") — the plaintext code itself is never in
+that log, only the outcome. Only `otp_sms`/`otp_email` are built; `magic_link`/`idp`/`thaid` are already in the
+column's CHECK constraint for later, exactly as the module doc's own "รองรับ IdP ภายนอก / ThaID ภายหลัง" says.
+
+Real import-cycle problem, not a design choice: `platform/audit/service` already imports `iam/service` (ORG-19's
+actor-name resolution) and `platform/notify` already imports it too (user-recipient contact resolution) — so
+`iam/service` importing either of *them* back (for `Write`/`Send`) would be a compile-time cycle. Fixed with two
+minimal local interfaces owned by `iam/service` (`Auditor`, `Notifier`) and matching plain-struct types
+(`AuditEntry`, `NotifyRequest`) that mirror only the fields this feature needs — no import of either concrete
+package. `internal/wiring.IamVerification` (new) is the adapter, built where both concrete packages are already
+safely importable; `cmd/api/main.go`'s `iamSvc` construction moved down past `keyring`/`notifySvc` and now goes
+through it (still serves `/me` unchanged — `Keyring`/`Notify`/`Audit` are simply unused there).
+
+No HTTP endpoint yet, deliberately — the module doc's own frontend note is "ขั้นตอนยืนยันตัวตนใน portal ใช้ร่วม
+preference center, คำขอใช้สิทธิ และ double opt-in", and none of those (a portal preference center, a public DSAR
+intake form, double opt-in) exist yet to design a real contract against; the same "no consumer yet" deferral
+PLT-13's own crypto Keyring used when it shipped ("not wired into cmd/api/cmd/worker yet"). Migration 00046 seeds
+the `iam.otp` template (sms/email × th/en) — operational text, no DRAFT marker (rule 8 is about legal/notice
+text). Tests (`internal/iam/service/verification_test.go`, the package's first test file): OTP sent with a
+5-minute expiry, correct-code verifies, 5 wrong attempts locks the row and a 6th is refused as already decided,
+an expired-but-correct code is refused with an injected clock, every attempt (right or wrong) leaves its own
+audit row, two-tenant isolation. Not done: rate-limiting *starting* a new verification (only the 5-attempt cap
+on *verifying* one is in decisions.md; the `internal/pkg/ratelimit` package exists for this but has no natural
+key to rate-limit against yet without a real public endpoint), and the frontend flow itself.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

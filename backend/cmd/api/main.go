@@ -119,7 +119,6 @@ func run() error {
 		return err
 	}
 
-	iamSvc := iamservice.New()
 	authzCache := authz.NewCachedLoader(rdb, iamservice.NewLoader(pool))
 	auditSvc := auditservice.New()
 	jwks := authn.NewJWKS(cfg.OIDCJWKSURL)
@@ -198,6 +197,7 @@ func run() error {
 	}
 	keyring := &crypto.Keyring{KEK: kek}
 	notifySvc := &notify.Service{Keyring: keyring, River: riverClient, Quiet: notify.DefaultQuietHours()}
+	iamSvc := wiring.IamVerification(keyring, notifySvc, auditSvc) // IAM-05: OTP subject verification, plus /me
 	store, err := files.NewS3Store(files.S3ConfigFromEnv())
 	if err != nil {
 		return err
