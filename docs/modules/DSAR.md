@@ -297,6 +297,24 @@
 
 **Acceptance criteria:** การปฏิเสธต้องมีเหตุผลและผู้อนุมัติ และถูกบันทึกเข้า RoPA อัตโนมัติ
 
+**Implementation:** built on top of DSAR-13's `Transition`/ST-02: entering `rejected` already required a
+reason; this feature added the second half of the acceptance criterion. "ผู้อนุมัติ" (an approver) is
+enforced as a permission gate — the caller must additionally hold `dsar.request.approve` (already-seeded,
+no new code), not just `dsar.request.execute` — rather than a separate propose/confirm maker-checker round,
+since DSAR-13's `rejected` transition is already a single explicit action a DPO takes with a reason attached,
+not a multi-step draft. "ลงบันทึกใน RoPA อัตโนมัติ" is deliberately *not* done here: `TransitionInput` gained
+an optional `ActivityIDs []uuid.UUID` (the RoPA processing activities this rejection concerns — FK-checked via
+a new `Ropa` interface, rule 9), and rejecting now publishes `dsar.rejected` (PLT-11 outbox) with those
+activity ids and the reason code — but DSAR never writes to the `ropa` schema itself; the actual write is
+ROPA-10's own job, subscribing to this event (module boundary, rule 9). `docs/architecture/events.yaml`'s
+`dsar.rejected` entry (a generic SA-authored template shared by all `dsar.*` lifecycle events) was extended
+with `reason_code` and `activity_refs` — the two fields ROPA-10 actually needs that the generic template
+didn't carry — and the catalog regenerated (`go generate ./internal/platform/events`). Tests: unit (rejecting
+without `dsar.request.approve` is refused with `ErrForbidden`/403, an unknown activity id is refused, the
+outbox row carries the reason and activity ref, redelivery-safety is ROPA-10's job to prove), HTTP contract.
+UI: the reject panel on `/requests` gained an activity multi-select (shown only when rejecting), passed as
+`activity_ids` on the transition call.
+
 <a id="dsar-13"></a>
 ### DSAR-13 template หนังสือตอบกลับ
 

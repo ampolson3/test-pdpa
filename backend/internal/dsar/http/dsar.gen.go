@@ -402,6 +402,8 @@ type DsarRequestTypeCode string
 
 // DsarTransitionInput defines model for DsarTransitionInput.
 type DsarTransitionInput struct {
+	// ActivityIds RoPA processing activities this rejection concerns (DSAR-11, ม.39(7)) — logged against each one (ROPA-10) once the rejection is confirmed
+	ActivityIds         *[]Uuid           `json:"activity_ids,omitempty"`
 	Outcome             *DsarOutcome      `json:"outcome,omitempty"`
 	RejectionReasonCode *string           `json:"rejection_reason_code,omitempty"`
 	To                  DsarRequestStatus `json:"to"`

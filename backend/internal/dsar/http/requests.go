@@ -105,6 +105,9 @@ func (h *Strict) DsarTransitionRequest(ctx context.Context, req DsarTransitionRe
 		in.Outcome = &o
 	}
 	in.RejectionReasonCode = b.RejectionReasonCode
+	if b.ActivityIds != nil {
+		in.ActivityIDs = *b.ActivityIds
+	}
 	r, docID, err := h.svc.Transition(ctx, req.Id, v, in)
 	if err != nil {
 		return nil, problem(err)
@@ -183,6 +186,8 @@ func problem(err error) error {
 	switch {
 	case errors.Is(err, dsarservice.ErrNotFound):
 		return httpx.NotFound()
+	case errors.Is(err, dsarservice.ErrForbidden):
+		return httpx.AuthzDenied()
 	case errors.Is(err, dsarservice.ErrVersionMismatch):
 		return httpx.VersionMismatch()
 	case errors.Is(err, dsarservice.ErrInvalidTransition):

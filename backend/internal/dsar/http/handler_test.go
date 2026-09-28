@@ -99,7 +99,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	}
 	other := uuid.New()
 	grants := map[string][]string{
-		tenant.UserID.String(): {"dsar.request.read", "dsar.request.create", "dsar.request.execute", "dsar.request.update"},
+		tenant.UserID.String(): {"dsar.request.read", "dsar.request.create", "dsar.request.execute", "dsar.request.update", "dsar.request.approve"},
 		other.String():         {"dsar.request.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {

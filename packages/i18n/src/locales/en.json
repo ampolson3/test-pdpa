@@ -796,7 +796,8 @@
       "retention": "Retention and disposal",
       "recipients": "Recipients and disclosures",
       "transfers": "Cross-border transfers",
-      "controls": "Security measures"
+      "controls": "Security measures",
+      "rejections": "DSAR rejections (ม.39(7))"
     },
     "missingItems": {
       "data": "No data categories yet",
@@ -851,7 +852,9 @@
       "physical": "Physical",
       "access_control": "Access control",
       "legal": "Legal"
-    }
+    },
+    "rejectionsHint": "Logged automatically from DSAR requests rejected against this activity",
+    "noRejections": "No rejections logged against this activity yet"
   },
   "notices": {
     "signInRequired": "Please sign in",
@@ -1810,7 +1813,9 @@
       "save": "Save",
       "cancel": "Cancel",
       "hide": "Hide",
-      "saveError": "Save failed: {detail}"
+      "saveError": "Save failed: {detail}",
+      "relatedActivities": "Related processing activities (RoPA)",
+      "relatedActivitiesHint": "Pick the processing activities this request concerns, to log the rejection against them in RoPA automatically"
     },
     "channels": {
       "web": "Web",

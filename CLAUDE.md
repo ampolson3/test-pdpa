@@ -902,6 +902,45 @@ directly — completing/rejecting a request generates a letter carrying the decr
 request's own type name and its request number in both languages — a rejected letter carries the reason, an
 invalid ST-02 edge refused, two-tenant isolation), HTTP contract (401/403/400/404/409/412/422/428).
 
+### DSAR-11 Rejection with reason (`docs/modules/DSAR.md#dsar-11`) + ROPA-10 Log of rejected requests
+(`docs/modules/ROPA.md#ropa-10`) — done
+Built together: DSAR-11's own acceptance criterion ends "...and gets recorded into RoPA automatically", and
+ROPA-10 (a separate backlog row, "Log of rejected requests") is literally that recording step, wired through
+the `dsar.rejected` event DSAR-11's own backend note names — the two features complete one BP-05/BP-11 flow.
+
+**DSAR-11**: built on DSAR-13's `Transition`/ST-02 — entering `rejected` already required a reason; this
+feature added the rest. "ผู้อนุมัติ" (an approver) is a permission gate, not a separate propose/confirm
+round: the caller must additionally hold `dsar.request.approve` (already-seeded, no new code), not just
+`dsar.request.execute` — `Transition` checks `authz.FromContext(ctx).Has(...)` and returns a new
+`ErrForbidden` (403 `authz.denied`) otherwise, since DSAR-13's `rejected` transition is already one explicit
+DPO action with a reason attached, not a multi-step draft. "บันทึกเข้า RoPA อัตโนมัติ" is deliberately *not*
+done inside dsar: `TransitionInput` gained an optional `ActivityIDs []uuid.UUID` (the processing activities
+this rejection concerns, FK-checked via a new `Ropa` interface — rule 9), and entering `rejected` now
+publishes `dsar.rejected` (PLT-11 outbox, same tx as the status update) carrying those activity ids and the
+reason code — dsar never writes to the `ropa` schema itself. `docs/architecture/events.yaml`'s `dsar.rejected`
+entry (a generic template shared by every `dsar.*` lifecycle event) was extended with `reason_code` and
+`activity_refs` — the two fields ROPA-10 actually needs, which the shared template didn't carry — and the
+catalog regenerated (`go generate ./internal/platform/events`).
+
+**ROPA-10**: `ropa.activity_rejections` (activity_id, dsar_request_id, reason_code, rejected_at) was already
+fully specified in the baseline migrations; migration 00044 adds only a unique index on
+`(activity_id, dsar_request_id)` for idempotency — `dsar.rejected` is delivered at-least-once (PLT-11), and
+`ropa.Service.RecordRejection`'s insert is `ON CONFLICT ... DO NOTHING` against it, so a redelivery is a
+harmless no-op rather than a duplicate row. `internal/wiring.Events` (new; called once from `cmd/worker`
+after `ropaSvc` is built) subscribes `dsar.rejected` on the shared `events.Registry` and calls
+`RecordRejection` for every activity ref the event carries — the first real in-process event
+producer/consumer pair in this codebase (PLT-11 shipped with none registered yet). `RecordRejection`
+FK-checks the activity via the already-exported `GetActivity` (rule 1) before inserting.
+
+API: `POST /admin/v1/dsar/requests/{id}/transition`'s body gained `activity_ids` (DSAR-11);
+`GET /admin/v1/ropa/activities/{id}/rejections` (`ropa.activity.read`, ROPA-10) is read-only — nothing writes
+these rows through HTTP. UI: the reject panel on `/requests` gained an activity multi-select shown only when
+rejecting; `/ropa/activities/{id}` gained a "DSAR rejections (ม.39(7))" section listing date + reason. Tests:
+unit (rejecting without `dsar.request.approve` refused with `ErrForbidden`, an unknown activity id refused,
+the outbox row carries the reason and activity ref — DSAR-11; idempotent redelivery of the same
+activity+request pair inserts once, unknown activity refused, two-tenant isolation — ROPA-10), HTTP contract
+for both.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

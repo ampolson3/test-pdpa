@@ -24,6 +24,7 @@ export type SecurityControl = components["schemas"]["SecurityControl"];
 export type SecurityControlCategory = components["schemas"]["SecurityControlCategory"];
 export type ActivityControl = components["schemas"]["ActivityControl"];
 export type ActivityControlInput = components["schemas"]["ActivityControlInput"];
+export type ActivityRejection = components["schemas"]["ActivityRejection"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const activitiesKey = ["ropa", "activities"] as const;
@@ -141,6 +142,20 @@ export function useActivityControls(client: ApiClient, id: string | undefined) {
     enabled: !!id,
     queryFn: async () => {
       const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/controls", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** GET /admin/v1/ropa/activities/{id}/rejections (ROPA-10) — DSAR rejections logged here automatically from
+ *  the dsar.rejected event; read-only, this module never writes these rows itself. */
+export function useActivityRejections(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...activityKey(id ?? ""), "rejections"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/rejections", { params: { path: { id: id! } } });
       if (error) throw error;
       return data.data;
     },

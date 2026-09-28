@@ -14,8 +14,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	dsarstore "pdpa-platform/internal/dsar/store"
+	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/platform/crypto"
+	"pdpa-platform/internal/platform/events"
 )
 
 var channels = []string{"web", "email", "phone", "branch", "letter", "line", "api"}
@@ -200,11 +202,18 @@ type TransitionInput struct {
 	To                  string
 	Outcome             *string
 	RejectionReasonCode *string
+	// ActivityIDs are the RoPA processing activities this rejection concerns (DSAR-11, ม.39(7)) — logged in
+	// the dsar.rejected event for ROPA-10 to record against each one; optional, since not every request maps
+	// to a specific processing activity.
+	ActivityIDs []uuid.UUID
 }
 
 // Transition moves a request along ST-02. Entering awaiting_info, completed or rejected auto-generates the
 // matching response letter draft (DSAR-13's own acceptance criterion) — request_info / result / rejection
 // respectively; the returned document id is what the frontend opens next ("เลือก template + แก้ก่อนส่ง").
+// Entering rejected additionally needs a reason and an approver (DSAR-11, ม.30/ม.39(7)): the caller must hold
+// dsar.request.approve, not just dsar.request.execute, and the rejection is published as `dsar.rejected` for
+// ROPA-10 to log against the referenced activities — DSAR-11 itself never writes to the ropa schema (rule 9).
 func (s *Service) Transition(ctx context.Context, id uuid.UUID, rowVersion int32, in TransitionInput) (Request, *uuid.UUID, error) {
 	req, err := s.GetRequest(ctx, id)
 	if err != nil {
@@ -224,6 +233,14 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, rowVersion int32
 	case "rejected":
 		if in.RejectionReasonCode == nil || strings.TrimSpace(*in.RejectionReasonCode) == "" {
 			return Request{}, nil, fmt.Errorf("%w: rejection_reason_code", ErrInvalid)
+		}
+		if g, _ := authz.FromContext(ctx); !g.Has("dsar.request.approve") {
+			return Request{}, nil, ErrForbidden
+		}
+		for _, aid := range in.ActivityIDs {
+			if _, err := s.Ropa.GetActivity(ctx, aid); err != nil {
+				return Request{}, nil, fmt.Errorf("%w: activity_ids", ErrInvalid)
+			}
 		}
 	case "withdrawn":
 		w := "withdrawn"
@@ -245,6 +262,22 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, rowVersion int32
 	out := toRequest(dsarstore.GetRequestRow(row))
 	if err := s.audit(ctx, "dsar.request.transition", out.ID, map[string]any{"status": req.Status}, map[string]any{"status": out.Status, "outcome": out.Outcome}); err != nil {
 		return Request{}, nil, err
+	}
+
+	if in.To == "rejected" && s.Events != nil {
+		rt, err := s.GetRequestType(ctx, out.RequestTypeID)
+		if err != nil {
+			return Request{}, nil, err
+		}
+		activityRefs := make([]string, len(in.ActivityIDs))
+		for i, aid := range in.ActivityIDs {
+			activityRefs[i] = aid.String()
+		}
+		if _, err := s.Events.Publish(ctx, events.Event{Type: "dsar.rejected", AggregateType: "dsar_request", AggregateID: out.ID,
+			Data: map[string]any{"request_ref": out.RequestNo, "request_type": rt.Code, "due_at": out.DueAt.Format(time.RFC3339),
+				"status": out.Status, "reason_code": *out.RejectionReasonCode, "activity_refs": activityRefs}}); err != nil {
+			return Request{}, nil, err
+		}
 	}
 
 	var purpose string

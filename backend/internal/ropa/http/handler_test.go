@@ -313,6 +313,14 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 		t.Errorf("delete control: %d", code)
 	}
 
+	// ROPA-10 rejections (read-only; the module never writes these itself — internal/wiring.Events does).
+	if code, _ := do("GET", actURL+"/rejections", nil, nil, nil); code != 401 {
+		t.Errorf("rejections, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", actURL+"/rejections", &viewer, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list rejections (none yet): %d %s", code, body)
+	}
+
 	// ROPA-08 cross-border transfers
 	var foreignPartyID uuid.UUID
 	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {

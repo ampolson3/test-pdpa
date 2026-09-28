@@ -516,6 +516,21 @@ updated to include `security_controls` alongside the other five core items, sinc
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
 
+**Implementation:** `ropa.activity_rejections` (activity_id, dsar_request_id, reason_code, rejected_at) was
+already fully specified in the baseline migrations — no new migration for the table itself; migration 00044
+adds only a unique index on `(activity_id, dsar_request_id)`, needed for idempotency: the `dsar.rejected`
+outbox event (PLT-11) is delivered at-least-once, and `Service.RecordRejection`'s insert is
+`ON CONFLICT ... DO NOTHING` against it, so a redelivery is a harmless no-op rather than a duplicate row.
+`internal/wiring.Events` (new, called once from `cmd/worker` after `ropaSvc` is built) subscribes
+`dsar.rejected` on the shared `events.Registry` and, for every activity ref the event carries, calls
+`RecordRejection` — DSAR-11 publishes the event and never writes to the `ropa` schema itself (rule 9); this is
+the first real in-process event producer/consumer pair in the codebase (PLT-11 was built with none yet).
+`RecordRejection` FK-checks the activity via the existing `GetActivity` (rule 1) before inserting. API:
+`GET /admin/v1/ropa/activities/{id}/rejections` (`ropa.activity.read`) — read-only; nothing writes these rows
+through HTTP. UI: a "DSAR rejections (ม.39(7))" section on `/ropa/activities/{id}`, listing date + reason.
+Tests: unit (idempotent redelivery of the same activity+request pair inserts once, unknown activity refused,
+two-tenant isolation), HTTP contract (401, 200 with an empty list).
+
 <a id="ropa-13"></a>
 ### ROPA-13 เวอร์ชันและการอนุมัติ
 

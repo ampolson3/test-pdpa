@@ -7,6 +7,7 @@ import { Button } from "@pdpa/ui";
 import { formatDate, type Locale } from "@pdpa/i18n";
 import {
   createApiClient,
+  useActivities,
   useDsarRequests,
   useDsarRequestTypes,
   useDsarRequestMutations,
@@ -61,17 +62,19 @@ export function RequestsContent() {
   const list = useDsarRequests(client, { status: statusFilter || undefined });
   const types = useDsarRequestTypes(client);
   const entities = useLegalEntities(client);
+  const activities = useActivities(client, {});
   const m = useDsarRequestMutations(client);
 
   const [draft, setDraft] = useState<{ request_type_id: string; legal_entity_id: string; channel: DsarRequestChannel | ""; requester_name: string; requester_contact: string; contact_kind: DsarContactKind } | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
-  const [actionDraft, setActionDraft] = useState<{ to: DsarRequestStatus | ""; outcome: DsarOutcome | ""; rejection_reason_code: string }>({ to: "", outcome: "", rejection_reason_code: "" });
+  const [actionDraft, setActionDraft] = useState<{ to: DsarRequestStatus | ""; outcome: DsarOutcome | ""; rejection_reason_code: string; activity_ids: string[] }>({ to: "", outcome: "", rejection_reason_code: "", activity_ids: [] });
 
   if (!canRead) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
 
   const rows = list.data?.pages.flatMap((p) => p.data) ?? [];
   const typeRows = types.data ?? [];
   const entityRows = entities.data ?? [];
+  const activityRows = activities.data?.pages.flatMap((p) => p.data) ?? [];
   const typeName = (id: string) => typeRows.find((rt) => rt.id === id)?.name_th ?? id;
 
   const create = () => {
@@ -88,9 +91,20 @@ export function RequestsContent() {
   const submitAction = (row: DsarRequest) => {
     if (!actionDraft.to) return;
     m.transition.mutate(
-      { request: row, input: { to: actionDraft.to, outcome: actionDraft.outcome || undefined, rejection_reason_code: actionDraft.rejection_reason_code || undefined } },
-      { onSuccess: () => { setActionId(null); setActionDraft({ to: "", outcome: "", rejection_reason_code: "" }); } },
+      {
+        request: row,
+        input: {
+          to: actionDraft.to, outcome: actionDraft.outcome || undefined, rejection_reason_code: actionDraft.rejection_reason_code || undefined,
+          activity_ids: actionDraft.to === "rejected" ? actionDraft.activity_ids : [],
+        },
+      },
+      { onSuccess: () => { setActionId(null); setActionDraft({ to: "", outcome: "", rejection_reason_code: "", activity_ids: [] }); } },
     );
+  };
+
+  const toggleActionActivity = (id: string) => {
+    const has = actionDraft.activity_ids.includes(id);
+    setActionDraft({ ...actionDraft, activity_ids: has ? actionDraft.activity_ids.filter((x) => x !== id) : [...actionDraft.activity_ids, id] });
   };
 
   return (
@@ -168,7 +182,7 @@ export function RequestsContent() {
                   <td className="px-3 py-2">
                     {canExecute && NEXT_STEPS[r.status].length > 0 && (
                       <button type="button" className="text-sky-700 underline" data-testid={`action-toggle-${r.id}`}
-                        onClick={() => { setActionId(actionId === r.id ? null : r.id); setActionDraft({ to: "", outcome: "", rejection_reason_code: "" }); }}>
+                        onClick={() => { setActionId(actionId === r.id ? null : r.id); setActionDraft({ to: "", outcome: "", rejection_reason_code: "", activity_ids: [] }); }}>
                         {actionId === r.id ? t("form.hide") : t("takeAction")}
                       </button>
                     )}
@@ -196,6 +210,20 @@ export function RequestsContent() {
                         {m.transition.isError && <p className="text-red-700 sm:col-span-3" role="alert">{t("form.saveError", { detail: detail(m.transition.error) })}</p>}
                         <Button onClick={() => submitAction(r)} disabled={m.transition.isPending || !actionDraft.to}>{t("form.save")}</Button>
                       </div>
+                      {actionDraft.to === "rejected" && (
+                        <div className="mt-2">
+                          <span className="block text-slate-600">{t("form.relatedActivities")}</span>
+                          <p className="mb-1 text-xs text-slate-500">{t("form.relatedActivitiesHint")}</p>
+                          <div className="max-h-32 space-y-1 overflow-auto rounded-md border border-slate-200 p-2">
+                            {activityRows.map((a) => (
+                              <label key={a.id} className="flex items-center gap-2">
+                                <input type="checkbox" checked={actionDraft.activity_ids.includes(a.id)} onChange={() => toggleActionActivity(a.id)} />
+                                <span>{a.code} — {a.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       {m.transition.data?.document_id && (
                         <p className="mt-2">
                           <Link className="text-sky-700 underline" href={`/documents/${m.transition.data.document_id}`}>{t("openLetter")}</Link>

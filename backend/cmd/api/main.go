@@ -249,7 +249,8 @@ func run() error {
 	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                // BRE-12 evidence
 	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read" // BRE-10 recipient lists
 	fileSvc.EntityPermissions[breach.PDPCEntityType] = "breach.notification.read"          // BRE-09 filing evidence
-	dsarSvc := &dsarservice.Service{Audit: auditSvc, Org: orgSvc, Docs: docsSvc, Keyring: keyring}
+	dsarSvc := &dsarservice.Service{Audit: auditSvc, Org: orgSvc, Docs: docsSvc, Ropa: ropaSvc, Keyring: keyring,
+		Events: &events.Publisher{River: riverClient}}
 
 	// Public consent forms (BP-01): tenant and principal from the public key, then the same Idempotency + Tx chain.
 	r.Group(func(g chi.Router) {

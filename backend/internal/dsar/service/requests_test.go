@@ -18,6 +18,9 @@ import (
 	"pdpa-platform/internal/platform/crypto"
 	"pdpa-platform/internal/platform/docs"
 	"pdpa-platform/internal/platform/docs/render"
+	"pdpa-platform/internal/platform/events"
+	"pdpa-platform/internal/platform/jobs"
+	ropaservice "pdpa-platform/internal/ropa/service"
 	"pdpa-platform/internal/wiring"
 )
 
@@ -26,11 +29,12 @@ type env struct {
 	tenant dbtest.Tenant
 	svc    *dsarservice.Service
 	org    *orgservice.Service
+	ropa   *ropaservice.Service
 	docs   *docs.Service
 }
 
 var dsarPermissions = []string{"dsar.request.read", "dsar.request.create", "dsar.request.execute", "dsar.request.update",
-	"org.structure.read", "org.structure.update"}
+	"dsar.request.approve", "org.structure.read", "org.structure.update", "ropa.activity.read", "ropa.activity.create", "ropa.activity.update"}
 
 func setup(t *testing.T, suffix string) env {
 	t.Helper()
@@ -42,6 +46,7 @@ func setup(t *testing.T, suffix string) env {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
 				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
+				`DELETE FROM ropa.processing_activities`, `DELETE FROM org.org_units`,
 				`UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
 			} {
 				_, _ = tx.Exec(ctx, q)
@@ -50,18 +55,28 @@ func setup(t *testing.T, suffix string) env {
 		})
 	})
 	orgSvc := &orgservice.Service{Audit: audit.New()}
+	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc}
 	versioningSvc := wiring.Versioning(nil, audit.New())
 	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
 	docsSvc.RegisterVersioning()
 	keyring := &crypto.Keyring{KEK: crypto.NewLocalKEK()}
-	svc := &dsarservice.Service{Audit: audit.New(), Org: orgSvc, Docs: docsSvc, Keyring: keyring}
-	return env{app: app, tenant: tenant, svc: svc, org: orgSvc, docs: docsSvc}
+	riverClient, err := jobs.NewInsertClient(app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := &dsarservice.Service{Audit: audit.New(), Org: orgSvc, Docs: docsSvc, Ropa: ropaSvc, Keyring: keyring, Events: &events.Publisher{River: riverClient}}
+	return env{app: app, tenant: tenant, svc: svc, org: orgSvc, ropa: ropaSvc, docs: docsSvc}
 }
 
 func (e env) in(t *testing.T, fn func(ctx context.Context) error) {
 	t.Helper()
+	e.inAs(t, dsarPermissions, fn)
+}
+
+func (e env) inAs(t *testing.T, permissions []string, fn func(ctx context.Context) error) {
+	t.Helper()
 	if err := pdb.WithTenantTx(context.Background(), e.app, e.tenant.ID.String(), e.tenant.UserID.String(), func(ctx context.Context) error {
-		return fn(authz.WithGrants(ctx, authz.Grants{TenantID: e.tenant.ID.String(), UserID: e.tenant.UserID.String(), Permissions: dsarPermissions}))
+		return fn(authz.WithGrants(ctx, authz.Grants{TenantID: e.tenant.ID.String(), UserID: e.tenant.UserID.String(), Permissions: permissions}))
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -209,14 +224,23 @@ func TestTransition_ResultLetterGeneratedWithRequesterNameAndType(t *testing.T) 
 	})
 }
 
-// TestTransition_RejectedRequiresReasonAndGeneratesLetter: rejecting without a reason is refused; with one,
-// the rejection letter is generated and carries the reason.
-func TestTransition_RejectedRequiresReasonAndGeneratesLetter(t *testing.T) {
+// TestTransition_RejectedRequiresReasonApproverAndGeneratesLetter is DSAR-11's acceptance criterion: a
+// rejection needs both a reason and an approver (dsar.request.approve, not just dsar.request.execute) —
+// with those it generates the rejection letter and publishes dsar.rejected (for ROPA-10 to log against any
+// referenced processing activities, which this test also links).
+func TestTransition_RejectedRequiresReasonApproverAndGeneratesLetter(t *testing.T) {
 	e := setup(t, "dsarreject")
 	var leID, typeID uuid.UUID
+	var activityID uuid.UUID
 	e.in(t, func(ctx context.Context) error {
 		leID, typeID = seedLegalEntityAndType(t, ctx, e)
-		return nil
+		unit, err := e.org.CreateOrgUnit(ctx, orgservice.OrgUnit{LegalEntityID: leID, Code: "HR", NameTh: "HR", UnitType: "department"})
+		if err != nil {
+			return err
+		}
+		a, err := e.ropa.SaveActivity(ctx, ropaservice.Activity{LegalEntityID: leID, OrgUnitID: unit.ID, Code: "HR-REJ", Name: "กิจกรรมทดสอบ", Role: "controller"}, 0)
+		activityID = a.ID
+		return err
 	})
 	var r dsarservice.Request
 	e.in(t, func(ctx context.Context) error {
@@ -239,11 +263,20 @@ func TestTransition_RejectedRequiresReasonAndGeneratesLetter(t *testing.T) {
 		}
 		return nil
 	})
+	noApprove := []string{"dsar.request.read", "dsar.request.create", "dsar.request.execute", "dsar.request.update"}
+	e.inAs(t, noApprove, func(ctx context.Context) error {
+		reason := "ไม่พบข้อมูลของท่านในระบบ"
+		_, _, err := e.svc.Transition(ctx, r.ID, r.RowVersion+2, dsarservice.TransitionInput{To: "rejected", RejectionReasonCode: &reason})
+		if !errors.Is(err, dsarservice.ErrForbidden) {
+			t.Errorf("no approve permission: err = %v, want ErrForbidden", err)
+		}
+		return nil
+	})
 	var docID *uuid.UUID
 	e.in(t, func(ctx context.Context) error {
 		reason := "ไม่พบข้อมูลของท่านในระบบ"
 		var err error
-		_, docID, err = e.svc.Transition(ctx, r.ID, r.RowVersion+2, dsarservice.TransitionInput{To: "rejected", RejectionReasonCode: &reason})
+		_, docID, err = e.svc.Transition(ctx, r.ID, r.RowVersion+2, dsarservice.TransitionInput{To: "rejected", RejectionReasonCode: &reason, ActivityIDs: []uuid.UUID{activityID}})
 		return err
 	})
 	if docID == nil {
@@ -258,6 +291,52 @@ func TestTransition_RejectedRequiresReasonAndGeneratesLetter(t *testing.T) {
 		plainText(doc.Draft.Content["th"], &sb)
 		if !strings.Contains(sb.String(), "ไม่พบข้อมูลของท่านในระบบ") {
 			t.Error("expected the rejection reason in the letter")
+		}
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		var n int
+		if err := pdb.MustTxFromContext(ctx).QueryRow(ctx,
+			`SELECT count(*)::int FROM platform.outbox_events WHERE event_type = 'dsar.rejected' AND aggregate_id = $1
+			 AND payload->'data'->>'reason_code' = 'ไม่พบข้อมูลของท่านในระบบ'
+			 AND payload->'data'->'activity_refs' @> to_jsonb($2::text)`, r.ID, activityID.String()).Scan(&n); err != nil {
+			return err
+		}
+		if n != 1 {
+			t.Errorf("dsar.rejected outbox rows for the activity = %d, want 1", n)
+		}
+		return nil
+	})
+}
+
+// TestTransition_RejectedUnknownActivityRefused: an activity_id from another tenant (or that doesn't exist)
+// is refused rather than silently published in the event.
+func TestTransition_RejectedUnknownActivityRefused(t *testing.T) {
+	e := setup(t, "dsarrejectbadact")
+	var leID, typeID uuid.UUID
+	e.in(t, func(ctx context.Context) error {
+		leID, typeID = seedLegalEntityAndType(t, ctx, e)
+		return nil
+	})
+	var r dsarservice.Request
+	e.in(t, func(ctx context.Context) error {
+		var err error
+		r, err = e.svc.CreateRequest(ctx, dsarservice.CreateRequestInput{RequestTypeID: typeID, LegalEntityID: leID,
+			Channel: "email", RequesterName: "x", RequesterContact: "z@example.com", ContactKind: crypto.KindEmail})
+		if err != nil {
+			return err
+		}
+		if _, _, err := e.svc.Transition(ctx, r.ID, r.RowVersion, dsarservice.TransitionInput{To: "verifying"}); err != nil {
+			return err
+		}
+		_, _, err = e.svc.Transition(ctx, r.ID, r.RowVersion+1, dsarservice.TransitionInput{To: "in_review"})
+		return err
+	})
+	e.in(t, func(ctx context.Context) error {
+		reason := "เหตุผล"
+		_, _, err := e.svc.Transition(ctx, r.ID, r.RowVersion+2, dsarservice.TransitionInput{To: "rejected", RejectionReasonCode: &reason, ActivityIDs: []uuid.UUID{uuid.New()}})
+		if !errors.Is(err, dsarservice.ErrInvalid) {
+			t.Errorf("err = %v, want ErrInvalid", err)
 		}
 		return nil
 	})

@@ -2485,6 +2485,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/activities/{id}/rejections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DSAR requests rejected against this activity, logged automatically from DSAR-11 (ROPA-10, ม.39(7)) */
+        get: operations["ropaListActivityRejections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/activities/{id}/controls": {
         parameters: {
             query?: never;
@@ -3647,6 +3664,14 @@ export interface components {
             control_id: components["schemas"]["Uuid"];
             description?: string;
         };
+        ActivityRejection: {
+            id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            dsar_request_id: components["schemas"]["Uuid"];
+            reason_code: string;
+            /** Format: date-time */
+            rejected_at: string;
+        };
         DsarRequestType: {
             id: components["schemas"]["Uuid"];
             /** @enum {string} */
@@ -3701,6 +3726,11 @@ export interface components {
             to: components["schemas"]["DsarRequestStatus"];
             outcome?: components["schemas"]["DsarOutcome"];
             rejection_reason_code?: string;
+            /**
+             * @description RoPA processing activities this rejection concerns (DSAR-11, ม.39(7)) — logged against each one (ROPA-10) once the rejection is confirmed
+             * @default []
+             */
+            activity_ids: components["schemas"]["Uuid"][];
         };
         DsarTransitionResult: {
             request: components["schemas"]["DsarRequest"];
@@ -11187,6 +11217,36 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaListActivityRejections: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ActivityRejection"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     ropaListActivityControls: {

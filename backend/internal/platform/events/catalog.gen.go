@@ -29,7 +29,7 @@ var Catalog = map[string]Spec{
 	"dpia.submitted":              {Producer: "risk / assess", Data: []string{"activity_id", "score", "assessment_id"}},
 	"dsar.completed":              {Producer: "dsar", Data: []string{"request_ref", "request_type", "due_at", "status"}},
 	"dsar.created":                {Producer: "dsar", Data: []string{"request_ref", "request_type", "due_at", "status"}},
-	"dsar.rejected":               {Producer: "dsar", Data: []string{"request_ref", "request_type", "due_at", "status"}},
+	"dsar.rejected":               {Producer: "dsar", Data: []string{"request_ref", "request_type", "due_at", "status", "reason_code", "activity_refs"}},
 	"dsar.sla_warning":            {Producer: "dsar", Data: []string{"request_ref", "request_type", "due_at", "status"}},
 	"dsar.subtask_assigned":       {Producer: "dsar", Data: []string{"request_ref", "request_type", "due_at", "status"}},
 	"dsar.verified":               {Producer: "dsar", Data: []string{"request_ref", "request_type", "due_at", "status"}},

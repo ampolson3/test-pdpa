@@ -7734,6 +7734,41 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/ropa/activities/{id}/rejections:
+    get:
+      operationId: ropaListActivityRejections
+      tags: [ropa]
+      summary: DSAR requests rejected against this activity, logged automatically from DSAR-11 (ROPA-10, ม.39(7))
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityRejection'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/ropa/activities/{id}/controls:
     get:
       operationId: ropaListActivityControls
@@ -10015,6 +10050,15 @@ components:
         activity_id: {$ref: '#/components/schemas/Uuid'}
         control_id: {$ref: '#/components/schemas/Uuid'}
         description: {type: string}
+    ActivityRejection:
+      type: object
+      required: [id, activity_id, dsar_request_id, reason_code, rejected_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        dsar_request_id: {$ref: '#/components/schemas/Uuid'}
+        reason_code: {type: string}
+        rejected_at: {type: string, format: date-time}
     DsarRequestType:
       type: object
       required: [id, code, name_th, sla_days]
@@ -10083,6 +10127,12 @@ components:
         to: {$ref: '#/components/schemas/DsarRequestStatus'}
         outcome: {$ref: '#/components/schemas/DsarOutcome'}
         rejection_reason_code: {type: string}
+        activity_ids:
+          type: array
+          description: RoPA processing activities this rejection concerns (DSAR-11, ม.39(7)) — logged against each one (ROPA-10) once the rejection is confirmed
+          items:
+            $ref: '#/components/schemas/Uuid'
+          default: []
     DsarTransitionResult:
       type: object
       required: [request]

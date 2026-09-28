@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
+import { formatDate, type Locale } from "@pdpa/i18n";
 import {
   createApiClient,
   useProcessingActivity,
@@ -14,6 +15,7 @@ import {
   useActivityTransfers,
   useSecurityControls,
   useActivityControls,
+  useActivityRejections,
   useActivityMutations,
   useLegalEntities,
   useOrgUnits,
@@ -42,6 +44,7 @@ function detail(e: unknown): string {
 
 export function ActivityDetailContent({ id }: { id: string }) {
   const t = useTranslations("activities");
+  const locale = useLocale() as Locale;
   const canRead = usePermission("ropa.activity.read");
   const canUpdate = usePermission("ropa.activity.update");
   const client = useMemo(() => createApiClient("/api/bff"), []);
@@ -53,6 +56,7 @@ export function ActivityDetailContent({ id }: { id: string }) {
   const recipients = useActivityRecipients(client, id);
   const transfers = useActivityTransfers(client, id);
   const controls = useActivityControls(client, id);
+  const rejections = useActivityRejections(client, id);
   const controlCatalog = useSecurityControls(client);
   const m = useActivityMutations(client, id);
 
@@ -375,6 +379,23 @@ export function ActivityDetailContent({ id }: { id: string }) {
               disabled={m.addControl.isPending || !controlDraft.control_id}
             >{t("add")}</Button>
           </div>
+        )}
+      </section>
+
+      <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4" data-testid="rejections-section">
+        <h2 className="font-semibold">{t("sections.rejections")}</h2>
+        <p className="text-xs text-slate-500">{t("rejectionsHint")}</p>
+        {(rejections.data?.length ?? 0) === 0 ? (
+          <p className="text-slate-500">{t("noRejections")}</p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {rejections.data!.map((r) => (
+              <li key={r.id} className="py-2">
+                <span className="text-slate-500">{formatDate(r.rejected_at, locale, { day: "numeric", month: "short", year: "numeric" })}</span>
+                {" — "}{r.reason_code}
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </main>

@@ -68,6 +68,7 @@ export {
   useActivityTransfers,
   useSecurityControls,
   useActivityControls,
+  useActivityRejections,
   useActivityMutations,
   type ProcessingActivity,
   type ProcessingActivityInput,
@@ -92,6 +93,7 @@ export {
   type SecurityControlCategory,
   type ActivityControl,
   type ActivityControlInput,
+  type ActivityRejection,
 } from "./activities";
 export {
   useNotices,

@@ -18,6 +18,7 @@ import (
 
 	breach "pdpa-platform/internal/breach/service"
 	notice "pdpa-platform/internal/notice/service"
+	orgservice "pdpa-platform/internal/org/service"
 	pdb "pdpa-platform/internal/pkg/db"
 	auditjobs "pdpa-platform/internal/platform/audit/jobs"
 	auditservice "pdpa-platform/internal/platform/audit/service"
@@ -30,6 +31,7 @@ import (
 	"pdpa-platform/internal/platform/jobs"
 	"pdpa-platform/internal/platform/notify"
 	"pdpa-platform/internal/platform/workflow"
+	ropaservice "pdpa-platform/internal/ropa/service"
 	"pdpa-platform/internal/wiring"
 )
 
@@ -94,6 +96,9 @@ func run() error {
 	river.AddWorker(workers, &importer.Applier{Service: importSvc})
 
 	notifySvc := &notify.Service{Keyring: &crypto.Keyring{KEK: kek}, River: inserter, Quiet: notify.DefaultQuietHours()}
+	orgSvc := &orgservice.Service{Audit: auditservice.New()}
+	ropaSvc := &ropaservice.Service{Audit: auditservice.New(), Org: orgSvc}
+	wiring.Events(subscribers, ropaSvc) // ROPA-10: logs DSAR rejections against their processing activities
 	river.AddWorker(workers, &workflow.Ticker{Service: wiring.Workflow(notifySvc, inserter, auditservice.New())})
 	breachSvc := wiring.Breach(notifySvc, fileStore(store, inserter), inserter, auditservice.New(), notifySvc.Keyring, nil) // BRE-09 recording is admin-only
 	river.AddWorker(workers, &breach.TimerWorker{Service: breachSvc})
