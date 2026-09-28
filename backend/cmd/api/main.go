@@ -65,8 +65,8 @@ import (
 	"pdpa-platform/internal/platform/publickeys"
 	versioninghttp "pdpa-platform/internal/platform/versioning/http"
 	workflowhttp "pdpa-platform/internal/platform/workflow/http"
-	ropahttp "pdpa-platform/internal/ropa/http"
 	riskservice "pdpa-platform/internal/risk/service"
+	ropahttp "pdpa-platform/internal/ropa/http"
 	ropaservice "pdpa-platform/internal/ropa/service"
 	"pdpa-platform/internal/wiring"
 )
@@ -232,7 +232,7 @@ func run() error {
 	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
 	formsSvc := wiring.Forms(notifySvc, auditSvc)
 	consentSvc := &consentservice.Service{Versioning: versioningSvc, Events: &events.Publisher{River: riverClient},
-		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc}
+		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc, Verification: iamSvc} // CON-11: guardian OTP (IAM-05)
 	consentSvc.RegisterVersioning()
 	ropaSvc.Consent = consentSvc // ROPA-03: evidence of explicit consent for sensitive-data purposes
 	dpoSvc.Forms = formsSvc      // DPO-09: the security-measures checklist
@@ -244,11 +244,11 @@ func run() error {
 	breachSvc := wiring.Breach(notifySvc, fileSvc, riverClient, auditSvc, keyring, docsSvc)
 	noticeSvc := &noticeservice.Service{Audit: auditSvc, Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc, Files: fileSvc, Notify: notifySvc, River: riverClient,
 		EnforceChecklist: os.Getenv("NOTICE_CHECKLIST_ENFORCE") != "false", EnforceTranslationSync: os.Getenv("NOTICE_TRANSLATION_SYNC_ENFORCE") != "false"}
-	docsSvc.SetValidate("notice", noticeSvc.CheckPublishable) // PNG-02: ม.23 checklist gates the notice's document publish
+	docsSvc.SetValidate("notice", noticeSvc.CheckPublishable)                                // PNG-02: ม.23 checklist gates the notice's document publish
 	fileSvc.EntityPermissions[noticeservice.IndirectCollectionType] = "notice.indirect.read" // PNG-04 notice evidence
-	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                // BRE-12 evidence
-	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read" // BRE-10 recipient lists
-	fileSvc.EntityPermissions[breach.PDPCEntityType] = "breach.notification.read"          // BRE-09 filing evidence
+	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                  // BRE-12 evidence
+	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read"   // BRE-10 recipient lists
+	fileSvc.EntityPermissions[breach.PDPCEntityType] = "breach.notification.read"            // BRE-09 filing evidence
 	dsarSvc := &dsarservice.Service{Audit: auditSvc, Org: orgSvc, Docs: docsSvc, Ropa: ropaSvc, Keyring: keyring,
 		Events: &events.Publisher{River: riverClient}, Notify: notifySvc, River: riverClient}
 	// DSAR-17: comments, attachments and an activity feed (PLT-07) on the request itself, so its history is

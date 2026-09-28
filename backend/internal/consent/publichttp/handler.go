@@ -130,6 +130,12 @@ func (h *Strict) ConsentSubmitPublicConsent(ctx context.Context, req ConsentSubm
 	if b.Language != nil {
 		sub.Language = string(*b.Language)
 	}
+	if b.Subject.IsMinor != nil {
+		sub.IsMinor = *b.Subject.IsMinor
+	}
+	if b.Subject.Guardian != nil {
+		sub.Guardian = &consent.Guardian{Identifiers: consenthttp.Identifiers(b.Subject.Guardian.Identifiers), Relationship: string(b.Subject.Guardian.Relationship)}
+	}
 	if ip, ok := clientip.From(ctx); ok {
 		sub.IP = &ip
 	}
@@ -146,4 +152,16 @@ func (h *Strict) ConsentSubmitPublicConsent(ctx context.Context, req ConsentSubm
 		return nil, err
 	}
 	return ConsentSubmitPublicConsent201JSONResponse(w), nil
+}
+
+func (h *Strict) ConsentVerifyGuardianApproval(ctx context.Context, req ConsentVerifyGuardianApprovalRequestObject) (ConsentVerifyGuardianApprovalResponseObject, error) {
+	if _, err := collectionPoint(ctx); err != nil {
+		return nil, err
+	}
+	b := req.Body
+	confirmed, err := h.svc.ConfirmGuardianApproval(ctx, req.Id, b.VerificationId, b.Code)
+	if err != nil {
+		return nil, consenthttp.ToProblem(err)
+	}
+	return ConsentVerifyGuardianApproval200JSONResponse{Status: Approved, ConfirmedPurposes: confirmed}, nil
 }

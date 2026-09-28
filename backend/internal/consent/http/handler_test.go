@@ -20,6 +20,7 @@ import (
 	consenthttp "pdpa-platform/internal/consent/http"
 	consentpublichttp "pdpa-platform/internal/consent/publichttp"
 	consent "pdpa-platform/internal/consent/service"
+	iamservice "pdpa-platform/internal/iam/service"
 	"pdpa-platform/internal/pkg/authz"
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/idempotency"
@@ -45,6 +46,8 @@ func TestConsentEndpoints_Contract(t *testing.T) {
 	}
 	t.Cleanup(func() { rdb.Close() })
 	f := consenttest.Setup(t)
+	guardianNotifier := &fakeIamNotifier{}
+	f.Svc.Verification = &iamservice.Service{Keyring: f.Svc.Keyring, Notify: guardianNotifier} // CON-11: guardian OTP (IAM-05)
 
 	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
 	if err != nil {
@@ -303,4 +306,69 @@ func TestConsentEndpoints_Contract(t *testing.T) {
 	if res := do("POST", "/admin/v1/consent/subjects/"+first.body["subject_ref"].(string)+"/verify", &alice, nil, nil); res.code != 200 || res.body["ok"] != true {
 		t.Errorf("verify: %d %v", res.code, res.body)
 	}
+
+	// ---- CON-11: guardian consent (ม.20) ----
+	minorContent := consenttest.Content("MKT-MINOR", "ยินยอมรับการตลาด")
+	minAge := 13
+	minorContent.MinAge = &minAge
+	minorPurpose := f.LivePurpose(t, "MKT-MINOR", minorContent)
+	minorCP := f.LiveCP(t, "MINOR-SIGNUP", consent.CPPurposeInput{PurposeID: minorPurpose.ID})
+	minorSubmit := map[string]any{
+		"subject": map[string]any{
+			"identifiers": []map[string]string{{"type": "email", "value": "minor@example.com"}},
+			"is_minor":    true,
+			"guardian": map[string]any{
+				"identifiers":  []map[string]string{{"type": "email", "value": "parent@example.com"}},
+				"relationship": "parent",
+			},
+		},
+		"decisions": []map[string]any{{"purpose_code": "MKT-MINOR", "purpose_version_no": 1, "decision": "CONSENTED"}},
+	}
+	minorKeyHdr := map[string]string{"X-Public-Key": minorCP.PublicKey, "Idempotency-Key": uuid.NewString()}
+	minorRes := do("POST", "/public/v1/consents", nil, minorSubmit, minorKeyHdr)
+	if minorRes.code != 201 {
+		t.Fatalf("guardian submission: %d %v", minorRes.code, minorRes.body)
+	}
+	txs, _ := minorRes.body["transactions"].([]any)
+	if len(txs) != 1 || txs[0].(map[string]any)["status"] != "PENDING" {
+		t.Fatalf("expected a PENDING transaction: %v", txs)
+	}
+	gas, _ := minorRes.body["guardian_approvals"].([]any)
+	if len(gas) != 1 {
+		t.Fatalf("expected one guardian_approvals entry: %v", minorRes.body)
+	}
+	ga := gas[0].(map[string]any)
+	code := guardianNotifier.lastCode()
+	if code == "" {
+		t.Fatal("expected an OTP to have been sent to the guardian")
+	}
+	verifyPath := "/public/v1/consents/guardian-approvals/" + ga["id"].(string) + "/verify"
+	if res := do("POST", verifyPath, nil, map[string]any{"verification_id": ga["verification_id"], "code": "000000"}, minorKeyHdr); res.code == 200 {
+		t.Errorf("wrong code should not confirm: %d %v", res.code, res.body)
+	}
+	verify := do("POST", verifyPath, nil, map[string]any{"verification_id": ga["verification_id"], "code": code}, map[string]string{"X-Public-Key": minorCP.PublicKey, "Idempotency-Key": uuid.NewString()})
+	if verify.code != 200 || verify.body["status"] != "approved" {
+		t.Fatalf("guardian verify: %d %v", verify.code, verify.body)
+	}
+	confirmed, _ := verify.body["confirmed_purposes"].([]any)
+	if len(confirmed) != 1 || confirmed[0] != "MKT-MINOR" {
+		t.Errorf("confirmed_purposes = %v, want [MKT-MINOR]", confirmed)
+	}
+}
+
+// fakeIamNotifier captures the OTP a StartVerification call would have sent (PLT-04), so the contract test can
+// read it without a real SMTP/SMS sender.
+type fakeIamNotifier struct{ sent []iamservice.NotifyRequest }
+
+func (f *fakeIamNotifier) Send(ctx context.Context, req iamservice.NotifyRequest) (uuid.UUID, error) {
+	f.sent = append(f.sent, req)
+	return uuid.New(), nil
+}
+
+func (f *fakeIamNotifier) lastCode() string {
+	if len(f.sent) == 0 {
+		return ""
+	}
+	code, _ := f.sent[len(f.sent)-1].Vars["code"].(string)
+	return code
 }

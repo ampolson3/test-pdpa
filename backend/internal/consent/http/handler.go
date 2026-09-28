@@ -359,7 +359,15 @@ func ResultMap(r consent.Receipt) map[string]any {
 	for _, t := range r.Transactions {
 		txs = append(txs, map[string]any{"id": t.ID, "purpose_code": t.PurposeCode, "transaction_type": t.Type, "status": t.Status})
 	}
-	return map[string]any{"receipt_no": r.No, "subject_ref": r.SubjectID, "transactions": txs}
+	out := map[string]any{"receipt_no": r.No, "subject_ref": r.SubjectID, "transactions": txs}
+	if len(r.GuardianApprovals) > 0 {
+		gas := make([]map[string]any, 0, len(r.GuardianApprovals))
+		for _, g := range r.GuardianApprovals {
+			gas = append(gas, map[string]any{"id": g.ID, "verification_id": g.VerificationID, "channel": g.Channel})
+		}
+		out["guardian_approvals"] = gas
+	}
+	return out
 }
 
 func text(t consent.Text) map[string]any {

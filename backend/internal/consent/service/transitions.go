@@ -13,6 +13,11 @@ const (
 	TxWithdrawn          = "WITHDRAWN"
 	TxExtended           = "EXTENDED"
 	TxChangedPreferences = "CHANGED_PREFERENCES"
+	// TxPending/TxConfirmed are CON-11's guardian gate (ม.20): a minor's CONSENTED decision on an age-gated
+	// purpose records PENDING instead of taking effect, and only becomes CONFIRMED once the guardian verifies
+	// their own OTP (IAM-05) — see ConfirmGuardianApproval in guardian.go.
+	TxPending   = "PENDING"
+	TxConfirmed = "CONFIRMED"
 )
 
 // allowed is ST-01#1: from → to. Initial states are reached from "" (no status yet).
@@ -29,19 +34,28 @@ var allowed = map[[2]string]bool{
 // NOT_CONSENTED transition out of ACTIVE, and an unverified web form must not withdraw someone's consent —
 // withdrawal is its own WITHDRAWN decision (decisions.md Q-21). Confirming an ACTIVE consent (same or newer
 // version) renews it (EXTENDED), or records the new preferences. Withdrawing what isn't given is
-// ErrInvalidTransition.
-func Decide(current, decision string, preferencesChanged bool) (txType, status string, err error) {
+// ErrInvalidTransition. guardianRequired is CON-11 (ม.20): a *brand-new* subject's first CONSENTED decision on
+// a guardian-gated purpose records PENDING instead of taking effect immediately (ST-01's documented "" ->
+// PENDING initial edge) — ConfirmGuardianApproval moves it to ACTIVE once the guardian verifies. Once a
+// subject has any prior status (even NOT_GIVEN/WITHDRAWN/EXPIRED) a later CONSENTED goes straight to ACTIVE,
+// same as an ungated purpose: `docs/states/state-machines.yaml#ST-01` declares no edge back into PENDING from
+// those states, only PENDING <-> ACTIVE and PENDING -> NOT_GIVEN.
+func Decide(current, decision string, preferencesChanged, guardianRequired bool) (txType, status string, err error) {
 	switch decision {
 	case TxConsented:
 		switch current {
 		case "", StatusNotGiven, StatusWithdrawn, StatusExpired:
-			txType, status = TxConsented, StatusActive
+			if guardianRequired && current == "" {
+				txType, status = TxPending, StatusPending
+			} else {
+				txType, status = TxConsented, StatusActive
+			}
 		case StatusActive:
 			txType, status = TxExtended, StatusActive
 			if preferencesChanged {
 				txType = TxChangedPreferences
 			}
-		default: // PENDING waits for its confirmation flow (double opt-in / re-consent), not built yet
+		default: // PENDING waits for its confirmation flow (double opt-in / guardian), not built for double opt-in yet
 			return "", "", ErrInvalidTransition
 		}
 	case TxNotConsented:
@@ -72,7 +86,7 @@ func Decide(current, decision string, preferencesChanged bool) (txType, status s
 // eventFor is the domain event a transaction publishes (docs/architecture/events.yaml).
 func eventFor(txType string) string {
 	switch txType {
-	case TxConsented, TxExtended:
+	case TxConsented, TxExtended, TxConfirmed:
 		return "consent.granted"
 	case TxNotConsented:
 		return "consent.denied"
@@ -83,3 +97,7 @@ func eventFor(txType string) string {
 	}
 	return ""
 }
+
+// ConfirmPending is CON-11's other half: once the guardian verifies, every purpose PENDING for the minor
+// moves to ACTIVE (ST-01's existing PENDING -> ACTIVE edge).
+func ConfirmPending() (txType, status string) { return TxConfirmed, StatusActive }

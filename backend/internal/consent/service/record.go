@@ -65,6 +65,26 @@ type Submission struct {
 	// Public submissions (a web form) decide every purpose of the form and can't withdraw — that needs the
 	// verified preference centre (CON-18/19).
 	Public bool
+	// IsMinor + Guardian are CON-11 (ม.20), self-declared on the form: when true, a fresh CONSENTED decision
+	// on a purpose with MinAge set records PENDING instead of ACTIVE until the guardian confirms their own
+	// OTP (IAM-05) — see ConfirmGuardianApproval. The system trusts the declaration; verifying age itself is
+	// DSAR-06's identity-verification job, not built here.
+	IsMinor  bool
+	Guardian *Guardian
+}
+
+// Guardian is who must confirm a minor's guardian-gated consent (ม.20).
+type Guardian struct {
+	Identifiers  []Identifier
+	Relationship string // parent | legal_guardian | curator | custodian
+}
+
+// GuardianApprovalRef is one guardian-approval request a submission created — the caller (frontend) carries
+// both ids forward to ConfirmGuardianApproval once the guardian has the OTP.
+type GuardianApprovalRef struct {
+	ID             uuid.UUID
+	VerificationID uuid.UUID
+	Channel        string // sms | email
 }
 
 // RecordedTransaction is one transaction written by Record.
@@ -77,11 +97,12 @@ type RecordedTransaction struct {
 
 // Receipt is what Record returns.
 type Receipt struct {
-	ID           uuid.UUID
-	No           string
-	SubjectID    uuid.UUID
-	OccurredAt   time.Time
-	Transactions []RecordedTransaction
+	ID                uuid.UUID
+	No                string
+	SubjectID         uuid.UUID
+	OccurredAt        time.Time
+	Transactions      []RecordedTransaction
+	GuardianApprovals []GuardianApprovalRef
 }
 
 // DecisionError names the purposes a submission got wrong (codes the caller maps to 422 field errors).
@@ -170,7 +191,8 @@ func (s *Service) Record(ctx context.Context, sub Submission) (Receipt, error) {
 			current, curPrefs, curExpires = cur.Status, cur.Preferences, cur.ExpiresAt
 		}
 		prefs := canonical(d.in.Preferences)
-		txType, status, err := Decide(current, d.in.Decision, current == StatusActive && d.in.Decision == TxConsented && !sameJSON(curPrefs, prefs))
+		guardianRequired := sub.IsMinor && d.purpose.MinAge != nil
+		txType, status, err := Decide(current, d.in.Decision, current == StatusActive && d.in.Decision == TxConsented && !sameJSON(curPrefs, prefs), guardianRequired)
 		if err != nil {
 			return Receipt{}, err
 		}
@@ -229,6 +251,14 @@ func (s *Service) Record(ctx context.Context, sub Submission) (Receipt, error) {
 			LastTransactionID: w.txID, Preferences: w.prefs, ExpiresAt: w.expiresAt}); err != nil {
 			return Receipt{}, err
 		}
+	}
+	anyPending := slices.ContainsFunc(writes, func(w statusWrite) bool { return w.status == StatusPending })
+	if anyPending {
+		ref, err := s.requestGuardianApproval(ctx, subjectID, sub, rid)
+		if err != nil {
+			return Receipt{}, err
+		}
+		out.GuardianApprovals = append(out.GuardianApprovals, ref)
 	}
 	if err := q.TouchSubject(ctx, subjectID); err != nil {
 		return Receipt{}, err
@@ -302,6 +332,8 @@ func (s *Service) checkDecisions(ctx context.Context, cp CollectionPoint, sub Su
 			errs = append(errs, FieldError{d.PurposeCode, "invalid"})
 		case d.ReasonCode != "" && (d.Decision == TxConsented || !slices.Contains(WithdrawalReasons, d.ReasonCode)):
 			errs = append(errs, FieldError{d.PurposeCode, "invalid_reason"})
+		case sub.IsMinor && p.MinAge != nil && d.Decision == TxConsented && (sub.Guardian == nil || len(sub.Guardian.Identifiers) == 0 || sub.Guardian.Relationship == ""):
+			errs = append(errs, FieldError{d.PurposeCode, "guardian_required"})
 		default:
 			out = append(out, checkedDecision{in: d, purpose: p})
 		}

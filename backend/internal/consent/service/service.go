@@ -12,8 +12,10 @@ import (
 
 	"github.com/google/uuid"
 
+	iamservice "pdpa-platform/internal/iam/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
+	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/crypto"
 	"pdpa-platform/internal/platform/events"
@@ -62,7 +64,10 @@ type Service struct {
 	Keyring    *crypto.Keyring
 	Audit      *audit.Service
 	Org        Org
-	Now        func() time.Time
+	// Verification is IAM-05 (rule 9): the guardian's own OTP before a guardian-gated consent (CON-11, ม.20)
+	// takes effect. Nil where guardian consent isn't exercised (e.g. tests that don't need it).
+	Verification *iamservice.Service
+	Now          func() time.Time
 }
 
 func (s *Service) now() time.Time {
@@ -79,7 +84,12 @@ func (s *Service) audit(ctx context.Context, action, entityType string, id uuid.
 	g, _ := authz.FromContext(ctx)
 	tenant, err := uuid.Parse(g.TenantID)
 	if err != nil {
-		return ErrForbidden
+		// No authz.Grants on this request — the /public/v1 routes (publickeys.Middleware) only set an
+		// httpx.Principal, not Grants, since there is no user to authorize. Fall back to the tenant the Tx
+		// middleware already set transaction-locally (same technique IAM-05's own verificationTenantID uses).
+		if terr := pdb.MustTxFromContext(ctx).QueryRow(ctx, `SELECT current_setting('app.tenant_id')`).Scan(&tenant); terr != nil {
+			return ErrForbidden
+		}
 	}
 	e := audit.Entry{TenantID: tenant, ActorType: "system", Action: action, EntityType: entityType, EntityID: &id, Before: before, After: after}
 	if u, err := uuid.Parse(g.UserID); err == nil {

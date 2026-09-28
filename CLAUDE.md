@@ -1030,6 +1030,66 @@ audit row, two-tenant isolation. Not done: rate-limiting *starting* a new verifi
 on *verifying* one is in decisions.md; the `internal/pkg/ratelimit` package exists for this but has no natural
 key to rate-limit against yet without a real public endpoint), and the frontend flow itself.
 
+### CON-11 ความยินยอมผู้เยาว์และผู้ปกครอง (`docs/modules/CON.md#con-11`) — done (portal form/guardian-confirm page not built)
+`internal/consent/service/guardian.go` (+ `store/guardian.sql.go`, no new migration): the schema already anticipated
+this feature — `consent.guardian_approvals`, `consent.data_subjects.is_minor`/`guardian_subject_id`/
+`legal_capacity`, and `consent.purposes.min_age` were all already in the baseline migrations, and ST-01 already
+declared a PENDING status with PENDING/CONFIRMED/CANCELLED transaction types (the SA's own `ConsentResult.
+transactions[].transaction_type` wire enum already listed CONFIRMED/CANCELLED before this feature touched it).
+`Decide()` (`transitions.go`) gates only a purpose's *first-ever* decision for a subject: `guardianRequired &&
+current == ""` routes to `TxPending`/`StatusPending` instead of `TxConsented`/`StatusActive` — deliberately
+narrower than "every guardian-gated decision," because `docs/states/state-machines.yaml#ST-01` declares PENDING
+reachable only from the empty initial state, with no edge back into PENDING from NOT_GIVEN/WITHDRAWN/EXPIRED;
+per CLAUDE.md's own source-priority order (migrations > docs/states > ...), a returning already-decided minor's
+fresh CONSENTED decision on a guardian-gated purpose goes straight to ACTIVE like any other purpose, rather than
+inventing a transition the state machine doesn't declare.
+
+`Record()` computes `guardianRequired := sub.IsMinor && d.purpose.MinAge != nil` per decision; a CONSENTED
+decision on a guardian-gated purpose without `Submission.Guardian` (identifiers + relationship) is refused as a
+`DecisionError{Fields: [{Code: "guardian_required"}]}` before anything is written. When any status lands PENDING,
+`requestGuardianApproval` resolves/creates the guardian's own data-subject record (reusing `resolveSubject`,
+the same blind-index lookup every other identifier match uses), inserts one `consent.guardian_approvals` row and
+starts the guardian's own OTP through `Service.Verification` — a direct `*iamservice.Service` field, not an
+interface-indirection adapter: unlike IAM-05's own `Auditor`/`Notifier` workaround (needed there because
+`platform/audit/service` and `platform/notify` already import `iam/service`, so `iam/service` importing either
+back would cycle), `iam/service` does not import `consent/service`, so there is no cycle to route around (rule 9
+is still satisfied — `consent` only calls `iam/service`'s own exported `Service`).
+
+`ConfirmGuardianApproval` is the acceptance criterion itself ("มีผลเมื่อผู้ปกครองยืนยันแล้วเท่านั้น"): verifies the
+guardian's OTP via `Verification.VerifyOTP`, then — guarded by `UPDATE ... WHERE status = 'requested'` so a
+redelivered/retried confirm is a harmless no-op (`ErrInvalidTransition`), not a duplicate activation — sweeps
+*every* purpose still PENDING for that minor subject (`ListPendingStatusForSubject ... FOR UPDATE`), not just the
+one that first triggered the request: a single public-form submission can guardian-gate several purposes at
+once, and the guardian's one OTP should unlock all of them together. Each confirmed purpose gets a CONFIRMED
+transaction, an ACTIVE status, and its own `consent.granted` event; the whole confirm is one audit entry
+(`consent.guardian_approval.approve`). `mapVerificationErr` translates IAM-05's own sentinel errors
+(`ErrVerificationNotFound/Decided/Expired/ErrTooManyAttempts/ErrCodeMismatch`) into consent's own sentinels so
+the HTTP layer never needs iam-specific mapping (rule 9).
+
+API: `subject.is_minor`/`subject.guardian` added to `ConsentSubmitPublicConsent`'s body,
+`guardian_approvals: [{id, verification_id, channel}]` added to `ConsentResult`, and a new public endpoint
+`POST /public/v1/consents/guardian-approvals/{id}/verify` (`x-permission: public`, `Idempotency-Key`, body
+`{verification_id, code}`, 200 `{status: "approved", confirmed_purposes: [...]}`).
+
+Real bug found and fixed while writing the HTTP contract test: `Service.audit()` resolved the tenant only from
+`authz.FromContext(ctx).TenantID` — fine on admin routes (AuthZ middleware sets Grants) but always empty on
+`/public/v1` routes, since `publickeys.Middleware` only sets an `httpx.Principal`, never `authz.Grants` (there is
+no user to authorize). `ConfirmGuardianApproval`'s own audit call therefore always hit `ErrForbidden` → 403
+`authz.denied`, breaking guardian verification on every real request. Fixed by falling back to
+`SELECT current_setting('app.tenant_id')` on the request's own transaction when no Grants are present — the same
+technique IAM-05's own `verificationTenantID` already uses — so every module's `audit()`-style helper on a public
+route should use this fallback, not just consent's.
+
+Tests: unit (`transitions_test.go` — the `current == ""` gate and its three "already decided" exceptions;
+`guardian_test.go` — the acceptance criterion end to end with a fake IAM notifier capturing the OTP, wrong code
+leaves the subject PENDING, missing guardian info refused pre-write), HTTP contract (`handler_test.go` — the same
+flow through the real validator/AuthZ/public-key/Idempotency/Tx chain, wrong code then correct code against the
+public verify endpoint). Not done: the portal-side UI (`docs/modules/CON.md#con-11`'s own frontend note —
+"ขั้นตอนผู้เยาว์ในฟอร์ม + หน้าผู้ปกครองยืนยัน", a minor-declaration step on the public consent form plus a
+guardian-confirmation page) — the acceptance criterion is fully exercised and proven by the backend contract test
+without one; add it once a screen actually needs it, the same "no consumer yet" deferral IAM-05's own OTP service
+used for its portal piece.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.
