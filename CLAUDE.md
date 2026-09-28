@@ -1090,6 +1090,72 @@ guardian-confirmation page) — the acceptance criterion is fully exercised and 
 without one; add it once a screen actually needs it, the same "no consumer yet" deferral IAM-05's own OTP service
 used for its portal piece.
 
+### DPIA-01 แบบคัดกรองความจำเป็นในการทำ DPIA · DPIA-02 เกณฑ์คะแนนและเงื่อนไขบังคับทำ (`docs/modules/DPIA.md#dpia-01`, `#dpia-02`) — done
+`internal/dpia` — the first module on the `assess` schema (`assessment.dpia.*`/`assessment.template.*`,
+already seeded in the baseline permission migration). `assess.templates`, `assess.screening_rules` and
+`assess.assessments` were all already fully specified in the baseline migrations, and `internal/wiring.Forms`
+had already reserved a PLT-06 form type, `"assessment"` (`assessment.template.*` to design/publish,
+`assessment.dpia.create` to respond), unused until now — no schema or wiring change needed beyond seed data.
+Migration 00047 seeds a global (`tenant_id NULL`) screening form + `assess.templates` row, code
+`dpia_screening`: 6 yes/no questions paraphrasing TDPG 4.0-P's high-risk factors (sensitive data ม.26,
+large-scale, systematic monitoring, automated decision-making, new tech/AI, vulnerable groups) — flagged for
+legal review the same way ORG-07/ROPA-09/PNG-03 already do (`docs/decisions.md` Q-26).
+
+`Service.Screen` answers the form against `forms.Evaluate` directly (the pure function, not
+`forms.Service.Record`): `assess.assessments` has no `form_submission_id` column to point at a
+`platform.form_submissions` row the way `dpo.security_assessments` does, so persisting an unlinked submission
+would be an orphan row nothing references. Instead each risk-factor answer is written to `assess.answers`
+(one row per question) — the schema's own intended place for a screening's answers — via `forms.Contributions`
+for the factor breakdown. The result is computed in Go, not baked into the form's own scoring bands: `required`
+when the factor count (or, if set, the raw score) meets the tenant's own `assess.screening_rules.min_factors`/
+`min_score` (default `min_factors=2`, a config tunable per Q-26, not persisted until first saved — the same
+"defaults until first save" pattern ORG-20's `org_settings` uses); `recommended` when at least one factor is
+flagged but short of that; `not_required` otherwise. `assess.assessments.status` lands `not_required` or
+`in_progress` directly (ST-05's own `screening → not_required | in_progress` edges — already declared, no new
+state-machine entry needed) — the transient `screening` status is never separately persisted, since the whole
+call is atomic and no partial state ever exists in the DB. Re-screening the same activity opens a new round
+(`round_no`/`previous_id`, following `assess.assessments`' own versioning columns) rather than editing the
+prior one, so `SaveRules`'s effect (DPIA-02's acceptance criterion) is naturally scoped to the next round only.
+
+`SaveRules` is append-only history (`DeactivateScreeningRules` then a fresh insert), not an in-place edit —
+the criteria a past round was judged against stays on record. Gated by `assessment.template.update` (DPO-only
+per the seeded RBAC — `assessment.dpia.update` is also held by OWNER, which the module doc's own actor line
+restricts to DPO for DPIA-02 specifically), matching DPIA-02's own actor line; `Screen` itself is gated by
+`assessment.dpia.create`, which only DPO holds in the seeded grants — OWNER (the module doc's other actor,
+who "answers" the screening per BP-08) only has `assessment.dpia.read`/`update`, not `create`, so for this
+pass DPO runs the whole screening in one call, the same "build the minimal slice this feature needs" move
+DPO-09's own `Assess` made (bypassing PLT-06's draft/section-assignment flow for a one-shot record); a
+delegated OWNER-fills-the-form flow needs that Assign/CompleteSection machinery layered on top later.
+
+Real migration bug found and fixed while seeding: the natural `WITH def AS (INSERT INTO form_definitions
+...), ver AS (INSERT INTO form_versions ... RETURNING id, form_id) UPDATE form_definitions SET
+current_version_id = ver.id FROM ver WHERE form_definitions.id = ver.form_id` pattern left `current_version_id`
+NULL every time (0 rows affected, no error) — confirmed by hand outside the migration too. All the
+sub-statements in one `WITH` share the query's own snapshot, so the primary `UPDATE`'s scan of
+`form_definitions` (the same table a sibling CTE just inserted into) never sees that new row. Fixed by using
+fixed literal ids and three separate top-level statements instead of one combined `WITH`/CTE chain — this
+pitfall applies to any future migration that inserts into a table and then needs to update a self-reference on
+that same freshly-inserted row within one statement.
+
+Real regression found and fixed in an unrelated package: `internal/platform/forms`' own
+`TestTwoTenantIsolation`/`TestPermissionsByFormType` asserted `len(ListForms(...)) == 0` for a tenant that had
+created nothing — true only because no global (`tenant_id NULL`) form existed anywhere in the DB before this
+migration. Migration 00047's seeded `dpia_screening` form is now always visible to every tenant by design
+(rule 1's RLS: `tenant_id IS NULL OR tenant_id = current tenant`), so that assertion legitimately breaks the
+instant any feature seeds a global form. Fixed by asserting the *other* tenant's specific form id is absent
+from the list instead of asserting the list is empty — the correct two-tenant-isolation check regardless of
+how many global forms exist.
+
+API: `GET`/`PUT /admin/v1/dpia/screening-rules`, `POST /admin/v1/dpia/activities/{id}/screen`,
+`GET /admin/v1/dpia/assessments` (+ `/{id}`) — cursor pagination, same shape as ROPA-04/PLT-16's own lists.
+UI: a "DPIA screening" section on `/ropa/activities/{id}` (6 checkboxes + past rounds for that activity) and
+`/settings/dpia` (thresholds). Tests: unit (not_required/recommended/required boundary cases against the
+default threshold, changing the threshold changes the *next* round only, unknown-activity FK check, two-tenant
+isolation), HTTP contract (401/403/422/201/200/404). Not done: everything past screening (DPIA-03 template
+library beyond this one seeded form, DPIA-04 RoPA prefill into a full assessment, DPIA-05 onward — necessity/
+proportionality, risk scoring, DPO opinion, approval) — sibling features layered on the same `assess.assessments`
+row, not built here, the same layering DSAR-13 used for DSAR-01/02/06/07/08/11.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

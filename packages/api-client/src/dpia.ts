@@ -1,0 +1,76 @@
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ApiClient, components } from "./client";
+
+export type DpiaScreeningRule = components["schemas"]["DpiaScreeningRule"];
+export type DpiaAssessment = components["schemas"]["DpiaAssessment"];
+
+const rulesKey = ["dpia", "screening-rules"] as const;
+const assessmentsKey = ["dpia", "assessments"] as const;
+
+/** GET /admin/v1/dpia/screening-rules (DPIA-02) — the tenant's own thresholds, or the default. */
+export function useScreeningRules(client: ApiClient) {
+  return useQuery({
+    queryKey: rulesKey,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/screening-rules", {});
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useSaveScreeningRules(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { min_factors: number; min_score?: number | null }) => {
+      const { data, error } = await client.PUT("/admin/v1/dpia/screening-rules", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: rulesKey }),
+  });
+}
+
+/** POST /admin/v1/dpia/activities/{id}/screen (DPIA-01) — answer the screening form for a RoPA activity. */
+export function useScreenActivity(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { activityId: string; answers: Record<string, unknown> }) => {
+      const { data, error } = await client.POST("/admin/v1/dpia/activities/{id}/screen", {
+        params: { path: { id: v.activityId } },
+        body: { answers: v.answers },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: assessmentsKey }),
+  });
+}
+
+/** GET /admin/v1/dpia/assessments, newest first — optionally one RoPA activity's own rounds. */
+export function useDpiaAssessments(client: ApiClient, filter: { activity_id?: string } = {}) {
+  return useInfiniteQuery({
+    queryKey: [...assessmentsKey, filter],
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const { data, error } = await client.GET("/admin/v1/dpia/assessments", {
+        params: { query: { activity_id: filter.activity_id, cursor: pageParam, limit: 50 } },
+      });
+      if (error) throw error;
+      return data;
+    },
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
+  });
+}
+
+export function useDpiaAssessment(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...assessmentsKey, id ?? ""],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/assessments/{id}", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}

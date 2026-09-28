@@ -409,8 +409,10 @@ func TestTwoTenantIsolation(t *testing.T) {
 		if _, err := f.svc.Publish(ctx, form.ID, 1); !errors.Is(err, forms.ErrNotFound) {
 			t.Errorf("publish: %v", err)
 		}
+		// Tenant A's own form never appears in tenant B's list — a global (tenant_id NULL) form, such as
+		// DPIA-01's seeded "dpia_screening" screening template (migration 00047), legitimately does.
 		list, err := f.svc.ListForms(ctx, "")
-		if err != nil || len(list) != 0 {
+		if err != nil || slices.ContainsFunc(list, func(lf forms.Form) bool { return lf.ID == form.ID }) {
 			t.Errorf("list: %+v %v", list, err)
 		}
 		// Same code in another tenant is fine.

@@ -630,6 +630,41 @@
       "tasks": "Remediation tasks opened automatically"
     }
   },
+  "dpia": {
+    "forbidden": "You don't have permission to view DPIA screening",
+    "sections": {
+      "screening": "DPIA screening"
+    },
+    "screenButton": "Screen for DPIA",
+    "loading": "Loading…",
+    "loadError": "Failed to load. Please try again.",
+    "empty": "No DPIA screening has been run for this activity yet",
+    "roundLabel": "Round {round}",
+    "results": {
+      "required": "DPIA required",
+      "recommended": "DPIA recommended",
+      "not_required": "DPIA not required"
+    },
+    "factors": {
+      "sensitive_data": "Processes sensitive personal data (section 26) at scale",
+      "large_scale": "Processes personal data at large scale",
+      "monitoring": "Involves systematic monitoring or observation of data subjects",
+      "automated_decision": "Involves automated decision-making with significant effects on data subjects",
+      "new_tech": "Uses new technology or AI not previously risk-assessed",
+      "vulnerable_groups": "Involves vulnerable groups, e.g. children or employees"
+    },
+    "submit": "Submit answers and screen",
+    "submitError": "Screening failed: {detail}",
+    "settings": {
+      "title": "DPIA screening thresholds",
+      "intro": "The minimum number of high-risk factors that requires a DPIA (default 2 of 6) — the screening questions are a draft pending legal review (see docs/decisions.md Q-26)",
+      "minFactors": "Minimum factors",
+      "minScore": "Minimum score (optional)",
+      "save": "Save",
+      "saveError": "Save failed: {detail}",
+      "saved": "Saved — the next screening round will use this threshold"
+    }
+  },
   "assets": {
     "signInRequired": "Please sign in.",
     "forbidden": "You don't have permission to view the system/asset register.",

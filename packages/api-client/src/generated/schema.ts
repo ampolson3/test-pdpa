@@ -1551,6 +1551,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/v1/consents/guardian-approvals/{id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The guardian confirms their OTP (CON-11, ม.20) — every purpose still PENDING for the minor becomes ACTIVE
+         * @description The public key (X-Public-Key) of the original submission names the tenant. verification_id and code are the IAM-05 OTP started by consentSubmitPublicConsent's guardian_approvals entry.
+         */
+        post: operations["consentVerifyGuardianApproval"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/breach/incidents": {
         parameters: {
             query?: never;
@@ -2625,6 +2645,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpia/screening-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's DPIA-02 screening thresholds (defaults if none saved yet) */
+        get: operations["dpiaGetScreeningRules"];
+        /** Set the DPIA-02 thresholds a screening result is judged against (takes effect on the next screening round) */
+        put: operations["dpiaSaveScreeningRules"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpia/activities/{id}/screen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Answer the DPIA screening form for a RoPA processing activity (DPIA-01): the system computes required / recommended / not_required against the tenant's own thresholds (DPIA-02) */
+        post: operations["dpiaScreenActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpia/assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's DPIA screening rounds, newest first */
+        get: operations["dpiaListAssessments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpia/assessments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One DPIA screening round with its factor answers */
+        get: operations["dpiaGetAssessment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/notices/template-groups": {
         parameters: {
             query?: never;
@@ -3522,6 +3611,29 @@ export interface components {
             assessed_by?: components["schemas"]["Uuid"];
             assessed_at: components["schemas"]["Timestamp"];
             tasks?: components["schemas"]["DpoRemediationTask"][];
+        };
+        DpiaScreeningRule: {
+            min_factors: number;
+            min_score?: number | null;
+        };
+        DpiaAssessment: {
+            id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            round_no: number;
+            previous_id?: components["schemas"]["Uuid"];
+            title?: string;
+            /** @enum {string} */
+            status: "not_required" | "in_progress";
+            /** @enum {string} */
+            screening_result: "required" | "recommended" | "not_required";
+            screening_reason: string;
+            score: number;
+            factors: {
+                question: string;
+                answer: unknown;
+                points: number;
+            }[];
+            created_at: components["schemas"]["Timestamp"];
         };
         /** @enum {string} */
         ActivityRole: "controller" | "processor";
@@ -4753,6 +4865,13 @@ export interface components {
                  * @enum {string}
                  */
                 status: "ACTIVE" | "NOT_GIVEN" | "WITHDRAWN" | "EXPIRED" | "PENDING";
+            }[];
+            /** @description CON-11 (ม.20) — one entry when the submission started a guardian OTP; carry both ids forward to consentVerifyGuardianApproval. */
+            guardian_approvals?: {
+                id: components["schemas"]["Uuid"];
+                verification_id: components["schemas"]["Uuid"];
+                /** @enum {string} */
+                channel: "sms" | "email";
             }[];
         };
     };
@@ -8572,6 +8691,13 @@ export interface operations {
                 "application/json": {
                     subject: {
                         identifiers: components["schemas"]["SubjectIdentifier"][];
+                        /** @description Self-declared (ม.20, CON-11) — when true, a CONSENTED decision on a purpose with min_age set records PENDING until the guardian confirms their own OTP. */
+                        is_minor?: boolean;
+                        guardian?: {
+                            identifiers: components["schemas"]["SubjectIdentifier"][];
+                            /** @enum {string} */
+                            relationship: "parent" | "legal_guardian" | "curator" | "custodian";
+                        };
                     };
                     decisions: components["schemas"]["ConsentDecisionInput"][];
                     /** @enum {string} */
@@ -8587,6 +8713,51 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConsentResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    consentVerifyGuardianApproval: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                "X-Public-Key": string;
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    verification_id: components["schemas"]["Uuid"];
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "approved";
+                        confirmed_purposes: string[];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -11630,6 +11801,162 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DpoSecurityAssessment"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpiaGetScreeningRules: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaScreeningRule"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dpiaSaveScreeningRules: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    min_factors: number;
+                    min_score?: number | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaScreeningRule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpiaScreenActivity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    answers: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Screened */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaAssessment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpiaListAssessments: {
+        parameters: {
+            query?: {
+                activity_id?: components["schemas"]["Uuid"];
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpiaAssessment"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dpiaGetAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaAssessment"];
                 };
             };
             401: components["responses"]["Unauthorized"];

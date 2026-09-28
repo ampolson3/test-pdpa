@@ -262,6 +262,15 @@ export {
   type DpoRemediationTask,
 } from "./dpo";
 export {
+  useScreeningRules,
+  useSaveScreeningRules,
+  useScreenActivity,
+  useDpiaAssessments,
+  useDpiaAssessment,
+  type DpiaScreeningRule,
+  type DpiaAssessment,
+} from "./dpia";
+export {
   useDsarRequestTypes,
   useDsarRequests,
   useDsarRequest,

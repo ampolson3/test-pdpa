@@ -25,6 +25,8 @@ tags:
     description: Record of Processing Activities — the asset register so far (backend/internal/ropa)
   - name: dpo
     description: DPO appointment register (backend/internal/dpo)
+  - name: dpia
+    description: DPIA screening — whether a RoPA activity needs a full impact assessment (backend/internal/dpia)
   - name: platform
     description: Platform services — background jobs, files, notifications, ... (backend/internal/platform/<service>)
 paths:
@@ -8287,6 +8289,188 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dpia/screening-rules:
+    get:
+      operationId: dpiaGetScreeningRules
+      tags: [dpia]
+      summary: The tenant's DPIA-02 screening thresholds (defaults if none saved yet)
+      x-permission: assessment.template.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaScreeningRule'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      operationId: dpiaSaveScreeningRules
+      tags: [dpia]
+      summary: Set the DPIA-02 thresholds a screening result is judged against (takes effect on the next screening round)
+      x-permission: assessment.template.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [min_factors]
+              additionalProperties: false
+              properties:
+                min_factors:
+                  type: integer
+                  minimum: 1
+                  maximum: 6
+                min_score:
+                  type: [number, 'null']
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaScreeningRule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpia/activities/{id}/screen:
+    post:
+      operationId: dpiaScreenActivity
+      tags: [dpia]
+      summary: 'Answer the DPIA screening form for a RoPA processing activity (DPIA-01): the system computes required / recommended / not_required against the tenant''s own thresholds (DPIA-02)'
+      x-permission: assessment.dpia.create
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answers]
+              additionalProperties: false
+              properties:
+                answers:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Screened
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaAssessment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpia/assessments:
+    get:
+      operationId: dpiaListAssessments
+      tags: [dpia]
+      summary: The tenant's DPIA screening rounds, newest first
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: activity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpiaAssessment'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/dpia/assessments/{id}:
+    get:
+      operationId: dpiaGetAssessment
+      tags: [dpia]
+      summary: One DPIA screening round with its factor answers
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaAssessment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/notices/template-groups:
     get:
       operationId: noticeListTemplateGroups
@@ -9984,6 +10168,39 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DpoRemediationTask'
+    DpiaScreeningRule:
+      type: object
+      required: [min_factors]
+      properties:
+        min_factors: {type: integer}
+        min_score: {type: [number, 'null']}
+    DpiaAssessment:
+      type: object
+      required: [id, activity_id, round_no, status, screening_result, screening_reason, score, factors, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        round_no: {type: integer}
+        previous_id: {$ref: '#/components/schemas/Uuid'}
+        title: {type: string}
+        status:
+          type: string
+          enum: [not_required, in_progress]
+        screening_result:
+          type: string
+          enum: [required, recommended, not_required]
+        screening_reason: {type: string}
+        score: {type: number}
+        factors:
+          type: array
+          items:
+            type: object
+            required: [question, answer, points]
+            properties:
+              question: {type: string}
+              answer: {}
+              points: {type: number}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
     ActivityRole:
       type: string
       enum: [controller, processor]

@@ -26,6 +26,8 @@ import (
 	consenthttp "pdpa-platform/internal/consent/http"
 	consentpublichttp "pdpa-platform/internal/consent/publichttp"
 	consentservice "pdpa-platform/internal/consent/service"
+	dpiahttp "pdpa-platform/internal/dpia/http"
+	dpiaservice "pdpa-platform/internal/dpia/service"
 	dpohttp "pdpa-platform/internal/dpo/http"
 	dposervice "pdpa-platform/internal/dpo/service"
 	dsarhttp "pdpa-platform/internal/dsar/http"
@@ -234,8 +236,9 @@ func run() error {
 	consentSvc := &consentservice.Service{Versioning: versioningSvc, Events: &events.Publisher{River: riverClient},
 		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc, Verification: iamSvc} // CON-11: guardian OTP (IAM-05)
 	consentSvc.RegisterVersioning()
-	ropaSvc.Consent = consentSvc // ROPA-03: evidence of explicit consent for sensitive-data purposes
-	dpoSvc.Forms = formsSvc      // DPO-09: the security-measures checklist
+	ropaSvc.Consent = consentSvc                                                     // ROPA-03: evidence of explicit consent for sensitive-data purposes
+	dpoSvc.Forms = formsSvc                                                          // DPO-09: the security-measures checklist
+	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Ropa: ropaSvc, Audit: auditSvc} // DPIA-01/02: screening on the "assessment" form type
 	docsSvc := wiring.Docs(versioningSvc, fileSvc, riverClient, auditSvc, render.FromEnv())
 	docsSvc.RegisterVersioning()
 	for k, v := range docsSvc.FilePermissions() { // PLT-16 rendered PDF / Word files
@@ -342,6 +345,11 @@ func run() error {
 			[]dpohttp.StrictMiddlewareFunc{authz.StrictMiddleware[dpohttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			dpohttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		dpohttp.HandlerWithOptions(strictDpo, dpohttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictDpia := dpiahttp.NewStrictHandlerWithOptions(dpiahttp.NewStrict(dpiaSvc),
+			[]dpiahttp.StrictMiddlewareFunc{authz.StrictMiddleware[dpiahttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			dpiahttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		dpiahttp.HandlerWithOptions(strictDpia, dpiahttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictConsent := consenthttp.NewStrictHandlerWithOptions(consenthttp.NewStrict(consentSvc),
 			[]consenthttp.StrictMiddlewareFunc{authz.StrictMiddleware[consenthttp.StrictHandlerFunc](authzCache, requiredPermission)},

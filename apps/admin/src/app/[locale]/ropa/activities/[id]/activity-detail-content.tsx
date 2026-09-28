@@ -29,6 +29,7 @@ import {
   type ActivityRecipientRole,
   type ActivityTransferBasis,
 } from "@pdpa/api-client";
+import { DpiaScreeningSection } from "./dpia-screening-section";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
 const ROLES: ActivityRole[] = ["controller", "processor"];
@@ -398,6 +399,8 @@ export function ActivityDetailContent({ id }: { id: string }) {
           </ul>
         )}
       </section>
+
+      <DpiaScreeningSection client={client} activityId={id} />
     </main>
   );
 }
