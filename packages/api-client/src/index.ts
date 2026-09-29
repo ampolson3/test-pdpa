@@ -268,6 +268,7 @@ export {
   useDpiaAssessments,
   useDpiaAssessment,
   useDpiaAssessmentDescription,
+  useDpiaAssessmentDiff,
   useDpiaNecessity,
   useAssessNecessity,
   useDpiaTemplates,
@@ -279,6 +280,7 @@ export {
   type DpiaScreeningRule,
   type DpiaAssessment,
   type DpiaActivityDescription,
+  type DpiaAssessmentDiff,
   type DpiaNecessity,
   type DpiaTemplate,
 } from "./dpia";

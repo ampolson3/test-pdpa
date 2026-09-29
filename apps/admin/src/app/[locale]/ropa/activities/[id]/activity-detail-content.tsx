@@ -43,7 +43,7 @@ function detail(e: unknown): string {
   return typeof e === "object" && e !== null ? [(e as { title?: string }).title, (e as { detail?: string }).detail].filter(Boolean).join(" — ") : "";
 }
 
-export function ActivityDetailContent({ id }: { id: string }) {
+export function ActivityDetailContent({ id, currentUserId }: { id: string; currentUserId: string }) {
   const t = useTranslations("activities");
   const locale = useLocale() as Locale;
   const canRead = usePermission("ropa.activity.read");
@@ -400,7 +400,7 @@ export function ActivityDetailContent({ id }: { id: string }) {
         )}
       </section>
 
-      <DpiaScreeningSection client={client} activityId={id} />
+      <DpiaScreeningSection client={client} activityId={id} currentUserId={currentUserId} />
     </main>
   );
 }

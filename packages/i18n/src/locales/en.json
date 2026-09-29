@@ -739,6 +739,14 @@
         "lawful_basis_appropriate": "The chosen lawful basis (ss.24/26) fits the data and the activity",
         "less_invasive_considered": "A less invasive alternative was considered before choosing this approach"
       }
+    },
+    "history": "History",
+    "form": {
+      "hide": "Hide"
+    },
+    "diff": {
+      "title": "Changes since the previous round",
+      "blank": "(unanswered)"
     }
   },
   "assets": {

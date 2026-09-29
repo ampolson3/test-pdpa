@@ -367,6 +367,8 @@ section, shown alongside DPIA-04's description panel once a round is `in_progres
 
 **Acceptance criteria:** เห็นความต่างของคำตอบระหว่างรอบได้
 
+**สถานะ implementation:** done — see `CLAUDE.md`'s DPIA-14 section.
+
 <a id="dpia-15"></a>
 ### DPIA-15 ออกรายงาน DPIA
 

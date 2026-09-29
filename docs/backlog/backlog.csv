@@ -196,7 +196,7 @@ DPIA-07,DPIA,มาตรการลดความเสี่ยงและ�
 DPIA-09,DPIA,เชิญผู้ร่วมประเมิน,Collaboration & invitations,Must,P2,Workflow,แนวปฏิบัติตลาด,DPO IT GUEST,M,M,Y,5,5,1.2,2.0,3.5,"IAM-04, PLT-07",BP-08,docs/modules/DPIA.md#dpia-09,ผู้ร่วมประเมินแก้ได้เฉพาะส่วนที่ได้รับมอบหมาย,todo
 DPIA-10,DPIA,ความเห็น DPO และการอนุมัติ,DPO opinion & sign-off,Must,P2,Workflow,ม.42; TDPG 4.0-P,DPO EXEC,S,S,N,3,3,0.7,0,2.1,PLT-08,BP-08,docs/modules/DPIA.md#dpia-10,DPIA ปิดได้เมื่อมีความเห็น DPO และการอนุมัติครบ,todo
 DPIA-12,DPIA,ทะเบียนและสถานะ DPIA,DPIA register & status,Must,P2,ติดตาม,ม.37(1),DPO EXEC,S,M,Y,3,5,1.0,2.0,2.8,DPIA-01,BP-08,docs/modules/DPIA.md#dpia-12,สถานะในทะเบียนตรงกับขั้นตอนจริงของแต่ละ DPIA,todo
-DPIA-14,DPIA,ประวัติเวอร์ชันและ audit trail,Version history & audit trail,Must,P2,ติดตาม,ม.37(1),DPO AUDIT,XS,S,N,1,3,0.5,0,1.4,"PLT-08, PLT-12",BP-08,docs/modules/DPIA.md#dpia-14,เห็นความต่างของคำตอบระหว่างรอบได้,todo
+DPIA-14,DPIA,ประวัติเวอร์ชันและ audit trail,Version history & audit trail,Must,P2,ติดตาม,ม.37(1),DPO AUDIT,XS,S,N,1,3,0.5,0,1.4,"PLT-08, PLT-12",BP-08,docs/modules/DPIA.md#dpia-14,เห็นความต่างของคำตอบระหว่างรอบได้,done
 DPIA-15,DPIA,ออกรายงาน DPIA,DPIA report export,Must,P2,รายงาน,แนวปฏิบัติตลาด,DPO AUDIT,S,XS,N,3,1,0.5,0,1.4,PLT-16,BP-08,docs/modules/DPIA.md#dpia-15,รายงานแสดงคะแนน มาตรการ และผู้อนุมัติครบ,todo
 DPIA-08,DPIA,เชื่อมทะเบียนความเสี่ยงและงานแก้ไข,Link to risk register & tasks,Should,P3,ความเสี่ยง,ม.37(1),DPO,S,XS,N,3,1,0.5,0,1.4,RRA-09,BP-08,docs/modules/DPIA.md#dpia-08,ความเสี่ยงคงเหลือปรากฏในทะเบียนพร้อมลิงก์กลับ,todo
 DPIA-11,DPIA,บันทึกการปรึกษาผู้มีส่วนได้เสีย,Stakeholder consultation log,Should,P3,Workflow,TDPG 4.0-P,DPO,S,S,N,3,3,0.7,0,2.1,DPIA-03,BP-08,docs/modules/DPIA.md#dpia-11,รายงาน DPIA แสดงบันทึกการปรึกษา,todo

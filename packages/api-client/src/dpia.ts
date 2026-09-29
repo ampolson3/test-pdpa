@@ -7,6 +7,7 @@ export type DpiaAssessment = components["schemas"]["DpiaAssessment"];
 export type DpiaTemplate = components["schemas"]["DpiaTemplate"];
 export type DpiaActivityDescription = components["schemas"]["DpiaActivityDescription"];
 export type DpiaNecessity = components["schemas"]["DpiaNecessity"];
+export type DpiaAssessmentDiff = components["schemas"]["DpiaAssessmentDiff"];
 
 const rulesKey = ["dpia", "screening-rules"] as const;
 const assessmentsKey = ["dpia", "assessments"] as const;
@@ -87,6 +88,19 @@ export function useDpiaAssessmentDescription(client: ApiClient, id: string | und
     enabled: !!id,
     queryFn: async () => {
       const { data, error } = await client.GET("/admin/v1/dpia/assessments/{id}/description", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** GET /admin/v1/dpia/assessments/{id}/diff (DPIA-14) — which screening answers changed since the round this one supersedes. */
+export function useDpiaAssessmentDiff(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...assessmentsKey, id ?? "", "diff"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/assessments/{id}/diff", { params: { path: { id: id! } } });
       if (error) throw error;
       return data;
     },

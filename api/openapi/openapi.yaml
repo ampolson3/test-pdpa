@@ -8573,6 +8573,35 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpia/assessments/{id}/diff:
+    get:
+      operationId: dpiaGetAssessmentDiff
+      tags: [dpia]
+      summary: 'DPIA-14: which screening answers changed since the previous round'
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaAssessmentDiff'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/dpia/templates:
     get:
       operationId: dpiaListTemplates
@@ -10558,6 +10587,22 @@ components:
               question: {type: string}
               answer: {}
         submitted_at: {$ref: '#/components/schemas/Timestamp'}
+    DpiaAssessmentDiff:
+      type: object
+      description: 'DPIA-14: which screening answers changed since the round this one supersedes (assess.assessments.previous_id). Empty changes for a first round or an unchanged re-screen.'
+      required: [assessment_id, changes]
+      properties:
+        assessment_id: {$ref: '#/components/schemas/Uuid'}
+        previous_id: {$ref: '#/components/schemas/Uuid'}
+        changes:
+          type: array
+          items:
+            type: object
+            required: [question]
+            properties:
+              question: {type: string}
+              before: {}
+              after: {}
     DpiaTemplate:
       type: object
       required: [id, assessment_type, code, name, form_id, version_no, status, row_version, created_at]

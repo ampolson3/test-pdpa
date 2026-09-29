@@ -5,7 +5,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
 import { formatDate, type Locale } from "@pdpa/i18n";
-import { type ApiClient, useAssessNecessity, useDpiaAssessmentDescription, useDpiaAssessments, useDpiaNecessity, useScreenActivity } from "@pdpa/api-client";
+import { type ApiClient, useAssessNecessity, useDpiaAssessmentDescription, useDpiaAssessmentDiff, useDpiaAssessments, useDpiaNecessity, useScreenActivity } from "@pdpa/api-client";
+import { RecordCollaboration } from "@/components/record-collaboration";
 
 const NECESSITY_KEYS = ["minimal_data", "purpose_specific", "lawful_basis_appropriate", "less_invasive_considered"] as const;
 
@@ -16,13 +17,15 @@ function detail(e: unknown): string {
 }
 
 /** DPIA-01/02: screen this RoPA activity against the tenant's own thresholds, and show past rounds. */
-export function DpiaScreeningSection({ client, activityId }: { client: ApiClient; activityId: string }) {
+export function DpiaScreeningSection({ client, activityId, currentUserId }: { client: ApiClient; activityId: string; currentUserId: string }) {
   const t = useTranslations("dpia");
   const locale = useLocale() as Locale;
   const canScreen = usePermission("assessment.dpia.create");
+  const canUpdate = usePermission("assessment.dpia.update");
   const canRead = usePermission("assessment.dpia.read");
   const rounds = useDpiaAssessments(client, { activity_id: activityId });
   const screen = useScreenActivity(client);
+  const [historyId, setHistoryId] = useState<string | null>(null);
 
   const [answers, setAnswers] = useState<Record<string, "yes" | "no">>(
     Object.fromEntries(FACTOR_KEYS.map((k) => [k, "no"])) as Record<string, "yes" | "no">,
@@ -51,6 +54,18 @@ export function DpiaScreeningSection({ client, activityId }: { client: ApiClient
               <span>{t(`results.${a.screening_result}`)}</span>
               <span className="text-slate-500"> ({formatDate(a.created_at, locale, { day: "numeric", month: "short", year: "numeric" })})</span>
               <p className="text-slate-500">{a.screening_reason}</p>
+              {a.round_no > 1 && <DpiaDiffPanel client={client} assessmentId={a.id} />}
+              <button
+                type="button"
+                className="text-sky-700 underline"
+                data-testid={`dpia-history-toggle-${a.id}`}
+                onClick={() => setHistoryId(historyId === a.id ? null : a.id)}
+              >
+                {historyId === a.id ? t("form.hide") : t("history")}
+              </button>
+              {historyId === a.id && (
+                <RecordCollaboration entityType="dpia_assessment" entityId={a.id} canWrite={canUpdate} currentUserId={currentUserId} />
+              )}
             </li>
           ))}
         </ul>
@@ -167,6 +182,30 @@ function DpiaDescriptionPanel({ client, assessmentId }: { client: ApiClient; ass
         </ul>
       </div>
     </section>
+  );
+}
+
+/** DPIA-14: what changed in this round's screening answers versus the round it supersedes. */
+function DpiaDiffPanel({ client, assessmentId }: { client: ApiClient; assessmentId: string }) {
+  const t = useTranslations("dpia");
+  const diff = useDpiaAssessmentDiff(client, assessmentId);
+
+  if (diff.isPending) return null;
+  if (diff.isError) return <p className="text-red-700">{t("loadError")}</p>;
+  const changes = diff.data?.changes ?? [];
+  if (changes.length === 0) return null;
+
+  return (
+    <div className="mt-1 rounded bg-sky-50 p-2 text-xs" data-testid={`dpia-diff-${assessmentId}`}>
+      <p className="font-medium text-sky-800">{t("diff.title")}</p>
+      <ul className="list-inside list-disc">
+        {changes.map((c) => (
+          <li key={c.question}>
+            {t(`factors.${c.question}`)}: {String(c.before ?? t("diff.blank"))} → {String(c.after ?? t("diff.blank"))}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

@@ -1269,6 +1269,40 @@ criterion directly — all-"yes" reads necessary with nothing missing; any "no" 
 re-answering replaces rather than duplicates; necessity answers never change the screening round's own
 Factors; reading before answering is `ErrNotFound`; two-tenant isolation), HTTP contract (401/403/200/404).
 
+### DPIA-14 ประวัติเวอร์ชันและ audit trail (`docs/modules/DPIA.md#dpia-14`) — done
+`internal/dpia/service/diff.go` (+ `http/diff.go`, no new migration, no new permission code): the acceptance
+criterion ("เห็นความต่างของคำตอบระหว่างรอบได้") maps directly onto DPIA-01's own round chain
+(`assess.assessments.round_no`/`previous_id`, built for re-screening) — `Service.CompareToPrevious` loads the
+current round and the round it supersedes through the already-exported `GetAssessment` (rule 1 — tenant
+isolation comes for free, no new query), builds question→answer maps from each round's `Factors
+([]forms.Contribution)`, and diffs them: a change is emitted only where a question's before and after differ
+(`reflect.DeepEqual`, since an answer can be any JSON-decoded type, not just a string), including one-sided
+additions/removals if a question's answer is missing on either side. Question keys are sorted (`sort.Strings`)
+before the diff is built — Go map iteration order is unstable, and an unsorted diff would return the same
+logical result in an unpredictable order across calls, which would be a nuisance for both API consumers and
+tests. Deliberately scoped to DPIA-01's own screening `Factors` only, not DPIA-05's necessity checklist:
+necessity has no round concept to diff against — an answer is replaced in place, not versioned into a new
+round — so under this feature's literal acceptance criterion there is nothing meaningful to diff there.
+
+The other half of the acceptance criterion ("ผู้แก้ไข และวันที่") needed no new backend code at all:
+`"dpia_assessment"` is now a registered PLT-07 collaboration record type (`collabSvc.Register` in
+`cmd/api/main.go`, right after `dpiaSvc` is constructed — the exact move DSAR-17 made for `dsar_request`),
+`Exists` backed by `dpiaSvc.GetAssessment`. Comments, attachments and the activity feed (which is
+`platform.audit_log` replayed, so it already carries every `Screen`/`AssessNecessity` call's actor and
+timestamp via `s.audit(...)`) come for free from the same generic component every other module's records use.
+
+API: `GET /admin/v1/dpia/assessments/{id}/diff` (`assessment.dpia.read`) — `changes: []` (serialized as `null`,
+an unpopulated slice) for a first round or an unchanged re-screen, `previous_id` omitted when there is none. UI:
+a diff panel under each round with `round_no > 1` on `/ropa/activities/{id}`'s DPIA section (only rendered when
+there's at least one change), and a "ประวัติ" toggle per round — the same pattern DSAR-17's own history toggle
+used — rendering the shared `RecordCollaboration` component (`entityType="dpia_assessment"`); `currentUserId`
+is threaded down from the activity detail page (`loadMe()`) through `ActivityDetailContent` to
+`DpiaScreeningSection`, which didn't need it before this feature. Tests: unit (a first round has no previous
+round to diff against; changing one answer shows exactly that question's before/after — the acceptance
+criterion directly; an identical re-screen diffs to nothing; an unknown assessment id is `ErrNotFound`;
+two-tenant isolation), HTTP contract (401/200/404, and a re-screened round showing the changed question in its
+diff response).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

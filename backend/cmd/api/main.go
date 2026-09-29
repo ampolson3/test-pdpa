@@ -239,6 +239,18 @@ func run() error {
 	ropaSvc.Consent = consentSvc                                                     // ROPA-03: evidence of explicit consent for sensitive-data purposes
 	dpoSvc.Forms = formsSvc                                                          // DPO-09: the security-measures checklist
 	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc, Audit: auditSvc} // DPIA-01/02: screening on the "assessment" form type; DPIA-04: RoPA-sourced description
+	// DPIA-14: comments, attachments and an activity feed (PLT-07) on the assessment, satisfying the "ผู้แก้ไข
+	// และวันที่" half of the acceptance criterion for free — the diff endpoint covers the other half.
+	collabSvc.Register("dpia_assessment", collab.Policy{
+		ReadPermission: "assessment.dpia.read", WritePermission: "assessment.dpia.update",
+		Exists: func(ctx context.Context, id uuid.UUID) (bool, error) {
+			_, err := dpiaSvc.GetAssessment(ctx, id)
+			if errors.Is(err, dpiaservice.ErrNotFound) {
+				return false, nil
+			}
+			return err == nil, err
+		},
+	})
 	docsSvc := wiring.Docs(versioningSvc, fileSvc, riverClient, auditSvc, render.FromEnv())
 	docsSvc.RegisterVersioning()
 	for k, v := range docsSvc.FilePermissions() { // PLT-16 rendered PDF / Word files

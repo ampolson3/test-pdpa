@@ -11,7 +11,7 @@ export default async function ActivityDetailPage({ params }: { params: Promise<{
   if (!me) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("signInRequired")}</main>;
   return (
     <GrantsProvider grants={{ roles: me.roles, permissions: me.permissions, scopes: me.scopes }}>
-      <ActivityDetailContent id={id} />
+      <ActivityDetailContent id={id} currentUserId={me.id} />
     </GrantsProvider>
   );
 }

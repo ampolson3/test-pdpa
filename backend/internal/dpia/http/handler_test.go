@@ -240,6 +240,32 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 		t.Errorf("description unknown assessment: %d, want 404", code)
 	}
 
+	// DPIA-14: diff against the previous round — none yet for this first round.
+	if code, _ := do("GET", item+"/diff", nil, nil, nil); code != 401 {
+		t.Errorf("diff no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", item+"/diff", &reader2, nil, nil); code != 200 || !strings.Contains(body, `"changes":null`) {
+		t.Errorf("diff first round: %d %s, want empty changes", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/dpia/assessments/"+uuid.New().String()+"/diff", &admin, nil, nil); code != 404 {
+		t.Errorf("diff unknown assessment: %d, want 404", code)
+	}
+	changedAnswers := map[string]any{}
+	for k, v := range answers {
+		changedAnswers[k] = v
+	}
+	changedAnswers["monitoring"] = "yes"
+	code, body = do("POST", screenPath, &admin, map[string]any{"answers": changedAnswers}, nil)
+	if code != 201 {
+		t.Fatalf("re-screen: %d %s", code, body)
+	}
+	var second dpiahttp.DpiaAssessment
+	_ = json.Unmarshal([]byte(body), &second)
+	if code, body := do("GET", "/admin/v1/dpia/assessments/"+second.Id.String()+"/diff", &reader2, nil, nil); code != 200 ||
+		!strings.Contains(body, `"question":"monitoring"`) {
+		t.Errorf("diff second round: %d %s, want a change on monitoring", code, body)
+	}
+
 	// DPIA-05: the necessity/proportionality checklist on the same assessment.
 	necessityAnswers := map[string]any{"minimal_data": "yes", "purpose_specific": "yes", "lawful_basis_appropriate": "yes", "less_invasive_considered": "yes"}
 	if code, _ := do("GET", item+"/necessity", &reader2, nil, nil); code != 404 {

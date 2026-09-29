@@ -2749,6 +2749,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpia/assessments/{id}/diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPIA-14: which screening answers changed since the previous round */
+        get: operations["dpiaGetAssessmentDiff"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpia/templates": {
         parameters: {
             query?: never;
@@ -3767,6 +3784,16 @@ export interface components {
                 answer: unknown;
             }[];
             submitted_at: components["schemas"]["Timestamp"];
+        };
+        /** @description DPIA-14: which screening answers changed since the round this one supersedes (assess.assessments.previous_id). Empty changes for a first round or an unchanged re-screen. */
+        DpiaAssessmentDiff: {
+            assessment_id: components["schemas"]["Uuid"];
+            previous_id?: components["schemas"]["Uuid"];
+            changes: {
+                question: string;
+                before?: unknown;
+                after?: unknown;
+            }[];
         };
         DpiaTemplate: {
             id: components["schemas"]["Uuid"];
@@ -12245,6 +12272,34 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpiaGetAssessmentDiff: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaAssessmentDiff"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     dpiaListTemplates: {

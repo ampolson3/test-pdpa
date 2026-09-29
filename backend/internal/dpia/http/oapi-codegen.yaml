@@ -11,6 +11,7 @@ output-options:
     - dpiaListAssessments
     - dpiaGetAssessment
     - dpiaGetAssessmentDescription
+    - dpiaGetAssessmentDiff
     - dpiaGetNecessity
     - dpiaAssessNecessity
     - dpiaListTemplates
