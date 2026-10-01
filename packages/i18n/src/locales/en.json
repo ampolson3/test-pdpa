@@ -974,7 +974,8 @@
       "legal": "Legal"
     },
     "rejectionsHint": "Logged automatically from DSAR requests rejected against this activity",
-    "noRejections": "No rejections logged against this activity yet"
+    "noRejections": "No rejections logged against this activity yet",
+    "browseTemplates": "Standard activity library"
   },
   "notices": {
     "signInRequired": "Please sign in",
@@ -2007,6 +2008,45 @@
     "status": {
       "at_risk": "At risk",
       "overdue": "Overdue"
+    }
+  },
+  "ropaTemplates": {
+    "title": "Standard activity library",
+    "description": "Ready-made activities by job category, with every ม.39 default filled in — a reference draft pending legal review",
+    "signInRequired": "Please sign in",
+    "forbidden": "You don't have access to this page",
+    "loading": "Loading...",
+    "loadError": "Failed to load",
+    "empty": "No standard activities found",
+    "jobCategory": "Job category",
+    "allCategories": "All categories",
+    "selectPrompt": "Select an activity on the left to view its defaults",
+    "roleController": "Controller",
+    "roleProcessor": "Processor",
+    "none": "None",
+    "months": "months",
+    "categories": {
+      "recruitment": "Recruitment",
+      "payroll": "Payroll",
+      "procurement": "Procurement",
+      "marketing": "Marketing",
+      "cctv": "CCTV",
+      "visitor": "Visitors",
+      "it_support": "IT support",
+      "customer_service": "Customer service",
+      "finance": "Finance",
+      "legal_compliance": "Legal / compliance",
+      "facilities": "Facilities",
+      "training": "Training",
+      "health_safety": "Health & safety",
+      "product_analytics": "Product / analytics"
+    },
+    "section": {
+      "purposes": "Purposes and lawful basis",
+      "data": "Data categories and subject types",
+      "recipients": "Recipients",
+      "retention": "Retention",
+      "securityControls": "Security controls"
     }
   }
 }

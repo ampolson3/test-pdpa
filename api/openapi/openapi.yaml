@@ -8011,6 +8011,102 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/templates:
+    get:
+      operationId: ropaListTemplateSets
+      tags: [ropa]
+      summary: Published standard-activity template sets (RTG-01, ม.39)
+      x-permission: ropa.template.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RopaTemplateSet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/ropa/templates/{id}/activities:
+    get:
+      operationId: ropaListActivityTemplates
+      tags: [ropa]
+      summary: Standard activities in one template set, optionally filtered by job category (RTG-01)
+      x-permission: ropa.template.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: job_category
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 40
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RopaActivityTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/ropa/templates/activities/{activityTemplateId}:
+    get:
+      operationId: ropaGetActivityTemplate
+      tags: [ropa]
+      summary: One standard activity template, with its full ม.39 defaults and rationale (RTG-01)
+      x-permission: ropa.template.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: activityTemplateId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RopaActivityTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/dpo/appointments:
     get:
       operationId: dpoListAppointments
@@ -10934,6 +11030,41 @@ components:
         activity_id: {$ref: '#/components/schemas/Uuid'}
         control_id: {$ref: '#/components/schemas/Uuid'}
         description: {type: string}
+    RopaTemplateSet:
+      type: object
+      required: [id, name, set_type, version_no]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string}
+        set_type:
+          type: string
+          enum: [standard, industry, government, processor, custom]
+        industry: {type: string}
+        version_no: {type: integer}
+    RopaActivityTemplate:
+      type: object
+      description: 'RTG-01: a ready-made RoPA activity. defaults/rationale are the raw seeded JSON (no fixed shape here — every ม.39 topic keyed by code, not id, since a global template can''t reference a tenant''s own org.* rows), displayed as-is by the admin UI.'
+      required: [id, template_set_id, code, name_th, job_category, role, defaults, rationale, legal_refs, version_no]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        template_set_id: {$ref: '#/components/schemas/Uuid'}
+        code: {type: string}
+        name_th: {type: string}
+        name_en: {type: string}
+        job_category: {type: string}
+        role:
+          type: string
+          enum: [controller, processor]
+        defaults:
+          type: object
+          additionalProperties: true
+        rationale:
+          type: object
+          additionalProperties: true
+        legal_refs:
+          type: array
+          items: {type: string}
+        version_no: {type: integer}
     ActivityRejection:
       type: object
       required: [id, activity_id, dsar_request_id, reason_code, rejected_at]

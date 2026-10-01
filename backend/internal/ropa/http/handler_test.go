@@ -25,6 +25,7 @@ import (
 	riskservice "pdpa-platform/internal/risk/service"
 	ropahttp "pdpa-platform/internal/ropa/http"
 	ropaservice "pdpa-platform/internal/ropa/service"
+	templatesservice "pdpa-platform/internal/ropa/templates"
 )
 
 func envOr(k, d string) string {
@@ -83,7 +84,7 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	}
 	other := uuid.New()
 	grants := map[string][]string{tenant.UserID.String(): {"ropa.inventory.read", "ropa.inventory.create", "ropa.inventory.update",
-		"ropa.activity.read", "ropa.activity.create", "ropa.activity.update", "ropa.risk.read", "ropa.risk.create", "ropa.risk.delete"},
+		"ropa.activity.read", "ropa.activity.create", "ropa.activity.update", "ropa.risk.read", "ropa.risk.create", "ropa.risk.delete", "ropa.template.read"},
 		other.String(): {"ropa.inventory.read", "ropa.activity.read", "ropa.risk.read"}}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
@@ -117,7 +118,7 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 			})
 		})
 	})
-	strict := ropahttp.NewStrictHandlerWithOptions(ropahttp.NewStrict(svc),
+	strict := ropahttp.NewStrictHandlerWithOptions(ropahttp.NewStrict(svc, templatesservice.New()),
 		[]ropahttp.StrictMiddlewareFunc{authz.StrictMiddleware[ropahttp.StrictHandlerFunc](cache, func(op string) (string, bool) { c, ok := perms[op]; return c, ok })},
 		ropahttp.StrictHTTPServerOptions{
 			RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
@@ -369,5 +370,47 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", exportURL, &viewer, nil, nil); code != 200 || !strings.Contains(body, "code,name,description,controller") {
 		t.Errorf("export: %d %s", code, body)
+	}
+
+	// RTG-01 standard activity library.
+	if code, _ := do("GET", "/admin/v1/ropa/templates", nil, nil, nil); code != 401 {
+		t.Errorf("templates, no principal: %d, want 401", code)
+	}
+	code, body = do("GET", "/admin/v1/ropa/templates", &admin, nil, nil)
+	if code != 200 || !strings.Contains(body, `"set_type":"standard"`) {
+		t.Fatalf("list template sets: %d %s", code, body)
+	}
+	var setsResp struct {
+		Data []ropahttp.RopaTemplateSet `json:"data"`
+	}
+	_ = json.Unmarshal([]byte(body), &setsResp)
+	if len(setsResp.Data) == 0 {
+		t.Fatal("no template sets returned")
+	}
+	setID := setsResp.Data[0].Id
+
+	activitiesURL := "/admin/v1/ropa/templates/" + setID.String() + "/activities"
+	code, body = do("GET", activitiesURL, &admin, nil, nil)
+	if code != 200 || !strings.Contains(body, `"job_category"`) {
+		t.Fatalf("list activity templates: %d %s", code, body)
+	}
+	var actsResp struct {
+		Data []ropahttp.RopaActivityTemplate `json:"data"`
+	}
+	_ = json.Unmarshal([]byte(body), &actsResp)
+	if len(actsResp.Data) < 50 {
+		t.Errorf("got %d standard activities, want at least 50", len(actsResp.Data))
+	}
+
+	if code, body := do("GET", activitiesURL+"?job_category=recruitment", &admin, nil, nil); code != 200 || !strings.Contains(body, `"job_category":"recruitment"`) {
+		t.Errorf("filter by job_category: %d %s", code, body)
+	}
+
+	itemURL := "/admin/v1/ropa/templates/activities/" + actsResp.Data[0].Id.String()
+	if code, body := do("GET", itemURL, &admin, nil, nil); code != 200 || !strings.Contains(body, `"defaults"`) || !strings.Contains(body, `"rationale"`) {
+		t.Errorf("get activity template: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/ropa/templates/activities/"+uuid.New().String(), &admin, nil, nil); code != 404 {
+		t.Errorf("unknown activity template: %d, want 404", code)
 	}
 }

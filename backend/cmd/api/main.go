@@ -70,6 +70,7 @@ import (
 	riskservice "pdpa-platform/internal/risk/service"
 	ropahttp "pdpa-platform/internal/ropa/http"
 	ropaservice "pdpa-platform/internal/ropa/service"
+	templatesservice "pdpa-platform/internal/ropa/templates"
 	"pdpa-platform/internal/wiring"
 )
 
@@ -228,6 +229,7 @@ func run() error {
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
 	riskSvc := riskservice.New() // ROPA-09: the ม.37(1) security-measures catalog (no RRA module yet)
 	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc}
+	ropaTemplatesSvc := templatesservice.New() // RTG-01: the platform's standard activity library (read-only)
 	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc}
 	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read" // DPO-01 appointment order / PDPC evidence
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
@@ -350,7 +352,7 @@ func run() error {
 			orghttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		orghttp.HandlerWithOptions(strictOrg, orghttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
-		strictRopa := ropahttp.NewStrictHandlerWithOptions(ropahttp.NewStrict(ropaSvc),
+		strictRopa := ropahttp.NewStrictHandlerWithOptions(ropahttp.NewStrict(ropaSvc, ropaTemplatesSvc),
 			[]ropahttp.StrictMiddlewareFunc{authz.StrictMiddleware[ropahttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			ropahttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		ropahttp.HandlerWithOptions(strictRopa, ropahttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})

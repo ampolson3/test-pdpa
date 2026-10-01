@@ -1338,6 +1338,40 @@ per-request detail route yet, so it links to the `/requests` list instead). Test
 across both modules — the acceptance criterion directly; sorted by due_at; a caller without a source module's read
 permission sees that source silently empty, not an error; two-tenant isolation), HTTP contract (401/403/200).
 
+### RTG-01 คลังกิจกรรมมาตรฐานตามหมวดงาน (`docs/modules/RTG.md#rtg-01`) — done
+The first feature on the `RTG` module: `ropa.template_sets`/`ropa.activity_templates` were already fully
+specified in the baseline migrations (ERD-09), and `ropa.template.*` was already seeded (migration 00019) —
+this pass only seeds data (migration 00049), no schema change. T15, the backlog dependency meant to supply
+real content, had no deliverable to pull from here, so — the same "seed a draft + flag for legal review" move
+ORG-07 (Q-20), ROPA-09 (Q-25), PNG-03 (Q-14) and DPIA-01 (Q-26) already made — this writes 51 activities
+across 14 job categories (recruitment, payroll, procurement, marketing, cctv, visitor, it_support,
+customer_service, finance, legal_compliance, facilities, training, health_safety, product_analytics, plus 3
+processor-role examples) as a new `docs/decisions.md` entry, Q-28. Each activity's `defaults` jsonb covers
+every ม.39 topic in the exact shape ROPA-03/06/08/09's own `activity_purposes`/`activity_data`/
+`activity_recipients`/`retention_rules`/`activity_controls` tables already use (purposes with
+`lawful_basis_code`, data with `data_category_code`+`subject_type_code`, recipients, retention, security
+controls) — keyed by *code*, not id, since a global template can't reference a tenant's own `org.*` rows.
+Lawful-basis/data-category/subject-type codes and security-control codes are the real seeded values from
+ORG-07 (migration 00031) and ROPA-09 (migration 00040), cross-checked against the live catalog before
+writing the migration, not invented. `rationale` carries a short "ร่าง — รอฝ่ายกฎหมายตรวจ" note per activity
+(rule 8's spirit, even though this is operational RoPA content, not a notice/letter/clause).
+
+`internal/ropa/templates` is a new, deliberately minimal read-only package (`Service.New()`, no fields) —
+mirrors `internal/risk/service`'s own "nothing to create/update yet" shape exactly: no tenant authors a
+template here (that's RTG-08, P3, "แก้ไขและสร้าง template ขององค์กร", not built). `Defaults`/`Rationale` stay
+opaque `json.RawMessage` all the way to the wire (`additionalProperties: true` in the OpenAPI schema) — no
+fixed Go shape, since the admin UI and a future RTG-04 ("create RoPA from template") both just need to
+show/copy the same JSON this was seeded with, not a typed model. API: `GET /admin/v1/ropa/templates`
+(published sets — today only the platform's own "standard" set), `GET /admin/v1/ropa/templates/{id}/activities`
+(optional `job_category` filter), `GET /admin/v1/ropa/templates/activities/{id}` (full detail) — all on the
+already-seeded `ropa.template.read`. UI: a new page, `/ropa/templates` (the module doc's own UX note: "มีหน้าจอ
+ใหม่") — a job-category picker, an activity list, and a detail panel rendering purposes/data/recipients/
+retention/security controls from the raw `defaults` JSON — linked from `/ropa/activities`. Tests: unit (the
+global standard set is visible, at least 50 activities with a working `job_category` filter — the acceptance
+criterion directly, every ม.39 topic present on a sampled activity's defaults, an unknown id is `ErrNotFound`,
+two-tenant isolation — the global set is visible to both tenants by design, the same ORG-07 master-data
+pattern), HTTP contract (401/200/404, the full list→activities→detail chain through the real validator).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

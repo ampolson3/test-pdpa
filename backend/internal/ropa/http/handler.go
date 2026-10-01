@@ -14,15 +14,19 @@ import (
 	"github.com/google/uuid"
 
 	ropaservice "pdpa-platform/internal/ropa/service"
+	templatesservice "pdpa-platform/internal/ropa/templates"
 
 	"pdpa-platform/internal/pkg/httpx"
 )
 
 type Strict struct {
-	svc *ropaservice.Service
+	svc       *ropaservice.Service
+	templates *templatesservice.Service
 }
 
-func NewStrict(svc *ropaservice.Service) *Strict { return &Strict{svc: svc} }
+func NewStrict(svc *ropaservice.Service, templates *templatesservice.Service) *Strict {
+	return &Strict{svc: svc, templates: templates}
+}
 
 var _ StrictServerInterface = (*Strict)(nil)
 
@@ -188,7 +192,7 @@ func problem(err error) error {
 			p.Errors = append(p.Errors, httpx.FieldError{Field: m, Code: "missing_item"})
 		}
 		return p
-	case errors.Is(err, ropaservice.ErrNotFound):
+	case errors.Is(err, ropaservice.ErrNotFound), errors.Is(err, templatesservice.ErrNotFound):
 		return httpx.NotFound()
 	case errors.Is(err, ropaservice.ErrVersionMismatch):
 		return httpx.VersionMismatch()

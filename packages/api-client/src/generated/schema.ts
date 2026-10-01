@@ -2574,6 +2574,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Published standard-activity template sets (RTG-01, ม.39) */
+        get: operations["ropaListTemplateSets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/templates/{id}/activities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Standard activities in one template set, optionally filtered by job category (RTG-01) */
+        get: operations["ropaListActivityTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/templates/activities/{activityTemplateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One standard activity template, with its full ม.39 defaults and rationale (RTG-01) */
+        get: operations["ropaGetActivityTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpo/appointments": {
         parameters: {
             query?: never;
@@ -4036,6 +4087,33 @@ export interface components {
             activity_id: components["schemas"]["Uuid"];
             control_id: components["schemas"]["Uuid"];
             description?: string;
+        };
+        RopaTemplateSet: {
+            id: components["schemas"]["Uuid"];
+            name: string;
+            /** @enum {string} */
+            set_type: "standard" | "industry" | "government" | "processor" | "custom";
+            industry?: string;
+            version_no: number;
+        };
+        /** @description RTG-01: a ready-made RoPA activity. defaults/rationale are the raw seeded JSON (no fixed shape here — every ม.39 topic keyed by code, not id, since a global template can't reference a tenant's own org.* rows), displayed as-is by the admin UI. */
+        RopaActivityTemplate: {
+            id: components["schemas"]["Uuid"];
+            template_set_id: components["schemas"]["Uuid"];
+            code: string;
+            name_th: string;
+            name_en?: string;
+            job_category: string;
+            /** @enum {string} */
+            role: "controller" | "processor";
+            defaults: {
+                [key: string]: unknown;
+            };
+            rationale: {
+                [key: string]: unknown;
+            };
+            legal_refs: string[];
+            version_no: number;
         };
         ActivityRejection: {
             id: components["schemas"]["Uuid"];
@@ -11817,6 +11895,92 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaListTemplateSets: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RopaTemplateSet"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaListActivityTemplates: {
+        parameters: {
+            query?: {
+                job_category?: string;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RopaActivityTemplate"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaGetActivityTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                activityTemplateId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaActivityTemplate"];
+                };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

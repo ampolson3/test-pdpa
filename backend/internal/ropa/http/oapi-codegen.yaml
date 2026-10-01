@@ -39,3 +39,6 @@ output-options:
     - ropaListActivityControls
     - ropaAddActivityControl
     - ropaDeleteActivityControl
+    - ropaListTemplateSets
+    - ropaListActivityTemplates
+    - ropaGetActivityTemplate

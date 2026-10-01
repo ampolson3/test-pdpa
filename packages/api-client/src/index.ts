@@ -96,6 +96,13 @@ export {
   type ActivityRejection,
 } from "./activities";
 export {
+  useTemplateSets,
+  useActivityTemplates,
+  useActivityTemplate,
+  type RopaTemplateSet,
+  type RopaActivityTemplate,
+} from "./activity-templates";
+export {
   useNotices,
   useNotice,
   useNoticeChecklist,

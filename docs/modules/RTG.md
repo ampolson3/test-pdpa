@@ -106,6 +106,9 @@
 
 **หมายเหตุ:** ดึงเข้า P1: จุดขายหลักเทียบ OneTrust; เนื้อหาจาก T15
 
+**สถานะ implementation:** done — see `CLAUDE.md`'s RTG-01 section. T15's own deliverable wasn't available, so
+content is a 51-activity draft (`docs/decisions.md` Q-28) pending legal review.
+
 <a id="rtg-04"></a>
 ### RTG-04 สร้าง RoPA จาก template ในไม่กี่ขั้นตอน
 
