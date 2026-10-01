@@ -628,7 +628,8 @@
       "item": "Item",
       "answer": "Answer",
       "tasks": "Remediation tasks opened automatically"
-    }
+    },
+    "deadlinesLink": "Deadline notification center"
   },
   "dpia": {
     "forbidden": "You don't have permission to view DPIA screening",
@@ -1983,6 +1984,29 @@
     "outcomes": {
       "fulfilled": "Fulfilled",
       "partially_fulfilled": "Partially fulfilled"
+    }
+  },
+  "dpoDeadlines": {
+    "title": "Deadline notification center",
+    "description": "Near-deadline and overdue work from every module that already tracks a legal deadline",
+    "signInRequired": "Please sign in",
+    "forbidden": "You don't have access to this page",
+    "loading": "Loading...",
+    "loadError": "Failed to load",
+    "empty": "No near-deadline or overdue work right now",
+    "column": {
+      "source": "Module",
+      "reference": "Reference",
+      "dueAt": "Due",
+      "status": "Status"
+    },
+    "source": {
+      "dsar_request": "DSAR request",
+      "breach_incident": "Breach incident"
+    },
+    "status": {
+      "at_risk": "At risk",
+      "overdue": "Overdue"
     }
   }
 }

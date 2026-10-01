@@ -2610,6 +2610,23 @@ export interface paths {
         patch: operations["dpoUpdateAppointment"];
         trace?: never;
     };
+    "/admin/v1/dpo/deadlines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPO-05: near-deadline and overdue items across every module that already tracks a legal deadline (today: DSAR 30-day SLA, breach 72-hour PDPC notice), on one page */
+        get: operations["dpoListDeadlines"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpo/security-assessments": {
         parameters: {
             query?: never;
@@ -3749,6 +3766,17 @@ export interface components {
             assessed_by?: components["schemas"]["Uuid"];
             assessed_at: components["schemas"]["Timestamp"];
             tasks?: components["schemas"]["DpoRemediationTask"][];
+        };
+        /** @description DPO-05: one near-deadline or overdue item from a module that already tracks a legal deadline — currently DSAR's 30-day SLA and breach's 72-hour PDPC notice clock. Sorted by due_at ascending. */
+        DpoDeadlineItem: {
+            /** @enum {string} */
+            source: "dsar_request" | "breach_incident";
+            reference_id: components["schemas"]["Uuid"];
+            /** @description The request number or incident number, for display */
+            reference_label: string;
+            due_at: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            status: "at_risk" | "overdue";
         };
         DpiaScreeningRule: {
             min_factors: number;
@@ -11925,6 +11953,33 @@ export interface operations {
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dpoListDeadlines: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpoDeadlineItem"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     dpoListAssessments: {

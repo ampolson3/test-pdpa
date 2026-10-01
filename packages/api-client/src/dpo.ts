@@ -6,10 +6,24 @@ export type DpoAppointmentInput = components["schemas"]["DpoAppointmentInput"];
 export type DpoType = components["schemas"]["DpoType"];
 export type DpoSecurityAssessment = components["schemas"]["DpoSecurityAssessment"];
 export type DpoRemediationTask = components["schemas"]["DpoRemediationTask"];
+export type DpoDeadlineItem = components["schemas"]["DpoDeadlineItem"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const appointmentsKey = ["dpo", "appointments"] as const;
 const assessmentsKey = ["dpo", "security-assessments"] as const;
+const deadlinesKey = ["dpo", "deadlines"] as const;
+
+/** GET /admin/v1/dpo/deadlines (DPO-05): near-deadline and overdue work from every module that already tracks a legal deadline, on one page. */
+export function useDeadlines(client: ApiClient) {
+  return useQuery({
+    queryKey: deadlinesKey,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpo/deadlines", {});
+      if (error) throw error;
+      return data;
+    },
+  });
+}
 
 /** GET /admin/v1/dpo/appointments (DPO-01), newest first. */
 export function useAppointments(client: ApiClient, filter: { legal_entity_id?: string } = {}) {

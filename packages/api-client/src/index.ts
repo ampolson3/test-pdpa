@@ -255,11 +255,13 @@ export {
   useAssessments,
   useAssessment,
   useRecordAssessment,
+  useDeadlines,
   type DpoAppointment,
   type DpoAppointmentInput,
   type DpoType,
   type DpoSecurityAssessment,
   type DpoRemediationTask,
+  type DpoDeadlineItem,
 } from "./dpo";
 export {
   useScreeningRules,

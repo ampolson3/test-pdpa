@@ -279,6 +279,8 @@ func run() error {
 		},
 	})
 	fileSvc.EntityPermissions["dsar_request"] = "dsar.request.read"
+	dpoSvc.Dsar = dsarSvc      // DPO-05: DSAR's 30-day SLA on the notification center
+	dpoSvc.Breach = breachSvc // DPO-05: breach's 72-hour PDPC clock on the notification center
 
 	// Public consent forms (BP-01): tenant and principal from the public key, then the same Idempotency + Tx chain.
 	r.Group(func(g chi.Router) {

@@ -17,7 +17,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	breachservice "pdpa-platform/internal/breach/service"
 	dpostore "pdpa-platform/internal/dpo/store"
+	dsarservice "pdpa-platform/internal/dsar/service"
 	iamservice "pdpa-platform/internal/iam/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
@@ -53,10 +55,13 @@ type Files interface {
 }
 
 type Service struct {
-	Audit *audit.Service
-	Org   Org
-	Files Files
-	Forms *forms.Service // DPO-09's security-measures checklist (PLT-06); nil until that feature is wired
+	Audit  *audit.Service
+	Org    Org
+	Files  Files
+	Forms  *forms.Service // DPO-09's security-measures checklist (PLT-06); nil until that feature is wired
+	Dsar   *dsarservice.Service
+	Breach *breachservice.Service
+	Now    func() time.Time
 }
 
 // Appointment is one DPO appointment (ม.41): internal (an existing iam.users row), external (a named person

@@ -8171,6 +8171,34 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dpo/deadlines:
+    get:
+      operationId: dpoListDeadlines
+      tags: [dpo]
+      summary: 'DPO-05: near-deadline and overdue items across every module that already tracks a legal deadline (today: DSAR 30-day SLA, breach 72-hour PDPC notice), on one page'
+      x-permission: dpo.report.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpoDeadlineItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/dpo/security-assessments:
     get:
       operationId: dpoListAssessments
@@ -10533,6 +10561,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DpoRemediationTask'
+    DpoDeadlineItem:
+      type: object
+      description: 'DPO-05: one near-deadline or overdue item from a module that already tracks a legal deadline — currently DSAR''s 30-day SLA and breach''s 72-hour PDPC notice clock. Sorted by due_at ascending.'
+      required: [source, reference_id, reference_label, due_at, status]
+      properties:
+        source:
+          type: string
+          enum: [dsar_request, breach_incident]
+        reference_id: {$ref: '#/components/schemas/Uuid'}
+        reference_label:
+          type: string
+          description: The request number or incident number, for display
+        due_at: {$ref: '#/components/schemas/Timestamp'}
+        status:
+          type: string
+          enum: [at_risk, overdue]
     DpiaScreeningRule:
       type: object
       required: [min_factors]

@@ -22,6 +22,7 @@ import {
 } from "@pdpa/api-client";
 import { FileUploader } from "@/components/file-uploader";
 import { useRendererMessages } from "@/components/form-messages";
+import { Link } from "@/i18n/routing";
 
 function problemText(e: unknown): string {
   if (typeof e !== "object" || e === null) return "";
@@ -109,7 +110,10 @@ export function DpoContent() {
           <h1 className="text-xl font-semibold">{t("title")}</h1>
           <p className="text-slate-600">{t("intro")}</p>
         </div>
-        {canCreate && legalEntityId && <Button onClick={startCreate}>{t("newAppointment")}</Button>}
+        <div className="flex items-center gap-2">
+          <Link className="text-sky-700 underline" href="/dpo">{t("deadlinesLink")}</Link>
+          {canCreate && legalEntityId && <Button onClick={startCreate}>{t("newAppointment")}</Button>}
+        </div>
       </header>
 
       <label><span className="block text-slate-600">{t("form.legalEntity")}</span>

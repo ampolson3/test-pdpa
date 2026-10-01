@@ -106,7 +106,7 @@ func TestAppointmentEndpoints_Contract(t *testing.T) {
 	}
 	other := uuid.New()
 	grants := map[string][]string{
-		tenant.UserID.String(): {"dpo.profile.read", "dpo.profile.create", "dpo.profile.update", "dpo.risk.read", "dpo.risk.create"},
+		tenant.UserID.String(): {"dpo.profile.read", "dpo.profile.create", "dpo.profile.update", "dpo.risk.read", "dpo.risk.create", "dpo.report.read"},
 		other.String():         {"dpo.profile.read", "dpo.risk.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
@@ -254,5 +254,17 @@ func TestAppointmentEndpoints_Contract(t *testing.T) {
 	if code, body := do("POST", "/admin/v1/dpo/security-assessments", &admin, map[string]any{"legal_entity_id": legalEntity, "form_id": uuid.New(),
 		"answers": map[string]any{"access_control": "yes"}}, nil); code != 422 || !strings.Contains(body, "dpo.bad_form") {
 		t.Errorf("unknown form: %d %s, want 422", code, body)
+	}
+
+	// DPO-05 notification center. The fixture's Dsar/Breach fields are nil (aggregation itself is proven in
+	// the service-level tests), so a caller holding dpo.report.read just sees an empty page.
+	if code, _ := do("GET", "/admin/v1/dpo/deadlines", nil, nil, nil); code != 401 {
+		t.Errorf("deadlines no principal: %d, want 401", code)
+	}
+	if code, _ := do("GET", "/admin/v1/dpo/deadlines", &viewer, nil, nil); code != 403 {
+		t.Errorf("deadlines without dpo.report.read: %d, want 403", code)
+	}
+	if code, body := do("GET", "/admin/v1/dpo/deadlines", &admin, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("deadlines: %d %s", code, body)
 	}
 }

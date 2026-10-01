@@ -1303,6 +1303,41 @@ criterion directly; an identical re-screen diffs to nothing; an unknown assessme
 two-tenant isolation), HTTP contract (401/200/404, and a re-screened round showing the changed question in its
 diff response).
 
+### DPO-05 ศูนย์แจ้งเตือนรวม (`docs/modules/DPO.md#dpo-05`) — done, scoped to modules that already track a deadline
+`internal/dpo/service/center.go` (+ `http/center.go`, no new migration, no new permission code — `dpo.report.read`
+is already seeded for "Dashboard และรายงาน" and fits this exactly). `Service.Deadlines` is the acceptance criterion
+("งานใกล้ครบกำหนดจากทุกโมดูลแสดงในหน้าเดียว"): it reads every module that already tracks a legal deadline — DSAR's
+30-day SLA and breach's 72-hour PDPC clock — through their own exported services (`dpo.Service` gained `Dsar
+*dsarservice.Service` and `Breach *breachservice.Service` fields, concrete types directly like `Forms` already was;
+no import cycle, since neither module imports `dpo`, rule 9). DPIA review cycles, contract expiry and notice-review
+reminders — the other three items the module doc's own description names — aren't built yet (no owning feature
+exists: DPIA-13, PNG-15, the DPA/DSA modules), so they're left out until they exist, the same "no consumer yet"
+deferral this codebase uses elsewhere (PLT-13's own Keyring shipped the same way).
+
+DSAR: `dsarservice.ListRequests` once per ST-02 non-terminal status (no multi-status filter exists, and adding one
+for a single caller felt like more than this feature needs), each row's `dsarservice.SLAStatus(now, due_at)` reused
+exactly as DSAR-07 already defined it — on_track items are dropped. Breach: `breachservice.List{OpenOnly: true}`,
+paginated to drain every open incident, classified at_risk/overdue against a new `breachAtRiskWindow` of 6 hours —
+deliberately the same point BRE-07 already escalates to role EXEC from (66 of the 72-hour clock), not a new
+threshold invented for this dashboard. Real access-control gap found while designing this: `dsarservice.ListRequests`
+and `breachservice.List` have no shared caller — `breachservice.List` already enforces `breach.incident.read`
+internally (`has(ctx, PermRead)`), but `dsarservice.ListRequests` enforces nothing itself (`dsar.request.read` is
+normally checked only at the HTTP/operation layer, which this internal call bypasses). A caller holding only
+`dpo.report.read` (EXEC, ORGADMIN — seeded with that permission but not `dsar.request.read`/`breach.incident.read`)
+would otherwise see DSAR request numbers and due dates they have no module-level permission for. Fixed by checking
+`authz.FromContext(ctx).Has("dsar.request.read")` before calling the DSAR side at all, and catching breach's own
+`ErrForbidden` to skip that source rather than failing the whole call — each source is left out, not a 403 for the
+whole dashboard, when the caller lacks that module's own read permission; `dpo.report.read` is not a blanket grant
+to every module's detail.
+
+`GET /admin/v1/dpo/deadlines` (`dpo.report.read`) returns every near-deadline/overdue item sorted by due date
+ascending, each naming its source module, a reference id + human label (request number / incident number) and
+at_risk/overdue. UI: a new page, `/dpo` (the module doc's own UX note: "มีหน้าจอใหม่"), linked from the existing
+`/settings/dpo` appointments page; each row links to its source record (`/incidents/{id}` for breach — DSAR has no
+per-request detail route yet, so it links to the `/requests` list instead). Tests: unit (aggregates and filters
+across both modules — the acceptance criterion directly; sorted by due_at; a caller without a source module's read
+permission sees that source silently empty, not an error; two-tenant isolation), HTTP contract (401/403/200).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

@@ -190,6 +190,10 @@ too), HTTP contract (401/403/400 schema/422/412/428).
 
 **หมายเหตุ:** OneTrust ไม่มีมุมมองรวม
 
+**สถานะ implementation:** done — see `CLAUDE.md`'s DPO-05 section. Scoped to the modules that already track a
+legal deadline (DSAR's 30-day SLA, breach's 72-hour PDPC clock); DPIA review cycles, contract expiry and notice
+review aren't built yet, so they're left out until they exist.
+
 <a id="dpo-09"></a>
 ### DPO-09 ประเมินมาตรการความปลอดภัย
 
