@@ -42,13 +42,14 @@ var (
 	ErrRedactionOutOfBounds   = errors.New("dsar: redaction rectangle is outside the image")
 )
 
-// Files is what DSAR-06 needs from file storage (PLT-09): the caller's own clean, unattached raw upload, and
-// saving the redacted output as a new, already-attached file (SaveGenerated never leaves an unmasked copy
-// reachable).
+// Files is what dsar needs from file storage (PLT-09): DSAR-06's caller-owned raw upload + saving the
+// redacted output as a new, already-attached file, and DSAR-08's own Attach for a subtask's evidence (the
+// caller's own clean, still-unattached upload).
 type Files interface {
 	Get(ctx context.Context, id uuid.UUID) (files.File, error)
 	Open(ctx context.Context, id uuid.UUID) (io.ReadCloser, files.File, error)
 	SaveGenerated(ctx context.Context, fileName string, r io.Reader, entityType string, entityID uuid.UUID) (files.File, error)
+	Attach(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error
 }
 
 // Verification is one identity-check attempt against a DSAR request (dsar.verifications).

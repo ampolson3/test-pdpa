@@ -1981,6 +1981,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/requests/{id}/subtasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every subtask of this request (DSAR-08), oldest first */
+        get: operations["dsarListSubtasks"];
+        put?: never;
+        /** Assign a subtask of this request to a system owner or team (DSAR-08) — notifies the assignee */
+        post: operations["dsarCreateSubtask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/requests/{id}/subtasks/{subtaskId}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a subtask along open → in_progress → done|not_applicable (If-Match) — only the assignee (user or their group), or a caller holding dsar.subtask.execute, may change a subtask they do not own */
+        post: operations["dsarUpdateSubtaskStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/requests/{id}/subtasks/{subtaskId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a subtask from a request (DSAR-08) */
+        delete: operations["dsarDeleteSubtask"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/platform/documents/types": {
         parameters: {
             query?: never;
@@ -4473,6 +4525,40 @@ export interface components {
         };
         DsarDecideVerificationInput: {
             pass: boolean;
+        };
+        /** @enum {string} */
+        DsarSubtaskAction: "search" | "export" | "delete" | "rectify" | "restrict" | "stop_marketing" | "review";
+        /** @enum {string} */
+        DsarSubtaskStatus: "open" | "in_progress" | "done" | "not_applicable";
+        DsarSubtask: {
+            id: components["schemas"]["Uuid"];
+            request_id: components["schemas"]["Uuid"];
+            action: components["schemas"]["DsarSubtaskAction"];
+            assignee_user_id?: components["schemas"]["Uuid"] | null;
+            assignee_group_id?: components["schemas"]["Uuid"] | null;
+            status: components["schemas"]["DsarSubtaskStatus"];
+            /** Format: date-time */
+            due_at?: string | null;
+            /** Format: date-time */
+            completed_at?: string | null;
+            evidence_file_id?: components["schemas"]["Uuid"] | null;
+            row_version: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        DsarCreateSubtaskInput: {
+            action: components["schemas"]["DsarSubtaskAction"];
+            assignee_user_id?: components["schemas"]["Uuid"];
+            assignee_group_id?: components["schemas"]["Uuid"];
+            /** Format: date-time */
+            due_at?: string;
+        };
+        DsarUpdateSubtaskStatusInput: {
+            status: components["schemas"]["DsarSubtaskStatus"];
+            /** @description The caller's own clean PLT-09 upload, attached as evidence when the subtask is marked done */
+            evidence_file_id?: components["schemas"]["Uuid"];
         };
         /** @enum {string} */
         NoticeType: "privacy_notice" | "privacy_policy" | "cookie_policy" | "cctv" | "layered_short" | "employee";
@@ -10576,6 +10662,139 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarListSubtasks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarSubtask"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dsarCreateSubtask: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarCreateSubtaskInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarSubtask"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarUpdateSubtaskStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                subtaskId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarUpdateSubtaskStatusInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarSubtask"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dsarDeleteSubtask: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                subtaskId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     platformListDocumentTypes: {

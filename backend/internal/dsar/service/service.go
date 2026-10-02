@@ -2,9 +2,9 @@
 // composer. It needs a real dsar.requests row with a status/outcome to generate from, so this package also
 // carries the minimal slice of DSAR-01/02/03/06/07/08's job that DSAR-13 depends on — creating a request and
 // moving it through ST-02's real state graph — deliberately scoped no further than that: full intake channels
-// (DSAR-01/02), identity verification (DSAR-06), the workflow/subtask engine (DSAR-08) and SLA business-day
-// countdown (DSAR-07) are sibling features layered on top later. DSAR-11 (reject with reason) added the
-// approver gate and the `dsar.rejected` event on top of the `rejected` edge DSAR-13 already had.
+// (DSAR-01/02) are sibling features layered on top later. DSAR-11 (reject with reason) added the approver gate
+// and the `dsar.rejected` event on top of the `rejected` edge DSAR-13 already had. DSAR-06 (identity
+// verification) and DSAR-08 (subtasks) are both now built, in identity.go and subtasks.go respectively.
 package service
 
 import (

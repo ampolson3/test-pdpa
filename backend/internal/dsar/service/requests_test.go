@@ -34,7 +34,8 @@ type env struct {
 }
 
 var dsarPermissions = []string{"dsar.request.read", "dsar.request.create", "dsar.request.execute", "dsar.request.update",
-	"dsar.request.approve", "org.structure.read", "org.structure.update", "ropa.activity.read", "ropa.activity.create", "ropa.activity.update"}
+	"dsar.request.approve", "org.structure.read", "org.structure.update", "ropa.activity.read", "ropa.activity.create", "ropa.activity.update",
+	"dsar.subtask.read", "dsar.subtask.create", "dsar.subtask.update", "dsar.subtask.execute", "dsar.subtask.delete"}
 
 func setup(t *testing.T, suffix string) env {
 	t.Helper()
@@ -45,7 +46,9 @@ func setup(t *testing.T, suffix string) env {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
-				`DELETE FROM dsar.verifications`, `DELETE FROM iam.subject_verifications`, `DELETE FROM platform.files`,
+				`DELETE FROM dsar.verifications`, `DELETE FROM iam.subject_verifications`, `DELETE FROM dsar.subtasks`,
+				`DELETE FROM platform.notifications`, `DELETE FROM river_job WHERE kind = 'notify.deliver'`,
+				`DELETE FROM iam.group_members`, `DELETE FROM iam.groups`, `DELETE FROM platform.files`,
 				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM org.org_units`,
 				`UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,

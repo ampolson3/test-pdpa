@@ -5959,6 +5959,166 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/requests/{id}/subtasks:
+    get:
+      operationId: dsarListSubtasks
+      tags: [dsar]
+      summary: Every subtask of this request (DSAR-08), oldest first
+      x-permission: dsar.subtask.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarSubtask'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dsarCreateSubtask
+      tags: [dsar]
+      summary: Assign a subtask of this request to a system owner or team (DSAR-08) — notifies the assignee
+      x-permission: dsar.subtask.create
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarCreateSubtaskInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarSubtask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/requests/{id}/subtasks/{subtaskId}/status:
+    post:
+      operationId: dsarUpdateSubtaskStatus
+      tags: [dsar]
+      summary: Move a subtask along open → in_progress → done|not_applicable (If-Match) — only the assignee (user or their group), or a caller holding dsar.subtask.execute, may change a subtask they do not own
+      x-permission: dsar.subtask.update
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: subtaskId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarUpdateSubtaskStatusInput'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarSubtask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dsar/requests/{id}/subtasks/{subtaskId}:
+    delete:
+      operationId: dsarDeleteSubtask
+      tags: [dsar]
+      summary: Remove a subtask from a request (DSAR-08)
+      x-permission: dsar.subtask.delete
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: subtaskId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/platform/documents/types:
     get:
       operationId: platformListDocumentTypes
@@ -11706,6 +11866,47 @@ components:
       required: [pass]
       properties:
         pass: {type: boolean}
+    DsarSubtaskAction:
+      type: string
+      enum: [search, export, delete, rectify, restrict, stop_marketing, review]
+    DsarSubtaskStatus:
+      type: string
+      enum: [open, in_progress, done, not_applicable]
+    DsarSubtask:
+      type: object
+      required: [id, request_id, action, status, row_version, created_at, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        request_id: {$ref: '#/components/schemas/Uuid'}
+        action: {$ref: '#/components/schemas/DsarSubtaskAction'}
+        assignee_user_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        assignee_group_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        status: {$ref: '#/components/schemas/DsarSubtaskStatus'}
+        due_at: {type: [string, 'null'], format: date-time}
+        completed_at: {type: [string, 'null'], format: date-time}
+        evidence_file_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        row_version: {type: integer}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    DsarCreateSubtaskInput:
+      type: object
+      required: [action]
+      properties:
+        action: {$ref: '#/components/schemas/DsarSubtaskAction'}
+        assignee_user_id: {$ref: '#/components/schemas/Uuid'}
+        assignee_group_id: {$ref: '#/components/schemas/Uuid'}
+        due_at: {type: string, format: date-time}
+    DsarUpdateSubtaskStatusInput:
+      type: object
+      required: [status]
+      properties:
+        status: {$ref: '#/components/schemas/DsarSubtaskStatus'}
+        evidence_file_id:
+          description: The caller's own clean PLT-09 upload, attached as evidence when the subtask is marked done
+          $ref: '#/components/schemas/Uuid'
     NoticeType:
       type: string
       enum: [privacy_notice, privacy_policy, cookie_policy, cctv, layered_short, employee]

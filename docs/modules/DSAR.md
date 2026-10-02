@@ -315,6 +315,49 @@ build` verified clean.
 
 **Acceptance criteria:** คำขอเดินครบทุกขั้นตอนและปิดได้เมื่อ subtask เสร็จทั้งหมด
 
+**Implementation:** `internal/dsar/service/subtasks.go` (`dsar.subtask.*`, already fully seeded in the baseline
+permission migration — no new permission code) — CRUD on `dsar.subtasks` (already fully specified in the
+baseline migrations). The acceptance criterion is the gate added to `Transition`'s own `in_progress →
+completed` edge (DSAR-13): it now additionally requires every subtask of the request to be `done` or
+`not_applicable` — a request with none is vacuously "all done" (DSAR-13's own completed tests never created
+any), one with any `open`/`in_progress` subtask is refused `dsar.invalid_transition`. "คำขอเดินครบทุกขั้นตอน"
+needed no new code: ST-02's full graph was already encoded by DSAR-13, and DSAR-06/11 already built the
+`received → ... → completed` path this walks.
+
+`dsar.subtasks.status` is its own small local machine (`open → in_progress → done|not_applicable`, or straight
+`open → done|not_applicable` for a subtask quick enough to finish in one step — `docs/states/state-machines.yaml#DSAR-08subtask`),
+not routed through the full PLT-05 workflow engine: `dsar.request_types.workflow_definition_id` exists for
+that in the schema, but DSAR never adopted it (DSAR-13's own module-doc note explains why — the engine's
+assignee is baked into its Definition JSON at the type level, which doesn't fit a per-record subtask list),
+so wiring a second engine in for just this gate would be a bigger change than the acceptance criterion needs.
+"แก้ได้เฉพาะงานที่ได้รับมอบหมาย" (docs/security/permissions.md's own note on `dsar.subtask`): a caller holding
+only `.update` (IT/OWNER/LEGAL/GUEST in the seeded RBAC) may change a subtask assigned to them directly, or to
+an `iam.groups` group they belong to (`iamservice.GroupIDsOf`); `.execute` (DPO/PRIVACY) bypasses that check.
+Creating an assigned subtask notifies the assignee (PLT-04, migration 00052's `dsar.subtask_assigned`
+template, operational text — no DRAFT marker, rule 8) — "มอบหมายงานย่อยให้เจ้าของระบบหรือทีม". A subtask's
+optional evidence is the caller's own clean PLT-09 upload, attached via `files.Service.Attach` against the
+already-registered `dsar_request` entity type (DSAR-17's own `fileSvc.EntityPermissions["dsar_request"]`).
+
+"ตั้ง rule อัตโนมัติตามประเภทและบริษัท" (an automatic default-subtask rule per request type) is deliberately
+not built: no column models it and no screen needs it yet — the module doc's own description names it, but the
+literal acceptance criterion is only about subtask completion gating closure, which is fully exercised without
+one. Add it (most naturally as a `default_subtask_actions` column on `dsar.request_types`, applied when a
+request enters `in_progress`) once a real request for it exists, the same "no consumer yet" deferral this
+codebase uses elsewhere.
+
+API: `GET`/`POST /admin/v1/dsar/requests/{id}/subtasks`, `POST .../subtasks/{subtaskId}/status` (ETag/If-Match),
+`DELETE .../subtasks/{subtaskId}` — same shapes as every other module's child-table endpoints. UI: a "งานย่อย"
+toggle per row on `/requests` — a status table, an inline create form (action + a user or group picker, reusing
+PLT-05's own `useGroupSearch`), and per-row start/done/not-applicable/remove actions. Tests: unit (the
+acceptance criterion directly — a request with an open subtask cannot complete, closes once it's done, a
+request with none is unaffected; action/assignee/group validation; the access-restriction rule for user and
+group assignees and its `.execute` bypass; delete; two-tenant isolation), HTTP contract (401/403/400/201/200/
+204/404/409/412/428). Verified live: created a real request and subtask through the running admin app against
+the real API, moved it `open → done`, and confirmed the row's actions correctly reduced to just "remove" once
+terminal. Found and fixed while live-testing a separate, pre-existing bug this same pass surfaced: `/requests`'
+row `<Fragment>` had no `key` of its own (only the inner `<tr>` did) — React warned "Each child in a list
+should have a unique key prop"; fixed by moving the key onto the `Fragment`.
+
 <a id="dsar-11"></a>
 ### DSAR-11 ปฏิเสธคำขอพร้อมเหตุผล
 

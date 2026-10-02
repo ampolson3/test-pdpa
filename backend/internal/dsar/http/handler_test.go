@@ -63,7 +63,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
-				`DELETE FROM dsar.verifications`, `DELETE FROM iam.subject_verifications`,
+				`DELETE FROM dsar.verifications`, `DELETE FROM iam.subject_verifications`, `DELETE FROM dsar.subtasks`,
 				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
 				`DELETE FROM iam.users WHERE email = 'dsarhttp-assignee@dbtest.example'`,
@@ -120,8 +120,9 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	}
 	other := uuid.New()
 	grants := map[string][]string{
-		tenant.UserID.String(): {"dsar.request.read", "dsar.request.create", "dsar.request.execute", "dsar.request.update", "dsar.request.approve"},
-		other.String():         {"dsar.request.read"},
+		tenant.UserID.String(): {"dsar.request.read", "dsar.request.create", "dsar.request.execute", "dsar.request.update", "dsar.request.approve",
+			"dsar.subtask.read", "dsar.subtask.create", "dsar.subtask.update", "dsar.subtask.execute", "dsar.subtask.delete"},
+		other.String(): {"dsar.request.read", "dsar.subtask.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
@@ -342,6 +343,48 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", verifications, &viewer, nil); code != 200 || !strings.Contains(body, `"status":"passed"`) {
 		t.Errorf("verifications after confirm: %d %s", code, body)
+	}
+
+	// DSAR-08 subtasks, against the same request (now in_review).
+	subtasks := item2 + "/subtasks"
+	if code, _ := do("GET", subtasks, nil, nil); code != 401 {
+		t.Errorf("subtasks, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", subtasks, &viewer, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("subtasks (none yet): %d %s", code, body)
+	}
+	if code, _ := do("POST", subtasks, &viewer, map[string]any{"action": "search"}); code != 403 {
+		t.Errorf("create subtask with read only: %d, want 403", code)
+	}
+	if code, _ := do("POST", subtasks, &admin, map[string]any{"action": "bogus"}); code != 400 {
+		t.Errorf("create subtask, bad action: %d, want 400 (schema)", code)
+	}
+	code, body = do("POST", subtasks, &admin, map[string]any{"action": "search"})
+	if code != 201 || !strings.Contains(body, `"status":"open"`) {
+		t.Fatalf("create subtask: %d %s", code, body)
+	}
+	var createdSt dsarhttp.DsarSubtask
+	_ = json.Unmarshal([]byte(body), &createdSt)
+	status := subtasks + "/" + createdSt.Id.String() + "/status"
+	if code, _ := do("POST", status, &admin, map[string]any{"status": "done"}); code != 428 {
+		t.Errorf("update subtask status, no If-Match: %d, want 428", code)
+	}
+	if code, body := do("POST", status, &admin, map[string]any{"status": "done"}, map[string]string{"If-Match": etagOf(int(createdSt.RowVersion))}); code != 200 || !strings.Contains(body, `"status":"done"`) {
+		t.Errorf("update subtask status: %d %s", code, body)
+	}
+	if code, body := do("POST", status, &admin, map[string]any{"status": "open"}, map[string]string{"If-Match": etagOf(int(createdSt.RowVersion) + 1)}); code != 409 || !strings.Contains(body, "dsar.invalid_transition") {
+		t.Errorf("update subtask status from terminal: %d %s, want 409", code, body)
+	}
+
+	del := subtasks + "/" + createdSt.Id.String()
+	if code, _ := do("DELETE", del, &viewer, nil); code != 403 {
+		t.Errorf("delete subtask with read only: %d, want 403", code)
+	}
+	if code, _ := do("DELETE", del, &admin, nil); code != 204 {
+		t.Errorf("delete subtask: %d, want 204", code)
+	}
+	if code, _ := do("DELETE", del, &admin, nil); code != 404 {
+		t.Errorf("delete subtask again: %d, want 404", code)
 	}
 }
 

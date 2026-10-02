@@ -13,8 +13,11 @@ import {
   useDsarRequestMutations,
   useDsarVerifications,
   useDsarVerificationMutations,
+  useDsarSubtasks,
+  useDsarSubtaskMutations,
   useLegalEntities,
   useMentionSearch,
+  useGroupSearch,
   type DsarRequest,
   type DsarRequestStatus,
   type DsarRequestChannel,
@@ -22,6 +25,7 @@ import {
   type DsarOutcome,
   type DsarSlaStatus,
   type DsarVerificationMethod,
+  type DsarSubtaskAction,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 import { RecordCollaboration } from "@/components/record-collaboration";
@@ -57,6 +61,8 @@ const STATUS_STYLE: Record<DsarRequestStatus, string> = {
   withdrawn: "bg-slate-100 text-slate-500",
 };
 
+const SUBTASK_ACTIONS: DsarSubtaskAction[] = ["search", "export", "delete", "rectify", "restrict", "stop_marketing", "review"];
+
 const SLA_STYLE: Record<DsarSlaStatus, string> = {
   on_track: "bg-emerald-100 text-emerald-800",
   at_risk: "bg-amber-100 text-amber-800",
@@ -78,6 +84,118 @@ function AssigneePicker({ client, onPick }: { client: ReturnType<typeof createAp
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  );
+}
+
+function GroupPicker({ client, onPick }: { client: ReturnType<typeof createApiClient>; onPick: (g: { id: string; display_name: string }) => void }) {
+  const t = useTranslations("dsarRequests");
+  const [q, setQ] = useState("");
+  const matches = useGroupSearch(client, q.length >= 2 ? q : null);
+  return (
+    <div className="relative inline-block">
+      <input className={INPUT + " w-56"} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("subtasks.groupSearch")} />
+      {q.length >= 2 && !!matches.data?.length && (
+        <ul className="absolute z-10 w-56 rounded-md border border-slate-200 bg-white text-sm shadow">
+          {matches.data.map((g) => (
+            <li key={g.id}>
+              <button type="button" className="block w-full px-3 py-1.5 text-left hover:bg-slate-50"
+                onClick={() => { onPick({ id: g.id, display_name: g.name }); setQ(""); }}>{g.name}</button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+const SUBTASK_STATUS_STYLE: Record<string, string> = {
+  open: "bg-slate-100 text-slate-700",
+  in_progress: "bg-amber-100 text-amber-800",
+  done: "bg-emerald-100 text-emerald-800",
+  not_applicable: "bg-slate-100 text-slate-500",
+};
+
+/** DSAR-08: assign work against the request to a system owner or team, and track it to done — the request
+ *  cannot complete while any subtask here is still open or in_progress. */
+function SubtasksPanel({ client, request, canCreate, canDelete }: { client: ReturnType<typeof createApiClient>; request: DsarRequest; canCreate: boolean; canDelete: boolean }) {
+  const t = useTranslations("dsarRequests");
+  const list = useDsarSubtasks(client, request.id);
+  const m = useDsarSubtaskMutations(client);
+  const [action, setAction] = useState<DsarSubtaskAction>("search");
+  const [assignee, setAssignee] = useState<{ id: string; display_name: string } | null>(null);
+  const [group, setGroup] = useState<{ id: string; display_name: string } | null>(null);
+
+  const rows = list.data ?? [];
+
+  return (
+    <div className="space-y-3" data-testid="subtasks-panel">
+      {rows.length > 0 && (
+        <table className="w-full text-xs">
+          <thead className="text-left text-slate-500">
+            <tr><th className="py-1">{t("subtasks.action")}</th><th className="py-1">{t("subtasks.assignee")}</th>
+              <th className="py-1">{t("subtasks.status")}</th><th className="py-1" /></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.map((st) => (
+              <tr key={st.id}>
+                <td className="py-1">{t(`subtasks.actions.${st.action}`)}</td>
+                <td className="py-1 font-mono">{(st.assignee_user_id ?? st.assignee_group_id ?? "—")?.slice(0, 8)}</td>
+                <td className="py-1"><span className={`rounded px-2 py-0.5 ${SUBTASK_STATUS_STYLE[st.status]}`}>{t(`subtasks.statuses.${st.status}`)}</span></td>
+                <td className="py-1 space-x-2">
+                  {st.status === "open" && (
+                    <button type="button" className="text-sky-700 underline" onClick={() => m.updateStatus.mutate({ requestId: request.id, subtask: st, status: "in_progress" })}>
+                      {t("subtasks.start")}
+                    </button>
+                  )}
+                  {(st.status === "open" || st.status === "in_progress") && (
+                    <>
+                      <button type="button" className="text-sky-700 underline" onClick={() => m.updateStatus.mutate({ requestId: request.id, subtask: st, status: "done" })}>
+                        {t("subtasks.markDone")}
+                      </button>
+                      <button type="button" className="text-sky-700 underline" onClick={() => m.updateStatus.mutate({ requestId: request.id, subtask: st, status: "not_applicable" })}>
+                        {t("subtasks.markNotApplicable")}
+                      </button>
+                    </>
+                  )}
+                  {canDelete && (
+                    <button type="button" className="text-red-700 underline" onClick={() => m.remove.mutate({ requestId: request.id, subtaskId: st.id })}>
+                      {t("subtasks.remove")}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {m.updateStatus.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(m.updateStatus.error) })}</p>}
+
+      {canCreate && (
+        <fieldset className="flex flex-wrap items-end gap-2 rounded-md border border-slate-200 p-3">
+          <legend className="px-1 text-slate-600">{t("subtasks.newTitle")}</legend>
+          <select className={INPUT + " w-auto"} value={action} onChange={(e) => setAction(e.target.value as DsarSubtaskAction)}>
+            {SUBTASK_ACTIONS.map((a) => <option key={a} value={a}>{t(`subtasks.actions.${a}`)}</option>)}
+          </select>
+          {assignee ? (
+            <span className="flex items-center gap-1 rounded bg-slate-100 px-2 py-1">{assignee.display_name}
+              <button type="button" className="text-slate-500" onClick={() => setAssignee(null)}>×</button></span>
+          ) : <AssigneePicker client={client} onPick={(u) => { setAssignee(u); setGroup(null); }} />}
+          {group ? (
+            <span className="flex items-center gap-1 rounded bg-slate-100 px-2 py-1">{group.display_name}
+              <button type="button" className="text-slate-500" onClick={() => setGroup(null)}>×</button></span>
+          ) : <GroupPicker client={client} onPick={(g) => { setGroup(g); setAssignee(null); }} />}
+          <Button
+            onClick={() => m.create.mutate(
+              { requestId: request.id, action, assigneeUserId: assignee?.id, assigneeGroupId: group?.id },
+              { onSuccess: () => { setAssignee(null); setGroup(null); } },
+            )}
+            disabled={m.create.isPending} data-testid="create-subtask">
+            {t("subtasks.add")}
+          </Button>
+          {m.create.isError && <p className="w-full text-red-700" role="alert">{t("form.saveError", { detail: detail(m.create.error) })}</p>}
+        </fieldset>
       )}
     </div>
   );
@@ -181,12 +299,15 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
   const canCreate = usePermission("dsar.request.create");
   const canExecute = usePermission("dsar.request.execute");
   const canUpdate = usePermission("dsar.request.update");
+  const canSubtaskCreate = usePermission("dsar.subtask.create");
+  const canSubtaskDelete = usePermission("dsar.subtask.delete");
   const client = useMemo(() => createApiClient("/api/bff"), []);
 
   const [statusFilter, setStatusFilter] = useState<DsarRequestStatus | "">("");
   const [search, setSearch] = useState("");
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [verifyId, setVerifyId] = useState<string | null>(null);
+  const [subtaskId, setSubtaskId] = useState<string | null>(null);
   const list = useDsarRequests(client, { status: statusFilter || undefined, search: search || undefined });
   const types = useDsarRequestTypes(client);
   const entities = useLegalEntities(client);
@@ -336,12 +457,23 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                       onClick={() => setVerifyId(verifyId === r.id ? null : r.id)}>
                       {verifyId === r.id ? t("form.hide") : t("verify.title")}
                     </button>
+                    <button type="button" className="text-sky-700 underline" data-testid={`subtasks-toggle-${r.id}`}
+                      onClick={() => setSubtaskId(subtaskId === r.id ? null : r.id)}>
+                      {subtaskId === r.id ? t("form.hide") : t("subtasks.title")}
+                    </button>
                   </td>
                 </tr>
                 {verifyId === r.id && (
                   <tr>
                     <td colSpan={6} className="bg-slate-50 px-3 py-3">
                       <VerificationPanel client={client} request={r} canUpdate={canUpdate} />
+                    </td>
+                  </tr>
+                )}
+                {subtaskId === r.id && (
+                  <tr>
+                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
+                      <SubtasksPanel client={client} request={r} canCreate={canSubtaskCreate} canDelete={canSubtaskDelete} />
                     </td>
                   </tr>
                 )}

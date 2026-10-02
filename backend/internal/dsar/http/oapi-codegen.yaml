@@ -16,3 +16,7 @@ output-options:
     - dsarConfirmOtpVerification
     - dsarSubmitIdDocumentVerification
     - dsarDecideVerification
+    - dsarListSubtasks
+    - dsarCreateSubtask
+    - dsarUpdateSubtaskStatus
+    - dsarDeleteSubtask

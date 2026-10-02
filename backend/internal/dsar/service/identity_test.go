@@ -77,6 +77,16 @@ func (f *fakeFiles) SaveGenerated(ctx context.Context, fileName string, r io.Rea
 	return files.File{ID: id, FileName: fileName, EntityType: entityType, EntityID: &entityID}, nil
 }
 
+// Attach marks an already-inserted platform.files row as attached — the real table's own FK to
+// dsar.subtasks.evidence_file_id needs a real row to point at, so DSAR-08's own subtasks_test.go inserts one
+// directly (the same "caller's own clean, unattached upload" fixture BRE/PLT-09 tests use elsewhere) before
+// calling UpdateSubtaskStatus with it.
+func (f *fakeFiles) Attach(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error {
+	_, err := pdb.MustTxFromContext(ctx).Exec(ctx,
+		`UPDATE platform.files SET entity_type = $2, entity_id = $3 WHERE id = $1`, id, entityType, entityID)
+	return err
+}
+
 func identityEnv(t *testing.T, suffix string) (env, *fakeNotifier, *fakeFiles) {
 	t.Helper()
 	e := setup(t, suffix)

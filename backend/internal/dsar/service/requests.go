@@ -205,9 +205,9 @@ func (s *Service) ListRequests(ctx context.Context, f RequestFilter) ([]Request,
 // ST-02's real transition graph (docs/states/state-machines.yaml#ST-02) — the full 8-state, 17-edge machine
 // the SA spec already fully defines, even though this feature only needs a subset of it: encoding the whole
 // thing here (it's cheap, just a table) means DSAR-06/08/11 build on a correct machine later, not a
-// reinvented one. No verification (DSAR-06), subtask-completeness (DSAR-08) or SLA-overdue (DSAR-07) guard is
-// enforced yet on the intermediate edges — those modules aren't built; only the two data-carrying guards below
-// (outcome required to enter completed, a reason required to enter rejected) are checked here.
+// reinvented one. verifying/in_review have no verification guard (DSAR-06 enters them itself, after the real
+// check); in_progress → completed additionally requires every subtask done (DSAR-08, below) on top of the two
+// data-carrying guards (outcome required to enter completed, a reason required to enter rejected).
 var st02Edges = map[string][]string{
 	"received":      {"verifying", "withdrawn"},
 	"verifying":     {"in_review", "awaiting_info", "withdrawn"},
@@ -246,6 +246,12 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, rowVersion int32
 	case "completed":
 		if in.Outcome == nil || !slices.Contains(outcomes[:2], *in.Outcome) {
 			return Request{}, nil, fmt.Errorf("%w: outcome (fulfilled or partially_fulfilled required)", ErrInvalid)
+		}
+		// DSAR-08's own acceptance criterion: closable only once every subtask is done (or not_applicable).
+		if done, err := s.allSubtasksDone(ctx, id); err != nil {
+			return Request{}, nil, err
+		} else if !done {
+			return Request{}, nil, fmt.Errorf("%w: subtasks are not all done", ErrInvalidTransition)
 		}
 		outcome = in.Outcome
 	case "rejected":

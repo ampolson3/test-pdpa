@@ -1083,7 +1083,7 @@ machines:
     to: completed
     trigger: subtask ครบ + DPO อนุมัติ / ส่งผล
     event: transition
-    guard: outcome ระบุ (fulfilled หรือ partially_fulfilled)
+    guard: outcome ระบุ (fulfilled หรือ partially_fulfilled) · ทุก subtask เป็น done หรือ not_applicable (DSAR-08)
     action: สร้างหนังสือตอบผล (DSAR-13, purpose=result) · audit
   - from: verifying
     to: awaiting_info
@@ -1148,6 +1148,51 @@ machines:
   - from: awaiting_info
     to: withdrawn
     trigger: ผู้ขอยกเลิก
+    event: transition
+    guard: null
+    action: audit
+
+- machine: DSAR-08#subtask
+  title: DSAR subtask (docs/modules/DSAR.md#dsar-08)
+  column: dsar.subtasks.status
+  states:
+  - open
+  - in_progress
+  - done
+  - not_applicable
+  initial:
+  - open
+  terminal:
+  - done
+  - not_applicable
+  transitions:
+  - from: open
+    to: in_progress
+    trigger: เริ่มดำเนินการ
+    event: transition
+    guard: null
+    action: audit
+  - from: open
+    to: done
+    trigger: ทำเสร็จแล้ว
+    event: transition
+    guard: null
+    action: audit
+  - from: open
+    to: not_applicable
+    trigger: ไม่เกี่ยวข้อง
+    event: transition
+    guard: null
+    action: audit
+  - from: in_progress
+    to: done
+    trigger: ทำเสร็จแล้ว
+    event: transition
+    guard: null
+    action: audit
+  - from: in_progress
+    to: not_applicable
+    trigger: ไม่เกี่ยวข้อง
     event: transition
     guard: null
     action: audit

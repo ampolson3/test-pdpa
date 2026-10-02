@@ -2045,6 +2045,34 @@
         "passed": "Passed",
         "failed": "Failed"
       }
+    },
+    "subtasks": {
+      "title": "Subtasks",
+      "action": "Task",
+      "assignee": "Assignee",
+      "status": "Status",
+      "newTitle": "Add subtask",
+      "groupSearch": "Search team",
+      "add": "Add",
+      "start": "Start",
+      "markDone": "Mark done",
+      "markNotApplicable": "Not applicable",
+      "remove": "Remove",
+      "actions": {
+        "search": "Search data",
+        "export": "Export data",
+        "delete": "Delete data",
+        "rectify": "Rectify data",
+        "restrict": "Restrict processing",
+        "stop_marketing": "Stop marketing",
+        "review": "Review"
+      },
+      "statuses": {
+        "open": "Open",
+        "in_progress": "In progress",
+        "done": "Done",
+        "not_applicable": "Not applicable"
+      }
     }
   },
   "dpoDeadlines": {

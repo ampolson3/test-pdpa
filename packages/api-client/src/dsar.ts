@@ -14,6 +14,9 @@ export type DsarSlaStatus = components["schemas"]["DsarSlaStatus"];
 export type DsarVerification = components["schemas"]["DsarVerification"];
 export type DsarVerificationMethod = components["schemas"]["DsarVerificationMethod"];
 export type DsarIdentityRedaction = components["schemas"]["DsarIdentityRedaction"];
+export type DsarSubtask = components["schemas"]["DsarSubtask"];
+export type DsarSubtaskAction = components["schemas"]["DsarSubtaskAction"];
+export type DsarSubtaskStatus = components["schemas"]["DsarSubtaskStatus"];
 
 const requestsKey = ["dsar", "requests"] as const;
 const requestKey = (id: string) => [...requestsKey, id] as const;
@@ -173,4 +176,67 @@ export function useDsarVerificationMutations(client: ApiClient) {
     onSuccess: (_d, { requestId }) => refresh(requestId),
   });
   return { startOtp, confirmOtp, submitIdDocument, decide };
+}
+
+const subtasksKey = (requestId: string) => [...requestKey(requestId), "subtasks"] as const;
+
+/** GET /admin/v1/dsar/requests/{id}/subtasks (DSAR-08) — every subtask of a request, oldest first. */
+export function useDsarSubtasks(client: ApiClient, requestId: string | undefined) {
+  return useQuery({
+    queryKey: subtasksKey(requestId ?? ""),
+    enabled: !!requestId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dsar/requests/{id}/subtasks", { params: { path: { id: requestId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** DSAR-08's workflow & subtasks: assign one, move it along open → in_progress → done|not_applicable, or
+ *  remove it. A request can only complete once every subtask is done (the acceptance criterion), so each
+ *  mutation also invalidates the request itself. */
+export function useDsarSubtaskMutations(client: ApiClient) {
+  const qc = useQueryClient();
+  const refresh = (requestId: string) => {
+    qc.invalidateQueries({ queryKey: subtasksKey(requestId) });
+    qc.invalidateQueries({ queryKey: requestKey(requestId) });
+    qc.invalidateQueries({ queryKey: requestsKey });
+  };
+  const create = useMutation({
+    mutationFn: async ({ requestId, action, assigneeUserId, assigneeGroupId, dueAt }: {
+      requestId: string; action: DsarSubtaskAction; assigneeUserId?: string; assigneeGroupId?: string; dueAt?: string;
+    }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/subtasks", {
+        params: { path: { id: requestId } },
+        body: { action, assignee_user_id: assigneeUserId, assignee_group_id: assigneeGroupId, due_at: dueAt },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, { requestId }) => refresh(requestId),
+  });
+  const updateStatus = useMutation({
+    mutationFn: async ({ requestId, subtask, status, evidenceFileId }: {
+      requestId: string; subtask: DsarSubtask; status: DsarSubtaskStatus; evidenceFileId?: string;
+    }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/subtasks/{subtaskId}/status", {
+        params: { path: { id: requestId, subtaskId: subtask.id }, header: ifMatch(subtask.row_version) },
+        body: { status, evidence_file_id: evidenceFileId },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, { requestId }) => refresh(requestId),
+  });
+  const remove = useMutation({
+    mutationFn: async ({ requestId, subtaskId }: { requestId: string; subtaskId: string }) => {
+      const { error } = await client.DELETE("/admin/v1/dsar/requests/{id}/subtasks/{subtaskId}", {
+        params: { path: { id: requestId, subtaskId } },
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_d, { requestId }) => refresh(requestId),
+  });
+  return { create, updateStatus, remove };
 }

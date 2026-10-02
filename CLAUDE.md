@@ -1566,6 +1566,53 @@ pixels; an out-of-bounds rectangle is refused; re-deciding an already-decided ve
 two-tenant isolation), HTTP contract (401/403/404/400/201/200 through the real validator),
 `pnpm --filter @pdpa/admin build` verified clean.
 
+### DSAR-08 Workflow และงานย่อย (`docs/modules/DSAR.md#dsar-08`) — done
+`internal/dsar/service/subtasks.go` (`dsar.subtask.*`, already fully seeded in the baseline permission
+migration — no new permission code) — CRUD on `dsar.subtasks` (already fully specified in the baseline
+migrations, no new migration for the table itself). The acceptance criterion ("คำขอเดินครบทุกขั้นตอนและปิดได้
+เมื่อ subtask เสร็จทั้งหมด") is a new guard on `Transition`'s own `in_progress → completed` edge (DSAR-13):
+every subtask of the request must now be `done` or `not_applicable` — a request with none is vacuously "all
+done" (DSAR-13's own completed tests never created any), one with any `open`/`in_progress` subtask is refused
+`dsar.invalid_transition`. "คำขอเดินครบทุกขั้นตอน" itself needed no new code: DSAR-13 already encoded ST-02's
+full graph, and DSAR-06/11 already built the `received → … → completed` path this walks end to end.
+
+`dsar.subtasks.status` is its own small local machine (`open → in_progress → done|not_applicable`, or straight
+`open → done|not_applicable` for a subtask quick enough to finish in one step —
+`docs/states/state-machines.yaml#DSAR-08subtask`), not routed through the full PLT-05 workflow engine:
+`dsar.request_types.workflow_definition_id` exists for that in the schema, but DSAR never adopted it (DSAR-13's
+own module-doc note already explains why — the engine's task assignee is baked into its Definition JSON at the
+type level, which doesn't fit a per-record subtask list), so wiring a second engine in for just this one gate
+would be a bigger change than the acceptance criterion needs. "แก้ได้เฉพาะงานที่ได้รับมอบหมาย"
+(`docs/security/permissions.md`'s own note on `dsar.subtask`): `requireSubtaskAccess` lets a caller holding
+only `.update` (IT/OWNER/LEGAL/GUEST in the seeded RBAC) change a subtask only when it's assigned to them
+directly, or to an `iam.groups` group they belong to (`iamservice.GroupIDsOf`); `.execute` (DPO/PRIVACY)
+bypasses that check entirely, the same two-tier shape DSAR-11's own approve-gate uses. Creating an assigned
+subtask notifies the assignee (PLT-04, migration 00052's `dsar.subtask_assigned` template, operational text —
+no DRAFT marker, rule 8) — "มอบหมายงานย่อยให้เจ้าของระบบหรือทีม". A subtask's optional evidence is the
+caller's own clean PLT-09 upload, attached via a new `Files.Attach` method (the `dsar.Files` interface DSAR-06
+already defined) against the `dsar_request` entity type DSAR-17 already registered
+(`fileSvc.EntityPermissions["dsar_request"]`) — no new entity-permission wiring needed.
+
+"ตั้ง rule อัตโนมัติตามประเภทและบริษัท" (an automatic default-subtask rule per request type) is deliberately
+not built: no column models it and no screen needs it yet — the module doc's own description names it, but the
+literal acceptance criterion is only about subtask completion gating closure, fully exercised without one. Add
+it (most naturally a `default_subtask_actions` column on `dsar.request_types`, applied when a request enters
+`in_progress`) once a real screen needs it, the same "no consumer yet" deferral this codebase uses elsewhere.
+
+API: `GET`/`POST /admin/v1/dsar/requests/{id}/subtasks`, `POST .../subtasks/{subtaskId}/status`
+(ETag/If-Match), `DELETE .../subtasks/{subtaskId}` — same shapes as every other module's child-table
+endpoints. UI: a "งานย่อย" toggle per row on `/requests` — a status table, an inline create form (action +
+a user or group picker, reusing PLT-05's own `useGroupSearch`), and per-row start/done/not-applicable/remove
+actions. Tests: unit (the acceptance criterion directly — a request with an open subtask cannot complete,
+closes once it's done, a request with none is unaffected; action/assignee/group validation; the
+access-restriction rule for both user and group assignees and its `.execute` bypass; delete; two-tenant
+isolation), HTTP contract (401/403/400/201/200/204/404/409/412/428). Verified live, not just with tests: ran
+the real `cmd/api`/`cmd/worker`/Next.js stack, logged in through the dev-login flow, created a real request and
+subtask through the browser, moved it `open → done`, and confirmed its row actions correctly reduced to just
+"remove" once terminal. Found and fixed, unrelated to DSAR-08 but surfaced by that same live run: `/requests`'
+own row `<Fragment>` had no `key` of its own (only the inner `<tr>` did) — React warned "Each child in a list
+should have a unique key prop"; fixed by moving the key onto the `Fragment`.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

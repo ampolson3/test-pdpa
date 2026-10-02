@@ -2045,6 +2045,34 @@
         "passed": "ผ่าน",
         "failed": "ไม่ผ่าน"
       }
+    },
+    "subtasks": {
+      "title": "งานย่อย",
+      "action": "งาน",
+      "assignee": "ผู้รับผิดชอบ",
+      "status": "สถานะ",
+      "newTitle": "เพิ่มงานย่อย",
+      "groupSearch": "ค้นหาทีม",
+      "add": "เพิ่ม",
+      "start": "เริ่มดำเนินการ",
+      "markDone": "ทำเสร็จแล้ว",
+      "markNotApplicable": "ไม่เกี่ยวข้อง",
+      "remove": "ลบ",
+      "actions": {
+        "search": "ค้นหาข้อมูล",
+        "export": "ส่งออกข้อมูล",
+        "delete": "ลบข้อมูล",
+        "rectify": "แก้ไขข้อมูล",
+        "restrict": "ระงับการใช้ข้อมูล",
+        "stop_marketing": "หยุดการตลาด",
+        "review": "ตรวจสอบ"
+      },
+      "statuses": {
+        "open": "ยังไม่เริ่ม",
+        "in_progress": "กำลังดำเนินการ",
+        "done": "เสร็จแล้ว",
+        "not_applicable": "ไม่เกี่ยวข้อง"
+      }
     }
   },
   "dpoDeadlines": {
