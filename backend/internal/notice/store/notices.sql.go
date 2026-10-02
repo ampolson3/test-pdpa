@@ -14,7 +14,7 @@ import (
 
 const getNotice = `-- name: GetNotice :one
 SELECT id, legal_entity_id, subject_type_id, notice_type, title, slug, document_id, status, current_version_id,
-    owner_user_id, review_cycle_months, row_version, updated_at
+    owner_user_id, review_cycle_months, public_key, row_version, updated_at
 FROM notice.notices
 WHERE id = $1
 `
@@ -31,6 +31,7 @@ type GetNoticeRow struct {
 	CurrentVersionID  pgtype.UUID        `db:"current_version_id" json:"current_version_id"`
 	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
 	ReviewCycleMonths int16              `db:"review_cycle_months" json:"review_cycle_months"`
+	PublicKey         *string            `db:"public_key" json:"public_key"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
@@ -50,6 +51,7 @@ func (q *Queries) GetNotice(ctx context.Context, id uuid.UUID) (GetNoticeRow, er
 		&i.CurrentVersionID,
 		&i.OwnerUserID,
 		&i.ReviewCycleMonths,
+		&i.PublicKey,
 		&i.RowVersion,
 		&i.UpdatedAt,
 	)
@@ -58,7 +60,7 @@ func (q *Queries) GetNotice(ctx context.Context, id uuid.UUID) (GetNoticeRow, er
 
 const getNoticeByDocumentID = `-- name: GetNoticeByDocumentID :one
 SELECT id, legal_entity_id, subject_type_id, notice_type, title, slug, document_id, status, current_version_id,
-    owner_user_id, review_cycle_months, row_version, updated_at
+    owner_user_id, review_cycle_months, public_key, row_version, updated_at
 FROM notice.notices
 WHERE document_id = $1
 `
@@ -75,6 +77,7 @@ type GetNoticeByDocumentIDRow struct {
 	CurrentVersionID  pgtype.UUID        `db:"current_version_id" json:"current_version_id"`
 	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
 	ReviewCycleMonths int16              `db:"review_cycle_months" json:"review_cycle_months"`
+	PublicKey         *string            `db:"public_key" json:"public_key"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
@@ -94,8 +97,104 @@ func (q *Queries) GetNoticeByDocumentID(ctx context.Context, documentID uuid.UUI
 		&i.CurrentVersionID,
 		&i.OwnerUserID,
 		&i.ReviewCycleMonths,
+		&i.PublicKey,
 		&i.RowVersion,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getNoticeByPublicKeyEntity = `-- name: GetNoticeByPublicKeyEntity :one
+SELECT id, legal_entity_id, subject_type_id, notice_type, title, slug, document_id, status, current_version_id,
+    owner_user_id, review_cycle_months, public_key, row_version, updated_at
+FROM notice.notices
+WHERE id = $1
+`
+
+type GetNoticeByPublicKeyEntityRow struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	LegalEntityID     uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	SubjectTypeID     pgtype.UUID        `db:"subject_type_id" json:"subject_type_id"`
+	NoticeType        string             `db:"notice_type" json:"notice_type"`
+	Title             string             `db:"title" json:"title"`
+	Slug              string             `db:"slug" json:"slug"`
+	DocumentID        uuid.UUID          `db:"document_id" json:"document_id"`
+	Status            string             `db:"status" json:"status"`
+	CurrentVersionID  pgtype.UUID        `db:"current_version_id" json:"current_version_id"`
+	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	ReviewCycleMonths int16              `db:"review_cycle_months" json:"review_cycle_months"`
+	PublicKey         *string            `db:"public_key" json:"public_key"`
+	RowVersion        int32              `db:"row_version" json:"row_version"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// The public key's entity_id is the notice's own id (publickeys.EntityNotice) — same row GetNotice reads,
+// named separately so the public handler's intent is obvious at the call site.
+func (q *Queries) GetNoticeByPublicKeyEntity(ctx context.Context, id uuid.UUID) (GetNoticeByPublicKeyEntityRow, error) {
+	row := q.db.QueryRow(ctx, getNoticeByPublicKeyEntity, id)
+	var i GetNoticeByPublicKeyEntityRow
+	err := row.Scan(
+		&i.ID,
+		&i.LegalEntityID,
+		&i.SubjectTypeID,
+		&i.NoticeType,
+		&i.Title,
+		&i.Slug,
+		&i.DocumentID,
+		&i.Status,
+		&i.CurrentVersionID,
+		&i.OwnerUserID,
+		&i.ReviewCycleMonths,
+		&i.PublicKey,
+		&i.RowVersion,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getNoticeVersion = `-- name: GetNoticeVersion :one
+SELECT id, notice_id, version_no, document_version_id, languages, effective_from, is_material_change,
+    changes_purpose, checklist_result, public_url, published_at, published_by
+FROM notice.notice_versions
+WHERE notice_id = $1 AND version_no = $2
+`
+
+type GetNoticeVersionParams struct {
+	NoticeID  uuid.UUID `db:"notice_id" json:"notice_id"`
+	VersionNo int32     `db:"version_no" json:"version_no"`
+}
+
+type GetNoticeVersionRow struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	NoticeID          uuid.UUID          `db:"notice_id" json:"notice_id"`
+	VersionNo         int32              `db:"version_no" json:"version_no"`
+	DocumentVersionID uuid.UUID          `db:"document_version_id" json:"document_version_id"`
+	Languages         []string           `db:"languages" json:"languages"`
+	EffectiveFrom     pgtype.Date        `db:"effective_from" json:"effective_from"`
+	IsMaterialChange  bool               `db:"is_material_change" json:"is_material_change"`
+	ChangesPurpose    bool               `db:"changes_purpose" json:"changes_purpose"`
+	ChecklistResult   []byte             `db:"checklist_result" json:"checklist_result"`
+	PublicUrl         *string            `db:"public_url" json:"public_url"`
+	PublishedAt       pgtype.Timestamptz `db:"published_at" json:"published_at"`
+	PublishedBy       pgtype.UUID        `db:"published_by" json:"published_by"`
+}
+
+func (q *Queries) GetNoticeVersion(ctx context.Context, arg GetNoticeVersionParams) (GetNoticeVersionRow, error) {
+	row := q.db.QueryRow(ctx, getNoticeVersion, arg.NoticeID, arg.VersionNo)
+	var i GetNoticeVersionRow
+	err := row.Scan(
+		&i.ID,
+		&i.NoticeID,
+		&i.VersionNo,
+		&i.DocumentVersionID,
+		&i.Languages,
+		&i.EffectiveFrom,
+		&i.IsMaterialChange,
+		&i.ChangesPurpose,
+		&i.ChecklistResult,
+		&i.PublicUrl,
+		&i.PublishedAt,
+		&i.PublishedBy,
 	)
 	return i, err
 }
@@ -106,7 +205,7 @@ INSERT INTO notice.notices (id, tenant_id, legal_entity_id, subject_type_id, not
 VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7, $8,
     NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
 RETURNING id, legal_entity_id, subject_type_id, notice_type, title, slug, document_id, status, current_version_id,
-    owner_user_id, review_cycle_months, row_version, updated_at
+    owner_user_id, review_cycle_months, public_key, row_version, updated_at
 `
 
 type InsertNoticeParams struct {
@@ -132,6 +231,7 @@ type InsertNoticeRow struct {
 	CurrentVersionID  pgtype.UUID        `db:"current_version_id" json:"current_version_id"`
 	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
 	ReviewCycleMonths int16              `db:"review_cycle_months" json:"review_cycle_months"`
+	PublicKey         *string            `db:"public_key" json:"public_key"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
@@ -160,6 +260,7 @@ func (q *Queries) InsertNotice(ctx context.Context, arg InsertNoticeParams) (Ins
 		&i.CurrentVersionID,
 		&i.OwnerUserID,
 		&i.ReviewCycleMonths,
+		&i.PublicKey,
 		&i.RowVersion,
 		&i.UpdatedAt,
 	)
@@ -180,6 +281,71 @@ type InsertNoticeActivityLinkParams struct {
 func (q *Queries) InsertNoticeActivityLink(ctx context.Context, arg InsertNoticeActivityLinkParams) error {
 	_, err := q.db.Exec(ctx, insertNoticeActivityLink, arg.NoticeID, arg.ActivityID)
 	return err
+}
+
+const insertNoticeVersion = `-- name: InsertNoticeVersion :one
+INSERT INTO notice.notice_versions (id, tenant_id, notice_id, version_no, document_version_id, languages,
+    effective_from, checklist_result, public_url, published_at, published_by, created_by, updated_by)
+VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7, $8, now(),
+    NULLIF(current_setting('app.user_id', true), '')::uuid,
+    NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
+RETURNING id, notice_id, version_no, document_version_id, languages, effective_from, is_material_change,
+    changes_purpose, checklist_result, public_url, published_at, published_by
+`
+
+type InsertNoticeVersionParams struct {
+	ID                uuid.UUID   `db:"id" json:"id"`
+	NoticeID          uuid.UUID   `db:"notice_id" json:"notice_id"`
+	VersionNo         int32       `db:"version_no" json:"version_no"`
+	DocumentVersionID uuid.UUID   `db:"document_version_id" json:"document_version_id"`
+	Languages         []string    `db:"languages" json:"languages"`
+	EffectiveFrom     pgtype.Date `db:"effective_from" json:"effective_from"`
+	ChecklistResult   []byte      `db:"checklist_result" json:"checklist_result"`
+	PublicUrl         *string     `db:"public_url" json:"public_url"`
+}
+
+type InsertNoticeVersionRow struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	NoticeID          uuid.UUID          `db:"notice_id" json:"notice_id"`
+	VersionNo         int32              `db:"version_no" json:"version_no"`
+	DocumentVersionID uuid.UUID          `db:"document_version_id" json:"document_version_id"`
+	Languages         []string           `db:"languages" json:"languages"`
+	EffectiveFrom     pgtype.Date        `db:"effective_from" json:"effective_from"`
+	IsMaterialChange  bool               `db:"is_material_change" json:"is_material_change"`
+	ChangesPurpose    bool               `db:"changes_purpose" json:"changes_purpose"`
+	ChecklistResult   []byte             `db:"checklist_result" json:"checklist_result"`
+	PublicUrl         *string            `db:"public_url" json:"public_url"`
+	PublishedAt       pgtype.Timestamptz `db:"published_at" json:"published_at"`
+	PublishedBy       pgtype.UUID        `db:"published_by" json:"published_by"`
+}
+
+func (q *Queries) InsertNoticeVersion(ctx context.Context, arg InsertNoticeVersionParams) (InsertNoticeVersionRow, error) {
+	row := q.db.QueryRow(ctx, insertNoticeVersion,
+		arg.ID,
+		arg.NoticeID,
+		arg.VersionNo,
+		arg.DocumentVersionID,
+		arg.Languages,
+		arg.EffectiveFrom,
+		arg.ChecklistResult,
+		arg.PublicUrl,
+	)
+	var i InsertNoticeVersionRow
+	err := row.Scan(
+		&i.ID,
+		&i.NoticeID,
+		&i.VersionNo,
+		&i.DocumentVersionID,
+		&i.Languages,
+		&i.EffectiveFrom,
+		&i.IsMaterialChange,
+		&i.ChangesPurpose,
+		&i.ChecklistResult,
+		&i.PublicUrl,
+		&i.PublishedAt,
+		&i.PublishedBy,
+	)
+	return i, err
 }
 
 const listNoticeActivityLinks = `-- name: ListNoticeActivityLinks :many
@@ -206,9 +372,65 @@ func (q *Queries) ListNoticeActivityLinks(ctx context.Context, noticeID uuid.UUI
 	return items, nil
 }
 
+const listNoticeVersions = `-- name: ListNoticeVersions :many
+SELECT id, notice_id, version_no, document_version_id, languages, effective_from, is_material_change,
+    changes_purpose, checklist_result, public_url, published_at, published_by
+FROM notice.notice_versions
+WHERE notice_id = $1
+ORDER BY version_no DESC
+`
+
+type ListNoticeVersionsRow struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	NoticeID          uuid.UUID          `db:"notice_id" json:"notice_id"`
+	VersionNo         int32              `db:"version_no" json:"version_no"`
+	DocumentVersionID uuid.UUID          `db:"document_version_id" json:"document_version_id"`
+	Languages         []string           `db:"languages" json:"languages"`
+	EffectiveFrom     pgtype.Date        `db:"effective_from" json:"effective_from"`
+	IsMaterialChange  bool               `db:"is_material_change" json:"is_material_change"`
+	ChangesPurpose    bool               `db:"changes_purpose" json:"changes_purpose"`
+	ChecklistResult   []byte             `db:"checklist_result" json:"checklist_result"`
+	PublicUrl         *string            `db:"public_url" json:"public_url"`
+	PublishedAt       pgtype.Timestamptz `db:"published_at" json:"published_at"`
+	PublishedBy       pgtype.UUID        `db:"published_by" json:"published_by"`
+}
+
+func (q *Queries) ListNoticeVersions(ctx context.Context, noticeID uuid.UUID) ([]ListNoticeVersionsRow, error) {
+	rows, err := q.db.Query(ctx, listNoticeVersions, noticeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListNoticeVersionsRow
+	for rows.Next() {
+		var i ListNoticeVersionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.NoticeID,
+			&i.VersionNo,
+			&i.DocumentVersionID,
+			&i.Languages,
+			&i.EffectiveFrom,
+			&i.IsMaterialChange,
+			&i.ChangesPurpose,
+			&i.ChecklistResult,
+			&i.PublicUrl,
+			&i.PublishedAt,
+			&i.PublishedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listNotices = `-- name: ListNotices :many
 SELECT id, legal_entity_id, subject_type_id, notice_type, title, slug, document_id, status, current_version_id,
-    owner_user_id, review_cycle_months, row_version, updated_at
+    owner_user_id, review_cycle_months, public_key, row_version, updated_at
 FROM notice.notices
 WHERE ($1::text IS NULL OR notice_type = $1)
   AND ($2::text IS NULL OR status = $2)
@@ -238,6 +460,7 @@ type ListNoticesRow struct {
 	CurrentVersionID  pgtype.UUID        `db:"current_version_id" json:"current_version_id"`
 	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
 	ReviewCycleMonths int16              `db:"review_cycle_months" json:"review_cycle_months"`
+	PublicKey         *string            `db:"public_key" json:"public_key"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
@@ -269,6 +492,7 @@ func (q *Queries) ListNotices(ctx context.Context, arg ListNoticesParams) ([]Lis
 			&i.CurrentVersionID,
 			&i.OwnerUserID,
 			&i.ReviewCycleMonths,
+			&i.PublicKey,
 			&i.RowVersion,
 			&i.UpdatedAt,
 		); err != nil {
@@ -280,4 +504,63 @@ func (q *Queries) ListNotices(ctx context.Context, arg ListNoticesParams) ([]Lis
 		return nil, err
 	}
 	return items, nil
+}
+
+const setNoticePublished = `-- name: SetNoticePublished :one
+
+UPDATE notice.notices
+SET status = 'published', current_version_id = $2, public_key = COALESCE($3::varchar, public_key),
+    updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE id = $1
+RETURNING id, legal_entity_id, subject_type_id, notice_type, title, slug, document_id, status, current_version_id,
+    owner_user_id, review_cycle_months, public_key, row_version, updated_at
+`
+
+type SetNoticePublishedParams struct {
+	ID               uuid.UUID   `db:"id" json:"id"`
+	CurrentVersionID pgtype.UUID `db:"current_version_id" json:"current_version_id"`
+	PublicKey        *string     `db:"public_key" json:"public_key"`
+}
+
+type SetNoticePublishedRow struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	LegalEntityID     uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	SubjectTypeID     pgtype.UUID        `db:"subject_type_id" json:"subject_type_id"`
+	NoticeType        string             `db:"notice_type" json:"notice_type"`
+	Title             string             `db:"title" json:"title"`
+	Slug              string             `db:"slug" json:"slug"`
+	DocumentID        uuid.UUID          `db:"document_id" json:"document_id"`
+	Status            string             `db:"status" json:"status"`
+	CurrentVersionID  pgtype.UUID        `db:"current_version_id" json:"current_version_id"`
+	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	ReviewCycleMonths int16              `db:"review_cycle_months" json:"review_cycle_months"`
+	PublicKey         *string            `db:"public_key" json:"public_key"`
+	RowVersion        int32              `db:"row_version" json:"row_version"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// PNG-06: version tracking + the public page. notice.notice_versions was already fully specified in the
+// baseline migrations (effective_from, document_version_id, checklist_result, public_url, ...).
+// First publish sets status + current_version_id together with the newly issued public key; a later publish
+// only needs the first two (public_key stays NULL in the params and the COALESCE keeps the existing one).
+func (q *Queries) SetNoticePublished(ctx context.Context, arg SetNoticePublishedParams) (SetNoticePublishedRow, error) {
+	row := q.db.QueryRow(ctx, setNoticePublished, arg.ID, arg.CurrentVersionID, arg.PublicKey)
+	var i SetNoticePublishedRow
+	err := row.Scan(
+		&i.ID,
+		&i.LegalEntityID,
+		&i.SubjectTypeID,
+		&i.NoticeType,
+		&i.Title,
+		&i.Slug,
+		&i.DocumentID,
+		&i.Status,
+		&i.CurrentVersionID,
+		&i.OwnerUserID,
+		&i.ReviewCycleMonths,
+		&i.PublicKey,
+		&i.RowVersion,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

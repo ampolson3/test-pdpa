@@ -81,7 +81,7 @@ PNG-02,PNG,ตรวจเนื้อหาครบตาม ม.23,Mandatory 
 PNG-03,PNG,แม่แบบตามกลุ่มเจ้าของข้อมูล,Templates by data subject,Must,P1,สร้าง,แนวปฏิบัติตลาดไทย,LEGAL,S,S,N,3,3,0.7,0,2.1,"PNG-01, T15",BP-04,docs/modules/PNG.md#png-03,เลือก template แล้วได้ร่างประกาศของกลุ่มนั้นทันที,done
 PNG-04,PNG,ประกาศกรณีเก็บจากแหล่งอื่น,Indirect collection notice,Must,P1,สร้าง,ม.25,OWNER SCHED DS,M,S,N,5,3,1.0,0,2.8,"PLT-05, PLT-04",BP-04,docs/modules/PNG.md#png-04,ระบบเตือนก่อนครบ 30 วัน และปิดรายการได้เมื่อมีหลักฐานการแจ้ง,done
 PNG-05,PNG,ประกาศสองภาษา,TH/EN notices,Must,P1,สร้าง,ม.23,LEGAL,S,S,N,3,3,0.7,0,2.1,PLT-03,BP-04,docs/modules/PNG.md#png-05,publish ไม่ได้ถ้าฉบับแปลยังไม่อัปเดตตามเวอร์ชันล่าสุด (ตั้งค่าได้),done
-PNG-06,PNG,จัดการเวอร์ชัน,Versioning,Must,P1,เผยแพร่,ม.23,LEGAL DPO,S,S,N,3,3,0.7,0,2.1,PLT-08,BP-04,docs/modules/PNG.md#png-06,หน้า public แสดงเวอร์ชันปัจจุบันและดูประวัติย้อนหลังได้,todo
+PNG-06,PNG,จัดการเวอร์ชัน,Versioning,Must,P1,เผยแพร่,ม.23,LEGAL DPO,S,S,N,3,3,0.7,0,2.1,PLT-08,BP-04,docs/modules/PNG.md#png-06,หน้า public แสดงเวอร์ชันปัจจุบันและดูประวัติย้อนหลังได้,done
 PNG-07,PNG,แจ้งการเปลี่ยนแปลงและขอความยินยอมใหม่,Change notification,Must,P1,เผยแพร่,ม.21,DPO DS,M,S,N,5,3,1.0,0,2.8,"PNG-06, CON-12",BP-04,docs/modules/PNG.md#png-07,การเปลี่ยนวัตถุประสงค์สร้างงานขอความยินยอมใหม่อัตโนมัติ,todo
 PNG-08,PNG,เผยแพร่และฝังในระบบ,Hosting & embed,Should,P1,เผยแพร่,แนวปฏิบัติตลาด,WEB,S,M,Y,3,5,1.0,2.0,2.8,PLT-17,BP-04,docs/modules/PNG.md#png-08,ประกาศแสดงบนเว็บลูกค้าผ่าน embed และอัปเดตเองเมื่อ publish,todo
 PNG-14,PNG,อนุมัติก่อนเผยแพร่,Review & approval,Should,P1,กำกับ,แนวปฏิบัติตลาด,DPO,XS,S,N,1,3,0.5,0,1.4,PLT-08,BP-04,docs/modules/PNG.md#png-14,ประกาศเผยแพร่ได้หลังอนุมัติเท่านั้น,todo

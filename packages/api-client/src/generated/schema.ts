@@ -2166,6 +2166,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/v1/notices/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A published notice's current version (PNG-06, no login)
+         * @description Tenant is resolved from `key` through platform.public_keys before the tenant transaction starts (ADR-19,
+         *     same mechanism as /public/v1/collection-points/{key}). `content` carries one rendered HTML body per
+         *     language the version was published in, merge fields and clauses already resolved.
+         */
+        get: operations["noticeGetPublicNotice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/notices/{key}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A published notice's version history (PNG-06, no login) */
+        get: operations["noticeListPublicVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/notices/{key}/versions/{versionNo}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One specific past published version of a notice (PNG-06, no login) */
+        get: operations["noticeGetPublicVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/consents": {
         parameters: {
             query?: never;
@@ -3032,6 +3088,23 @@ export interface paths {
         };
         /** Whether the notice's English content still matches its latest Thai content (PNG-05) — a notice's document can't be published while the translation is stale */
         get: operations["noticeGetTranslationStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/notices/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every published version of a notice, newest first (PNG-06) — the admin-side counterpart of the public history page */
+        get: operations["noticeListVersions"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4301,8 +4374,42 @@ export interface components {
             owner_user_id?: components["schemas"]["Uuid"];
             review_cycle_months: number;
             activity_ids?: components["schemas"]["Uuid"][];
+            /** @description PNG-06 — the notice's public page path (/public/v1/notices/{key}), once it has been published at least once; absent before that */
+            public_url?: string | null;
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
+        };
+        NoticeVersion: {
+            id: components["schemas"]["Uuid"];
+            notice_id: components["schemas"]["Uuid"];
+            version_no: number;
+            languages: ("th" | "en")[];
+            /** Format: date */
+            effective_from: string;
+            is_material_change: boolean;
+            changes_purpose: boolean;
+            /** @description PNG-02's ม.23 checklist result as it stood at the moment this version was published (a snapshot, never recomputed later) */
+            checklist: components["schemas"]["NoticeChecklistItem"][];
+            public_url?: string | null;
+            published_at: components["schemas"]["Timestamp"];
+        };
+        PublicNotice: {
+            title: string;
+            notice_type: components["schemas"]["NoticeType"];
+            version_no: number;
+            /** Format: date */
+            effective_from: string;
+            languages: ("th" | "en")[];
+            /** @description One rendered HTML body per language, merge fields and clauses already resolved */
+            content: {
+                [key: string]: string;
+            };
+        };
+        PublicNoticeVersion: {
+            version_no: number;
+            /** Format: date */
+            effective_from: string;
+            published_at: components["schemas"]["Timestamp"];
         };
         /** @enum {string} */
         NoticeChecklistItemCode: "purpose_basis" | "consequence" | "data_retention" | "recipients" | "contact" | "rights";
@@ -10818,6 +10925,88 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
+    noticeGetPublicNotice: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                /** @description Public key of the notice (random, at least 128 bits, base64url) */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The notice's current published version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicNotice"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    noticeListPublicVersions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Every published version, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["PublicNoticeVersion"][];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    noticeGetPublicVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                key: string;
+                versionNo: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description That version's content */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicNotice"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
     consentSubmitConsents: {
         parameters: {
             query?: never;
@@ -13021,6 +13210,36 @@ export interface operations {
                     "application/json": {
                         /** @description The Thai content changed since the last published version but the English content did not */
                         stale: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    noticeListVersions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["NoticeVersion"][];
                     };
                 };
             };

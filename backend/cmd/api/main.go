@@ -35,6 +35,7 @@ import (
 	iamhttp "pdpa-platform/internal/iam/http"
 	iamservice "pdpa-platform/internal/iam/service"
 	noticehttp "pdpa-platform/internal/notice/http"
+	noticepublichttp "pdpa-platform/internal/notice/publichttp"
 	noticeservice "pdpa-platform/internal/notice/service"
 	orghttp "pdpa-platform/internal/org/http"
 	orgservice "pdpa-platform/internal/org/service"
@@ -262,6 +263,7 @@ func run() error {
 	noticeSvc := &noticeservice.Service{Audit: auditSvc, Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc, Files: fileSvc, Notify: notifySvc, River: riverClient,
 		EnforceChecklist: os.Getenv("NOTICE_CHECKLIST_ENFORCE") != "false", EnforceTranslationSync: os.Getenv("NOTICE_TRANSLATION_SYNC_ENFORCE") != "false"}
 	docsSvc.SetValidate("notice", noticeSvc.CheckPublishable)                                // PNG-02: ม.23 checklist gates the notice's document publish
+	docsSvc.SetOnPublished("notice", noticeSvc.OnDocumentPublished)                          // PNG-06: version history + the public page's key
 	fileSvc.EntityPermissions[noticeservice.IndirectCollectionType] = "notice.indirect.read" // PNG-04 notice evidence
 	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                  // BRE-12 evidence
 	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read"   // BRE-10 recipient lists
@@ -284,7 +286,9 @@ func run() error {
 	dpoSvc.Dsar = dsarSvc      // DPO-05: DSAR's 30-day SLA on the notification center
 	dpoSvc.Breach = breachSvc // DPO-05: breach's 72-hour PDPC clock on the notification center
 
-	// Public consent forms (BP-01): tenant and principal from the public key, then the same Idempotency + Tx chain.
+	// Public consent forms (BP-01) and published notices (PNG-06): tenant and principal from the public key,
+	// then the same Idempotency + Tx chain. Both mount on the same group — chi dispatches by path, and
+	// publickeys.Middleware's own path regex already distinguishes /collection-points/ from /notices/.
 	r.Group(func(g chi.Router) {
 		g.Use(publickeys.Middleware(pool))
 		g.Use(idemMw.Handler)
@@ -293,6 +297,9 @@ func run() error {
 			[]consentpublichttp.StrictMiddlewareFunc{consentpublichttp.RequestInfo},
 			consentpublichttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		consentpublichttp.HandlerWithOptions(strictPublic, consentpublichttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+		strictNoticePublic := noticepublichttp.NewStrictHandlerWithOptions(noticepublichttp.NewStrict(noticeSvc), nil,
+			noticepublichttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		noticepublichttp.HandlerWithOptions(strictNoticePublic, noticepublichttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 	})
 
 	// The inbox stream (SSE) is the one route outside Idempotency + Tx: the Tx middleware buffers the

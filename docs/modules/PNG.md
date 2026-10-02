@@ -393,6 +393,36 @@ publish, HTTP contract.
 
 **Acceptance criteria:** หน้า public แสดงเวอร์ชันปัจจุบันและดูประวัติย้อนหลังได้
 
+**Implementation (PNG-06):** `docs.Service` gained a second extension point symmetric with PNG-02's own
+`SetValidate` — `SetOnPublished(docType, fn)`, called inside the same publish transaction right after PLT-08
+freezes a new `platform.document_versions` row, so a module can react to its own document's publish without
+`docs` ever reaching back into that module (rule 9 stays intact). `notice.Service.OnDocumentPublished`
+(registered in `cmd/api/main.go` next to the existing `SetValidate("notice", ...)` call) inserts one
+`notice.notice_versions` row per publish (version_no, document_version_id, languages, effective_from — default
+`now()` since no input wires `is_material_change`/`changes_purpose` yet, that is PNG-07's job) and snapshots
+PNG-02's own `Checklist(content)` result into `checklist_result` so a later change to the checklist logic can
+never rewrite history. A public key (`notice.notices.public_key`, migration 00050) is issued on the *first*
+publish only — `SetNoticePublished`'s sqlc query uses `COALESCE(sqlc.narg(public_key), public_key)` so every
+later publish leaves an already-bookmarked public URL alone. `publickeys.Middleware`'s single-entity regex was
+generalized (`EntityNotice` alongside the existing `EntityCollectionPoint`) rather than adding a second
+mechanism, so `/public/v1/notices/{key}` resolves tenant the exact way CON-09's own collection-point links do.
+A new, deliberately permission-free `docs.Service.PublicVersionHTML` (reuses the existing `buildInputs`/
+`render.HTML` the authenticated `Export` path already uses) serves fully merge-field-resolved HTML to an
+anonymous caller — the module's own prior lookup of the version through a notice it owns is what already
+proves access, so no fake "public" grant is threaded through the normal `authz`-gated read path.
+API: `GET /admin/v1/notices/{id}/versions` (`notice.document.read`); public
+`GET /public/v1/notices/{key}`, `/public/v1/notices/{key}/versions`,
+`/public/v1/notices/{key}/versions/{versionNo}` (`x-permission: public`). UI: `/notices` gained a
+version-history toggle per row (public link or "not published yet", a version_no/effective_from/published_at
+table) next to the existing checklist toggle; the portal gained a new public page,
+`/[locale]/n/[key]` (mirrors the existing `/[locale]/c/[key]` consent-form pattern exactly — a server
+component fetching `/public/v1/notices/...` directly, `?v={no}` for a past version, a history list linking
+back to the current one). Tests: unit (`OnDocumentPublished` records the version and issues a key on first
+publish only, re-publish reuses it; `PublicNotice` serves the current version and history by number; unknown
+key/version is `ErrNotFound`), HTTP contract (401/200/404 on the admin versions list; 404/200 with correct
+rendered HTML on all three public endpoints), `pnpm --filter @pdpa/admin build` and
+`pnpm --filter @pdpa/portal build` both verified clean including the new routes.
+
 <a id="png-07"></a>
 ### PNG-07 แจ้งการเปลี่ยนแปลงและขอความยินยอมใหม่
 

@@ -6,6 +6,7 @@ export type NoticeType = components["schemas"]["NoticeType"];
 export type NoticeStatus = components["schemas"]["NoticeStatus"];
 export type NoticeWizardInput = components["schemas"]["NoticeWizardInput"];
 export type NoticeChecklistItem = components["schemas"]["NoticeChecklistItem"];
+export type NoticeVersion = components["schemas"]["NoticeVersion"];
 export type IndirectCollection = components["schemas"]["IndirectCollection"];
 export type IndirectCollectionInput = components["schemas"]["IndirectCollectionInput"];
 export type IndirectCollectionStatus = components["schemas"]["IndirectCollectionStatus"];
@@ -80,6 +81,19 @@ export function useNoticeTranslationStatus(client: ApiClient, id: string | undef
       const { data, error } = await client.GET("/admin/v1/notices/{id}/translation-status", { params: { path: { id: id! } } });
       if (error) throw error;
       return data.stale;
+    },
+  });
+}
+
+/** GET /admin/v1/notices/{id}/versions (PNG-06) — every published version, newest first. */
+export function useNoticeVersions(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...noticeKey(id ?? ""), "versions"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/notices/{id}/versions", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data.data;
     },
   });
 }

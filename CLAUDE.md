@@ -1443,6 +1443,52 @@ empty and over-50 batches refused), HTTP contract (403 without `ropa.activity.cr
 empty array — the schema's own `minItems`, 201 with a 10-activity batch's response carrying exactly 10
 entries).
 
+### PNG-06 จัดการเวอร์ชัน (`docs/modules/PNG.md#png-06`) — done
+`internal/platform/docs` gained a second extension point symmetric with PNG-02's own `SetValidate`:
+`Service.SetOnPublished(docType, fn)`, called inside the same publish transaction right after PLT-08 freezes
+a new `platform.document_versions` row and flips the document to published — gives a module the chance to
+write its own per-version record from the frozen content without `docs` ever reaching back into that module
+(rule 9). `internal/notice/service/versions.go`'s `OnDocumentPublished` (registered in `cmd/api/main.go`
+right after the existing `SetValidate("notice", ...)` line) inserts one `notice.notice_versions` row per
+publish — a baseline-schema table purpose-built for this feature, distinct from PLT-16's own generic
+versioning (version_no, document_version_id, languages, effective_from, checklist_result jsonb) —
+snapshotting PNG-02's own `Checklist(content)` result so a later change to the checklist logic can never
+rewrite history; `is_material_change`/`changes_purpose` stay at their column defaults (false) since no
+screen wires them yet (PNG-07's job). A public key (`notice.notices.public_key`, migration 00050) is issued
+only on the *first* publish — `SetNoticePublished`'s sqlc query uses
+`COALESCE(sqlc.narg(public_key)::varchar, public_key)` so every later publish leaves an already-bookmarked
+public URL untouched. `internal/platform/publickeys`'s single-entity regex was generalized
+(`EntityNotice = "notice"` alongside the existing `EntityCollectionPoint`, `pathKeyRE` widened to
+`^/public/v1/(?:collection-points|notices)/([^/]+)`) rather than adding a second tenant-resolution mechanism
+— `/public/v1/notices/{key}` resolves tenant through the exact same `publickeys.Middleware` CON-09's
+collection-point links already use.
+
+The acceptance criterion's "หน้า public แสดง...ได้" needed a way to serve real rendered HTML to an anonymous
+caller: every existing read on `docs.Service` (`Get`/`PublishedContent`/`Export`/`Versions`) internally gates
+on `authz` permissions a `/public/v1` request never carries, so a new, deliberately permission-free
+`Service.PublicVersionHTML(ctx, documentID, versionID, lang)` was added instead of threading a fake "public"
+grant through the normal gated path — it reuses the existing `buildInputs(frozen)` helper `Export` already
+uses internally to resolve merge fields/clauses into real HTML via `render.HTML(in)`. Access is proven by the
+module's own prior lookup of the version id through a notice it owns (resolved via the public key), not by
+any permission check inside `docs` itself.
+
+API: `GET /admin/v1/notices/{id}/versions` (`notice.document.read`, cursor-free list, newest first); public
+`GET /public/v1/notices/{key}`, `GET /public/v1/notices/{key}/versions`,
+`GET /public/v1/notices/{key}/versions/{versionNo}` (`x-permission: public`, `security: []`, same `cmd/api`
+public `r.Group` consent's own `publichttp` already shares). UI: `/notices` gained a version-history toggle
+per row (the public URL when issued, or "not published yet"; a table of version_no/effective_from/
+published_at) next to the existing checklist toggle, using a new `useNoticeVersions` api-client hook. The
+portal gained a new public page, `/[locale]/n/[key]` (`apps/portal/src/lib/notice.ts` +
+`apps/portal/src/app/[locale]/n/[key]/page.tsx`) mirroring the existing `/[locale]/c/[key]` consent-form
+pattern exactly — a server component, never calling the Go API from the browser, `?v={no}` to view a past
+version, a history list linking back to the current one. Tests: unit (`OnDocumentPublished` records the
+version and issues a key only on first publish, a second publish reuses the existing key;
+`PublicNotice`/`PublicVersions`/`PublicVersionHTML` serve the current version and full history by number;
+unknown key or version number is `ErrNotFound`; two-tenant isolation via the existing harness), HTTP contract
+(401/200/404 on the admin versions list; 404 for an unknown key, 200 with the correct title and rendered HTML
+on all three public endpoints, including a specific past version). `pnpm --filter @pdpa/admin build` and
+`pnpm --filter @pdpa/portal build` both verified clean, including the new routes.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

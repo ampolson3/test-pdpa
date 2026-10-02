@@ -497,6 +497,11 @@ func (s *Service) publish(ctx context.Context, docType string, id uuid.UUID, sna
 	if err := q.SetDocumentPublished(ctx, docsstore.SetDocumentPublishedParams{ID: id, Title: d.Title, VersionID: pgtype.UUID{Bytes: vid, Valid: true}}); err != nil {
 		return err
 	}
+	if fn := s.published(docType); fn != nil {
+		if err := fn(ctx, id, PublishedUpdate{DocumentVersionID: vid, VersionNo: pub.No, Languages: langs, EffectiveFrom: eff, Content: d.Content}); err != nil {
+			return err
+		}
+	}
 	_, g, _ := currentUser(ctx)
 	if _, err := jobs.Enqueue(ctx, s.River, RenderArgs{TenantArgs: jobs.TenantArgs{TenantID: g.TenantID}, VersionID: vid.String()},
 		&river.InsertOpts{MaxAttempts: renderAttempts}); err != nil {
@@ -568,6 +573,38 @@ func (s *Service) Versions(ctx context.Context, id uuid.UUID) ([]PublishedVersio
 			ApprovedAt: r.ApprovedAt, CreatedAt: r.CreatedAt}))
 	}
 	return out, nil
+}
+
+// PublicVersionHTML renders one published version's content in one language as HTML (merge fields and
+// clauses already resolved, same as Export's "html" format), for a module's own /public/v1 page —
+// deliberately no permission check: there is no caller identity on a public request to check one against,
+// and the module's own lookup of versionID through a record it owns is what already proved the caller may
+// see this one specific, already-published version (rule 2's "deny by default" is satisfied by the public
+// key itself naming exactly one entity, not by a permission grant). documentID is the caller's own
+// already-resolved document, checked here only as a sanity bound against a version id from a different one.
+func (s *Service) PublicVersionHTML(ctx context.Context, documentID, versionID uuid.UUID, lang string) ([]byte, error) {
+	if lang != "th" && lang != "en" {
+		return nil, invalid("language")
+	}
+	r, err := docsstore.New(pdb.MustTxFromContext(ctx)).GetDocumentVersion(ctx, versionID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	if r.DocumentID != documentID {
+		return nil, ErrNotFound
+	}
+	var f frozen
+	if err := json.Unmarshal(r.Content, &f); err != nil {
+		return nil, err
+	}
+	in, ok := buildInputs(f)[lang]
+	if !ok {
+		return nil, invalid("the version has no %s text", lang)
+	}
+	return render.HTML(in), nil
 }
 
 // PublishedVersionOf returns one published version (for modules that link to it, e.g. BRE-09's PDPC notice).

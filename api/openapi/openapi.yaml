@@ -6670,6 +6670,97 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /public/v1/notices/{key}:
+    get:
+      operationId: noticeGetPublicNotice
+      tags: [notice]
+      summary: A published notice's current version (PNG-06, no login)
+      description: |
+        Tenant is resolved from `key` through platform.public_keys before the tenant transaction starts (ADR-19,
+        same mechanism as /public/v1/collection-points/{key}). `content` carries one rendered HTML body per
+        language the version was published in, merge fields and clauses already resolved.
+      x-permission: public
+      x-module: notice
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Public key of the notice (random, at least 128 bits, base64url)
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: The notice's current published version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicNotice'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /public/v1/notices/{key}/versions:
+    get:
+      operationId: noticeListPublicVersions
+      tags: [notice]
+      summary: A published notice's version history (PNG-06, no login)
+      x-permission: public
+      x-module: notice
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Every published version, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PublicNoticeVersion'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /public/v1/notices/{key}/versions/{versionNo}:
+    get:
+      operationId: noticeGetPublicVersion
+      tags: [notice]
+      summary: One specific past published version of a notice (PNG-06, no login)
+      x-permission: public
+      x-module: notice
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - name: versionNo
+          in: path
+          required: true
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: That version's content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicNotice'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/v1/consents:
     post:
       operationId: consentSubmitConsents
@@ -9249,6 +9340,41 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/notices/{id}/versions:
+    get:
+      operationId: noticeListVersions
+      tags: [notice]
+      summary: Every published version of a notice, newest first (PNG-06) — the admin-side counterpart of the public history page
+      x-permission: notice.document.read
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NoticeVersion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/notices/indirect-collections:
     get:
       operationId: noticeListIndirectCollections
@@ -11324,8 +11450,54 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Uuid'
+        public_url:
+          type: string
+          nullable: true
+          description: PNG-06 — the notice's public page path (/public/v1/notices/{key}), once it has been published at least once; absent before that
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
+    NoticeVersion:
+      type: object
+      required: [id, notice_id, version_no, languages, effective_from, is_material_change, changes_purpose, checklist, published_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        notice_id: {$ref: '#/components/schemas/Uuid'}
+        version_no: {type: integer}
+        languages:
+          type: array
+          items: {type: string, enum: [th, en]}
+        effective_from: {type: string, format: date}
+        is_material_change: {type: boolean}
+        changes_purpose: {type: boolean}
+        checklist:
+          type: array
+          items:
+            $ref: '#/components/schemas/NoticeChecklistItem'
+          description: PNG-02's ม.23 checklist result as it stood at the moment this version was published (a snapshot, never recomputed later)
+        public_url: {type: string, nullable: true}
+        published_at: {$ref: '#/components/schemas/Timestamp'}
+    PublicNotice:
+      type: object
+      required: [title, notice_type, version_no, effective_from, languages, content]
+      properties:
+        title: {type: string}
+        notice_type: {$ref: '#/components/schemas/NoticeType'}
+        version_no: {type: integer}
+        effective_from: {type: string, format: date}
+        languages:
+          type: array
+          items: {type: string, enum: [th, en]}
+        content:
+          type: object
+          description: One rendered HTML body per language, merge fields and clauses already resolved
+          additionalProperties: {type: string}
+    PublicNoticeVersion:
+      type: object
+      required: [version_no, effective_from, published_at]
+      properties:
+        version_no: {type: integer}
+        effective_from: {type: string, format: date}
+        published_at: {$ref: '#/components/schemas/Timestamp'}
     NoticeChecklistItemCode:
       type: string
       enum: [purpose_basis, consequence, data_retention, recipients, contact, rights]

@@ -1049,6 +1049,17 @@
       "cctv": "CCTV",
       "shareholder": "Shareholder",
       "member": "Member"
+    },
+    "versions": {
+      "title": "Versions",
+      "show": "Show history",
+      "hide": "Hide history",
+      "publicLink": "Public page link:",
+      "notPublishedYet": "Not published yet",
+      "none": "No published versions yet",
+      "versionNo": "Version",
+      "effectiveFrom": "Effective from",
+      "publishedAt": "Published at"
     }
   },
   "masterData": {
@@ -1514,6 +1525,17 @@
         "not_found": "This form doesn't exist",
         "no_change": "Nothing changed. To withdraw a consent you gave, contact the organization through the channels in its privacy notice."
       }
+    },
+    "notice": {
+      "notFound": "This notice was not found, or has not been published yet.",
+      "effectiveFrom": "Effective from",
+      "currentVersion": "Current version (v{no})",
+      "viewingVersion": "Viewing version {no} (not the current one)",
+      "backToCurrent": "Back to the current version",
+      "history": "Version history",
+      "historyEmpty": "Only the current version exists",
+      "published": "Published",
+      "view": "View"
     }
   },
   "breach": {

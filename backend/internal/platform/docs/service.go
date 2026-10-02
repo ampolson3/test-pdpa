@@ -102,9 +102,21 @@ type Service struct {
 	PDF        render.PDFRenderer // nil: PDFs are not produced (the version's render_status says failed)
 	Now        func() time.Time
 
-	mu         sync.RWMutex
-	policies   map[string]Policy
-	validators map[string]func(ctx context.Context, id uuid.UUID, d Draft, previous *Draft) error
+	mu          sync.RWMutex
+	policies    map[string]Policy
+	validators  map[string]func(ctx context.Context, id uuid.UUID, d Draft, previous *Draft) error
+	onPublished map[string]func(ctx context.Context, id uuid.UUID, u PublishedUpdate) error
+}
+
+// PublishedUpdate is what SetOnPublished's hook sees right after a document type's generic publish step froze
+// a new version — everything a module needs to keep its own per-version record (PNG-06's notice.notice_versions)
+// without re-deriving it from the draft snapshot a second time.
+type PublishedUpdate struct {
+	DocumentVersionID uuid.UUID
+	VersionNo         int32
+	Languages         []string
+	EffectiveFrom     *time.Time
+	Content           render.Content
 }
 
 // SetValidate registers an extra publish-time check for a document type, run after the generic merge-field /
@@ -128,6 +140,26 @@ func (s *Service) validator(docType string) func(ctx context.Context, id uuid.UU
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.validators[docType]
+}
+
+// SetOnPublished registers a document type's own after-publish step, run in the same transaction right after
+// the new version is frozen and the document row flips to published — the module's chance to keep its own
+// per-version record in step (PNG-06's notice.notice_versions: effective date, checklist snapshot, public
+// key) without re-reading the draft a second time. An error here rolls the whole publish back, same as any
+// other step in that one transaction. Call once at start-up, same sequencing rule as SetValidate.
+func (s *Service) SetOnPublished(docType string, fn func(ctx context.Context, id uuid.UUID, u PublishedUpdate) error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.onPublished == nil {
+		s.onPublished = map[string]func(ctx context.Context, id uuid.UUID, u PublishedUpdate) error{}
+	}
+	s.onPublished[docType] = fn
+}
+
+func (s *Service) published(docType string) func(ctx context.Context, id uuid.UUID, u PublishedUpdate) error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.onPublished[docType]
 }
 
 // Register offers a document type (at start-up, in internal/wiring).

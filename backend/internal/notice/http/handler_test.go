@@ -227,6 +227,18 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 		t.Errorf("checklist, unknown notice: %d, want 404", code)
 	}
 
+	// PNG-06 version history — nothing published yet in this harness, so the list is just empty.
+	versions := item + "/versions"
+	if code, _ := do("GET", versions, nil, nil); code != 401 {
+		t.Errorf("versions, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", versions, &viewer, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("versions (none published yet): %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/notices/"+uuid.New().String()+"/versions", &admin, nil); code != 404 {
+		t.Errorf("versions, unknown notice: %d, want 404", code)
+	}
+
 	// PNG-03 template groups + wizard.
 	if code, _ := do("GET", "/admin/v1/notices/template-groups", nil, nil); code != 401 {
 		t.Errorf("template-groups, no principal: %d, want 401", code)

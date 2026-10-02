@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
 import {
@@ -12,8 +12,10 @@ import {
   useNotices,
   useNoticeChecklist,
   useNoticeTranslationStatus,
+  useNoticeVersions,
   useTemplateGroups,
   type ApiClient,
+  type Notice,
   type NoticeType,
 } from "@pdpa/api-client";
 import { Link, useRouter } from "@/i18n/routing";
@@ -55,14 +57,58 @@ function ChecklistPanel({ client, noticeId }: { client: ApiClient; noticeId: str
   );
 }
 
-export function NoticesContent() {
+/** PNG-06: version history + the public page link once a notice has been published at least once. */
+function VersionsPanel({ client, notice, portalUrl, locale }: { client: ApiClient; notice: Notice; portalUrl: string; locale: string }) {
   const t = useTranslations("notices");
+  const versions = useNoticeVersions(client, notice.id);
+  const list = versions.data ?? [];
+  const publicLink = notice.public_url ? `${portalUrl.replace(/\/$/, "")}/${locale}${notice.public_url}` : "";
+  return (
+    <div className="space-y-2" data-testid="versions-panel">
+      {publicLink ? (
+        <p>
+          {t("versions.publicLink")}{" "}
+          <a className="text-sky-700 underline" href={publicLink} target="_blank" rel="noreferrer">
+            {publicLink}
+          </a>
+        </p>
+      ) : (
+        <p className="text-slate-500">{t("versions.notPublishedYet")}</p>
+      )}
+      {versions.isPending ? (
+        <p className="text-slate-500">{t("loading")}</p>
+      ) : list.length === 0 ? (
+        <p className="text-slate-500">{t("versions.none")}</p>
+      ) : (
+        <table className="w-full text-xs">
+          <thead className="text-left text-slate-500">
+            <tr><th className="py-1">{t("versions.versionNo")}</th><th className="py-1">{t("versions.effectiveFrom")}</th><th className="py-1">{t("versions.publishedAt")}</th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {list.map((v) => (
+              <tr key={v.id}>
+                <td className="py-1">{v.version_no}</td>
+                <td className="py-1">{v.effective_from}</td>
+                <td className="py-1">{new Date(v.published_at).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+export function NoticesContent({ portalUrl }: { portalUrl: string }) {
+  const t = useTranslations("notices");
+  const locale = useLocale();
   const canRead = usePermission("notice.document.read");
   const canCreate = usePermission("notice.document.create");
   const client = useMemo(() => createApiClient("/api/bff"), []);
   const router = useRouter();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [versionsOpen, setVersionsOpen] = useState<string | null>(null);
 
   const list = useNotices(client, {});
   const wizard = useCreateNoticeWizard(client);
@@ -167,7 +213,8 @@ export function NoticesContent() {
         <table className="w-full rounded-md border border-slate-200 bg-white" data-testid="notices-list">
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr><th className="px-3 py-2">{t("form.noticeTitle")}</th><th className="px-3 py-2">{t("form.noticeType")}</th>
-              <th className="px-3 py-2">{t("statusLabel")}</th><th className="px-3 py-2">{t("form.slug")}</th><th className="px-3 py-2">{t("checklist.title")}</th></tr>
+              <th className="px-3 py-2">{t("statusLabel")}</th><th className="px-3 py-2">{t("form.slug")}</th><th className="px-3 py-2">{t("checklist.title")}</th>
+              <th className="px-3 py-2">{t("versions.title")}</th></tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((n) => (
@@ -182,11 +229,23 @@ export function NoticesContent() {
                       {expanded === n.id ? t("checklist.hide") : t("checklist.check")}
                     </button>
                   </td>
+                  <td className="px-3 py-2">
+                    <button type="button" className="text-sky-700 underline" onClick={() => setVersionsOpen(versionsOpen === n.id ? null : n.id)} data-testid={`versions-toggle-${n.id}`}>
+                      {versionsOpen === n.id ? t("versions.hide") : t("versions.show")}
+                    </button>
+                  </td>
                 </tr>
                 {expanded === n.id && (
                   <tr>
-                    <td colSpan={5} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
                       <ChecklistPanel client={client} noticeId={n.id} />
+                    </td>
+                  </tr>
+                )}
+                {versionsOpen === n.id && (
+                  <tr>
+                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
+                      <VersionsPanel client={client} notice={n} portalUrl={portalUrl} locale={locale} />
                     </td>
                   </tr>
                 )}

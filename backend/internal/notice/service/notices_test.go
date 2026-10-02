@@ -49,7 +49,8 @@ func setup(t *testing.T, suffix string) env {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
 				`DELETE FROM notice.indirect_collections`, `DELETE FROM platform.files`,
-				`DELETE FROM notice.notice_activity_links`, `DELETE FROM notice.notices`,
+				`DELETE FROM notice.notice_activity_links`, `DELETE FROM notice.notice_versions`,
+				`DELETE FROM platform.public_keys`, `DELETE FROM notice.notices`,
 				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM ropa.activity_transfers`, `DELETE FROM ropa.activity_recipients`,
 				`DELETE FROM ropa.retention_rules`, `DELETE FROM ropa.activity_data`, `DELETE FROM ropa.activity_purposes`,
@@ -74,6 +75,7 @@ func setup(t *testing.T, suffix string) env {
 	docsSvc.RegisterVersioning()
 	svc := &noticeservice.Service{Audit: audit.New(), Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc, EnforceChecklist: true, EnforceTranslationSync: true}
 	docsSvc.SetValidate("notice", svc.CheckPublishable)
+	docsSvc.SetOnPublished("notice", svc.OnDocumentPublished) // PNG-06: version history + the public key, right after a real publish
 
 	var dpo uuid.UUID
 	if err := pdb.WithTenantTx(ctx, owner, tenant.ID.String(), "", func(ctx context.Context) error {

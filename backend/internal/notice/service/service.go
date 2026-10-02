@@ -65,6 +65,11 @@ type Docs interface {
 	SaveDraft(ctx context.Context, id uuid.UUID, rowVersion int32, d docsservice.Draft) (docsservice.Document, error)
 	Get(ctx context.Context, id uuid.UUID) (docsservice.Document, error)
 	PublishedContent(ctx context.Context, id uuid.UUID) (render.Content, bool, error)
+	// SetOnPublished wires OnDocumentPublished (PNG-06) into docs.Service's own generic publish step.
+	SetOnPublished(docType string, fn func(ctx context.Context, id uuid.UUID, u docsservice.PublishedUpdate) error)
+	// PublicVersionHTML renders one published version for the public page (PNG-06) — no permission check, see
+	// docs.Service's own doc comment for why that's safe here.
+	PublicVersionHTML(ctx context.Context, documentID, versionID uuid.UUID, lang string) ([]byte, error)
 }
 
 // Files is what PNG-04 needs from file storage (PLT-09): the caller's own clean upload as evidence of an

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	noticeservice "pdpa-platform/internal/notice/service"
 	"pdpa-platform/internal/pkg/httpx"
@@ -117,6 +118,38 @@ func toNoticeWire(n noticeservice.Notice) Notice {
 	if len(n.ActivityIDs) > 0 {
 		ids := append([]uuid.UUID(nil), n.ActivityIDs...)
 		w.ActivityIds = &ids
+	}
+	if n.PublicKey != nil {
+		url := "/n/" + *n.PublicKey // PNG-06: the portal's public page path for this notice's public key
+		w.PublicUrl = &url
+	}
+	return w
+}
+
+func (h *Strict) NoticeListVersions(ctx context.Context, req NoticeListVersionsRequestObject) (NoticeListVersionsResponseObject, error) {
+	list, err := h.svc.ListNoticeVersions(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := NoticeListVersions200JSONResponse{Data: make([]NoticeVersion, 0, len(list))}
+	for _, v := range list {
+		resp.Data = append(resp.Data, toNoticeVersionWire(v))
+	}
+	return resp, nil
+}
+
+func toNoticeVersionWire(v noticeservice.NoticeVersion) NoticeVersion {
+	w := NoticeVersion{Id: v.ID, NoticeId: v.NoticeID, VersionNo: int(v.VersionNo), Languages: make([]NoticeVersionLanguages, 0, len(v.Languages)),
+		EffectiveFrom: openapi_types.Date{Time: v.EffectiveFrom}, IsMaterialChange: v.IsMaterialChange, ChangesPurpose: v.ChangesPurpose,
+		Checklist: make([]NoticeChecklistItem, 0, len(v.Checklist)), PublishedAt: v.PublishedAt.UTC()}
+	for _, lang := range v.Languages {
+		w.Languages = append(w.Languages, NoticeVersionLanguages(lang))
+	}
+	for _, it := range v.Checklist {
+		w.Checklist = append(w.Checklist, NoticeChecklistItem{Code: NoticeChecklistItemCode(it.Code), Complete: it.Complete})
+	}
+	if v.PublicURL != "" {
+		w.PublicUrl = &v.PublicURL
 	}
 	return w
 }

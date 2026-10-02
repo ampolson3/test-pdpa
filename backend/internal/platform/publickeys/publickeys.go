@@ -25,6 +25,7 @@ import (
 // Entity types a key can stand for (platform.public_keys.entity_type).
 const (
 	EntityCollectionPoint = "collection_point"
+	EntityNotice          = "notice"
 )
 
 // Key is a resolved public key.
@@ -93,12 +94,15 @@ func FromContext(ctx context.Context) (Key, bool) {
 // WithKey puts a resolved key in ctx (tests, and callers that resolved it themselves).
 func WithKey(ctx context.Context, k Key) context.Context { return context.WithValue(ctx, ctxKey{}, k) }
 
-var pathKeyRE = regexp.MustCompile(`^/public/v1/collection-points/([^/]+)`)
+// pathKeyRE matches every /public/v1 route shape that carries the key as its first path segment — one
+// alternative per module that has a public page (collection points today, notices from PNG-06).
+var pathKeyRE = regexp.MustCompile(`^/public/v1/(?:collection-points|notices)/([^/]+)`)
 
-// Middleware resolves the public key of a /public/v1 request — from the path (/public/v1/collection-points/{key})
-// or the X-Public-Key header — refuses browsers from origins the key doesn't allow, and sets a data-subject
-// principal of the key's tenant so the ordinary Tx + audit middleware run the request. Unknown or revoked keys
-// are 404, like a missing record.
+// Middleware resolves the public key of a /public/v1 request — from the path (e.g.
+// /public/v1/collection-points/{key} or /public/v1/notices/{key}) or the X-Public-Key header — refuses
+// browsers from origins the key doesn't allow, and sets a data-subject principal of the key's tenant so
+// the ordinary Tx + audit middleware run the request. Unknown or revoked keys are 404, like a missing
+// record.
 func Middleware(pool *pgxpool.Pool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
