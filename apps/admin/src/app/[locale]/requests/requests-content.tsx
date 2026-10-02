@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
@@ -308,8 +308,8 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((r) => (
-              <>
-                <tr key={r.id}>
+              <Fragment key={r.id}>
+                <tr>
                   <td className="px-3 py-2 font-mono text-xs">{r.request_no}</td>
                   <td className="px-3 py-2">{typeName(r.request_type_id)}</td>
                   <td className="px-3 py-2">{formatDate(r.due_at, locale, { day: "numeric", month: "short", year: "numeric" })}</td>
@@ -411,7 +411,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
