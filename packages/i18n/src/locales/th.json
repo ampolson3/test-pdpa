@@ -2057,6 +2057,20 @@
       "choose": "-- เลือก --",
       "save": "บันทึก",
       "cancel": "ยกเลิก"
-    }
+    },
+    "batchTitle": "สร้างหลายกิจกรรมพร้อมกัน",
+    "batchDescription": "เลือกหมวดงาน เลือกกิจกรรมที่ต้องการ แล้วเลือกแผนกเจ้าของ เพื่อสร้างร่าง RoPA หลายรายการในครั้งเดียว",
+    "backToBrowse": "กลับไปดูคลังกิจกรรม",
+    "batchStep": {
+      "category": "หมวดงาน",
+      "activities": "เลือกกิจกรรม",
+      "department": "แผนกเจ้าของ",
+      "summary": "สรุปก่อนสร้าง"
+    },
+    "batchNext": "ถัดไป",
+    "batchBack": "ย้อนกลับ",
+    "batchCreate": "สร้างร่าง RoPA",
+    "batchSelectedCount": "{count, plural, =0{ยังไม่ได้เลือก} other{เลือกแล้ว # รายการ}}",
+    "batchSummaryIntro": "จะสร้างร่างกิจกรรม {count} รายการสำหรับแผนกที่เลือก"
   }
 }

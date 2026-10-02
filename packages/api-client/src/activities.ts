@@ -26,6 +26,7 @@ export type ActivityControl = components["schemas"]["ActivityControl"];
 export type ActivityControlInput = components["schemas"]["ActivityControlInput"];
 export type ActivityRejection = components["schemas"]["ActivityRejection"];
 export type ProcessingActivityFromTemplateInput = components["schemas"]["ProcessingActivityFromTemplateInput"];
+export type ProcessingActivityBatchFromTemplatesInput = components["schemas"]["ProcessingActivityBatchFromTemplatesInput"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const activitiesKey = ["ropa", "activities"] as const;
@@ -194,6 +195,15 @@ export function useActivityMutations(client: ApiClient, id?: string) {
         const { data, error } = await client.POST("/admin/v1/ropa/activities/from-template", { body });
         if (error) throw error;
         return data;
+      },
+      onSuccess: refresh,
+    }),
+    /** RTG-04: one-click generation — create a draft for each chosen template against one department. */
+    createBatchFromTemplates: useMutation({
+      mutationFn: async (body: ProcessingActivityBatchFromTemplatesInput) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/batch-from-templates", { body });
+        if (error) throw error;
+        return data?.data;
       },
       onSuccess: refresh,
     }),

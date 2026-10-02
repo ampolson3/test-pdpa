@@ -157,3 +157,46 @@ func (s *Service) controlIDByCode(ctx context.Context, code string) (uuid.UUID, 
 	}
 	return uuid.Nil, fmt.Errorf("%w: security_control %q", ErrInvalid, code)
 }
+
+// MaxBatchActivityTemplates bounds one RTG-04 batch — the acceptance criterion is 20 activities in one
+// call, so this gives comfortable headroom without letting one request create an unbounded number of
+// rows (and audit entries) in a single transaction.
+const MaxBatchActivityTemplates = 50
+
+// CreateActivitiesFromTemplates is RTG-04's "one-click generation": pick a job category's activities and
+// one department, and get a draft for each in a single request. It's a thin loop over ROPA-05's own
+// CreateActivityFromTemplate against one resolved legal entity (the org unit's own, so the caller only
+// picks a department — the wizard's third step — not a separate legal entity field); each activity's
+// code is the template's own `code` (already unique platform-wide, so it reads sensibly without the
+// caller typing 20 codes by hand). The whole batch runs in the request's own transaction (rule 1 — this
+// service never opens one), so a failure partway through (e.g. a duplicate code because one of the
+// chosen templates was already used for this department) rolls every activity in the batch back with
+// it, the same all-or-nothing contract PLT-14's `import.apply` already established for a bulk write.
+func (s *Service) CreateActivitiesFromTemplates(ctx context.Context, orgUnitID uuid.UUID, templateIDs []uuid.UUID, ownerUserID *uuid.UUID) ([]Activity, error) {
+	if len(templateIDs) == 0 || len(templateIDs) > MaxBatchActivityTemplates {
+		return nil, fmt.Errorf("%w: activity_template_ids", ErrInvalid)
+	}
+	if s.Templates == nil {
+		return nil, fmt.Errorf("%w: activity_template_ids", ErrInvalid)
+	}
+	unit, err := s.Org.GetOrgUnit(ctx, orgUnitID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: org_unit_id", ErrInvalid)
+	}
+	out := make([]Activity, 0, len(templateIDs))
+	for _, tid := range templateIDs {
+		tpl, err := s.Templates.GetActivityTemplate(ctx, tid)
+		if err != nil {
+			if errors.Is(err, templatesservice.ErrNotFound) {
+				return nil, fmt.Errorf("%w: activity_template_id %s", ErrInvalid, tid)
+			}
+			return nil, err
+		}
+		a, err := s.CreateActivityFromTemplate(ctx, tid, unit.LegalEntityID, orgUnitID, tpl.Code, ownerUserID)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, a)
+	}
+	return out, nil
+}

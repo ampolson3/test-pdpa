@@ -1409,6 +1409,40 @@ acceptance criterion directly — every ม.39 topic the template carries lands 
 visible to both tenants by design), HTTP contract (403 without `ropa.activity.create`, 422 for an unknown
 template, 201 happy path with the copied purpose visible on the new activity via its own purposes endpoint).
 
+### RTG-04 สร้าง RoPA จาก template ในไม่กี่ขั้นตอน (`docs/modules/RTG.md#rtg-04`) — done
+`backend/internal/ropa/service/from_template.go`'s `CreateActivitiesFromTemplates` (`ropa.activity.create`,
+shared with ROPA-05 — no new permission or migration): the module doc's own "เลือกหมวดงาน → เลือกกิจกรรม →
+เลือกแผนกเจ้าของ แล้วได้ร่าง RoPA ทันที" is a thin loop over ROPA-05's own `CreateActivityFromTemplate`, not a
+reimplementation — each chosen template id gets exactly the same treatment a single ROPA-05 create would
+(purposes/data/retention/security-controls copied in, codes resolved against this tenant's own `org.*`/
+`risk.controls`), just against one resolved department instead of asking the caller for a legal entity *and*
+an org unit separately: `s.Org.GetOrgUnit(orgUnitID).LegalEntityID` supplies the legal entity, so the wizard's
+third step really is just "pick a department." Each created activity's `code` is the template's own `code`
+(already unique platform-wide), so the caller never types 20 codes by hand — a real collision (re-running the
+wizard against the same department with an already-used template) surfaces as the same duplicate-code
+`ErrInvalid` ROPA-05's own `SaveActivity` already raises.
+
+The whole batch runs inside the request's own transaction (rule 1 — this service never opens one): any
+failure partway through — one bad template id, one duplicate code — rolls every activity already created in
+*this* call back with it, not just the one that failed; there is no partial-batch state to clean up or report
+on, the same all-or-nothing contract PLT-14's `import.apply` already established for a bulk write. Capped at
+`MaxBatchActivityTemplates = 50` — comfortable headroom over this feature's own 20-activity acceptance
+criterion, not an arbitrary round number pulled from nowhere.
+
+API: `POST /admin/v1/ropa/activities/batch-from-templates` (`ProcessingActivityBatchFromTemplatesInput`:
+`org_unit_id`, `activity_template_ids` (1–50), optional `owner_user_id`) → 201 `{data: [ProcessingActivity]}`,
+same list-wrapper shape every other module's batch/list responses already use. UI: a new page,
+`/ropa/templates/batch` (the module doc's own UX note: "มีหน้าจอใหม่") — the literal 3-step wizard + summary
+the frontend note calls for (job category → multi-select activities within it → department → a summary
+listing every chosen activity's name before the single create call fires), linked from `/ropa/templates`'s
+own header next to the browse-only flow RTG-01/ROPA-05 already built. Tests: unit (the acceptance criterion
+directly — 20 template ids in one call yield 20 real, independently-scoped activities, each already carrying
+its own template's defaults with no further edits; an unknown id anywhere in the batch rolls back the whole
+call — proven by driving the same transaction the HTTP layer would use and checking nothing persisted after;
+empty and over-50 batches refused), HTTP contract (403 without `ropa.activity.create`, 400 for an
+empty array — the schema's own `minItems`, 201 with a 10-activity batch's response carrying exactly 10
+entries).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

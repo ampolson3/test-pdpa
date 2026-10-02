@@ -132,6 +132,28 @@ content is a 51-activity draft (`docs/decisions.md` Q-28) pending legal review.
 
 **หมายเหตุ:** ดึงเข้า P1 คู่กับ RTG-01
 
+**Implementation (RTG-04):** `backend/internal/ropa/service/from_template.go`'s `CreateActivitiesFromTemplates`
+(`ropa.activity.create`, shared with ROPA-05 — no new permission or migration): a thin loop over ROPA-05's own
+`CreateActivityFromTemplate` against one resolved department (`org.GetOrgUnit`'s own `LegalEntityID`, so the
+caller only picks a department — the wizard's third step — not a separate legal-entity field). Each created
+activity's code is the template's own `code` (already unique platform-wide), so the caller never has to type
+20 codes by hand. The whole batch runs inside the request's own transaction (rule 1 — this service never opens
+one): any failure partway through — an unknown template id, or a duplicate code because one of the chosen
+templates was already used for this department — rolls every activity in the batch back with it, the same
+all-or-nothing contract PLT-14's `import.apply` already established for a bulk write. Capped at
+`MaxBatchActivityTemplates = 50` (comfortable headroom over this feature's own 20-activity acceptance
+criterion, not an arbitrary round number).
+
+API: `POST /admin/v1/ropa/activities/batch-from-templates` (`ProcessingActivityBatchFromTemplatesInput`:
+`org_unit_id`, `activity_template_ids` (1–50), optional `owner_user_id`) → 201 `{data: [ProcessingActivity]}`.
+UI: a new page, `/ropa/templates/batch` (the module doc's own UX note: "มีหน้าจอใหม่") — the literal 3-step
+wizard + summary the frontend note calls for (job category → multi-select activities → department → a summary
+listing every chosen activity before the one create call), linked from `/ropa/templates`' own header. Tests:
+unit (the acceptance criterion directly — 20 template ids in one call yield 20 real, independently-scoped
+activities, each already carrying its own template's defaults; an unknown id anywhere in the batch rolls back
+the whole call, nothing partial survives; empty/oversized batches refused), HTTP contract (403/400 schema/201,
+a 10-activity batch's response carries exactly 10 entries).
+
 <a id="rtg-05"></a>
 ### RTG-05 Wizard ถาม-ตอบภาษาง่าย
 

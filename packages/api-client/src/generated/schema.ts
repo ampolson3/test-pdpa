@@ -2295,6 +2295,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/activities/batch-from-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RTG-04 one-click generation — create a draft for each of several RTG-01 templates against one department in a single call */
+        post: operations["ropaCreateActivitiesFromTemplates"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/activities/processor-export": {
         parameters: {
             query?: never;
@@ -3984,6 +4001,20 @@ export interface components {
             legal_entity_id: components["schemas"]["Uuid"];
             org_unit_id: components["schemas"]["Uuid"];
             code: string;
+            owner_user_id?: components["schemas"]["Uuid"];
+        };
+        /**
+         * @example {
+         *       "org_unit_id": "00000000-0000-0000-0000-000000000000",
+         *       "activity_template_ids": [
+         *         "00000000-0000-0000-0000-000000000000",
+         *         "00000000-0000-0000-0000-000000000001"
+         *       ]
+         *     }
+         */
+        ProcessingActivityBatchFromTemplatesInput: {
+            org_unit_id: components["schemas"]["Uuid"];
+            activity_template_ids: components["schemas"]["Uuid"][];
             owner_user_id?: components["schemas"]["Uuid"];
         };
         ProcessingActivity: {
@@ -11217,6 +11248,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProcessingActivity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaCreateActivitiesFromTemplates: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcessingActivityBatchFromTemplatesInput"];
+            };
+        };
+        responses: {
+            /** @description Created — one entry per template, in the order requested */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ProcessingActivity"][];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];

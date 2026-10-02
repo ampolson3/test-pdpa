@@ -7216,6 +7216,44 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/activities/batch-from-templates:
+    post:
+      operationId: ropaCreateActivitiesFromTemplates
+      tags: [ropa]
+      summary: RTG-04 one-click generation — create a draft for each of several RTG-01 templates against one department in a single call
+      x-permission: ropa.activity.create
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessingActivityBatchFromTemplatesInput'
+      responses:
+        '201':
+          description: Created — one entry per template, in the order requested
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProcessingActivity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/ropa/activities/processor-export:
     get:
       operationId: ropaExportProcessorActivities
@@ -10901,6 +10939,22 @@ components:
         legal_entity_id: 00000000-0000-0000-0000-000000000000
         org_unit_id: 00000000-0000-0000-0000-000000000000
         code: HR-01
+    ProcessingActivityBatchFromTemplatesInput:
+      type: object
+      required: [org_unit_id, activity_template_ids]
+      properties:
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        activity_template_ids:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: {$ref: '#/components/schemas/Uuid'}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+      example:
+        org_unit_id: 00000000-0000-0000-0000-000000000000
+        activity_template_ids:
+          - 00000000-0000-0000-0000-000000000000
+          - 00000000-0000-0000-0000-000000000001
     ProcessingActivity:
       type: object
       required: [id, legal_entity_id, org_unit_id, code, name, role, status, completeness, row_version, updated_at]

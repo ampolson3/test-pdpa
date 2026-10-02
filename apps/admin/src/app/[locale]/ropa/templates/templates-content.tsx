@@ -14,7 +14,7 @@ import {
   useOrgUnits,
   type RopaActivityTemplate,
 } from "@pdpa/api-client";
-import { useRouter } from "@/i18n/routing";
+import { Link, useRouter } from "@/i18n/routing";
 
 type Purpose = { purpose_text_th?: string; purpose_text_en?: string; lawful_basis_code?: string };
 type DataItem = { data_category_code?: string; subject_type_code?: string; source?: string };
@@ -33,6 +33,7 @@ function str(v: unknown): string {
 export function TemplatesContent() {
   const t = useTranslations("ropaTemplates");
   const allowed = usePermission("ropa.template.read");
+  const canCreateBatch = usePermission("ropa.activity.create");
   const client = useMemo(() => createApiClient("/api/bff"), []);
   const [jobCategory, setJobCategory] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -52,9 +53,16 @@ export function TemplatesContent() {
 
   return (
     <main className="mx-auto max-w-5xl space-y-4 p-8">
-      <header>
-        <h1 className="text-xl font-semibold">{t("title")}</h1>
-        <p className="text-sm text-slate-600">{t("description")}</p>
+      <header className="flex items-start justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-semibold">{t("title")}</h1>
+          <p className="text-sm text-slate-600">{t("description")}</p>
+        </div>
+        {canCreateBatch && (
+          <Link className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm hover:bg-slate-50" href="/ropa/templates/batch">
+            {t("batchTitle")}
+          </Link>
+        )}
       </header>
 
       <div className="grid gap-4 sm:grid-cols-[260px_1fr]">

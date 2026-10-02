@@ -2057,6 +2057,20 @@
       "choose": "-- choose --",
       "save": "Save",
       "cancel": "Cancel"
-    }
+    },
+    "batchTitle": "Create several activities at once",
+    "batchDescription": "Pick a job category, pick the activities you need, then pick the owning department to create several RoPA drafts in one go.",
+    "backToBrowse": "Back to the template library",
+    "batchStep": {
+      "category": "Job category",
+      "activities": "Pick activities",
+      "department": "Department",
+      "summary": "Summary"
+    },
+    "batchNext": "Next",
+    "batchBack": "Back",
+    "batchCreate": "Create RoPA drafts",
+    "batchSelectedCount": "{count, plural, =0{Nothing selected yet} other{# selected}}",
+    "batchSummaryIntro": "This will create {count} draft activities for the chosen department."
   }
 }

@@ -73,6 +73,19 @@ func (h *Strict) RopaCreateActivityFromTemplate(ctx context.Context, req RopaCre
 	return RopaCreateActivityFromTemplate201JSONResponse{Body: toActivityWire(a), Headers: RopaCreateActivityFromTemplate201ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
 }
 
+func (h *Strict) RopaCreateActivitiesFromTemplates(ctx context.Context, req RopaCreateActivitiesFromTemplatesRequestObject) (RopaCreateActivitiesFromTemplatesResponseObject, error) {
+	b := *req.Body
+	list, err := h.svc.CreateActivitiesFromTemplates(ctx, b.OrgUnitId, b.ActivityTemplateIds, b.OwnerUserId)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := RopaCreateActivitiesFromTemplates201JSONResponse{Data: make([]ProcessingActivity, 0, len(list))}
+	for _, a := range list {
+		resp.Data = append(resp.Data, toActivityWire(a))
+	}
+	return resp, nil
+}
+
 func (h *Strict) RopaGetActivity(ctx context.Context, req RopaGetActivityRequestObject) (RopaGetActivityResponseObject, error) {
 	a, err := h.svc.GetActivity(ctx, req.Id)
 	if err != nil {

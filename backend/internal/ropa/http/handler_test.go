@@ -302,6 +302,43 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 		t.Errorf("template-created activity's purposes: %d %s", code, body)
 	}
 
+	// RTG-04 one-click generation: several templates against one department in one call
+	var tenTemplateIDs []uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		rows, err := pdb.MustTxFromContext(ctx).Query(ctx, `SELECT id FROM ropa.activity_templates ORDER BY code LIMIT 10`)
+		if err != nil {
+			return err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id uuid.UUID
+			if err := rows.Scan(&id); err != nil {
+				return err
+			}
+			tenTemplateIDs = append(tenTemplateIDs, id)
+		}
+		return rows.Err()
+	}); err != nil {
+		t.Fatal(err)
+	}
+	batchBody := map[string]any{"org_unit_id": orgUnitID, "activity_template_ids": tenTemplateIDs}
+	if code, _ := do("POST", actBase+"/batch-from-templates", &viewer, batchBody, nil); code != 403 {
+		t.Errorf("batch create with read permission only: %d, want 403", code)
+	}
+	if code, body := do("POST", actBase+"/batch-from-templates", &admin, map[string]any{"org_unit_id": orgUnitID, "activity_template_ids": []uuid.UUID{}}, nil); code != 400 {
+		t.Errorf("empty batch: %d %s, want 400 (schema minItems)", code, body)
+	}
+	code, body = do("POST", actBase+"/batch-from-templates", &admin, batchBody, nil)
+	if code != 201 {
+		t.Fatalf("batch create: %d %s", code, body)
+	}
+	var batchResp struct {
+		Data []ropahttp.ProcessingActivity `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(body), &batchResp); err != nil || len(batchResp.Data) != 10 {
+		t.Fatalf("batch create: expected 10 activities, got %d (err=%v, body=%s)", len(batchResp.Data), err, body)
+	}
+
 	// ROPA-09 security measures (ม.37(1))
 	if code, _ := do("GET", "/admin/v1/ropa/security-controls", nil, nil, nil); code != 401 {
 		t.Errorf("security-controls, no principal: %d, want 401", code)
