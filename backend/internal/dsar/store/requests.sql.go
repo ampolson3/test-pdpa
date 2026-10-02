@@ -74,6 +74,17 @@ func (q *Queries) GetRequest(ctx context.Context, id uuid.UUID) (GetRequestRow, 
 	return i, err
 }
 
+const getRequestRequesterContact = `-- name: GetRequestRequesterContact :one
+SELECT requester_contact_enc FROM dsar.requests WHERE id = $1
+`
+
+func (q *Queries) GetRequestRequesterContact(ctx context.Context, id uuid.UUID) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getRequestRequesterContact, id)
+	var requester_contact_enc []byte
+	err := row.Scan(&requester_contact_enc)
+	return requester_contact_enc, err
+}
+
 const getRequestRequesterName = `-- name: GetRequestRequesterName :one
 SELECT requester_name_enc FROM dsar.requests WHERE id = $1
 `
@@ -264,6 +275,23 @@ SELECT pg_advisory_xact_lock(hashtext('dsar.request_no:' || current_setting('app
 
 func (q *Queries) LockRequestNumbering(ctx context.Context, year string) error {
 	_, err := q.db.Exec(ctx, lockRequestNumbering, year)
+	return err
+}
+
+const setRequestVerified = `-- name: SetRequestVerified :exec
+UPDATE dsar.requests SET verified_at = $1, updated_at = now(),
+    updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE id = $2
+`
+
+type SetRequestVerifiedParams struct {
+	VerifiedAt pgtype.Timestamptz `db:"verified_at" json:"verified_at"`
+	ID         uuid.UUID          `db:"id" json:"id"`
+}
+
+// DSAR-06: stamps the request's own verified_at once an identity-verification attempt passes.
+func (q *Queries) SetRequestVerified(ctx context.Context, arg SetRequestVerifiedParams) error {
+	_, err := q.db.Exec(ctx, setRequestVerified, arg.VerifiedAt, arg.ID)
 	return err
 }
 

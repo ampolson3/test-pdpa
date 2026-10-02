@@ -1896,6 +1896,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/requests/{id}/verifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every identity-verification attempt against this request, oldest first (DSAR-06) */
+        get: operations["dsarListVerifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/requests/{id}/verifications/otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a fresh OTP to the request's own stored contact (IAM-05) and open a verification attempt — moves the request received → verifying the first time this is called */
+        post: operations["dsarStartOtpVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/requests/{id}/verifications/{verificationId}/confirm-otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check a submitted OTP code — success sets dsar.requests.verified_at and moves verifying → in_review (DSAR-06's acceptance criterion) */
+        post: operations["dsarConfirmOtpVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/requests/{id}/verifications/id-document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Redact the ID-card number in the uploaded photo (the given rectangles only) before it is ever stored — the raw upload is never attached (DSAR-06's acceptance criterion); opens a pending verification for staff to decide */
+        post: operations["dsarSubmitIdDocumentVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/requests/{id}/verifications/{verificationId}/decide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Staff decision on a pending id_document verification after checking it against system records — passing sets dsar.requests.verified_at and moves verifying → in_review */
+        post: operations["dsarDecideVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/platform/documents/types": {
         parameters: {
             query?: never;
@@ -4350,6 +4435,44 @@ export interface components {
             request: components["schemas"]["DsarRequest"];
             /** @description The generated response-letter document's id (PLT-16), when this transition produced one */
             document_id?: components["schemas"]["Uuid"] | null;
+        };
+        /** @enum {string} */
+        DsarVerificationMethod: "otp_sms" | "otp_email" | "id_document";
+        /** @enum {string} */
+        DsarVerificationStatus: "pending" | "passed" | "failed";
+        DsarVerification: {
+            id: components["schemas"]["Uuid"];
+            request_id: components["schemas"]["Uuid"];
+            method: components["schemas"]["DsarVerificationMethod"];
+            status: components["schemas"]["DsarVerificationStatus"];
+            masked_id_file_id?: components["schemas"]["Uuid"] | null;
+            verified_by?: components["schemas"]["Uuid"] | null;
+            /** Format: date-time */
+            verified_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        DsarStartOtpVerificationInput: {
+            /** @enum {string} */
+            method: "otp_sms" | "otp_email";
+        };
+        DsarConfirmOtpInput: {
+            code: string;
+        };
+        /** @description A pixel rectangle (image's own coordinate space) to black out before the ID copy is ever stored — the raw upload named by raw_file_id is never itself attached or kept (CLAUDE.md rule 3). */
+        DsarIdentityRedaction: {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+        };
+        DsarSubmitIdDocumentInput: {
+            /** @description The caller's own clean, still-unattached PLT-09 upload (POST /admin/v1/platform/files) of the ID-card photo */
+            raw_file_id: components["schemas"]["Uuid"];
+            redactions: components["schemas"]["DsarIdentityRedaction"][];
+        };
+        DsarDecideVerificationInput: {
+            pass: boolean;
         };
         /** @enum {string} */
         NoticeType: "privacy_notice" | "privacy_policy" | "cookie_policy" | "cctv" | "layered_short" | "employee";
@@ -10283,6 +10406,176 @@ export interface operations {
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dsarListVerifications: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarVerification"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dsarStartOtpVerification: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarStartOtpVerificationInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarVerification"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarConfirmOtpVerification: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                verificationId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarConfirmOtpInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarVerification"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarSubmitIdDocumentVerification: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarSubmitIdDocumentInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarVerification"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarDecideVerification: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                verificationId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarDecideVerificationInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarVerification"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     platformListDocumentTypes: {

@@ -11,3 +11,8 @@ output-options:
     - dsarGetRequest
     - dsarTransitionRequest
     - dsarAssignRequest
+    - dsarListVerifications
+    - dsarStartOtpVerification
+    - dsarConfirmOtpVerification
+    - dsarSubmitIdDocumentVerification
+    - dsarDecideVerification

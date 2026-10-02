@@ -5754,6 +5754,211 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dsar/requests/{id}/verifications:
+    get:
+      operationId: dsarListVerifications
+      tags: [dsar]
+      summary: Every identity-verification attempt against this request, oldest first (DSAR-06)
+      x-permission: dsar.request.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarVerification'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/dsar/requests/{id}/verifications/otp:
+    post:
+      operationId: dsarStartOtpVerification
+      tags: [dsar]
+      summary: Send a fresh OTP to the request's own stored contact (IAM-05) and open a verification attempt — moves the request received → verifying the first time this is called
+      x-permission: dsar.request.update
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarStartOtpVerificationInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarVerification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/requests/{id}/verifications/{verificationId}/confirm-otp:
+    post:
+      operationId: dsarConfirmOtpVerification
+      tags: [dsar]
+      summary: Check a submitted OTP code — success sets dsar.requests.verified_at and moves verifying → in_review (DSAR-06's acceptance criterion)
+      x-permission: dsar.request.update
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: verificationId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarConfirmOtpInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarVerification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/requests/{id}/verifications/id-document:
+    post:
+      operationId: dsarSubmitIdDocumentVerification
+      tags: [dsar]
+      summary: Redact the ID-card number in the uploaded photo (the given rectangles only) before it is ever stored — the raw upload is never attached (DSAR-06's acceptance criterion); opens a pending verification for staff to decide
+      x-permission: dsar.request.update
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarSubmitIdDocumentInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarVerification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/requests/{id}/verifications/{verificationId}/decide:
+    post:
+      operationId: dsarDecideVerification
+      tags: [dsar]
+      summary: Staff decision on a pending id_document verification after checking it against system records — passing sets dsar.requests.verified_at and moves verifying → in_review
+      x-permission: dsar.request.update
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: verificationId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarDecideVerificationInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarVerification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/platform/documents/types:
     get:
       operationId: platformListDocumentTypes
@@ -11443,6 +11648,64 @@ components:
           oneOf:
             - $ref: '#/components/schemas/Uuid'
             - type: 'null'
+    DsarVerificationMethod:
+      type: string
+      enum: [otp_sms, otp_email, id_document]
+    DsarVerificationStatus:
+      type: string
+      enum: [pending, passed, failed]
+    DsarVerification:
+      type: object
+      required: [id, request_id, method, status, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        request_id: {$ref: '#/components/schemas/Uuid'}
+        method: {$ref: '#/components/schemas/DsarVerificationMethod'}
+        status: {$ref: '#/components/schemas/DsarVerificationStatus'}
+        masked_id_file_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        verified_by:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        verified_at: {type: [string, 'null'], format: date-time}
+        created_at: {type: string, format: date-time}
+    DsarStartOtpVerificationInput:
+      type: object
+      required: [method]
+      properties:
+        method:
+          type: string
+          enum: [otp_sms, otp_email]
+    DsarConfirmOtpInput:
+      type: object
+      required: [code]
+      properties:
+        code: {type: string, minLength: 1, maxLength: 20}
+    DsarIdentityRedaction:
+      type: object
+      required: [x, y, width, height]
+      description: A pixel rectangle (image's own coordinate space) to black out before the ID copy is ever stored — the raw upload named by raw_file_id is never itself attached or kept (CLAUDE.md rule 3).
+      properties:
+        x: {type: integer, minimum: 0}
+        y: {type: integer, minimum: 0}
+        width: {type: integer, minimum: 1}
+        height: {type: integer, minimum: 1}
+    DsarSubmitIdDocumentInput:
+      type: object
+      required: [raw_file_id, redactions]
+      properties:
+        raw_file_id:
+          description: The caller's own clean, still-unattached PLT-09 upload (POST /admin/v1/platform/files) of the ID-card photo
+          $ref: '#/components/schemas/Uuid'
+        redactions:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/DsarIdentityRedaction'
+    DsarDecideVerificationInput:
+      type: object
+      required: [pass]
+      properties:
+        pass: {type: boolean}
     NoticeType:
       type: string
       enum: [privacy_notice, privacy_policy, cookie_policy, cctv, layered_short, employee]

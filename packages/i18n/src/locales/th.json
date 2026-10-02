@@ -2014,6 +2014,37 @@
     "outcomes": {
       "fulfilled": "ดำเนินการครบถ้วน",
       "partially_fulfilled": "ดำเนินการบางส่วน"
+    },
+    "verify": {
+      "title": "ยืนยันตัวตน",
+      "method": "วิธี",
+      "status": "สถานะ",
+      "verifiedAt": "วันที่ยืนยัน",
+      "otpTitle": "ส่ง OTP",
+      "sendOtp": "ส่งรหัส OTP",
+      "codePlaceholder": "รหัส OTP 6 หลัก",
+      "confirm": "ยืนยันรหัส",
+      "idDocumentTitle": "สำเนาบัตรประชาชน",
+      "idDocumentHint": "อัปโหลดรูปบัตร แล้วระบุตำแหน่ง (พิกเซล) ของเลขบัตรเพื่อปกปิดก่อนบันทึก — ไฟล์ต้นฉบับไม่ถูกเก็บไว้",
+      "submitIdDocument": "บันทึกสำเนาที่ปกปิดแล้ว",
+      "pass": "ตรงกับข้อมูลในระบบ",
+      "fail": "ไม่ตรง / ปฏิเสธ",
+      "rect": {
+        "x": "X",
+        "y": "Y",
+        "width": "กว้าง",
+        "height": "สูง"
+      },
+      "methods": {
+        "otp_sms": "OTP ทาง SMS",
+        "otp_email": "OTP ทางอีเมล",
+        "id_document": "สำเนาบัตรประชาชน"
+      },
+      "statuses": {
+        "pending": "รอดำเนินการ",
+        "passed": "ผ่าน",
+        "failed": "ไม่ผ่าน"
+      }
     }
   },
   "dpoDeadlines": {

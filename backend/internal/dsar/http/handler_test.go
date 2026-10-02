@@ -18,6 +18,7 @@ import (
 
 	dsarhttp "pdpa-platform/internal/dsar/http"
 	dsarservice "pdpa-platform/internal/dsar/service"
+	iamservice "pdpa-platform/internal/iam/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
@@ -28,6 +29,15 @@ import (
 	"pdpa-platform/internal/platform/crypto"
 	"pdpa-platform/internal/wiring"
 )
+
+// fakeNotifier captures DSAR-06's OTP so the contract test can read the code back (never logged — rule 3),
+// the same test double IAM-05/dsar's own service-level tests already use.
+type fakeNotifier struct{ sent []iamservice.NotifyRequest }
+
+func (f *fakeNotifier) Send(ctx context.Context, req iamservice.NotifyRequest) (uuid.UUID, error) {
+	f.sent = append(f.sent, req)
+	return uuid.New(), nil
+}
 
 func envOr(k, d string) string {
 	if v := os.Getenv(k); v != "" {
@@ -53,6 +63,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
+				`DELETE FROM dsar.verifications`, `DELETE FROM iam.subject_verifications`,
 				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
 				`DELETE FROM iam.users WHERE email = 'dsarhttp-assignee@dbtest.example'`,
@@ -68,6 +79,9 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	docsSvc.RegisterVersioning()
 	keyring := &crypto.Keyring{KEK: crypto.NewLocalKEK()}
 	svc := &dsarservice.Service{Audit: audit.New(), Org: orgSvc, Docs: docsSvc, Keyring: keyring}
+	notifier := &fakeNotifier{}
+	svc.Verification = wiring.IamVerification(keyring, nil, nil)
+	svc.Verification.Notify = notifier
 
 	var legalEntity uuid.UUID
 	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
@@ -275,6 +289,59 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("POST", transition, &admin, map[string]any{"to": "completed"}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 5)}); code != 409 || !strings.Contains(body, "dsar.invalid_transition") {
 		t.Errorf("transition from terminal rejected: %d %s, want 409", code, body)
+	}
+
+	// DSAR-06 identity verification: a fresh request so it starts "received" (the first one above is already
+	// terminal).
+	code, body = do("POST", "/admin/v1/dsar/requests", &admin, create)
+	var created2 dsarhttp.DsarRequest
+	_ = json.Unmarshal([]byte(body), &created2)
+	item2 := "/admin/v1/dsar/requests/" + created2.Id.String()
+	verifications := item2 + "/verifications"
+	if code, _ := do("GET", verifications, nil, nil); code != 401 {
+		t.Errorf("verifications, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", verifications, &viewer, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("verifications (none yet): %d %s", code, body)
+	}
+
+	startOtp := item2 + "/verifications/otp"
+	if code, _ := do("POST", startOtp, &viewer, map[string]any{"method": "otp_email"}); code != 403 {
+		t.Errorf("start otp with read only: %d, want 403", code)
+	}
+	if code, body := do("POST", startOtp, &admin, map[string]any{"method": "bogus"}); code != 400 && code != 422 {
+		t.Errorf("start otp, bad method: %d %s, want 400/422", code, body)
+	}
+	if code, _ := do("POST", "/admin/v1/dsar/requests/"+uuid.New().String()+"/verifications/otp", &admin, map[string]any{"method": "otp_email"}); code != 404 {
+		t.Errorf("start otp, unknown request: %d, want 404", code)
+	}
+	code, body = do("POST", startOtp, &admin, map[string]any{"method": "otp_email"})
+	if code != 201 || !strings.Contains(body, `"method":"otp_email"`) || !strings.Contains(body, `"status":"pending"`) {
+		t.Errorf("start otp: %d %s", code, body)
+	}
+	var startedV dsarhttp.DsarVerification
+	_ = json.Unmarshal([]byte(body), &startedV)
+	if len(notifier.sent) == 0 {
+		t.Fatal("expected an OTP to be sent")
+	}
+	otpCode, _ := notifier.sent[len(notifier.sent)-1].Vars["code"].(string)
+
+	if code, body := do("GET", item2, &viewer, nil); code != 200 || !strings.Contains(body, `"status":"verifying"`) {
+		t.Errorf("request after start otp: %d %s, want status verifying", code, body)
+	}
+
+	confirmOtp := verifications + "/" + startedV.Id.String() + "/confirm-otp"
+	if code, _ := do("POST", confirmOtp, &admin, map[string]any{"code": "000000"}); code != 400 && code != 422 {
+		t.Errorf("confirm otp, wrong code: %d, want 400/422", code)
+	}
+	if code, body := do("POST", confirmOtp, &admin, map[string]any{"code": otpCode}); code != 200 || !strings.Contains(body, `"status":"passed"`) {
+		t.Errorf("confirm otp: %d %s", code, body)
+	}
+	if code, body := do("GET", item2, &viewer, nil); code != 200 || !strings.Contains(body, `"status":"in_review"`) || !strings.Contains(body, `"verified_at"`) {
+		t.Errorf("request after confirm otp: %d %s, want in_review + verified_at", code, body)
+	}
+	if code, body := do("GET", verifications, &viewer, nil); code != 200 || !strings.Contains(body, `"status":"passed"`) {
+		t.Errorf("verifications after confirm: %d %s", code, body)
 	}
 }
 

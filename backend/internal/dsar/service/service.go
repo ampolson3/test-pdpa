@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
 
+	iamservice "pdpa-platform/internal/iam/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
@@ -64,6 +65,10 @@ type Service struct {
 	Ropa    Ropa
 	Keyring *crypto.Keyring
 	Events  *events.Publisher
+	// Files and Verification drive DSAR-06's identity checks (PLT-09 redaction, IAM-05 OTP); nil in tests
+	// that don't need them.
+	Files        Files
+	Verification *iamservice.Service
 	// Notify and River drive DSAR-07's SLA reminder (dsar.sla_reminder); nil in tests that don't need it
 	// (the same optionality PNG-04's indirect-collection reminders use).
 	Notify *notify.Service

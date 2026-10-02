@@ -45,6 +45,7 @@ func setup(t *testing.T, suffix string) env {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
+				`DELETE FROM dsar.verifications`, `DELETE FROM iam.subject_verifications`, `DELETE FROM platform.files`,
 				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM org.org_units`,
 				`UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,

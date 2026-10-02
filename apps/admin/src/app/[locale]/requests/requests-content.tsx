@@ -11,6 +11,8 @@ import {
   useDsarRequests,
   useDsarRequestTypes,
   useDsarRequestMutations,
+  useDsarVerifications,
+  useDsarVerificationMutations,
   useLegalEntities,
   useMentionSearch,
   type DsarRequest,
@@ -19,9 +21,11 @@ import {
   type DsarContactKind,
   type DsarOutcome,
   type DsarSlaStatus,
+  type DsarVerificationMethod,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 import { RecordCollaboration } from "@/components/record-collaboration";
+import { FileUploader } from "@/components/file-uploader";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
 const CHANNELS: DsarRequestChannel[] = ["web", "email", "phone", "branch", "letter", "line", "api"];
@@ -79,6 +83,97 @@ function AssigneePicker({ client, onPick }: { client: ReturnType<typeof createAp
   );
 }
 
+/** DSAR-06: OTP or a redacted ID-card copy, then staff's own pass/fail on the latter. */
+function VerificationPanel({ client, request, canUpdate }: { client: ReturnType<typeof createApiClient>; request: DsarRequest; canUpdate: boolean }) {
+  const t = useTranslations("dsarRequests");
+  const list = useDsarVerifications(client, request.id);
+  const m = useDsarVerificationMutations(client);
+  const [method, setMethod] = useState<DsarVerificationMethod>("otp_email");
+  const [codeByVerification, setCodeByVerification] = useState<Record<string, string>>({});
+  const [rawFileId, setRawFileId] = useState<string | null>(null);
+  const [rect, setRect] = useState({ x: 0, y: 0, width: 100, height: 40 });
+
+  const rows = list.data ?? [];
+  const pendingId = rows.find((v) => v.status === "pending")?.id ?? null;
+
+  return (
+    <div className="space-y-3" data-testid="verification-panel">
+      {rows.length > 0 && (
+        <table className="w-full text-xs">
+          <thead className="text-left text-slate-500">
+            <tr><th className="py-1">{t("verify.method")}</th><th className="py-1">{t("verify.status")}</th><th className="py-1">{t("verify.verifiedAt")}</th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.map((v) => (
+              <tr key={v.id}>
+                <td className="py-1">{t(`verify.methods.${v.method}`)}</td>
+                <td className="py-1">{t(`verify.statuses.${v.status}`)}</td>
+                <td className="py-1">{v.verified_at ? new Date(v.verified_at).toLocaleString() : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {canUpdate && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <fieldset className="space-y-2 rounded-md border border-slate-200 p-3">
+            <legend className="px-1 text-slate-600">{t("verify.otpTitle")}</legend>
+            <select className={INPUT} value={method} onChange={(e) => setMethod(e.target.value as DsarVerificationMethod)}>
+              <option value="otp_email">{t("verify.methods.otp_email")}</option>
+              <option value="otp_sms">{t("verify.methods.otp_sms")}</option>
+            </select>
+            <Button onClick={() => m.startOtp.mutate({ requestId: request.id, method: method as "otp_sms" | "otp_email" })} disabled={m.startOtp.isPending} data-testid="start-otp">
+              {t("verify.sendOtp")}
+            </Button>
+            {pendingId && (
+              <div className="flex items-center gap-2">
+                <input className={INPUT} placeholder={t("verify.codePlaceholder")} value={codeByVerification[pendingId] ?? ""}
+                  onChange={(e) => setCodeByVerification({ ...codeByVerification, [pendingId]: e.target.value })} data-testid="otp-code-input" />
+                <Button onClick={() => m.confirmOtp.mutate({ requestId: request.id, verificationId: pendingId, code: codeByVerification[pendingId] ?? "" })}
+                  disabled={m.confirmOtp.isPending} data-testid="confirm-otp">
+                  {t("verify.confirm")}
+                </Button>
+              </div>
+            )}
+            {m.startOtp.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(m.startOtp.error) })}</p>}
+            {m.confirmOtp.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(m.confirmOtp.error) })}</p>}
+          </fieldset>
+
+          <fieldset className="space-y-2 rounded-md border border-slate-200 p-3">
+            <legend className="px-1 text-slate-600">{t("verify.idDocumentTitle")}</legend>
+            <p className="text-xs text-slate-500">{t("verify.idDocumentHint")}</p>
+            <FileUploader accept=".png,.jpg,.jpeg" onUploaded={(f) => setRawFileId(f.id)} />
+            <div className="grid grid-cols-4 gap-1 text-xs">
+              {(["x", "y", "width", "height"] as const).map((k) => (
+                <label key={k}><span className="block text-slate-500">{t(`verify.rect.${k}`)}</span>
+                  <input type="number" className={INPUT} value={rect[k]} min={0}
+                    onChange={(e) => setRect({ ...rect, [k]: Number(e.target.value) })} /></label>
+              ))}
+            </div>
+            <Button
+              onClick={() => rawFileId && m.submitIdDocument.mutate({ requestId: request.id, rawFileId, redactions: [rect] }, { onSuccess: () => setRawFileId(null) })}
+              disabled={!rawFileId || m.submitIdDocument.isPending} data-testid="submit-id-document">
+              {t("verify.submitIdDocument")}
+            </Button>
+            {m.submitIdDocument.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(m.submitIdDocument.error) })}</p>}
+            {pendingId && rows.find((v) => v.id === pendingId)?.method === "id_document" && (
+              <div className="flex gap-2">
+                <Button onClick={() => m.decide.mutate({ requestId: request.id, verificationId: pendingId, pass: true })} disabled={m.decide.isPending} data-testid="decide-pass">
+                  {t("verify.pass")}
+                </Button>
+                <Button variant="secondary" onClick={() => m.decide.mutate({ requestId: request.id, verificationId: pendingId, pass: false })} disabled={m.decide.isPending} data-testid="decide-fail">
+                  {t("verify.fail")}
+                </Button>
+              </div>
+            )}
+          </fieldset>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function RequestsContent({ currentUserId }: { currentUserId: string }) {
   const t = useTranslations("dsarRequests");
   const locale = useLocale() as Locale;
@@ -91,6 +186,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
   const [statusFilter, setStatusFilter] = useState<DsarRequestStatus | "">("");
   const [search, setSearch] = useState("");
   const [historyId, setHistoryId] = useState<string | null>(null);
+  const [verifyId, setVerifyId] = useState<string | null>(null);
   const list = useDsarRequests(client, { status: statusFilter || undefined, search: search || undefined });
   const types = useDsarRequestTypes(client);
   const entities = useLegalEntities(client);
@@ -236,8 +332,19 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                       onClick={() => setHistoryId(historyId === r.id ? null : r.id)}>
                       {historyId === r.id ? t("form.hide") : t("history")}
                     </button>
+                    <button type="button" className="text-sky-700 underline" data-testid={`verify-toggle-${r.id}`}
+                      onClick={() => setVerifyId(verifyId === r.id ? null : r.id)}>
+                      {verifyId === r.id ? t("form.hide") : t("verify.title")}
+                    </button>
                   </td>
                 </tr>
+                {verifyId === r.id && (
+                  <tr>
+                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
+                      <VerificationPanel client={client} request={r} canUpdate={canUpdate} />
+                    </td>
+                  </tr>
+                )}
                 {assignId === r.id && (
                   <tr>
                     <td colSpan={6} className="bg-slate-50 px-3 py-3">

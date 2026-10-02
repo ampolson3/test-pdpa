@@ -304,6 +304,8 @@ export {
   useDsarRequests,
   useDsarRequest,
   useDsarRequestMutations,
+  useDsarVerifications,
+  useDsarVerificationMutations,
   type DsarRequestType,
   type DsarRequest,
   type DsarRequestStatus,
@@ -314,4 +316,7 @@ export {
   type DsarTransitionInput,
   type DsarTransitionResult,
   type DsarSlaStatus,
+  type DsarVerification,
+  type DsarVerificationMethod,
+  type DsarIdentityRedaction,
 } from "./dsar";

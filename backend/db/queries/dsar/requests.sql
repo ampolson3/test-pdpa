@@ -16,6 +16,15 @@ RETURNING id, request_no, request_type_id, legal_entity_id, channel, on_behalf, 
 -- name: GetRequestRequesterName :one
 SELECT requester_name_enc FROM dsar.requests WHERE id = $1;
 
+-- name: GetRequestRequesterContact :one
+SELECT requester_contact_enc FROM dsar.requests WHERE id = $1;
+
+-- name: SetRequestVerified :exec
+-- DSAR-06: stamps the request's own verified_at once an identity-verification attempt passes.
+UPDATE dsar.requests SET verified_at = @verified_at, updated_at = now(),
+    updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE id = @id;
+
 -- name: GetRequest :one
 SELECT id, request_no, request_type_id, legal_entity_id, channel, on_behalf, details, status, received_at,
     due_at, verified_at, closed_at, outcome, rejection_reason_code, assignee_user_id, row_version, updated_at

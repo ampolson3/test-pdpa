@@ -209,9 +209,9 @@ func problem(err error) error {
 		return httpx.AuthzDenied()
 	case errors.Is(err, dsarservice.ErrVersionMismatch):
 		return httpx.VersionMismatch()
-	case errors.Is(err, dsarservice.ErrInvalidTransition):
+	case errors.Is(err, dsarservice.ErrInvalidTransition), errors.Is(err, dsarservice.ErrVerificationNotPending):
 		return httpx.InvalidTransition("dsar")
-	case errors.Is(err, dsarservice.ErrInvalid):
+	case errors.Is(err, dsarservice.ErrInvalid), errors.Is(err, dsarservice.ErrRedactionOutOfBounds):
 		return httpx.UnprocessableEntity("dsar.invalid_input", err.Error())
 	}
 	return err

@@ -1523,6 +1523,49 @@ exactly one `dpo.tasks` row per linked consent purpose and the published `Notice
 flags), HTTP contract (428/412/200 on `/publish-intent`), full backend `go test -p 1 ./internal/...` and
 `pnpm --filter @pdpa/admin build` both verified clean.
 
+### DSAR-06 ยืนยันตัวตนผู้ยื่นคำขอ (`docs/modules/DSAR.md#dsar-06`) — done (admin-side; no portal yet)
+`dsar.verifications` was already fully specified in the baseline migrations (`method`
+otp_sms/otp_email/id_document/in_person/idp/thaid, `subject_verification_id` → `iam.subject_verifications`,
+`masked_id_file_id` → `platform.files`, status pending/passed/failed) — no new migration, only the service and
+endpoints against it (`internal/dsar/service/identity.go`). OTP reuses IAM-05 directly:
+`StartOTPVerification` decrypts the request's own `requester_contact_enc` (PLT-13, never logged — rule 3) and
+calls `iamservice.StartVerification` with `Purpose: "dsar"` (already in IAM-05's own purpose list);
+`ConfirmOTPVerification` calls `VerifyOTP` — a wrong code is a harmless retry (IAM-05's own 5-attempt cap,
+D-01); only once IAM-05 itself gives up (too-many-attempts or expired) does the `dsar.verifications` row get
+marked `failed`. "ตรวจกับข้อมูลในระบบ" for OTP is implicit: the code goes to the contact already on file for
+this exact request, so a correct code proves the requester controls that channel.
+
+The acceptance criterion's "เลขบัตรในไฟล์ที่เก็บถูกปกปิดเสมอ" is taken literally, not as an OCR claim: no OCR
+library is available in this environment (no Tesseract, no cloud OCR service configured —
+`docs/decisions.md` Q-30), so rather than guess at unavailable tooling, staff mark the rectangle(s) over the
+ID number themselves after uploading the photo. `SubmitIDDocumentVerification` decodes the uploaded JPEG/PNG
+with Go's own `image`/`image/draw` stdlib (no new dependency), draws an opaque black box over each given
+rectangle — refusing one that reaches outside the image rather than silently clipping it short — and only
+the *redacted* bytes are ever saved, via `files.Service.SaveGenerated`, already attached to the request; the
+caller's raw upload is never attached to anything and simply expires through PLT-09's own 24h orphan cleanup.
+`ConfirmIDDocument` is staff's own pass/fail judgement after checking the redacted card against system
+records — there is no trusted national-id database to automate this against from here. Either path's first
+call on a `received` request moves it `received` → `verifying` (ST-02, already declared, no new state-machine
+entry needed); a pass stamps `dsar.requests.verified_at` (the acceptance criterion's other half) and moves
+`verifying` → `in_review`. `identity.go`'s small `Files` interface (rule 9) is backed directly by
+`*files.Service` in `cmd/api/main.go` (already constructed), alongside `Verification *iamservice.Service`
+(already constructed for `/me` and IAM-05) — no import cycle, since neither `iam/service` nor
+`platform/files` imports `dsar`.
+
+API: `GET /admin/v1/dsar/requests/{id}/verifications` (list, oldest first), `POST .../verifications/otp`
+(201), `POST .../verifications/{verificationId}/confirm-otp` (200), `POST .../verifications/id-document`
+(201, body `raw_file_id` + one or more pixel `redactions`), `POST .../verifications/{verificationId}/decide`
+(200, staff pass/fail) — all `dsar.request.update`, no new permission code. UI: a "ยืนยันตัวตน" toggle per row
+on `/requests` — past attempts, an OTP form (method + code), and an ID-document form (`FileUploader` + four
+numeric rectangle fields + save, then pass/fail buttons once a submission is pending). No portal UI yet,
+deliberately — same "no consumer yet" deferral IAM-05's own OTP service used (the module doc's own frontend
+note calls for "ขั้นตอนยืนยันตัวตนใน portal", but no DSAR public intake form exists to design one against).
+Tests: unit (OTP pass stamps `verified_at` and transitions to `in_review`; a wrong code is a harmless retry;
+redaction blacks out exactly the given rectangle and nothing else, proven by decoding the saved bytes back to
+pixels; an out-of-bounds rectangle is refused; re-deciding an already-decided verification is refused;
+two-tenant isolation), HTTP contract (401/403/404/400/201/200 through the real validator),
+`pnpm --filter @pdpa/admin build` verified clean.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

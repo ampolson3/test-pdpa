@@ -11,6 +11,9 @@ export type DsarRequestInput = components["schemas"]["DsarRequestInput"];
 export type DsarTransitionInput = components["schemas"]["DsarTransitionInput"];
 export type DsarTransitionResult = components["schemas"]["DsarTransitionResult"];
 export type DsarSlaStatus = components["schemas"]["DsarSlaStatus"];
+export type DsarVerification = components["schemas"]["DsarVerification"];
+export type DsarVerificationMethod = components["schemas"]["DsarVerificationMethod"];
+export type DsarIdentityRedaction = components["schemas"]["DsarIdentityRedaction"];
 
 const requestsKey = ["dsar", "requests"] as const;
 const requestKey = (id: string) => [...requestsKey, id] as const;
@@ -99,4 +102,75 @@ export function useDsarRequestMutations(client: ApiClient) {
     },
   });
   return { create, transition, assign };
+}
+
+const verificationsKey = (requestId: string) => [...requestKey(requestId), "verifications"] as const;
+
+/** GET /admin/v1/dsar/requests/{id}/verifications (DSAR-06) — every identity-check attempt, oldest first. */
+export function useDsarVerifications(client: ApiClient, requestId: string | undefined) {
+  return useQuery({
+    queryKey: verificationsKey(requestId ?? ""),
+    enabled: !!requestId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dsar/requests/{id}/verifications", { params: { path: { id: requestId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** DSAR-06's identity-verification flow: start/confirm an OTP, submit a redacted ID-card copy, and staff's
+ * own pass/fail decision on one. Each invalidates the request itself too (verified_at / status can change). */
+export function useDsarVerificationMutations(client: ApiClient) {
+  const qc = useQueryClient();
+  const refresh = (requestId: string) => {
+    qc.invalidateQueries({ queryKey: verificationsKey(requestId) });
+    qc.invalidateQueries({ queryKey: requestKey(requestId) });
+    qc.invalidateQueries({ queryKey: requestsKey });
+  };
+  const startOtp = useMutation({
+    mutationFn: async ({ requestId, method }: { requestId: string; method: "otp_sms" | "otp_email" }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/verifications/otp", {
+        params: { path: { id: requestId } },
+        body: { method },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, { requestId }) => refresh(requestId),
+  });
+  const confirmOtp = useMutation({
+    mutationFn: async ({ requestId, verificationId, code }: { requestId: string; verificationId: string; code: string }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/verifications/{verificationId}/confirm-otp", {
+        params: { path: { id: requestId, verificationId } },
+        body: { code },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, { requestId }) => refresh(requestId),
+  });
+  const submitIdDocument = useMutation({
+    mutationFn: async ({ requestId, rawFileId, redactions }: { requestId: string; rawFileId: string; redactions: DsarIdentityRedaction[] }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/verifications/id-document", {
+        params: { path: { id: requestId } },
+        body: { raw_file_id: rawFileId, redactions },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, { requestId }) => refresh(requestId),
+  });
+  const decide = useMutation({
+    mutationFn: async ({ requestId, verificationId, pass }: { requestId: string; verificationId: string; pass: boolean }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/verifications/{verificationId}/decide", {
+        params: { path: { id: requestId, verificationId } },
+        body: { pass },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, { requestId }) => refresh(requestId),
+  });
+  return { startOtp, confirmOtp, submitIdDocument, decide };
 }

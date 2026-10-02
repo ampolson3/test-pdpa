@@ -2014,6 +2014,37 @@
     "outcomes": {
       "fulfilled": "Fulfilled",
       "partially_fulfilled": "Partially fulfilled"
+    },
+    "verify": {
+      "title": "Identity verification",
+      "method": "Method",
+      "status": "Status",
+      "verifiedAt": "Verified at",
+      "otpTitle": "Send OTP",
+      "sendOtp": "Send OTP code",
+      "codePlaceholder": "6-digit OTP code",
+      "confirm": "Confirm code",
+      "idDocumentTitle": "ID card copy",
+      "idDocumentHint": "Upload the card photo, then mark the pixel rectangle(s) over the ID number to redact before it is saved — the original is never kept",
+      "submitIdDocument": "Save the redacted copy",
+      "pass": "Matches system records",
+      "fail": "Does not match / reject",
+      "rect": {
+        "x": "X",
+        "y": "Y",
+        "width": "Width",
+        "height": "Height"
+      },
+      "methods": {
+        "otp_sms": "OTP via SMS",
+        "otp_email": "OTP via email",
+        "id_document": "ID card copy"
+      },
+      "statuses": {
+        "pending": "Pending",
+        "passed": "Passed",
+        "failed": "Failed"
+      }
     }
   },
   "dpoDeadlines": {

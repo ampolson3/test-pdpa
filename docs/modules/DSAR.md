@@ -234,6 +234,45 @@
 
 **หมายเหตุ:** ThaID / NDID ต่อยอดผ่าน ORG-15
 
+**Implementation (DSAR-06):** `dsar.verifications` was already fully specified in the baseline migrations
+(`method` otp_sms/otp_email/id_document/in_person/idp/thaid, `subject_verification_id` → `iam.
+subject_verifications`, `masked_id_file_id` → `platform.files`, status pending/passed/failed) — no new
+migration; this builds only the (admin-side, no portal yet — same deferral IAM-05's own OTP service used)
+service and endpoints against it. OTP reuses IAM-05 directly: `StartOTPVerification` decrypts the request's
+own `requester_contact_enc` (PLT-13, never logged — rule 3) and calls `iamservice.StartVerification` with
+`Purpose: "dsar"` (already in IAM-05's own purpose list); `ConfirmOTPVerification` calls `VerifyOTP` — a
+wrong code is a harmless retry (IAM-05's own 5-attempt cap, D-01), only once IAM-05 itself gives up
+(too-many-attempts or expired) does the `dsar.verifications` row get marked `failed`. "ตรวจกับข้อมูลในระบบ"
+for OTP is implicit: the code goes to the contact already on file for this exact request, so a correct code
+proves the requester controls that channel.
+
+The acceptance criterion's "เลขบัตรในไฟล์ที่เก็บถูกปกปิดเสมอ" is literal, not an OCR claim: no OCR library is
+available in this environment (no Tesseract, no cloud OCR service configured — `decisions.md` Q-30), so
+rather than guess at unavailable tooling, staff mark the rectangle(s) over the ID number themselves;
+`SubmitIDDocumentVerification` decodes the uploaded JPEG/PNG (Go's own `image`/`image/draw` stdlib, no new
+dependency), draws an opaque black box over each rectangle (refusing one that reaches outside the image
+rather than silently clipping it), and only the *redacted* bytes are ever saved — via `files.Service.
+SaveGenerated`, already attached to the request — the caller's raw upload is never attached to anything and
+simply expires through PLT-09's own 24h orphan cleanup. `ConfirmIDDocument` is staff's own pass/fail judgement
+after checking the redacted card (there is no trusted national-id database to automate this against from
+here). Either path's first call on a `received` request moves it `received` → `verifying` (ST-02, already
+declared); a pass stamps `dsar.requests.verified_at` (the acceptance criterion's other half) and moves
+`verifying` → `in_review`. `internal/dsar/service/identity.go`'s small `Files` interface (rule 9) is backed
+directly by `*files.Service` in `cmd/api/main.go` (already constructed), alongside `Verification
+*iamservice.Service` (already constructed for `/me` and IAM-05).
+
+API: `GET /admin/v1/dsar/requests/{id}/verifications` (list, oldest first), `POST .../verifications/otp`
+(201), `POST .../verifications/{verificationId}/confirm-otp` (200), `POST .../verifications/id-document`
+(201, body: `raw_file_id` + one or more pixel `redactions`), `POST .../verifications/{verificationId}/decide`
+(200, staff pass/fail) — all `dsar.request.update`, no new permission code. UI: a "ยืนยันตัวตน" toggle per row
+on `/requests` — a list of past attempts, an OTP form (method + code), and an ID-document form (`FileUploader`
++ four numeric rectangle fields + a save button, then pass/fail buttons once pending). Tests: unit (OTP pass
+stamps `verified_at` and transitions to `in_review`; a wrong code is a harmless retry; redaction blacks out
+exactly the given rectangle and nothing else, proven by decoding the saved bytes back to pixels; an
+out-of-bounds rectangle is refused; re-deciding an already-decided verification is refused; two-tenant
+isolation), HTTP contract (401/403/404/400/201/200 through the real validator), `pnpm --filter @pdpa/admin
+build` verified clean.
+
 <a id="dsar-07"></a>
 ### DSAR-07 นับเวลา SLA 30 วัน
 

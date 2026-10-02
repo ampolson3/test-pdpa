@@ -203,6 +203,66 @@ func (e DsarSlaStatus) Valid() bool {
 	}
 }
 
+// Defines values for DsarStartOtpVerificationInputMethod.
+const (
+	DsarStartOtpVerificationInputMethodOtpEmail DsarStartOtpVerificationInputMethod = "otp_email"
+	DsarStartOtpVerificationInputMethodOtpSms   DsarStartOtpVerificationInputMethod = "otp_sms"
+)
+
+// Valid indicates whether the value is a known member of the DsarStartOtpVerificationInputMethod enum.
+func (e DsarStartOtpVerificationInputMethod) Valid() bool {
+	switch e {
+	case DsarStartOtpVerificationInputMethodOtpEmail:
+		return true
+	case DsarStartOtpVerificationInputMethodOtpSms:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarVerificationMethod.
+const (
+	DsarVerificationMethodIdDocument DsarVerificationMethod = "id_document"
+	DsarVerificationMethodOtpEmail   DsarVerificationMethod = "otp_email"
+	DsarVerificationMethodOtpSms     DsarVerificationMethod = "otp_sms"
+)
+
+// Valid indicates whether the value is a known member of the DsarVerificationMethod enum.
+func (e DsarVerificationMethod) Valid() bool {
+	switch e {
+	case DsarVerificationMethodIdDocument:
+		return true
+	case DsarVerificationMethodOtpEmail:
+		return true
+	case DsarVerificationMethodOtpSms:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarVerificationStatus.
+const (
+	Failed  DsarVerificationStatus = "failed"
+	Passed  DsarVerificationStatus = "passed"
+	Pending DsarVerificationStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the DsarVerificationStatus enum.
+func (e DsarVerificationStatus) Valid() bool {
+	switch e {
+	case Failed:
+		return true
+	case Passed:
+		return true
+	case Pending:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for FormConditionOp.
 const (
 	Answered    FormConditionOp = "answered"
@@ -371,14 +431,122 @@ func (e DsarTransitionRequestParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for DsarListVerificationsParamsAcceptLanguage.
+const (
+	DsarListVerificationsParamsAcceptLanguageEn DsarListVerificationsParamsAcceptLanguage = "en"
+	DsarListVerificationsParamsAcceptLanguageTh DsarListVerificationsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DsarListVerificationsParamsAcceptLanguage enum.
+func (e DsarListVerificationsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DsarListVerificationsParamsAcceptLanguageEn:
+		return true
+	case DsarListVerificationsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarSubmitIdDocumentVerificationParamsAcceptLanguage.
+const (
+	DsarSubmitIdDocumentVerificationParamsAcceptLanguageEn DsarSubmitIdDocumentVerificationParamsAcceptLanguage = "en"
+	DsarSubmitIdDocumentVerificationParamsAcceptLanguageTh DsarSubmitIdDocumentVerificationParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DsarSubmitIdDocumentVerificationParamsAcceptLanguage enum.
+func (e DsarSubmitIdDocumentVerificationParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DsarSubmitIdDocumentVerificationParamsAcceptLanguageEn:
+		return true
+	case DsarSubmitIdDocumentVerificationParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarStartOtpVerificationParamsAcceptLanguage.
+const (
+	DsarStartOtpVerificationParamsAcceptLanguageEn DsarStartOtpVerificationParamsAcceptLanguage = "en"
+	DsarStartOtpVerificationParamsAcceptLanguageTh DsarStartOtpVerificationParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DsarStartOtpVerificationParamsAcceptLanguage enum.
+func (e DsarStartOtpVerificationParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DsarStartOtpVerificationParamsAcceptLanguageEn:
+		return true
+	case DsarStartOtpVerificationParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarConfirmOtpVerificationParamsAcceptLanguage.
+const (
+	DsarConfirmOtpVerificationParamsAcceptLanguageEn DsarConfirmOtpVerificationParamsAcceptLanguage = "en"
+	DsarConfirmOtpVerificationParamsAcceptLanguageTh DsarConfirmOtpVerificationParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DsarConfirmOtpVerificationParamsAcceptLanguage enum.
+func (e DsarConfirmOtpVerificationParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DsarConfirmOtpVerificationParamsAcceptLanguageEn:
+		return true
+	case DsarConfirmOtpVerificationParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarDecideVerificationParamsAcceptLanguage.
+const (
+	DsarDecideVerificationParamsAcceptLanguageEn DsarDecideVerificationParamsAcceptLanguage = "en"
+	DsarDecideVerificationParamsAcceptLanguageTh DsarDecideVerificationParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DsarDecideVerificationParamsAcceptLanguage enum.
+func (e DsarDecideVerificationParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DsarDecideVerificationParamsAcceptLanguageEn:
+		return true
+	case DsarDecideVerificationParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // DsarAssignInput defines model for DsarAssignInput.
 type DsarAssignInput struct {
 	// AssigneeUserId The responsible person notified alongside role DPO when the SLA reminder fires (DSAR-07). Omit or null to unassign.
 	AssigneeUserId *Uuid `json:"assignee_user_id,omitempty"`
 }
 
+// DsarConfirmOtpInput defines model for DsarConfirmOtpInput.
+type DsarConfirmOtpInput struct {
+	Code string `json:"code"`
+}
+
 // DsarContactKind defines model for DsarContactKind.
 type DsarContactKind string
+
+// DsarDecideVerificationInput defines model for DsarDecideVerificationInput.
+type DsarDecideVerificationInput struct {
+	Pass bool `json:"pass"`
+}
+
+// DsarIdentityRedaction A pixel rectangle (image's own coordinate space) to black out before the ID copy is ever stored — the raw upload named by raw_file_id is never itself attached or kept (CLAUDE.md rule 3).
+type DsarIdentityRedaction struct {
+	Height int `json:"height"`
+	Width  int `json:"width"`
+	X      int `json:"x"`
+	Y      int `json:"y"`
+}
 
 // DsarOutcome defines model for DsarOutcome.
 type DsarOutcome string
@@ -451,6 +619,21 @@ type DsarRequestTypeCode string
 // DsarSlaStatus DSAR-07 — computed live off due_at, never stored — on_track, at_risk (10 days or fewer left) or overdue.
 type DsarSlaStatus string
 
+// DsarStartOtpVerificationInput defines model for DsarStartOtpVerificationInput.
+type DsarStartOtpVerificationInput struct {
+	Method DsarStartOtpVerificationInputMethod `json:"method"`
+}
+
+// DsarStartOtpVerificationInputMethod defines model for DsarStartOtpVerificationInput.Method.
+type DsarStartOtpVerificationInputMethod string
+
+// DsarSubmitIdDocumentInput defines model for DsarSubmitIdDocumentInput.
+type DsarSubmitIdDocumentInput struct {
+	// RawFileId The caller's own clean, still-unattached PLT-09 upload (POST /admin/v1/platform/files) of the ID-card photo
+	RawFileId  Uuid                    `json:"raw_file_id"`
+	Redactions []DsarIdentityRedaction `json:"redactions"`
+}
+
 // DsarTransitionInput defines model for DsarTransitionInput.
 type DsarTransitionInput struct {
 	// ActivityIds RoPA processing activities this rejection concerns (DSAR-11, ม.39(7)) — logged against each one (ROPA-10) once the rejection is confirmed
@@ -466,6 +649,28 @@ type DsarTransitionResult struct {
 	DocumentId *Uuid       `json:"document_id,omitempty"`
 	Request    DsarRequest `json:"request"`
 }
+
+// DsarVerification defines model for DsarVerification.
+type DsarVerification struct {
+	CreatedAt time.Time `json:"created_at"`
+
+	// Id UUIDv7 generated by the API
+	Id             Uuid                   `json:"id"`
+	MaskedIdFileId *Uuid                  `json:"masked_id_file_id,omitempty"`
+	Method         DsarVerificationMethod `json:"method"`
+
+	// RequestId UUIDv7 generated by the API
+	RequestId  Uuid                   `json:"request_id"`
+	Status     DsarVerificationStatus `json:"status"`
+	VerifiedAt *time.Time             `json:"verified_at,omitempty"`
+	VerifiedBy *Uuid                  `json:"verified_by,omitempty"`
+}
+
+// DsarVerificationMethod defines model for DsarVerificationMethod.
+type DsarVerificationMethod string
+
+// DsarVerificationStatus defines model for DsarVerificationStatus.
+type DsarVerificationStatus string
 
 // FieldError defines model for FieldError.
 type FieldError struct {
@@ -598,6 +803,51 @@ type DsarTransitionRequestParams struct {
 // DsarTransitionRequestParamsAcceptLanguage defines parameters for DsarTransitionRequest.
 type DsarTransitionRequestParamsAcceptLanguage string
 
+// DsarListVerificationsParams defines parameters for DsarListVerifications.
+type DsarListVerificationsParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DsarListVerificationsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DsarListVerificationsParamsAcceptLanguage defines parameters for DsarListVerifications.
+type DsarListVerificationsParamsAcceptLanguage string
+
+// DsarSubmitIdDocumentVerificationParams defines parameters for DsarSubmitIdDocumentVerification.
+type DsarSubmitIdDocumentVerificationParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DsarSubmitIdDocumentVerificationParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DsarSubmitIdDocumentVerificationParamsAcceptLanguage defines parameters for DsarSubmitIdDocumentVerification.
+type DsarSubmitIdDocumentVerificationParamsAcceptLanguage string
+
+// DsarStartOtpVerificationParams defines parameters for DsarStartOtpVerification.
+type DsarStartOtpVerificationParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DsarStartOtpVerificationParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DsarStartOtpVerificationParamsAcceptLanguage defines parameters for DsarStartOtpVerification.
+type DsarStartOtpVerificationParamsAcceptLanguage string
+
+// DsarConfirmOtpVerificationParams defines parameters for DsarConfirmOtpVerification.
+type DsarConfirmOtpVerificationParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DsarConfirmOtpVerificationParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DsarConfirmOtpVerificationParamsAcceptLanguage defines parameters for DsarConfirmOtpVerification.
+type DsarConfirmOtpVerificationParamsAcceptLanguage string
+
+// DsarDecideVerificationParams defines parameters for DsarDecideVerification.
+type DsarDecideVerificationParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DsarDecideVerificationParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DsarDecideVerificationParamsAcceptLanguage defines parameters for DsarDecideVerification.
+type DsarDecideVerificationParamsAcceptLanguage string
+
 // DsarCreateRequestJSONRequestBody defines body for DsarCreateRequest for application/json ContentType.
 type DsarCreateRequestJSONRequestBody = DsarRequestInput
 
@@ -606,6 +856,18 @@ type DsarAssignRequestJSONRequestBody = DsarAssignInput
 
 // DsarTransitionRequestJSONRequestBody defines body for DsarTransitionRequest for application/json ContentType.
 type DsarTransitionRequestJSONRequestBody = DsarTransitionInput
+
+// DsarSubmitIdDocumentVerificationJSONRequestBody defines body for DsarSubmitIdDocumentVerification for application/json ContentType.
+type DsarSubmitIdDocumentVerificationJSONRequestBody = DsarSubmitIdDocumentInput
+
+// DsarStartOtpVerificationJSONRequestBody defines body for DsarStartOtpVerification for application/json ContentType.
+type DsarStartOtpVerificationJSONRequestBody = DsarStartOtpVerificationInput
+
+// DsarConfirmOtpVerificationJSONRequestBody defines body for DsarConfirmOtpVerification for application/json ContentType.
+type DsarConfirmOtpVerificationJSONRequestBody = DsarConfirmOtpInput
+
+// DsarDecideVerificationJSONRequestBody defines body for DsarDecideVerification for application/json ContentType.
+type DsarDecideVerificationJSONRequestBody = DsarDecideVerificationInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -627,6 +889,21 @@ type ServerInterface interface {
 	// DsarTransitionRequest Move a request along ST-02 (If-Match). Entering awaiting_info/completed/rejected auto-generates the matching response letter draft (DSAR-13) — the caller also needs dsar.request.update for that document-composer write.
 	// (POST /admin/v1/dsar/requests/{id}/transition)
 	DsarTransitionRequest(w http.ResponseWriter, r *http.Request, id Uuid, params DsarTransitionRequestParams)
+	// DsarListVerifications Every identity-verification attempt against this request, oldest first (DSAR-06)
+	// (GET /admin/v1/dsar/requests/{id}/verifications)
+	DsarListVerifications(w http.ResponseWriter, r *http.Request, id Uuid, params DsarListVerificationsParams)
+	// DsarSubmitIdDocumentVerification Redact the ID-card number in the uploaded photo (the given rectangles only) before it is ever stored — the raw upload is never attached (DSAR-06's acceptance criterion); opens a pending verification for staff to decide
+	// (POST /admin/v1/dsar/requests/{id}/verifications/id-document)
+	DsarSubmitIdDocumentVerification(w http.ResponseWriter, r *http.Request, id Uuid, params DsarSubmitIdDocumentVerificationParams)
+	// DsarStartOtpVerification Send a fresh OTP to the request's own stored contact (IAM-05) and open a verification attempt — moves the request received → verifying the first time this is called
+	// (POST /admin/v1/dsar/requests/{id}/verifications/otp)
+	DsarStartOtpVerification(w http.ResponseWriter, r *http.Request, id Uuid, params DsarStartOtpVerificationParams)
+	// DsarConfirmOtpVerification Check a submitted OTP code — success sets dsar.requests.verified_at and moves verifying → in_review (DSAR-06's acceptance criterion)
+	// (POST /admin/v1/dsar/requests/{id}/verifications/{verificationId}/confirm-otp)
+	DsarConfirmOtpVerification(w http.ResponseWriter, r *http.Request, id Uuid, verificationId Uuid, params DsarConfirmOtpVerificationParams)
+	// DsarDecideVerification Staff decision on a pending id_document verification after checking it against system records — passing sets dsar.requests.verified_at and moves verifying → in_review
+	// (POST /admin/v1/dsar/requests/{id}/verifications/{verificationId}/decide)
+	DsarDecideVerification(w http.ResponseWriter, r *http.Request, id Uuid, verificationId Uuid, params DsarDecideVerificationParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -666,6 +943,36 @@ func (_ Unimplemented) DsarAssignRequest(w http.ResponseWriter, r *http.Request,
 // DsarTransitionRequest Move a request along ST-02 (If-Match). Entering awaiting_info/completed/rejected auto-generates the matching response letter draft (DSAR-13) — the caller also needs dsar.request.update for that document-composer write.
 // (POST /admin/v1/dsar/requests/{id}/transition)
 func (_ Unimplemented) DsarTransitionRequest(w http.ResponseWriter, r *http.Request, id Uuid, params DsarTransitionRequestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DsarListVerifications Every identity-verification attempt against this request, oldest first (DSAR-06)
+// (GET /admin/v1/dsar/requests/{id}/verifications)
+func (_ Unimplemented) DsarListVerifications(w http.ResponseWriter, r *http.Request, id Uuid, params DsarListVerificationsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DsarSubmitIdDocumentVerification Redact the ID-card number in the uploaded photo (the given rectangles only) before it is ever stored — the raw upload is never attached (DSAR-06's acceptance criterion); opens a pending verification for staff to decide
+// (POST /admin/v1/dsar/requests/{id}/verifications/id-document)
+func (_ Unimplemented) DsarSubmitIdDocumentVerification(w http.ResponseWriter, r *http.Request, id Uuid, params DsarSubmitIdDocumentVerificationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DsarStartOtpVerification Send a fresh OTP to the request's own stored contact (IAM-05) and open a verification attempt — moves the request received → verifying the first time this is called
+// (POST /admin/v1/dsar/requests/{id}/verifications/otp)
+func (_ Unimplemented) DsarStartOtpVerification(w http.ResponseWriter, r *http.Request, id Uuid, params DsarStartOtpVerificationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DsarConfirmOtpVerification Check a submitted OTP code — success sets dsar.requests.verified_at and moves verifying → in_review (DSAR-06's acceptance criterion)
+// (POST /admin/v1/dsar/requests/{id}/verifications/{verificationId}/confirm-otp)
+func (_ Unimplemented) DsarConfirmOtpVerification(w http.ResponseWriter, r *http.Request, id Uuid, verificationId Uuid, params DsarConfirmOtpVerificationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DsarDecideVerification Staff decision on a pending id_document verification after checking it against system records — passing sets dsar.requests.verified_at and moves verifying → in_review
+// (POST /admin/v1/dsar/requests/{id}/verifications/{verificationId}/decide)
+func (_ Unimplemented) DsarDecideVerification(w http.ResponseWriter, r *http.Request, id Uuid, verificationId Uuid, params DsarDecideVerificationParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1049,6 +1356,274 @@ func (siw *ServerInterfaceWrapper) DsarTransitionRequest(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// DsarListVerifications operation middleware
+func (siw *ServerInterfaceWrapper) DsarListVerifications(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DsarListVerificationsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DsarListVerificationsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DsarListVerifications(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DsarSubmitIdDocumentVerification operation middleware
+func (siw *ServerInterfaceWrapper) DsarSubmitIdDocumentVerification(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DsarSubmitIdDocumentVerificationParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DsarSubmitIdDocumentVerificationParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DsarSubmitIdDocumentVerification(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DsarStartOtpVerification operation middleware
+func (siw *ServerInterfaceWrapper) DsarStartOtpVerification(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DsarStartOtpVerificationParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DsarStartOtpVerificationParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DsarStartOtpVerification(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DsarConfirmOtpVerification operation middleware
+func (siw *ServerInterfaceWrapper) DsarConfirmOtpVerification(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "verificationId" -------------
+	var verificationId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "verificationId", chi.URLParam(r, "verificationId"), &verificationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "verificationId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DsarConfirmOtpVerificationParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DsarConfirmOtpVerificationParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DsarConfirmOtpVerification(w, r, id, verificationId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DsarDecideVerification operation middleware
+func (siw *ServerInterfaceWrapper) DsarDecideVerification(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "verificationId" -------------
+	var verificationId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "verificationId", chi.URLParam(r, "verificationId"), &verificationId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "verificationId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DsarDecideVerificationParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DsarDecideVerificationParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DsarDecideVerification(w, r, id, verificationId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -1179,6 +1754,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/dsar/requests/{id}/assign", wrapper.DsarAssignRequest)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dsar/requests/{id}/verifications", wrapper.DsarListVerifications)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dsar/requests/{id}/verifications/otp", wrapper.DsarStartOtpVerification)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dsar/requests/{id}/verifications/{verificationId}/confirm-otp", wrapper.DsarConfirmOtpVerification)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dsar/requests/{id}/verifications/id-document", wrapper.DsarSubmitIdDocumentVerification)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dsar/requests/{id}/verifications/{verificationId}/decide", wrapper.DsarDecideVerification)
 	})
 
 	return r
@@ -1799,6 +2389,529 @@ func (response DsarTransitionRequest428ApplicationProblemPlusJSONResponse) Visit
 	return err
 }
 
+type DsarListVerificationsRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DsarListVerificationsParams
+}
+
+type DsarListVerificationsResponseObject interface {
+	VisitDsarListVerificationsResponse(w http.ResponseWriter) error
+}
+
+type DsarListVerifications200JSONResponse struct {
+	Data []DsarVerification `json:"data"`
+}
+
+func (response DsarListVerifications200JSONResponse) VisitDsarListVerificationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarListVerifications401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DsarListVerifications401ApplicationProblemPlusJSONResponse) VisitDsarListVerificationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarListVerifications403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DsarListVerifications403ApplicationProblemPlusJSONResponse) VisitDsarListVerificationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarListVerifications404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DsarListVerifications404ApplicationProblemPlusJSONResponse) VisitDsarListVerificationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSubmitIdDocumentVerificationRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DsarSubmitIdDocumentVerificationParams
+	Body   *DsarSubmitIdDocumentVerificationJSONRequestBody
+}
+
+type DsarSubmitIdDocumentVerificationResponseObject interface {
+	VisitDsarSubmitIdDocumentVerificationResponse(w http.ResponseWriter) error
+}
+
+type DsarSubmitIdDocumentVerification201JSONResponse DsarVerification
+
+func (response DsarSubmitIdDocumentVerification201JSONResponse) VisitDsarSubmitIdDocumentVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSubmitIdDocumentVerification400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSubmitIdDocumentVerification400ApplicationProblemPlusJSONResponse) VisitDsarSubmitIdDocumentVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSubmitIdDocumentVerification401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSubmitIdDocumentVerification401ApplicationProblemPlusJSONResponse) VisitDsarSubmitIdDocumentVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSubmitIdDocumentVerification403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSubmitIdDocumentVerification403ApplicationProblemPlusJSONResponse) VisitDsarSubmitIdDocumentVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSubmitIdDocumentVerification404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSubmitIdDocumentVerification404ApplicationProblemPlusJSONResponse) VisitDsarSubmitIdDocumentVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSubmitIdDocumentVerification422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSubmitIdDocumentVerification422ApplicationProblemPlusJSONResponse) VisitDsarSubmitIdDocumentVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarStartOtpVerificationRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DsarStartOtpVerificationParams
+	Body   *DsarStartOtpVerificationJSONRequestBody
+}
+
+type DsarStartOtpVerificationResponseObject interface {
+	VisitDsarStartOtpVerificationResponse(w http.ResponseWriter) error
+}
+
+type DsarStartOtpVerification201JSONResponse DsarVerification
+
+func (response DsarStartOtpVerification201JSONResponse) VisitDsarStartOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarStartOtpVerification400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DsarStartOtpVerification400ApplicationProblemPlusJSONResponse) VisitDsarStartOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarStartOtpVerification401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DsarStartOtpVerification401ApplicationProblemPlusJSONResponse) VisitDsarStartOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarStartOtpVerification403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DsarStartOtpVerification403ApplicationProblemPlusJSONResponse) VisitDsarStartOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarStartOtpVerification404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DsarStartOtpVerification404ApplicationProblemPlusJSONResponse) VisitDsarStartOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarStartOtpVerification422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DsarStartOtpVerification422ApplicationProblemPlusJSONResponse) VisitDsarStartOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarConfirmOtpVerificationRequestObject struct {
+	Id             Uuid `json:"id"`
+	VerificationId Uuid `json:"verificationId"`
+	Params         DsarConfirmOtpVerificationParams
+	Body           *DsarConfirmOtpVerificationJSONRequestBody
+}
+
+type DsarConfirmOtpVerificationResponseObject interface {
+	VisitDsarConfirmOtpVerificationResponse(w http.ResponseWriter) error
+}
+
+type DsarConfirmOtpVerification200JSONResponse DsarVerification
+
+func (response DsarConfirmOtpVerification200JSONResponse) VisitDsarConfirmOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarConfirmOtpVerification400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DsarConfirmOtpVerification400ApplicationProblemPlusJSONResponse) VisitDsarConfirmOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarConfirmOtpVerification401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DsarConfirmOtpVerification401ApplicationProblemPlusJSONResponse) VisitDsarConfirmOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarConfirmOtpVerification403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DsarConfirmOtpVerification403ApplicationProblemPlusJSONResponse) VisitDsarConfirmOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarConfirmOtpVerification404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DsarConfirmOtpVerification404ApplicationProblemPlusJSONResponse) VisitDsarConfirmOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarConfirmOtpVerification409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response DsarConfirmOtpVerification409ApplicationProblemPlusJSONResponse) VisitDsarConfirmOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarConfirmOtpVerification422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DsarConfirmOtpVerification422ApplicationProblemPlusJSONResponse) VisitDsarConfirmOtpVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarDecideVerificationRequestObject struct {
+	Id             Uuid `json:"id"`
+	VerificationId Uuid `json:"verificationId"`
+	Params         DsarDecideVerificationParams
+	Body           *DsarDecideVerificationJSONRequestBody
+}
+
+type DsarDecideVerificationResponseObject interface {
+	VisitDsarDecideVerificationResponse(w http.ResponseWriter) error
+}
+
+type DsarDecideVerification200JSONResponse DsarVerification
+
+func (response DsarDecideVerification200JSONResponse) VisitDsarDecideVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarDecideVerification400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DsarDecideVerification400ApplicationProblemPlusJSONResponse) VisitDsarDecideVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarDecideVerification401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DsarDecideVerification401ApplicationProblemPlusJSONResponse) VisitDsarDecideVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarDecideVerification403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DsarDecideVerification403ApplicationProblemPlusJSONResponse) VisitDsarDecideVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarDecideVerification404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DsarDecideVerification404ApplicationProblemPlusJSONResponse) VisitDsarDecideVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarDecideVerification409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response DsarDecideVerification409ApplicationProblemPlusJSONResponse) VisitDsarDecideVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarDecideVerification422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DsarDecideVerification422ApplicationProblemPlusJSONResponse) VisitDsarDecideVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// DsarListRequestTypes The 9 fixed DSAR right types (dsar.requests.request_type_id), for the request form's picker
@@ -1819,6 +2932,21 @@ type StrictServerInterface interface {
 	// DsarTransitionRequest Move a request along ST-02 (If-Match). Entering awaiting_info/completed/rejected auto-generates the matching response letter draft (DSAR-13) — the caller also needs dsar.request.update for that document-composer write.
 	// (POST /admin/v1/dsar/requests/{id}/transition)
 	DsarTransitionRequest(ctx context.Context, request DsarTransitionRequestRequestObject) (DsarTransitionRequestResponseObject, error)
+	// DsarListVerifications Every identity-verification attempt against this request, oldest first (DSAR-06)
+	// (GET /admin/v1/dsar/requests/{id}/verifications)
+	DsarListVerifications(ctx context.Context, request DsarListVerificationsRequestObject) (DsarListVerificationsResponseObject, error)
+	// DsarSubmitIdDocumentVerification Redact the ID-card number in the uploaded photo (the given rectangles only) before it is ever stored — the raw upload is never attached (DSAR-06's acceptance criterion); opens a pending verification for staff to decide
+	// (POST /admin/v1/dsar/requests/{id}/verifications/id-document)
+	DsarSubmitIdDocumentVerification(ctx context.Context, request DsarSubmitIdDocumentVerificationRequestObject) (DsarSubmitIdDocumentVerificationResponseObject, error)
+	// DsarStartOtpVerification Send a fresh OTP to the request's own stored contact (IAM-05) and open a verification attempt — moves the request received → verifying the first time this is called
+	// (POST /admin/v1/dsar/requests/{id}/verifications/otp)
+	DsarStartOtpVerification(ctx context.Context, request DsarStartOtpVerificationRequestObject) (DsarStartOtpVerificationResponseObject, error)
+	// DsarConfirmOtpVerification Check a submitted OTP code — success sets dsar.requests.verified_at and moves verifying → in_review (DSAR-06's acceptance criterion)
+	// (POST /admin/v1/dsar/requests/{id}/verifications/{verificationId}/confirm-otp)
+	DsarConfirmOtpVerification(ctx context.Context, request DsarConfirmOtpVerificationRequestObject) (DsarConfirmOtpVerificationResponseObject, error)
+	// DsarDecideVerification Staff decision on a pending id_document verification after checking it against system records — passing sets dsar.requests.verified_at and moves verifying → in_review
+	// (POST /admin/v1/dsar/requests/{id}/verifications/{verificationId}/decide)
+	DsarDecideVerification(ctx context.Context, request DsarDecideVerificationRequestObject) (DsarDecideVerificationResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -2033,6 +3161,171 @@ func (sh *strictHandler) DsarTransitionRequest(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DsarTransitionRequestResponseObject); ok {
 		if err := validResponse.VisitDsarTransitionRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DsarListVerifications operation middleware
+func (sh *strictHandler) DsarListVerifications(w http.ResponseWriter, r *http.Request, id Uuid, params DsarListVerificationsParams) {
+	var request DsarListVerificationsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DsarListVerifications(ctx, request.(DsarListVerificationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DsarListVerifications")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DsarListVerificationsResponseObject); ok {
+		if err := validResponse.VisitDsarListVerificationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DsarSubmitIdDocumentVerification operation middleware
+func (sh *strictHandler) DsarSubmitIdDocumentVerification(w http.ResponseWriter, r *http.Request, id Uuid, params DsarSubmitIdDocumentVerificationParams) {
+	var request DsarSubmitIdDocumentVerificationRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body DsarSubmitIdDocumentVerificationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DsarSubmitIdDocumentVerification(ctx, request.(DsarSubmitIdDocumentVerificationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DsarSubmitIdDocumentVerification")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DsarSubmitIdDocumentVerificationResponseObject); ok {
+		if err := validResponse.VisitDsarSubmitIdDocumentVerificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DsarStartOtpVerification operation middleware
+func (sh *strictHandler) DsarStartOtpVerification(w http.ResponseWriter, r *http.Request, id Uuid, params DsarStartOtpVerificationParams) {
+	var request DsarStartOtpVerificationRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body DsarStartOtpVerificationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DsarStartOtpVerification(ctx, request.(DsarStartOtpVerificationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DsarStartOtpVerification")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DsarStartOtpVerificationResponseObject); ok {
+		if err := validResponse.VisitDsarStartOtpVerificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DsarConfirmOtpVerification operation middleware
+func (sh *strictHandler) DsarConfirmOtpVerification(w http.ResponseWriter, r *http.Request, id Uuid, verificationId Uuid, params DsarConfirmOtpVerificationParams) {
+	var request DsarConfirmOtpVerificationRequestObject
+
+	request.Id = id
+	request.VerificationId = verificationId
+	request.Params = params
+
+	var body DsarConfirmOtpVerificationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DsarConfirmOtpVerification(ctx, request.(DsarConfirmOtpVerificationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DsarConfirmOtpVerification")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DsarConfirmOtpVerificationResponseObject); ok {
+		if err := validResponse.VisitDsarConfirmOtpVerificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DsarDecideVerification operation middleware
+func (sh *strictHandler) DsarDecideVerification(w http.ResponseWriter, r *http.Request, id Uuid, verificationId Uuid, params DsarDecideVerificationParams) {
+	var request DsarDecideVerificationRequestObject
+
+	request.Id = id
+	request.VerificationId = verificationId
+	request.Params = params
+
+	var body DsarDecideVerificationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DsarDecideVerification(ctx, request.(DsarDecideVerificationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DsarDecideVerification")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DsarDecideVerificationResponseObject); ok {
+		if err := validResponse.VisitDsarDecideVerificationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
