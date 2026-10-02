@@ -261,6 +261,7 @@ func run() error {
 	}
 	breachSvc := wiring.Breach(notifySvc, fileSvc, riverClient, auditSvc, keyring, docsSvc)
 	noticeSvc := &noticeservice.Service{Audit: auditSvc, Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc, Files: fileSvc, Notify: notifySvc, River: riverClient,
+		Dpo: dpoSvc, Consent: consentSvc, // PNG-07: re-consent task + material-change alert
 		EnforceChecklist: os.Getenv("NOTICE_CHECKLIST_ENFORCE") != "false", EnforceTranslationSync: os.Getenv("NOTICE_TRANSLATION_SYNC_ENFORCE") != "false"}
 	docsSvc.SetValidate("notice", noticeSvc.CheckPublishable)                                // PNG-02: ม.23 checklist gates the notice's document publish
 	docsSvc.SetOnPublished("notice", noticeSvc.OnDocumentPublished)                          // PNG-06: version history + the public page's key

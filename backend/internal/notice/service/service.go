@@ -18,6 +18,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
 
+	consentservice "pdpa-platform/internal/consent/service"
+	dposervice "pdpa-platform/internal/dpo/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
@@ -80,12 +82,26 @@ type Files interface {
 	AttachSystem(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error
 }
 
+// Dpo is what PNG-07 needs from the DPO module (rule 9): opening a dpo.tasks "request new consent" job when
+// a notice publish changes a purpose — dpo.tasks is dpo's own schema, so notice never writes it directly.
+type Dpo interface {
+	OpenConsentTask(ctx context.Context, consentPurposeID uuid.UUID, title, description string) (dposervice.Task, error)
+}
+
+// Consent is what PNG-07 needs from the consent module (rule 9): the purpose's own name, to label the task
+// OpenConsentTask opens.
+type Consent interface {
+	GetPurpose(ctx context.Context, id uuid.UUID) (consentservice.Purpose, error)
+}
+
 type Service struct {
-	Audit *audit.Service
-	Org   Org
-	Ropa  Ropa
-	Docs  Docs
-	Files Files
+	Audit   *audit.Service
+	Org     Org
+	Ropa    Ropa
+	Docs    Docs
+	Files   Files
+	Dpo     Dpo
+	Consent Consent
 	// Notify and River drive PNG-04's 30-day indirect-collection reminders (notice.indirect_due); nil in
 	// contexts that don't need them (e.g. a stub in a test that never registers a collection).
 	Notify *notify.Service

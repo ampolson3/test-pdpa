@@ -1060,6 +1060,13 @@
       "versionNo": "Version",
       "effectiveFrom": "Effective from",
       "publishedAt": "Published at"
+    },
+    "publishIntent": {
+      "title": "Before the next publish",
+      "isMaterialChange": "This is a material change (alerts DPO)",
+      "changesPurpose": "Changes a purpose (opens a re-consent task)",
+      "save": "Save",
+      "saved": "Saved — applies to the next publish"
     }
   },
   "masterData": {

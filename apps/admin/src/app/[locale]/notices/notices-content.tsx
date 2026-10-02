@@ -13,6 +13,7 @@ import {
   useNoticeChecklist,
   useNoticeTranslationStatus,
   useNoticeVersions,
+  useSetNoticePublishIntent,
   useTemplateGroups,
   type ApiClient,
   type Notice,
@@ -57,6 +58,37 @@ function ChecklistPanel({ client, noticeId }: { client: ApiClient; noticeId: str
   );
 }
 
+/** PNG-07: the DPO stages whether the next publish is a material change / changes a purpose. */
+function PublishIntentForm({ client, notice }: { client: ApiClient; notice: Notice }) {
+  const t = useTranslations("notices");
+  const mutation = useSetNoticePublishIntent(client);
+  const [isMaterial, setIsMaterial] = useState(notice.pending_is_material_change ?? false);
+  const [changesPurpose, setChangesPurpose] = useState(notice.pending_changes_purpose ?? false);
+  return (
+    <div className="rounded border border-slate-200 bg-white p-2" data-testid="publish-intent-form">
+      <p className="mb-1 font-medium text-slate-700">{t("publishIntent.title")}</p>
+      <label className="flex items-center gap-2">
+        <input type="checkbox" checked={isMaterial} onChange={(e) => setIsMaterial(e.target.checked)} />
+        <span>{t("publishIntent.isMaterialChange")}</span>
+      </label>
+      <label className="flex items-center gap-2">
+        <input type="checkbox" checked={changesPurpose} onChange={(e) => setChangesPurpose(e.target.checked)} />
+        <span>{t("publishIntent.changesPurpose")}</span>
+      </label>
+      <Button
+        className="mt-2"
+        onClick={() => mutation.mutate({ notice, input: { is_material_change: isMaterial, changes_purpose: changesPurpose } })}
+        disabled={mutation.isPending}
+        data-testid="publish-intent-save"
+      >
+        {t("publishIntent.save")}
+      </Button>
+      {mutation.isSuccess && <p className="text-emerald-700">{t("publishIntent.saved")}</p>}
+      {mutation.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(mutation.error) })}</p>}
+    </div>
+  );
+}
+
 /** PNG-06: version history + the public page link once a notice has been published at least once. */
 function VersionsPanel({ client, notice, portalUrl, locale }: { client: ApiClient; notice: Notice; portalUrl: string; locale: string }) {
   const t = useTranslations("notices");
@@ -65,6 +97,7 @@ function VersionsPanel({ client, notice, portalUrl, locale }: { client: ApiClien
   const publicLink = notice.public_url ? `${portalUrl.replace(/\/$/, "")}/${locale}${notice.public_url}` : "";
   return (
     <div className="space-y-2" data-testid="versions-panel">
+      <PublishIntentForm client={client} notice={notice} />
       {publicLink ? (
         <p>
           {t("versions.publicLink")}{" "}

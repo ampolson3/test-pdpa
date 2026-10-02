@@ -3113,6 +3113,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/notices/{id}/publish-intent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stage whether the next publish is a material change and/or changes a purpose (PNG-07, ม.21) — consumed and reset by that publish */
+        post: operations["noticeSetPublishIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/notices/indirect-collections": {
         parameters: {
             query?: never;
@@ -4376,8 +4393,18 @@ export interface components {
             activity_ids?: components["schemas"]["Uuid"][];
             /** @description PNG-06 — the notice's public page path (/public/v1/notices/{key}), once it has been published at least once; absent before that */
             public_url?: string | null;
+            /** @description PNG-07 — staged via POST .../publish-intent, consumed by the next publish */
+            pending_is_material_change?: boolean;
+            /** @description PNG-07 — staged via POST .../publish-intent, consumed by the next publish */
+            pending_changes_purpose?: boolean;
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
+        };
+        NoticePublishIntentInput: {
+            /** @default false */
+            is_material_change: boolean;
+            /** @default false */
+            changes_purpose: boolean;
         };
         NoticeVersion: {
             id: components["schemas"]["Uuid"];
@@ -13246,6 +13273,43 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    noticeSetPublishIntent: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoticePublishIntentInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notice"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     noticeListIndirectCollections: {

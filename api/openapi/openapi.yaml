@@ -9375,6 +9375,49 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/notices/{id}/publish-intent:
+    post:
+      operationId: noticeSetPublishIntent
+      tags: [notice]
+      summary: Stage whether the next publish is a material change and/or changes a purpose (PNG-07, ม.21) — consumed and reset by that publish
+      x-permission: notice.document.update
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticePublishIntentInput'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/notices/indirect-collections:
     get:
       operationId: noticeListIndirectCollections
@@ -11454,8 +11497,19 @@ components:
           type: string
           nullable: true
           description: PNG-06 — the notice's public page path (/public/v1/notices/{key}), once it has been published at least once; absent before that
+        pending_is_material_change:
+          type: boolean
+          description: PNG-07 — staged via POST .../publish-intent, consumed by the next publish
+        pending_changes_purpose:
+          type: boolean
+          description: PNG-07 — staged via POST .../publish-intent, consumed by the next publish
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
+    NoticePublishIntentInput:
+      type: object
+      properties:
+        is_material_change: {type: boolean, default: false}
+        changes_purpose: {type: boolean, default: false}
     NoticeVersion:
       type: object
       required: [id, notice_id, version_no, languages, effective_from, is_material_change, changes_purpose, checklist, published_at]

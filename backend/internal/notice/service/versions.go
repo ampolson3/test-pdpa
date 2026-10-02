@@ -33,6 +33,29 @@ type NoticeVersion struct {
 	PublishedAt       time.Time
 }
 
+// SetPublishIntent stages PNG-07's two flags ahead of the next publish — PLT-08's generic publish endpoint
+// knows nothing about notice-specific fields, so the DPO sets these on the notice itself first; the very next
+// OnDocumentPublished call consumes and resets them (CLAUDE.md rule 10: ETag/If-Match on every update).
+func (s *Service) SetPublishIntent(ctx context.Context, id uuid.UUID, rowVersion int32, isMaterialChange, changesPurpose bool) (Notice, error) {
+	before, err := s.GetNotice(ctx, id)
+	if err != nil {
+		return Notice{}, err
+	}
+	row, err := noticestore.New(pdb.MustTxFromContext(ctx)).SetNoticePublishIntent(ctx, noticestore.SetNoticePublishIntentParams{
+		ID: id, PendingIsMaterialChange: isMaterialChange, PendingChangesPurpose: changesPurpose, RowVersion: rowVersion,
+	})
+	if err != nil {
+		return Notice{}, ErrVersionMismatch
+	}
+	n := toNotice(noticestore.GetNoticeRow(row))
+	if err := s.audit(ctx, "notice.notice.publish_intent", n.ID,
+		map[string]any{"is_material_change": before.PendingIsMaterialChange, "changes_purpose": before.PendingChangesPurpose},
+		map[string]any{"is_material_change": isMaterialChange, "changes_purpose": changesPurpose}); err != nil {
+		return Notice{}, err
+	}
+	return n, nil
+}
+
 // OnDocumentPublished is PNG-06's own acceptance criterion, wired into docs.Service as the "notice" document
 // type's SetOnPublished hook (cmd/api/main.go, right after docsSvc.SetValidate("notice", ...) — same
 // sequencing rule): every time a notice's underlying PLT-16 document is published, record one
@@ -77,6 +100,9 @@ func (s *Service) OnDocumentPublished(ctx context.Context, documentID uuid.UUID,
 		return err
 	}
 
+	// PNG-07: the flags the DPO staged via SetPublishIntent, consumed here and reset by SetNoticePublished below.
+	isMaterial, changesPurpose := n.PendingIsMaterialChange, n.PendingChangesPurpose
+
 	vid, err := uuid.NewV7()
 	if err != nil {
 		return err
@@ -84,6 +110,7 @@ func (s *Service) OnDocumentPublished(ctx context.Context, documentID uuid.UUID,
 	if _, err := q.InsertNoticeVersion(ctx, noticestore.InsertNoticeVersionParams{
 		ID: vid, NoticeID: n.ID, VersionNo: u.VersionNo, DocumentVersionID: u.DocumentVersionID,
 		Languages: u.Languages, EffectiveFrom: pgtype.Date{Time: eff, Valid: true},
+		IsMaterialChange: isMaterial, ChangesPurpose: changesPurpose,
 		ChecklistResult: checklistJSON, PublicUrl: &publicURL,
 	}); err != nil {
 		return err
@@ -98,8 +125,26 @@ func (s *Service) OnDocumentPublished(ctx context.Context, documentID uuid.UUID,
 	}); err != nil {
 		return err
 	}
-	return s.audit(ctx, "notice.notice.publish", n.ID, nil,
-		map[string]any{"version_no": u.VersionNo, "document_version_id": u.DocumentVersionID, "effective_from": eff.Format(time.DateOnly)})
+	if err := s.audit(ctx, "notice.notice.publish", n.ID, nil,
+		map[string]any{"version_no": u.VersionNo, "document_version_id": u.DocumentVersionID, "effective_from": eff.Format(time.DateOnly),
+			"is_material_change": isMaterial, "changes_purpose": changesPurpose}); err != nil {
+		return err
+	}
+
+	// PNG-07's own acceptance criterion: changing a purpose opens a dpo.tasks job per affected consent purpose
+	// (decisions.md Q-29 — never auto-publishes the new consent text itself, rule 8).
+	if changesPurpose {
+		if err := s.openReconsentTasks(ctx, n, u.VersionNo); err != nil {
+			return err
+		}
+	}
+	// A material change alerts role DPO (decisions.md Q-29 — no addressable data-subject audience exists yet).
+	if isMaterial && s.Notify != nil {
+		if err := s.alertMaterialChange(ctx, n, u.VersionNo); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // ListNoticeVersions is the "ดูประวัติย้อนหลัง" half of the acceptance criterion: every published version of

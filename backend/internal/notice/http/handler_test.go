@@ -239,6 +239,20 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 		t.Errorf("versions, unknown notice: %d, want 404", code)
 	}
 
+	// PNG-07 publish-intent: stage the two flags ahead of the next publish.
+	intent := item + "/publish-intent"
+	intentBody := map[string]bool{"is_material_change": true, "changes_purpose": true}
+	if code, _ := do("POST", intent, &admin, intentBody); code != 428 {
+		t.Errorf("publish-intent without If-Match: %d, want 428", code)
+	}
+	if code, _ := do("POST", intent, &admin, intentBody, map[string]string{"If-Match": `"99"`}); code != 412 {
+		t.Errorf("publish-intent with wrong If-Match: %d, want 412", code)
+	}
+	if code, body := do("POST", intent, &admin, intentBody, map[string]string{"If-Match": etagOf(created.RowVersion)}); code != 200 ||
+		!strings.Contains(body, `"pending_is_material_change":true`) || !strings.Contains(body, `"pending_changes_purpose":true`) {
+		t.Errorf("publish-intent: %d %s", code, body)
+	}
+
 	// PNG-03 template groups + wizard.
 	if code, _ := do("GET", "/admin/v1/notices/template-groups", nil, nil); code != 401 {
 		t.Errorf("template-groups, no principal: %d, want 401", code)

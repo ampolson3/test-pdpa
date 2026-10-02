@@ -111,10 +111,32 @@ func (h *Strict) NoticeGetChecklist(ctx context.Context, req NoticeGetChecklistR
 	return resp, nil
 }
 
+func (h *Strict) NoticeSetPublishIntent(ctx context.Context, req NoticeSetPublishIntentRequestObject) (NoticeSetPublishIntentResponseObject, error) {
+	v, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	var isMaterial, changesPurpose bool
+	if req.Body != nil {
+		if req.Body.IsMaterialChange != nil {
+			isMaterial = *req.Body.IsMaterialChange
+		}
+		if req.Body.ChangesPurpose != nil {
+			changesPurpose = *req.Body.ChangesPurpose
+		}
+	}
+	n, err := h.svc.SetPublishIntent(ctx, req.Id, v, isMaterial, changesPurpose)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return NoticeSetPublishIntent200JSONResponse{Body: toNoticeWire(n), Headers: NoticeSetPublishIntent200ResponseHeaders{ETag: etag(n.RowVersion)}}, nil
+}
+
 func toNoticeWire(n noticeservice.Notice) Notice {
 	w := Notice{Id: n.ID, LegalEntityId: n.LegalEntityID, SubjectTypeId: n.SubjectTypeID, NoticeType: NoticeType(n.NoticeType),
 		Title: n.Title, Slug: n.Slug, DocumentId: n.DocumentID, Status: NoticeStatus(n.Status), OwnerUserId: n.OwnerUserID,
-		ReviewCycleMonths: n.ReviewCycleMonths, RowVersion: int(n.RowVersion), UpdatedAt: n.UpdatedAt.UTC()}
+		ReviewCycleMonths: n.ReviewCycleMonths, PendingIsMaterialChange: &n.PendingIsMaterialChange, PendingChangesPurpose: &n.PendingChangesPurpose,
+		RowVersion: int(n.RowVersion), UpdatedAt: n.UpdatedAt.UTC()}
 	if len(n.ActivityIDs) > 0 {
 		ids := append([]uuid.UUID(nil), n.ActivityIDs...)
 		w.ActivityIds = &ids

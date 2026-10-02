@@ -12,6 +12,7 @@ output-options:
     - noticeGetChecklist
     - noticeGetTranslationStatus
     - noticeListVersions
+    - noticeSetPublishIntent
     - noticeListIndirectCollections
     - noticeRegisterIndirectCollection
     - noticeGetIndirectCollection

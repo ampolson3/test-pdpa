@@ -2241,25 +2241,27 @@ type NoticeLinkedDocument struct {
 
 // ประกาศความเป็นส่วนตัว / นโยบาย / ป้าย CCTV
 type NoticeNotice struct {
-	ID                uuid.UUID          `db:"id" json:"id"`
-	TenantID          uuid.UUID          `db:"tenant_id" json:"tenant_id"`
-	LegalEntityID     uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
-	SubjectTypeID     pgtype.UUID        `db:"subject_type_id" json:"subject_type_id"`
-	NoticeType        string             `db:"notice_type" json:"notice_type"`
-	Title             string             `db:"title" json:"title"`
-	Slug              string             `db:"slug" json:"slug"`
-	DocumentID        uuid.UUID          `db:"document_id" json:"document_id"`
-	Status            string             `db:"status" json:"status"`
-	CurrentVersionID  pgtype.UUID        `db:"current_version_id" json:"current_version_id"`
-	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
-	ReviewCycleMonths int16              `db:"review_cycle_months" json:"review_cycle_months"`
-	NextReviewAt      pgtype.Date        `db:"next_review_at" json:"next_review_at"`
-	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	CreatedBy         pgtype.UUID        `db:"created_by" json:"created_by"`
-	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	UpdatedBy         pgtype.UUID        `db:"updated_by" json:"updated_by"`
-	RowVersion        int32              `db:"row_version" json:"row_version"`
-	PublicKey         *string            `db:"public_key" json:"public_key"`
+	ID                      uuid.UUID          `db:"id" json:"id"`
+	TenantID                uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	LegalEntityID           uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	SubjectTypeID           pgtype.UUID        `db:"subject_type_id" json:"subject_type_id"`
+	NoticeType              string             `db:"notice_type" json:"notice_type"`
+	Title                   string             `db:"title" json:"title"`
+	Slug                    string             `db:"slug" json:"slug"`
+	DocumentID              uuid.UUID          `db:"document_id" json:"document_id"`
+	Status                  string             `db:"status" json:"status"`
+	CurrentVersionID        pgtype.UUID        `db:"current_version_id" json:"current_version_id"`
+	OwnerUserID             pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	ReviewCycleMonths       int16              `db:"review_cycle_months" json:"review_cycle_months"`
+	NextReviewAt            pgtype.Date        `db:"next_review_at" json:"next_review_at"`
+	CreatedAt               pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy               pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt               pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy               pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion              int32              `db:"row_version" json:"row_version"`
+	PublicKey               *string            `db:"public_key" json:"public_key"`
+	PendingIsMaterialChange bool               `db:"pending_is_material_change" json:"pending_is_material_change"`
+	PendingChangesPurpose   bool               `db:"pending_changes_purpose" json:"pending_changes_purpose"`
 }
 
 // กิจกรรม RoPA ที่ประกาศครอบคลุม

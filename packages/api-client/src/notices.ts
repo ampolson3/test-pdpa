@@ -7,6 +7,7 @@ export type NoticeStatus = components["schemas"]["NoticeStatus"];
 export type NoticeWizardInput = components["schemas"]["NoticeWizardInput"];
 export type NoticeChecklistItem = components["schemas"]["NoticeChecklistItem"];
 export type NoticeVersion = components["schemas"]["NoticeVersion"];
+export type NoticePublishIntentInput = components["schemas"]["NoticePublishIntentInput"];
 export type IndirectCollection = components["schemas"]["IndirectCollection"];
 export type IndirectCollectionInput = components["schemas"]["IndirectCollectionInput"];
 export type IndirectCollectionStatus = components["schemas"]["IndirectCollectionStatus"];
@@ -108,6 +109,26 @@ export function useCreateNoticeWizard(client: ApiClient) {
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: noticesKey }),
+  });
+}
+
+/** POST /admin/v1/notices/{id}/publish-intent (PNG-07) — stage whether the next publish is a material change
+ * and/or changes a purpose; consumed and reset by that publish. */
+export function useSetNoticePublishIntent(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { notice: Notice; input: NoticePublishIntentInput }) => {
+      const { data, error } = await client.POST("/admin/v1/notices/{id}/publish-intent", {
+        params: { path: { id: v.notice.id }, header: ifMatch(v.notice.row_version) },
+        body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: noticesKey });
+      qc.invalidateQueries({ queryKey: noticeKey(data.id) });
+    },
   });
 }
 

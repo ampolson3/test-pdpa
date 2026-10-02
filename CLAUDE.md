@@ -1489,6 +1489,40 @@ unknown key or version number is `ErrNotFound`; two-tenant isolation via the exi
 on all three public endpoints, including a specific past version). `pnpm --filter @pdpa/admin build` and
 `pnpm --filter @pdpa/portal build` both verified clean, including the new routes.
 
+### PNG-07 แจ้งการเปลี่ยนแปลงและขอความยินยอมใหม่ (`docs/modules/PNG.md#png-07`) — done
+`notice.notices` gained two staging columns (migration 00051), `pending_is_material_change`/
+`pending_changes_purpose`: PLT-08's generic publish endpoint knows nothing about notice-specific fields, so
+the DPO sets these on the notice itself first via a new `POST /admin/v1/notices/{id}/publish-intent`
+(ETag/If-Match), and the very next `OnDocumentPublished` (PNG-06) reads, snapshots into `notice_versions` and
+resets them in the same transaction — never meaningful outside that short window. decisions.md Q-29 covers
+the two mechanism choices this feature needed (no data-model or legal-behaviour question, so no blocking
+ask): a material-change publish alerts role DPO via PLT-04 (migration 00051's `notice.material_change`
+template, th/en × in_app/email) — the same "default recipients until real routing exists" fallback
+BRE-07/PNG-04 already use, since no portal account model or acknowledgement list (PNG-09, not built) exists
+to notify an actual data subject directly yet. A purpose-changing publish opens one `dpo.tasks` job
+(`source_type = 'consent'`, migration 00051 widens the CHECK the same way DPO-09 widened
+`form_definitions.form_type`) per `consent.purposes` row reachable from the notice's own linked RoPA
+activities (`notice_activity_links` → `ropa.activity_purposes.consent_purpose_id`) — the acceptance
+criterion's "สร้างงานขอความยินยอมใหม่อัตโนมัติ" literally: a job appears automatically, but the new consent
+text itself is never auto-generated (rule 8 — legal wording stays a human's job); a DPO goes and
+authors/publishes the material version with `requires_reconsent=true` in CON-12's own `/consent/purposes`
+editor from there.
+
+`internal/dpo/service/reconsent.go`'s new `OpenConsentTask` mirrors DPO-09's own `openRemediationTask`
+numbering pattern exactly (per-tenant-per-year advisory lock, `"CON-<year>-NNNN"` instead of `"SEC-..."`,
+`source_type = "consent"`). `notice.Service` reads both other modules only through small local interfaces
+(`Dpo.OpenConsentTask`, `Consent.GetPurpose` — rule 9) backed directly by `*dposervice.Service`/
+`*consentservice.Service` in `cmd/api/main.go` (both already constructed before `noticeSvc`, no import
+cycle — `dpo`/`consent` never import `notice`). API: `POST /admin/v1/notices/{id}/publish-intent`
+(`notice.document.update`); `Notice.pending_is_material_change`/`pending_changes_purpose` added to the wire
+schema so the UI can show the currently staged state. UI: a small form on `/notices`' existing
+version-history panel (two checkboxes + save) right above the public-link display, using a new
+`useSetNoticePublishIntent` api-client hook. Tests: unit (`SetPublishIntent` stages/round-trips and rejects a
+stale ETag; a `changes_purpose` publish through the real PLT-08 submit→DPO-approve→publish chain opens
+exactly one `dpo.tasks` row per linked consent purpose and the published `NoticeVersion` carries the right
+flags), HTTP contract (428/412/200 on `/publish-intent`), full backend `go test -p 1 ./internal/...` and
+`pnpm --filter @pdpa/admin build` both verified clean.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

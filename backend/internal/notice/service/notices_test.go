@@ -52,6 +52,8 @@ func setup(t *testing.T, suffix string) env {
 				`DELETE FROM notice.notice_activity_links`, `DELETE FROM notice.notice_versions`,
 				`DELETE FROM platform.public_keys`, `DELETE FROM notice.notices`,
 				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
+				`DELETE FROM dpo.tasks`, `UPDATE consent.purposes SET current_version_id = NULL`, `DELETE FROM consent.purpose_versions`,
+				`DELETE FROM consent.purposes`,
 				`DELETE FROM ropa.activity_transfers`, `DELETE FROM ropa.activity_recipients`,
 				`DELETE FROM ropa.retention_rules`, `DELETE FROM ropa.activity_data`, `DELETE FROM ropa.activity_purposes`,
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM org.data_categories WHERE tenant_id IS NOT NULL`,

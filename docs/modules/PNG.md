@@ -444,6 +444,33 @@ rendered HTML on all three public endpoints), `pnpm --filter @pdpa/admin build` 
 
 **Acceptance criteria:** การเปลี่ยนวัตถุประสงค์สร้างงานขอความยินยอมใหม่อัตโนมัติ
 
+**Implementation (PNG-07):** `notice.notices` gained two staging columns (migration 00051),
+`pending_is_material_change`/`pending_changes_purpose` — PLT-08's generic publish endpoint knows nothing about
+notice-specific fields, so the DPO sets these on the notice itself first via a new
+`POST /admin/v1/notices/{id}/publish-intent` (ETag/If-Match), and the very next
+`OnDocumentPublished` (PNG-06) reads, snapshots and resets them in the same transaction — they are never
+meaningful outside that short window. Entirely config/mechanism decisions (decisions.md Q-29, since no
+contract or legal behaviour was at stake — only *how* to deliver a notification with no addressable audience
+yet): a material-change publish alerts role DPO via PLT-04 (migration 00051's `notice.material_change`
+template, th/en × in_app/email) — the same "default recipients until real routing exists" fallback
+BRE-07/PNG-04 already use, since no portal account model or acknowledgement list (PNG-09, not built) exists
+to notify an actual data subject directly. A purpose-changing publish opens one `dpo.tasks` job
+(`source_type = 'consent'`, migration 00051 widens the CHECK the same way DPO-09 widened
+`form_definitions.form_type`) per `consent.purposes` row reachable from the notice's own linked RoPA
+activities (`notice_activity_links` → `ropa.activity_purposes.consent_purpose_id`) — this is the acceptance
+criterion's "สร้างงานขอความยินยอมใหม่อัตโนมัติ" literally: a job appears, but the new consent text itself is
+never auto-generated (rule 8 — legal wording stays a human's job); a DPO goes and authors/publishes the
+material version with `requires_reconsent=true` in CON-12's own `/consent/purposes` editor from there.
+`notice.Service` reads both other modules only through their own exported services (`Dpo.OpenConsentTask`,
+`Consent.GetPurpose` — rule 9; `internal/dpo/service/reconsent.go`'s `OpenConsentTask` mirrors DPO-09's own
+`openRemediationTask` numbering pattern, just with a `"CON-"` prefix). API: `POST
+/admin/v1/notices/{id}/publish-intent` (`notice.document.update`), `Notice.pending_is_material_change`/
+`pending_changes_purpose` added to the wire schema so the UI can show the currently staged state. UI: a small
+form on `/notices`' existing version-history panel (two checkboxes + save) right above the public-link
+display. Tests: unit (`SetPublishIntent` stages/round-trips and rejects a stale ETag; a `changes_purpose`
+publish opens exactly one `dpo.tasks` row per linked consent purpose and the published `NoticeVersion` carries
+the right flags), HTTP contract (428/412/200 on `/publish-intent`).
+
 <a id="png-08"></a>
 ### PNG-08 เผยแพร่และฝังในระบบ
 

@@ -41,9 +41,13 @@ type Notice struct {
 	ActivityIDs       []uuid.UUID
 	// PublicKey is the platform.public_keys key for /public/v1/notices/{key} (PNG-06) — nil until the first
 	// publish issues one; it then stays for the notice's lifetime, same as CON-09's collection_points.public_key.
-	PublicKey  *string
-	RowVersion int32
-	UpdatedAt  time.Time
+	PublicKey *string
+	// PendingIsMaterialChange / PendingChangesPurpose (PNG-07) are staged by SetPublishIntent right before the
+	// next publish and consumed/reset by OnDocumentPublished — never meaningful outside that short window.
+	PendingIsMaterialChange bool
+	PendingChangesPurpose   bool
+	RowVersion              int32
+	UpdatedAt               time.Time
 }
 
 type NoticeCursor struct {
@@ -219,7 +223,9 @@ func toNotice(r noticestore.GetNoticeRow) Notice {
 	return Notice{
 		ID: r.ID, LegalEntityID: r.LegalEntityID, SubjectTypeID: uuidPtr(r.SubjectTypeID), NoticeType: r.NoticeType,
 		Title: r.Title, Slug: r.Slug, DocumentID: r.DocumentID, Status: r.Status, OwnerUserID: uuidPtr(r.OwnerUserID),
-		ReviewCycleMonths: int(r.ReviewCycleMonths), PublicKey: r.PublicKey, RowVersion: r.RowVersion, UpdatedAt: r.UpdatedAt.Time,
+		ReviewCycleMonths: int(r.ReviewCycleMonths), PublicKey: r.PublicKey,
+		PendingIsMaterialChange: r.PendingIsMaterialChange, PendingChangesPurpose: r.PendingChangesPurpose,
+		RowVersion: r.RowVersion, UpdatedAt: r.UpdatedAt.Time,
 	}
 }
 
