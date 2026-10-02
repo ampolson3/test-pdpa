@@ -25,6 +25,7 @@ export type SecurityControlCategory = components["schemas"]["SecurityControlCate
 export type ActivityControl = components["schemas"]["ActivityControl"];
 export type ActivityControlInput = components["schemas"]["ActivityControlInput"];
 export type ActivityRejection = components["schemas"]["ActivityRejection"];
+export type ProcessingActivityFromTemplateInput = components["schemas"]["ProcessingActivityFromTemplateInput"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const activitiesKey = ["ropa", "activities"] as const;
@@ -181,6 +182,16 @@ export function useActivityMutations(client: ApiClient, id?: string) {
           params: { path: { id: v.activity.id }, header: ifMatch(v.activity.row_version) },
           body: v.input,
         });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    /** ROPA-05: create an activity from one of RTG-01's standard templates — purposes, data, retention and
+     * security controls arrive already filled in from the template's own ม.39 defaults. */
+    createFromTemplate: useMutation({
+      mutationFn: async (body: ProcessingActivityFromTemplateInput) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/from-template", { body });
         if (error) throw error;
         return data;
       },

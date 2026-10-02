@@ -1372,6 +1372,43 @@ criterion directly, every ม.39 topic present on a sampled activity's defaults,
 two-tenant isolation — the global set is visible to both tenants by design, the same ORG-07 master-data
 pattern), HTTP contract (401/200/404, the full list→activities→detail chain through the real validator).
 
+### ROPA-05 เพิ่มกิจกรรมแบบปกติและแบบมาตรฐาน (`docs/modules/ROPA.md#ropa-05`) — done
+`internal/ropa/service/from_template.go` (`ropa.activity.create`, shared with ROPA-03's own blank-create path
+— no new permission or migration): `CreateActivityFromTemplate` is RTG-01's natural consumer — it looks up one
+`ropa.activity_templates` row (`ropa/templates` is a sibling package of `ropa/service` inside the same `ropa`
+module, so `Service` holds it as a direct concrete field, `Templates *templatesservice.Service`, not a rule-9
+interface — only a *different* module's own schema needs that indirection), creates the activity, then replays
+its `defaults` jsonb through the exact same `AddActivityPurpose`/`AddActivityData`/`AddRetentionRule`/
+`AddActivityControl` calls ROPA-03/07/09's own manual-entry endpoints already use — a template-created activity
+is otherwise indistinguishable from a hand-entered one, same audit trail and all. `data_category_code`/
+`subject_type_code`/security-control codes are resolved to *this tenant's* own visible `org.*`/`risk.controls`
+rows at creation time (`masterIDByCode`/`controlIDByCode`, the same `ListMaster`-scan pattern ROPA-06/ROPA-08
+already use for code-keyed master data) — never the platform-global template's own (nonexistent) ids.
+
+Two topics are deliberately left out, both for the same reason: a global template cannot know which of *this*
+tenant's rows a free-text hint resolves to. Recipients only carry a role + note (e.g. "ผู้ให้บริการระบบสรรหา
+บุคลากรภายนอก"), never a real `org.external_parties` id — the same cross-schema-FK limit ORG-06's own party
+merge already documents — so they're left for the OWNER to add by hand from the template's own note (already
+shown on `/ropa/templates`' detail panel, RTG-01); recipients also isn't one of `completeness()`'s 6 core items,
+so this doesn't block the acceptance criterion. A processor-role template's `controller_party_id` has the same
+problem and *is* a core item when role=processor — so of the 51 seeded activities, the 48 controller-role ones
+reach `completeness == 100` immediately on creation (tested directly), while the 3 processor-role examples still
+need that one FK set by hand afterward, same as a blank processor-role activity always has. `rights_and_access`
+has no equivalent in the template's own defaults at all (it describes what data is processed, not how this
+tenant handles a data-subject request for it) — a plain Go constant fills it instead, since it's internal RoPA
+record text, not the outward-facing legal wording rule 8 governs.
+
+API: `POST /admin/v1/ropa/activities/from-template` (`ProcessingActivityFromTemplateInput`: `activity_template_id`,
+`legal_entity_id`, `org_unit_id`, `code`, optional `owner_user_id`) → 201 `ProcessingActivity`, same shape as
+`ropaCreateActivity`. UI: a "create from this template" button + inline legal-entity/org-unit/code form added to
+`/ropa/templates`' own `ActivityDetail` panel (RTG-01), routing straight to `/ropa/activities/{id}` on success —
+no new page needed, since the template browser already is the natural place to start from one. Tests: unit (the
+acceptance criterion directly — every ม.39 topic the template carries lands as a real row, completeness reads
+100% with no missing items right after creation, no further edits; an unknown template id refused as
+`ErrInvalid`, not a 500; two-tenant isolation of the resulting activity, while the templates themselves stay
+visible to both tenants by design), HTTP contract (403 without `ropa.activity.create`, 422 for an unknown
+template, 201 happy path with the copied purpose visible on the new activity via its own purposes endpoint).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

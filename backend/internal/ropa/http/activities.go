@@ -64,6 +64,15 @@ func (h *Strict) RopaCreateActivity(ctx context.Context, req RopaCreateActivityR
 	return RopaCreateActivity201JSONResponse{Body: toActivityWire(a), Headers: RopaCreateActivity201ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
 }
 
+func (h *Strict) RopaCreateActivityFromTemplate(ctx context.Context, req RopaCreateActivityFromTemplateRequestObject) (RopaCreateActivityFromTemplateResponseObject, error) {
+	b := *req.Body
+	a, err := h.svc.CreateActivityFromTemplate(ctx, b.ActivityTemplateId, b.LegalEntityId, b.OrgUnitId, b.Code, b.OwnerUserId)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RopaCreateActivityFromTemplate201JSONResponse{Body: toActivityWire(a), Headers: RopaCreateActivityFromTemplate201ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
 func (h *Strict) RopaGetActivity(ctx context.Context, req RopaGetActivityRequestObject) (RopaGetActivityResponseObject, error) {
 	a, err := h.svc.GetActivity(ctx, req.Id)
 	if err != nil {

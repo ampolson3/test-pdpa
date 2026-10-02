@@ -94,6 +94,7 @@ export {
   type ActivityControl,
   type ActivityControlInput,
   type ActivityRejection,
+  type ProcessingActivityFromTemplateInput,
 } from "./activities";
 export {
   useTemplateSets,

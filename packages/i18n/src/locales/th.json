@@ -2047,6 +2047,16 @@
       "recipients": "ผู้รับข้อมูล",
       "retention": "ระยะเวลาเก็บรักษา",
       "securityControls": "มาตรการความปลอดภัย"
+    },
+    "createFromTemplate": "สร้างกิจกรรมจาก template นี้",
+    "createError": "สร้างกิจกรรมจาก template ไม่สำเร็จ",
+    "form": {
+      "legalEntity": "นิติบุคคล",
+      "orgUnit": "หน่วยงาน",
+      "code": "รหัสกิจกรรม",
+      "choose": "-- เลือก --",
+      "save": "บันทึก",
+      "cancel": "ยกเลิก"
     }
   }
 }

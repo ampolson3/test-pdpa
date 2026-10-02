@@ -2047,6 +2047,16 @@
       "recipients": "Recipients",
       "retention": "Retention",
       "securityControls": "Security controls"
+    },
+    "createFromTemplate": "Create activity from this template",
+    "createError": "Could not create the activity from this template",
+    "form": {
+      "legalEntity": "Legal entity",
+      "orgUnit": "Org unit",
+      "code": "Activity code",
+      "choose": "-- choose --",
+      "save": "Save",
+      "cancel": "Cancel"
     }
   }
 }

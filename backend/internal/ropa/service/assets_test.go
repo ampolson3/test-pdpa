@@ -16,15 +16,17 @@ import (
 	audit "pdpa-platform/internal/platform/audit/service"
 	riskservice "pdpa-platform/internal/risk/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
+	templatesservice "pdpa-platform/internal/ropa/templates"
 )
 
 type env struct {
-	app     *pgxpool.Pool
-	tenant  dbtest.Tenant
-	svc     *ropaservice.Service
-	org     *orgservice.Service
-	consent *consentservice.Service
-	risk    *riskservice.Service
+	app       *pgxpool.Pool
+	tenant    dbtest.Tenant
+	svc       *ropaservice.Service
+	org       *orgservice.Service
+	consent   *consentservice.Service
+	risk      *riskservice.Service
+	templates *templatesservice.Service
 }
 
 func setup(t *testing.T, suffix string) env {
@@ -59,8 +61,9 @@ func setup(t *testing.T, suffix string) env {
 	org := &orgservice.Service{Audit: audit.New()}
 	consent := &consentservice.Service{Audit: audit.New()}
 	risk := riskservice.New()
-	return env{app: app, tenant: tenant, svc: &ropaservice.Service{Audit: audit.New(), Org: org, Consent: consent, Risk: risk},
-		org: org, consent: consent, risk: risk}
+	templates := templatesservice.New()
+	return env{app: app, tenant: tenant, svc: &ropaservice.Service{Audit: audit.New(), Org: org, Consent: consent, Risk: risk, Templates: templates},
+		org: org, consent: consent, risk: risk, templates: templates}
 }
 
 // in runs fn as the tenant's admin in one transaction (as the Tx middleware would).

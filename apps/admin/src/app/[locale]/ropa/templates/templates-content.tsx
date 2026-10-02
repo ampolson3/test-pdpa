@@ -3,7 +3,18 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
-import { createApiClient, useTemplateSets, useActivityTemplates, useActivityTemplate, type RopaActivityTemplate } from "@pdpa/api-client";
+import { Button } from "@pdpa/ui";
+import {
+  createApiClient,
+  useTemplateSets,
+  useActivityTemplates,
+  useActivityTemplate,
+  useActivityMutations,
+  useLegalEntities,
+  useOrgUnits,
+  type RopaActivityTemplate,
+} from "@pdpa/api-client";
+import { useRouter } from "@/i18n/routing";
 
 type Purpose = { purpose_text_th?: string; purpose_text_en?: string; lawful_basis_code?: string };
 type DataItem = { data_category_code?: string; subject_type_code?: string; source?: string };
@@ -108,14 +119,74 @@ function ActivityDetail({ activity }: { activity: RopaActivityTemplate }) {
   const t = useTranslations("ropaTemplates");
   const d = activity.defaults as Record<string, unknown>;
   const r = activity.rationale as Record<string, unknown>;
+  const canCreate = usePermission("ropa.activity.create");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const router = useRouter();
+  const { createFromTemplate } = useActivityMutations(client);
+  const entities = useLegalEntities(client);
+  const [legalEntityId, setLegalEntityId] = useState("");
+  const [code, setCode] = useState("");
+  const units = useOrgUnits(client, legalEntityId || undefined);
+  const [orgUnitId, setOrgUnitId] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const submit = () => {
+    if (!legalEntityId || !orgUnitId || !code) return;
+    createFromTemplate.mutate(
+      { activity_template_id: activity.id, legal_entity_id: legalEntityId, org_unit_id: orgUnitId, code },
+      { onSuccess: (a) => router.push(`/ropa/activities/${a!.id}`) },
+    );
+  };
 
   return (
     <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4 text-sm" data-testid="template-detail">
-      <div>
-        <h2 className="font-semibold">{activity.name_th}</h2>
-        {activity.name_en && <p className="text-slate-500">{activity.name_en}</p>}
-        {str(d.description_th) && <p className="mt-1 text-slate-600">{str(d.description_th)}</p>}
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h2 className="font-semibold">{activity.name_th}</h2>
+          {activity.name_en && <p className="text-slate-500">{activity.name_en}</p>}
+          {str(d.description_th) && <p className="mt-1 text-slate-600">{str(d.description_th)}</p>}
+        </div>
+        {canCreate && !creating && (
+          <Button onClick={() => { createFromTemplate.reset(); setCreating(true); }}>{t("createFromTemplate")}</Button>
+        )}
       </div>
+
+      {creating && (
+        <fieldset className="grid gap-2 rounded-md border border-sky-200 bg-sky-50 p-3 sm:grid-cols-2" data-testid="create-from-template-form">
+          <legend className="px-1 text-xs font-medium text-sky-800">{t("createFromTemplate")}</legend>
+          <label className="text-xs">
+            <span className="block text-slate-600">{t("form.legalEntity")}</span>
+            <select
+              className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1"
+              value={legalEntityId}
+              onChange={(e) => { setLegalEntityId(e.target.value); setOrgUnitId(""); }}
+            >
+              <option value="">{t("form.choose")}</option>
+              {entities.data?.map((le) => <option key={le.id} value={le.id}>{le.name_th}</option>)}
+            </select>
+          </label>
+          <label className="text-xs">
+            <span className="block text-slate-600">{t("form.orgUnit")}</span>
+            <select className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1" value={orgUnitId} onChange={(e) => setOrgUnitId(e.target.value)}>
+              <option value="">{t("form.choose")}</option>
+              {units.data?.map((u) => <option key={u.id} value={u.id}>{u.name_th}</option>)}
+            </select>
+          </label>
+          <label className="text-xs sm:col-span-2">
+            <span className="block text-slate-600">{t("form.code")}</span>
+            <input className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1" value={code} onChange={(e) => setCode(e.target.value)} maxLength={40} />
+          </label>
+          {createFromTemplate.isError && (
+            <p className="text-red-700 sm:col-span-2" role="alert">
+              {(createFromTemplate.error as { detail?: string } | undefined)?.detail ?? t("createError")}
+            </p>
+          )}
+          <div className="flex gap-2 sm:col-span-2">
+            <Button onClick={submit} disabled={createFromTemplate.isPending || !legalEntityId || !orgUnitId || !code}>{t("form.save")}</Button>
+            <Button variant="secondary" onClick={() => setCreating(false)}>{t("form.cancel")}</Button>
+          </div>
+        </fieldset>
+      )}
 
       {str(r.note_th) && <p className="rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">{str(r.note_th)}</p>}
 

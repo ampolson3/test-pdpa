@@ -23,6 +23,7 @@ import (
 	audit "pdpa-platform/internal/platform/audit/service"
 	riskservice "pdpa-platform/internal/risk/service"
 	ropastore "pdpa-platform/internal/ropa/store"
+	templatesservice "pdpa-platform/internal/ropa/templates"
 )
 
 const AssetEntityType = "asset"
@@ -63,10 +64,11 @@ type Risk interface {
 }
 
 type Service struct {
-	Audit   *audit.Service
-	Org     Org
-	Consent Consent
-	Risk    Risk
+	Audit     *audit.Service
+	Org       Org
+	Consent   Consent
+	Risk      Risk
+	Templates *templatesservice.Service
 }
 
 // Asset is a system, application, database or other place personal data lives — ROPA-02's registry

@@ -67,7 +67,7 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 		})
 	})
 	orgSvc := &orgservice.Service{Audit: audit.New()}
-	svc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: riskservice.New()}
+	svc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: riskservice.New(), Templates: templatesservice.New()}
 
 	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
 	if err != nil {
@@ -276,6 +276,30 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("GET", actBase+"/"+uuid.New().String(), &admin, nil, nil); code != 404 {
 		t.Errorf("unknown activity: %d, want 404", code)
+	}
+
+	// ROPA-05 create from an RTG-01 standard-activity template
+	var recruitmentTemplateID uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		return pdb.MustTxFromContext(ctx).QueryRow(ctx, `SELECT id FROM ropa.activity_templates WHERE code = 'recruitment_job_posting'`).Scan(&recruitmentTemplateID)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	fromTemplate := map[string]any{"activity_template_id": recruitmentTemplateID, "legal_entity_id": legalEntityID, "org_unit_id": orgUnitID, "code": "HR-TPL-01"}
+	if code, _ := do("POST", actBase+"/from-template", &viewer, fromTemplate, nil); code != 403 {
+		t.Errorf("create from template with read permission only: %d, want 403", code)
+	}
+	if code, body := do("POST", actBase+"/from-template", &admin, map[string]any{"activity_template_id": uuid.New(), "legal_entity_id": legalEntityID, "org_unit_id": orgUnitID, "code": "HR-TPL-BAD"}, nil); code != 422 || !strings.Contains(body, "ropa.invalid_input") {
+		t.Errorf("unknown template: %d %s, want 422 ropa.invalid_input", code, body)
+	}
+	code, body = do("POST", actBase+"/from-template", &admin, fromTemplate, nil)
+	if code != 201 || strings.Contains(body, `"missing_items"`) || !strings.Contains(body, `"completeness":100`) {
+		t.Fatalf("create from template: %d %s", code, body)
+	}
+	var fromTpl ropahttp.ProcessingActivity
+	_ = json.Unmarshal([]byte(body), &fromTpl)
+	if code, body := do("GET", actBase+"/"+fromTpl.Id.String()+"/purposes", &viewer, nil, nil); code != 200 || !strings.Contains(body, `"lawful_basis_code":"CONTRACT"`) {
+		t.Errorf("template-created activity's purposes: %d %s", code, body)
 	}
 
 	// ROPA-09 security measures (ม.37(1))

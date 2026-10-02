@@ -228,8 +228,8 @@ func run() error {
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
 	riskSvc := riskservice.New() // ROPA-09: the ม.37(1) security-measures catalog (no RRA module yet)
-	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc}
 	ropaTemplatesSvc := templatesservice.New() // RTG-01: the platform's standard activity library (read-only)
+	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc} // ROPA-05: create an activity from one of these templates
 	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc}
 	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read" // DPO-01 appointment order / PDPC evidence
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)

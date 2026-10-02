@@ -7181,6 +7181,41 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/activities/from-template:
+    post:
+      operationId: ropaCreateActivityFromTemplate
+      tags: [ropa]
+      summary: Create a processing activity from an RTG-01 standard-activity template (ROPA-05) — purposes, data, retention and security controls are filled in from the template's ม.39 defaults
+      x-permission: ropa.activity.create
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessingActivityFromTemplateInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingActivity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/ropa/activities/processor-export:
     get:
       operationId: ropaExportProcessorActivities
@@ -10852,6 +10887,20 @@ components:
         code: HR-01
         name: การจ่ายเงินเดือนพนักงาน
         role: controller
+    ProcessingActivityFromTemplateInput:
+      type: object
+      required: [activity_template_id, legal_entity_id, org_unit_id, code]
+      properties:
+        activity_template_id: {$ref: '#/components/schemas/Uuid'}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        code: {type: string, maxLength: 40}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+      example:
+        activity_template_id: 00000000-0000-0000-0000-000000000000
+        legal_entity_id: 00000000-0000-0000-0000-000000000000
+        org_unit_id: 00000000-0000-0000-0000-000000000000
+        code: HR-01
     ProcessingActivity:
       type: object
       required: [id, legal_entity_id, org_unit_id, code, name, role, status, completeness, row_version, updated_at]

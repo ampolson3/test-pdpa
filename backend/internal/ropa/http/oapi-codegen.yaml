@@ -16,6 +16,7 @@ output-options:
     - ropaListActivities
     - ropaExportProcessorActivities
     - ropaCreateActivity
+    - ropaCreateActivityFromTemplate
     - ropaGetActivity
     - ropaUpdateActivity
     - ropaSubmitActivity

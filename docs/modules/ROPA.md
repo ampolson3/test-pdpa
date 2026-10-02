@@ -320,6 +320,35 @@ principal, 200 with the header row present).
 
 **Acceptance criteria:** สร้างจาก template แล้วได้ค่าตั้งต้นครบทุกหัวข้อ
 
+**Implementation (ROPA-05):** `backend/internal/ropa/service/from_template.go` (`ropa.activity.create`, shared
+with ROPA-03's own blank-create path — no new permission or migration): `CreateActivityFromTemplate` looks up
+one RTG-01 `ropa.activity_templates` row (`ropa/templates` is a sibling package of `ropa/service` within the
+same module, so this is a direct import, not a rule-9 cross-module interface), creates the activity, then
+replays its `defaults` jsonb through the exact same `AddActivityPurpose`/`AddActivityData`/`AddRetentionRule`/
+`AddActivityControl` calls the manual-entry UI uses — `data_category_code`/`subject_type_code`/security-control
+codes are resolved to this tenant's own visible `org.*`/`risk.controls` rows (`masterIDByCode`/`controlIDByCode`,
+the same `ListMaster`-scan pattern ROPA-06/ROPA-08 already use for code-keyed master data), so a template-created
+activity is otherwise indistinguishable from one entered by hand. Recipients are deliberately *not*
+auto-created: the template only carries a role + free-text note (e.g. "ผู้ให้บริการระบบสรรหาบุคลากรภายนอก"),
+never a real `org.external_parties` id — a global template can't know which of *this* tenant's parties that is
+(the same cross-schema-FK limit ORG-06's own party merge already documents); recipients is also not one of
+`completeness()`'s 6 core items, so this doesn't block the acceptance criterion. `rights_and_access` has no
+equivalent field in the template's own defaults (it describes what data is processed, not how this tenant
+handles a data-subject request for it), so it gets a plain Go constant default instead — internal RoPA record
+text, not the outward-facing legal wording rule 8 governs. For the 48 of 51 seeded activities that are
+controller-role, every one of the 6 ม.39 completeness items is filled in immediately (`completeness == 100`
+right after creation, with no further edits — tested directly); the 3 processor-role examples still need a real
+`controller_party_id` set by hand afterward, the same "FK the tenant must supply" limit recipients has.
+API: `POST /admin/v1/ropa/activities/from-template` (`ProcessingActivityFromTemplateInput`: `activity_template_id`,
+`legal_entity_id`, `org_unit_id`, `code`, optional `owner_user_id`) → 201 `ProcessingActivity`. UI: a "create from
+this template" button + inline legal-entity/org-unit/code form on `/ropa/templates`' own activity detail panel,
+routing straight to the new activity's `/ropa/activities/{id}` page on success. Tests: unit (the acceptance
+criterion directly — every ม.39 topic the template carries lands as a real row and completeness reads 100% with
+no missing items; an unknown template id refused as `ErrInvalid`, not a 500; two-tenant isolation of the
+resulting activity, with the templates themselves staying visible to both tenants by design), HTTP contract
+(403 without `ropa.activity.create`, 422 for an unknown template, 201 happy path with the copied purpose visible
+on the new activity).
+
 <a id="ropa-06"></a>
 ### ROPA-06 ฐานกฎหมายต่อวัตถุประสงค์
 
