@@ -132,6 +132,42 @@
 
 **หมายเหตุ:** OneTrust ไม่มี wizard (จุดต่าง)
 
+**Implementation (PNG-01):** `backend/internal/notice` — the first module on the `notice` schema
+(`notice.document.{read,create,update}`, `notice.template.*`, already seeded in the baseline permission
+migration in anticipation of PLT-16's own "notice" document type — no new migration). A notice
+(`notice.notices`) is a thin wrapper — legal entity, subject type, slug, ST-04 status — around a PLT-16
+document (`document_id`, NOT NULL): `CreateWizard` is the whole wizard in one call — legal entity, notice
+type, title, slug and the RoPA processing activities (ROPA-03/06/07/08) it covers — composing the document's
+first draft (`docs.Service.Create` + `SaveDraft`) from data the platform already has, rather than a generic
+conditional Q&A engine (which would duplicate PLT-06's forms engine for no acceptance-criterion benefit):
+for each linked activity, `ListActivityPurposes` (+ ORG-07 lawful basis names), `ListActivityData` (+ data
+category names), `ListRetentionRules`, `ListActivityRecipients` and `ListActivityTransfers` (+ ORG-07 country
+names) are turned into ม.23 sections (purposes/basis, data collected, retention, recipients/transfers), plus a
+fixed rights-of-the-data-subject section and a DPO-contact section built from `mergeField` nodes
+(`org_name_th`/`org_email`/`org_phone`/`org_address`) resolved from the legal entity (ORG-01) the same way
+every other PLT-16 document resolves them. A topic nothing was linked for becomes a bracketed placeholder
+("[โปรดระบุ...]") rather than blocking creation — the acceptance criterion is a *complete* draft within 30
+minutes, not a *finished* one; filling in a placeholder, the ม.23 completeness gate (PNG-02), industry/subject
+templates (PNG-03/PNG-11), DPO approval (PNG-14) and publish (PNG-08) are all sibling features layered on top
+of the same PLT-16 document, not rebuilt here. `notice.notices.status` starts and stays `draft` (ST-04's
+`[*] → draft`) — PNG-01 only ever produces that one transition; the rest of ST-04 is built when PNG-02/08/14
+are. The slug is typed by the caller, not transliterated from the (often Thai) title — kept simple since
+`^[a-z0-9-]+$` is validated and enforced unique per tenant (`uq_notices_slug`) via a `pdb.Savepoint`-wrapped
+insert (the established pattern for catching a real unique-constraint violation without aborting the request
+transaction). API `/admin/v1/notices` (cursor pagination, same shape as ORG-06/PLT-16/ROPA-02's lists),
+`GET /{id}` (includes `activity_ids` via `notice_activity_links`) — editing the composed content itself,
+after creation, is PLT-16's own `/admin/v1/platform/documents/{document_id}/draft` (no new endpoint). UI
+`/notices`: a wizard form (legal entity, notice type, title, slug, an activity checklist) that on success
+routes straight to the PLT-16 document editor page for the freshly composed draft. Tests: unit (the draft
+contains every ม.23 topic when an activity is linked — the derived purpose/retention/recipient/transfer text
+verified verbatim, not just "non-empty" — and placeholders when none is, validation, duplicate slug, two-tenant
+isolation of both the legal entity and the activity FK), HTTP contract (401/403/400/422). Not done, deliberately:
+`notice.wizard_templates` (subject-type/industry-driven starter templates and question sets — PNG-03/PNG-11's
+job, not PNG-01's, per the module's own «extend» relationships), the ม.23 checklist gate (PNG-02), re-flagging
+notices when a linked RoPA activity later changes (PNG-10 — a distinct event-driven feature, not part of the
+one-time wizard compose), DPO approval and publish (PNG-14/PNG-08), portal/`/public/v1` hosting and
+acknowledgements (no portal feature yet).
+
 <a id="png-02"></a>
 ### PNG-02 ตรวจเนื้อหาครบตาม ม.23
 
@@ -155,6 +191,40 @@
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
 
+**Implementation (PNG-02):** No new endpoint or migration — the gate lives inside the existing publish flow.
+PLT-16's document publish (`docs.Service.publish`, called from PLT-08's generic
+`POST /admin/v1/platform/record-versions/{id}/publish`) already ran one completeness check (merge fields /
+clauses) before this feature; PNG-02 adds a second, notice-specific one at the same point via a small new
+platform hook (`docs.Policy` — actually `docs.Service` itself — gained `SetValidate(docType, fn)`, called once
+both `docs.Service` and the owning module's own service exist — wired for `"notice"` in `cmd/api/main.go` right
+after `noticeSvc` is constructed) rather than baking notice's own business rule into the generic PLT-16/PLT-08
+packages. `compose.go`'s headings (PNG-01) now carry a stable topic code (`attrs.topic`) matched against six
+checklist items — `purpose_basis`, `consequence`, `data_retention` (needs both the data *and* retention
+sections, ม.23 states them as one item), `recipients`, `contact`, `rights` — each complete when its heading
+exists and the text under it isn't empty or one of the wizard's own bracketed placeholders (`Checklist`, a pure
+function over the document's Thai content — BP-04 rule 5: Thai is the minimum required language). A document
+with no topic-coded headings at all (created directly through PLT-16's generic document endpoints, bypassing
+the wizard) reads as every topic missing; this checklist only recognizes what PNG-01 itself composes, not
+free-form authoring — a known, documented limit rather than a fuzzy text-matching guess. `notice.Service`'s
+`CheckPublishable` (the registered validator) looks up the notice by `document_id` (`GetNoticeByDocumentID`,
+new sqlc query — still no migration) and blocks with `ErrChecklistIncomplete` (422 `versioning.invalid_request`,
+following `docs.IncompleteError`'s own pattern for reporting through PLT-08) whenever a topic is missing.
+Configurable per the description's "(ตั้งค่าได้)": `Service.EnforceChecklist` (default true; `NOTICE_CHECKLIST_ENFORCE=false`
+turns it off), no `docs/decisions.md` entry needed since it's a tunable, not legally-relevant behaviour.
+`GET /admin/v1/notices/{id}/checklist` (`notice.document.read`) reads the same `Checklist` function live off
+the current draft, for the UI panel — no separate stored checklist result (unlike `notice_versions.checklist_result`,
+which is PNG-08's job at actual publish time, once that table gets a writer). UI: an expandable "ตรวจความครบถ้วน"
+row per notice in `/notices`' list showing all six items with ✓/✗. Tests: unit (`Checklist` directly — complete,
+one placeholder blocking only its own item, `data_retention` needing both halves, no topic codes at all →
+everything missing), integration through the real PLT-08 submit → DPO approve → publish chain (a notice left
+with placeholders is blocked at publish with the itemized list; a notice completed *before* submission —
+matching the real BP-04 order, content edited ahead of the ม.23 gate — publishes normally; `EnforceChecklist =
+false` skips the gate), HTTP contract (401/200/404). Not done: PNG-08's own publish/versioning
+(`notice_versions`, hosting), PNG-14's dedicated approval UI (PLT-08's generic `/approvals` inbox already
+works), and — deliberately — recovering an *already-approved* version whose publish was blocked: PLT-08 has no
+"unapprove" action, only a DPO return-to-draft during review, so a blocked notice must go through a fresh
+review round once edited; that is existing PLT-08 behaviour, not something to work around from here.
+
 <a id="png-03"></a>
 ### PNG-03 แม่แบบตามกลุ่มเจ้าของข้อมูล
 
@@ -175,6 +245,32 @@
 **Frontend (Next.js):** หน้าเลือก template ตามกลุ่ม
 
 **Acceptance criteria:** เลือก template แล้วได้ร่างประกาศของกลุ่มนั้นทันที
+
+**Implementation:** T15 resolves via `docs/decisions.md` Q-14 ("ระบบให้กลไก + ข้อความตัวอย่างที่ติดป้าย DRAFT") — the
+same "seed DRAFT sample content, flag for legal review" move ORG-07 (Q-20) and ROPA-09 (Q-25) already made.
+`platform.templates` and `notice.wizard_templates` were both already fully specified in the baseline migrations
+(00002/00007) with the same global (`tenant_id NULL`) + tenant-override RLS pattern as ORG-07's master data — no
+schema migration needed, only seed data (migration 00042): 8 groups (customer, employee, job_applicant, vendor,
+visitor, cctv, shareholder, member) × th/en = 16 `platform.templates` rows (`template_type = 'notice_wizard'`),
+each a full ม.23-topic-coded ProseMirror document (same shape PNG-01's `compose()` produces — every heading
+carries the `topic` attr PNG-02's checklist keys off, so a template-sourced draft is checklist-compatible from
+the start) with bracketed placeholders for anything group-specific and an opening `[ร่าง — ...]`/`[DRAFT — ...]`
+paragraph (CLAUDE.md rule 8), plus a linking `notice.wizard_templates` row per (group, language). `WizardInput`
+gained `TemplateGroup string`, mutually exclusive with `ActivityIDs` (refused with `ErrInvalid` if both are set —
+the two content sources don't merge); `notice.Service.templateContent` (`internal/notice/service/templates.go`)
+loads and JSON-decodes both languages' stored `render.Node` trees directly (no conversion needed, since the seed
+data already matches `compose.go`'s own output shape) and `CreateWizard` uses it in place of `compose()` when a
+group is picked — everything downstream (document creation, PLT-16 draft save, notice row, activity linking —
+skipped when there's no activity) is identical to PNG-01's existing path. `ListTemplateGroups` (backed by
+`notice.wizard_templates`, not a hardcoded list) drives the picker; `TemplateGroups` in Go is only the fixed
+8-code list the UI's i18n keys are built against. API: `GET /admin/v1/notices/template-groups`
+(`notice.document.read`) and `template_group` added to `NoticeWizardInput`. UI: a group `<select>` on the same
+wizard form (`/notices`) that, when chosen, disables the activity picker (client-side mirror of the
+mutual-exclusivity rule) — picking a group and submitting routes straight to the composed draft exactly like the
+RoPA-activity path already did. Tests: unit (`ListTemplateGroups` covers all 8, the acceptance criterion directly
+— picking a group produces an immediate draft carrying that group's own sample text and DRAFT marker in both
+languages, unknown group refused, group+activity_ids together refused), HTTP contract (200 list, 201 create,
+422 unknown group).
 
 <a id="png-04"></a>
 ### PNG-04 ประกาศกรณีเก็บจากแหล่งอื่น
@@ -199,6 +295,34 @@
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
 
+**Implementation (PNG-04):** `notice.indirect_collections` (already fully specified in the baseline
+migrations — `notify_due_at date NOT NULL`, `status` pending/notified/overdue/exempted, `method`,
+`notified_at`, `evidence_file_id` — no new migration) plus the already-seeded `notice.indirect.*`
+permissions (no new permission code). `internal/notice/service/indirect.go` follows BRE-07's exact
+deadline pattern rather than instantiating the generic PLT-05 workflow engine: `Checkpoints`/`ToSchedule`
+are pure, clock-testable functions (reminders at 20 and 25 days elapsed, overdue at 30 — matching
+PLT-05's own worked example for a 30-day SLA) and `notice.indirect_due` River jobs (the exact job name
+BP-04's own sequence already names) fire them. This was a deliberate choice, not a literal use of PLT-05
+itself: the engine's task assignee is baked into its Definition JSON at the *type* level, not resolvable
+per record, and `notice.indirect_collections` has no owner column to resolve one from — so alerts go to
+role DPO (`iamservice.UsersWithRole`, migration 00041's two new global notification templates,
+`notice.indirect_reminder`/`notice.indirect_overdue`), the same "default recipients until real routing
+exists" fallback BRE-07 used before BRE-04. `RegisterCollection` validates the source party (and,
+optionally, a linked RoPA activity) and computes `notify_due_at = obtained_at + 30 calendar days` (ม.25
+counts calendar days, not business days). `RecordNotice` is the acceptance criterion's other half — method
++ evidence (a PLT-09 file, `Files.Get` + `AttachSystem`) close a `pending` or `overdue` record as
+`notified`; a stale `notice.indirect_due` tick after that is a harmless no-op. `exempted` is in the schema
+and the new `docs/states/state-machines.yaml#PNG-04` machine but has no transition into it in this pass —
+deliberately deferred (ม.25's exemption grounds aren't modeled by any column yet; add the transition when
+a screen actually needs it, rather than guessing the UI now). API
+`/admin/v1/notices/indirect-collections` (cursor pagination, list + create) and `/{id}` (get),
+`/{id}/notify` (ETag/If-Match). UI `/notices/indirect-collections` (linked from `/notices`): a register
+form, a status-filtered list with the due date and a colored status badge, and an inline "record notice"
+panel (method + `FileUploader` evidence). Tests: unit (`Checkpoints`/`ToSchedule` incl. a late-recorded
+event still alerting at once, validation, the acceptance criterion directly — overdue after the 30-day
+checkpoint, still closable afterwards with evidence, a stale tick is harmless — two-tenant isolation),
+HTTP contract (401/403/201/200/404/412/428/422).
+
 <a id="png-05"></a>
 ### PNG-05 ประกาศสองภาษา
 
@@ -219,6 +343,34 @@
 **Frontend (Next.js):** สลับภาษาใน editor และ preview
 
 **Acceptance criteria:** publish ไม่ได้ถ้าฉบับแปลยังไม่อัปเดตตามเวอร์ชันล่าสุด (ตั้งค่าได้)
+
+**Implementation (PNG-05):** "เนื้อหาคู่ขนานหลายภาษาใน composer" and "สลับภาษาใน editor และ preview" were already
+built generically by PLT-01/PLT-16 (`render.Content{"th","en"}`; the document editor already switches between
+th/en for both editing and preview) — PNG-01's wizard already composes both languages side by side. This
+feature's actual new work is only the acceptance criterion itself: a second publish-time gate, reusing the
+exact `docs.Service.SetValidate` hook PNG-02 added (no new hook mechanism), extended with one thing PNG-02
+didn't need — the *previous* published version's content, so the check has something to diff against. `docs.Service`
+gained `previousPublished` (fetches the version being superseded, if any, via the existing `s.Versioning.List`)
+and the `Validate` hook signature grew a `previous *Draft` parameter (nil on a document's first publish);
+`docsSvc.SetValidate`'s only caller (notice) was updated, so this was a safe, non-breaking-in-practice signature
+change. `notice.Service.CheckPublishable` (already PNG-02's gate) now also runs `StaleTranslation(current, previous)`:
+stale only when both versions carry English content, the Thai section changed, and the English section did not —
+adding English for the first time or removing it entirely is never itself flagged, since neither is "an update
+the translation missed". Blocks with `ErrTranslationStale` (422 `versioning.invalid_request`, same reporting
+pattern as `ErrChecklistIncomplete`). Configurable per "(ตั้งค่าได้)": `Service.EnforceTranslationSync` (default
+true, `NOTICE_TRANSLATION_SYNC_ENFORCE=false` to turn off) — a tunable, no `docs/decisions.md` entry needed.
+Read-side: `docs.Service.PublishedContent` (new, generic — reads a document's currently published frozen
+content) backs `GET /admin/v1/notices/{id}/translation-status`, so the UI can show the same staleness signal
+before anyone actually attempts to submit/publish. Not built, deliberately: "เพิ่มภาษาแรงงานต่างชาติ" (a third,
+migrant-worker language) — `render.Content`'s language validation is hard-coded to exactly `th`/`en` throughout
+PLT-16 (`Validate()`, `FormatDate`, the DOCX/PDF renderers, the editor's language tabs); adding a third language
+is a cross-cutting PLT-16 change with no other feature asking for it yet, well beyond this feature's literal
+acceptance criterion, which only mentions the TH/EN pair. UI: the same expandable checklist panel from PNG-02
+(`/notices`) now also shows a translation-stale warning when applicable. Tests: unit (`StaleTranslation`
+directly — stale only on Thai-changed/English-unchanged, every other combination not stale), integration
+through the real PLT-08 submit → DPO approve → publish chain (a second version with an untouched translation is
+blocked; one with both languages updated together publishes), the read-side status check before/after a
+publish, HTTP contract.
 
 <a id="png-06"></a>
 ### PNG-06 จัดการเวอร์ชัน
@@ -241,6 +393,36 @@
 
 **Acceptance criteria:** หน้า public แสดงเวอร์ชันปัจจุบันและดูประวัติย้อนหลังได้
 
+**Implementation (PNG-06):** `docs.Service` gained a second extension point symmetric with PNG-02's own
+`SetValidate` — `SetOnPublished(docType, fn)`, called inside the same publish transaction right after PLT-08
+freezes a new `platform.document_versions` row, so a module can react to its own document's publish without
+`docs` ever reaching back into that module (rule 9 stays intact). `notice.Service.OnDocumentPublished`
+(registered in `cmd/api/main.go` next to the existing `SetValidate("notice", ...)` call) inserts one
+`notice.notice_versions` row per publish (version_no, document_version_id, languages, effective_from — default
+`now()` since no input wires `is_material_change`/`changes_purpose` yet, that is PNG-07's job) and snapshots
+PNG-02's own `Checklist(content)` result into `checklist_result` so a later change to the checklist logic can
+never rewrite history. A public key (`notice.notices.public_key`, migration 00050) is issued on the *first*
+publish only — `SetNoticePublished`'s sqlc query uses `COALESCE(sqlc.narg(public_key), public_key)` so every
+later publish leaves an already-bookmarked public URL alone. `publickeys.Middleware`'s single-entity regex was
+generalized (`EntityNotice` alongside the existing `EntityCollectionPoint`) rather than adding a second
+mechanism, so `/public/v1/notices/{key}` resolves tenant the exact way CON-09's own collection-point links do.
+A new, deliberately permission-free `docs.Service.PublicVersionHTML` (reuses the existing `buildInputs`/
+`render.HTML` the authenticated `Export` path already uses) serves fully merge-field-resolved HTML to an
+anonymous caller — the module's own prior lookup of the version through a notice it owns is what already
+proves access, so no fake "public" grant is threaded through the normal `authz`-gated read path.
+API: `GET /admin/v1/notices/{id}/versions` (`notice.document.read`); public
+`GET /public/v1/notices/{key}`, `/public/v1/notices/{key}/versions`,
+`/public/v1/notices/{key}/versions/{versionNo}` (`x-permission: public`). UI: `/notices` gained a
+version-history toggle per row (public link or "not published yet", a version_no/effective_from/published_at
+table) next to the existing checklist toggle; the portal gained a new public page,
+`/[locale]/n/[key]` (mirrors the existing `/[locale]/c/[key]` consent-form pattern exactly — a server
+component fetching `/public/v1/notices/...` directly, `?v={no}` for a past version, a history list linking
+back to the current one). Tests: unit (`OnDocumentPublished` records the version and issues a key on first
+publish only, re-publish reuses it; `PublicNotice` serves the current version and history by number; unknown
+key/version is `ErrNotFound`), HTTP contract (401/200/404 on the admin versions list; 404/200 with correct
+rendered HTML on all three public endpoints), `pnpm --filter @pdpa/admin build` and
+`pnpm --filter @pdpa/portal build` both verified clean including the new routes.
+
 <a id="png-07"></a>
 ### PNG-07 แจ้งการเปลี่ยนแปลงและขอความยินยอมใหม่
 
@@ -261,6 +443,33 @@
 **Frontend (Next.js):** ขั้นตอนยืนยันการแจ้งเปลี่ยนแปลงตอน publish
 
 **Acceptance criteria:** การเปลี่ยนวัตถุประสงค์สร้างงานขอความยินยอมใหม่อัตโนมัติ
+
+**Implementation (PNG-07):** `notice.notices` gained two staging columns (migration 00051),
+`pending_is_material_change`/`pending_changes_purpose` — PLT-08's generic publish endpoint knows nothing about
+notice-specific fields, so the DPO sets these on the notice itself first via a new
+`POST /admin/v1/notices/{id}/publish-intent` (ETag/If-Match), and the very next
+`OnDocumentPublished` (PNG-06) reads, snapshots and resets them in the same transaction — they are never
+meaningful outside that short window. Entirely config/mechanism decisions (decisions.md Q-29, since no
+contract or legal behaviour was at stake — only *how* to deliver a notification with no addressable audience
+yet): a material-change publish alerts role DPO via PLT-04 (migration 00051's `notice.material_change`
+template, th/en × in_app/email) — the same "default recipients until real routing exists" fallback
+BRE-07/PNG-04 already use, since no portal account model or acknowledgement list (PNG-09, not built) exists
+to notify an actual data subject directly. A purpose-changing publish opens one `dpo.tasks` job
+(`source_type = 'consent'`, migration 00051 widens the CHECK the same way DPO-09 widened
+`form_definitions.form_type`) per `consent.purposes` row reachable from the notice's own linked RoPA
+activities (`notice_activity_links` → `ropa.activity_purposes.consent_purpose_id`) — this is the acceptance
+criterion's "สร้างงานขอความยินยอมใหม่อัตโนมัติ" literally: a job appears, but the new consent text itself is
+never auto-generated (rule 8 — legal wording stays a human's job); a DPO goes and authors/publishes the
+material version with `requires_reconsent=true` in CON-12's own `/consent/purposes` editor from there.
+`notice.Service` reads both other modules only through their own exported services (`Dpo.OpenConsentTask`,
+`Consent.GetPurpose` — rule 9; `internal/dpo/service/reconsent.go`'s `OpenConsentTask` mirrors DPO-09's own
+`openRemediationTask` numbering pattern, just with a `"CON-"` prefix). API: `POST
+/admin/v1/notices/{id}/publish-intent` (`notice.document.update`), `Notice.pending_is_material_change`/
+`pending_changes_purpose` added to the wire schema so the UI can show the currently staged state. UI: a small
+form on `/notices`' existing version-history panel (two checkboxes + save) right above the public-link
+display. Tests: unit (`SetPublishIntent` stages/round-trips and rejects a stale ETag; a `changes_purpose`
+publish opens exactly one `dpo.tasks` row per linked consent purpose and the published `NoticeVersion` carries
+the right flags), HTTP contract (428/412/200 on `/publish-intent`).
 
 <a id="png-08"></a>
 ### PNG-08 เผยแพร่และฝังในระบบ

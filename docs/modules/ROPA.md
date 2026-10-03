@@ -135,6 +135,27 @@
 
 **Acceptance criteria:** ข้อมูลอ่อนไหวถูกระบุและกรองได้ทุกหน่วยงาน
 
+**Implementation (ROPA-01):** `backend/internal/ropa/service/inventory.go` (`ropa.inventory.*`, shared with
+ROPA-02) — CRUD on `ropa.data_inventory`, already fully specified in the baseline migrations (asset_id/
+data_category_id NOT NULL, org_unit_id/owner_user_id/discovered_by_finding_id nullable) — no new migration.
+The acceptance criterion's sensitive-data flag comes straight from ORG-07's `org.data_categories.is_sensitive`
+(no new column): `ListDataInventory`'s query joins it in the same transaction (its RLS already allows global
+defaults + the tenant's own rows), so every row carries `is_sensitive`/`sensitive_type`/`category_name_*`
+without a second round trip. `sensitive_only=true` on `GET /admin/v1/ropa/data-inventory` searches every
+department at once (no `org_unit_id` filter applied) — the literal "filterable across every department"; an
+`org_unit_id` filter narrows to one department when wanted. Duplicate detection isn't part of this
+acceptance criterion, so unlike ORG-06 there's no dedupe step. FK visibility checks follow the ROPA-02
+pattern: `asset_id` through `Service.GetAsset` (same package), `data_category_id` through a newly exported
+`orgservice.GetMaster` (was a private `masterItem()` helper — same "export what another module needs" move as
+ROPA-02's `GetOrgUnit`), `org_unit_id`/`owner_user_id` reusing the exact same checks ROPA-02 already has.
+`discovered_by_finding_id` (FK to `dataflow.discovery_findings`) is left alone — the `dataflow` module (automated
+discovery scans) doesn't exist yet, so there's nothing to link to; add it when that module ships. API
+`/admin/v1/ropa/data-inventory` (cursor pagination), `/{id}`. UI `/ropa/data-inventory` (sensitive-only
+toggle, department filter, form with an asset/category/unit picker — the sensitive flag shows inline next to
+each category option and as a badge on sensitive rows). Tests: unit (validation, the four FK-visibility
+checks, update, the acceptance criterion directly — two departments each with a sensitive entry, confirming
+`sensitive_only` returns both — two-tenant isolation), HTTP contract (401/403/400 schema/422/412/428).
+
 <a id="ropa-02"></a>
 ### ROPA-02 ทะเบียนระบบและทรัพย์สิน
 
@@ -155,6 +176,23 @@
 **Frontend (Next.js):** หน้าทะเบียนระบบ + ฟอร์ม
 
 **Acceptance criteria:** กิจกรรมอ้างถึงระบบจากทะเบียนเดียวกัน
+
+**Implementation (ROPA-02):** `backend/internal/ropa` — the first ropa-schema module built (`ropa.inventory.*`,
+a permission code already shared with ROPA-01's future data inventory). CRUD on `ropa.assets`, which the
+baseline migrations already had (asset_type, org_unit_id/owner_user_id/provider_party_id/hosting_country_code
+all real FKs) — no new migration needed. Built ahead of ROPA-01 even though the backlog's `depends_on` only
+lists ORG-07 for it: `ropa.data_inventory.asset_id` is a NOT NULL FK to `ropa.assets`, so ROPA-01 cannot be
+built first — this asset register has to exist before there is anything for a data-inventory row to point at.
+`org_unit_id` and `provider_party_id` are FKs that bypass RLS, so `SaveAsset` verifies each is visible under
+the caller's RLS before writing it (rule 1) through org's own exported service (`orgservice.Service.GetOrgUnit`
+— newly exported, was a private `unit()` helper — and the already-exported `GetExternalParty`, rule 9);
+`owner_user_id` is checked through `iamservice.Names`, the same cross-module helper BRE already uses.
+`hosting_country_code`'s FK violation is mapped to a friendly 422 the same way ORG-06 does for its own country
+code. API `/admin/v1/ropa/assets` (cursor pagination, same shape as ORG-06/PLT-16's lists), `/{id}`. UI
+`/ropa/assets` (list + filter + form; the org-unit picker needs a legal entity chosen first, same two-step
+pattern as `/settings/organization`; owner_user_id has no field yet — no user directory UI exists until
+IAM-01/ORG-09). Tests: unit (validation, FK visibility checks for org_unit_id/provider_party_id/owner_user_id,
+update, two-tenant isolation), HTTP contract (401/403/400 schema/422/412/428).
 
 <a id="ropa-03"></a>
 ### ROPA-03 RoPA ของผู้ควบคุมข้อมูล
@@ -177,6 +215,46 @@
 
 **Acceptance criteria:** กิจกรรมที่ขาดหัวข้อบังคับแสดงสถานะ 'ไม่ครบ' พร้อมรายการที่ขาด
 
+**Implementation (ROPA-03):** `backend/internal/ropa/service/activities.go` (`ropa.activity.*`, permission codes already
+seeded in the baseline migrations) — CRUD on `ropa.processing_activities` plus four child tables
+(`activity_purposes`, `activity_data`, `retention_rules`, `activity_recipients`), all already fully specified
+in the baseline migrations — no new migration. Scoped to exactly this feature's acceptance criterion and BP-05
+rules 1–2: full ST-05 approval (`pending_approval` → `active`) is ROPA-13's job (versioning & approval, PLT-08,
+a separate Should feature this doesn't depend on); recipients/transfers with country-adequacy checks is ROPA-08's
+job (this builds the recipients table generically, ROPA-08 adds transfers on top); retention policy automation is
+ROPA-07's; security-control linking (`activity_controls` → `risk.controls`) and DSAR-linked rejections
+(`activity_rejections` → `dsar.requests`) are deferred entirely — neither the risk-control library nor the DSAR
+module exists yet (same "don't build against tables nothing can populate" reasoning as ROPA-01's
+`discovered_by_finding_id`).
+
+Completeness (the acceptance criterion) is computed live on every `GetActivity` — never persisted from a plain
+read, only from mutations (see below) — against 5 fixed items (data, purpose, controller, retention,
+rights_and_access; "controller" only applies when `role=processor` and no `controller_party_id`) plus two
+conditional ones counted in the missing-item list but not the score denominator: a recipient missing
+`disclosure_basis`, and sensitive data (`activity_data.is_sensitive`, from ORG-07 as in ROPA-01) with no purpose
+carrying `consent_purpose_id` (BP-05 rule 2's explicit-consent evidence — checked via a newly exported
+`consentservice.GetPurpose`, the first cross-module read from `ropa` into `consent`). `POST …/submit` (draft/
+under_review → pending_approval, ST-05) refuses with the itemized list (`ropa.activity_incomplete`, 422, same
+`FieldError` pattern as PLT-16's `docs.incomplete`) while anything is missing, and 409 `ropa.invalid_transition`
+from any other status.
+
+Real bug found and fixed while testing: `SetActivityCompleteness`'s UPDATE ran through the table's ordinary
+`row_version`-bumping trigger, so a plain `GetActivity` (no user edit) silently invalidated the caller's ETag —
+fixed by making the completeness computation pure and persisting it only from mutation paths (`SaveActivity`,
+and each child add/delete), which already legitimately bump the version. Second bug: a duplicate `code` hit the
+table's real unique constraint and aborted the whole request transaction (no savepoint), corrupting every later
+statement in the same tx until commit failed with `ErrTxCommitRollback` — fixed by wrapping the insert/update in
+`pdb.Savepoint`, the same pattern `org.SaveLegalEntity` already uses for its own unique-constraint check.
+
+API `/admin/v1/ropa/activities` (cursor pagination), `/{id}`, `/{id}/submit`, and one list+create+delete triple
+per child table (`/purposes`, `/data`, `/retention-rules`, `/recipients` — no per-row update; editing a child is
+delete+recreate, keeping the sub-resource surface small). UI `/ropa/activities` (list with a completeness badge)
+and `/ropa/activities/{id}` (core-field form, missing-items banner, one section per child table with inline
+add/remove, submit button — editable only while `status=draft`). Tests: unit (validation, all four FK-visibility
+checks, the acceptance criterion — an activity missing items shows them and clears them one at a time as each is
+filled in — processor-needs-controller, sensitive-data-needs-consent-evidence, submit blocked while incomplete
+with the itemized list, two-tenant isolation), HTTP contract (401/403/400 schema/422/428).
+
 <a id="ropa-04"></a>
 ### ROPA-04 RoPA ของผู้ประมวลผลข้อมูล
 
@@ -197,6 +275,29 @@
 **Frontend (Next.js):** ฟอร์มและรายการ RoPA ผู้ประมวลผล
 
 **Acceptance criteria:** ส่งออก RoPA ผู้ประมวลผลได้ครบหัวข้อตามประกาศ
+
+**Implementation (ROPA-04):** `internal/ropa/service/export.go` (`ropa.activity.read`, shared with
+ROPA-03/06/08 — no new permission or migration) — `ExportProcessorActivities` writes every
+`role='processor'` activity (a new sqlc query, `ListProcessorActivities`, code order — a tenant's
+processor RoPA is meant to be filed as one document, so it isn't paginated, following ORG-19's own CSV
+export shape: UTF-8 with BOM, the export itself audited as `ropa.activity.export`). The PDPC's actual
+"ประกาศ RoPA ผู้ประมวลผล พ.ศ. 2565" form text wasn't available to fetch from here, so — the same "seed a
+draft flagged for legal review" move ORG-07 made for its Q-20 master data — the column set is a
+best-effort draft built only from fields ROPA-03/06/08 already model, not any newly invented
+legally-mandated field: code, name, description, the controller's identity (`controller_party_id` via
+`Org.GetExternalParty`), org unit, owner, every data category and subject type the activity's
+`activity_data` rows reference (via `Org.GetMaster`, deduplicated), its retention rules (period, trigger,
+disposal method), its recipients (party name + role) and its cross-border transfers (country + legal
+mechanism). It deliberately excludes `lawful_basis_code`: that's the *controller's* basis for processing
+under the controller's own RoPA, not something a processor's ม.40(3) record reports about work done on
+another controller's instructions. `GET /admin/v1/ropa/activities/processor-export` (registered as a
+static path ahead of `/{id}` — `text/csv`, `Content-Disposition: attachment`, same response shape as
+ORG-19's audit-log export). UI: an "ส่งออก RoPA ผู้ประมวลผล (CSV)" link next to `/ropa/activities`'s own
+"เพิ่มกิจกรรม" button (`processorActivitiesExportHref`, a plain `<a href>` through the BFF, same pattern
+as the audit log's own export link — the browser downloads it, no separate query hook needed). Tests:
+unit (the export contains every column and a real processor activity's controller/recipient names, and
+never includes a controller-role activity — the acceptance criterion), HTTP contract (401 without a
+principal, 200 with the header row present).
 
 <a id="ropa-05"></a>
 ### ROPA-05 เพิ่มกิจกรรมแบบปกติและแบบมาตรฐาน
@@ -219,6 +320,35 @@
 
 **Acceptance criteria:** สร้างจาก template แล้วได้ค่าตั้งต้นครบทุกหัวข้อ
 
+**Implementation (ROPA-05):** `backend/internal/ropa/service/from_template.go` (`ropa.activity.create`, shared
+with ROPA-03's own blank-create path — no new permission or migration): `CreateActivityFromTemplate` looks up
+one RTG-01 `ropa.activity_templates` row (`ropa/templates` is a sibling package of `ropa/service` within the
+same module, so this is a direct import, not a rule-9 cross-module interface), creates the activity, then
+replays its `defaults` jsonb through the exact same `AddActivityPurpose`/`AddActivityData`/`AddRetentionRule`/
+`AddActivityControl` calls the manual-entry UI uses — `data_category_code`/`subject_type_code`/security-control
+codes are resolved to this tenant's own visible `org.*`/`risk.controls` rows (`masterIDByCode`/`controlIDByCode`,
+the same `ListMaster`-scan pattern ROPA-06/ROPA-08 already use for code-keyed master data), so a template-created
+activity is otherwise indistinguishable from one entered by hand. Recipients are deliberately *not*
+auto-created: the template only carries a role + free-text note (e.g. "ผู้ให้บริการระบบสรรหาบุคลากรภายนอก"),
+never a real `org.external_parties` id — a global template can't know which of *this* tenant's parties that is
+(the same cross-schema-FK limit ORG-06's own party merge already documents); recipients is also not one of
+`completeness()`'s 6 core items, so this doesn't block the acceptance criterion. `rights_and_access` has no
+equivalent field in the template's own defaults (it describes what data is processed, not how this tenant
+handles a data-subject request for it), so it gets a plain Go constant default instead — internal RoPA record
+text, not the outward-facing legal wording rule 8 governs. For the 48 of 51 seeded activities that are
+controller-role, every one of the 6 ม.39 completeness items is filled in immediately (`completeness == 100`
+right after creation, with no further edits — tested directly); the 3 processor-role examples still need a real
+`controller_party_id` set by hand afterward, the same "FK the tenant must supply" limit recipients has.
+API: `POST /admin/v1/ropa/activities/from-template` (`ProcessingActivityFromTemplateInput`: `activity_template_id`,
+`legal_entity_id`, `org_unit_id`, `code`, optional `owner_user_id`) → 201 `ProcessingActivity`. UI: a "create from
+this template" button + inline legal-entity/org-unit/code form on `/ropa/templates`' own activity detail panel,
+routing straight to the new activity's `/ropa/activities/{id}` page on success. Tests: unit (the acceptance
+criterion directly — every ม.39 topic the template carries lands as a real row and completeness reads 100% with
+no missing items; an unknown template id refused as `ErrInvalid`, not a 500; two-tenant isolation of the
+resulting activity, with the templates themselves staying visible to both tenants by design), HTTP contract
+(403 without `ropa.activity.create`, 422 for an unknown template, 201 happy path with the copied purpose visible
+on the new activity).
+
 <a id="ropa-06"></a>
 ### ROPA-06 ฐานกฎหมายต่อวัตถุประสงค์
 
@@ -239,6 +369,29 @@
 **Frontend (Next.js):** เลือกฐานต่อวัตถุประสงค์ + ลิงก์ Purpose
 
 **Acceptance criteria:** วัตถุประสงค์ที่ใช้ฐานความยินยอมต้องผูก Purpose ก่อนบันทึก
+
+**Implementation (ROPA-06):** `backend/internal/ropa/service/activities.go`'s `AddActivityPurpose` (`ropa.activity.*`,
+shared with ROPA-03) — no new migration, no new endpoint: ROPA-03 already built `activity_purposes` with
+`lawful_basis_code` and an optional `consent_purpose_id`, and already validated the lawful basis code exists
+(`validLawfulBasis`) and that a given `consent_purpose_id`, if set, is a real, visible `consent.purposes` row.
+What was missing is this feature's own rule: `validLawfulBasis` now returns the matched `org.lawful_bases` row
+(not just a bool), and when its `requires_consent` flag is set, `consent_purpose_id` becomes mandatory — refused
+with `ErrInvalid` **at save time**, before the row is ever written, not just flagged later as an incomplete item.
+This is a stricter, narrower rule than ROPA-03's own `sensitive_consent` completeness check: that one only
+fires when the activity's *data* is sensitive (`org.data_categories.is_sensitive`) and only blocks `/submit`;
+this one fires whenever the *lawful basis itself* is consent (`org.lawful_bases.requires_consent`, e.g. for
+ordinary non-sensitive marketing use cases) and blocks the write immediately. The two checks are independent
+and can both apply to the same purpose. "แสดงสถิติความยินยอม" (surfacing consent statistics) from the module
+doc's backend note isn't built — no screen in this pass needed aggregate consent numbers, and the
+`consentservice.GetPurpose` call already used for the FK check would need a materially different query
+(counts, not a single row) to serve one; add it when a screen actually asks for those numbers.
+
+UI: the lawful-basis picker on the activity detail page now tags each consent-requiring code inline, and the
+Add button for a new purpose is disabled with an inline hint until a Purpose is chosen for those codes — a
+client-side mirror of the same rule, not a replacement for it (the service still enforces it as the source of
+truth). Tests: unit (a consent-basis purpose without a link is refused; the same purpose with one saves and the
+link round-trips; existing tests' shared `lawfulBasisCode` helper now explicitly picks a non-consent code so
+they don't accidentally trip this new rule), HTTP contract (422 `ropa.invalid_input` for the missing-link case).
 
 <a id="ropa-07"></a>
 ### ROPA-07 ระยะเวลาเก็บรักษาและวิธีทำลาย
@@ -261,6 +414,16 @@
 
 **Acceptance criteria:** ทุกกิจกรรมมีระยะเวลาเก็บและวิธีทำลาย
 
+**Implementation:** already fully built by ROPA-03, not re-implemented here — `ropa.retention_rules`
+(`retention_months`, `retention_basis` as the reason/legal reference, `trigger_event`, `disposal_method`
+validated against `delete`/`destroy`/`anonymize`/`return`) already has full CRUD (`AddRetentionRule`,
+`DeleteRetentionRule`, `ListRetentionRules`), a `/retention-rules` list+create/delete endpoint, a UI section
+on `/ropa/activities/{id}`, and — the acceptance criterion itself — `completeness()`'s unconditional `retention`
+core item, which blocks `/submit` with the itemized `ropa.activity_incomplete` list while any activity has no
+retention rule (`TestActivities_CompletenessAndMissingItems`, `activities_test.go`). Not done: "ส่งต่อ DPX-05"
+(forwarding the retention deadline to the not-yet-built DPX-05) — nothing to forward to yet, same reasoning as
+ROPA-01's deferred `discovered_by_finding_id`; add the hand-off when DPX-05 exists.
+
 <a id="ropa-08"></a>
 ### ROPA-08 ผู้รับข้อมูลและการโอนต่างประเทศ
 
@@ -282,6 +445,34 @@
 
 **Acceptance criteria:** การโอนที่ไม่มีฐานการโอนถูกเตือน
 
+**Implementation (ROPA-08):** `backend/internal/ropa/service/transfers.go` (`ropa.activity.*`, shared with ROPA-03)
+— CRUD on `ropa.activity_transfers`, already fully specified in the baseline migrations — no new migration.
+Recipients themselves (`activity_recipients`, with `disclosure_basis` for ม.27's consent-exempt disclosures)
+were already built in ROPA-03 (documented there as "generic now, ROPA-08 adds transfers on top"); this feature
+adds only the transfer half: `country_code` (validated against ORG-07's countries list — a new `Org.ListMaster`
+lookup follows the exact `validLawfulBasis` pattern ROPA-03 already established for `lawful_basis_code`, since
+both are code-keyed, not id-keyed), `transfer_basis` (ม.28/29's six mechanisms), `safeguards` free text, and an
+optional link to one of the activity's own recipients (checked by scanning `ListActivityRecipients`, not a new
+FK-visibility query).
+
+Since `transfer_basis` is a NOT NULL enum column, an actual transfer row can never lack a basis — the acceptance
+criterion ("a transfer without a basis is warned") is about the *implicit* transfer that isn't logged at all:
+`docs/legal/pdpa-rules.md`'s ม.28 row is explicit that every real transfer in the RoPA needs its country and
+mechanism recorded. So `completeness()` (ROPA-03's live, non-persisted check) gained one more conditional item:
+for each recipient, look up its party's `country_code` via the already-shared `Org.GetExternalParty`, and if
+that's a real country other than `TH` with no `activity_transfers` row referencing that recipient, flag
+`transfer_basis` (once per activity, same one-flag-not-one-per-row pattern as `recipient_basis`) — it blocks
+`/submit` exactly like ROPA-03's other conditional items. A party with an empty `country_code` (not required at
+ORG-06) is treated as domestic rather than guessed at.
+
+API `/admin/v1/ropa/activities/{id}/transfers` (list+create) and `/{transferId}` (delete) — same
+list+create+delete shape as ROPA-03's other child tables, no per-row update. UI: a "การโอนข้อมูลไปต่างประเทศ"
+section on the activity detail page (country/basis/safeguards + an optional recipient picker scoped to the
+activity's own recipients). Tests: unit (validation — bad country code, unknown country, bad transfer basis,
+a recipient from another activity refused — the acceptance criterion directly: a foreign recipient with no
+transfer flags `transfer_basis`, adding one clears it, deleting the only one brings it back — two-tenant
+isolation), HTTP contract (401/403/400 schema/422).
+
 <a id="ropa-09"></a>
 ### ROPA-09 มาตรการความปลอดภัยต่อกิจกรรม
 
@@ -302,6 +493,34 @@
 **Frontend (Next.js):** ส่วนมาตรการความปลอดภัยในฟอร์ม
 
 **Acceptance criteria:** ทุกกิจกรรมอ้างอิงมาตรการตาม ม.37(1)
+
+**Implementation (ROPA-09):** `ropa.activity_controls` (link to `risk.controls`, both already fully specified
+in the baseline migrations — no new migration for either table) was still empty: no feature owned seeding the
+control catalog, since the full RRA module (risk matrices, control library management) is P2 and not built —
+RRA-06 only *links* controls to risks, never creates the catalog. Rather than block on RRA, migration 00040
+seeds a draft global catalog (`tenant_id NULL`, the same ORG-07 Q-20 visibility pattern) of 12 measures across
+all four ม.37(1) categories the ประกาศมาตรการความปลอดภัย พ.ศ. 2565 covers (organizational, technical, physical,
+access_control) — flagged for legal review (`docs/decisions.md` Q-25, `legal` category left unseeded: no clear
+example in the notice to paraphrase). `internal/risk/service` is the first, deliberately minimal package on the
+`risk` schema — a plain `ListControls`/`GetControl` read, no create/update surface, exactly mirroring ORG-07's
+own read-only master data. `ropa.Service` gained a `Risk` interface (rule 9) and `internal/ropa/service/controls.go`
+(`AddActivityControl`/`DeleteActivityControl`/`ListActivityControls`, the exact `ActivityTransfer` CRUD pattern
+ROPA-08 already set: FK-visibility check via `Risk.GetControl`, `pdb.Savepoint` around the insert so a duplicate
+link — the PK is `(activity_id, control_id)` — doesn't abort the request transaction). The acceptance criterion
+is a sixth core item in ROPA-03's `completeness()` (`security_controls`, unconditional like `data`/`purpose`,
+not one of the conditional recipient/sensitive-data checks) — clears once any control is linked, comes back if
+the last one is removed. Permissions reuse the already-seeded `ropa.risk.*` (baseline migration 00019's "ความ
+เสี่ยงและช่องว่างรายกิจกรรม" — per-activity risk-and-gap items, which this link is one of; no new permission
+code). API `GET /admin/v1/ropa/security-controls` (the catalog, for the picker) and
+`/admin/v1/ropa/activities/{id}/controls` (list+create) / `/{controlId}` (delete) — same shape as ROPA-08's
+transfer endpoints. UI: a "มาตรการความปลอดภัย" section on `/ropa/activities/{id}`, right after transfers — a
+control picker (grouped implicitly by category label) + optional free-text description, list with remove.
+Tests: unit (missing until referenced, unknown control_id refused, duplicate link refused, delete brings the
+missing item back, catalog covers all four seeded categories, two-tenant isolation of the per-activity link —
+the global catalog itself is visible to both tenants, as designed), HTTP contract (401/403/201/200/404/422).
+Existing ROPA-03 tests that asserted an exact "fully complete" activity or an exact missing-items list were
+updated to include `security_controls` alongside the other five core items, since the denominator changed from
+5 to 6.
 
 <a id="ropa-10"></a>
 ### ROPA-10 บันทึกการปฏิเสธคำขอใช้สิทธิ
@@ -325,6 +544,21 @@
 **Acceptance criteria:** คำขอที่ถูกปฏิเสธปรากฏใน RoPA ของกิจกรรมที่เกี่ยวข้องอัตโนมัติ
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
+
+**Implementation:** `ropa.activity_rejections` (activity_id, dsar_request_id, reason_code, rejected_at) was
+already fully specified in the baseline migrations — no new migration for the table itself; migration 00044
+adds only a unique index on `(activity_id, dsar_request_id)`, needed for idempotency: the `dsar.rejected`
+outbox event (PLT-11) is delivered at-least-once, and `Service.RecordRejection`'s insert is
+`ON CONFLICT ... DO NOTHING` against it, so a redelivery is a harmless no-op rather than a duplicate row.
+`internal/wiring.Events` (new, called once from `cmd/worker` after `ropaSvc` is built) subscribes
+`dsar.rejected` on the shared `events.Registry` and, for every activity ref the event carries, calls
+`RecordRejection` — DSAR-11 publishes the event and never writes to the `ropa` schema itself (rule 9); this is
+the first real in-process event producer/consumer pair in the codebase (PLT-11 was built with none yet).
+`RecordRejection` FK-checks the activity via the existing `GetActivity` (rule 1) before inserting. API:
+`GET /admin/v1/ropa/activities/{id}/rejections` (`ropa.activity.read`) — read-only; nothing writes these rows
+through HTTP. UI: a "DSAR rejections (ม.39(7))" section on `/ropa/activities/{id}`, listing date + reason.
+Tests: unit (idempotent redelivery of the same activity+request pair inserts once, unknown activity refused,
+two-tenant isolation), HTTP contract (401, 200 with an empty list).
 
 <a id="ropa-13"></a>
 ### ROPA-13 เวอร์ชันและการอนุมัติ

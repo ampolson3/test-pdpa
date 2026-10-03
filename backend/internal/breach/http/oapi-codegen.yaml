@@ -1,0 +1,29 @@
+package: breachhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - breachListIncidents
+    - breachCreateIncident
+    - breachGetIncident
+    - breachUpdateIncident
+    - breachTransitionIncident
+    - breachListAssessments
+    - breachAssessIncident
+    - breachDecideIncident
+    - breachGetTimeline
+    - breachAddNote
+    - breachListEvidence
+    - breachAddEvidence
+    - breachListNotices
+    - breachCreateNotice
+    - breachGetNotice
+    - breachUpdateNotice
+    - breachListRecipients
+    - breachLoadRecipients
+    - breachSendNotice
+    - breachListPDPCNotifications
+    - breachRecordPDPCNotification
+    - breachConfirmPDPCNotification

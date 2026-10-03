@@ -17,6 +17,11 @@ REVOKE ALL ON public.goose_db_version FROM pdpa_app, pdpa_platform;
 -- append-only evidence
 REVOKE UPDATE, DELETE, TRUNCATE ON platform.audit_log, consent.consent_transactions, consent.consent_receipts, breach.timeline_events
   FROM pdpa_app, pdpa_platform;
+-- written only by platform.drop_expired_audit_partitions() (SECURITY DEFINER), read by audit Verify
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON platform.audit_chain_anchors FROM pdpa_app, pdpa_platform;
+
+-- wrapped data keys: deleting one makes its data unreadable (crypto-shredding is a tenant-offboarding step, PLT-13)
+REVOKE DELETE, TRUNCATE ON platform.tenant_keys FROM pdpa_app, pdpa_platform;
 
 -- global tables without RLS: read-only for the application, written by the provider console (pdpa_platform) or migrations
 REVOKE INSERT, UPDATE, DELETE ON platform.tenants, iam.permissions, org.lawful_bases, org.countries, cookie.cookie_kb,
@@ -34,6 +39,8 @@ END $$;
 
 -- worker job partition.maintain
 GRANT EXECUTE ON FUNCTION platform.ensure_monthly_partitions(int) TO pdpa_app, pdpa_platform;
+-- worker job audit.retention (the function refuses to keep less than 60 months)
+GRANT EXECUTE ON FUNCTION platform.drop_expired_audit_partitions(int) TO pdpa_app;
 
 -- tables created by later migrations (as pdpa_owner) get the same DML grants automatically;
 -- ensure_monthly_partitions() revokes them again on every new partition

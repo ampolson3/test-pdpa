@@ -108,6 +108,42 @@
 
 **Acceptance criteria:** ประกาศทุกฉบับแสดงช่องทางติดต่อ DPO ล่าสุด
 
+**Implementation (DPO-01):** `internal/dpo` — the first module on the `dpo` schema (`dpo.profile.*`, already
+seeded in the baseline permission migration; no new migration — `dpo.appointments` was already fully
+specified: `dpo_type` internal/external/group, `user_id` for internal, `external_name`/`external_company`
+for external/group, `contact_email`/`contact_phone`, `appointed_at`/`ended_at`, `appointment_file_id` and
+`pdpc_notified_at`/`pdpc_evidence_file_id` for recording the ม.41 filing with the PDPC). `SaveAppointment`
+checks the legal entity is visible under RLS (rule 1, via `orgservice.GetLegalEntity`) and, for an internal
+appointment, that `user_id` is a real active user of the tenant (`iamservice.Names`, the same cross-module
+helper ROPA already uses); a file id (order or evidence) is checked and attached the same way BRE-09's PDPC
+evidence is (`Files.Get` + `AttachSystem`, refused unless it's the caller's own clean, still-unattached
+upload) — but only when it's new or changed from a stored one, since re-checking an id already attached to
+this same appointment would fail the "unattached" test on every plain update. A legal entity's *current*
+appointment is whichever has no `ended_at` yet, most recently appointed (`CurrentAppointment`, a new sqlc
+query) — plain CRUD otherwise, no state machine (the module doc lists no process for this feature).
+
+The acceptance criterion itself is a new extension point on PLT-16, not a screen: `docs.Service` gained a
+second merge-field source alongside `OrgFields` (ORG-01) — `DpoFields` (`Dpo DpoFields` field, same
+`MergeFields(ctx, legalEntityID) (map[string]string, error)` shape) — resolved in `fieldValues` right after
+the organization's own fields, so every document (notices today; DPAs, DSA and PDPC-form letters once those
+document types exist) picks up `dpo_name`/`dpo_email`/`dpo_phone` from the legal entity's current appointment
+without any template ever hard-coding it (rule 8). `dpo.Service.MergeFields` returns nothing when there's no
+current appointment — the draft then shows `[dpo_name]` etc. as an unresolved placeholder and publishing
+refuses it, exactly like any other missing merge field; it never blocks *reading* a document. `wiring.Docs`
+builds the `dpo.Service` itself (mirroring how it already builds its own `orgservice.Service`) so `docs`
+never imports `dpo`'s HTTP layer or vice versa — module boundaries stay one-directional (rule 9: `dpo` reads
+`org`; `docs` reads `dpo` only through the two-method `DpoFields` interface it declares itself).
+
+API `/admin/v1/dpo/appointments` (cursor pagination, same shape as ROPA-04's own list), `/{id}`. UI
+`/settings/dpo`: a legal-entity picker (the same two-step pattern `/settings/organization` and
+`/ropa/activities` use) then the entity's appointments with a create/edit form (`FileUploader` for the
+appointment order), current vs. ended shown as a badge. Tests: unit (validation incl. dpo_type-conditional
+fields, the two FK-visibility checks, update, current-contact resolution as an appointment starts/ends/is
+replaced — the acceptance criterion's core logic — two-tenant isolation), a white-box `docs` package test
+proving `fieldValues` actually merges the dpo source in (with a stub, no database needed — the org source
+has no equivalent unit test, only the existing Chromium-based E2E; this closes that gap for the new source
+too), HTTP contract (401/403/400 schema/422/412/428).
+
 <a id="dpo-04"></a>
 ### DPO-04 แดชบอร์ด DPO
 
@@ -154,6 +190,10 @@
 
 **หมายเหตุ:** OneTrust ไม่มีมุมมองรวม
 
+**สถานะ implementation:** done — see `CLAUDE.md`'s DPO-05 section. Scoped to the modules that already track a
+legal deadline (DSAR's 30-day SLA, breach's 72-hour PDPC clock); DPIA review cycles, contract expiry and notice
+review aren't built yet, so they're left out until they exist.
+
 <a id="dpo-09"></a>
 ### DPO-09 ประเมินมาตรการความปลอดภัย
 
@@ -176,6 +216,32 @@
 **Acceptance criteria:** ข้อที่ไม่ผ่านสร้างงานแก้ไขอัตโนมัติ
 
 **หมายเหตุ:** OneTrust ต้องนำเข้า framework เอง
+
+**Implementation (DPO-09):** the checklist itself is an ordinary PLT-06 form the DPO authors and publishes
+(a new module-agnostic form type, `"security"` — `internal/wiring/forms.go` registers it with
+`dpo.risk.*` permissions, since a failed control reads as a risk-register-adjacent finding, not a new
+permission code; `platform.form_definitions.form_type`'s CHECK constraint widened by migration 00039 rather
+than reusing the unclaimed `'quiz'` value, for clarity). SEC/DPO submit a completed run in one call —
+`internal/dpo/service/assessment.go`'s `Assess` — via `forms.Service.Record` (BRE-05's exact pattern:
+bypasses the draft/section-assignment UI flow, for a form filled in one atomic step) against a specific
+published form version, refusing with `ErrBadForm` if that form isn't type `"security"` or has no published
+version. The score/band (`forms.Result`) and every question's answer (`forms.Contributions`) are stored in a
+new `dpo.security_assessments` row (migration 00039, mirrors `breach.assessments`' shape: score, result,
+factors jsonb, form_submission_id). The acceptance criterion — a failed item auto-opens remediation work —
+is computed by walking the form's schema directly (not `Contribution.Points`, which would misfire on any
+non-yes_no question): every `yes_no` question answered `"no"` opens one `dpo.tasks` row
+(`source_type = 'risk'`, no enum widening needed; numbered `SEC-<year>-NNNN` with the same
+per-tenant-per-year advisory-lock pattern `breach.incidents.incident_no` already uses), linked back to the
+assessment. API `/admin/v1/dpo/security-assessments` (cursor pagination, list + create) and `/{id}`. UI: a
+"Security assessments" section on `/settings/dpo` (`FormRenderer` against the published form, score badge,
+expandable factor table, remediation-task list). Tests: unit (pass/fail scoring, task auto-creation and
+round-trip via `GetAssessment`, validation — unknown legal entity, unknown/unpublished form,
+non-`"security"`-type form, missing required answer — two-tenant isolation), HTTP contract
+(401/403/201/200/404/422). Found while writing the tests (a re-confirmed forms-package gotcha, not new to
+this feature): `forms.Service.CreateForm`/`Publish` both return via `GetForm`, which folds a missing *Read*
+permission into `ErrNotFound` rather than `ErrForbidden` — so any fixture granting only Create/Update/Publish
+for a form type fails opaquely; test grants for `"security"` (and the cross-type rejection test's
+`"questionnaire"` fixture) now include Read.
 
 <a id="dpo-02"></a>
 ### DPO-02 ประเมินหน้าที่ต้องแต่งตั้ง DPO

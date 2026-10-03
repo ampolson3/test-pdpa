@@ -164,6 +164,8 @@
 
 **Acceptance criteria:** ทุกเหตุมีสถานะและผู้รับผิดชอบชัดเจน
 
+**Implementation (BRE-02):** `backend/internal/breach` (`service`, `store`, `http`) — เหตุ = เลขที่ `BR-ปีค.ศ.-NNNN` ต่อ tenant (advisory lock), นิติบุคคล, ช่องทาง (`employee_form` / `email` / `phone` / `system` ใน admin), หัวข้อ, รายละเอียด, ลักษณะ C/I/A, เวลาเกิด / ทราบ / ควบคุมได้, จำนวนเจ้าของข้อมูล, หมวดข้อมูล (ORG-07), **ผู้รับผิดชอบ** (`owner_user_id`, migration 00036 — ค่าเริ่มต้นคือผู้บันทึก) · สถานะตาม ST-03 เท่านั้น (`Allowed` = allow-list จาก state-machines.yaml): รับเรื่อง (reported → triage, มอบผู้รับผิดชอบได้), ยืนยันเหตุ (→ assessing), ไม่ใช่เหตุ (triage → closed) / ปิดเหตุ (remediating → closed) ต้องมี `breach.incident.approve` และเหตุผล (`close_reason`), พบข้อเท็จจริงใหม่ (remediating → assessing, เหตุผล) · assessing → notifying / remediating ผ่านการตัดสิน (BRE-06) เท่านั้น · notifying → remediating ต้องมีการแจ้ง สคส. ที่บันทึกแล้ว (BRE-09) — ตอนนี้ตอบ 409 `breach.pdpc_notice_missing` (ดู decisions Q-23) · ทุกการเปลี่ยนสถานะเขียน timeline + audit ใน tx เดียว, event `breach.reported` / `breach.closed` · สิทธิ์เห็นเหตุ: `breach.incident.read` เห็นทั้งหมด, ผู้มีแค่ `create` เห็นเฉพาะที่ตนแจ้ง · API `/admin/v1/breach/incidents` (+ `/{id}`, `/transitions`) · หน้าจอ `/incidents` (ทะเบียน + ค้นหา + ตัวนับถอยหลัง) และ `/incidents/{id}`
+
 <a id="bre-03"></a>
 ### BRE-03 รับแจ้งเหตุจากผู้ประมวลผล
 
@@ -229,6 +231,8 @@
 
 **Acceptance criteria:** ผลประเมินได้ระดับความเสี่ยงพร้อมเหตุผลตามปัจจัย
 
+**Implementation (BRE-05):** แบบประเมินเป็นฟอร์ม PLT-06 ประเภทใหม่ `breach` (สิทธิ์: สร้าง/แก้/เผยแพร่ = `breach.incident.approve` คือ DPO, ตอบ = `breach.incident.update`) ที่ต้องมีระดับคะแนน (bands) เป็น `none` / `low` / `high` เท่านั้น — ตัวคำถาม/ปัจจัยตามประกาศ พ.ศ. 2565 เป็นเนื้อหาที่ DPO สร้างเอง (ระบบไม่ฝังถ้อยคำกฎหมาย, rule 8) · `Assess` (สถานะ assessing) ส่งคำตอบผ่าน `forms.Service.Record` (ตรวจ + คิดคะแนน + เก็บ `form_submissions`) → ระดับความเสี่ยง = band, **เหตุผลตามปัจจัย** = `forms.Contributions` (คำถาม, คำตอบ + ป้ายตัวเลือก, คะแนนที่ได้) เก็บใน `assessments.factors` · ระดับล่าสุดเป็น `incidents.risk_level`, event `breach.assessed` · API `/incidents/{id}/assessments`
+
 <a id="bre-06"></a>
 ### BRE-06 ตัดสินหน้าที่แจ้งพร้อมเหตุผล
 
@@ -249,6 +253,8 @@
 **Frontend (Next.js):** ขั้นตอนตัดสินหน้าที่แจ้ง
 
 **Acceptance criteria:** ทุกการตัดสินมีเหตุผลและผู้อนุมัติ
+
+**Implementation (BRE-06):** `Decide` (`breach.incident.approve`, If-Match) ต้องมีผลประเมินแล้วและเหตุผล · กฎ ม.37(4): none → ไม่ต้องแจ้ง, low → แจ้ง สคส., high → แจ้ง สคส. และเจ้าของข้อมูล — DPO เลือกแจ้ง **มากกว่า** ที่ระดับกำหนดได้ แต่น้อยกว่าไม่ได้ (422 `breach.decision_too_weak`) · บันทึก `decision`, `decision_reason`, `decided_by` + timeline + audit · ไม่ต้องแจ้ง → remediating (นาฬิกา 72 ชม. หยุด), นอกนั้น → notifying · หน้าจอ: แผงตัดสิน (ตัวเลือกที่อ่อนกว่ากำหนดถูกปิด)
 
 <a id="bre-07"></a>
 ### BRE-07 นับเวลา 72 ชั่วโมง
@@ -271,6 +277,8 @@
 
 **Acceptance criteria:** แจ้งเตือนครบทุกจุดเวลาและ escalate เมื่อใกล้ครบ 72 ชั่วโมง
 
+**Implementation (BRE-07):** ฟังก์ชันล้วน (ทดสอบด้วยเวลาที่กำหนดเอง, rule 7) ใน `breach/service/deadlines.go`: `PDPCDue` = ทราบเหตุ + 72 ชม. (ชั่วโมงจริง ไม่ใช่วันทำการ), `LateDeadline` = + 15 วัน (Q-07), `Checkpoints` 24 / 48 / 66 / 72 ชม., `ToSchedule` (จุดที่ยังไม่ถึง + จุดล่าสุดที่ผ่านไปแล้วให้ยิงทันที — บันทึกเหตุช้าก็ยังเตือน/escalate), `ClockAt` (on_track / due_soon ≥ 66 ชม. / overdue / stopped) · สร้างเหตุ = ตั้ง job `breach.sla_timer` ทุกจุด (River ScheduledAt, unique ต่อ args) · ยิงแล้ว: ถ้านาฬิกายังเดิน (reported…notifying และไม่ได้ตัดสินว่าไม่ต้องแจ้ง) → timeline `deadline:N` + แจ้งเตือน in-app + อีเมล (เร่งด่วน) ถึงผู้รับผิดชอบและผู้มี role DPO, **ตั้งแต่ 66 ชม. เพิ่มผู้มี role EXEC**, 72 ชม. = เกินกำหนด (template `breach.deadline_overdue`) · ผู้รับตาม role นี้เป็นค่าเริ่มต้นจนกว่าจะมีกฎผู้รับแจ้ง BRE-04 · แก้เวลาที่ทราบเหตุต้องมี `approve` + เหตุผล (SEQ-06) แล้วตั้งเวลาใหม่ job เก่าเห็น `aware_at` ไม่ตรงจึงไม่ทำอะไร · แจ้งเหตุใหม่ทันทีด้วย template `breach.reported`
+
 <a id="bre-08"></a>
 ### BRE-08 แจ้งล่าช้าพร้อมเหตุผล
 
@@ -291,6 +299,8 @@
 **Frontend (Next.js):** ส่วนเหตุผลความล่าช้า
 
 **Acceptance criteria:** แบบแจ้งที่ล่าช้าส่งไม่ได้ถ้าไม่มีเหตุผล
+
+**Implementation (BRE-08):** `LateReasonRequired(awareAt, submittedAt)` (`service/deadlines.go`, เขียนไว้ตั้งแต่ BRE-07) — ยื่นเกิน 72 ชม. นับแต่ทราบเหตุ ต้องกรอก `late_reason` มิฉะนั้น 422 `breach.invalid` (`late_reason: required`) · `is_late` คำนวณจากค่านี้ เก็บคู่กับ `late_reason` ในแต่ละรอบการแจ้ง (`breach.pdpc_notifications`, ดู BRE-09) · กรอบ 15 วันยังไม่บังคับเป็น hard limit (การตีความยังรอฝ่ายกฎหมาย — decisions Q-07); ตอนนี้เป็นแค่ธง `is_late` ให้ผู้ใช้เห็น
 
 <a id="bre-09"></a>
 ### BRE-09 แบบแจ้ง สคส. และแจ้งเพิ่มเติมเป็นระยะ
@@ -315,6 +325,8 @@
 
 **หมายเหตุ:** ระบบเตรียมเอกสาร ผู้ใช้ยื่นผ่านช่องทางของ สคส.
 
+**Implementation (BRE-09):** `internal/breach/service/pdpc.go` — เอกสารแบบแจ้ง (ครบหัวข้อตามประกาศ) สร้างผ่านตัวสร้างเอกสาร PLT-16 เองในฐานะเอกสารประเภท `pdpc_form` (permission `breach.notification.*`, อนุมัติโดย DPO ผ่าน PLT-08) · `breach.pdpc_notifications` แต่ละแถวคือหนึ่งรอบการยื่น (`sequence_no` ต่อเหตุ, `notification_type` = `initial` / `supplementary` / `final`) อ้างอิง `document_version_id` ของเวอร์ชันที่**เผยแพร่แล้ว**เท่านั้น (ตรวจผ่าน `docs.Service` ซึ่งพิสูจน์ด้วยว่าแถวนั้นมองเห็นได้ภายใต้ RLS, rule 1) · เก็บ `submitted_at` (เวลาที่ยื่นจริงผ่านช่องทางของ สคส., ห้ามเป็นอนาคต), `submission_ref` (เลขที่รับจาก สคส.), `evidence_file_id` (ไฟล์หลักฐานการยื่น, ไม่บังคับ), `is_late` / `late_reason` (BRE-08) · ต้องมีคนที่สองยืนยัน (`breach.notification.approve`, maker-checker แบบเดียวกับการแจ้งเจ้าของข้อมูล — ผู้บันทึกยืนยันเองไม่ได้) ก่อนจะนับเป็นการแจ้งที่สมบูรณ์ · ออกจาก `notifying` (ST-03) ต้องมีรอบที่ยืนยันแล้วอย่างน้อยหนึ่งรอบ **และ** ถ้าการตัดสินใจรวมเจ้าของข้อมูลด้วย ต้องมีการแจ้งเจ้าของข้อมูลที่ส่งเสร็จแล้วด้วย (`breach.subject_notice_missing`) · API `/incidents/{id}/pdpc-notifications`, `/pdpc-notifications/{id}/confirm` · หน้าจอ: แท็บ "แจ้ง สคส." ในหน้าเหตุละเมิด — เลือกเอกสารที่เผยแพร่แล้ว (มีทางลัดไปสร้างใหม่ที่ตัวสร้างเอกสาร) บันทึกรอบ อัปโหลดหลักฐาน และยืนยัน
+
 <a id="bre-10"></a>
 ### BRE-10 แจ้งเจ้าของข้อมูลเมื่อความเสี่ยงสูง
 
@@ -335,6 +347,8 @@
 **Frontend (Next.js):** หน้าส่งแจ้งเจ้าของข้อมูล + สถานะ
 
 **Acceptance criteria:** ส่งแจ้ง 10,000 รายได้และติดตามผลการส่งรายคน
+
+**Implementation (BRE-10):** ใช้ได้เมื่อการตัดสินเป็น `notify_pdpc_and_subjects` · ร่าง (`breach.notification.create`): ช่องทางอีเมล / SMS + ตัวแปรของเหตุ (องค์กร, สรุป, แนวทางเยียวยา, ติดต่อ — `subject_notifications.variables`) ที่เติมลง template `breach.subject_notice` ซึ่ง seed เป็น **ร่างที่ติดป้ายรอฝ่ายกฎหมายอนุมัติ** (rule 8) ให้ tenant แก้ที่หน้าแม่แบบการแจ้งเตือน · รายชื่อ = CSV ที่ผู้ใช้อัปโหลด (ไฟล์ PLT-09 สะอาด) คอลัมน์ email/phone + language — normalize, ตัดซ้ำ, บรรทัดผิดปฏิเสธทั้งไฟล์ (แจ้งเลขบรรทัด+รหัส ไม่แสดงค่า), ที่อยู่เข้ารหัส PLT-13 (`address_enc`), สูงสุด 100,000 · **maker-checker:** ผู้จัดทำอนุมัติเองไม่ได้ (403 `breach.self_approval`), ผู้อนุมัติต้องมี `breach.notification.approve` · job `breach.subject_notice` ส่งต่อให้ PLT-04 ครั้งละ 1,000 รายใน tx ของ job (ล้มกลางทางไม่ส่งซ้ำ) แล้วต่อ job ถัดไป · ติดตามรายคน: ผู้รับเก็บ `notification_id` → สถานะการส่งจริง (queued / sent / failed, จำนวนครั้ง) จาก `notify.Service.Statuses` · จบแล้ว event `breach.subjects_notified` · ทดสอบ 10,000 ราย ~12–17 วินาที · ยังไม่ทำ: LINE, จดหมาย, ประกาศบนเว็บไซต์
 
 **หมายเหตุ:** OneTrust ต้องใช้เครื่องมือส่งภายนอก
 
@@ -359,6 +373,8 @@
 
 **Acceptance criteria:** timeline แสดงทุกการตัดสินใจพร้อมเวลาและผู้ตัดสิน
 
+**Implementation (BRE-12):** `breach.timeline_events` เพิ่มได้อย่างเดียว (app role ไม่มีสิทธิ์ UPDATE/DELETE, rule 4) · รายการอัตโนมัติเก็บเป็น token คงที่ + ข้อความที่คนให้ (เหตุผล) เช่น `status:triage:assessing`, `assessment:high:8`, `decision:notify_pdpc_and_subjects:high`, `deadline:66`, `evidence:<sha256>`, `notice_sent:email:25:0` — หน้าจอแปลเป็นไทย/อังกฤษ (rule 12) · บันทึกของคนเพิ่มได้ (เวลาย้อนหลังได้, ไม่ใช่อนาคต) · หลักฐาน: ไฟล์ที่ผู้ใช้อัปโหลดและผ่านการตรวจไวรัส ผูกกับเหตุ (ดาวน์โหลดด้วย `breach.incident.read`) + SHA-256 บน timeline · ปิดเหตุแล้วเพิ่มไม่ได้
+
 <a id="bre-13"></a>
 ### BRE-13 ประวัติและสืบค้นเหตุ
 
@@ -379,6 +395,8 @@
 **Frontend (Next.js):** ตัวกรองในทะเบียนเหตุ
 
 **Acceptance criteria:** ค้นหาเหตุย้อนหลังได้ครบ
+
+**Implementation (BRE-13):** `GET /admin/v1/breach/incidents` ค้นหาตามสถานะ / ความเสี่ยง / ผู้รับผิดชอบ / ช่วงเวลาที่ทราบเหตุ / เฉพาะที่ยังไม่ปิด / คำค้น (เลขเหตุ หัวข้อ รายละเอียด — escape `%` `_`) เรียงเวลาทราบเหตุใหม่สุด cursor (aware_at, id) · ประวัติ = timeline + audit log
 
 <a id="bre-11"></a>
 ### BRE-11 แผนตอบสนองและงานควบคุมเหตุ

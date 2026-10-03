@@ -169,6 +169,17 @@
 
 **Acceptance criteria:** clone template แล้วแก้ได้โดยไม่กระทบต้นฉบับ
 
+**สถานะ implementation:** done — see `CLAUDE.md`'s DPIA-03 section for the full implementation note.
+Built on the already-existing `assess.templates` table and the generic PLT-06 form engine (no new
+migration): a catalog/list of templates by `assessment_type`, `Clone` (copies a source's current form
+content into a brand-new, independent `platform.form_definitions` row — editing the clone afterward
+through PLT-06's own form builder never touches the source), and a `Publish`/`Retire` lifecycle wrapping
+the underlying form's own draft/publish state. API `/admin/v1/dpia/templates` (list, create), `/{id}`
+(get), `/{id}/clone`, `/{id}/publish`, `/{id}/retire` — all on the already-seeded `assessment.template.*`
+permissions. UI `/settings/dpia-templates` (list + filter by type, clone dialog, create form, publish/
+retire actions, links to PLT-06's own `/forms/{id}` builder for editing content), linked from
+`/settings/dpia`.
+
 <a id="dpia-04"></a>
 ### DPIA-04 อธิบายกิจกรรมโดยดึงข้อมูลจาก RoPA
 
@@ -190,6 +201,15 @@
 
 **Acceptance criteria:** ข้อมูลที่ดึงจาก RoPA ตรงกับกิจกรรมต้นทาง
 
+**สถานะ implementation:** done — see `CLAUDE.md`'s DPIA-04 section for the full implementation note.
+Composed live from the assessment's linked RoPA activity on every read (purposes, data categories, data
+subject groups, recipients, cross-border transfers, retention) — never persisted, so "sync เมื่อ RoPA เปลี่ยน"
+needs no separate sync step. New `GET /admin/v1/dpia/assessments/{id}/description`
+(`assessment.dpia.read`). UI: an auto-filled description panel on `/ropa/activities/{id}`'s own DPIA
+screening section, shown once a round is `in_progress`. Not done: `ropa.activity_systems` ("ระบบที่ใช้") —
+that link has no CRUD anywhere yet in ROPA-02/03, so there is nothing to surface; add it once a screen
+writes to that table.
+
 <a id="dpia-05"></a>
 ### DPIA-05 ประเมินความจำเป็นและความได้สัดส่วน
 
@@ -210,6 +230,16 @@
 **Frontend (Next.js):** section ความจำเป็นและความได้สัดส่วน
 
 **Acceptance criteria:** ตอบครบแล้วสรุปผลความจำเป็นได้
+
+**สถานะ implementation:** done — see `CLAUDE.md`'s DPIA-05 section for the full implementation note.
+4 yes/no questions (ม.22/24/26, `docs/decisions.md` Q-27) on the same PLT-06/assess.templates apparatus
+DPIA-01/02/03 already use (migration 00048) — answered via `POST /admin/v1/dpia/assessments/{id}/necessity`,
+read via `GET` on the same path (`assessment.dpia.update`/`.read`). "Necessary" only once every question is
+"yes"; any other answer is flagged in `missing` and the result reads "needs_review". Answers persist under
+`assess.sections`/`assess.answers` with a `necessity` section code, kept separate from DPIA-01's own screening
+answers so re-answering never affects `Assessment.Factors`. Re-answering replaces the prior submission (no
+round numbering, unlike DPIA-01's own re-screening). UI: a checklist panel on `/ropa/activities/{id}`'s DPIA
+section, shown alongside DPIA-04's description panel once a round is `in_progress`.
 
 <a id="dpia-06"></a>
 ### DPIA-06 ระบุและให้คะแนนความเสี่ยง
@@ -336,6 +366,8 @@
 **Frontend (Next.js):** หน้าเปรียบเทียบคำตอบระหว่างรอบ
 
 **Acceptance criteria:** เห็นความต่างของคำตอบระหว่างรอบได้
+
+**สถานะ implementation:** done — see `CLAUDE.md`'s DPIA-14 section.
 
 <a id="dpia-15"></a>
 ### DPIA-15 ออกรายงาน DPIA

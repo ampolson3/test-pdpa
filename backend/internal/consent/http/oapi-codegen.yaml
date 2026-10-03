@@ -1,0 +1,24 @@
+package: consenthttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - consentListPurposes
+    - consentCreatePurpose
+    - consentGetPurpose
+    - consentSavePurposeDraft
+    - consentRetirePurpose
+    - consentListCollectionPoints
+    - consentCreateCollectionPoint
+    - consentGetCollectionPoint
+    - consentUpdateCollectionPoint
+    - consentPublishCollectionPoint
+    - consentRetireCollectionPoint
+    - consentListSubjects
+    - consentSearchSubjects
+    - consentGetSubject
+    - consentVerifySubject
+    - consentRecordOnBehalf
+    - consentGetSettings

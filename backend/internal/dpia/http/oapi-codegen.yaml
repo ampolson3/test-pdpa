@@ -1,0 +1,22 @@
+package: dpiahttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - dpiaGetScreeningRules
+    - dpiaSaveScreeningRules
+    - dpiaScreenActivity
+    - dpiaListAssessments
+    - dpiaGetAssessment
+    - dpiaGetAssessmentDescription
+    - dpiaGetAssessmentDiff
+    - dpiaGetNecessity
+    - dpiaAssessNecessity
+    - dpiaListTemplates
+    - dpiaCreateTemplate
+    - dpiaGetTemplate
+    - dpiaCloneTemplate
+    - dpiaPublishTemplate
+    - dpiaRetireTemplate
