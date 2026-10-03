@@ -169,6 +169,32 @@
 
 **Acceptance criteria:** คำขอทุกช่องทางเข้าคิวเดียวกันและระบุช่องทางที่มา
 
+**Implementation:** Most of this was already in place from DSAR-13's own intake slice: `CreateRequest` already
+accepted any of the seven `channel` values (web/email/phone/branch/letter/line/api) and an `on_behalf` flag,
+and every request — whatever its channel — lands in the same `dsar.requests` table, visible through the same
+`ListRequests`/`GET /admin/v1/dsar/requests` the UI already used. What was actually missing against the
+literal acceptance criterion: the admin UI's intake form hard-coded `on_behalf: false` (staff had no way to
+mark a request as recorded on the data subject's own behalf) and the `/requests` list never showed a
+request's channel at all — so "ระบุช่องทางที่มา" (shows its origin channel) wasn't actually visible anywhere,
+even though the data was already stored. Fixed both: a "ลงคำขอแทนเจ้าของข้อมูล" checkbox on the intake form
+now sets `on_behalf` for real (natural for a phone/branch/letter/LINE intake, where staff are the ones typing
+it in), and `/requests` gained a "ช่องทาง" column showing each request's channel with a "ลงแทน" badge when
+`on_behalf` is true — "คำขอทุกช่องทางเข้าคิวเดียวกัน" is now also visibly true, not just true in the database.
+No migration, no new endpoint, no new permission — this was a frontend gap closing a backend capability that
+already existed. "แนบไฟล์" (attach a file at intake, e.g. a scanned letter) needed no new code either: every
+`dsar_request` is already a registered PLT-07 collaboration record (DSAR-17), so staff can attach a file to
+the request immediately after creating it via the existing "ประวัติ" panel — a second step, not a field on the
+create form itself, since PLT-09 attachments need a real entity id to attach to and the create form is a
+single atomic call. "รับคำขอผ่าน API จากแอป" (an external app submitting requests through `/api/v1`) is
+deliberately not built: that surface needs API-client authentication (ORG-16, not started) the same way
+CON-16's own `/api/v1` + webhooks are deferred for the same reason — the `channel: "api"` value is already in
+the CHECK constraint and already selectable by staff logging a call from an external system by hand, so a real
+`/api/v1` consumer can be layered on top later without touching this schema. Tests: unit (the acceptance
+criterion directly — every channel value round-trips through `CreateRequest` and is visible in the same
+`ListRequests` call, `on_behalf` is set correctly per channel), `pnpm --filter @pdpa/admin build`/`tsc` clean.
+Verified live: created a real `channel: "phone"`, `on_behalf: true` request through the running admin app and
+confirmed the list shows "โทรศัพท์" with a "ลงแทน" badge on that row.
+
 <a id="dsar-03"></a>
 ### DSAR-03 ครอบคลุมสิทธิทุกประเภท
 

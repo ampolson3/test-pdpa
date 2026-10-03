@@ -1981,7 +1981,9 @@
       "assigneeSearch": "Search for the responsible person",
       "currentAssignee": "Currently assigned: {id}…",
       "unassigned": "Unassigned",
-      "unassign": "Unassign"
+      "unassign": "Unassign",
+      "onBehalf": "Recorded on the data subject's behalf (staff intake)",
+      "onBehalfBadge": "On behalf"
     },
     "channels": {
       "web": "Web",

@@ -137,7 +137,7 @@ DFG-09,DFG,ค้นหาข้อมูลส่วนบุคคลอัต
 DFG-10,DFG,แผนผังระดับระบบ (Data lineage),System-level lineage,Nice,P4,อัตโนมัติ,แนวโน้มตลาด,IT,M,M,N,5,5,1.2,0,3.5,ROPA-02,,docs/modules/DFG.md#dfg-10,แสดงการไหลระหว่างระบบตรงกับทะเบียน asset,todo
 DFG-11,DFG,แผนที่โลกของการโอนข้อมูล,Transfer world map,Nice,P4,อัตโนมัติ,แนวโน้มตลาด,DPO,S,M,N,3,5,1.0,0,2.8,DFG-03,,docs/modules/DFG.md#dfg-11,คลิกประเทศแล้วเห็นกิจกรรมที่โอนไปประเทศนั้น,todo
 DSAR-01,DSAR,แบบฟอร์มขอใช้สิทธิออนไลน์,DSR web form,Must,P1,รับคำขอ,ม.30-36,DS,M,M,Y,5,5,1.2,2.0,3.5,"PLT-06, PLT-17",BP-06,docs/modules/DSAR.md#dsar-01,ผู้ยื่นได้เลขที่คำขอทันทีหลังส่ง,todo
-DSAR-02,DSAR,รับคำขอหลายช่องทาง,Multi-channel intake,Must,P1,รับคำขอ,ม.30,FRONT EXT,S,M,N,3,5,1.0,0,2.8,DSAR-08,BP-06,docs/modules/DSAR.md#dsar-02,คำขอทุกช่องทางเข้าคิวเดียวกันและระบุช่องทางที่มา,todo
+DSAR-02,DSAR,รับคำขอหลายช่องทาง,Multi-channel intake,Must,P1,รับคำขอ,ม.30,FRONT EXT,S,M,N,3,5,1.0,0,2.8,DSAR-08,BP-06,docs/modules/DSAR.md#dsar-02,คำขอทุกช่องทางเข้าคิวเดียวกันและระบุช่องทางที่มา,done
 DSAR-03,DSAR,ครอบคลุมสิทธิทุกประเภท,All data subject rights,Must,P1,รับคำขอ,"ม.19, ม.30-36",DS DPO,M,S,N,5,3,1.0,0,2.8,DSAR-08,BP-06,docs/modules/DSAR.md#dsar-03,ทุกประเภทสิทธิมี workflow และหนังสือตอบของตนเอง,todo
 DSAR-04,DSAR,ยื่นคำขอแทนเจ้าของข้อมูล,Authorized agent / guardian,Must,P1,รับคำขอ,ม.20,GUARD,S,S,N,3,3,0.7,0,2.1,DSAR-01,BP-06,docs/modules/DSAR.md#dsar-04,คำขอแทนต้องมีเอกสารยืนยันอำนาจก่อนดำเนินการ,todo
 DSAR-06,DSAR,ยืนยันตัวตนผู้ยื่นคำขอ,Identity verification,Must,P1,ยืนยันตัวตน,แนวปฏิบัติตลาด,DS DPO,M,S,N,5,3,1.0,0,2.8,IAM-05,BP-06,docs/modules/DSAR.md#dsar-06,เลขบัตรในไฟล์ที่เก็บถูกปกปิดเสมอ และบันทึกวันยืนยันตัวตน,done

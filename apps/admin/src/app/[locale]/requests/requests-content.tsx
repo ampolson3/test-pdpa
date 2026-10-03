@@ -314,7 +314,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
   const activities = useActivities(client, {});
   const m = useDsarRequestMutations(client);
 
-  const [draft, setDraft] = useState<{ request_type_id: string; legal_entity_id: string; channel: DsarRequestChannel | ""; requester_name: string; requester_contact: string; contact_kind: DsarContactKind } | null>(null);
+  const [draft, setDraft] = useState<{ request_type_id: string; legal_entity_id: string; channel: DsarRequestChannel | ""; requester_name: string; requester_contact: string; contact_kind: DsarContactKind; on_behalf: boolean } | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
   const [assignId, setAssignId] = useState<string | null>(null);
   const [actionDraft, setActionDraft] = useState<{ to: DsarRequestStatus | ""; outcome: DsarOutcome | ""; rejection_reason_code: string; activity_ids: string[] }>({ to: "", outcome: "", rejection_reason_code: "", activity_ids: [] });
@@ -331,7 +331,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
     if (!draft || !draft.request_type_id || !draft.legal_entity_id || !draft.channel || !draft.requester_name || !draft.requester_contact) return;
     m.create.mutate(
       {
-        request_type_id: draft.request_type_id, legal_entity_id: draft.legal_entity_id, channel: draft.channel, on_behalf: false,
+        request_type_id: draft.request_type_id, legal_entity_id: draft.legal_entity_id, channel: draft.channel, on_behalf: draft.on_behalf,
         requester_name: draft.requester_name, requester_contact: draft.requester_contact, contact_kind: draft.contact_kind,
       },
       { onSuccess: () => setDraft(null) },
@@ -364,7 +364,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
           <h1 className="text-xl font-semibold">{t("title")}</h1>
           <p className="text-slate-600">{t("intro")}</p>
         </div>
-        {canCreate && <Button onClick={() => setDraft({ request_type_id: "", legal_entity_id: "", channel: "", requester_name: "", requester_contact: "", contact_kind: "email" })} data-testid="new-request">{t("newRequest")}</Button>}
+        {canCreate && <Button onClick={() => setDraft({ request_type_id: "", legal_entity_id: "", channel: "", requester_name: "", requester_contact: "", contact_kind: "email", on_behalf: false })} data-testid="new-request">{t("newRequest")}</Button>}
       </header>
 
       {draft && (
@@ -387,6 +387,11 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
               <option value="">{t("form.choose")}</option>
               {CHANNELS.map((c) => <option key={c} value={c}>{t(`channels.${c}`)}</option>)}
             </select>
+          </label>
+          <label className="flex items-end gap-2 pb-1">
+            <input type="checkbox" checked={draft.on_behalf} data-testid="on-behalf-checkbox"
+              onChange={(e) => setDraft({ ...draft, on_behalf: e.target.checked })} />
+            <span className="text-slate-600">{t("form.onBehalf")}</span>
           </label>
           <label><span className="block text-slate-600">{t("form.requesterName")}</span>
             <input className={INPUT} value={draft.requester_name} onChange={(e) => setDraft({ ...draft, requester_name: e.target.value })} maxLength={300} /></label>
@@ -424,6 +429,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
         <table className="w-full rounded-md border border-slate-200 bg-white" data-testid="requests-list">
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr><th className="px-3 py-2">{t("form.requestNo")}</th><th className="px-3 py-2">{t("form.requestType")}</th>
+              <th className="px-3 py-2">{t("form.channel")}</th>
               <th className="px-3 py-2">{t("dueBy")}</th><th className="px-3 py-2">{t("sla.label")}</th>
               <th className="px-3 py-2">{t("statusLabel")}</th><th className="px-3 py-2" /></tr>
           </thead>
@@ -433,6 +439,10 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                 <tr>
                   <td className="px-3 py-2 font-mono text-xs">{r.request_no}</td>
                   <td className="px-3 py-2">{typeName(r.request_type_id)}</td>
+                  <td className="px-3 py-2">
+                    <span data-testid={`channel-${r.id}`}>{t(`channels.${r.channel}`)}</span>
+                    {r.on_behalf && <span className="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{t("form.onBehalfBadge")}</span>}
+                  </td>
                   <td className="px-3 py-2">{formatDate(r.due_at, locale, { day: "numeric", month: "short", year: "numeric" })}</td>
                   <td className="px-3 py-2"><span className={`rounded px-2 py-0.5 ${SLA_STYLE[r.sla_status]}`} data-testid={`sla-${r.id}`}>{t(`sla.${r.sla_status}`)}</span></td>
                   <td className="px-3 py-2"><span className={`rounded px-2 py-0.5 ${STATUS_STYLE[r.status]}`}>{t(`statuses.${r.status}`)}</span></td>
@@ -465,21 +475,21 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                 </tr>
                 {verifyId === r.id && (
                   <tr>
-                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
                       <VerificationPanel client={client} request={r} canUpdate={canUpdate} />
                     </td>
                   </tr>
                 )}
                 {subtaskId === r.id && (
                   <tr>
-                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
                       <SubtasksPanel client={client} request={r} canCreate={canSubtaskCreate} canDelete={canSubtaskDelete} />
                     </td>
                   </tr>
                 )}
                 {assignId === r.id && (
                   <tr>
-                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
                       <div className="flex flex-wrap items-center gap-3">
                         <span className="text-slate-600">
                           {r.assignee_user_id ? t("form.currentAssignee", { id: r.assignee_user_id.slice(0, 8) }) : t("form.unassigned")}
@@ -494,14 +504,14 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                 )}
                 {historyId === r.id && (
                   <tr>
-                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
                       <RecordCollaboration entityType="dsar_request" entityId={r.id} canWrite={canUpdate} currentUserId={currentUserId} />
                     </td>
                   </tr>
                 )}
                 {actionId === r.id && (
                   <tr>
-                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
                       <div className="grid gap-2 sm:grid-cols-3">
                         <select className={INPUT} value={actionDraft.to} onChange={(e) => setActionDraft({ ...actionDraft, to: e.target.value as DsarRequestStatus })}>
                           <option value="">{t("form.nextStatus")}</option>

@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -150,6 +151,58 @@ func TestCreateRequest_ValidatesAndNumbers(t *testing.T) {
 			Channel: "web", RequesterName: "x", RequesterContact: "y@example.com", ContactKind: crypto.KindEmail})
 		if !errors.Is(err, dsarservice.ErrInvalid) {
 			t.Errorf("unknown request type: err = %v, want ErrInvalid", err)
+		}
+		return nil
+	})
+}
+
+// TestCreateRequest_EveryChannelLandsInTheSameQueueWithOnBehalf is DSAR-02's acceptance criterion directly:
+// a request intaken by staff on any channel (phone, branch, letter, email, LINE — not just the self-service
+// "web" default) lands in the same dsar.requests queue, visible through the same ListRequests, and records
+// both its origin channel and whether staff recorded it on the data subject's own behalf.
+func TestCreateRequest_EveryChannelLandsInTheSameQueueWithOnBehalf(t *testing.T) {
+	e := setup(t, "dsarchannel")
+	var leID, typeID uuid.UUID
+	e.in(t, func(ctx context.Context) error {
+		leID, typeID = seedLegalEntityAndType(t, ctx, e)
+		return nil
+	})
+
+	channels := []string{"web", "email", "phone", "branch", "letter", "line", "api"}
+	created := map[string]dsarservice.Request{}
+	e.in(t, func(ctx context.Context) error {
+		for i, ch := range channels {
+			r, err := e.svc.CreateRequest(ctx, dsarservice.CreateRequestInput{RequestTypeID: typeID, LegalEntityID: leID,
+				Channel: ch, OnBehalf: ch != "web", RequesterName: "x", RequesterContact: fmt.Sprintf("chan%d@example.com", i), ContactKind: crypto.KindEmail})
+			if err != nil {
+				return fmt.Errorf("channel %s: %w", ch, err)
+			}
+			created[ch] = r
+		}
+		return nil
+	})
+
+	e.in(t, func(ctx context.Context) error {
+		list, _, err := e.svc.ListRequests(ctx, dsarservice.RequestFilter{})
+		if err != nil {
+			return err
+		}
+		seen := map[string]bool{}
+		for _, r := range list {
+			if want, ok := created[r.Channel]; ok && r.ID == want.ID {
+				seen[r.Channel] = true
+				if r.Channel == "web" && r.OnBehalf {
+					t.Errorf("web request unexpectedly recorded as on_behalf")
+				}
+				if r.Channel != "web" && !r.OnBehalf {
+					t.Errorf("channel %s: expected on_behalf, got false", r.Channel)
+				}
+			}
+		}
+		for _, ch := range channels {
+			if !seen[ch] {
+				t.Errorf("channel %s: its request was not found in the same ListRequests queue", ch)
+			}
 		}
 		return nil
 	})
