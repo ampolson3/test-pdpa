@@ -8,6 +8,7 @@ import { formatDate, type Locale } from "@pdpa/i18n";
 import {
   createApiClient,
   useActivities,
+  useAssets,
   useDsarRequests,
   useDsarRequestTypes,
   useDsarRequestMutations,
@@ -312,12 +313,13 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
   const types = useDsarRequestTypes(client);
   const entities = useLegalEntities(client);
   const activities = useActivities(client, {});
+  const assets = useAssets(client, {});
   const m = useDsarRequestMutations(client);
 
-  const [draft, setDraft] = useState<{ request_type_id: string; legal_entity_id: string; channel: DsarRequestChannel | ""; requester_name: string; requester_contact: string; contact_kind: DsarContactKind; on_behalf: boolean } | null>(null);
+  const [draft, setDraft] = useState<{ request_type_id: string; legal_entity_id: string; channel: DsarRequestChannel | ""; requester_name: string; requester_contact: string; contact_kind: DsarContactKind; on_behalf: boolean; data_source: string } | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
   const [assignId, setAssignId] = useState<string | null>(null);
-  const [actionDraft, setActionDraft] = useState<{ to: DsarRequestStatus | ""; outcome: DsarOutcome | ""; rejection_reason_code: string; activity_ids: string[] }>({ to: "", outcome: "", rejection_reason_code: "", activity_ids: [] });
+  const [actionDraft, setActionDraft] = useState<{ to: DsarRequestStatus | ""; outcome: DsarOutcome | ""; rejection_reason_code: string; activity_ids: string[]; asset_ids: string[] }>({ to: "", outcome: "", rejection_reason_code: "", activity_ids: [], asset_ids: [] });
 
   if (!canRead) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
 
@@ -325,7 +327,9 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
   const typeRows = types.data ?? [];
   const entityRows = entities.data ?? [];
   const activityRows = activities.data?.pages.flatMap((p) => p.data) ?? [];
+  const assetRows = assets.data?.pages.flatMap((p) => p.data) ?? [];
   const typeName = (id: string) => typeRows.find((rt) => rt.id === id)?.name_th ?? id;
+  const draftTypeCode = draft ? typeRows.find((rt) => rt.id === draft.request_type_id)?.code : undefined;
 
   const create = () => {
     if (!draft || !draft.request_type_id || !draft.legal_entity_id || !draft.channel || !draft.requester_name || !draft.requester_contact) return;
@@ -333,6 +337,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
       {
         request_type_id: draft.request_type_id, legal_entity_id: draft.legal_entity_id, channel: draft.channel, on_behalf: draft.on_behalf,
         requester_name: draft.requester_name, requester_contact: draft.requester_contact, contact_kind: draft.contact_kind,
+        data_source: draft.data_source || undefined,
       },
       { onSuccess: () => setDraft(null) },
     );
@@ -346,15 +351,21 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
         input: {
           to: actionDraft.to, outcome: actionDraft.outcome || undefined, rejection_reason_code: actionDraft.rejection_reason_code || undefined,
           activity_ids: actionDraft.to === "rejected" ? actionDraft.activity_ids : [],
+          asset_ids: actionDraft.to === "in_progress" ? actionDraft.asset_ids : [],
         },
       },
-      { onSuccess: () => { setActionId(null); setActionDraft({ to: "", outcome: "", rejection_reason_code: "", activity_ids: [] }); } },
+      { onSuccess: () => { setActionId(null); setActionDraft({ to: "", outcome: "", rejection_reason_code: "", activity_ids: [], asset_ids: [] }); } },
     );
   };
 
   const toggleActionActivity = (id: string) => {
     const has = actionDraft.activity_ids.includes(id);
     setActionDraft({ ...actionDraft, activity_ids: has ? actionDraft.activity_ids.filter((x) => x !== id) : [...actionDraft.activity_ids, id] });
+  };
+
+  const toggleActionAsset = (id: string) => {
+    const has = actionDraft.asset_ids.includes(id);
+    setActionDraft({ ...actionDraft, asset_ids: has ? actionDraft.asset_ids.filter((x) => x !== id) : [...actionDraft.asset_ids, id] });
   };
 
   return (
@@ -364,7 +375,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
           <h1 className="text-xl font-semibold">{t("title")}</h1>
           <p className="text-slate-600">{t("intro")}</p>
         </div>
-        {canCreate && <Button onClick={() => setDraft({ request_type_id: "", legal_entity_id: "", channel: "", requester_name: "", requester_contact: "", contact_kind: "email", on_behalf: false })} data-testid="new-request">{t("newRequest")}</Button>}
+        {canCreate && <Button onClick={() => setDraft({ request_type_id: "", legal_entity_id: "", channel: "", requester_name: "", requester_contact: "", contact_kind: "email", on_behalf: false, data_source: "" })} data-testid="new-request">{t("newRequest")}</Button>}
       </header>
 
       {draft && (
@@ -402,6 +413,12 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
               {CONTACT_KINDS.map((k) => <option key={k} value={k}>{t(`contactKinds.${k}`)}</option>)}
             </select>
           </label>
+          {draftTypeCode === "access" && (
+            <label className="sm:col-span-3"><span className="block text-slate-600">{t("form.dataSource")}</span>
+              <p className="mb-1 text-xs text-slate-500">{t("form.dataSourceHint")}</p>
+              <input className={INPUT} value={draft.data_source} maxLength={500} data-testid="data-source-input"
+                onChange={(e) => setDraft({ ...draft, data_source: e.target.value })} /></label>
+          )}
           {m.create.isError && <p className="text-red-700 sm:col-span-3" role="alert">{t("form.saveError", { detail: detail(m.create.error) })}</p>}
           <div className="flex gap-2 sm:col-span-3">
             <Button onClick={create} disabled={m.create.isPending}>{t("form.save")}</Button>
@@ -449,7 +466,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                   <td className="px-3 py-2 space-x-3">
                     {canExecute && NEXT_STEPS[r.status].length > 0 && (
                       <button type="button" className="text-sky-700 underline" data-testid={`action-toggle-${r.id}`}
-                        onClick={() => { setActionId(actionId === r.id ? null : r.id); setActionDraft({ to: "", outcome: "", rejection_reason_code: "", activity_ids: [] }); }}>
+                        onClick={() => { setActionId(actionId === r.id ? null : r.id); setActionDraft({ to: "", outcome: "", rejection_reason_code: "", activity_ids: [], asset_ids: [] }); }}>
                         {actionId === r.id ? t("form.hide") : t("takeAction")}
                       </button>
                     )}
@@ -540,6 +557,20 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                               <label key={a.id} className="flex items-center gap-2">
                                 <input type="checkbox" checked={actionDraft.activity_ids.includes(a.id)} onChange={() => toggleActionActivity(a.id)} />
                                 <span>{a.code} — {a.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {actionDraft.to === "in_progress" && (
+                        <div className="mt-2" data-testid="asset-picker">
+                          <span className="block text-slate-600">{t("form.relatedAssets")}</span>
+                          <p className="mb-1 text-xs text-slate-500">{t("form.relatedAssetsHint")}</p>
+                          <div className="max-h-32 space-y-1 overflow-auto rounded-md border border-slate-200 p-2">
+                            {assetRows.map((a) => (
+                              <label key={a.id} className="flex items-center gap-2">
+                                <input type="checkbox" checked={actionDraft.asset_ids.includes(a.id)} onChange={() => toggleActionAsset(a.id)} />
+                                <span>{a.name}</span>
                               </label>
                             ))}
                           </div>

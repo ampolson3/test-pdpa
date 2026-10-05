@@ -1983,7 +1983,11 @@
       "unassigned": "Unassigned",
       "unassign": "Unassign",
       "onBehalf": "Recorded on the data subject's behalf (staff intake)",
-      "onBehalfBadge": "On behalf"
+      "onBehalfBadge": "On behalf",
+      "dataSource": "Source of the data",
+      "dataSourceHint": "Fill in when the data wasn't collected directly from the subject (ม.30) — shown in the response letter",
+      "relatedAssets": "Related systems (RoPA)",
+      "relatedAssetsHint": "Pick the systems that hold this subject's data, to open one subtask per system automatically"
     },
     "channels": {
       "web": "Web",

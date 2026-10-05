@@ -53,9 +53,11 @@ type Docs interface {
 
 // Ropa is what dsar reads from the RoPA module (rule 9): DSAR-11's FK visibility check (rule 1) for the
 // processing activities a rejection is logged against — the actual write into `ropa.activity_rejections` is
-// ROPA-10's job, done asynchronously off the `dsar.rejected` event this module publishes, not here.
+// ROPA-10's job, done asynchronously off the `dsar.rejected` event this module publishes, not here. GetAsset
+// is DSAR-03's own FK visibility check for the RoPA assets (systems) a per-right subtask is opened against.
 type Ropa interface {
 	GetActivity(ctx context.Context, id uuid.UUID) (ropaservice.Activity, error)
+	GetAsset(ctx context.Context, id uuid.UUID) (ropaservice.Asset, error)
 }
 
 type Service struct {

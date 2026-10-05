@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -45,8 +46,12 @@ type Request struct {
 	Outcome             *string
 	RejectionReasonCode *string
 	AssigneeUserID      *uuid.UUID
-	RowVersion          int32
-	UpdatedAt           time.Time
+	// DataSource is DSAR-03's own ม.30 field: for an access request, where the data was obtained when not
+	// collected directly from the subject — stored in dsar.requests.details (the baseline schema's own
+	// catch-all jsonb column, unused until now) and disclosed in the generated access response letter.
+	DataSource *string
+	RowVersion int32
+	UpdatedAt  time.Time
 }
 
 type CreateRequestInput struct {
@@ -57,6 +62,11 @@ type CreateRequestInput struct {
 	RequesterName    string
 	RequesterContact string
 	ContactKind      crypto.IdentifierKind
+	DataSource       *string
+}
+
+type requestDetails struct {
+	DataSource *string `json:"data_source,omitempty"`
 }
 
 // CreateRequest is the minimal slice of DSAR-01/02's job this feature needs: receive a request and start its
@@ -114,11 +124,15 @@ func (s *Service) CreateRequest(ctx context.Context, in CreateRequestInput) (Req
 		return Request{}, err
 	}
 
+	details, err := json.Marshal(requestDetails{DataSource: in.DataSource})
+	if err != nil {
+		return Request{}, err
+	}
 	receivedAt := s.now()
 	dueAt := receivedAt.AddDate(0, 0, int(rt.SLADays))
 	row, err := q.InsertRequest(ctx, dsarstore.InsertRequestParams{
 		ID: id, RequestNo: fmt.Sprintf("%s%04d", prefix, n+1), RequestTypeID: in.RequestTypeID,
-		LegalEntityID: in.LegalEntityID, Channel: in.Channel, OnBehalf: in.OnBehalf, Details: []byte("{}"),
+		LegalEntityID: in.LegalEntityID, Channel: in.Channel, OnBehalf: in.OnBehalf, Details: details,
 		RequesterNameEnc: nameEnc, RequesterContactEnc: contactEnc, RequesterBlindIndex: blindIndex,
 		ReceivedAt: pgtype.Timestamptz{Time: receivedAt, Valid: true}, DueAt: pgtype.Timestamptz{Time: dueAt, Valid: true},
 	})
@@ -224,6 +238,9 @@ type TransitionInput struct {
 	// the dsar.rejected event for ROPA-10 to record against each one; optional, since not every request maps
 	// to a specific processing activity.
 	ActivityIDs []uuid.UUID
+	// AssetIDs are the RoPA assets (systems) this request's work touches (DSAR-03) — entering in_progress
+	// with one or more opens a per-right subtask (openRightSubtasks) against each.
+	AssetIDs []uuid.UUID
 }
 
 // Transition moves a request along ST-02. Entering awaiting_info, completed or rejected auto-generates the
@@ -240,6 +257,15 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, rowVersion int32
 	allowed, ok := st02Edges[req.Status]
 	if !ok || !slices.Contains(allowed, in.To) {
 		return Request{}, nil, fmt.Errorf("%w: %s -> %s", ErrInvalidTransition, req.Status, in.To)
+	}
+	rt, err := s.GetRequestType(ctx, req.RequestTypeID)
+	if err != nil {
+		return Request{}, nil, err
+	}
+	for _, aid := range in.AssetIDs {
+		if _, err := s.Ropa.GetAsset(ctx, aid); err != nil {
+			return Request{}, nil, fmt.Errorf("%w: asset_ids", ErrInvalid)
+		}
 	}
 	var outcome *string
 	switch in.To {
@@ -288,11 +314,15 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, rowVersion int32
 		return Request{}, nil, err
 	}
 
-	if in.To == "rejected" && s.Events != nil {
-		rt, err := s.GetRequestType(ctx, out.RequestTypeID)
-		if err != nil {
+	// DSAR-03: entering in_progress opens one per-right subtask per linked RoPA asset (ม.30-36/19's own
+	// "ขั้นตอนเฉพาะของแต่ละสิทธิ" — "สร้าง subtask ไปทุกระบบที่มีข้อมูล" generalized across every right type).
+	if in.To == "in_progress" && len(in.AssetIDs) > 0 {
+		if err := s.openRightSubtasks(ctx, out, rt, in.AssetIDs); err != nil {
 			return Request{}, nil, err
 		}
+	}
+
+	if in.To == "rejected" && s.Events != nil {
 		activityRefs := make([]string, len(in.ActivityIDs))
 		for i, aid := range in.ActivityIDs {
 			activityRefs[i] = aid.String()
@@ -300,6 +330,18 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, rowVersion int32
 		if _, err := s.Events.Publish(ctx, events.Event{Type: "dsar.rejected", AggregateType: "dsar_request", AggregateID: out.ID,
 			Data: map[string]any{"request_ref": out.RequestNo, "request_type": rt.Code, "due_at": out.DueAt.Format(time.RFC3339),
 				"status": out.Status, "reason_code": *out.RejectionReasonCode, "activity_refs": activityRefs}}); err != nil {
+			return Request{}, nil, err
+		}
+	}
+
+	// DSAR-03 (ม.32/34 "แจ้งระบบปลายทาง"): dsar.completed was already in the events catalog
+	// (docs/architecture/events.yaml) with "ITSM / CRM (subtask)" as a named consumer, but nothing published
+	// it yet — every completion (every right type, not just objection/restriction) now does, so downstream
+	// systems can flag suppression/stop marketing/whatever their own subscription needs once the DSAR closes.
+	if in.To == "completed" && s.Events != nil {
+		if _, err := s.Events.Publish(ctx, events.Event{Type: "dsar.completed", AggregateType: "dsar_request", AggregateID: out.ID,
+			Data: map[string]any{"request_ref": out.RequestNo, "request_type": rt.Code, "due_at": out.DueAt.Format(time.RFC3339),
+				"status": out.Status}}); err != nil {
 			return Request{}, nil, err
 		}
 	}
@@ -315,10 +357,6 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, rowVersion int32
 	}
 	var docID *uuid.UUID
 	if purpose != "" {
-		rt, err := s.GetRequestType(ctx, out.RequestTypeID)
-		if err != nil {
-			return Request{}, nil, err
-		}
 		id, err := s.generateResponseLetter(ctx, out, rt, purpose)
 		if err != nil {
 			return Request{}, nil, err
@@ -343,6 +381,10 @@ func toRequest(r dsarstore.GetRequestRow) Request {
 	if r.AssigneeUserID.Valid {
 		u := uuid.UUID(r.AssigneeUserID.Bytes)
 		req.AssigneeUserID = &u
+	}
+	var details requestDetails
+	if len(r.Details) > 0 && json.Unmarshal(r.Details, &details) == nil {
+		req.DataSource = details.DataSource
 	}
 	return req
 }

@@ -4439,6 +4439,8 @@ export interface components {
             requester_name: string;
             requester_contact: string;
             contact_kind: components["schemas"]["DsarContactKind"];
+            /** @description DSAR-03, ม.30 — for an access request, where the data was obtained when not collected directly from the data subject. Disclosed verbatim in the generated response letter. */
+            data_source?: string;
         };
         /**
          * @description DSAR-07 — computed live off due_at, never stored — on_track, at_risk (10 days or fewer left) or overdue.
@@ -4465,6 +4467,7 @@ export interface components {
             outcome?: components["schemas"]["DsarOutcome"] | null;
             rejection_reason_code?: string | null;
             assignee_user_id?: components["schemas"]["Uuid"] | null;
+            data_source?: string | null;
             row_version: number;
             /** Format: date-time */
             updated_at: string;
@@ -4482,6 +4485,11 @@ export interface components {
              * @default []
              */
             activity_ids: components["schemas"]["Uuid"][];
+            /**
+             * @description DSAR-03 — entering in_progress with one or more RoPA assets (systems that hold the subject's data) opens one subtask per asset, its action chosen by the request's own right type (ม.30/31/32/33/34/35-36/19 — "สร้าง subtask ไปทุกระบบที่มีข้อมูล")
+             * @default []
+             */
+            asset_ids: components["schemas"]["Uuid"][];
         };
         DsarTransitionResult: {
             request: components["schemas"]["DsarRequest"];
@@ -4533,6 +4541,8 @@ export interface components {
         DsarSubtask: {
             id: components["schemas"]["Uuid"];
             request_id: components["schemas"]["Uuid"];
+            /** @description The RoPA asset (system) this subtask acts on, when auto-opened by DSAR-03's per-right workflow on entering in_progress. */
+            asset_id?: components["schemas"]["Uuid"] | null;
             action: components["schemas"]["DsarSubtaskAction"];
             assignee_user_id?: components["schemas"]["Uuid"] | null;
             assignee_group_id?: components["schemas"]["Uuid"] | null;

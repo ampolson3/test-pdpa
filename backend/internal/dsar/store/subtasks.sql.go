@@ -38,7 +38,7 @@ func (q *Queries) DeleteSubtask(ctx context.Context, id uuid.UUID) (int64, error
 }
 
 const getSubtask = `-- name: GetSubtask :one
-SELECT id, request_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
+SELECT id, request_id, asset_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
     evidence_file_id, created_at, updated_at, row_version
 FROM dsar.subtasks
 WHERE id = $1
@@ -47,6 +47,7 @@ WHERE id = $1
 type GetSubtaskRow struct {
 	ID              uuid.UUID          `db:"id" json:"id"`
 	RequestID       uuid.UUID          `db:"request_id" json:"request_id"`
+	AssetID         pgtype.UUID        `db:"asset_id" json:"asset_id"`
 	Action          string             `db:"action" json:"action"`
 	AssigneeUserID  pgtype.UUID        `db:"assignee_user_id" json:"assignee_user_id"`
 	AssigneeGroupID pgtype.UUID        `db:"assignee_group_id" json:"assignee_group_id"`
@@ -65,6 +66,7 @@ func (q *Queries) GetSubtask(ctx context.Context, id uuid.UUID) (GetSubtaskRow, 
 	err := row.Scan(
 		&i.ID,
 		&i.RequestID,
+		&i.AssetID,
 		&i.Action,
 		&i.AssigneeUserID,
 		&i.AssigneeGroupID,
@@ -81,18 +83,19 @@ func (q *Queries) GetSubtask(ctx context.Context, id uuid.UUID) (GetSubtaskRow, 
 
 const insertSubtask = `-- name: InsertSubtask :one
 
-INSERT INTO dsar.subtasks (id, tenant_id, request_id, action, assignee_user_id, assignee_group_id, due_at,
+INSERT INTO dsar.subtasks (id, tenant_id, request_id, asset_id, action, assignee_user_id, assignee_group_id, due_at,
     created_by, updated_by)
-VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5,
-    $6, NULLIF(current_setting('app.user_id', true), '')::uuid,
+VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6,
+    $7, NULLIF(current_setting('app.user_id', true), '')::uuid,
     NULLIF(current_setting('app.user_id', true), '')::uuid)
-RETURNING id, request_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
+RETURNING id, request_id, asset_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
     evidence_file_id, created_at, updated_at, row_version
 `
 
 type InsertSubtaskParams struct {
 	ID              uuid.UUID          `db:"id" json:"id"`
 	RequestID       uuid.UUID          `db:"request_id" json:"request_id"`
+	AssetID         pgtype.UUID        `db:"asset_id" json:"asset_id"`
 	Action          string             `db:"action" json:"action"`
 	AssigneeUserID  pgtype.UUID        `db:"assignee_user_id" json:"assignee_user_id"`
 	AssigneeGroupID pgtype.UUID        `db:"assignee_group_id" json:"assignee_group_id"`
@@ -102,6 +105,7 @@ type InsertSubtaskParams struct {
 type InsertSubtaskRow struct {
 	ID              uuid.UUID          `db:"id" json:"id"`
 	RequestID       uuid.UUID          `db:"request_id" json:"request_id"`
+	AssetID         pgtype.UUID        `db:"asset_id" json:"asset_id"`
 	Action          string             `db:"action" json:"action"`
 	AssigneeUserID  pgtype.UUID        `db:"assignee_user_id" json:"assignee_user_id"`
 	AssigneeGroupID pgtype.UUID        `db:"assignee_group_id" json:"assignee_group_id"`
@@ -119,6 +123,7 @@ func (q *Queries) InsertSubtask(ctx context.Context, arg InsertSubtaskParams) (I
 	row := q.db.QueryRow(ctx, insertSubtask,
 		arg.ID,
 		arg.RequestID,
+		arg.AssetID,
 		arg.Action,
 		arg.AssigneeUserID,
 		arg.AssigneeGroupID,
@@ -128,6 +133,7 @@ func (q *Queries) InsertSubtask(ctx context.Context, arg InsertSubtaskParams) (I
 	err := row.Scan(
 		&i.ID,
 		&i.RequestID,
+		&i.AssetID,
 		&i.Action,
 		&i.AssigneeUserID,
 		&i.AssigneeGroupID,
@@ -143,7 +149,7 @@ func (q *Queries) InsertSubtask(ctx context.Context, arg InsertSubtaskParams) (I
 }
 
 const listSubtasksForRequest = `-- name: ListSubtasksForRequest :many
-SELECT id, request_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
+SELECT id, request_id, asset_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
     evidence_file_id, created_at, updated_at, row_version
 FROM dsar.subtasks
 WHERE request_id = $1
@@ -153,6 +159,7 @@ ORDER BY created_at
 type ListSubtasksForRequestRow struct {
 	ID              uuid.UUID          `db:"id" json:"id"`
 	RequestID       uuid.UUID          `db:"request_id" json:"request_id"`
+	AssetID         pgtype.UUID        `db:"asset_id" json:"asset_id"`
 	Action          string             `db:"action" json:"action"`
 	AssigneeUserID  pgtype.UUID        `db:"assignee_user_id" json:"assignee_user_id"`
 	AssigneeGroupID pgtype.UUID        `db:"assignee_group_id" json:"assignee_group_id"`
@@ -177,6 +184,7 @@ func (q *Queries) ListSubtasksForRequest(ctx context.Context, requestID uuid.UUI
 		if err := rows.Scan(
 			&i.ID,
 			&i.RequestID,
+			&i.AssetID,
 			&i.Action,
 			&i.AssigneeUserID,
 			&i.AssigneeGroupID,
@@ -204,7 +212,7 @@ SET status = $1, completed_at = CASE WHEN $1::text IN ('done', 'not_applicable')
     evidence_file_id = coalesce($2, evidence_file_id),
     updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
 WHERE id = $3 AND row_version = $4
-RETURNING id, request_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
+RETURNING id, request_id, asset_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
     evidence_file_id, created_at, updated_at, row_version
 `
 
@@ -218,6 +226,7 @@ type UpdateSubtaskStatusParams struct {
 type UpdateSubtaskStatusRow struct {
 	ID              uuid.UUID          `db:"id" json:"id"`
 	RequestID       uuid.UUID          `db:"request_id" json:"request_id"`
+	AssetID         pgtype.UUID        `db:"asset_id" json:"asset_id"`
 	Action          string             `db:"action" json:"action"`
 	AssigneeUserID  pgtype.UUID        `db:"assignee_user_id" json:"assignee_user_id"`
 	AssigneeGroupID pgtype.UUID        `db:"assignee_group_id" json:"assignee_group_id"`
@@ -241,6 +250,7 @@ func (q *Queries) UpdateSubtaskStatus(ctx context.Context, arg UpdateSubtaskStat
 	err := row.Scan(
 		&i.ID,
 		&i.RequestID,
+		&i.AssetID,
 		&i.Action,
 		&i.AssigneeUserID,
 		&i.AssigneeGroupID,

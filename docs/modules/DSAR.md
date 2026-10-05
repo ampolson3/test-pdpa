@@ -216,6 +216,30 @@ confirmed the list shows "โทรศัพท์" with a "ลงแทน" bad
 
 **Acceptance criteria:** ทุกประเภทสิทธิมี workflow และหนังสือตอบของตนเอง
 
+**Implementation:** DSAR-13 already gave all 9 right types a shared ST-02 workflow and their own response
+letter (purpose-keyed body with `{{request_type_name}}` substituted — "ของตนเอง" in the sense that every
+type's own name and number appear in its own generated letter). This feature adds the "ขั้นตอนเฉพาะของแต่ละ
+สิทธิ" half the backend note names: `rightSubtaskAction` (`backend/internal/dsar/service/subtasks.go`) maps
+each right type's code to the DSAR-08 subtask action its per-system work should carry (ม.30 access → search,
+ม.31 portability → export, ม.32 objection → stop_marketing, ม.33 erasure → delete, ม.34 restriction →
+restrict, ม.35-36 rectification → rectify, ม.19 withdraw_consent → restrict, complaint/inquiry → review).
+`Transition`'s `in_progress` edge now takes `asset_ids` (`dsar.subtasks.asset_id` → `ropa.assets`, already in
+the baseline schema but unused until now — "ทุกระบบที่มีข้อมูล (จาก RoPA / data map)" literally, not RoPA
+processing activities) and opens one subtask per asset via `openRightSubtasks` — "คำขอเดินครบทุกขั้นตอน"
+against every system involved, generalizing DSAR-08's own erasure-only example across every right type.
+`access`'s own ม.30 requirement ("ขอสำเนาต้องแจ้งแหล่งที่มา") is a new optional `data_source` field on
+`CreateRequest` (stored in `dsar.requests.details` jsonb, previously unused), appended as its own disclosure
+paragraph on the generated result letter (`letters.go`'s `appendDataSourceParagraph`) only for `access`
+requests that set it. `dsar.completed` — already in `docs/architecture/events.yaml` with "ITSM / CRM
+(subtask)" as a named consumer, but nothing published it — now fires on every completion (ม.32/34's "แจ้ง
+ระบบปลายทาง"/"หยุดทันทีและแจ้งระบบปลายทาง"), so a downstream subscriber can flag suppression/stop marketing
+once the DSAR closes, for whichever right type needs it. API: `data_source` on `DsarRequestInput`/`DsarRequest`,
+`asset_ids` on `DsarTransitionInput`, `asset_id` on `DsarSubtask`. UI: an access-only "แหล่งที่มาของข้อมูล"
+field on the intake form, an asset multi-select on the in_progress action panel (`/requests`). Tests: unit
+(access/erasure open the right action per linked asset, an unknown asset_id refused, dsar.completed published
+on every completion, the access letter discloses a given data_source verbatim — two-tenant isolation via the
+existing harness), HTTP contract (422 for an unknown asset, 200 opening a real subtask, data_source round-trip).
+
 <a id="dsar-04"></a>
 ### DSAR-04 ยื่นคำขอแทนเจ้าของข้อมูล
 

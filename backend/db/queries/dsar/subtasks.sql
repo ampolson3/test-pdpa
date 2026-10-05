@@ -1,22 +1,22 @@
 -- DSAR-08 workflow & subtasks (dsar.subtasks — already fully specified in the baseline migrations).
 
 -- name: InsertSubtask :one
-INSERT INTO dsar.subtasks (id, tenant_id, request_id, action, assignee_user_id, assignee_group_id, due_at,
+INSERT INTO dsar.subtasks (id, tenant_id, request_id, asset_id, action, assignee_user_id, assignee_group_id, due_at,
     created_by, updated_by)
-VALUES (@id, current_setting('app.tenant_id')::uuid, @request_id, @action, @assignee_user_id, @assignee_group_id,
+VALUES (@id, current_setting('app.tenant_id')::uuid, @request_id, @asset_id, @action, @assignee_user_id, @assignee_group_id,
     @due_at, NULLIF(current_setting('app.user_id', true), '')::uuid,
     NULLIF(current_setting('app.user_id', true), '')::uuid)
-RETURNING id, request_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
+RETURNING id, request_id, asset_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
     evidence_file_id, created_at, updated_at, row_version;
 
 -- name: GetSubtask :one
-SELECT id, request_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
+SELECT id, request_id, asset_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
     evidence_file_id, created_at, updated_at, row_version
 FROM dsar.subtasks
 WHERE id = $1;
 
 -- name: ListSubtasksForRequest :many
-SELECT id, request_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
+SELECT id, request_id, asset_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
     evidence_file_id, created_at, updated_at, row_version
 FROM dsar.subtasks
 WHERE request_id = $1
@@ -33,7 +33,7 @@ SET status = @status, completed_at = CASE WHEN @status::text IN ('done', 'not_ap
     evidence_file_id = coalesce(sqlc.narg(evidence_file_id), evidence_file_id),
     updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
 WHERE id = @id AND row_version = @row_version
-RETURNING id, request_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
+RETURNING id, request_id, asset_id, action, assignee_user_id, assignee_group_id, status, due_at, completed_at,
     evidence_file_id, created_at, updated_at, row_version;
 
 -- name: DeleteSubtask :execrows

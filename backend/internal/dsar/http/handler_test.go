@@ -27,6 +27,7 @@ import (
 	"pdpa-platform/internal/pkg/validate"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/crypto"
+	ropaservice "pdpa-platform/internal/ropa/service"
 	"pdpa-platform/internal/wiring"
 )
 
@@ -65,7 +66,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 			for _, q := range []string{
 				`DELETE FROM dsar.verifications`, `DELETE FROM iam.subject_verifications`, `DELETE FROM dsar.subtasks`,
 				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
-				`DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
+				`DELETE FROM ropa.assets`, `DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
 				`DELETE FROM iam.users WHERE email = 'dsarhttp-assignee@dbtest.example'`,
 			} {
 				_, _ = tx.Exec(ctx, q)
@@ -74,11 +75,12 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 		})
 	})
 	orgSvc := &orgservice.Service{Audit: audit.New()}
+	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc}
 	versioningSvc := wiring.Versioning(nil, audit.New())
 	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
 	docsSvc.RegisterVersioning()
 	keyring := &crypto.Keyring{KEK: crypto.NewLocalKEK()}
-	svc := &dsarservice.Service{Audit: audit.New(), Org: orgSvc, Docs: docsSvc, Keyring: keyring}
+	svc := &dsarservice.Service{Audit: audit.New(), Org: orgSvc, Docs: docsSvc, Ropa: ropaSvc, Keyring: keyring}
 	notifier := &fakeNotifier{}
 	svc.Verification = wiring.IamVerification(keyring, nil, nil)
 	svc.Verification.Notify = notifier
@@ -89,14 +91,25 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 		legalEntity = e.ID
 		return err
 	})
-	var requestTypeID uuid.UUID
+	var requestTypeID, accessTypeID uuid.UUID
 	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
 		types, err := svc.ListRequestTypes(ctx)
 		if err != nil || len(types) == 0 {
 			t.Fatal(err, "expected seeded request types")
 		}
 		requestTypeID = types[0].ID
+		for _, rt := range types {
+			if rt.Code == "access" {
+				accessTypeID = rt.ID
+			}
+		}
 		return nil
+	})
+	var assetID uuid.UUID
+	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		a, err := ropaSvc.SaveAsset(ctx, ropaservice.Asset{Name: "ระบบ CRM", AssetType: "application", Status: "active"}, 0)
+		assetID = a.ID
+		return err
 	})
 	var assignee uuid.UUID
 	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
@@ -385,6 +398,38 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("DELETE", del, &admin, nil); code != 404 {
 		t.Errorf("delete subtask again: %d, want 404", code)
+	}
+
+	// DSAR-03: an access request's data_source round-trips, and entering in_progress with asset_ids opens a
+	// "search" subtask per asset (ม.30's own "ขอสำเนาต้องแจ้งแหล่งที่มา" step).
+	createAccess := map[string]any{"request_type_id": accessTypeID, "legal_entity_id": legalEntity, "channel": "web",
+		"requester_name": "สมหญิง ใจดี", "requester_contact": "somying@example.com", "contact_kind": "email",
+		"data_source": "ได้รับจากบริษัทพันธมิตร ABC จำกัด"}
+	code, body = do("POST", "/admin/v1/dsar/requests", &admin, createAccess)
+	if code != 201 || !strings.Contains(body, `"data_source":"ได้รับจากบริษัทพันธมิตร ABC จำกัด"`) {
+		t.Fatalf("create access request with data_source: %d %s", code, body)
+	}
+	var created3 dsarhttp.DsarRequest
+	_ = json.Unmarshal([]byte(body), &created3)
+	item3 := "/admin/v1/dsar/requests/" + created3.Id.String()
+	transition3 := item3 + "/transition"
+	if code, body := do("GET", item3, &viewer, nil); code != 200 || !strings.Contains(body, `"data_source"`) {
+		t.Errorf("get access request: %d %s, want data_source", code, body)
+	}
+	if code, _ := do("POST", transition3, &admin, map[string]any{"to": "verifying"}, map[string]string{"If-Match": etagOf(int(created3.RowVersion))}); code != 200 {
+		t.Errorf("transition3 to verifying: %d", code)
+	}
+	if code, _ := do("POST", transition3, &admin, map[string]any{"to": "in_review"}, map[string]string{"If-Match": etagOf(int(created3.RowVersion) + 1)}); code != 200 {
+		t.Errorf("transition3 to in_review: %d", code)
+	}
+	if code, body := do("POST", transition3, &admin, map[string]any{"to": "in_progress", "asset_ids": []uuid.UUID{uuid.New()}}, map[string]string{"If-Match": etagOf(int(created3.RowVersion) + 2)}); code != 422 || !strings.Contains(body, "dsar.invalid_input") {
+		t.Errorf("transition3 in_progress, unknown asset: %d %s, want 422", code, body)
+	}
+	if code, body := do("POST", transition3, &admin, map[string]any{"to": "in_progress", "asset_ids": []uuid.UUID{assetID}}, map[string]string{"If-Match": etagOf(int(created3.RowVersion) + 2)}); code != 200 || !strings.Contains(body, `"status":"in_progress"`) {
+		t.Errorf("transition3 in_progress: %d %s", code, body)
+	}
+	if code, body := do("GET", item3+"/subtasks", &viewer, nil); code != 200 || !strings.Contains(body, `"action":"search"`) || !strings.Contains(body, assetID.String()) {
+		t.Errorf("subtasks after in_progress: %d %s, want one search subtask against the asset", code, body)
 	}
 }
 

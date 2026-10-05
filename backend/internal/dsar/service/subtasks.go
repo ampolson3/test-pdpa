@@ -40,6 +40,7 @@ var subtaskEdges = map[string][]string{
 type Subtask struct {
 	ID              uuid.UUID
 	RequestID       uuid.UUID
+	AssetID         *uuid.UUID
 	Action          string
 	AssigneeUserID  *uuid.UUID
 	AssigneeGroupID *uuid.UUID
@@ -53,6 +54,7 @@ type Subtask struct {
 }
 
 type CreateSubtaskInput struct {
+	AssetID         *uuid.UUID
 	Action          string
 	AssigneeUserID  *uuid.UUID
 	AssigneeGroupID *uuid.UUID
@@ -71,6 +73,11 @@ func (s *Service) CreateSubtask(ctx context.Context, requestID uuid.UUID, in Cre
 	}
 	if isClosed(req.Status) {
 		return Subtask{}, fmt.Errorf("%w: request is closed", ErrInvalid)
+	}
+	if in.AssetID != nil {
+		if _, err := s.Ropa.GetAsset(ctx, *in.AssetID); err != nil {
+			return Subtask{}, fmt.Errorf("%w: asset_id", ErrInvalid)
+		}
 	}
 	if in.AssigneeUserID != nil {
 		names, err := iamservice.Names(ctx, []uuid.UUID{*in.AssigneeUserID})
@@ -96,7 +103,7 @@ func (s *Service) CreateSubtask(ctx context.Context, requestID uuid.UUID, in Cre
 		return Subtask{}, err
 	}
 	row, err := dsarstore.New(pdb.MustTxFromContext(ctx)).InsertSubtask(ctx, dsarstore.InsertSubtaskParams{
-		ID: id, RequestID: requestID, Action: in.Action,
+		ID: id, RequestID: requestID, AssetID: pgUUID(in.AssetID), Action: in.Action,
 		AssigneeUserID: pgUUID(in.AssigneeUserID), AssigneeGroupID: pgUUID(in.AssigneeGroupID), DueAt: pgTimestamptz(in.DueAt),
 	})
 	if err != nil {
@@ -237,6 +244,41 @@ func (s *Service) DeleteSubtask(ctx context.Context, requestID, subtaskID uuid.U
 	return s.audit(ctx, "dsar.subtask.delete", requestID, map[string]any{"subtask_id": st.ID, "action": st.Action}, nil)
 }
 
+// rightSubtaskAction is DSAR-03's own mapping from a request's right type (ม.19, 30-36) to the subtask action
+// its per-system work item should carry — "ขั้นตอนเฉพาะของแต่ละสิทธิ" generalized across every type via the
+// subtask action vocabulary DSAR-08 already seeded (search/export/delete/rectify/restrict/stop_marketing/
+// review), rather than the single erasure-only example the module doc's own backend note gives.
+var rightSubtaskAction = map[string]string{
+	"access":           "search",         // ม.30 — locate the subject's data in each system before disclosure
+	"portability":      "export",         // ม.31 — machine-readable package
+	"objection":        "stop_marketing", // ม.32 — stop processing (direct marketing) immediately
+	"erasure":          "delete",         // ม.33 — delete / destroy / de-identify
+	"restriction":      "restrict",       // ม.34 — flag restricted
+	"rectification":    "rectify",        // ม.35-36 — correct the record
+	"withdraw_consent": "restrict",       // ม.19 — stop processing under the withdrawn consent basis
+	"complaint":        "review",
+	"inquiry":          "review",
+}
+
+// openRightSubtasks is DSAR-03's own acceptance criterion in code: entering in_progress with one or more
+// linked RoPA assets (the systems that actually hold the subject's data, per the RoPA/data map — ropa.assets,
+// not ropa.processing_activities) opens one subtask per asset, so the request "เดินครบทุกขั้นตอน" against
+// every system involved, not just a single generic task. An unmapped right type (future CHECK-constraint
+// addition) falls back to "review" rather than failing the transition outright.
+func (s *Service) openRightSubtasks(ctx context.Context, req Request, rt RequestType, assetIDs []uuid.UUID) error {
+	action, ok := rightSubtaskAction[rt.Code]
+	if !ok {
+		action = "review"
+	}
+	for _, aid := range assetIDs {
+		assetID := aid
+		if _, err := s.CreateSubtask(ctx, req.ID, CreateSubtaskInput{AssetID: &assetID, Action: action, DueAt: &req.DueAt}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // allSubtasksDone is DSAR-08's own close guard on Transition's in_progress → completed edge: a request with
 // zero subtasks is vacuously "all done" (not every request needs subtasks — DSAR-13's own completed tests
 // never created any), one with any subtask still open or in_progress is not.
@@ -251,6 +293,10 @@ func (s *Service) allSubtasksDone(ctx context.Context, requestID uuid.UUID) (boo
 func toSubtask(r dsarstore.GetSubtaskRow) Subtask {
 	st := Subtask{ID: r.ID, RequestID: r.RequestID, Action: r.Action, Status: r.Status,
 		CreatedAt: r.CreatedAt.Time, UpdatedAt: r.UpdatedAt.Time, RowVersion: r.RowVersion}
+	if r.AssetID.Valid {
+		u := uuid.UUID(r.AssetID.Bytes)
+		st.AssetID = &u
+	}
 	if r.AssigneeUserID.Valid {
 		u := uuid.UUID(r.AssigneeUserID.Bytes)
 		st.AssigneeUserID = &u

@@ -53,7 +53,7 @@ func (h *Strict) DsarDeleteSubtask(ctx context.Context, req DsarDeleteSubtaskReq
 }
 
 func toSubtaskWire(st dsarservice.Subtask) DsarSubtask {
-	w := DsarSubtask{Id: st.ID, RequestId: st.RequestID, Action: DsarSubtaskAction(st.Action), Status: DsarSubtaskStatus(st.Status),
+	w := DsarSubtask{Id: st.ID, RequestId: st.RequestID, AssetId: st.AssetID, Action: DsarSubtaskAction(st.Action), Status: DsarSubtaskStatus(st.Status),
 		AssigneeUserId: st.AssigneeUserID, AssigneeGroupId: st.AssigneeGroupID, EvidenceFileId: st.EvidenceFileID,
 		RowVersion: int(st.RowVersion), CreatedAt: st.CreatedAt.UTC(), UpdatedAt: st.UpdatedAt.UTC()}
 	if st.DueAt != nil {

@@ -51,6 +51,13 @@ func (s *Service) generateResponseLetter(ctx context.Context, req Request, rt Re
 	if n, ok := tpl["en"]; ok {
 		content["en"] = substitute(n, varsEn)
 	}
+	// DSAR-03, ม.30: an access request's result letter discloses the data source when it wasn't collected
+	// directly from the subject — appended as its own paragraph rather than a template placeholder, since the
+	// 3 shared purpose templates (migration 00043) are reused by every right type and only access ever has
+	// this field.
+	if purpose == "result" && rt.Code == "access" && req.DataSource != nil && strings.TrimSpace(*req.DataSource) != "" {
+		content = appendDataSourceParagraph(content, *req.DataSource)
+	}
 
 	title := fmt.Sprintf("หนังสือตอบกลับคำขอ %s — %s", req.RequestNo, purposeTitleTh[purpose])
 	doc, err := s.Docs.Create(ctx, docsservice.CreateInput{DocType: "dsar_letter", Title: title, LegalEntityID: &req.LegalEntityID})
@@ -64,6 +71,22 @@ func (s *Service) generateResponseLetter(ctx context.Context, req Request, rt Re
 		return uuid.Nil, err
 	}
 	return doc.ID, nil
+}
+
+// appendDataSourceParagraph adds the ม.30 source-disclosure line to both languages of an access letter.
+func appendDataSourceParagraph(content render.Content, source string) render.Content {
+	para := func(prefix, text string) render.Node {
+		return render.Node{Type: "paragraph", Content: []render.Node{{Type: "text", Text: prefix + text}}}
+	}
+	if n, ok := content["th"]; ok {
+		n.Content = append(n.Content, para("แหล่งที่มาของข้อมูล: ", source))
+		content["th"] = n
+	}
+	if n, ok := content["en"]; ok {
+		n.Content = append(n.Content, para("Source of data: ", source))
+		content["en"] = n
+	}
+	return content
 }
 
 func (s *Service) decryptRequesterName(ctx context.Context, req Request) (string, error) {

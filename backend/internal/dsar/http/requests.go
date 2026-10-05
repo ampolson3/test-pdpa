@@ -77,6 +77,7 @@ func (h *Strict) DsarCreateRequest(ctx context.Context, req DsarCreateRequestReq
 	in := dsarservice.CreateRequestInput{
 		RequestTypeID: b.RequestTypeId, LegalEntityID: b.LegalEntityId, Channel: string(b.Channel),
 		RequesterName: b.RequesterName, RequesterContact: b.RequesterContact, ContactKind: crypto.IdentifierKind(b.ContactKind),
+		DataSource: b.DataSource,
 	}
 	if b.OnBehalf != nil {
 		in.OnBehalf = *b.OnBehalf
@@ -110,6 +111,9 @@ func (h *Strict) DsarTransitionRequest(ctx context.Context, req DsarTransitionRe
 	in.RejectionReasonCode = b.RejectionReasonCode
 	if b.ActivityIds != nil {
 		in.ActivityIDs = *b.ActivityIds
+	}
+	if b.AssetIds != nil {
+		in.AssetIDs = *b.AssetIds
 	}
 	r, docID, err := h.svc.Transition(ctx, req.Id, v, in)
 	if err != nil {
@@ -150,7 +154,7 @@ func toRequestWire(r dsarservice.Request) DsarRequest {
 	w := DsarRequest{Id: r.ID, RequestNo: r.RequestNo, RequestTypeId: r.RequestTypeID, LegalEntityId: r.LegalEntityID,
 		Channel: DsarRequestChannel(r.Channel), OnBehalf: r.OnBehalf, Status: DsarRequestStatus(r.Status),
 		ReceivedAt: r.ReceivedAt.UTC(), DueAt: r.DueAt.UTC(), SlaStatus: DsarSlaStatus(dsarservice.SLAStatus(time.Now().UTC(), r.DueAt)),
-		RejectionReasonCode: r.RejectionReasonCode, RowVersion: int(r.RowVersion), UpdatedAt: r.UpdatedAt.UTC()}
+		RejectionReasonCode: r.RejectionReasonCode, DataSource: r.DataSource, RowVersion: int(r.RowVersion), UpdatedAt: r.UpdatedAt.UTC()}
 	if r.Outcome != nil {
 		o := DsarOutcome(*r.Outcome)
 		w.Outcome = &o

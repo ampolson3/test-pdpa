@@ -11746,6 +11746,10 @@ components:
         requester_name: {type: string, minLength: 1, maxLength: 300}
         requester_contact: {type: string, minLength: 1, maxLength: 300}
         contact_kind: {$ref: '#/components/schemas/DsarContactKind'}
+        data_source:
+          description: DSAR-03, ม.30 — for an access request, where the data was obtained when not collected directly from the data subject. Disclosed verbatim in the generated response letter.
+          type: string
+          maxLength: 500
     DsarSlaStatus:
       type: string
       description: DSAR-07 — computed live off due_at, never stored — on_track, at_risk (10 days or fewer left) or overdue.
@@ -11775,6 +11779,7 @@ components:
           oneOf:
             - $ref: '#/components/schemas/Uuid'
             - type: 'null'
+        data_source: {type: [string, 'null']}
         row_version: {type: integer}
         updated_at: {type: string, format: date-time}
     DsarAssignInput:
@@ -11795,6 +11800,12 @@ components:
         activity_ids:
           type: array
           description: RoPA processing activities this rejection concerns (DSAR-11, ม.39(7)) — logged against each one (ROPA-10) once the rejection is confirmed
+          items:
+            $ref: '#/components/schemas/Uuid'
+          default: []
+        asset_ids:
+          type: array
+          description: DSAR-03 — entering in_progress with one or more RoPA assets (systems that hold the subject's data) opens one subtask per asset, its action chosen by the request's own right type (ม.30/31/32/33/34/35-36/19 — "สร้าง subtask ไปทุกระบบที่มีข้อมูล")
           items:
             $ref: '#/components/schemas/Uuid'
           default: []
@@ -11878,6 +11889,9 @@ components:
       properties:
         id: {$ref: '#/components/schemas/Uuid'}
         request_id: {$ref: '#/components/schemas/Uuid'}
+        asset_id:
+          description: The RoPA asset (system) this subtask acts on, when auto-opened by DSAR-03's per-right workflow on entering in_progress.
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
         action: {$ref: '#/components/schemas/DsarSubtaskAction'}
         assignee_user_id:
           oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
