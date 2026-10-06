@@ -54,7 +54,7 @@ pdpa-platform/
 | DPO | งานของ DPO (DPO Module) | `backend/internal/dpo` | dpo | `/admin/v1/dpo` | admin: /dpo/*, /dashboard |
 | DPIA | แบบประเมินผลกระทบ (DPIA) | `backend/internal/assess` | assess | `/admin/v1/assessments` | admin: /assessments/*; portal: /guest/assessment/[token] |
 | RRA | ประเมินความเสี่ยงกิจกรรม (ROPA Risk Assessment) | `backend/internal/risk` | risk | `/admin/v1/risk` | admin: /risk/* |
-| VEN | ประเมินคู่ค้า (Vendor Assessment) | `backend/internal/vendor` | vendor | `/admin/v1/vendors` | admin: /vendors/*; portal: /guest/vendor/[token] |
+| VEN | ประเมินคู่ค้า (Vendor Assessment) | `backend/internal/vendormgmt` (ไม่ใช่ `vendor` — ชื่อไดเรกทอรี "vendor" ชนกับการจัดการ vendor directory ของ Go toolchain เอง, VEN-01) | vendor | `/admin/v1/vendors` | admin: /vendors/*; portal: /guest/vendor/[token] |
 | DPA | ข้อตกลงการประมวลผลข้อมูล (DPA) | `backend/internal/agreement` | agreement | `/admin/v1/agreements` | admin: /agreements/dpa/* |
 | DSA | ข้อตกลงการแบ่งปันข้อมูล (DSA) | `backend/internal/agreement` | agreement | `/admin/v1/agreements` | admin: /agreements/dsa/* |
 | DPX | DPO ส่วนต่อขยาย (DPO Extension) | `backend/internal/gov` | gov | `/admin/v1/governance` | admin: /governance/*; portal: /learn |

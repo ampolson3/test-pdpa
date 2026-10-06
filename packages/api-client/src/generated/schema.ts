@@ -3319,6 +3319,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/vendors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's vendor / processor registry (VEN-01) */
+        get: operations["vendorListVendors"];
+        put?: never;
+        /** Register a vendor/processor against an existing external party (ORG-06) — always starts prospect (ST-06) */
+        post: operations["vendorCreateVendor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/vendors/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One vendor's full profile — the acceptance criterion's single page (VEN-01) */
+        get: operations["vendorGetVendor"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change a vendor's profile — never its status/tier (ST-06's own transitions, owned by sibling features) */
+        patch: operations["vendorUpdateVendor"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3965,6 +4001,59 @@ export interface components {
             classification?: components["schemas"]["AssetClassification"];
             /** @enum {string} */
             status: "active" | "retired";
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * @description ST-06. VEN-01 only ever creates prospect — every other transition belongs to a sibling feature (VEN-02/05/07/08/09/14) not built yet.
+         * @enum {string}
+         */
+        VendorStatus: "prospect" | "onboarding" | "approved" | "conditional" | "rejected" | "offboarding" | "terminated";
+        /** @enum {string} */
+        VendorTier: "low" | "medium" | "high" | "critical";
+        /**
+         * @example {
+         *       "party_id": "00000000-0000-0000-0000-000000000000",
+         *       "service_description": "ระบบประมวลผลเงินเดือนบนคลาวด์",
+         *       "is_processor": true,
+         *       "processing_countries": [
+         *         "TH"
+         *       ]
+         *     }
+         */
+        VendorInput: {
+            /** @description The external party (ORG-06) this vendor extends — one vendor row per party */
+            party_id: components["schemas"]["Uuid"];
+            service_description: string;
+            /** @description The internal staff member who owns this relationship */
+            relationship_owner_id?: components["schemas"]["Uuid"];
+            /** @default true */
+            is_processor: boolean;
+            /** @description Free-form notes on what data this vendor can access — no fixed shape yet (ม.40) */
+            data_access?: {
+                [key: string]: unknown;
+            };
+            /** @default [] */
+            processing_countries: string[];
+        };
+        Vendor: {
+            id: components["schemas"]["Uuid"];
+            party_id: components["schemas"]["Uuid"];
+            service_description: string;
+            relationship_owner_id?: components["schemas"]["Uuid"] | null;
+            is_processor: boolean;
+            tier?: components["schemas"]["VendorTier"] | null;
+            data_access: {
+                [key: string]: unknown;
+            };
+            processing_countries: string[];
+            status: components["schemas"]["VendorStatus"];
+            /** Format: date */
+            next_assessment_at?: string | null;
+            /** Format: date-time */
+            approved_at?: string | null;
+            /** Format: date-time */
+            offboarded_at?: string | null;
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
         };
@@ -13955,6 +14044,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IndirectCollection"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    vendorListVendors: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["VendorStatus"];
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Vendor"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    vendorCreateVendor: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vendor"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    vendorGetVendor: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vendor"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    vendorUpdateVendor: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vendor"];
                 };
             };
             400: components["responses"]["BadRequest"];

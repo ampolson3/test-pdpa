@@ -804,6 +804,55 @@
       "saveError": "Couldn't save: {detail}"
     }
   },
+  "vendors": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view the vendor registry.",
+    "title": "Vendor & processor registry",
+    "intro": "Vendors and processors of personal data (ม.40) — extends the external party directory (ORG-06)",
+    "newVendor": "Add vendor",
+    "filterStatus": "Status",
+    "allStatuses": "All statuses",
+    "loading": "Loading…",
+    "loadError": "Couldn't load. Please try again.",
+    "empty": "No vendors registered yet.",
+    "more": "Load more",
+    "open": "Open",
+    "backToList": "← Back to vendor registry",
+    "statuses": {
+      "prospect": "Prospect",
+      "onboarding": "Onboarding",
+      "approved": "Approved",
+      "conditional": "Conditional",
+      "rejected": "Rejected",
+      "offboarding": "Offboarding",
+      "terminated": "Terminated"
+    },
+    "tiers": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "form": {
+      "details": "Vendor details",
+      "party": "External party (ORG-06)",
+      "none": "None",
+      "serviceDescription": "Service provided",
+      "edit": "Edit",
+      "relationshipOwner": "Internal relationship owner",
+      "ownerSearch": "Search for a name",
+      "isProcessor": "Processes personal data",
+      "processingCountries": "Countries where data is processed (2-letter codes, comma-separated)",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Saved.",
+      "saveError": "Couldn't save: {detail}",
+      "status": "Status",
+      "tier": "Risk tier",
+      "tierNotSet": "Not tiered yet",
+      "nextAssessmentAt": "Next assessment"
+    }
+  },
   "dataInventory": {
     "signInRequired": "Please sign in.",
     "forbidden": "You don't have permission to view the personal data inventory.",

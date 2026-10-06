@@ -1701,6 +1701,47 @@ against, the same reasoning PLT-02 already used to defer DB-per-tenant deploymen
 Q-02 (cloud provider / region) is still an open DevOps decision, not something this backend-only pass can
 resolve by itself.
 
+### VEN-01 ทะเบียนคู่ค้าและผู้ประมวลผล (`docs/modules/VEN.md#ven-01`) — done
+The first feature on the `vendor` schema (`internal/vendormgmt` — see below). `vendor.vendors` and its six
+sibling tables, plus `vendor.vendor.{read,create,update,delete,approve}` with role grants (PROC, OWNER, DPO,
+AUDIT, IT, LEGAL, SEC, PRIVACY), were all already fully specified in the baseline migrations (00014, 00019) —
+no new migration. `internal/vendormgmt/service`'s `SaveVendor` is plain CRUD: `party_id` checked visible under
+RLS via `orgservice.GetExternalParty` (reused from ORG-06, rule 1), `relationship_owner_id` via
+`iamservice.Names` (the same cross-module FK-visibility pattern ROPA-02/DPO-01 already use). Deliberately
+scoped to only the `[*] → prospect` edge of `docs/states/ST-06.md`'s full 7-state machine (prospect →
+onboarding → approved/conditional/rejected → offboarding → terminated): `status`/`tier`/`next_assessment_at`/
+`approved_at`/`offboarded_at` are never written here — every other transition belongs to sibling features not
+yet built (VEN-02/05/07/08/09/14), the same "build only the minimal slice this feature needs" pattern used
+throughout this codebase (e.g. ROPA-01 deferring `discovered_by_finding_id`). `uq_vendors_party_id` (one
+vendor per external party) is a real unique constraint, so the insert/update is wrapped in `pdb.Savepoint`
+(the established pattern from `org.SaveLegalEntity`/ROPA-03) so a duplicate-party attempt doesn't abort the
+whole request transaction.
+
+**Real Go toolchain bug found and fixed while building this**: a package directory literally named `vendor`
+anywhere under a Go module — not just at the module root — triggers Go's vendoring-directory import-rewriting
+rules, breaking normal `import` resolution with an error like "`pdpa-platform/internal/vendor/store` must be
+imported as `store`". This is a Go toolchain quirk entirely unrelated to this project's own `vendor` business
+domain. Fixed by renaming the whole package tree from `internal/vendor` to `internal/vendormgmt` (sqlc.yaml,
+Makefile, every Go import, `cmd/api/main.go`) while keeping the PostgreSQL schema name (`vendor`), permission
+codes (`vendor.*`) and the API prefix (`/admin/v1/vendors`) unchanged — documented in
+`docs/architecture/code-structure.md`, `docs/modules/VEN.md` and `docs/data/vendor.md` so a future pass doesn't
+"helpfully" rename the Go package back to `internal/vendor` and reintroduce the bug.
+
+The acceptance criterion ("คู่ค้าหนึ่งรายมีหน้าเดียวที่รวมข้อมูลทุกโมดูล" — one vendor has a single page
+aggregating data from every module) is read as what it can literally be today: a foundation detail page every
+later VEN/DPA/DSA sibling feature will add its own section to, not a claim that those other modules' vendor
+data already exists to aggregate — the same forward-looking interpretation this codebase already used for
+DPO-05's cross-module dashboard and RTG-01's seeded template content.
+
+API: `GET`/`POST /admin/v1/vendors` (cursor pagination, status filter), `GET`/`PATCH /admin/v1/vendors/{id}`
+(ETag/If-Match). UI: `/vendors` (list + create form, an owner picker reusing PLT-07's own `useMentionSearch`)
+and `/vendors/{id}` (detail + inline edit). Tests: unit (validation, both FK-visibility checks, update, the
+unique-constraint savepoint doesn't poison the transaction, two-tenant isolation), HTTP contract
+(401/403/400 schema/404/412/428/200/201). Not verified live in a browser: the dev-login flow didn't establish a
+session cookie through Playwright in this environment — the same pre-existing gap ROPA-02/DPO-01 already
+noted, not a regression from this feature. Not done: every ST-06 transition past creation, and the DPA/DSA/
+assessment sections the detail page's acceptance criterion anticipates — all sibling features, not yet built.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

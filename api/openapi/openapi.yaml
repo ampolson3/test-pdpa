@@ -9944,6 +9944,166 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/vendors:
+    get:
+      operationId: vendorListVendors
+      tags: [vendor]
+      summary: The tenant's vendor / processor registry (VEN-01)
+      x-permission: vendor.vendor.read
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/VendorStatus'
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Vendor'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: vendorCreateVendor
+      tags: [vendor]
+      summary: Register a vendor/processor against an existing external party (ORG-06) — always starts prospect (ST-06)
+      x-permission: vendor.vendor.create
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/vendors/{id}:
+    get:
+      operationId: vendorGetVendor
+      tags: [vendor]
+      summary: One vendor's full profile — the acceptance criterion's single page (VEN-01)
+      x-permission: vendor.vendor.read
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: vendorUpdateVendor
+      tags: [vendor]
+      summary: Change a vendor's profile — never its status/tier (ST-06's own transitions, owned by sibling features)
+      x-permission: vendor.vendor.update
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
 components:
   securitySchemes:
     adminJwt:
@@ -11143,6 +11303,58 @@ components:
         hosting_type: {$ref: '#/components/schemas/AssetHostingType'}
         classification: {$ref: '#/components/schemas/AssetClassification'}
         status: {type: string, enum: [active, retired]}
+        row_version: {type: integer}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
+    VendorStatus:
+      type: string
+      description: ST-06. VEN-01 only ever creates prospect — every other transition belongs to a sibling feature (VEN-02/05/07/08/09/14) not built yet.
+      enum: [prospect, onboarding, approved, conditional, rejected, offboarding, terminated]
+    VendorTier:
+      type: string
+      enum: [low, medium, high, critical]
+    VendorInput:
+      type: object
+      required: [party_id, service_description]
+      properties:
+        party_id: {$ref: '#/components/schemas/Uuid', description: The external party (ORG-06) this vendor extends — one vendor row per party}
+        service_description: {type: string, minLength: 1, maxLength: 2000}
+        relationship_owner_id: {$ref: '#/components/schemas/Uuid', description: The internal staff member who owns this relationship}
+        is_processor: {type: boolean, default: true}
+        data_access:
+          description: Free-form notes on what data this vendor can access — no fixed shape yet (ม.40)
+          type: object
+          additionalProperties: true
+        processing_countries:
+          type: array
+          items: {type: string, minLength: 2, maxLength: 2, description: ISO 3166-1 alpha-2}
+          default: []
+      example:
+        party_id: 00000000-0000-0000-0000-000000000000
+        service_description: ระบบประมวลผลเงินเดือนบนคลาวด์
+        is_processor: true
+        processing_countries: [TH]
+    Vendor:
+      type: object
+      required: [id, party_id, service_description, is_processor, status, data_access, processing_countries, row_version, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        party_id: {$ref: '#/components/schemas/Uuid'}
+        service_description: {type: string}
+        relationship_owner_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        is_processor: {type: boolean}
+        tier:
+          oneOf: [{$ref: '#/components/schemas/VendorTier'}, {type: 'null'}]
+        data_access:
+          type: object
+          additionalProperties: true
+        processing_countries:
+          type: array
+          items: {type: string}
+        status: {$ref: '#/components/schemas/VendorStatus'}
+        next_assessment_at: {type: [string, 'null'], format: date}
+        approved_at: {type: [string, 'null'], format: date-time}
+        offboarded_at: {type: [string, 'null'], format: date-time}
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
     DataInventorySource:

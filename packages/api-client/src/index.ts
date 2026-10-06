@@ -51,6 +51,15 @@ export {
 } from "./parties";
 export { useAssets, useSaveAsset, type Asset, type AssetInput, type AssetType } from "./assets";
 export {
+  useVendors,
+  useVendor,
+  useSaveVendor,
+  type Vendor,
+  type VendorInput,
+  type VendorStatus,
+  type VendorTier,
+} from "./vendors";
+export {
   useDataInventory,
   useSaveDataInventoryItem,
   type DataInventoryItem,

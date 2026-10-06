@@ -7,7 +7,7 @@
 
 | หัวข้อ | รายละเอียด |
 |---|---|
-| Go package | `backend/internal/vendor` |
+| Go package | `backend/internal/vendormgmt` — **not** `backend/internal/vendor` as originally planned: a directory literally named `vendor` anywhere under the module triggers Go's own vendoring-directory import rewriting (`pdpa-platform/internal/vendor/store` fails to build with "must be imported as store"), discovered while building VEN-01. The PostgreSQL schema, permission codes (`vendor.*`) and API prefix (`/admin/v1/vendors`) are unaffected — only the Go source directory moved. |
 | PostgreSQL schema | [`vendor`](../data/vendor.md) (7 ตาราง) |
 | Admin API prefix | `/admin/v1/vendors` |
 | Endpoint ที่ SA กำหนดแล้ว | `POST /admin/v1/vendors/intakes` — คำขอรับคู่ค้าใหม่ (BP-09) |
@@ -121,6 +121,37 @@
 **Frontend (Next.js):** หน้าทะเบียนคู่ค้า + หน้ารายละเอียด
 
 **Acceptance criteria:** คู่ค้าหนึ่งรายมีหน้าเดียวที่รวมข้อมูลทุกโมดูล
+
+**Implementation (VEN-01) — done:** The first feature on the `vendor` schema — `vendor.vendors` was already
+fully specified in the baseline migrations (party_id → `org.external_parties` UQ, relationship_owner_id →
+`iam.users`, is_processor, tier, data_access jsonb, processing_countries char(2)[], ST-06's own status column
+defaulting to `prospect`) — no new migration. `internal/vendormgmt/service` (see the Go-package note above for
+why the directory isn't literally `vendor`) is plain CRUD on the profile fields plus the FK-visibility checks
+rule 1 requires: `party_id` via a newly-reused `orgservice.GetExternalParty` (ORG-06), `relationship_owner_id`
+via `iamservice.Names`. `SaveVendor` deliberately never touches `status`/`tier`/`next_assessment_at`/
+`approved_at`/`offboarded_at` — a new vendor always lands `prospect` (the column's own DB default, ST-06's
+`[*] → prospect` edge) and every other ST-06 transition belongs to a sibling feature not built yet (VEN-02
+tiering, VEN-05/07 assessment, VEN-08 approval, VEN-09 remediation, VEN-14 offboarding). The insert is wrapped
+in `pdb.Savepoint` since `uq_vendors_party_id` is a real unique constraint (one vendor row per external party)
+— the same pattern `org.SaveLegalEntity`/ROPA-03's own unique-constraint checks already use, so a duplicate
+party_id doesn't abort the whole request transaction.
+
+The acceptance criterion ("คู่ค้าหนึ่งรายมีหน้าเดียวที่รวมข้อมูลทุกโมดูล") is read literally as "the page is the
+single place every later VEN/DPA/DSA feature adds its section to," not as a claim that those sibling modules
+already exist to aggregate from — today the page shows exactly the profile this feature owns (status badge,
+tier when set, processing countries, service description, relationship owner) with nothing yet to show from
+VEN-02/04/05/07/08/09/11/14 (none built). API: `GET`/`POST /admin/v1/vendors` (cursor pagination, same shape as
+every other module's list), `GET`/`PATCH /admin/v1/vendors/{id}` (ETag/If-Match) — all on the already-seeded
+`vendor.vendor.*` permissions, no new code. UI: `/vendors` (list + create form, a party picker from ORG-06's
+own `useExternalParties`, an owner picker reusing PLT-07's `useMentionSearch`) and `/vendors/{id}` (the single
+profile page the acceptance criterion names, with its own inline edit). Tests: unit (validation, both
+FK-visibility checks, duplicate-party refused without aborting the transaction, update never changes status,
+two-tenant isolation incl. one tenant's party_id refused for another tenant's vendor), HTTP contract
+(401/403/400 schema/404/412/422/428) through the real validator + AuthZ. `pnpm --filter @pdpa/admin build`/
+`tsc` and the `@pdpa/i18n` ICU message tests both verified clean; not verified in a live browser session (the
+dev-login server action didn't produce a session cookie against this session's local stack — the same
+Keycloak-less limitation several earlier features, e.g. ROPA-02/DPO-01, already flagged rather than a bug
+newly introduced here).
 
 <a id="ven-02"></a>
 ### VEN-02 จัดระดับความเสี่ยงคู่ค้า
