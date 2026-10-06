@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
+import { Link } from "@/i18n/routing";
 import { formatDate, type Locale } from "@pdpa/i18n";
 import {
   type ApiClient,
@@ -49,7 +50,10 @@ export function DpiaScreeningSection({ client, activityId, currentUserId }: { cl
 
   return (
     <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4" data-testid="dpia-section">
-      <h2 className="font-semibold">{t("sections.screening")}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold">{t("sections.screening")}</h2>
+        <Link className="text-sm text-sky-700 underline" href="/dpia-register">{t("registry.link")}</Link>
+      </div>
 
       {rounds.isPending ? (
         <p className="text-slate-500">{t("loading")}</p>

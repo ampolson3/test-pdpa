@@ -777,6 +777,25 @@
     "diff": {
       "title": "Changes since the previous round",
       "blank": "(unanswered)"
+    },
+    "registry": {
+      "link": "DPIA register",
+      "title": "DPIA register & status",
+      "intro": "Every RoPA processing activity's current DPIA round in one report — always read live, so the status shown here always matches the DPIA's real current state.",
+      "legalEntity": "Legal entity",
+      "allEntities": "All legal entities",
+      "orgUnit": "Department",
+      "allUnits": "All departments",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "empty": "No DPIA screening rounds yet.",
+      "activity": "Processing activity",
+      "legalEntityCol": "Legal entity",
+      "orgUnitCol": "Department",
+      "round": "Round",
+      "statusCol": "Status",
+      "result": "Screening result",
+      "open": "Open"
     }
   },
   "assets": {

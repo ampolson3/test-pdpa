@@ -2992,6 +2992,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpia/registry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPIA-12: every RoPA activity's current DPIA round in one report, read live so its status always matches reality (no pagination, same precedent as ROPA-04's own processor-RoPA export) */
+        get: operations["dpiaGetRegistry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpia/assessments/{id}": {
         parameters: {
             query?: never;
@@ -4239,6 +4256,23 @@ export interface components {
                 points: number;
             }[];
             row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        DpiaRegistryEntry: {
+            assessment_id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            activity_code: string;
+            activity_name: string;
+            legal_entity_id: components["schemas"]["Uuid"];
+            legal_entity_name: string;
+            org_unit_id: components["schemas"]["Uuid"];
+            org_unit_name: string;
+            round_no: number;
+            /** @enum {string} */
+            status: "screening" | "not_required" | "in_progress" | "in_review" | "approved" | "rejected" | "needs_review" | "closed";
+            /** @enum {string} */
+            screening_result: "required" | "recommended" | "not_required";
+            score: number;
             created_at: components["schemas"]["Timestamp"];
         };
         /** @enum {string} */
@@ -13368,6 +13402,37 @@ export interface operations {
                     "application/json": {
                         data: components["schemas"]["DpiaAssessment"][];
                         next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dpiaGetRegistry: {
+        parameters: {
+            query?: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+                org_unit_id?: components["schemas"]["Uuid"];
+                status?: "screening" | "not_required" | "in_progress" | "in_review" | "approved" | "rejected" | "needs_review" | "closed";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpiaRegistryEntry"][];
                     };
                 };
             };

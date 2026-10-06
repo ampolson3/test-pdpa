@@ -60,11 +60,14 @@ type Ropa interface {
 }
 
 // Org is what dpia reads from the org module (rule 9): master-data names (lawful basis, data category,
-// subject type, country) and external-party names for DPIA-04's own description.
+// subject type, country) and external-party names for DPIA-04's own description; GetOrgUnit/GetLegalEntity
+// are DPIA-12's own registry, resolving each activity's department/entity name for display and filtering.
 type Org interface {
 	GetMaster(ctx context.Context, kind string, id uuid.UUID) (orgservice.MasterItem, error)
 	ListMaster(ctx context.Context, kind string) ([]orgservice.MasterItem, error)
 	GetExternalParty(ctx context.Context, id uuid.UUID) (orgservice.ExternalParty, error)
+	GetOrgUnit(ctx context.Context, id uuid.UUID) (orgservice.OrgUnit, error)
+	GetLegalEntity(ctx context.Context, id uuid.UUID) (orgservice.LegalEntity, error)
 }
 
 // Service runs the dpia module for the tenant of the transaction in ctx.

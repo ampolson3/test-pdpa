@@ -58,3 +58,14 @@ WHERE assessment_type = 'dpia'
     AND (sqlc.narg(cursor_at)::timestamptz IS NULL OR (created_at, id) < (sqlc.narg(cursor_at), sqlc.narg(cursor_id)::uuid))
 ORDER BY created_at DESC, id DESC
 LIMIT @lim;
+
+-- name: ListAllAssessments :many
+-- DPIA-12's registry: every one of the tenant's DPIA rounds, every activity, no pagination — the registry
+-- is meant to be viewed as one report (the same precedent as ROPA-04's own processor-RoPA export), and
+-- Registry() re-filters/joins in Go against ropa/org (rule 9), so there is nothing to page server-side.
+-- Latest round per activity first (one activity may have several rounds; the registry shows the current
+-- one), then newest overall.
+SELECT DISTINCT ON (activity_id) *
+FROM assess.assessments
+WHERE assessment_type = 'dpia'
+ORDER BY activity_id, round_no DESC;

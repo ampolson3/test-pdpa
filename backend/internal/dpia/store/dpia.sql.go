@@ -310,6 +310,64 @@ func (q *Queries) InsertScreeningRule(ctx context.Context, arg InsertScreeningRu
 	return i, err
 }
 
+const listAllAssessments = `-- name: ListAllAssessments :many
+SELECT DISTINCT ON (activity_id) id, tenant_id, assessment_type, template_id, form_version_id, title, subject_type, subject_id, activity_id, round_no, previous_id, status, screening_result, screening_reason, score, risk_level, owner_user_id, due_at, approved_at, next_review_at, created_at, created_by, updated_at, updated_by, row_version
+FROM assess.assessments
+WHERE assessment_type = 'dpia'
+ORDER BY activity_id, round_no DESC
+`
+
+// DPIA-12's registry: every one of the tenant's DPIA rounds, every activity, no pagination — the registry
+// is meant to be viewed as one report (the same precedent as ROPA-04's own processor-RoPA export), and
+// Registry() re-filters/joins in Go against ropa/org (rule 9), so there is nothing to page server-side.
+// Latest round per activity first (one activity may have several rounds; the registry shows the current
+// one), then newest overall.
+func (q *Queries) ListAllAssessments(ctx context.Context) ([]AssessAssessment, error) {
+	rows, err := q.db.Query(ctx, listAllAssessments)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AssessAssessment
+	for rows.Next() {
+		var i AssessAssessment
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.AssessmentType,
+			&i.TemplateID,
+			&i.FormVersionID,
+			&i.Title,
+			&i.SubjectType,
+			&i.SubjectID,
+			&i.ActivityID,
+			&i.RoundNo,
+			&i.PreviousID,
+			&i.Status,
+			&i.ScreeningResult,
+			&i.ScreeningReason,
+			&i.Score,
+			&i.RiskLevel,
+			&i.OwnerUserID,
+			&i.DueAt,
+			&i.ApprovedAt,
+			&i.NextReviewAt,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.UpdatedAt,
+			&i.UpdatedBy,
+			&i.RowVersion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAnswersForAssessment = `-- name: ListAnswersForAssessment :many
 SELECT id, tenant_id, assessment_id, section_id, question_code, answer, evidence_file_ids, answered_by, ai_suggested, confirmed_by, created_at, created_by, updated_at, updated_by, row_version FROM assess.answers WHERE assessment_id = $1 AND section_id IS NULL ORDER BY created_at
 `

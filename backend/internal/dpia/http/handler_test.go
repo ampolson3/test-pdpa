@@ -71,7 +71,7 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	formsSvc := wiring.Forms(nil, audit.New())
 	svc := &dpiaservice.Service{Audit: audit.New(), Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc}
 
-	var activityID uuid.UUID
+	var activityID, legalEntityID, orgUnitID uuid.UUID
 	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
 		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
 			Permissions: []string{"org.structure.create", "ropa.activity.create"}})
@@ -79,10 +79,12 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 		if err != nil {
 			return err
 		}
+		legalEntityID = le.ID
 		unit, err := orgSvc.CreateOrgUnit(ctx, orgservice.OrgUnit{LegalEntityID: le.ID, Code: "IT", NameTh: "IT", UnitType: "department"})
 		if err != nil {
 			return err
 		}
+		orgUnitID = unit.ID
 		a, err := ropaSvc.SaveActivity(ctx, ropaservice.Activity{LegalEntityID: le.ID, OrgUnitID: unit.ID, Code: "HTTP-01", Name: "กิจกรรมทดสอบ", Role: "controller"}, 0)
 		activityID = a.ID
 		return err
@@ -397,5 +399,26 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("POST", transitionPath, &admin, map[string]any{"to": "closed"}, map[string]string{"If-Match": `"3"`}); code != 200 {
 		t.Errorf("close with an opinion on record: %d, want 200", code)
+	}
+
+	// DPIA-12: the registry report — one row per activity, always the latest round. round 1 ("created") was
+	// transitioned to closed above, but round 2 ("second", from the DPIA-14 re-screen) is the activity's
+	// actual latest round and was never transitioned past in_progress — the registry must show that live
+	// current state, not round 1's stale closed status (the acceptance criterion: status matches reality).
+	if code, _ := do("GET", "/admin/v1/dpia/registry", nil, nil, nil); code != 401 {
+		t.Errorf("registry no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", "/admin/v1/dpia/registry", &reader2, nil, nil); code != 200 ||
+		!strings.Contains(body, `"activity_code":"HTTP-01"`) || !strings.Contains(body, `"round_no":2`) || !strings.Contains(body, `"status":"in_progress"`) {
+		t.Errorf("registry: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/dpia/registry?org_unit_id="+orgUnitID.String(), &reader2, nil, nil); code != 200 || !strings.Contains(body, activityID.String()) {
+		t.Errorf("registry org_unit filter: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/dpia/registry?legal_entity_id="+legalEntityID.String(), &reader2, nil, nil); code != 200 || !strings.Contains(body, activityID.String()) {
+		t.Errorf("registry legal_entity filter: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/dpia/registry?org_unit_id="+uuid.New().String(), &reader2, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("registry unknown org_unit filter: %d %s, want empty data", code, body)
 	}
 }

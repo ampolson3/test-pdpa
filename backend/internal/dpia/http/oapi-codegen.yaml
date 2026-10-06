@@ -9,6 +9,7 @@ output-options:
     - dpiaSaveScreeningRules
     - dpiaScreenActivity
     - dpiaListAssessments
+    - dpiaGetRegistry
     - dpiaGetAssessment
     - dpiaGetAssessmentDescription
     - dpiaGetAssessmentDiff

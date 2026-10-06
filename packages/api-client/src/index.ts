@@ -304,6 +304,7 @@ export {
   useTransitionDpiaAssessment,
   useDpiaOpinions,
   useRecordDpiaOpinion,
+  useDpiaRegistry,
   type DpiaScreeningRule,
   type DpiaAssessment,
   type DpiaActivityDescription,
@@ -312,6 +313,7 @@ export {
   type DpiaTemplate,
   type DpiaOpinion,
   type DpiaOpinionRecommendation,
+  type DpiaRegistryEntry,
 } from "./dpia";
 export {
   useDsarRequestTypes,

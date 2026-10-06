@@ -10,6 +10,7 @@ export type DpiaNecessity = components["schemas"]["DpiaNecessity"];
 export type DpiaAssessmentDiff = components["schemas"]["DpiaAssessmentDiff"];
 export type DpiaOpinion = components["schemas"]["DpiaOpinion"];
 export type DpiaOpinionRecommendation = components["schemas"]["DpiaOpinionRecommendation"];
+export type DpiaRegistryEntry = components["schemas"]["DpiaRegistryEntry"];
 
 const rulesKey = ["dpia", "screening-rules"] as const;
 const assessmentsKey = ["dpia", "assessments"] as const;
@@ -260,6 +261,24 @@ export function usePublishDpiaTemplate(client: ApiClient) {
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: templatesKey }),
+  });
+}
+
+/** GET /admin/v1/dpia/registry (DPIA-12) — every RoPA activity's current DPIA round in one report, read
+ *  live so its status always matches reality; no pagination. */
+export function useDpiaRegistry(
+  client: ApiClient,
+  filter: { legal_entity_id?: string; org_unit_id?: string; status?: DpiaRegistryEntry["status"] } = {},
+) {
+  return useQuery({
+    queryKey: ["dpia", "registry", filter],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/registry", {
+        params: { query: filter },
+      });
+      if (error) throw error;
+      return data;
+    },
   });
 }
 

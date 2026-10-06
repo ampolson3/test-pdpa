@@ -9095,6 +9095,50 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/dpia/registry:
+    get:
+      operationId: dpiaGetRegistry
+      tags: [dpia]
+      summary: 'DPIA-12: every RoPA activity''s current DPIA round in one report, read live so its status always matches reality (no pagination, same precedent as ROPA-04''s own processor-RoPA export)'
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: legal_entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: org_unit_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [screening, not_required, in_progress, in_review, approved, rejected, needs_review, closed]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpiaRegistryEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/dpia/assessments/{id}:
     get:
       operationId: dpiaGetAssessment
@@ -11668,6 +11712,28 @@ components:
               answer: {}
               points: {type: number}
         row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    DpiaRegistryEntry:
+      type: object
+      required: [assessment_id, activity_id, activity_code, activity_name, legal_entity_id, legal_entity_name,
+        org_unit_id, org_unit_name, round_no, status, screening_result, score, created_at]
+      properties:
+        assessment_id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        activity_code: {type: string}
+        activity_name: {type: string}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        legal_entity_name: {type: string}
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        org_unit_name: {type: string}
+        round_no: {type: integer}
+        status:
+          type: string
+          enum: [screening, not_required, in_progress, in_review, approved, rejected, needs_review, closed]
+        screening_result:
+          type: string
+          enum: [required, recommended, not_required]
+        score: {type: number}
         created_at: {$ref: '#/components/schemas/Timestamp'}
     DpiaOpinionRecommendation:
       type: string
