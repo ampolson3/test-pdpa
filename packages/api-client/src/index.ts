@@ -301,12 +301,17 @@ export {
   useCloneDpiaTemplate,
   usePublishDpiaTemplate,
   useRetireDpiaTemplate,
+  useTransitionDpiaAssessment,
+  useDpiaOpinions,
+  useRecordDpiaOpinion,
   type DpiaScreeningRule,
   type DpiaAssessment,
   type DpiaActivityDescription,
   type DpiaAssessmentDiff,
   type DpiaNecessity,
   type DpiaTemplate,
+  type DpiaOpinion,
+  type DpiaOpinionRecommendation,
 } from "./dpia";
 export {
   useDsarRequestTypes,

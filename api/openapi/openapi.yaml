@@ -9255,6 +9255,148 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dpia/assessments/{id}/transition:
+    post:
+      operationId: dpiaTransitionAssessment
+      tags: [dpia]
+      summary: 'DPIA-10: submit for review, request more info, decide (approved/rejected/needs_review), resume or close (ST-05#2) — deciding or closing needs assessment.dpia.approve beyond the endpoint''s own permission'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to]
+              additionalProperties: false
+              properties:
+                to:
+                  type: string
+                  enum: [in_review, in_progress, approved, rejected, needs_review, closed]
+                reason:
+                  type: string
+                  maxLength: 2000
+      responses:
+        '200':
+          description: Transitioned
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaAssessment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dpia/assessments/{id}/opinions:
+    get:
+      operationId: dpiaListOpinions
+      tags: [dpia]
+      summary: 'DPIA-10: every DPO opinion recorded against this assessment round, oldest first'
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpiaOpinion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dpiaRecordOpinion
+      tags: [dpia]
+      summary: 'DPIA-10: the DPO''s written opinion and recommendation on a round under review'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [opinion, recommendation]
+              additionalProperties: false
+              properties:
+                opinion:
+                  type: string
+                  minLength: 1
+                  maxLength: 4000
+                recommendation:
+                  $ref: '#/components/schemas/DpiaOpinionRecommendation'
+      responses:
+        '201':
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaOpinion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/dpia/templates:
     get:
       operationId: dpiaListTemplates
@@ -11500,7 +11642,7 @@ components:
         min_score: {type: [number, 'null']}
     DpiaAssessment:
       type: object
-      required: [id, activity_id, round_no, status, screening_result, screening_reason, score, factors, created_at]
+      required: [id, activity_id, round_no, status, screening_result, screening_reason, score, factors, row_version, created_at]
       properties:
         id: {$ref: '#/components/schemas/Uuid'}
         activity_id: {$ref: '#/components/schemas/Uuid'}
@@ -11509,7 +11651,8 @@ components:
         title: {type: string}
         status:
           type: string
-          enum: [not_required, in_progress]
+          description: 'ST-05#2 (docs/states/state-machines.yaml): screening/not_required/in_progress are DPIA-01/02''s own; in_review/approved/rejected/needs_review/closed are DPIA-10''s.'
+          enum: [screening, not_required, in_progress, in_review, approved, rejected, needs_review, closed]
         screening_result:
           type: string
           enum: [required, recommended, not_required]
@@ -11524,6 +11667,20 @@ components:
               question: {type: string}
               answer: {}
               points: {type: number}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    DpiaOpinionRecommendation:
+      type: string
+      enum: [proceed, proceed_with_conditions, do_not_proceed, consult_pdpc]
+    DpiaOpinion:
+      type: object
+      required: [id, assessment_id, dpo_user_id, opinion, recommendation, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        assessment_id: {$ref: '#/components/schemas/Uuid'}
+        dpo_user_id: {$ref: '#/components/schemas/Uuid'}
+        opinion: {type: string}
+        recommendation: {$ref: '#/components/schemas/DpiaOpinionRecommendation'}
         created_at: {$ref: '#/components/schemas/Timestamp'}
     DpiaNecessity:
       type: object

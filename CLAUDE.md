@@ -1742,6 +1742,42 @@ session cookie through Playwright in this environment — the same pre-existing 
 noted, not a regression from this feature. Not done: every ST-06 transition past creation, and the DPA/DSA/
 assessment sections the detail page's acceptance criterion anticipates — all sibling features, not yet built.
 
+### DPIA-10 ความเห็น DPO และการอนุมัติ (`docs/modules/DPIA.md#dpia-10`) — done
+`assess.dpo_opinions` and the rest of ST-05#2's review/approval states (`in_review`/`approved`/`rejected`/
+`needs_review`/`closed`, beyond DPIA-01/02's own `screening`/`not_required`/`in_progress`) were already fully
+specified in the baseline migrations and `docs/states/state-machines.yaml` — no new migration.
+`internal/dpia/service/opinion.go`'s `Transition` is the whole state machine as one allow-list
+(`assessTransitions`, ST-05#2's own edges beyond screening): submit for review, request more info, decide
+(approved/rejected/needs_review) and close — all through the one `db/queries/dpia/opinion.sql`'s
+`SetAssessmentStatus` query. Deciding or closing needs `assessment.dpia.approve` beyond the endpoint's own
+`assessment.dpia.update` permission (checked internally, `ErrForbidden` → 403) — the module doc's own EXEC
+actor has no grant on `assessment.dpia` in the baseline RBAC seed, so in this tenant's RBAC only DPO can
+decide (the same gap DPIA-02/DPIA-05's own actor lines already document). The acceptance criterion itself is
+`Transition`'s own guard on entering `closed`: a round that was actually assessed (`approved`/`rejected`)
+needs at least one `RecordOpinion` call already on record — `not_required` never had anything to opine on, so
+it closes with none. `RecordOpinion` only accepts a real `recommendation` value (proceed /
+proceed_with_conditions / do_not_proceed / consult_pdpc, `assess.dpo_opinions`' own CHECK) and only while the
+round is `in_progress` or `in_review`. `DpiaAssessment`'s wire schema gained `row_version` (an ETag was never
+needed before this feature's `If-Match`-gated transition) and its `status` enum widened to the full ST-05#2
+set — both additive, no existing consumer broke.
+
+This was the second feature picked for this pass — VEN-08 (vendor approval) was abandoned mid-implementation
+once its own `vendor.vendor_assessments.assessment_id` FK turned out to point at this very `assess.assessments`
+table, meaning VEN-08 actually depends on this generic review/approval machinery existing first (a real gap
+the backlog's own `depends_on: PLT-08` didn't surface); DPIA-10 was built instead, and all VEN-08 scaffolding
+from that abandoned attempt was reverted before starting here.
+
+API: `POST /admin/v1/dpia/assessments/{id}/transition` (ETag/If-Match, `{to, reason}` — `reason` required
+entering `rejected`/`needs_review`), `GET`/`POST /admin/v1/dpia/assessments/{id}/opinions`. UI: a decision
+panel on `/ropa/activities/{id}`'s existing DPIA section — submit-for-review/resume/close buttons, an opinion
+form + list, and approve/needs-review/reject buttons gated on holding `.approve`. Tests: unit (every ST-05#2
+edge allowed/refused, the approve-only gate with a limited-permission caller, reason required entering
+rejected/needs_review, close blocked without an opinion unless not_required, opinion validation + status
+gate, two-tenant isolation), HTTP contract (401/403/404/409/412/422/428/200) through the real validator +
+AuthZ, including a real `iam.users` row for the limited-permission test caller (`assess.dpo_opinions.
+dpo_user_id` is a real FK to `iam.users`, not satisfiable by an arbitrary uuid). `pnpm --filter @pdpa/admin
+build`/`tsc` and the `@pdpa/i18n` ICU message tests both verified clean.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

@@ -5,7 +5,19 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
 import { formatDate, type Locale } from "@pdpa/i18n";
-import { type ApiClient, useAssessNecessity, useDpiaAssessmentDescription, useDpiaAssessmentDiff, useDpiaAssessments, useDpiaNecessity, useScreenActivity } from "@pdpa/api-client";
+import {
+  type ApiClient,
+  type DpiaOpinionRecommendation,
+  useAssessNecessity,
+  useDpiaAssessmentDescription,
+  useDpiaAssessmentDiff,
+  useDpiaAssessments,
+  useDpiaNecessity,
+  useDpiaOpinions,
+  useRecordDpiaOpinion,
+  useScreenActivity,
+  useTransitionDpiaAssessment,
+} from "@pdpa/api-client";
 import { RecordCollaboration } from "@/components/record-collaboration";
 
 const NECESSITY_KEYS = ["minimal_data", "purpose_specific", "lawful_basis_appropriate", "less_invasive_considered"] as const;
@@ -76,6 +88,10 @@ export function DpiaScreeningSection({ client, activityId, currentUserId }: { cl
           <DpiaDescriptionPanel client={client} assessmentId={latest.id} />
           <DpiaNecessityPanel client={client} assessmentId={latest.id} />
         </>
+      )}
+
+      {latest && latest.status !== "screening" && latest.status !== "closed" && (
+        <DpiaDecisionPanel client={client} assessment={latest} />
       )}
 
       {canScreen && (
@@ -273,6 +289,104 @@ function DpiaNecessityPanel({ client, assessmentId }: { client: ApiClient; asses
             {t("necessity.submit")}
           </Button>
         </div>
+      )}
+    </section>
+  );
+}
+
+const RECOMMENDATIONS: DpiaOpinionRecommendation[] = ["proceed", "proceed_with_conditions", "do_not_proceed", "consult_pdpc"];
+
+/** DPIA-10: submit for review, the DPO's opinion, the decision (approved/rejected/needs_review), resume
+ *  and close (ST-05#2) — shown for any round past screening that hasn't closed yet. */
+function DpiaDecisionPanel({ client, assessment }: { client: ApiClient; assessment: { id: string; status: string; row_version: number } }) {
+  const t = useTranslations("dpia");
+  const canUpdate = usePermission("assessment.dpia.update");
+  const canApprove = usePermission("assessment.dpia.approve");
+  const opinions = useDpiaOpinions(client, assessment.id);
+  const recordOpinion = useRecordDpiaOpinion(client);
+  const transition = useTransitionDpiaAssessment(client);
+  const [opinionText, setOpinionText] = useState("");
+  const [recommendation, setRecommendation] = useState<DpiaOpinionRecommendation>("proceed");
+  const [reason, setReason] = useState("");
+
+  const go = (to: "in_review" | "in_progress" | "approved" | "rejected" | "needs_review" | "closed") =>
+    transition.mutate({ assessmentId: assessment.id, ifMatch: `"${assessment.row_version}"`, to, reason });
+
+  return (
+    <section className="space-y-2 rounded-md border border-slate-200 bg-white p-3 text-sm" data-testid="dpia-decision">
+      <h3 className="font-semibold">{t("decision.title")}</h3>
+      <p className="text-slate-500">{t(`decision.status.${assessment.status}`)}</p>
+      {transition.isError && <p className="text-red-700">{t("submitError", { detail: detail(transition.error) })}</p>}
+
+      {canUpdate && assessment.status === "in_progress" && <Button onClick={() => go("in_review")}>{t("decision.submitForReview")}</Button>}
+
+      {assessment.status === "in_review" && (
+        <>
+          <div className="space-y-1">
+            <h4 className="font-medium">{t("decision.opinions")}</h4>
+            {opinions.data?.data.length ? (
+              <ul className="list-inside list-disc text-slate-600">
+                {opinions.data.data.map((o) => (
+                  <li key={o.id}>
+                    {o.opinion} — <span className="italic">{t(`decision.recommendation.${o.recommendation}`)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-slate-500">{t("decision.noOpinions")}</p>
+            )}
+            {canUpdate && (
+              <div className="space-y-2 pt-1">
+                <textarea
+                  className="w-full rounded border border-slate-300 p-2"
+                  value={opinionText}
+                  onChange={(e) => setOpinionText(e.target.value)}
+                  placeholder={t("decision.opinionPlaceholder")}
+                />
+                <select
+                  className="rounded border border-slate-300 p-1"
+                  value={recommendation}
+                  onChange={(e) => setRecommendation(e.target.value as DpiaOpinionRecommendation)}
+                >
+                  {RECOMMENDATIONS.map((r) => (
+                    <option key={r} value={r}>
+                      {t(`decision.recommendation.${r}`)}
+                    </option>
+                  ))}
+                </select>
+                {recordOpinion.isError && <p className="text-red-700">{t("submitError", { detail: detail(recordOpinion.error) })}</p>}
+                <Button
+                  onClick={() => recordOpinion.mutate({ assessmentId: assessment.id, opinion: opinionText, recommendation })}
+                  disabled={recordOpinion.isPending || !opinionText.trim()}
+                >
+                  {t("decision.recordOpinion")}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {canApprove && (
+            <div className="space-y-2 border-t border-slate-100 pt-2">
+              <input
+                className="w-full rounded border border-slate-300 p-2"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder={t("decision.reasonPlaceholder")}
+              />
+              <div className="flex gap-2">
+                <Button onClick={() => go("approved")}>{t("decision.approve")}</Button>
+                <Button onClick={() => go("needs_review")}>{t("decision.needsReview")}</Button>
+                <Button onClick={() => go("rejected")}>{t("decision.reject")}</Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {canUpdate && assessment.status === "needs_review" && <Button onClick={() => go("in_progress")}>{t("decision.resume")}</Button>}
+
+      {canApprove && ["approved", "rejected", "not_required"].includes(assessment.status) && (
+        <Button onClick={() => go("closed")}>{t("decision.close")}</Button>
       )}
     </section>
   );

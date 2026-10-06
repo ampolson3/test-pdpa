@@ -656,6 +656,35 @@
     },
     "submit": "Submit answers and screen",
     "submitError": "Screening failed: {detail}",
+    "decision": {
+      "title": "DPO opinion & sign-off",
+      "status": {
+        "in_progress": "In progress",
+        "in_review": "In review",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "needs_review": "Needs review",
+        "not_required": "DPIA not required",
+        "closed": "Closed"
+      },
+      "submitForReview": "Submit for review",
+      "opinions": "DPO opinions",
+      "noOpinions": "No opinions recorded yet",
+      "opinionPlaceholder": "The DPO's opinion",
+      "recordOpinion": "Record opinion",
+      "recommendation": {
+        "proceed": "Proceed",
+        "proceed_with_conditions": "Proceed with conditions",
+        "do_not_proceed": "Do not proceed",
+        "consult_pdpc": "Consult the PDPC"
+      },
+      "reasonPlaceholder": "Reason (required for reject/needs review)",
+      "approve": "Approve",
+      "needsReview": "Needs review",
+      "reject": "Reject",
+      "resume": "Resume review",
+      "close": "Close DPIA"
+    },
     "settings": {
       "title": "DPIA screening thresholds",
       "intro": "The minimum number of high-risk factors that requires a DPIA (default 2 of 6) — the screening questions are a draft pending legal review (see docs/decisions.md Q-26)",

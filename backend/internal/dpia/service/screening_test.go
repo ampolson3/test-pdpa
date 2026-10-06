@@ -28,7 +28,7 @@ type env struct {
 	ropa   *ropaservice.Service
 }
 
-var perms = []string{"assessment.dpia.read", "assessment.dpia.create", "assessment.dpia.update",
+var perms = []string{"assessment.dpia.read", "assessment.dpia.create", "assessment.dpia.update", "assessment.dpia.approve",
 	"assessment.template.read", "assessment.template.update"}
 
 func setup(t *testing.T, suffix string) env {
@@ -39,6 +39,7 @@ func setup(t *testing.T, suffix string) env {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM assess.dpo_opinions`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.answers`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.assessments`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.screening_rules`)
@@ -64,6 +65,19 @@ func (e env) in(t *testing.T, fn func(ctx context.Context) error) {
 	t.Helper()
 	err := pdb.WithTenantTx(context.Background(), e.app, e.tenant.ID.String(), e.tenant.UserID.String(), func(ctx context.Context) error {
 		return fn(authz.WithGrants(ctx, authz.Grants{TenantID: e.tenant.ID.String(), UserID: e.tenant.UserID.String(), Permissions: perms}))
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// inWithoutApprove is like in, but without assessment.dpia.approve — for proving DPIA-10's decide/close
+// gate actually blocks a caller who only has the generic .update permission.
+func (e env) inWithoutApprove(t *testing.T, fn func(ctx context.Context) error) {
+	t.Helper()
+	limited := []string{"assessment.dpia.read", "assessment.dpia.create", "assessment.dpia.update"}
+	err := pdb.WithTenantTx(context.Background(), e.app, e.tenant.ID.String(), e.tenant.UserID.String(), func(ctx context.Context) error {
+		return fn(authz.WithGrants(ctx, authz.Grants{TenantID: e.tenant.ID.String(), UserID: e.tenant.UserID.String(), Permissions: limited}))
 	})
 	if err != nil {
 		t.Fatal(err)

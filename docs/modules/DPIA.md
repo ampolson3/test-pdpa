@@ -325,6 +325,35 @@ section, shown alongside DPIA-04's description panel once a round is `in_progres
 
 **Acceptance criteria:** DPIA ปิดได้เมื่อมีความเห็น DPO และการอนุมัติครบ
 
+**Implementation (DPIA-10) — done:** `assess.dpo_opinions` and the rest of ST-05#2's review/approval states
+(`in_review`/`approved`/`rejected`/`needs_review`/`closed`, beyond DPIA-01/02's own `screening`/`not_required`/
+`in_progress`) were already fully specified in the baseline migrations and `docs/states/state-machines.yaml`
+— no new migration. `internal/dpia/service/opinion.go`'s `Transition` is the whole state machine as one
+allow-list (`assessTransitions`, ST-05#2's own edges beyond screening): submit for review, request more info,
+decide (approved/rejected/needs_review) and close — the same `db/queries/dpia/opinion.sql`'s `SetAssessmentStatus`
+query every edge shares. Deciding or closing needs `assessment.dpia.approve` beyond the endpoint's own
+`assessment.dpia.update` permission (checked internally, `ErrForbidden` → 403) — the module doc's own EXEC
+actor has no grant on `assessment.dpia` in the baseline RBAC seed, so in this tenant's RBAC only DPO can
+decide (the same gap DPIA-02/DPIA-05's own actor lines already document). The acceptance criterion itself is
+`Transition`'s own guard on entering `closed`: a round that was actually assessed (`approved`/`rejected`) needs
+at least one `RecordOpinion` call already on record — `not_required` never had anything to opine on, so it
+closes with none. `RecordOpinion` only accepts a real `recommendation` value (proceed / proceed_with_conditions
+/ do_not_proceed / consult_pdpc, `assess.dpo_opinions`' own CHECK) and only while the round is `in_progress` or
+`in_review`. `DpiaAssessment`'s wire schema gained `row_version` (an ETag was never needed before this
+feature's `If-Match`-gated transition) and its `status` enum widened to the full ST-05#2 set — both additive,
+no existing consumer broke.
+
+API: `POST /admin/v1/dpia/assessments/{id}/transition` (ETag/If-Match, `{to, reason}` — `reason` required
+entering `rejected`/`needs_review`), `GET`/`POST /admin/v1/dpia/assessments/{id}/opinions`. UI: a decision panel
+on `/ropa/activities/{id}`'s existing DPIA section — submit-for-review/resume/close buttons, an opinion form +
+list, and approve/needs-review/reject buttons gated on holding `.approve`. Tests: unit (every ST-05#2 edge
+allowed/refused, the approve-only gate with a limited-permission caller, reason required entering
+rejected/needs_review, close blocked without an opinion unless not_required, opinion validation + status gate,
+two-tenant isolation), HTTP contract (401/403/404/409/412/422/428/200) through the real validator + AuthZ,
+including a real `iam.users` row for the limited-permission test caller (`assess.dpo_opinions.dpo_user_id` is a
+real FK to `iam.users`, not satisfiable by an arbitrary uuid). `pnpm --filter @pdpa/admin build`/`tsc` and the
+`@pdpa/i18n` ICU message tests both verified clean.
+
 <a id="dpia-12"></a>
 ### DPIA-12 ทะเบียนและสถานะ DPIA
 

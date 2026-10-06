@@ -8,6 +8,8 @@ export type DpiaTemplate = components["schemas"]["DpiaTemplate"];
 export type DpiaActivityDescription = components["schemas"]["DpiaActivityDescription"];
 export type DpiaNecessity = components["schemas"]["DpiaNecessity"];
 export type DpiaAssessmentDiff = components["schemas"]["DpiaAssessmentDiff"];
+export type DpiaOpinion = components["schemas"]["DpiaOpinion"];
+export type DpiaOpinionRecommendation = components["schemas"]["DpiaOpinionRecommendation"];
 
 const rulesKey = ["dpia", "screening-rules"] as const;
 const assessmentsKey = ["dpia", "assessments"] as const;
@@ -134,6 +136,57 @@ export function useAssessNecessity(client: ApiClient) {
       return data;
     },
     onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "necessity"] }),
+  });
+}
+
+/** POST /admin/v1/dpia/assessments/{id}/transition (DPIA-10, ST-05#2): submit for review, request more
+ *  info, decide (approved/rejected/needs_review), resume or close. */
+export function useTransitionDpiaAssessment(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: {
+      assessmentId: string;
+      ifMatch: string;
+      to: "in_review" | "in_progress" | "approved" | "rejected" | "needs_review" | "closed";
+      reason?: string;
+    }) => {
+      const { data, error } = await client.POST("/admin/v1/dpia/assessments/{id}/transition", {
+        params: { path: { id: v.assessmentId }, header: { "If-Match": v.ifMatch } },
+        body: { to: v.to, reason: v.reason },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId] }),
+  });
+}
+
+/** GET /admin/v1/dpia/assessments/{id}/opinions (DPIA-10) — every DPO opinion recorded, oldest first. */
+export function useDpiaOpinions(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...assessmentsKey, id ?? "", "opinions"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/assessments/{id}/opinions", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/dpia/assessments/{id}/opinions (DPIA-10) — the DPO's written opinion + recommendation. */
+export function useRecordDpiaOpinion(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { assessmentId: string; opinion: string; recommendation: DpiaOpinionRecommendation }) => {
+      const { data, error } = await client.POST("/admin/v1/dpia/assessments/{id}/opinions", {
+        params: { path: { id: v.assessmentId } },
+        body: { opinion: v.opinion, recommendation: v.recommendation },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "opinions"] }),
   });
 }
 

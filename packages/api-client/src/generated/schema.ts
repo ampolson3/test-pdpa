@@ -3061,6 +3061,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpia/assessments/{id}/transition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** DPIA-10: submit for review, request more info, decide (approved/rejected/needs_review), resume or close (ST-05#2) — deciding or closing needs assessment.dpia.approve beyond the endpoint's own permission */
+        post: operations["dpiaTransitionAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpia/assessments/{id}/opinions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPIA-10: every DPO opinion recorded against this assessment round, oldest first */
+        get: operations["dpiaListOpinions"];
+        put?: never;
+        /** DPIA-10: the DPO's written opinion and recommendation on a round under review */
+        post: operations["dpiaRecordOpinion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpia/templates": {
         parameters: {
             query?: never;
@@ -4189,8 +4224,11 @@ export interface components {
             round_no: number;
             previous_id?: components["schemas"]["Uuid"];
             title?: string;
-            /** @enum {string} */
-            status: "not_required" | "in_progress";
+            /**
+             * @description ST-05#2 (docs/states/state-machines.yaml): screening/not_required/in_progress are DPIA-01/02's own; in_review/approved/rejected/needs_review/closed are DPIA-10's.
+             * @enum {string}
+             */
+            status: "screening" | "not_required" | "in_progress" | "in_review" | "approved" | "rejected" | "needs_review" | "closed";
             /** @enum {string} */
             screening_result: "required" | "recommended" | "not_required";
             screening_reason: string;
@@ -4200,6 +4238,17 @@ export interface components {
                 answer: unknown;
                 points: number;
             }[];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        DpiaOpinionRecommendation: "proceed" | "proceed_with_conditions" | "do_not_proceed" | "consult_pdpc";
+        DpiaOpinion: {
+            id: components["schemas"]["Uuid"];
+            assessment_id: components["schemas"]["Uuid"];
+            dpo_user_id: components["schemas"]["Uuid"];
+            opinion: string;
+            recommendation: components["schemas"]["DpiaOpinionRecommendation"];
             created_at: components["schemas"]["Timestamp"];
         };
         /** @description DPIA-05: "necessary" only once every question is answered "yes"; otherwise "needs_review" names the flagged questions. */
@@ -13474,6 +13523,118 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    dpiaTransitionAssessment: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    to: "in_review" | "in_progress" | "approved" | "rejected" | "needs_review" | "closed";
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Transitioned */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaAssessment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dpiaListOpinions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpiaOpinion"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpiaRecordOpinion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    opinion: string;
+                    recommendation: components["schemas"]["DpiaOpinionRecommendation"];
+                };
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaOpinion"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     dpiaListTemplates: {

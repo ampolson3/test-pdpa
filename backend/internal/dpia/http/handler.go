@@ -76,6 +76,10 @@ func problem(err error) error {
 		return httpx.NotFound()
 	case errors.Is(err, dpiaservice.ErrVersionMismatch), errors.Is(err, forms.ErrVersionMismatch):
 		return httpx.VersionMismatch()
+	case errors.Is(err, dpiaservice.ErrInvalidTransition):
+		return httpx.InvalidTransition("dpia")
+	case errors.Is(err, dpiaservice.ErrForbidden):
+		return httpx.AuthzDenied()
 	case errors.Is(err, dpiaservice.ErrBadTemplate):
 		return httpx.Problem{Status: 422, Code: "dpia.bad_template", Title: "No published DPIA template for this checklist"}
 	case errors.Is(err, forms.ErrForbidden):

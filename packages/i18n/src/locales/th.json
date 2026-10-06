@@ -656,6 +656,35 @@
     },
     "submit": "ส่งคำตอบและคัดกรอง",
     "submitError": "คัดกรองไม่สำเร็จ: {detail}",
+    "decision": {
+      "title": "ความเห็น DPO และการอนุมัติ",
+      "status": {
+        "in_progress": "กำลังประเมิน",
+        "in_review": "รอตรวจ",
+        "approved": "อนุมัติแล้ว",
+        "rejected": "ไม่อนุมัติ",
+        "needs_review": "ต้องทบทวน",
+        "not_required": "ไม่ต้องทำ DPIA",
+        "closed": "ปิดแล้ว"
+      },
+      "submitForReview": "ส่งตรวจ",
+      "opinions": "ความเห็น DPO",
+      "noOpinions": "ยังไม่มีความเห็น",
+      "opinionPlaceholder": "ความเห็นของ DPO",
+      "recordOpinion": "บันทึกความเห็น",
+      "recommendation": {
+        "proceed": "ดำเนินการได้",
+        "proceed_with_conditions": "ดำเนินการได้แบบมีเงื่อนไข",
+        "do_not_proceed": "ไม่ควรดำเนินการ",
+        "consult_pdpc": "ควรปรึกษา สคส."
+      },
+      "reasonPlaceholder": "เหตุผล (จำเป็นสำหรับไม่อนุมัติ/ต้องทบทวน)",
+      "approve": "อนุมัติ",
+      "needsReview": "ต้องทบทวน",
+      "reject": "ไม่อนุมัติ",
+      "resume": "เริ่มทบทวนใหม่",
+      "close": "ปิด DPIA"
+    },
     "settings": {
       "title": "เกณฑ์คัดกรอง DPIA",
       "intro": "จำนวนปัจจัยเสี่ยงสูงขั้นต่ำที่บังคับให้ต้องทำ DPIA (ค่าตั้งต้น 2 ข้อ จากทั้งหมด 6 ข้อ) — เนื้อหาคำถามคัดกรองเป็นร่างรอฝ่ายกฎหมายตรวจ (ดู docs/decisions.md Q-26)",

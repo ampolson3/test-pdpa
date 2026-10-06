@@ -51,6 +51,7 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM assess.dpo_opinions`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.answers`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.assessments`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.screening_rules`)
@@ -60,6 +61,7 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.processing_activities`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.org_units`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
+			_, _ = tx.Exec(ctx, `DELETE FROM iam.users WHERE email = 'limited-dpia@dbtest.example'`)
 			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
 			return err
 		})
@@ -102,10 +104,21 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 		}
 	}
 	reader := uuid.New()
+	limited := uuid.New() // DPIA-10: assessment.dpia.update but not .approve — a real iam.users row (below),
+	// since assess.dpo_opinions.dpo_user_id is a real FK to iam.users.
 	grants := map[string][]string{
-		tenant.UserID.String(): {"assessment.dpia.read", "assessment.dpia.create", "assessment.dpia.update", "assessment.template.read", "assessment.template.update",
-			"assessment.template.create", "assessment.template.publish", "assessment.template.delete"},
-		reader.String(): {"assessment.dpia.read", "assessment.template.read"},
+		tenant.UserID.String(): {"assessment.dpia.read", "assessment.dpia.create", "assessment.dpia.update", "assessment.dpia.approve",
+			"assessment.template.read", "assessment.template.update", "assessment.template.create", "assessment.template.publish", "assessment.template.delete"},
+		reader.String():  {"assessment.dpia.read", "assessment.template.read"},
+		limited.String(): {"assessment.dpia.read", "assessment.dpia.update"},
+	}
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		_, err := pdb.MustTxFromContext(ctx).Exec(ctx,
+			`INSERT INTO iam.users (id, tenant_id, email, display_name, status) VALUES ($1, current_setting('app.tenant_id')::uuid, $2, 'Limited', 'active')`,
+			limited, "limited-dpia@dbtest.example")
+		return err
+	}); err != nil {
+		t.Fatal(err)
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
@@ -345,5 +358,44 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	}
 	if code, body = do("POST", "/admin/v1/dpia/templates/"+clone.Id.String()+"/retire", &admin, nil, map[string]string{"If-Match": `"1"`}); code != 200 || !strings.Contains(body, `"status":"retired"`) {
 		t.Errorf("retire: %d %s", code, body)
+	}
+
+	// DPIA-10: transition (ST-05#2) + DPO opinions, on the first screening round ("created", still in_progress).
+	transitionPath := item + "/transition"
+	opinionsPath := item + "/opinions"
+	if code, _ := do("POST", transitionPath, &admin, map[string]any{"to": "approved"}, map[string]string{"If-Match": `"1"`}); code != 409 {
+		t.Errorf("in_progress -> approved (skips in_review): %d, want 409", code)
+	}
+	if code, _ := do("POST", transitionPath, &admin, map[string]any{"to": "in_review"}, nil); code != 428 {
+		t.Errorf("transition without If-Match: %d, want 428", code)
+	}
+	code, body = do("POST", transitionPath, &limited, map[string]any{"to": "in_review"}, map[string]string{"If-Match": `"1"`})
+	if code != 200 || !strings.Contains(body, `"status":"in_review"`) {
+		t.Fatalf("submit for review (update only, no approve needed): %d %s", code, body)
+	}
+
+	if code, _ := do("GET", opinionsPath, &reader2, nil, nil); code != 200 {
+		t.Errorf("list opinions (none yet): %d", code)
+	}
+	if code, _ := do("POST", opinionsPath, &reader2, map[string]any{"opinion": "x", "recommendation": "proceed"}, nil); code != 403 {
+		t.Errorf("record opinion with read-only permission: %d, want 403", code)
+	}
+	code, body = do("POST", opinionsPath, &limited, map[string]any{"opinion": "เห็นควรดำเนินการ", "recommendation": "proceed"}, nil)
+	if code != 201 || !strings.Contains(body, `"recommendation":"proceed"`) {
+		t.Fatalf("record opinion: %d %s", code, body)
+	}
+	if code, body := do("GET", opinionsPath, &reader2, nil, nil); code != 200 || !strings.Contains(body, `"opinion":"เห็นควรดำเนินการ"`) {
+		t.Errorf("list opinions: %d %s", code, body)
+	}
+
+	if code, _ := do("POST", transitionPath, &limited, map[string]any{"to": "approved"}, map[string]string{"If-Match": `"2"`}); code != 403 {
+		t.Errorf("decide without .approve: %d, want 403", code)
+	}
+	code, body = do("POST", transitionPath, &admin, map[string]any{"to": "approved"}, map[string]string{"If-Match": `"2"`})
+	if code != 200 || !strings.Contains(body, `"status":"approved"`) {
+		t.Fatalf("decide approved: %d %s", code, body)
+	}
+	if code, _ := do("POST", transitionPath, &admin, map[string]any{"to": "closed"}, map[string]string{"If-Match": `"3"`}); code != 200 {
+		t.Errorf("close with an opinion on record: %d, want 200", code)
 	}
 }
