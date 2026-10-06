@@ -307,6 +307,17 @@ func TestConsentEndpoints_Contract(t *testing.T) {
 		t.Errorf("verify: %d %v", res.code, res.body)
 	}
 
+	// ---- CON-17: where consent data is stored and how identifiers are protected ----
+	if res := do("GET", "/admin/v1/consent/settings", nil, nil, nil); res.code != 401 {
+		t.Errorf("settings, no principal: %d, want 401", res.code)
+	}
+	if res := do("GET", "/admin/v1/consent/settings", &dpoLess, nil, nil); res.code != 403 {
+		t.Errorf("settings, reader without consent.record.read: %d, want 403", res.code)
+	}
+	if res := do("GET", "/admin/v1/consent/settings", &alice, nil, nil); res.code != 200 || res.body["data_region"] != "TH" || res.body["identifier_encryption"] != "aes-256-gcm" {
+		t.Errorf("settings: %d %v, want data_region TH and identifier_encryption aes-256-gcm", res.code, res.body)
+	}
+
 	// ---- CON-11: guardian consent (ม.20) ----
 	minorContent := consenttest.Content("MKT-MINOR", "ยินยอมรับการตลาด")
 	minAge := 13
