@@ -125,6 +125,32 @@
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่างหลัก)
 
+**Implementation — done.** No new Go code at all, the same shape VEN-04 just took for its own template
+library: PLT-16's document composer already registers the `"dpa"` doc type (`internal/wiring.Docs`,
+`agreement.dpa.*` permissions — read/create/update/publish already seeded to LEGAL in the baseline RBAC) and
+already has its own generic, doc-type-agnostic template library (`internal/platform/docs/library.go`'s
+`ListTemplates`/`GetTemplate`/`CreateTemplate`/`UpdateTemplate`/`PublishTemplate` on `platform.templates` —
+the exact same table and mechanism PNG-03's own wizard templates already used, just `language='mul'`: one row
+carries both `th`/`en` content together as `render.Content`'s own `{"th": ..., "en": ...}` shape, instead of
+PNG-03's separate per-language rows). Migration 00054 (`docs/decisions.md` Q-32) seeds the first, global
+(`tenant_id NULL`) published template — code `standard_dpa` — covering every clause topic DPA-01's sibling
+features name: processing only on instructions, confidentiality, security measures (ม.37(2)), breach
+notification, sub-processors, assistance with data-subject-rights requests, return/destruction on
+termination, the controller's audit rights, and cross-border transfer (ม.28-29) — with `org_name_th`/
+`org_name_en`/`dpo_name`/`dpo_email` merge fields resolved the same way every other PLT-16 document already
+does. Content opens with a `[ร่าง — ...]`/`[DRAFT — ...]` banner paragraph (rule 8 — legal wording stays
+flagged until Legal reviews it, the same "seed a draft pending review" move ORG-07/ROPA-09/PNG-03/DPIA-01/
+RTG-01/VEN-04 already made). Frontend: the existing `/documents/templates` page (built generically, already
+listing every doc type the caller's own permissions make visible) needed no change — a LEGAL user already
+sees `"dpa"` as an option there and can view, clone or author further `dpa` templates with it. Tests:
+`TestStandardDpaTemplate_SeededReady` (the acceptance criterion directly — a published, global `standard_dpa`
+template with both Thai and English content) and `TestStandardDpaTemplate_VisibleToAnyTenant` (a second,
+entirely separate tenant sees it too, with nothing of its own) — both run against the real seeded migration
+on a real Postgres, using a bare `docs.Service` with only `"dpa"` registered rather than the full
+`docstest.Setup` fixture, since `ListTemplates`/`Access` touch neither Files, River nor PDF and that fixture
+unconditionally needs S3+clamd this environment doesn't have. Migration verified both directions
+(`up`/`down`/`up` against the real local Postgres) before committing.
+
 <a id="dpa-02"></a>
 ### DPA-02 สร้างแบบกรอกเองและแบบอัตโนมัติ
 
