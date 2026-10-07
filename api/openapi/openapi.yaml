@@ -9299,6 +9299,58 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dpia/assessments/{id}/report:
+    get:
+      operationId: dpiaGetReport
+      tags: [dpia]
+      summary: 'DPIA-15: render the assessment as a PDF or Word report, TH or EN — score, linked security measures and DPO opinions/approvers'
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: language
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [th, en]
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [pdf, docx]
+      responses:
+        '200':
+          description: The file
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          description: PDF rendering is not configured
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /admin/v1/dpia/assessments/{id}/transition:
     post:
       operationId: dpiaTransitionAssessment

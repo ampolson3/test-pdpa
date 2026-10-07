@@ -16,11 +16,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	orgservice "pdpa-platform/internal/org/service"
+	riskservice "pdpa-platform/internal/risk/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
 
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/docs/render"
 	"pdpa-platform/internal/platform/forms"
 )
 
@@ -57,6 +59,12 @@ type Ropa interface {
 	ListActivityRecipients(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityRecipient, error)
 	ListActivityTransfers(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityTransfer, error)
 	ListRetentionRules(ctx context.Context, activityID uuid.UUID) ([]ropaservice.RetentionRule, error)
+	// ListActivityControls/ListControls are DPIA-15's own "มาตรการ" (security measures) section — both
+	// already exported by ropaservice for ROPA-09's own activity-control picker and completeness check;
+	// ListControls is itself only a thin pass-through to the risk module there, so this stays rule-9-clean
+	// (dpia never imports risk directly, only ropaservice's own re-export of it).
+	ListActivityControls(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityControl, error)
+	ListControls(ctx context.Context) ([]riskservice.Control, error)
 }
 
 // Org is what dpia reads from the org module (rule 9): master-data names (lawful basis, data category,
@@ -76,6 +84,9 @@ type Service struct {
 	Ropa  Ropa
 	Org   Org
 	Audit *audit.Service
+	// PDF renders DPIA-15's report to PDF (render.FromEnv(); nil skips PDF, same as docs.Service.PDF —
+	// GET .../report?format=pdf then answers 503 docs-style rather than panicking).
+	PDF render.PDFRenderer
 }
 
 func (s *Service) audit(ctx context.Context, action, entityType string, id uuid.UUID, before, after any) error {

@@ -14,6 +14,7 @@ import (
 	dpiaservice "pdpa-platform/internal/dpia/service"
 
 	"pdpa-platform/internal/pkg/httpx"
+	"pdpa-platform/internal/platform/docs/render"
 	"pdpa-platform/internal/platform/forms"
 )
 
@@ -74,6 +75,8 @@ func problem(err error) error {
 	switch {
 	case errors.Is(err, dpiaservice.ErrNotFound):
 		return httpx.NotFound()
+	case errors.Is(err, render.ErrNoRenderer):
+		return httpx.Problem{Status: 503, Code: "dpia.no_renderer", Title: "PDF rendering is not configured"}
 	case errors.Is(err, dpiaservice.ErrVersionMismatch), errors.Is(err, forms.ErrVersionMismatch):
 		return httpx.VersionMismatch()
 	case errors.Is(err, dpiaservice.ErrInvalidTransition):

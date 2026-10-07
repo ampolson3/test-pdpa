@@ -796,6 +796,13 @@
       "statusCol": "Status",
       "result": "Screening result",
       "open": "Open"
+    },
+    "report": {
+      "download": "Download {format} ({lang})",
+      "lang": {
+        "th": "Thai",
+        "en": "English"
+      }
     }
   },
   "assets": {

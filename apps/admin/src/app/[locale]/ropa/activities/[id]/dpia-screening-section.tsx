@@ -18,6 +18,7 @@ import {
   useRecordDpiaOpinion,
   useScreenActivity,
   useTransitionDpiaAssessment,
+  dpiaReportHref,
 } from "@pdpa/api-client";
 import { RecordCollaboration } from "@/components/record-collaboration";
 
@@ -71,6 +72,16 @@ export function DpiaScreeningSection({ client, activityId, currentUserId }: { cl
               <span className="text-slate-500"> ({formatDate(a.created_at, locale, { day: "numeric", month: "short", year: "numeric" })})</span>
               <p className="text-slate-500">{a.screening_reason}</p>
               {a.round_no > 1 && <DpiaDiffPanel client={client} assessmentId={a.id} />}
+              <div className="flex flex-wrap gap-2 py-1 text-xs">
+                {(["th", "en"] as const).flatMap((l) =>
+                  (["pdf", "docx"] as const).map((f) => (
+                    <a key={`${l}${f}`} className="text-sky-700 underline" data-testid={`dpia-report-${a.id}-${l}-${f}`}
+                      href={dpiaReportHref("/api/bff", a.id, l, f)} target={f === "pdf" ? "_blank" : undefined} rel="noreferrer">
+                      {t("report.download", { format: f === "pdf" ? "PDF" : "Word", lang: t(`report.lang.${l}`) })}
+                    </a>
+                  )),
+                )}
+              </div>
               <button
                 type="button"
                 className="text-sky-700 underline"

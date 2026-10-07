@@ -12,6 +12,13 @@ export type DpiaOpinion = components["schemas"]["DpiaOpinion"];
 export type DpiaOpinionRecommendation = components["schemas"]["DpiaOpinionRecommendation"];
 export type DpiaRegistryEntry = components["schemas"]["DpiaRegistryEntry"];
 
+/** GET /admin/v1/dpia/assessments/{id}/report (DPIA-15) — a plain href, not a query/mutation: the browser
+ *  downloads the PDF/Word file through this link directly, the same pattern documentExportHref uses. */
+export function dpiaReportHref(bffBaseUrl: string, assessmentId: string, language: "th" | "en", format: "pdf" | "docx"): string {
+  const q = new URLSearchParams({ language, format });
+  return `${bffBaseUrl}/admin/v1/dpia/assessments/${assessmentId}/report?${q}`;
+}
+
 const rulesKey = ["dpia", "screening-rules"] as const;
 const assessmentsKey = ["dpia", "assessments"] as const;
 const templatesKey = ["dpia", "templates"] as const;

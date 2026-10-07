@@ -444,6 +444,34 @@ HTTP contract test ran and passed live.
 
 **Acceptance criteria:** รายงานแสดงคะแนน มาตรการ และผู้อนุมัติครบ
 
+**Implementation — done.** Not built on PLT-16's document composer (no `docs.Service` registration, no new
+document type, no draft/approval cycle) — this report is a one-shot, always-live export, not a negotiated
+legal document: `internal/platform/docs/render`'s own standalone `Input`/`HTML`/`DOCX`/`PDFRenderer` pieces
+(already built for PLT-16, no database access of their own) are reused directly instead, the same "no stored
+document, nothing to go stale" discipline DPIA-04/12 already established for this module. `dpiaservice.Report`
+(`internal/dpia/service/report.go`) composes a ProseMirror `render.Input` live from three already-built
+pieces: the assessment's own score/result/round (DPIA-01/02), its RoPA activity's linked ม.37(1) security
+measures — DPIA-15's own "มาตรการ", read via `Ropa.ListActivityControls`/`Ropa.ListControls` (both already
+exported by `ropaservice` for ROPA-09's own picker — a thin pass-through to `risk`, so this stays rule-9-clean
+without dpia importing `risk` directly) — and every DPO opinion recorded on the round (DPIA-10's
+`ListOpinions`), with each opinion's DPO resolved to a display name via `iamservice.AllNames` (a free
+function, not a wrapped interface, the same direct-import pattern ROPA-02/DPO-01 already use for it). No
+merge fields or clauses (this is an internal operational report, not legal wording — rule 8 doesn't apply),
+and never a DRAFT banner. `GET /admin/v1/dpia/assessments/{id}/report?language=th|en&format=pdf|docx`
+(`assessment.dpia.read`, same binary/`Content-Disposition` response shape as PLT-16's own
+`/admin/v1/platform/documents/{id}/export`, including the same 503 `*.no_renderer` mapping when no
+`GOTENBERG_URL`/`CHROMIUM_PATH` is configured for `format=pdf`) — the handler duplicates PLT-16's small
+`typedWriter`/`contentType` helpers locally since they're unexported in `platform/docs/http`. `wiring`:
+`dpiaservice.Service` gained a `PDF render.PDFRenderer` field, set from `render.FromEnv()` in `cmd/api`
+alongside `docsSvc`'s own (`cmd/worker` never renders a DPIA report, so it's left nil there). UI: each
+screening round on `/ropa/activities/{id}`'s DPIA section gained four download links (PDF/Word × TH/EN) next
+to its existing history toggle. Tests: unit (the acceptance criterion directly — a round with a linked
+security measure and a recorded DPO opinion renders both by name/text in the report, in both languages; an
+activity with neither still renders with the "none yet" placeholders rather than failing; two-tenant
+isolation), HTTP contract (401/200/404, and a real `.docx` download verified as a real OOXML zip
+(`bytes.HasPrefix(raw, []byte("PK"))`) with the right `Content-Type`/`Content-Disposition`) — all run against
+a real Postgres + Redis, not just compiled.
+
 <a id="dpia-08"></a>
 ### DPIA-08 เชื่อมทะเบียนความเสี่ยงและงานแก้ไข
 

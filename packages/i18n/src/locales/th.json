@@ -796,6 +796,13 @@
       "statusCol": "สถานะ",
       "result": "ผลคัดกรอง",
       "open": "เปิด"
+    },
+    "report": {
+      "download": "ดาวน์โหลด {format} ({lang})",
+      "lang": {
+        "th": "ไทย",
+        "en": "อังกฤษ"
+      }
     }
   },
   "assets": {

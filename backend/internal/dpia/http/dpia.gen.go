@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -500,6 +501,60 @@ func (e DpiaRecordOpinionParamsAcceptLanguage) Valid() bool {
 	case DpiaRecordOpinionParamsAcceptLanguageEn:
 		return true
 	case DpiaRecordOpinionParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaGetReportParamsLanguage.
+const (
+	DpiaGetReportParamsLanguageEn DpiaGetReportParamsLanguage = "en"
+	DpiaGetReportParamsLanguageTh DpiaGetReportParamsLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaGetReportParamsLanguage enum.
+func (e DpiaGetReportParamsLanguage) Valid() bool {
+	switch e {
+	case DpiaGetReportParamsLanguageEn:
+		return true
+	case DpiaGetReportParamsLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaGetReportParamsFormat.
+const (
+	Docx DpiaGetReportParamsFormat = "docx"
+	Pdf  DpiaGetReportParamsFormat = "pdf"
+)
+
+// Valid indicates whether the value is a known member of the DpiaGetReportParamsFormat enum.
+func (e DpiaGetReportParamsFormat) Valid() bool {
+	switch e {
+	case Docx:
+		return true
+	case Pdf:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaGetReportParamsAcceptLanguage.
+const (
+	DpiaGetReportParamsAcceptLanguageEn DpiaGetReportParamsAcceptLanguage = "en"
+	DpiaGetReportParamsAcceptLanguageTh DpiaGetReportParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaGetReportParamsAcceptLanguage enum.
+func (e DpiaGetReportParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaGetReportParamsAcceptLanguageEn:
+		return true
+	case DpiaGetReportParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -1201,6 +1256,24 @@ type DpiaRecordOpinionParams struct {
 // DpiaRecordOpinionParamsAcceptLanguage defines parameters for DpiaRecordOpinion.
 type DpiaRecordOpinionParamsAcceptLanguage string
 
+// DpiaGetReportParams defines parameters for DpiaGetReport.
+type DpiaGetReportParams struct {
+	Language DpiaGetReportParamsLanguage `form:"language" json:"language"`
+	Format   DpiaGetReportParamsFormat   `form:"format" json:"format"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaGetReportParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpiaGetReportParamsLanguage defines parameters for DpiaGetReport.
+type DpiaGetReportParamsLanguage string
+
+// DpiaGetReportParamsFormat defines parameters for DpiaGetReport.
+type DpiaGetReportParamsFormat string
+
+// DpiaGetReportParamsAcceptLanguage defines parameters for DpiaGetReport.
+type DpiaGetReportParamsAcceptLanguage string
+
 // DpiaTransitionAssessmentJSONBody defines parameters for DpiaTransitionAssessment.
 type DpiaTransitionAssessmentJSONBody struct {
 	Reason *string                            `json:"reason,omitempty"`
@@ -1389,6 +1462,9 @@ type ServerInterface interface {
 	// DpiaRecordOpinion DPIA-10: the DPO's written opinion and recommendation on a round under review
 	// (POST /admin/v1/dpia/assessments/{id}/opinions)
 	DpiaRecordOpinion(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaRecordOpinionParams)
+	// DpiaGetReport DPIA-15: render the assessment as a PDF or Word report, TH or EN — score, linked security measures and DPO opinions/approvers
+	// (GET /admin/v1/dpia/assessments/{id}/report)
+	DpiaGetReport(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaGetReportParams)
 	// DpiaTransitionAssessment DPIA-10: submit for review, request more info, decide (approved/rejected/needs_review), resume or close (ST-05#2) — deciding or closing needs assessment.dpia.approve beyond the endpoint's own permission
 	// (POST /admin/v1/dpia/assessments/{id}/transition)
 	DpiaTransitionAssessment(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaTransitionAssessmentParams)
@@ -1476,6 +1552,12 @@ func (_ Unimplemented) DpiaListOpinions(w http.ResponseWriter, r *http.Request, 
 // DpiaRecordOpinion DPIA-10: the DPO's written opinion and recommendation on a round under review
 // (POST /admin/v1/dpia/assessments/{id}/opinions)
 func (_ Unimplemented) DpiaRecordOpinion(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaRecordOpinionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpiaGetReport DPIA-15: render the assessment as a PDF or Word report, TH or EN — score, linked security measures and DPO opinions/approvers
+// (GET /admin/v1/dpia/assessments/{id}/report)
+func (_ Unimplemented) DpiaGetReport(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaGetReportParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2019,6 +2101,82 @@ func (siw *ServerInterfaceWrapper) DpiaRecordOpinion(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DpiaRecordOpinion(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpiaGetReport operation middleware
+func (siw *ServerInterfaceWrapper) DpiaGetReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaGetReportParams
+
+	// ------------- Required query parameter "language" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "language", r.URL.Query(), &params.Language, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "language"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "language", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "format" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "format", r.URL.Query(), &params.Format, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "format"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "format", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaGetReportParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaGetReport(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2746,6 +2904,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/dpia/assessments/{id}/diff", wrapper.DpiaGetAssessmentDiff)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dpia/assessments/{id}/report", wrapper.DpiaGetReport)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/dpia/assessments/{id}/transition", wrapper.DpiaTransitionAssessment)
@@ -3516,6 +3677,105 @@ func (response DpiaRecordOpinion422ApplicationProblemPlusJSONResponse) VisitDpia
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaGetReportRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DpiaGetReportParams
+}
+
+type DpiaGetReportResponseObject interface {
+	VisitDpiaGetReportResponse(w http.ResponseWriter) error
+}
+
+type DpiaGetReport200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type DpiaGetReport200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       DpiaGetReport200ResponseHeaders
+	ContentLength int64
+}
+
+func (response DpiaGetReport200ApplicationoctetStreamResponse) VisitDpiaGetReportResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DpiaGetReport401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaGetReport401ApplicationProblemPlusJSONResponse) VisitDpiaGetReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaGetReport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaGetReport403ApplicationProblemPlusJSONResponse) VisitDpiaGetReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaGetReport404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaGetReport404ApplicationProblemPlusJSONResponse) VisitDpiaGetReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaGetReport503ApplicationProblemPlusJSONResponse Problem
+
+func (response DpiaGetReport503ApplicationProblemPlusJSONResponse) VisitDpiaGetReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4480,6 +4740,9 @@ type StrictServerInterface interface {
 	// DpiaRecordOpinion DPIA-10: the DPO's written opinion and recommendation on a round under review
 	// (POST /admin/v1/dpia/assessments/{id}/opinions)
 	DpiaRecordOpinion(ctx context.Context, request DpiaRecordOpinionRequestObject) (DpiaRecordOpinionResponseObject, error)
+	// DpiaGetReport DPIA-15: render the assessment as a PDF or Word report, TH or EN — score, linked security measures and DPO opinions/approvers
+	// (GET /admin/v1/dpia/assessments/{id}/report)
+	DpiaGetReport(ctx context.Context, request DpiaGetReportRequestObject) (DpiaGetReportResponseObject, error)
 	// DpiaTransitionAssessment DPIA-10: submit for review, request more info, decide (approved/rejected/needs_review), resume or close (ST-05#2) — deciding or closing needs assessment.dpia.approve beyond the endpoint's own permission
 	// (POST /admin/v1/dpia/assessments/{id}/transition)
 	DpiaTransitionAssessment(ctx context.Context, request DpiaTransitionAssessmentRequestObject) (DpiaTransitionAssessmentResponseObject, error)
@@ -4807,6 +5070,33 @@ func (sh *strictHandler) DpiaRecordOpinion(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DpiaRecordOpinionResponseObject); ok {
 		if err := validResponse.VisitDpiaRecordOpinionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpiaGetReport operation middleware
+func (sh *strictHandler) DpiaGetReport(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaGetReportParams) {
+	var request DpiaGetReportRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaGetReport(ctx, request.(DpiaGetReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaGetReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaGetReportResponseObject); ok {
+		if err := validResponse.VisitDpiaGetReportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -420,5 +421,31 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", "/admin/v1/dpia/registry?org_unit_id="+uuid.New().String(), &reader2, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
 		t.Errorf("registry unknown org_unit filter: %d %s, want empty data", code, body)
+	}
+
+	// DPIA-15: the PDF/Word report — language/format both required by the schema, the body is binary
+	// (checked via a raw request so the Content-Disposition/Content-Type headers are visible, unlike the
+	// plain do() helper above which only returns status + body text).
+	reportPath := item + "/report"
+	if code, _ := do("GET", reportPath+"?language=th&format=docx", nil, nil, nil); code != 401 {
+		t.Errorf("report no principal: %d, want 401", code)
+	}
+	if code, _ := do("GET", reportPath+"?language=th&format=docx", &reader2, nil, nil); code != 200 {
+		t.Errorf("report (read-only permission is enough): %d, want 200", code)
+	}
+	if code, _ := do("GET", "/admin/v1/dpia/assessments/"+uuid.New().String()+"/report?language=th&format=docx", &admin, nil, nil); code != 404 {
+		t.Errorf("report unknown assessment: %d, want 404", code)
+	}
+	req, _ := http.NewRequest("GET", srv.URL+reportPath+"?language=en&format=docx", nil)
+	req.Header.Set("X-Test-User", reader2.String())
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if res.StatusCode != 200 || !strings.HasPrefix(res.Header.Get("Content-Type"), "application/vnd.openxmlformats") ||
+		!strings.Contains(res.Header.Get("Content-Disposition"), "attachment") || !bytes.HasPrefix(raw, []byte("PK")) {
+		t.Errorf("report docx: %d %v %q", res.StatusCode, res.Header, raw[:min(len(raw), 40)])
 	}
 }

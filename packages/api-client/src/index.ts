@@ -305,6 +305,7 @@ export {
   useDpiaOpinions,
   useRecordDpiaOpinion,
   useDpiaRegistry,
+  dpiaReportHref,
   type DpiaScreeningRule,
   type DpiaAssessment,
   type DpiaActivityDescription,

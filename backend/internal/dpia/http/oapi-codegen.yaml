@@ -13,6 +13,7 @@ output-options:
     - dpiaGetAssessment
     - dpiaGetAssessmentDescription
     - dpiaGetAssessmentDiff
+    - dpiaGetReport
     - dpiaTransitionAssessment
     - dpiaListOpinions
     - dpiaRecordOpinion
