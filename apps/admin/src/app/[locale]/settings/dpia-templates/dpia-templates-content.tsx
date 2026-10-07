@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
@@ -30,7 +31,11 @@ export function DpiaTemplatesContent() {
   const canRetire = usePermission("assessment.template.delete");
   const client = useMemo(() => createApiClient("/api/bff"), []);
 
-  const [filterType, setFilterType] = useState("");
+  // A deep link (e.g. VEN-04's "/settings/dpia-templates?type=vendor" from /vendors) pre-selects the
+  // filter; the generic library is shared across every assessment_type, so this is the one hook VEN needs,
+  // not a vendor-specific page.
+  const searchParams = useSearchParams();
+  const [filterType, setFilterType] = useState(() => ASSESSMENT_TYPES.includes(searchParams.get("type") ?? "") ? searchParams.get("type")! : "");
   const templates = useDpiaTemplates(client, filterType || undefined);
   const clone = useCloneDpiaTemplate(client);
   const publish = usePublishDpiaTemplate(client);

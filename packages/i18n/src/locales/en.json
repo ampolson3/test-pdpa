@@ -906,7 +906,8 @@
       "tier": "Risk tier",
       "tierNotSet": "Not tiered yet",
       "nextAssessmentAt": "Next assessment"
-    }
+    },
+    "assessmentTemplatesLink": "Vendor assessment template library"
   },
   "dataInventory": {
     "signInRequired": "Please sign in.",

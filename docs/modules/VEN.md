@@ -195,6 +195,27 @@ newly introduced here).
 
 **Acceptance criteria:** มี template พร้อมใช้อย่างน้อย 3 ชุด
 
+**Implementation — done.** No new Go code at all: DPIA-03's own generic template library (`internal/dpia/
+service/templates.go`'s `ListTemplates`/`GetTemplateByID`/`CreateTemplate`/`CloneTemplate`/
+`PublishTemplate`/`RetireTemplate`, all on `assess.templates` + a PLT-06 "assessment" form, gated on the
+already-seeded `assessment.template.*` codes) was never hardcoded to `assessment_type='dpia'` — it takes the
+type as a plain parameter, and `'vendor'` was already in `assess.templates`' own CHECK constraint, unused
+until now. VEN-04 is purely data: migration 00053 (`docs/decisions.md` Q-31) seeds 3 global
+(`tenant_id NULL`) published templates — PDPA compliance (ม.40), information security mapped to ISO/IEC
+27001/27701 control areas, and cross-border data transfer — the same "seed a draft flagged for legal/security
+review" move ORG-07/ROPA-09/PNG-03/DPIA-01/RTG-01 already made; each template's own `name` carries the
+"(ร่าง — รอฝ่ายกฎหมายตรวจ)" marker directly in the data, since the shared template-library page (built for
+DPIA-03, used by every assessment_type) has no per-row banner mechanism of its own to hook into. Frontend:
+the existing `/settings/dpia-templates` page gained one hook — its `filterType` state now reads an initial
+`?type=` query param (`useSearchParams`) — so `/vendors` can deep-link straight to the vendor-filtered view
+instead of a new, duplicate screen; `/vendors`'s header gained a plain link there. Tests:
+`TestVendorAssessmentTemplates_SeededReady` (the acceptance criterion directly — at least 3 published vendor
+templates, each with real `legal_refs` and a resolvable published form version, including the three specific
+seeded codes) and `TestVendorAssessmentTemplates_VisibleToAnyTenant` (a second, entirely separate tenant sees
+them too, with no provisioning of its own — the same global-visibility pattern ORG-07's master data already
+proved) — both run against the real seeded migration on a real Postgres. Migration verified both directions
+(`up`/`down`/`up` against the real local Postgres) before committing.
+
 <a id="ven-05"></a>
 ### VEN-05 พอร์ทัลให้คู่ค้าตอบแบบประเมิน
 

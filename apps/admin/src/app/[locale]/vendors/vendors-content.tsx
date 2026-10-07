@@ -95,6 +95,7 @@ export function VendorsContent() {
         <div>
           <h1 className="text-xl font-semibold">{t("title")}</h1>
           <p className="text-slate-600">{t("intro")}</p>
+          <Link className="text-sky-700 underline" href="/settings/dpia-templates?type=vendor">{t("assessmentTemplatesLink")}</Link>
         </div>
         {canCreate && <Button onClick={() => { save.reset(); setDraft({ ...blank }); }} data-testid="new-vendor">{t("newVendor")}</Button>}
       </header>
