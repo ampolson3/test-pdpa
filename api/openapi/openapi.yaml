@@ -10627,6 +10627,69 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/activities/{id}/risk-score:
+    get:
+      operationId: riskGetLatestActivityScore
+      tags: [risk]
+      summary: The activity's most recently computed risk score, without recomputing (RRA-01)
+      x-permission: ropa.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRiskScore'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Not found, or the activity has never been scored yet
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+    post:
+      operationId: riskScoreActivity
+      tags: [risk]
+      summary: Compute a fresh risk score from the activity's current RoPA data and record it (RRA-01) — the acceptance criterion itself, since this always reads live data and explains the contributing factors
+      x-permission: ropa.risk.create
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityRiskScore'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 components:
   securitySchemes:
     adminJwt:
@@ -11996,6 +12059,34 @@ components:
           items: {$ref: '#/components/schemas/RiskThreshold'}
         is_default: {type: boolean}
         row_version: {type: integer}
+    RiskFactorContribution:
+      type: object
+      required: [code, contributes_to]
+      properties:
+        code:
+          type: string
+          description: Which signal from the activity's own RoPA data moved the score, e.g. sensitive_data, cross_border_transfer, no_controls
+        contributes_to:
+          type: string
+          enum: [likelihood, impact]
+    ActivityRiskScore:
+      type: object
+      required: [id, activity_id, matrix_id, likelihood, impact, score, level, factors, computed_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        matrix_id: {$ref: '#/components/schemas/Uuid'}
+        likelihood: {type: integer}
+        impact: {type: integer}
+        score:
+          type: number
+          description: likelihood x impact, classified against the matrix's own thresholds
+        level: {$ref: '#/components/schemas/RiskLevel'}
+        factors:
+          type: array
+          items: {$ref: '#/components/schemas/RiskFactorContribution'}
+          description: Every RoPA signal that raised likelihood or impact — RRA-01's own "explain the factors" acceptance criterion
+        computed_at: {$ref: '#/components/schemas/Timestamp'}
     DataInventorySource:
       type: string
       enum: [direct, indirect, derived]

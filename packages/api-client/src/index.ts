@@ -78,6 +78,12 @@ export {
   type RiskLevel,
 } from "./riskMatrices";
 export {
+  useActivityRiskScore,
+  useScoreActivity,
+  type ActivityRiskScore,
+  type RiskFactorContribution,
+} from "./activityRiskScores";
+export {
   useDataInventory,
   useSaveDataInventoryItem,
   type DataInventoryItem,

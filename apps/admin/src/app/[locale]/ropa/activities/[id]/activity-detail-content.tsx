@@ -30,6 +30,7 @@ import {
   type ActivityTransferBasis,
 } from "@pdpa/api-client";
 import { DpiaScreeningSection } from "./dpia-screening-section";
+import { RiskScoreSection } from "./risk-score-section";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
 const ROLES: ActivityRole[] = ["controller", "processor"];
@@ -382,6 +383,8 @@ export function ActivityDetailContent({ id, currentUserId }: { id: string; curre
           </div>
         )}
       </section>
+
+      <RiskScoreSection client={client} activityId={id} />
 
       <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4" data-testid="rejections-section">
         <h2 className="font-semibold">{t("sections.rejections")}</h2>

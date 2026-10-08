@@ -74,6 +74,32 @@ func (h *Strict) RiskDeleteMatrix(ctx context.Context, req RiskDeleteMatrixReque
 	return RiskDeleteMatrix204Response{}, nil
 }
 
+func (h *Strict) RiskGetLatestActivityScore(ctx context.Context, req RiskGetLatestActivityScoreRequestObject) (RiskGetLatestActivityScoreResponseObject, error) {
+	s, err := h.svc.LatestScore(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RiskGetLatestActivityScore200JSONResponse(toScoreWire(s)), nil
+}
+
+func (h *Strict) RiskScoreActivity(ctx context.Context, req RiskScoreActivityRequestObject) (RiskScoreActivityResponseObject, error) {
+	s, err := h.svc.Score(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RiskScoreActivity201JSONResponse(toScoreWire(s)), nil
+}
+
+func toScoreWire(s riskservice.ActivityScore) ActivityRiskScore {
+	w := ActivityRiskScore{Id: s.ID, ActivityId: s.ActivityID, MatrixId: s.MatrixID, Likelihood: s.Likelihood,
+		Impact: s.Impact, Score: float32(s.Score), Level: RiskLevel(s.Level), ComputedAt: s.ComputedAt.UTC(),
+		Factors: []RiskFactorContribution{}}
+	for _, f := range s.Factors {
+		w.Factors = append(w.Factors, RiskFactorContribution{Code: f.Code, ContributesTo: RiskFactorContributionContributesTo(f.ContributesTo)})
+	}
+	return w
+}
+
 func toMatrixInput(b RiskMatrixInput) riskservice.RiskMatrix {
 	m := riskservice.RiskMatrix{Name: b.Name, LikelihoodLevels: b.LikelihoodLevels, ImpactLevels: b.ImpactLevels}
 	for _, t := range b.Thresholds {

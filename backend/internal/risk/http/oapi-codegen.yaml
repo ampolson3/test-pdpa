@@ -10,3 +10,5 @@ output-options:
     - riskGetMatrix
     - riskUpdateMatrix
     - riskDeleteMatrix
+    - riskGetLatestActivityScore
+    - riskScoreActivity

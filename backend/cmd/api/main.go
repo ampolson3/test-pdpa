@@ -237,6 +237,7 @@ func run() error {
 	riskSvc.Audit = auditSvc                                                                                  // RRA-02: risk matrix CRUD audit
 	ropaTemplatesSvc := templatesservice.New()                                                                // RTG-01: the platform's standard activity library (read-only)
 	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc} // ROPA-05: create an activity from one of these templates
+	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}                                                // RRA-01: score an activity from its own RoPA data
 	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc}                                         // VEN-01: vendor/processor registry
 	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc}
 	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read" // DPO-01 appointment order / PDPC evidence

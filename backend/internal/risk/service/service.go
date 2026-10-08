@@ -28,6 +28,7 @@ type Control struct {
 
 type Service struct {
 	Audit *audit.Service
+	Ropa  Ropa // RRA-01: scoring an activity (nil until a caller needs Score/LatestScore)
 }
 
 func New() *Service { return &Service{} }

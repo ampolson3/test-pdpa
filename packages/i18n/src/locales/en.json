@@ -1129,7 +1129,33 @@
       "recipients": "Recipients and disclosures",
       "transfers": "Cross-border transfers",
       "controls": "Security measures",
-      "rejections": "DSAR rejections (ม.39(7))"
+      "rejections": "DSAR rejections (ม.39(7))",
+      "riskScore": "Risk score (RRA-01)"
+    },
+    "riskScore": {
+      "recompute": "Recompute",
+      "notScoredYet": "Not scored yet — press \"Recompute\" to start",
+      "scoreError": "Failed to compute: {detail}",
+      "score": "Score {score} (likelihood {likelihood} x impact {impact})",
+      "noFactors": "No additional risk factors",
+      "levels": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "very_high": "Very high"
+      },
+      "contributesTo": {
+        "likelihood": "likelihood",
+        "impact": "impact"
+      },
+      "factors": {
+        "sensitive_data": "Sensitive data present",
+        "vulnerable_subjects": "Vulnerable data subjects",
+        "high_volume": "High data volume",
+        "cross_border_transfer": "Cross-border transfer",
+        "external_recipients": "External recipients",
+        "no_controls": "No security measures yet"
+      }
     },
     "missingItems": {
       "data": "No data categories yet",

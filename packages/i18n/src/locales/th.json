@@ -1129,7 +1129,33 @@
       "recipients": "ผู้รับข้อมูลและการเปิดเผย",
       "transfers": "การโอนข้อมูลไปต่างประเทศ",
       "controls": "มาตรการความปลอดภัย",
-      "rejections": "การปฏิเสธคำขอใช้สิทธิ (ม.39(7))"
+      "rejections": "การปฏิเสธคำขอใช้สิทธิ (ม.39(7))",
+      "riskScore": "คะแนนความเสี่ยง (RRA-01)"
+    },
+    "riskScore": {
+      "recompute": "คำนวณใหม่",
+      "notScoredYet": "ยังไม่มีการคำนวณคะแนนความเสี่ยง — กด \"คำนวณใหม่\" เพื่อเริ่ม",
+      "scoreError": "คำนวณไม่สำเร็จ: {detail}",
+      "score": "คะแนน {score} (โอกาสระดับ {likelihood} × ผลกระทบระดับ {impact})",
+      "noFactors": "ไม่มีปัจจัยเสี่ยงเพิ่มเติม",
+      "levels": {
+        "low": "ต่ำ",
+        "medium": "กลาง",
+        "high": "สูง",
+        "very_high": "สูงมาก"
+      },
+      "contributesTo": {
+        "likelihood": "โอกาส",
+        "impact": "ผลกระทบ"
+      },
+      "factors": {
+        "sensitive_data": "มีข้อมูลอ่อนไหว",
+        "vulnerable_subjects": "มีเจ้าของข้อมูลกลุ่มเปราะบาง",
+        "high_volume": "ปริมาณข้อมูลจำนวนมาก",
+        "cross_border_transfer": "มีการโอนข้อมูลไปต่างประเทศ",
+        "external_recipients": "มีผู้รับข้อมูลภายนอก",
+        "no_controls": "ยังไม่มีมาตรการความปลอดภัย"
+      }
     },
     "missingItems": {
       "data": "ยังไม่ระบุข้อมูลที่เก็บ",

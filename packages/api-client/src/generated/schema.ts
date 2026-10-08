@@ -3496,6 +3496,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/activities/{id}/risk-score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The activity's most recently computed risk score, without recomputing (RRA-01) */
+        get: operations["riskGetLatestActivityScore"];
+        put?: never;
+        /** Compute a fresh risk score from the activity's current RoPA data and record it (RRA-01) — the acceptance criterion itself, since this always reads live data and explains the contributing factors */
+        post: operations["riskScoreActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4291,6 +4309,25 @@ export interface components {
             thresholds: components["schemas"]["RiskThreshold"][];
             is_default: boolean;
             row_version: number;
+        };
+        RiskFactorContribution: {
+            /** @description Which signal from the activity's own RoPA data moved the score, e.g. sensitive_data, cross_border_transfer, no_controls */
+            code: string;
+            /** @enum {string} */
+            contributes_to: "likelihood" | "impact";
+        };
+        ActivityRiskScore: {
+            id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            matrix_id: components["schemas"]["Uuid"];
+            likelihood: number;
+            impact: number;
+            /** @description likelihood x impact, classified against the matrix's own thresholds */
+            score: number;
+            level: components["schemas"]["RiskLevel"];
+            /** @description Every RoPA signal that raised likelihood or impact — RRA-01's own "explain the factors" acceptance criterion */
+            factors: components["schemas"]["RiskFactorContribution"][];
+            computed_at: components["schemas"]["Timestamp"];
         };
         /** @enum {string} */
         DataInventorySource: "direct" | "indirect" | "derived";
@@ -14884,6 +14921,71 @@ export interface operations {
             404: components["responses"]["NotFound"];
             412: components["responses"]["PreconditionFailed"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    riskGetLatestActivityScore: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityRiskScore"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Not found, or the activity has never been scored yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    riskScoreActivity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityRiskScore"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
 }

@@ -114,6 +114,53 @@
 
 **Acceptance criteria:** คะแนนเปลี่ยนตามข้อมูล RoPA และอธิบายปัจจัยที่ทำให้สูงได้
 
+**Implementation — done (factor weights/`risk.risk_factors` still deferred).** RRA-02's own risk engine
+gets its first real consumer: `riskservice.Score(ctx, activityID)` is the acceptance criterion in one call —
+reads the activity's current RoPA data live (never cached), derives a likelihood/impact pair from six
+yes/no signals, classifies it against the tenant's default matrix (`Classify`, RRA-02), and persists the
+result as a new `risk.activity_scores` row (already fully specified in the baseline migrations — no new
+migration; each computation is its own row, never updated in place, so the table is naturally a history
+trail for RRA-12's future "re-assess on change/schedule" to build on). The six signals — `sensitive_data`,
+`vulnerable_subjects`, `high_volume` (any `ActivityData` at `10k_100k`/`gt_100k`), `cross_border_transfer`
+(any `ActivityTransfer`, counted toward both impact and likelihood — a transfer is both a bigger potential
+harm and a wider exposure), `external_recipients` (any `ActivityRecipient`), and `no_controls` (zero linked
+`ActivityControl`s — the *absence* of a mitigation is itself a likelihood factor) — are exactly the module
+doc's own backend note ("ประเภท/ปริมาณข้อมูล อ่อนไหว กลุ่มเปราะบาง ผู้รับ การโอน มาตรการ"), each returned by
+name in the response so the UI can literally list "the factors that made it high" (the acceptance
+criterion's other half). `risk.risk_factors` (configurable per-tenant weights) is deliberately not used
+here — every signal above is a fixed +1, not a tenant-tunable weight — since nothing in this acceptance
+criterion asks for configurable weights and RRA-06 (control-driven residual risk) is a better fit for that
+table once it exists; this is the same "leave the column/table, build the real thing when a screen needs
+it" deferral ROPA-01's own `discovered_by_finding_id` already used.
+
+Real import-cycle problem, not a design choice: `internal/ropa/service` already imports
+`internal/risk/service` (ROPA-09's own security-controls catalog), so `risk/service` importing `ropa/service`
+back would cycle. Fixed with the same local-interface-plus-adapter pattern IAM-05/PNG-07 already
+established: `riskservice.Ropa` is a small interface over two plain local types (`ActivityVisible`,
+`Signals` → a flat `ActivitySignals` struct) that `risk/service` owns itself, and `internal/wiring.RiskRopa`
+(new) is the adapter built where `ropaservice`/`orgservice` are both already safely importable — it resolves
+`IsSensitive`/`VolumeBand` straight off `ActivityData` and `IsVulnerable` via `Org.GetMaster` on each data
+point's own subject type. `cmd/api/main.go` wires `riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}`
+right after `ropaSvc` itself is built (the dependency order the adapter needs). Scoring without a configured
+default matrix is refused (422) rather than guessing a shape — RRA-02's own "ตั้งค่า risk matrix" is a real
+prerequisite, not a soft default.
+
+API: `GET /admin/v1/ropa/activities/{id}/risk-score` (`ropa.risk.read`, the latest computation without
+recomputing — 404 if the activity has never been scored), `POST` (same path, `ropa.risk.create`) computes a
+fresh one and records it — the acceptance criterion's own "live" half, since a page view alone never
+recomputes (that would silently grow the history table on every click; recomputing is the user's own
+explicit "คำนวณใหม่" action). UI: a new "คะแนนความเสี่ยง (RRA-01)" section on `/ropa/activities/{id}`, right
+before the existing DSAR-rejections section — a level badge, the score/likelihood/impact, a "คำนวณใหม่"
+button, and the factor list in plain language. Tests: unit (the acceptance criterion directly — a baseline
+activity scores with only the `no_controls` factor; adding sensitive data and a recipient both raises the
+score and surfaces the new factors on the very next call; no default matrix is refused; an unknown activity
+is refused; reading before any score exists is `ErrNotFound`; two-tenant isolation of both scoring and
+reading), HTTP contract (401/403/404/201/200) through the real validator + AuthZ, using the real
+`wiring.RiskRopa` adapter rather than a test double, so the adapter itself is exercised end to end. Not done:
+RRA-03 (auto-trigger a DPIA for a high-scoring activity), RRA-06 (control-driven residual score, where
+`risk.risk_factors`/weights would actually fit), RRA-07 (remediation tasks from gaps), RRA-12 (scheduled
+re-assessment) — all sibling features layered on this same `risk.activity_scores` row, not built here.
+
 <a id="rra-02"></a>
 ### RRA-02 ตั้งค่า risk matrix
 
