@@ -70,6 +70,7 @@ import (
 	"pdpa-platform/internal/platform/publickeys"
 	versioninghttp "pdpa-platform/internal/platform/versioning/http"
 	workflowhttp "pdpa-platform/internal/platform/workflow/http"
+	riskhttp "pdpa-platform/internal/risk/http"
 	riskservice "pdpa-platform/internal/risk/service"
 	ropahttp "pdpa-platform/internal/ropa/http"
 	ropaservice "pdpa-platform/internal/ropa/service"
@@ -232,7 +233,8 @@ func run() error {
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
-	riskSvc := riskservice.New()                                                                              // ROPA-09: the ม.37(1) security-measures catalog (no RRA module yet)
+	riskSvc := riskservice.New()                                                                              // ROPA-09's ม.37(1) controls catalog
+	riskSvc.Audit = auditSvc                                                                                  // RRA-02: risk matrix CRUD audit
 	ropaTemplatesSvc := templatesservice.New()                                                                // RTG-01: the platform's standard activity library (read-only)
 	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc} // ROPA-05: create an activity from one of these templates
 	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc}                                         // VEN-01: vendor/processor registry
@@ -391,6 +393,11 @@ func run() error {
 			[]agreementhttp.StrictMiddlewareFunc{authz.StrictMiddleware[agreementhttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			agreementhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		agreementhttp.HandlerWithOptions(strictAgreement, agreementhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictRisk := riskhttp.NewStrictHandlerWithOptions(riskhttp.NewStrict(riskSvc),
+			[]riskhttp.StrictMiddlewareFunc{authz.StrictMiddleware[riskhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			riskhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		riskhttp.HandlerWithOptions(strictRisk, riskhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictConsent := consenthttp.NewStrictHandlerWithOptions(consenthttp.NewStrict(consentSvc),
 			[]consenthttp.StrictMiddlewareFunc{authz.StrictMiddleware[consenthttp.StrictHandlerFunc](authzCache, requiredPermission)},

@@ -3459,6 +3459,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/risk/matrices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's own likelihood x impact risk matrices, default first (RRA-02) */
+        get: operations["riskListMatrices"];
+        put?: never;
+        /** Create a risk matrix */
+        post: operations["riskCreateMatrix"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/risk/matrices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One risk matrix */
+        get: operations["riskGetMatrix"];
+        /** Change a risk matrix's own levels, thresholds or default flag — the acceptance criterion itself (RRA-02), since Classify always reads the current row live, never a cached score */
+        put: operations["riskUpdateMatrix"];
+        post?: never;
+        /** Remove a risk matrix (If-Match = its own ETag) */
+        delete: operations["riskDeleteMatrix"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4223,6 +4260,37 @@ export interface components {
             activity_ids: components["schemas"]["Uuid"][];
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * @description risk.activity_scores.level's own CHECK constraint — the only four values any matrix may ever classify a score into
+         * @enum {string}
+         */
+        RiskLevel: "low" | "medium" | "high" | "very_high";
+        RiskThreshold: {
+            level: components["schemas"]["RiskLevel"];
+            /** @description The score (likelihood x impact) at and above which this level applies */
+            min_score: number;
+        };
+        RiskMatrixInput: {
+            name: string;
+            /** @description Labels from lowest to highest likelihood, e.g. 5 entries for a 5x5 matrix */
+            likelihood_levels: string[];
+            impact_levels: string[];
+            thresholds: components["schemas"]["RiskThreshold"][];
+            /**
+             * @description At most one matrix per tenant may be the default — setting this clears the flag on every other one in the same request
+             * @default false
+             */
+            is_default: boolean;
+        };
+        RiskMatrix: {
+            id: components["schemas"]["Uuid"];
+            name: string;
+            likelihood_levels: string[];
+            impact_levels: string[];
+            thresholds: components["schemas"]["RiskThreshold"][];
+            is_default: boolean;
+            row_version: number;
         };
         /** @enum {string} */
         DataInventorySource: "direct" | "indirect" | "derived";
@@ -14659,6 +14727,163 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    riskListMatrices: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RiskMatrix"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    riskCreateMatrix: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiskMatrixInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskMatrix"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    riskGetMatrix: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskMatrix"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    riskUpdateMatrix: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiskMatrixInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskMatrix"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    riskDeleteMatrix: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
 }

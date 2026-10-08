@@ -1,9 +1,9 @@
-// Package service is the first, deliberately minimal package on the `risk` schema — the full RRA module
-// (risk matrices, factor-weighted scoring, gap findings) is P2 and not built yet. This exists only so
-// ROPA-09 (ม.37(1): every processing activity references its security measures) has a catalog to point at.
-// risk.controls already carries a global-vs-tenant RLS split identical to ORG-07's master data (tenant_id
-// NULL = platform default, seeded as a draft pending legal review — decisions.md Q-25); this package is a
-// plain read, with no create/update surface, since nothing needs tenant-authored controls yet.
+// Package service is the `risk` schema's own module. It started deliberately minimal — only
+// ROPA-09's read-only ม.37(1) controls catalog — and gained its first real feature with RRA-02
+// (configurable risk matrices): the shared "risk engine" the module doc's own backend note says
+// DPIA/vendor/breach will all read from, once those modules compute a risk score. risk.controls still
+// carries a global-vs-tenant RLS split identical to ORG-07's master data (tenant_id NULL = platform
+// default, seeded as a draft pending legal review — decisions.md Q-25).
 package service
 
 import (
@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	pdb "pdpa-platform/internal/pkg/db"
+	audit "pdpa-platform/internal/platform/audit/service"
 	riskstore "pdpa-platform/internal/risk/store"
 )
 
@@ -25,7 +26,9 @@ type Control struct {
 	FrameworkRefs []string
 }
 
-type Service struct{}
+type Service struct {
+	Audit *audit.Service
+}
 
 func New() *Service { return &Service{} }
 

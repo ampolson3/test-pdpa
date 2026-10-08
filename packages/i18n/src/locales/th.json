@@ -977,6 +977,45 @@
       "saveError": "สร้างไม่สำเร็จ: {detail}"
     }
   },
+  "riskMatrices": {
+    "signInRequired": "กรุณาเข้าสู่ระบบ",
+    "forbidden": "คุณไม่มีสิทธิ์ดู risk matrix",
+    "title": "Risk Matrix",
+    "intro": "กำหนดระดับโอกาส × ผลกระทบ และเกณฑ์สูง/กลาง/ต่ำ — ใช้ร่วมกันระหว่าง DPIA, คู่ค้า และเหตุละเมิดเมื่อโมดูลเหล่านั้นคำนวณคะแนนความเสี่ยง",
+    "newMatrix": "สร้าง matrix ใหม่",
+    "loading": "กำลังโหลด…",
+    "loadError": "โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่",
+    "empty": "ยังไม่มี risk matrix",
+    "edit": "แก้ไข",
+    "delete": "ลบ",
+    "levels": {
+      "low": "ต่ำ",
+      "medium": "กลาง",
+      "high": "สูง",
+      "very_high": "สูงมาก"
+    },
+    "table": {
+      "name": "ชื่อ",
+      "shape": "ขนาด (โอกาส×ผลกระทบ)",
+      "default": "ค่าเริ่มต้น",
+      "yes": "✓"
+    },
+    "form": {
+      "newTitle": "สร้าง risk matrix",
+      "editTitle": "แก้ไข risk matrix",
+      "name": "ชื่อ",
+      "likelihoodLevels": "ระดับโอกาส (คั่นด้วยจุลภาค เรียงจากน้อยไปมาก)",
+      "impactLevels": "ระดับผลกระทบ (คั่นด้วยจุลภาค เรียงจากน้อยไปมาก)",
+      "levelsPlaceholder": "เช่น น้อยมาก, น้อย, ปานกลาง, สูง, สูงมาก",
+      "isDefault": "ตั้งเป็นค่าเริ่มต้นของ tenant นี้",
+      "thresholds": "เกณฑ์คะแนน (โอกาส × ผลกระทบ)",
+      "minScore": "คะแนนขั้นต่ำ",
+      "addThreshold": "เพิ่มเกณฑ์",
+      "save": "บันทึก",
+      "cancel": "ยกเลิก",
+      "saveError": "บันทึกไม่สำเร็จ: {detail}"
+    }
+  },
   "dataInventory": {
     "signInRequired": "กรุณาเข้าสู่ระบบ",
     "forbidden": "คุณไม่มีสิทธิ์ดูทะเบียนข้อมูลส่วนบุคคล",

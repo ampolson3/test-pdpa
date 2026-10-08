@@ -977,6 +977,45 @@
       "saveError": "Failed to create: {detail}"
     }
   },
+  "riskMatrices": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view risk matrices.",
+    "title": "Risk Matrix",
+    "intro": "Configure likelihood x impact levels and the low/medium/high thresholds — shared by DPIA, vendors and breach once those modules compute a risk score against it.",
+    "newMatrix": "Create matrix",
+    "loading": "Loading…",
+    "loadError": "Failed to load. Please try again.",
+    "empty": "No risk matrices yet.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "levels": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "very_high": "Very high"
+    },
+    "table": {
+      "name": "Name",
+      "shape": "Shape (likelihood x impact)",
+      "default": "Default",
+      "yes": "✓"
+    },
+    "form": {
+      "newTitle": "Create risk matrix",
+      "editTitle": "Edit risk matrix",
+      "name": "Name",
+      "likelihoodLevels": "Likelihood levels (comma-separated, lowest to highest)",
+      "impactLevels": "Impact levels (comma-separated, lowest to highest)",
+      "levelsPlaceholder": "e.g. very low, low, medium, high, very high",
+      "isDefault": "Set as this tenant's default",
+      "thresholds": "Score thresholds (likelihood x impact)",
+      "minScore": "Minimum score",
+      "addThreshold": "Add threshold",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saveError": "Failed to save: {detail}"
+    }
+  },
   "dataInventory": {
     "signInRequired": "Please sign in.",
     "forbidden": "You don't have permission to view the personal data inventory.",

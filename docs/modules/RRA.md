@@ -135,6 +135,38 @@
 
 **Acceptance criteria:** เปลี่ยน matrix แล้วคะแนนทุกโมดูลคำนวณตามค่าใหม่
 
+**Implementation — done (factor weights deferred to RRA-01).** The first real feature on `internal/risk`
+(previously only ROPA-09's read-only ม.37(1) controls catalog) — CRUD on `risk.risk_matrices`, already fully
+specified in the baseline migrations, no new migration for the table itself. Migration 00055 adds a partial
+unique index (`tenant_id` WHERE `is_default`) so at most one matrix per tenant can ever be the default at the
+database level, not just in application code — `SaveMatrix` clears every other default in the same
+transaction before writing the new one, so the index is never actually hit from inside the service itself.
+`Classify(matrix, likelihood, impact) (score, level, error)` is the acceptance criterion as a pure function:
+score is `likelihood x impact` (the classic risk-matrix multiplication) and `level` comes from the matrix's
+own ordered thresholds — nothing is ever cached, so changing the matrix changes the next `Classify` call's
+result immediately, for whichever future module calls it. `GetMatrix(ctx, id|nil)` resolves either a specific
+matrix or the tenant's own default, the same `BusinessCalendar(ctx, id|nil)` pattern ORG-20's own default
+calendar already established — there is no built-in fallback matrix (unlike ORG-20's Mon–Fri default): no NxN
+shape is obviously "correct" to guess, so a tenant must configure one explicitly, matching this feature's own
+title ("ตั้งค่า risk matrix"). `thresholds` levels are restricted to exactly `risk.activity_scores.level`'s own
+four CHECK values (low/medium/high/very_high) so a future RRA-01 write against that column can never find a
+level it refuses; thresholds must cover every score from 1 upward with no gap at the bottom, checked before
+anything is written. Deliberately scoped to exactly this feature's own acceptance criterion: `risk.risk_factors`
+(the module doc's own "น้ำหนักปัจจัยต่อ tenant") belongs to RRA-01 (its own feature, and its own dependency on
+this one), which will call `Classify` once it computes a real `likelihood`/`impact` pair from RoPA data — no
+module calls either yet, the same "no consumer yet" deferral this codebase uses elsewhere (PLT-13's Keyring,
+ROPA-01's `discovered_by_finding_id`). API: `GET`/`POST /admin/v1/risk/matrices`, `GET`/`PUT`/`DELETE
+/admin/v1/risk/matrices/{id}` (ETag/If-Match on write/delete) — on the already-seeded `ropa.risk.*` permissions
+(no new code: a risk matrix is itself a "ความเสี่ยงและช่องว่างรายกิจกรรม" setting under that area). UI: a new
+page, `/settings/risk-matrices` — list with default/shape columns, a create/edit form (comma-separated
+likelihood/impact level labels, a dynamic threshold list, a default checkbox) and delete. Tests: unit
+(validation — too few levels, no thresholds, an invalid level, a gap at the bottom; `Classify`'s own
+correctness and its "no caching" property directly — the same inputs classify differently under two different
+matrices; the one-default swap leaves exactly one default however the saves are ordered; ETag mismatch on
+update and delete; two-tenant isolation), HTTP contract (401/403/400 schema/422/201/200/404/412/428/204)
+through the real validator + AuthZ. Migration verified up/down/up against the real local Postgres before
+committing.
+
 <a id="rra-03"></a>
 ### RRA-03 ส่งต่อทำ DPIA อัตโนมัติ
 

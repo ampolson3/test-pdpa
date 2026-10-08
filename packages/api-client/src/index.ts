@@ -68,6 +68,16 @@ export {
   type AgreementType,
 } from "./agreements";
 export {
+  useRiskMatrices,
+  useRiskMatrix,
+  useSaveRiskMatrix,
+  useDeleteRiskMatrix,
+  type RiskMatrix,
+  type RiskMatrixInput,
+  type RiskThreshold,
+  type RiskLevel,
+} from "./riskMatrices";
+export {
   useDataInventory,
   useSaveDataInventoryItem,
   type DataInventoryItem,

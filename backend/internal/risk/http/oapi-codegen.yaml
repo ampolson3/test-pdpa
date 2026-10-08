@@ -1,0 +1,12 @@
+package: riskhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - riskListMatrices
+    - riskCreateMatrix
+    - riskGetMatrix
+    - riskUpdateMatrix
+    - riskDeleteMatrix

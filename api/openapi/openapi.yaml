@@ -27,6 +27,8 @@ tags:
     description: DPO appointment register (backend/internal/dpo)
   - name: dpia
     description: DPIA screening — whether a RoPA activity needs a full impact assessment (backend/internal/dpia)
+  - name: risk
+    description: Risk engine — configurable likelihood x impact matrices so far (backend/internal/risk)
   - name: platform
     description: Platform services — background jobs, files, notifications, ... (backend/internal/platform/<service>)
 paths:
@@ -10456,6 +10458,175 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/risk/matrices:
+    get:
+      operationId: riskListMatrices
+      tags: [risk]
+      summary: The tenant's own likelihood x impact risk matrices, default first (RRA-02)
+      x-permission: ropa.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RiskMatrix'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: riskCreateMatrix
+      tags: [risk]
+      summary: Create a risk matrix
+      x-permission: ropa.risk.create
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskMatrixInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskMatrix'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/risk/matrices/{id}:
+    get:
+      operationId: riskGetMatrix
+      tags: [risk]
+      summary: One risk matrix
+      x-permission: ropa.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskMatrix'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: riskUpdateMatrix
+      tags: [risk]
+      summary: Change a risk matrix's own levels, thresholds or default flag — the acceptance criterion itself (RRA-02), since Classify always reads the current row live, never a cached score
+      x-permission: ropa.risk.update
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskMatrixInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskMatrix'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+    delete:
+      operationId: riskDeleteMatrix
+      tags: [risk]
+      summary: Remove a risk matrix (If-Match = its own ETag)
+      x-permission: ropa.risk.delete
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
 components:
   securitySchemes:
     adminJwt:
@@ -11772,6 +11943,59 @@ components:
           items: {$ref: '#/components/schemas/Uuid'}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    RiskLevel:
+      type: string
+      description: risk.activity_scores.level's own CHECK constraint — the only four values any matrix may ever classify a score into
+      enum: [low, medium, high, very_high]
+    RiskThreshold:
+      type: object
+      required: [level, min_score]
+      properties:
+        level: {$ref: '#/components/schemas/RiskLevel'}
+        min_score:
+          type: number
+          description: The score (likelihood x impact) at and above which this level applies
+    RiskMatrixInput:
+      type: object
+      required: [name, likelihood_levels, impact_levels, thresholds]
+      properties:
+        name: {type: string}
+        likelihood_levels:
+          type: array
+          minItems: 2
+          maxItems: 10
+          items: {type: string}
+          description: Labels from lowest to highest likelihood, e.g. 5 entries for a 5x5 matrix
+        impact_levels:
+          type: array
+          minItems: 2
+          maxItems: 10
+          items: {type: string}
+        thresholds:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/RiskThreshold'}
+        is_default:
+          type: boolean
+          default: false
+          description: At most one matrix per tenant may be the default — setting this clears the flag on every other one in the same request
+    RiskMatrix:
+      type: object
+      required: [id, name, likelihood_levels, impact_levels, thresholds, is_default, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string}
+        likelihood_levels:
+          type: array
+          items: {type: string}
+        impact_levels:
+          type: array
+          items: {type: string}
+        thresholds:
+          type: array
+          items: {$ref: '#/components/schemas/RiskThreshold'}
+        is_default: {type: boolean}
+        row_version: {type: integer}
     DataInventorySource:
       type: string
       enum: [direct, indirect, derived]
