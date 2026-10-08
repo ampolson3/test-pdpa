@@ -104,7 +104,7 @@ func Classify(m RiskMatrix, likelihood, impact int) (score float64, level string
 	return score, "", fmt.Errorf("%w: no threshold covers score %v", ErrInvalid, score)
 }
 
-func (s *Service) audit(ctx context.Context, action string, id uuid.UUID, before, after any) error {
+func (s *Service) audit(ctx context.Context, action, entityType string, id uuid.UUID, before, after any) error {
 	if s.Audit == nil {
 		return nil
 	}
@@ -119,7 +119,7 @@ func (s *Service) audit(ctx context.Context, action string, id uuid.UUID, before
 			return fmt.Errorf("risk: audit without a tenant: %w", err)
 		}
 	}
-	e := audit.Entry{TenantID: tenant, ActorType: "system", Action: action, EntityType: "risk_matrix", EntityID: &id, Before: before, After: after}
+	e := audit.Entry{TenantID: tenant, ActorType: "system", Action: action, EntityType: entityType, EntityID: &id, Before: before, After: after}
 	if u, err := uuid.Parse(g.UserID); err == nil {
 		e.ActorType, e.ActorID = "user", &u
 	}
@@ -219,7 +219,7 @@ func (s *Service) SaveMatrix(ctx context.Context, m RiskMatrix, version int32) (
 	if m.ID == uuid.Nil {
 		action = "risk.matrix.create"
 	}
-	if err := s.audit(ctx, action, out.ID, nil, map[string]any{"name": out.Name, "is_default": out.IsDefault}); err != nil {
+	if err := s.audit(ctx, action, "risk_matrix", out.ID, nil, map[string]any{"name": out.Name, "is_default": out.IsDefault}); err != nil {
 		return RiskMatrix{}, err
 	}
 	return out, nil
@@ -236,7 +236,7 @@ func (s *Service) DeleteMatrix(ctx context.Context, id uuid.UUID, version int32)
 	if n == 0 {
 		return ErrVersionMismatch
 	}
-	return s.audit(ctx, "risk.matrix.delete", id, nil, nil)
+	return s.audit(ctx, "risk.matrix.delete", "risk_matrix", id, nil, nil)
 }
 
 func toMatrix(r riskstore.RiskRiskMatrix) (RiskMatrix, error) {

@@ -11,6 +11,9 @@ export type DpiaAssessmentDiff = components["schemas"]["DpiaAssessmentDiff"];
 export type DpiaOpinion = components["schemas"]["DpiaOpinion"];
 export type DpiaOpinionRecommendation = components["schemas"]["DpiaOpinionRecommendation"];
 export type DpiaRegistryEntry = components["schemas"]["DpiaRegistryEntry"];
+export type DpiaRisk = components["schemas"]["DpiaRisk"];
+export type DpiaRiskInput = components["schemas"]["DpiaRiskInput"];
+export type DpiaRiskCatalogItem = components["schemas"]["DpiaRiskCatalogItem"];
 
 /** GET /admin/v1/dpia/assessments/{id}/report (DPIA-15) — a plain href, not a query/mutation: the browser
  *  downloads the PDF/Word file through this link directly, the same pattern documentExportHref uses. */
@@ -195,6 +198,79 @@ export function useRecordDpiaOpinion(client: ApiClient) {
       return data;
     },
     onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "opinions"] }),
+  });
+}
+
+const riskCatalogKey = ["dpia", "risk-catalog"] as const;
+
+/** GET /admin/v1/dpia/risk-catalog (DPIA-06) — the ready-made starter list for the "add risk" form. */
+export function useRiskCatalog(client: ApiClient) {
+  return useQuery({
+    queryKey: riskCatalogKey,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/risk-catalog", {});
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** GET /admin/v1/dpia/assessments/{id}/risks (DPIA-06) — every risk identified against this round. */
+export function useAssessmentRisks(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...assessmentsKey, id ?? "", "risks"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/assessments/{id}/risks", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/dpia/assessments/{id}/risks (DPIA-06) — identify + score a risk against this round. */
+export function useIdentifyRisk(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { assessmentId: string; input: DpiaRiskInput }) => {
+      const { data, error } = await client.POST("/admin/v1/dpia/assessments/{id}/risks", {
+        params: { path: { id: v.assessmentId } },
+        body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "risks"] }),
+  });
+}
+
+/** PUT /admin/v1/dpia/assessments/{id}/risks/{riskId} (DPIA-06) — edit a risk already linked to this round. */
+export function useUpdateRisk(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { assessmentId: string; riskId: string; rowVersion: number; input: DpiaRiskInput }) => {
+      const { data, error } = await client.PUT("/admin/v1/dpia/assessments/{id}/risks/{riskId}", {
+        params: { path: { id: v.assessmentId, riskId: v.riskId }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "risks"] }),
+  });
+}
+
+/** DELETE /admin/v1/dpia/assessments/{id}/risks/{riskId} (DPIA-06) — unlink a risk from this round. */
+export function useRemoveAssessmentRisk(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { assessmentId: string; riskId: string }) => {
+      const { error } = await client.DELETE("/admin/v1/dpia/assessments/{id}/risks/{riskId}", {
+        params: { path: { id: v.assessmentId, riskId: v.riskId } },
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "risks"] }),
   });
 }
 

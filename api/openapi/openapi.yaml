@@ -9495,6 +9495,194 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpia/risk-catalog:
+    get:
+      operationId: dpiaRiskCatalog
+      tags: [dpia]
+      summary: 'DPIA-06: the ready-made risk catalog used to prefill the "add risk" form'
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpiaRiskCatalogItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/dpia/assessments/{id}/risks:
+    get:
+      operationId: dpiaListAssessmentRisks
+      tags: [dpia]
+      summary: 'DPIA-06: every risk identified against this assessment round'
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpiaRisk'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dpiaIdentifyRisk
+      tags: [dpia]
+      summary: 'DPIA-06: identify and score a risk (likelihood x impact against the tenant''s own matrix, RRA-02)'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DpiaRiskInput'
+      responses:
+        '201':
+          description: Identified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaRisk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpia/assessments/{id}/risks/{riskId}:
+    put:
+      operationId: dpiaUpdateRisk
+      tags: [dpia]
+      summary: 'DPIA-06: edit a risk already identified against this assessment round'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: riskId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DpiaRiskInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaRisk'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+    delete:
+      operationId: dpiaRemoveAssessmentRisk
+      tags: [dpia]
+      summary: 'DPIA-06: unlink a risk from this assessment round (the risk.risks row itself is kept)'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: riskId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /admin/v1/dpia/templates:
     get:
       operationId: dpiaListTemplates
@@ -12246,6 +12434,11 @@ components:
           enum: [required, recommended, not_required]
         screening_reason: {type: string}
         score: {type: number}
+        risk_level:
+          type: [string, 'null']
+          description: 'Set when this round was opened by RRA-03''s risk-score trigger (high | very_high); null for a manually-screened round.'
+          enum: [low, medium, high, very_high, null]
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
         factors:
           type: array
           items:
@@ -12291,6 +12484,54 @@ components:
         dpo_user_id: {$ref: '#/components/schemas/Uuid'}
         opinion: {type: string}
         recommendation: {$ref: '#/components/schemas/DpiaOpinionRecommendation'}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    DpiaRiskCatalogItem:
+      type: object
+      description: 'DPIA-06''s own ready-made risk catalog (a static starter list, not a tenant-editable table — see docs/decisions.md Q-33): picking one only prefills the "add risk" form''s title/description.'
+      required: [code, title_th, title_en, description_th]
+      properties:
+        code: {type: string}
+        title_th: {type: string}
+        title_en: {type: string}
+        description_th: {type: string}
+    DpiaRiskInput:
+      type: object
+      required: [title, likelihood, impact]
+      additionalProperties: false
+      properties:
+        title: {type: string, minLength: 1, maxLength: 300}
+        description: {type: string, maxLength: 4000}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        likelihood: {type: integer, minimum: 1}
+        impact: {type: integer, minimum: 1}
+        treatment:
+          type: string
+          enum: [mitigate, accept, transfer, avoid]
+        status:
+          type: string
+          enum: [open, in_treatment, accepted, closed]
+    DpiaRisk:
+      type: object
+      description: 'DPIA-06: one risk.risks row identified against this DPIA round, scored live against the tenant''s own matrix (RRA-02).'
+      required: [id, title, likelihood, impact, inherent_score, level, status, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        title: {type: string}
+        description: {type: string}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        likelihood: {type: integer}
+        impact: {type: integer}
+        inherent_score: {type: number}
+        level:
+          type: string
+          enum: [low, medium, high, very_high]
+        treatment:
+          type: [string, 'null']
+          enum: [mitigate, accept, transfer, avoid, null]
+        status:
+          type: string
+          enum: [open, in_treatment, accepted, closed]
+        row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
     DpiaNecessity:
       type: object

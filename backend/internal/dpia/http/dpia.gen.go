@@ -54,6 +54,33 @@ func (e DpiaActivityDescriptionDataSource) Valid() bool {
 	}
 }
 
+// Defines values for DpiaAssessmentRiskLevel.
+const (
+	DpiaAssessmentRiskLevelHigh        DpiaAssessmentRiskLevel = "high"
+	DpiaAssessmentRiskLevelLessThannil DpiaAssessmentRiskLevel = "<nil>"
+	DpiaAssessmentRiskLevelLow         DpiaAssessmentRiskLevel = "low"
+	DpiaAssessmentRiskLevelMedium      DpiaAssessmentRiskLevel = "medium"
+	DpiaAssessmentRiskLevelVeryHigh    DpiaAssessmentRiskLevel = "very_high"
+)
+
+// Valid indicates whether the value is a known member of the DpiaAssessmentRiskLevel enum.
+func (e DpiaAssessmentRiskLevel) Valid() bool {
+	switch e {
+	case DpiaAssessmentRiskLevelHigh:
+		return true
+	case DpiaAssessmentRiskLevelLessThannil:
+		return true
+	case DpiaAssessmentRiskLevelLow:
+		return true
+	case DpiaAssessmentRiskLevelMedium:
+		return true
+	case DpiaAssessmentRiskLevelVeryHigh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DpiaAssessmentScreeningResult.
 const (
 	DpiaAssessmentScreeningResultNotRequired DpiaAssessmentScreeningResult = "not_required"
@@ -204,6 +231,129 @@ func (e DpiaRegistryEntryStatus) Valid() bool {
 	case DpiaRegistryEntryStatusRejected:
 		return true
 	case DpiaRegistryEntryStatusScreening:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaRiskLevel.
+const (
+	DpiaRiskLevelHigh     DpiaRiskLevel = "high"
+	DpiaRiskLevelLow      DpiaRiskLevel = "low"
+	DpiaRiskLevelMedium   DpiaRiskLevel = "medium"
+	DpiaRiskLevelVeryHigh DpiaRiskLevel = "very_high"
+)
+
+// Valid indicates whether the value is a known member of the DpiaRiskLevel enum.
+func (e DpiaRiskLevel) Valid() bool {
+	switch e {
+	case DpiaRiskLevelHigh:
+		return true
+	case DpiaRiskLevelLow:
+		return true
+	case DpiaRiskLevelMedium:
+		return true
+	case DpiaRiskLevelVeryHigh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaRiskStatus.
+const (
+	DpiaRiskStatusAccepted    DpiaRiskStatus = "accepted"
+	DpiaRiskStatusClosed      DpiaRiskStatus = "closed"
+	DpiaRiskStatusInTreatment DpiaRiskStatus = "in_treatment"
+	DpiaRiskStatusOpen        DpiaRiskStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the DpiaRiskStatus enum.
+func (e DpiaRiskStatus) Valid() bool {
+	switch e {
+	case DpiaRiskStatusAccepted:
+		return true
+	case DpiaRiskStatusClosed:
+		return true
+	case DpiaRiskStatusInTreatment:
+		return true
+	case DpiaRiskStatusOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaRiskTreatment.
+const (
+	DpiaRiskTreatmentAccept      DpiaRiskTreatment = "accept"
+	DpiaRiskTreatmentAvoid       DpiaRiskTreatment = "avoid"
+	DpiaRiskTreatmentLessThannil DpiaRiskTreatment = "<nil>"
+	DpiaRiskTreatmentMitigate    DpiaRiskTreatment = "mitigate"
+	DpiaRiskTreatmentTransfer    DpiaRiskTreatment = "transfer"
+)
+
+// Valid indicates whether the value is a known member of the DpiaRiskTreatment enum.
+func (e DpiaRiskTreatment) Valid() bool {
+	switch e {
+	case DpiaRiskTreatmentAccept:
+		return true
+	case DpiaRiskTreatmentAvoid:
+		return true
+	case DpiaRiskTreatmentLessThannil:
+		return true
+	case DpiaRiskTreatmentMitigate:
+		return true
+	case DpiaRiskTreatmentTransfer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaRiskInputStatus.
+const (
+	DpiaRiskInputStatusAccepted    DpiaRiskInputStatus = "accepted"
+	DpiaRiskInputStatusClosed      DpiaRiskInputStatus = "closed"
+	DpiaRiskInputStatusInTreatment DpiaRiskInputStatus = "in_treatment"
+	DpiaRiskInputStatusOpen        DpiaRiskInputStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the DpiaRiskInputStatus enum.
+func (e DpiaRiskInputStatus) Valid() bool {
+	switch e {
+	case DpiaRiskInputStatusAccepted:
+		return true
+	case DpiaRiskInputStatusClosed:
+		return true
+	case DpiaRiskInputStatusInTreatment:
+		return true
+	case DpiaRiskInputStatusOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaRiskInputTreatment.
+const (
+	DpiaRiskInputTreatmentAccept   DpiaRiskInputTreatment = "accept"
+	DpiaRiskInputTreatmentAvoid    DpiaRiskInputTreatment = "avoid"
+	DpiaRiskInputTreatmentMitigate DpiaRiskInputTreatment = "mitigate"
+	DpiaRiskInputTreatmentTransfer DpiaRiskInputTreatment = "transfer"
+)
+
+// Valid indicates whether the value is a known member of the DpiaRiskInputTreatment enum.
+func (e DpiaRiskInputTreatment) Valid() bool {
+	switch e {
+	case DpiaRiskInputTreatmentAccept:
+		return true
+	case DpiaRiskInputTreatmentAvoid:
+		return true
+	case DpiaRiskInputTreatmentMitigate:
+		return true
+	case DpiaRiskInputTreatmentTransfer:
 		return true
 	default:
 		return false
@@ -561,6 +711,78 @@ func (e DpiaGetReportParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for DpiaListAssessmentRisksParamsAcceptLanguage.
+const (
+	DpiaListAssessmentRisksParamsAcceptLanguageEn DpiaListAssessmentRisksParamsAcceptLanguage = "en"
+	DpiaListAssessmentRisksParamsAcceptLanguageTh DpiaListAssessmentRisksParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaListAssessmentRisksParamsAcceptLanguage enum.
+func (e DpiaListAssessmentRisksParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaListAssessmentRisksParamsAcceptLanguageEn:
+		return true
+	case DpiaListAssessmentRisksParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaIdentifyRiskParamsAcceptLanguage.
+const (
+	DpiaIdentifyRiskParamsAcceptLanguageEn DpiaIdentifyRiskParamsAcceptLanguage = "en"
+	DpiaIdentifyRiskParamsAcceptLanguageTh DpiaIdentifyRiskParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaIdentifyRiskParamsAcceptLanguage enum.
+func (e DpiaIdentifyRiskParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaIdentifyRiskParamsAcceptLanguageEn:
+		return true
+	case DpiaIdentifyRiskParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaRemoveAssessmentRiskParamsAcceptLanguage.
+const (
+	DpiaRemoveAssessmentRiskParamsAcceptLanguageEn DpiaRemoveAssessmentRiskParamsAcceptLanguage = "en"
+	DpiaRemoveAssessmentRiskParamsAcceptLanguageTh DpiaRemoveAssessmentRiskParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaRemoveAssessmentRiskParamsAcceptLanguage enum.
+func (e DpiaRemoveAssessmentRiskParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaRemoveAssessmentRiskParamsAcceptLanguageEn:
+		return true
+	case DpiaRemoveAssessmentRiskParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaUpdateRiskParamsAcceptLanguage.
+const (
+	DpiaUpdateRiskParamsAcceptLanguageEn DpiaUpdateRiskParamsAcceptLanguage = "en"
+	DpiaUpdateRiskParamsAcceptLanguageTh DpiaUpdateRiskParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaUpdateRiskParamsAcceptLanguage enum.
+func (e DpiaUpdateRiskParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaUpdateRiskParamsAcceptLanguageEn:
+		return true
+	case DpiaUpdateRiskParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DpiaTransitionAssessmentParamsAcceptLanguage.
 const (
 	DpiaTransitionAssessmentParamsAcceptLanguageEn DpiaTransitionAssessmentParamsAcceptLanguage = "en"
@@ -657,6 +879,24 @@ func (e DpiaGetRegistryParamsAcceptLanguage) Valid() bool {
 	case DpiaGetRegistryParamsAcceptLanguageEn:
 		return true
 	case DpiaGetRegistryParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaRiskCatalogParamsAcceptLanguage.
+const (
+	DpiaRiskCatalogParamsAcceptLanguageEn DpiaRiskCatalogParamsAcceptLanguage = "en"
+	DpiaRiskCatalogParamsAcceptLanguageTh DpiaRiskCatalogParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaRiskCatalogParamsAcceptLanguage enum.
+func (e DpiaRiskCatalogParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaRiskCatalogParamsAcceptLanguageEn:
+		return true
+	case DpiaRiskCatalogParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -874,8 +1114,14 @@ type DpiaAssessment struct {
 	// Id UUIDv7 generated by the API
 	Id Uuid `json:"id"`
 
+	// OwnerUserId UUIDv7 generated by the API
+	OwnerUserId *Uuid `json:"owner_user_id,omitempty"`
+
 	// PreviousId UUIDv7 generated by the API
-	PreviousId      *Uuid                         `json:"previous_id,omitempty"`
+	PreviousId *Uuid `json:"previous_id,omitempty"`
+
+	// RiskLevel Set when this round was opened by RRA-03's risk-score trigger (high | very_high); null for a manually-screened round.
+	RiskLevel       *DpiaAssessmentRiskLevel      `json:"risk_level,omitempty"`
 	RoundNo         int                           `json:"round_no"`
 	RowVersion      int                           `json:"row_version"`
 	Score           float32                       `json:"score"`
@@ -886,6 +1132,9 @@ type DpiaAssessment struct {
 	Status DpiaAssessmentStatus `json:"status"`
 	Title  *string              `json:"title,omitempty"`
 }
+
+// DpiaAssessmentRiskLevel Set when this round was opened by RRA-03's risk-score trigger (high | very_high); null for a manually-screened round.
+type DpiaAssessmentRiskLevel string
 
 // DpiaAssessmentScreeningResult defines model for DpiaAssessment.ScreeningResult.
 type DpiaAssessmentScreeningResult string
@@ -978,6 +1227,63 @@ type DpiaRegistryEntryScreeningResult string
 
 // DpiaRegistryEntryStatus defines model for DpiaRegistryEntry.Status.
 type DpiaRegistryEntryStatus string
+
+// DpiaRisk DPIA-06: one risk.risks row identified against this DPIA round, scored live against the tenant's own matrix (RRA-02).
+type DpiaRisk struct {
+	// CreatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	CreatedAt   Timestamp `json:"created_at"`
+	Description *string   `json:"description,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id            Uuid          `json:"id"`
+	Impact        int           `json:"impact"`
+	InherentScore float32       `json:"inherent_score"`
+	Level         DpiaRiskLevel `json:"level"`
+	Likelihood    int           `json:"likelihood"`
+
+	// OwnerUserId UUIDv7 generated by the API
+	OwnerUserId *Uuid              `json:"owner_user_id,omitempty"`
+	RowVersion  int                `json:"row_version"`
+	Status      DpiaRiskStatus     `json:"status"`
+	Title       string             `json:"title"`
+	Treatment   *DpiaRiskTreatment `json:"treatment,omitempty"`
+}
+
+// DpiaRiskLevel defines model for DpiaRisk.Level.
+type DpiaRiskLevel string
+
+// DpiaRiskStatus defines model for DpiaRisk.Status.
+type DpiaRiskStatus string
+
+// DpiaRiskTreatment defines model for DpiaRisk.Treatment.
+type DpiaRiskTreatment string
+
+// DpiaRiskCatalogItem DPIA-06's own ready-made risk catalog (a static starter list, not a tenant-editable table — see docs/decisions.md Q-33): picking one only prefills the "add risk" form's title/description.
+type DpiaRiskCatalogItem struct {
+	Code          string `json:"code"`
+	DescriptionTh string `json:"description_th"`
+	TitleEn       string `json:"title_en"`
+	TitleTh       string `json:"title_th"`
+}
+
+// DpiaRiskInput defines model for DpiaRiskInput.
+type DpiaRiskInput struct {
+	Description *string `json:"description,omitempty"`
+	Impact      int     `json:"impact"`
+	Likelihood  int     `json:"likelihood"`
+
+	// OwnerUserId UUIDv7 generated by the API
+	OwnerUserId *Uuid                   `json:"owner_user_id,omitempty"`
+	Status      *DpiaRiskInputStatus    `json:"status,omitempty"`
+	Title       string                  `json:"title"`
+	Treatment   *DpiaRiskInputTreatment `json:"treatment,omitempty"`
+}
+
+// DpiaRiskInputStatus defines model for DpiaRiskInput.Status.
+type DpiaRiskInputStatus string
+
+// DpiaRiskInputTreatment defines model for DpiaRiskInput.Treatment.
+type DpiaRiskInputTreatment string
 
 // DpiaScreeningRule defines model for DpiaScreeningRule.
 type DpiaScreeningRule struct {
@@ -1274,6 +1580,45 @@ type DpiaGetReportParamsFormat string
 // DpiaGetReportParamsAcceptLanguage defines parameters for DpiaGetReport.
 type DpiaGetReportParamsAcceptLanguage string
 
+// DpiaListAssessmentRisksParams defines parameters for DpiaListAssessmentRisks.
+type DpiaListAssessmentRisksParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaListAssessmentRisksParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpiaListAssessmentRisksParamsAcceptLanguage defines parameters for DpiaListAssessmentRisks.
+type DpiaListAssessmentRisksParamsAcceptLanguage string
+
+// DpiaIdentifyRiskParams defines parameters for DpiaIdentifyRisk.
+type DpiaIdentifyRiskParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaIdentifyRiskParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpiaIdentifyRiskParamsAcceptLanguage defines parameters for DpiaIdentifyRisk.
+type DpiaIdentifyRiskParamsAcceptLanguage string
+
+// DpiaRemoveAssessmentRiskParams defines parameters for DpiaRemoveAssessmentRisk.
+type DpiaRemoveAssessmentRiskParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaRemoveAssessmentRiskParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpiaRemoveAssessmentRiskParamsAcceptLanguage defines parameters for DpiaRemoveAssessmentRisk.
+type DpiaRemoveAssessmentRiskParamsAcceptLanguage string
+
+// DpiaUpdateRiskParams defines parameters for DpiaUpdateRisk.
+type DpiaUpdateRiskParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaUpdateRiskParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// DpiaUpdateRiskParamsAcceptLanguage defines parameters for DpiaUpdateRisk.
+type DpiaUpdateRiskParamsAcceptLanguage string
+
 // DpiaTransitionAssessmentJSONBody defines parameters for DpiaTransitionAssessment.
 type DpiaTransitionAssessmentJSONBody struct {
 	Reason *string                            `json:"reason,omitempty"`
@@ -1310,6 +1655,15 @@ type DpiaGetRegistryParamsStatus string
 
 // DpiaGetRegistryParamsAcceptLanguage defines parameters for DpiaGetRegistry.
 type DpiaGetRegistryParamsAcceptLanguage string
+
+// DpiaRiskCatalogParams defines parameters for DpiaRiskCatalog.
+type DpiaRiskCatalogParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaRiskCatalogParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpiaRiskCatalogParamsAcceptLanguage defines parameters for DpiaRiskCatalog.
+type DpiaRiskCatalogParamsAcceptLanguage string
 
 // DpiaGetScreeningRulesParams defines parameters for DpiaGetScreeningRules.
 type DpiaGetScreeningRulesParams struct {
@@ -1421,6 +1775,12 @@ type DpiaAssessNecessityJSONRequestBody DpiaAssessNecessityJSONBody
 // DpiaRecordOpinionJSONRequestBody defines body for DpiaRecordOpinion for application/json ContentType.
 type DpiaRecordOpinionJSONRequestBody DpiaRecordOpinionJSONBody
 
+// DpiaIdentifyRiskJSONRequestBody defines body for DpiaIdentifyRisk for application/json ContentType.
+type DpiaIdentifyRiskJSONRequestBody = DpiaRiskInput
+
+// DpiaUpdateRiskJSONRequestBody defines body for DpiaUpdateRisk for application/json ContentType.
+type DpiaUpdateRiskJSONRequestBody = DpiaRiskInput
+
 // DpiaTransitionAssessmentJSONRequestBody defines body for DpiaTransitionAssessment for application/json ContentType.
 type DpiaTransitionAssessmentJSONRequestBody DpiaTransitionAssessmentJSONBody
 
@@ -1465,12 +1825,27 @@ type ServerInterface interface {
 	// DpiaGetReport DPIA-15: render the assessment as a PDF or Word report, TH or EN — score, linked security measures and DPO opinions/approvers
 	// (GET /admin/v1/dpia/assessments/{id}/report)
 	DpiaGetReport(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaGetReportParams)
+	// DpiaListAssessmentRisks DPIA-06: every risk identified against this assessment round
+	// (GET /admin/v1/dpia/assessments/{id}/risks)
+	DpiaListAssessmentRisks(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaListAssessmentRisksParams)
+	// DpiaIdentifyRisk DPIA-06: identify and score a risk (likelihood x impact against the tenant's own matrix, RRA-02)
+	// (POST /admin/v1/dpia/assessments/{id}/risks)
+	DpiaIdentifyRisk(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaIdentifyRiskParams)
+	// DpiaRemoveAssessmentRisk DPIA-06: unlink a risk from this assessment round (the risk.risks row itself is kept)
+	// (DELETE /admin/v1/dpia/assessments/{id}/risks/{riskId})
+	DpiaRemoveAssessmentRisk(w http.ResponseWriter, r *http.Request, id Uuid, riskId Uuid, params DpiaRemoveAssessmentRiskParams)
+	// DpiaUpdateRisk DPIA-06: edit a risk already identified against this assessment round
+	// (PUT /admin/v1/dpia/assessments/{id}/risks/{riskId})
+	DpiaUpdateRisk(w http.ResponseWriter, r *http.Request, id Uuid, riskId Uuid, params DpiaUpdateRiskParams)
 	// DpiaTransitionAssessment DPIA-10: submit for review, request more info, decide (approved/rejected/needs_review), resume or close (ST-05#2) — deciding or closing needs assessment.dpia.approve beyond the endpoint's own permission
 	// (POST /admin/v1/dpia/assessments/{id}/transition)
 	DpiaTransitionAssessment(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaTransitionAssessmentParams)
 	// DpiaGetRegistry DPIA-12: every RoPA activity's current DPIA round in one report, read live so its status always matches reality (no pagination, same precedent as ROPA-04's own processor-RoPA export)
 	// (GET /admin/v1/dpia/registry)
 	DpiaGetRegistry(w http.ResponseWriter, r *http.Request, params DpiaGetRegistryParams)
+	// DpiaRiskCatalog DPIA-06: the ready-made risk catalog used to prefill the "add risk" form
+	// (GET /admin/v1/dpia/risk-catalog)
+	DpiaRiskCatalog(w http.ResponseWriter, r *http.Request, params DpiaRiskCatalogParams)
 	// DpiaGetScreeningRules The tenant's DPIA-02 screening thresholds (defaults if none saved yet)
 	// (GET /admin/v1/dpia/screening-rules)
 	DpiaGetScreeningRules(w http.ResponseWriter, r *http.Request, params DpiaGetScreeningRulesParams)
@@ -1561,6 +1936,30 @@ func (_ Unimplemented) DpiaGetReport(w http.ResponseWriter, r *http.Request, id 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// DpiaListAssessmentRisks DPIA-06: every risk identified against this assessment round
+// (GET /admin/v1/dpia/assessments/{id}/risks)
+func (_ Unimplemented) DpiaListAssessmentRisks(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaListAssessmentRisksParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpiaIdentifyRisk DPIA-06: identify and score a risk (likelihood x impact against the tenant's own matrix, RRA-02)
+// (POST /admin/v1/dpia/assessments/{id}/risks)
+func (_ Unimplemented) DpiaIdentifyRisk(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaIdentifyRiskParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpiaRemoveAssessmentRisk DPIA-06: unlink a risk from this assessment round (the risk.risks row itself is kept)
+// (DELETE /admin/v1/dpia/assessments/{id}/risks/{riskId})
+func (_ Unimplemented) DpiaRemoveAssessmentRisk(w http.ResponseWriter, r *http.Request, id Uuid, riskId Uuid, params DpiaRemoveAssessmentRiskParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpiaUpdateRisk DPIA-06: edit a risk already identified against this assessment round
+// (PUT /admin/v1/dpia/assessments/{id}/risks/{riskId})
+func (_ Unimplemented) DpiaUpdateRisk(w http.ResponseWriter, r *http.Request, id Uuid, riskId Uuid, params DpiaUpdateRiskParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // DpiaTransitionAssessment DPIA-10: submit for review, request more info, decide (approved/rejected/needs_review), resume or close (ST-05#2) — deciding or closing needs assessment.dpia.approve beyond the endpoint's own permission
 // (POST /admin/v1/dpia/assessments/{id}/transition)
 func (_ Unimplemented) DpiaTransitionAssessment(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaTransitionAssessmentParams) {
@@ -1570,6 +1969,12 @@ func (_ Unimplemented) DpiaTransitionAssessment(w http.ResponseWriter, r *http.R
 // DpiaGetRegistry DPIA-12: every RoPA activity's current DPIA round in one report, read live so its status always matches reality (no pagination, same precedent as ROPA-04's own processor-RoPA export)
 // (GET /admin/v1/dpia/registry)
 func (_ Unimplemented) DpiaGetRegistry(w http.ResponseWriter, r *http.Request, params DpiaGetRegistryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpiaRiskCatalog DPIA-06: the ready-made risk catalog used to prefill the "add risk" form
+// (GET /admin/v1/dpia/risk-catalog)
+func (_ Unimplemented) DpiaRiskCatalog(w http.ResponseWriter, r *http.Request, params DpiaRiskCatalogParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2186,6 +2591,247 @@ func (siw *ServerInterfaceWrapper) DpiaGetReport(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// DpiaListAssessmentRisks operation middleware
+func (siw *ServerInterfaceWrapper) DpiaListAssessmentRisks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaListAssessmentRisksParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaListAssessmentRisksParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaListAssessmentRisks(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpiaIdentifyRisk operation middleware
+func (siw *ServerInterfaceWrapper) DpiaIdentifyRisk(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaIdentifyRiskParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaIdentifyRiskParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaIdentifyRisk(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpiaRemoveAssessmentRisk operation middleware
+func (siw *ServerInterfaceWrapper) DpiaRemoveAssessmentRisk(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "riskId" -------------
+	var riskId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "riskId", chi.URLParam(r, "riskId"), &riskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "riskId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaRemoveAssessmentRiskParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaRemoveAssessmentRiskParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaRemoveAssessmentRisk(w, r, id, riskId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpiaUpdateRisk operation middleware
+func (siw *ServerInterfaceWrapper) DpiaUpdateRisk(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "riskId" -------------
+	var riskId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "riskId", chi.URLParam(r, "riskId"), &riskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "riskId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaUpdateRiskParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaUpdateRiskParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaUpdateRisk(w, r, id, riskId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // DpiaTransitionAssessment operation middleware
 func (siw *ServerInterfaceWrapper) DpiaTransitionAssessment(w http.ResponseWriter, r *http.Request) {
 
@@ -2330,6 +2976,47 @@ func (siw *ServerInterfaceWrapper) DpiaGetRegistry(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DpiaGetRegistry(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpiaRiskCatalog operation middleware
+func (siw *ServerInterfaceWrapper) DpiaRiskCatalog(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaRiskCatalogParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaRiskCatalogParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaRiskCatalog(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2916,6 +3603,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/dpia/assessments/{id}/opinions", wrapper.DpiaRecordOpinion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dpia/risk-catalog", wrapper.DpiaRiskCatalog)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dpia/assessments/{id}/risks", wrapper.DpiaListAssessmentRisks)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dpia/assessments/{id}/risks", wrapper.DpiaIdentifyRisk)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/admin/v1/dpia/assessments/{id}/risks/{riskId}", wrapper.DpiaRemoveAssessmentRisk)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/v1/dpia/assessments/{id}/risks/{riskId}", wrapper.DpiaUpdateRisk)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/dpia/templates", wrapper.DpiaListTemplates)
@@ -3780,6 +4482,444 @@ func (response DpiaGetReport503ApplicationProblemPlusJSONResponse) VisitDpiaGetR
 	return err
 }
 
+type DpiaListAssessmentRisksRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DpiaListAssessmentRisksParams
+}
+
+type DpiaListAssessmentRisksResponseObject interface {
+	VisitDpiaListAssessmentRisksResponse(w http.ResponseWriter) error
+}
+
+type DpiaListAssessmentRisks200JSONResponse struct {
+	Data []DpiaRisk `json:"data"`
+}
+
+func (response DpiaListAssessmentRisks200JSONResponse) VisitDpiaListAssessmentRisksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaListAssessmentRisks401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaListAssessmentRisks401ApplicationProblemPlusJSONResponse) VisitDpiaListAssessmentRisksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaListAssessmentRisks403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaListAssessmentRisks403ApplicationProblemPlusJSONResponse) VisitDpiaListAssessmentRisksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaListAssessmentRisks404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaListAssessmentRisks404ApplicationProblemPlusJSONResponse) VisitDpiaListAssessmentRisksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaIdentifyRiskRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DpiaIdentifyRiskParams
+	Body   *DpiaIdentifyRiskJSONRequestBody
+}
+
+type DpiaIdentifyRiskResponseObject interface {
+	VisitDpiaIdentifyRiskResponse(w http.ResponseWriter) error
+}
+
+type DpiaIdentifyRisk201JSONResponse DpiaRisk
+
+func (response DpiaIdentifyRisk201JSONResponse) VisitDpiaIdentifyRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaIdentifyRisk400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaIdentifyRisk400ApplicationProblemPlusJSONResponse) VisitDpiaIdentifyRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaIdentifyRisk401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaIdentifyRisk401ApplicationProblemPlusJSONResponse) VisitDpiaIdentifyRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaIdentifyRisk403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaIdentifyRisk403ApplicationProblemPlusJSONResponse) VisitDpiaIdentifyRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaIdentifyRisk404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaIdentifyRisk404ApplicationProblemPlusJSONResponse) VisitDpiaIdentifyRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaIdentifyRisk409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaIdentifyRisk409ApplicationProblemPlusJSONResponse) VisitDpiaIdentifyRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaIdentifyRisk422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaIdentifyRisk422ApplicationProblemPlusJSONResponse) VisitDpiaIdentifyRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRemoveAssessmentRiskRequestObject struct {
+	Id     Uuid `json:"id"`
+	RiskId Uuid `json:"riskId"`
+	Params DpiaRemoveAssessmentRiskParams
+}
+
+type DpiaRemoveAssessmentRiskResponseObject interface {
+	VisitDpiaRemoveAssessmentRiskResponse(w http.ResponseWriter) error
+}
+
+type DpiaRemoveAssessmentRisk204Response struct {
+}
+
+func (response DpiaRemoveAssessmentRisk204Response) VisitDpiaRemoveAssessmentRiskResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DpiaRemoveAssessmentRisk401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaRemoveAssessmentRisk401ApplicationProblemPlusJSONResponse) VisitDpiaRemoveAssessmentRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRemoveAssessmentRisk403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaRemoveAssessmentRisk403ApplicationProblemPlusJSONResponse) VisitDpiaRemoveAssessmentRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRemoveAssessmentRisk404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaRemoveAssessmentRisk404ApplicationProblemPlusJSONResponse) VisitDpiaRemoveAssessmentRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRemoveAssessmentRisk409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaRemoveAssessmentRisk409ApplicationProblemPlusJSONResponse) VisitDpiaRemoveAssessmentRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaUpdateRiskRequestObject struct {
+	Id     Uuid `json:"id"`
+	RiskId Uuid `json:"riskId"`
+	Params DpiaUpdateRiskParams
+	Body   *DpiaUpdateRiskJSONRequestBody
+}
+
+type DpiaUpdateRiskResponseObject interface {
+	VisitDpiaUpdateRiskResponse(w http.ResponseWriter) error
+}
+
+type DpiaUpdateRisk200ResponseHeaders struct {
+	ETag *string
+}
+
+type DpiaUpdateRisk200JSONResponse struct {
+	Body    DpiaRisk
+	Headers DpiaUpdateRisk200ResponseHeaders
+}
+
+func (response DpiaUpdateRisk200JSONResponse) VisitDpiaUpdateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaUpdateRisk400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaUpdateRisk400ApplicationProblemPlusJSONResponse) VisitDpiaUpdateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaUpdateRisk401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaUpdateRisk401ApplicationProblemPlusJSONResponse) VisitDpiaUpdateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaUpdateRisk403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaUpdateRisk403ApplicationProblemPlusJSONResponse) VisitDpiaUpdateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaUpdateRisk404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaUpdateRisk404ApplicationProblemPlusJSONResponse) VisitDpiaUpdateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaUpdateRisk409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaUpdateRisk409ApplicationProblemPlusJSONResponse) VisitDpiaUpdateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaUpdateRisk412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaUpdateRisk412ApplicationProblemPlusJSONResponse) VisitDpiaUpdateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaUpdateRisk422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaUpdateRisk422ApplicationProblemPlusJSONResponse) VisitDpiaUpdateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaUpdateRisk428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaUpdateRisk428ApplicationProblemPlusJSONResponse) VisitDpiaUpdateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DpiaTransitionAssessmentRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params DpiaTransitionAssessmentParams
@@ -3987,6 +5127,62 @@ type DpiaGetRegistry403ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response DpiaGetRegistry403ApplicationProblemPlusJSONResponse) VisitDpiaGetRegistryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRiskCatalogRequestObject struct {
+	Params DpiaRiskCatalogParams
+}
+
+type DpiaRiskCatalogResponseObject interface {
+	VisitDpiaRiskCatalogResponse(w http.ResponseWriter) error
+}
+
+type DpiaRiskCatalog200JSONResponse struct {
+	Data []DpiaRiskCatalogItem `json:"data"`
+}
+
+func (response DpiaRiskCatalog200JSONResponse) VisitDpiaRiskCatalogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRiskCatalog401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaRiskCatalog401ApplicationProblemPlusJSONResponse) VisitDpiaRiskCatalogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaRiskCatalog403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaRiskCatalog403ApplicationProblemPlusJSONResponse) VisitDpiaRiskCatalogResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -4743,12 +5939,27 @@ type StrictServerInterface interface {
 	// DpiaGetReport DPIA-15: render the assessment as a PDF or Word report, TH or EN — score, linked security measures and DPO opinions/approvers
 	// (GET /admin/v1/dpia/assessments/{id}/report)
 	DpiaGetReport(ctx context.Context, request DpiaGetReportRequestObject) (DpiaGetReportResponseObject, error)
+	// DpiaListAssessmentRisks DPIA-06: every risk identified against this assessment round
+	// (GET /admin/v1/dpia/assessments/{id}/risks)
+	DpiaListAssessmentRisks(ctx context.Context, request DpiaListAssessmentRisksRequestObject) (DpiaListAssessmentRisksResponseObject, error)
+	// DpiaIdentifyRisk DPIA-06: identify and score a risk (likelihood x impact against the tenant's own matrix, RRA-02)
+	// (POST /admin/v1/dpia/assessments/{id}/risks)
+	DpiaIdentifyRisk(ctx context.Context, request DpiaIdentifyRiskRequestObject) (DpiaIdentifyRiskResponseObject, error)
+	// DpiaRemoveAssessmentRisk DPIA-06: unlink a risk from this assessment round (the risk.risks row itself is kept)
+	// (DELETE /admin/v1/dpia/assessments/{id}/risks/{riskId})
+	DpiaRemoveAssessmentRisk(ctx context.Context, request DpiaRemoveAssessmentRiskRequestObject) (DpiaRemoveAssessmentRiskResponseObject, error)
+	// DpiaUpdateRisk DPIA-06: edit a risk already identified against this assessment round
+	// (PUT /admin/v1/dpia/assessments/{id}/risks/{riskId})
+	DpiaUpdateRisk(ctx context.Context, request DpiaUpdateRiskRequestObject) (DpiaUpdateRiskResponseObject, error)
 	// DpiaTransitionAssessment DPIA-10: submit for review, request more info, decide (approved/rejected/needs_review), resume or close (ST-05#2) — deciding or closing needs assessment.dpia.approve beyond the endpoint's own permission
 	// (POST /admin/v1/dpia/assessments/{id}/transition)
 	DpiaTransitionAssessment(ctx context.Context, request DpiaTransitionAssessmentRequestObject) (DpiaTransitionAssessmentResponseObject, error)
 	// DpiaGetRegistry DPIA-12: every RoPA activity's current DPIA round in one report, read live so its status always matches reality (no pagination, same precedent as ROPA-04's own processor-RoPA export)
 	// (GET /admin/v1/dpia/registry)
 	DpiaGetRegistry(ctx context.Context, request DpiaGetRegistryRequestObject) (DpiaGetRegistryResponseObject, error)
+	// DpiaRiskCatalog DPIA-06: the ready-made risk catalog used to prefill the "add risk" form
+	// (GET /admin/v1/dpia/risk-catalog)
+	DpiaRiskCatalog(ctx context.Context, request DpiaRiskCatalogRequestObject) (DpiaRiskCatalogResponseObject, error)
 	// DpiaGetScreeningRules The tenant's DPIA-02 screening thresholds (defaults if none saved yet)
 	// (GET /admin/v1/dpia/screening-rules)
 	DpiaGetScreeningRules(ctx context.Context, request DpiaGetScreeningRulesRequestObject) (DpiaGetScreeningRulesResponseObject, error)
@@ -5104,6 +6315,130 @@ func (sh *strictHandler) DpiaGetReport(w http.ResponseWriter, r *http.Request, i
 	}
 }
 
+// DpiaListAssessmentRisks operation middleware
+func (sh *strictHandler) DpiaListAssessmentRisks(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaListAssessmentRisksParams) {
+	var request DpiaListAssessmentRisksRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaListAssessmentRisks(ctx, request.(DpiaListAssessmentRisksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaListAssessmentRisks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaListAssessmentRisksResponseObject); ok {
+		if err := validResponse.VisitDpiaListAssessmentRisksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpiaIdentifyRisk operation middleware
+func (sh *strictHandler) DpiaIdentifyRisk(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaIdentifyRiskParams) {
+	var request DpiaIdentifyRiskRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body DpiaIdentifyRiskJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaIdentifyRisk(ctx, request.(DpiaIdentifyRiskRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaIdentifyRisk")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaIdentifyRiskResponseObject); ok {
+		if err := validResponse.VisitDpiaIdentifyRiskResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpiaRemoveAssessmentRisk operation middleware
+func (sh *strictHandler) DpiaRemoveAssessmentRisk(w http.ResponseWriter, r *http.Request, id Uuid, riskId Uuid, params DpiaRemoveAssessmentRiskParams) {
+	var request DpiaRemoveAssessmentRiskRequestObject
+
+	request.Id = id
+	request.RiskId = riskId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaRemoveAssessmentRisk(ctx, request.(DpiaRemoveAssessmentRiskRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaRemoveAssessmentRisk")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaRemoveAssessmentRiskResponseObject); ok {
+		if err := validResponse.VisitDpiaRemoveAssessmentRiskResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpiaUpdateRisk operation middleware
+func (sh *strictHandler) DpiaUpdateRisk(w http.ResponseWriter, r *http.Request, id Uuid, riskId Uuid, params DpiaUpdateRiskParams) {
+	var request DpiaUpdateRiskRequestObject
+
+	request.Id = id
+	request.RiskId = riskId
+	request.Params = params
+
+	var body DpiaUpdateRiskJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaUpdateRisk(ctx, request.(DpiaUpdateRiskRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaUpdateRisk")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaUpdateRiskResponseObject); ok {
+		if err := validResponse.VisitDpiaUpdateRiskResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // DpiaTransitionAssessment operation middleware
 func (sh *strictHandler) DpiaTransitionAssessment(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaTransitionAssessmentParams) {
 	var request DpiaTransitionAssessmentRequestObject
@@ -5157,6 +6492,32 @@ func (sh *strictHandler) DpiaGetRegistry(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DpiaGetRegistryResponseObject); ok {
 		if err := validResponse.VisitDpiaGetRegistryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpiaRiskCatalog operation middleware
+func (sh *strictHandler) DpiaRiskCatalog(w http.ResponseWriter, r *http.Request, params DpiaRiskCatalogParams) {
+	var request DpiaRiskCatalogRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaRiskCatalog(ctx, request.(DpiaRiskCatalogRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaRiskCatalog")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaRiskCatalogResponseObject); ok {
+		if err := validResponse.VisitDpiaRiskCatalogResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

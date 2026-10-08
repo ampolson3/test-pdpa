@@ -9,13 +9,18 @@ import { formatDate, type Locale } from "@pdpa/i18n";
 import {
   type ApiClient,
   type DpiaOpinionRecommendation,
+  type DpiaRiskInput,
   useAssessNecessity,
+  useAssessmentRisks,
   useDpiaAssessmentDescription,
   useDpiaAssessmentDiff,
   useDpiaAssessments,
   useDpiaNecessity,
   useDpiaOpinions,
+  useIdentifyRisk,
   useRecordDpiaOpinion,
+  useRemoveAssessmentRisk,
+  useRiskCatalog,
   useScreenActivity,
   useTransitionDpiaAssessment,
   dpiaReportHref,
@@ -102,6 +107,7 @@ export function DpiaScreeningSection({ client, activityId, currentUserId }: { cl
         <>
           <DpiaDescriptionPanel client={client} assessmentId={latest.id} />
           <DpiaNecessityPanel client={client} assessmentId={latest.id} />
+          <DpiaRiskPanel client={client} assessmentId={latest.id} />
         </>
       )}
 
@@ -402,6 +408,154 @@ function DpiaDecisionPanel({ client, assessment }: { client: ApiClient; assessme
 
       {canApprove && ["approved", "rejected", "not_required"].includes(assessment.status) && (
         <Button onClick={() => go("closed")}>{t("decision.close")}</Button>
+      )}
+    </section>
+  );
+}
+
+const RISK_LEVEL_STYLE: Record<string, string> = {
+  low: "bg-emerald-100 text-emerald-800",
+  medium: "bg-amber-100 text-amber-800",
+  high: "bg-orange-100 text-orange-800",
+  very_high: "bg-red-100 text-red-800",
+};
+
+/** DPIA-06: identify and score risks against the tenant's own risk matrix (RRA-02), for the in-progress
+ *  round — a catalog dropdown prefills the title/description, the DPO can still edit either before saving. */
+function DpiaRiskPanel({ client, assessmentId }: { client: ApiClient; assessmentId: string }) {
+  const t = useTranslations("dpia");
+  const canUpdate = usePermission("assessment.dpia.update");
+  const canRead = usePermission("assessment.dpia.read");
+  const catalog = useRiskCatalog(client);
+  const risks = useAssessmentRisks(client, assessmentId);
+  const identify = useIdentifyRisk(client);
+  const remove = useRemoveAssessmentRisk(client);
+
+  const [catalogCode, setCatalogCode] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [likelihood, setLikelihood] = useState(1);
+  const [impact, setImpact] = useState(1);
+
+  if (!canRead) return null;
+
+  const pickCatalog = (code: string) => {
+    setCatalogCode(code);
+    const item = catalog.data?.data.find((c) => c.code === code);
+    if (item) {
+      setTitle(item.title_th);
+      setDescription(item.description_th);
+    }
+  };
+
+  const submit = () => {
+    const input: DpiaRiskInput = { title, description: description || undefined, likelihood, impact };
+    identify.mutate(
+      { assessmentId, input },
+      {
+        onSuccess: () => {
+          setCatalogCode("");
+          setTitle("");
+          setDescription("");
+          setLikelihood(1);
+          setImpact(1);
+        },
+      },
+    );
+  };
+
+  return (
+    <section className="space-y-2 rounded-md border border-slate-200 bg-white p-3 text-sm" data-testid="dpia-risks">
+      <h3 className="font-semibold">{t("risks.title")}</h3>
+
+      {risks.isPending ? (
+        <p className="text-slate-500">{t("loading")}</p>
+      ) : risks.isError ? (
+        <p className="text-red-700">{t("loadError")}</p>
+      ) : (risks.data?.data.length ?? 0) === 0 ? (
+        <p className="text-slate-500">{t("risks.empty")}</p>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {risks.data!.data.map((r) => (
+            <li key={r.id} className="flex items-center justify-between gap-2 py-2">
+              <div>
+                <span className={`mr-2 rounded px-2 py-0.5 text-xs font-semibold ${RISK_LEVEL_STYLE[r.level] ?? "bg-slate-100 text-slate-700"}`}>
+                  {t(`risks.levels.${r.level}`)}
+                </span>
+                <span className="font-medium">{r.title}</span>
+                {r.description && <p className="text-slate-500">{r.description}</p>}
+                <p className="text-slate-500">
+                  {t("risks.score", { score: r.inherent_score, likelihood: r.likelihood, impact: r.impact })}
+                </p>
+              </div>
+              {canUpdate && (
+                <button
+                  type="button"
+                  className="text-sky-700 underline"
+                  onClick={() => remove.mutate({ assessmentId, riskId: r.id })}
+                  disabled={remove.isPending}
+                >
+                  {t("risks.remove")}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {canUpdate && (
+        <div className="space-y-2 border-t border-slate-100 pt-2">
+          {catalog.data?.data.length ? (
+            <select className="w-full rounded border border-slate-300 p-1" value={catalogCode} onChange={(e) => pickCatalog(e.target.value)}>
+              <option value="">{t("risks.catalogPick")}</option>
+              {catalog.data.data.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.title_th}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          <input
+            className="w-full rounded border border-slate-300 p-2"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={t("risks.titlePlaceholder")}
+          />
+          <textarea
+            className="w-full rounded border border-slate-300 p-2"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={t("risks.descriptionPlaceholder")}
+          />
+          <div className="flex gap-2">
+            <label className="flex items-center gap-1">
+              {t("risks.likelihood")}
+              <input
+                type="number"
+                min={1}
+                max={5}
+                className="w-16 rounded border border-slate-300 p-1"
+                value={likelihood}
+                onChange={(e) => setLikelihood(Number(e.target.value))}
+              />
+            </label>
+            <label className="flex items-center gap-1">
+              {t("risks.impact")}
+              <input
+                type="number"
+                min={1}
+                max={5}
+                className="w-16 rounded border border-slate-300 p-1"
+                value={impact}
+                onChange={(e) => setImpact(Number(e.target.value))}
+              />
+            </label>
+          </div>
+          {identify.isError && <p className="text-red-700">{t("submitError", { detail: detail(identify.error) })}</p>}
+          <Button onClick={submit} disabled={identify.isPending || !title.trim()}>
+            {t("risks.add")}
+          </Button>
+        </div>
       )}
     </section>
   );

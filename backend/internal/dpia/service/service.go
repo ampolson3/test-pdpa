@@ -84,6 +84,10 @@ type Service struct {
 	Ropa  Ropa
 	Org   Org
 	Audit *audit.Service
+	// Risk is DPIA-06's own risk register writer (risk.risks, RRA-02's matrix) — a direct concrete field,
+	// not a rule-9 interface: dpia/service already imports risk/service for the Ropa interface's own
+	// riskservice.Control reference above, so there is no cycle to route around.
+	Risk *riskservice.Service
 	// PDF renders DPIA-15's report to PDF (render.FromEnv(); nil skips PDF, same as docs.Service.PDF —
 	// GET .../report?format=pdf then answers 503 docs-style rather than panicking).
 	PDF render.PDFRenderer

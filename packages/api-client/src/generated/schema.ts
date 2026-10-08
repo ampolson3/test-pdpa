@@ -3130,6 +3130,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpia/risk-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPIA-06: the ready-made risk catalog used to prefill the "add risk" form */
+        get: operations["dpiaRiskCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpia/assessments/{id}/risks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPIA-06: every risk identified against this assessment round */
+        get: operations["dpiaListAssessmentRisks"];
+        put?: never;
+        /** DPIA-06: identify and score a risk (likelihood x impact against the tenant's own matrix, RRA-02) */
+        post: operations["dpiaIdentifyRisk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpia/assessments/{id}/risks/{riskId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** DPIA-06: edit a risk already identified against this assessment round */
+        put: operations["dpiaUpdateRisk"];
+        post?: never;
+        /** DPIA-06: unlink a risk from this assessment round (the risk.risks row itself is kept) */
+        delete: operations["dpiaRemoveAssessmentRisk"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpia/templates": {
         parameters: {
             query?: never;
@@ -4470,6 +4523,12 @@ export interface components {
             screening_result: "required" | "recommended" | "not_required";
             screening_reason: string;
             score: number;
+            /**
+             * @description Set when this round was opened by RRA-03's risk-score trigger (high | very_high); null for a manually-screened round.
+             * @enum {string|null}
+             */
+            risk_level?: "low" | "medium" | "high" | "very_high" | null;
+            owner_user_id?: components["schemas"]["Uuid"];
             factors: {
                 question: string;
                 answer: unknown;
@@ -4503,6 +4562,42 @@ export interface components {
             dpo_user_id: components["schemas"]["Uuid"];
             opinion: string;
             recommendation: components["schemas"]["DpiaOpinionRecommendation"];
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @description DPIA-06's own ready-made risk catalog (a static starter list, not a tenant-editable table — see docs/decisions.md Q-33): picking one only prefills the "add risk" form's title/description. */
+        DpiaRiskCatalogItem: {
+            code: string;
+            title_th: string;
+            title_en: string;
+            description_th: string;
+        };
+        DpiaRiskInput: {
+            title: string;
+            description?: string;
+            owner_user_id?: components["schemas"]["Uuid"];
+            likelihood: number;
+            impact: number;
+            /** @enum {string} */
+            treatment?: "mitigate" | "accept" | "transfer" | "avoid";
+            /** @enum {string} */
+            status?: "open" | "in_treatment" | "accepted" | "closed";
+        };
+        /** @description DPIA-06: one risk.risks row identified against this DPIA round, scored live against the tenant's own matrix (RRA-02). */
+        DpiaRisk: {
+            id: components["schemas"]["Uuid"];
+            title: string;
+            description?: string;
+            owner_user_id?: components["schemas"]["Uuid"];
+            likelihood: number;
+            impact: number;
+            inherent_score: number;
+            /** @enum {string} */
+            level: "low" | "medium" | "high" | "very_high";
+            /** @enum {string|null} */
+            treatment?: "mitigate" | "accept" | "transfer" | "avoid" | null;
+            /** @enum {string} */
+            status: "open" | "in_treatment" | "accepted" | "closed";
+            row_version: number;
             created_at: components["schemas"]["Timestamp"];
         };
         /** @description DPIA-05: "necessary" only once every question is answered "yes"; otherwise "needs_review" names the flagged questions. */
@@ -13961,6 +14056,167 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpiaRiskCatalog: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpiaRiskCatalogItem"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dpiaListAssessmentRisks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpiaRisk"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpiaIdentifyRisk: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpiaRiskInput"];
+            };
+        };
+        responses: {
+            /** @description Identified */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaRisk"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpiaUpdateRisk: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                riskId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpiaRiskInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaRisk"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dpiaRemoveAssessmentRisk: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                riskId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     dpiaListTemplates: {

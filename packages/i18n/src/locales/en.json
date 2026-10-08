@@ -770,6 +770,24 @@
         "less_invasive_considered": "A less invasive alternative was considered before choosing this approach"
       }
     },
+    "risks": {
+      "title": "Risk identification & scoring (DPIA-06)",
+      "empty": "No risks identified yet",
+      "catalogPick": "Pick from the risk catalog (optional)",
+      "titlePlaceholder": "Risk title",
+      "descriptionPlaceholder": "Description (optional)",
+      "likelihood": "Likelihood",
+      "impact": "Impact",
+      "add": "Identify risk",
+      "remove": "Remove",
+      "score": "Score {score} (likelihood {likelihood} x impact {impact})",
+      "levels": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "very_high": "Very high"
+      }
+    },
     "history": "History",
     "form": {
       "hide": "Hide"

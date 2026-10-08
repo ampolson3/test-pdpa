@@ -17,6 +17,11 @@ output-options:
     - dpiaTransitionAssessment
     - dpiaListOpinions
     - dpiaRecordOpinion
+    - dpiaRiskCatalog
+    - dpiaListAssessmentRisks
+    - dpiaIdentifyRisk
+    - dpiaUpdateRisk
+    - dpiaRemoveAssessmentRisk
     - dpiaGetNecessity
     - dpiaAssessNecessity
     - dpiaListTemplates

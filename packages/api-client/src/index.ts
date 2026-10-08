@@ -329,6 +329,11 @@ export {
   useDpiaOpinions,
   useRecordDpiaOpinion,
   useDpiaRegistry,
+  useRiskCatalog,
+  useAssessmentRisks,
+  useIdentifyRisk,
+  useUpdateRisk,
+  useRemoveAssessmentRisk,
   dpiaReportHref,
   type DpiaScreeningRule,
   type DpiaAssessment,
@@ -339,6 +344,9 @@ export {
   type DpiaOpinion,
   type DpiaOpinionRecommendation,
   type DpiaRegistryEntry,
+  type DpiaRisk,
+  type DpiaRiskInput,
+  type DpiaRiskCatalogItem,
 } from "./dpia";
 export {
   useDsarRequestTypes,

@@ -52,6 +52,9 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM assess.assessment_risks`)
+			_, _ = tx.Exec(ctx, `DELETE FROM risk.risks`)
+			_, _ = tx.Exec(ctx, `DELETE FROM risk.risk_matrices`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.dpo_opinions`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.answers`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.assessments`)
@@ -68,9 +71,11 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 		})
 	})
 	orgSvc := &orgservice.Service{Audit: audit.New()}
-	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: riskservice.New()}
+	riskSvc := &riskservice.Service{Audit: audit.New()}
+	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: riskSvc}
+	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}
 	formsSvc := wiring.Forms(nil, audit.New())
-	svc := &dpiaservice.Service{Audit: audit.New(), Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc}
+	svc := &dpiaservice.Service{Audit: audit.New(), Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc, Risk: riskSvc}
 
 	var activityID, legalEntityID, orgUnitID uuid.UUID
 	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
@@ -87,7 +92,15 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 		}
 		orgUnitID = unit.ID
 		a, err := ropaSvc.SaveActivity(ctx, ropaservice.Activity{LegalEntityID: le.ID, OrgUnitID: unit.ID, Code: "HTTP-01", Name: "กิจกรรมทดสอบ", Role: "controller"}, 0)
+		if err != nil {
+			return err
+		}
 		activityID = a.ID
+		_, err = riskSvc.SaveMatrix(ctx, riskservice.RiskMatrix{
+			Name: "default", LikelihoodLevels: []string{"low", "medium", "high"}, ImpactLevels: []string{"low", "medium", "high"},
+			Thresholds: []riskservice.Threshold{{Level: "low", MinScore: 1}, {Level: "medium", MinScore: 4}, {Level: "high", MinScore: 7}},
+			IsDefault:  true,
+		}, 0)
 		return err
 	}); err != nil {
 		t.Fatal(err)
@@ -299,6 +312,51 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	flagged := map[string]any{"minimal_data": "no", "purpose_specific": "yes", "lawful_basis_appropriate": "yes", "less_invasive_considered": "yes"}
 	if code, body := do("POST", item+"/necessity", &admin, map[string]any{"answers": flagged}, nil); code != 200 || !strings.Contains(body, `"result":"needs_review"`) || !strings.Contains(body, `"minimal_data"`) {
 		t.Errorf("re-assess necessity: %d %s", code, body)
+	}
+
+	// DPIA-06: identify and score a risk against the tenant's own matrix, while this round is still
+	// in_progress (set up above, before the DPIA-10 section below moves it on to closed).
+	risksPath := item + "/risks"
+	if code, _ := do("GET", "/admin/v1/dpia/risk-catalog", nil, nil, nil); code != 401 {
+		t.Errorf("risk catalog no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", "/admin/v1/dpia/risk-catalog", &reader2, nil, nil); code != 200 || !strings.Contains(body, `"code"`) {
+		t.Errorf("risk catalog: %d %s", code, body)
+	}
+	if code, _ := do("POST", risksPath, &reader2, map[string]any{"title": "x", "likelihood": 1, "impact": 1}, nil); code != 403 {
+		t.Errorf("identify risk with read-only permission: %d, want 403", code)
+	}
+	code, body = do("POST", risksPath, &admin, map[string]any{"title": "เข้าถึงข้อมูลโดยไม่ได้รับอนุญาต", "likelihood": 2, "impact": 3}, nil)
+	if code != 201 || !strings.Contains(body, `"level":"medium"`) || !strings.Contains(body, `"inherent_score":6`) {
+		t.Fatalf("identify risk: %d %s", code, body)
+	}
+	var risk dpiahttp.DpiaRisk
+	_ = json.Unmarshal([]byte(body), &risk)
+	riskPath := risksPath + "/" + risk.Id.String()
+
+	if code, body := do("GET", risksPath, &reader2, nil, nil); code != 200 || !strings.Contains(body, risk.Id.String()) {
+		t.Errorf("list assessment risks: %d %s", code, body)
+	}
+	if code, _ := do("PUT", riskPath, &admin, map[string]any{"title": "a", "likelihood": 3, "impact": 3}, nil); code != 428 {
+		t.Errorf("update risk without If-Match: %d, want 428", code)
+	}
+	code, body = do("PUT", riskPath, &admin, map[string]any{"title": "a (revised)", "likelihood": 3, "impact": 3, "treatment": "mitigate"},
+		map[string]string{"If-Match": `"1"`})
+	if code != 200 || !strings.Contains(body, `"level":"high"`) || !strings.Contains(body, `"treatment":"mitigate"`) {
+		t.Errorf("update risk: %d %s", code, body)
+	}
+	if code, _ := do("PUT", "/admin/v1/dpia/assessments/"+second.Id.String()+"/risks/"+risk.Id.String(), &admin,
+		map[string]any{"title": "a", "likelihood": 1, "impact": 1}, map[string]string{"If-Match": `"2"`}); code != 404 {
+		t.Errorf("update risk from a round it isn't linked to: %d, want 404", code)
+	}
+	if code, _ := do("DELETE", riskPath, &reader2, nil, nil); code != 403 {
+		t.Errorf("remove risk with read-only permission: %d, want 403", code)
+	}
+	if code, _ := do("DELETE", riskPath, &admin, nil, nil); code != 204 {
+		t.Errorf("remove risk: %d, want 204", code)
+	}
+	if code, body := do("GET", risksPath, &reader2, nil, nil); code != 200 || strings.Contains(body, risk.Id.String()) {
+		t.Errorf("list assessment risks after remove: %d %s, want empty", code, body)
 	}
 
 	// DPIA-03 template library.

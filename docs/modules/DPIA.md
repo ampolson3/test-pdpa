@@ -262,6 +262,58 @@ section, shown alongside DPIA-04's description panel once a round is `in_progres
 
 **Acceptance criteria:** คะแนนความเสี่ยงคำนวณตาม matrix ของ tenant
 
+**Implementation — done (likelihood/impact are DPO-entered; DPIA-07's own mitigation/residual columns
+deliberately untouched).** The acceptance criterion's own risk matrix is RRA-02's `risk.risk_matrices` engine,
+already built and shared verbatim — `Classify(matrix, likelihood, impact)` is called live, uncached, exactly
+the way RRA-01's own activity score already does; nothing here duplicates that math. The real new piece is
+`risk.risks` itself (already fully specified in the baseline migrations, no new migration): a tenant-wide risk
+register row every future risk-scoring feature (vendor, breach, audit) will eventually also write, with
+DPIA-06 as its first real writer. `internal/risk/service/risks.go`'s `IdentifyRisk`/`UpdateRisk`/`GetRisk`/
+`ListRisksByIDs` own that table; `internal/dpia/service/risks.go`'s `IdentifyRisk`/`UpdateRisk`/
+`ListAssessmentRisks`/`RemoveAssessmentRisk` own the link in `assess.assessment_risks` (the schema's own
+intended join table for exactly this) — two separate module calls in one request transaction, each writing
+only its own schema (rule 9), the same split ROPA-09's own `ropa.activity_controls` ↔ `risk.controls` link
+already established. `dpia/service` already imports `risk/service` directly (for `ListControls`'s own
+`riskservice.Control` reference, DPIA-15), so `Service.Risk *riskservice.Service` is a plain concrete field,
+not a rule-9 interface — there is no cycle to route around, unlike RRA-01/RRA-03's own local-interface dance.
+
+Risks are identified/edited only while the round is `in_progress` or `in_review` — the exact same editable
+window DPIA-10's own `RecordOpinion` already uses, so a decided or closed round can't quietly gain a new risk
+after the fact. `UpdateRisk`/`RemoveAssessmentRisk` both check the risk id is actually linked to *this*
+assessment before touching it (`requireLinkedRisk`), so one round can never edit another's risk by guessing
+its id even within the same tenant. Removing a risk only drops the link row — `risk.risks` itself is left
+alone, since a later round (or, eventually, another feature) may still reference it. `OwnerUserID`/
+`ActivityID` are checked visible under the caller's own RLS before anything is written (rule 1): the activity
+id is never taken from the request body at all — it's copied straight from the assessment's own
+`activity_id`, so a risk can never be identified against a different activity than the round it belongs to.
+
+"คลังความเสี่ยงสำเร็จรูป" (the ready-made risk catalog) is deliberately a plain Go constant
+(`dpiaservice.RiskCatalog()`, 12 common PDPA risk scenarios — re-identification, excessive retention,
+unauthorized access, third-party leakage, profiling bias, missing lawful basis, cross-border transfer without
+a safeguard, unfulfilled data-subject rights, insecure storage, vendor breach, unreviewed automated decisions,
+vulnerable subjects), not a seeded table: picking an entry only prefills the "add risk" form's title/
+description, which stays editable, and nothing else references it by id — so there's no tenant-override or
+RLS story a table would need. Still flagged draft pending legal review, the same `docs/decisions.md` pattern
+ORG-07/ROPA-09/PNG-03/DPIA-01/RTG-01 already used for seeded domain content (Q-33). `risk.risks` columns this
+feature doesn't touch — `residual_likelihood/impact/score`, `asset_id`, `vendor_id`, and the acceptances table
+— are left alone for DPIA-07 ("มาตรการลดความเสี่ยงและความเสี่ยงคงเหลือ") to build on, the same "leave the
+column/FK for the sibling feature that actually needs it" deferral this codebase uses throughout.
+
+API: `GET /admin/v1/dpia/risk-catalog` (`assessment.dpia.read`), `GET`/`POST /admin/v1/dpia/assessments/{id}/risks`,
+`PUT`/`DELETE /admin/v1/dpia/assessments/{id}/risks/{riskId}` (ETag/If-Match on update, `assessment.dpia.update`
+to write) — same shape as DPIA-10's own opinions sub-resource. `DpiaAssessment`'s own wire schema gained
+`risk_level`/`owner_user_id` (both previously unused columns, now surfaced — also doubles as RRA-03's own
+"which rounds were auto-triggered" signal). UI: a risk panel on `/ropa/activities/{id}`'s DPIA section, shown
+for the same in-progress round as DPIA-04/05's own panels — a catalog dropdown, title/description/likelihood/
+impact inputs, a level-badged list, and remove. Tests: unit (the acceptance criterion directly — a risk's
+score/level come from `Classify` against the tenant's current matrix; changing the matrix changes the next
+identified risk's score immediately; refused outside the editable window; a risk not linked to this
+assessment is refused with `ErrNotFound` even from a caller who holds the right permission; recomputes the
+score on update; remove only unlinks, the `risk.risks` row itself survives; the risk catalog has unique,
+complete entries; two-tenant isolation of both the link and the underlying `risk.risks` row), HTTP contract
+(401/403/404/412/428/201/200/204) through the real validator + AuthZ. `pnpm --filter @pdpa/admin build` and
+the `@pdpa/i18n` ICU message tests both verified clean.
+
 <a id="dpia-07"></a>
 ### DPIA-07 มาตรการลดความเสี่ยงและความเสี่ยงคงเหลือ
 

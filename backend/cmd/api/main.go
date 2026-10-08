@@ -247,10 +247,10 @@ func run() error {
 	consentSvc := &consentservice.Service{Versioning: versioningSvc, Events: &events.Publisher{River: riverClient},
 		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc, Verification: iamSvc} // CON-11: guardian OTP (IAM-05)
 	consentSvc.RegisterVersioning()
-	ropaSvc.Consent = consentSvc                                                                                         // ROPA-03: evidence of explicit consent for sensitive-data purposes
-	dpoSvc.Forms = formsSvc                                                                                              // DPO-09: the security-measures checklist
-	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc, Audit: auditSvc, PDF: render.FromEnv()} // DPIA-01/02: screening on the "assessment" form type; DPIA-04: RoPA-sourced description; DPIA-15: PDF/Word report
-	riskSvc.DpiaTrigger = dpiaSvc                                                                                        // RRA-03: a high/very_high risk score opens a DPIA round
+	ropaSvc.Consent = consentSvc                                                                                                        // ROPA-03: evidence of explicit consent for sensitive-data purposes
+	dpoSvc.Forms = formsSvc                                                                                                             // DPO-09: the security-measures checklist
+	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc, Audit: auditSvc, PDF: render.FromEnv(), Risk: riskSvc} // DPIA-01/02: screening on the "assessment" form type; DPIA-04: RoPA-sourced description; DPIA-15: PDF/Word report; DPIA-06: risk identification & scoring
+	riskSvc.DpiaTrigger = dpiaSvc                                                                                                       // RRA-03: a high/very_high risk score opens a DPIA round
 	// DPIA-14: comments, attachments and an activity feed (PLT-07) on the assessment, satisfying the "ผู้แก้ไข
 	// และวันที่" half of the acceptance criterion for free — the diff endpoint covers the other half.
 	collabSvc.Register("dpia_assessment", collab.Policy{

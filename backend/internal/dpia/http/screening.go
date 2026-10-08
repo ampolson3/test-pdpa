@@ -88,7 +88,12 @@ func toRuleWire(r dpiaservice.ScreeningRule) DpiaScreeningRule {
 func toAssessmentWire(a dpiaservice.Assessment) DpiaAssessment {
 	w := DpiaAssessment{Id: a.ID, ActivityId: a.ActivityID, RoundNo: a.RoundNo, PreviousId: a.PreviousID,
 		Title: ptr(a.Title), Status: DpiaAssessmentStatus(a.Status), ScreeningResult: DpiaAssessmentScreeningResult(a.ScreeningResult),
-		ScreeningReason: a.ScreeningReason, Score: float32(a.Score), RowVersion: int(a.RowVersion), CreatedAt: a.CreatedAt.UTC()}
+		ScreeningReason: a.ScreeningReason, Score: float32(a.Score), OwnerUserId: a.OwnerUserID,
+		RowVersion: int(a.RowVersion), CreatedAt: a.CreatedAt.UTC()}
+	if a.RiskLevel != "" {
+		lvl := DpiaAssessmentRiskLevel(a.RiskLevel)
+		w.RiskLevel = &lvl
+	}
 	for _, f := range a.Factors {
 		w.Factors = append(w.Factors, struct {
 			Answer   interface{} `json:"answer"`

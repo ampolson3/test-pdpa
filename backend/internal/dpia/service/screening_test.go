@@ -26,6 +26,7 @@ type env struct {
 	svc    *dpiaservice.Service
 	org    *orgservice.Service
 	ropa   *ropaservice.Service
+	risk   *riskservice.Service
 }
 
 var perms = []string{"assessment.dpia.read", "assessment.dpia.create", "assessment.dpia.update", "assessment.dpia.approve",
@@ -39,6 +40,9 @@ func setup(t *testing.T, suffix string) env {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM assess.assessment_risks`)
+			_, _ = tx.Exec(ctx, `DELETE FROM risk.risks`)
+			_, _ = tx.Exec(ctx, `DELETE FROM risk.risk_matrices`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.dpo_opinions`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.answers`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.assessments`)
@@ -54,10 +58,12 @@ func setup(t *testing.T, suffix string) env {
 		})
 	})
 	org := &orgservice.Service{Audit: audit.New()}
-	ropa := &ropaservice.Service{Audit: audit.New(), Org: org, Risk: riskservice.New()}
+	riskSvc := &riskservice.Service{Audit: audit.New()}
+	ropa := &ropaservice.Service{Audit: audit.New(), Org: org, Risk: riskSvc}
+	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropa, Org: org}
 	formsSvc := wiring.Forms(nil, audit.New())
-	svc := &dpiaservice.Service{Audit: audit.New(), Forms: formsSvc, Ropa: ropa, Org: org}
-	return env{app: app, tenant: tenant, svc: svc, org: org, ropa: ropa}
+	svc := &dpiaservice.Service{Audit: audit.New(), Forms: formsSvc, Ropa: ropa, Org: org, Risk: riskSvc}
+	return env{app: app, tenant: tenant, svc: svc, org: org, ropa: ropa, risk: riskSvc}
 }
 
 // in runs fn as the tenant's admin in one transaction (as the Tx middleware would).
