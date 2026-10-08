@@ -14,6 +14,9 @@ export type DpiaRegistryEntry = components["schemas"]["DpiaRegistryEntry"];
 export type DpiaRisk = components["schemas"]["DpiaRisk"];
 export type DpiaRiskInput = components["schemas"]["DpiaRiskInput"];
 export type DpiaRiskCatalogItem = components["schemas"]["DpiaRiskCatalogItem"];
+export type DpiaRiskControl = components["schemas"]["DpiaRiskControl"];
+export type DpiaRiskControlInput = components["schemas"]["DpiaRiskControlInput"];
+export type DpiaRiskControlStatus = components["schemas"]["DpiaRiskControlStatus"];
 
 /** GET /admin/v1/dpia/assessments/{id}/report (DPIA-15) — a plain href, not a query/mutation: the browser
  *  downloads the PDF/Word file through this link directly, the same pattern documentExportHref uses. */
@@ -271,6 +274,76 @@ export function useRemoveAssessmentRisk(client: ApiClient) {
       if (error) throw error;
     },
     onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "risks"] }),
+  });
+}
+
+/** GET /admin/v1/dpia/assessments/{id}/risks/{riskId}/controls (DPIA-07) — mitigation measures linked to a risk. */
+export function useRiskControls(client: ApiClient, assessmentId: string | undefined, riskId: string | undefined) {
+  return useQuery({
+    queryKey: [...assessmentsKey, assessmentId ?? "", "risks", riskId ?? "", "controls"],
+    enabled: !!assessmentId && !!riskId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/assessments/{id}/risks/{riskId}/controls", {
+        params: { path: { id: assessmentId!, riskId: riskId! } },
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST .../risks/{riskId}/controls (DPIA-07) — link a control; an owner + due date opens a tracked task. */
+export function useAddRiskControl(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { assessmentId: string; riskId: string; input: DpiaRiskControlInput }) => {
+      const { data, error } = await client.POST("/admin/v1/dpia/assessments/{id}/risks/{riskId}/controls", {
+        params: { path: { id: v.assessmentId, riskId: v.riskId } },
+        body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, v) => {
+      qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "risks", v.riskId, "controls"] });
+      qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "risks"] });
+    },
+  });
+}
+
+/** PUT .../risks/{riskId}/controls/{controlId} (DPIA-07) — change a linked control's own status. */
+export function useUpdateRiskControlStatus(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { assessmentId: string; riskId: string; controlId: string; rowVersion: number; status: DpiaRiskControlStatus }) => {
+      const { data, error } = await client.PUT("/admin/v1/dpia/assessments/{id}/risks/{riskId}/controls/{controlId}", {
+        params: { path: { id: v.assessmentId, riskId: v.riskId, controlId: v.controlId }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: { status: v.status },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, v) => {
+      qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "risks", v.riskId, "controls"] });
+      qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "risks"] });
+    },
+  });
+}
+
+/** DELETE .../risks/{riskId}/controls/{controlId} (DPIA-07) — unlink a control; residual score recomputes. */
+export function useRemoveRiskControl(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { assessmentId: string; riskId: string; controlId: string }) => {
+      const { error } = await client.DELETE("/admin/v1/dpia/assessments/{id}/risks/{riskId}/controls/{controlId}", {
+        params: { path: { id: v.assessmentId, riskId: v.riskId, controlId: v.controlId } },
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_data, v) => {
+      qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "risks", v.riskId, "controls"] });
+      qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "risks"] });
+    },
   });
 }
 

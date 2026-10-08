@@ -30,6 +30,7 @@ type Service struct {
 	Audit       *audit.Service
 	Ropa        Ropa        // RRA-01: scoring an activity (nil until a caller needs Score/LatestScore)
 	DpiaTrigger DpiaTrigger // RRA-03: open a DPIA when an activity scores high/very_high (nil until dpia registers itself)
+	Dpo         DpoTasks    // DPIA-07: open a remediation task when a control gets an owner/due date (nil until dpo registers itself)
 }
 
 func New() *Service { return &Service{} }

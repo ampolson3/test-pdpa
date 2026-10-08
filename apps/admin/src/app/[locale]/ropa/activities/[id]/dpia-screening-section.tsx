@@ -9,7 +9,9 @@ import { formatDate, type Locale } from "@pdpa/i18n";
 import {
   type ApiClient,
   type DpiaOpinionRecommendation,
+  type DpiaRiskControlStatus,
   type DpiaRiskInput,
+  useAddRiskControl,
   useAssessNecessity,
   useAssessmentRisks,
   useDpiaAssessmentDescription,
@@ -20,9 +22,13 @@ import {
   useIdentifyRisk,
   useRecordDpiaOpinion,
   useRemoveAssessmentRisk,
+  useRemoveRiskControl,
   useRiskCatalog,
+  useRiskControls,
   useScreenActivity,
+  useSecurityControls,
   useTransitionDpiaAssessment,
+  useUpdateRiskControlStatus,
   dpiaReportHref,
 } from "@pdpa/api-client";
 import { RecordCollaboration } from "@/components/record-collaboration";
@@ -436,6 +442,7 @@ function DpiaRiskPanel({ client, assessmentId }: { client: ApiClient; assessment
   const [description, setDescription] = useState("");
   const [likelihood, setLikelihood] = useState(1);
   const [impact, setImpact] = useState(1);
+  const [controlsRiskId, setControlsRiskId] = useState<string | null>(null);
 
   if (!canRead) return null;
 
@@ -487,6 +494,24 @@ function DpiaRiskPanel({ client, assessmentId }: { client: ApiClient; assessment
                 <p className="text-slate-500">
                   {t("risks.score", { score: r.inherent_score, likelihood: r.likelihood, impact: r.impact })}
                 </p>
+                {r.residual_level && (
+                  <p className="text-slate-500">
+                    {t("risks.residual", {
+                      level: t(`risks.levels.${r.residual_level}`),
+                      score: r.residual_score ?? 0,
+                      likelihood: r.residual_likelihood ?? 0,
+                      impact: r.residual_impact ?? 0,
+                    })}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  className="text-sky-700 underline"
+                  onClick={() => setControlsRiskId(controlsRiskId === r.id ? null : r.id)}
+                >
+                  {controlsRiskId === r.id ? t("risks.controls.hide") : t("risks.controls.show")}
+                </button>
+                {controlsRiskId === r.id && <DpiaRiskControlsPanel client={client} assessmentId={assessmentId} riskId={r.id} canUpdate={canUpdate} />}
               </div>
               {canUpdate && (
                 <button
@@ -558,5 +583,118 @@ function DpiaRiskPanel({ client, assessmentId }: { client: ApiClient; assessment
         </div>
       )}
     </section>
+  );
+}
+
+/** DPIA-07: mitigation measures linked to one risk — picking one from the ม.37(1) catalog, marking it
+ *  implemented (which recomputes the risk's residual likelihood/score on the next read), and removing it. */
+function DpiaRiskControlsPanel({
+  client,
+  assessmentId,
+  riskId,
+  canUpdate,
+}: {
+  client: ApiClient;
+  assessmentId: string;
+  riskId: string;
+  canUpdate: boolean;
+}) {
+  const t = useTranslations("dpia");
+  const catalog = useSecurityControls(client);
+  const controls = useRiskControls(client, assessmentId, riskId);
+  const add = useAddRiskControl(client);
+  const updateStatus = useUpdateRiskControlStatus(client);
+  const remove = useRemoveRiskControl(client);
+  const [controlId, setControlId] = useState("");
+  const [ownerUserId, setOwnerUserId] = useState("");
+  const [dueAt, setDueAt] = useState("");
+
+  const statuses: DpiaRiskControlStatus[] = ["planned", "existing", "implemented", "not_effective"];
+
+  return (
+    <div className="mt-2 space-y-2 rounded bg-slate-50 p-2 text-xs" data-testid={`dpia-risk-controls-${riskId}`}>
+      {controls.isPending ? (
+        <p className="text-slate-500">{t("loading")}</p>
+      ) : controls.isError ? (
+        <p className="text-red-700">{t("loadError")}</p>
+      ) : (controls.data?.data.length ?? 0) === 0 ? (
+        <p className="text-slate-500">{t("risks.controls.empty")}</p>
+      ) : (
+        <ul className="space-y-1">
+          {controls.data!.data.map((c) => (
+            <li key={c.control_id} className="flex items-center justify-between gap-2">
+              <span>
+                {c.control_name} —{" "}
+                {canUpdate ? (
+                  <select
+                    className="rounded border border-slate-300"
+                    value={c.status}
+                    onChange={(e) =>
+                      updateStatus.mutate({
+                        assessmentId,
+                        riskId,
+                        controlId: c.control_id,
+                        rowVersion: c.row_version,
+                        status: e.target.value as DpiaRiskControlStatus,
+                      })
+                    }
+                  >
+                    {statuses.map((s) => (
+                      <option key={s} value={s}>
+                        {t(`risks.controls.statuses.${s}`)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  t(`risks.controls.statuses.${c.status}`)
+                )}
+              </span>
+              {canUpdate && (
+                <button
+                  type="button"
+                  className="text-sky-700 underline"
+                  onClick={() => remove.mutate({ assessmentId, riskId, controlId: c.control_id })}
+                  disabled={remove.isPending}
+                >
+                  {t("risks.remove")}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {canUpdate && (
+        <div className="flex flex-wrap items-end gap-2 border-t border-slate-200 pt-2">
+          <select className="rounded border border-slate-300 p-1" value={controlId} onChange={(e) => setControlId(e.target.value)}>
+            <option value="">{t("risks.controls.pick")}</option>
+            {catalog.data?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <input
+            className="w-32 rounded border border-slate-300 p-1"
+            placeholder={t("risks.controls.ownerPlaceholder")}
+            value={ownerUserId}
+            onChange={(e) => setOwnerUserId(e.target.value)}
+          />
+          <input type="date" className="rounded border border-slate-300 p-1" value={dueAt} onChange={(e) => setDueAt(e.target.value)} />
+          {add.isError && <p className="w-full text-red-700">{t("submitError", { detail: detail(add.error) })}</p>}
+          <Button
+            onClick={() => {
+              add.mutate(
+                { assessmentId, riskId, input: { control_id: controlId, owner_user_id: ownerUserId || undefined, due_at: dueAt || undefined } },
+                { onSuccess: () => { setControlId(""); setOwnerUserId(""); setDueAt(""); } },
+              );
+            }}
+            disabled={add.isPending || !controlId}
+          >
+            {t("risks.controls.add")}
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }

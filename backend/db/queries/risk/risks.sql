@@ -22,3 +22,10 @@ UPDATE risk.risks SET
     updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
 WHERE id = $1 AND row_version = $11
 RETURNING *;
+
+-- DPIA-07: the residual likelihood/impact/score/level — recomputed (service-side, via Classify) every time
+-- the risk's linked controls change, so it's never left stale after a mitigation is added or removed.
+-- name: SetResidualRisk :one
+UPDATE risk.risks SET residual_likelihood = $2, residual_impact = $3, residual_score = $4, residual_level = $5, updated_at = now()
+WHERE id = $1
+RETURNING *;

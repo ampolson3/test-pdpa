@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -129,6 +130,64 @@ func (s *Service) RemoveAssessmentRisk(ctx context.Context, assessmentID, riskID
 		return ErrNotFound
 	}
 	return s.audit(ctx, "dpia.risk.remove", AssessmentEntityType, assessmentID, nil, map[string]any{"risk_id": riskID})
+}
+
+// AddRiskControl is DPIA-07's own write path: link a mitigation measure from the ม.37(1) catalog to a risk
+// already identified on this round. Delegates the actual link + residual recompute to risk/service (rule 9
+// — dpia never writes the risk schema itself).
+func (s *Service) AddRiskControl(ctx context.Context, assessmentID, riskID, controlID uuid.UUID, ownerUserID *uuid.UUID, dueAt *time.Time) (riskservice.RiskControl, error) {
+	a, err := s.GetAssessment(ctx, assessmentID)
+	if err != nil {
+		return riskservice.RiskControl{}, err
+	}
+	if !canEditRisks(a.Status) {
+		return riskservice.RiskControl{}, fmt.Errorf("%w: status", ErrInvalidTransition)
+	}
+	if err := s.requireLinkedRisk(ctx, assessmentID, riskID); err != nil {
+		return riskservice.RiskControl{}, err
+	}
+	return s.Risk.AddRiskControl(ctx, riskID, controlID, ownerUserID, dueAt)
+}
+
+// ListRiskControls returns every control linked to a risk of this assessment.
+func (s *Service) ListRiskControls(ctx context.Context, assessmentID, riskID uuid.UUID) ([]riskservice.RiskControl, error) {
+	if _, err := s.GetAssessment(ctx, assessmentID); err != nil {
+		return nil, err
+	}
+	if err := s.requireLinkedRisk(ctx, assessmentID, riskID); err != nil {
+		return nil, err
+	}
+	return s.Risk.ListRiskControls(ctx, riskID)
+}
+
+// UpdateRiskControlStatus changes a linked control's own status.
+func (s *Service) UpdateRiskControlStatus(ctx context.Context, assessmentID, riskID, controlID uuid.UUID, status string, version int32) (riskservice.RiskControl, error) {
+	a, err := s.GetAssessment(ctx, assessmentID)
+	if err != nil {
+		return riskservice.RiskControl{}, err
+	}
+	if !canEditRisks(a.Status) {
+		return riskservice.RiskControl{}, fmt.Errorf("%w: status", ErrInvalidTransition)
+	}
+	if err := s.requireLinkedRisk(ctx, assessmentID, riskID); err != nil {
+		return riskservice.RiskControl{}, err
+	}
+	return s.Risk.UpdateRiskControlStatus(ctx, riskID, controlID, status, version)
+}
+
+// RemoveRiskControl unlinks a control from a risk of this assessment.
+func (s *Service) RemoveRiskControl(ctx context.Context, assessmentID, riskID, controlID uuid.UUID) error {
+	a, err := s.GetAssessment(ctx, assessmentID)
+	if err != nil {
+		return err
+	}
+	if !canEditRisks(a.Status) {
+		return fmt.Errorf("%w: status", ErrInvalidTransition)
+	}
+	if err := s.requireLinkedRisk(ctx, assessmentID, riskID); err != nil {
+		return err
+	}
+	return s.Risk.RemoveRiskControl(ctx, riskID, controlID)
 }
 
 func (s *Service) requireLinkedRisk(ctx context.Context, assessmentID, riskID uuid.UUID) error {

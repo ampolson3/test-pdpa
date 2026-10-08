@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	dposervice "pdpa-platform/internal/dpo/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
@@ -34,8 +35,8 @@ func scoreSetup(t *testing.T, suffix string) scoreEnv {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
-				`DELETE FROM risk.activity_scores`, `DELETE FROM risk.risk_matrices`,
-				`DELETE FROM ropa.processing_activities`, `DELETE FROM org.org_units`,
+				`DELETE FROM risk.activity_scores`, `DELETE FROM risk.risks`, `DELETE FROM risk.risk_matrices`,
+				`DELETE FROM dpo.tasks`, `DELETE FROM ropa.processing_activities`, `DELETE FROM org.org_units`,
 				`UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`,
 				`DELETE FROM platform.audit_log`,
 			} {
@@ -48,6 +49,7 @@ func scoreSetup(t *testing.T, suffix string) scoreEnv {
 	riskSvc := &riskservice.Service{Audit: audit.New()}
 	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: riskSvc}
 	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}
+	riskSvc.Dpo = &dposervice.Service{Audit: audit.New()} // DPIA-07: owner+due date on a control opens a dpo.tasks job
 	return scoreEnv{app: app, tenant: tenant, svc: riskSvc, org: orgSvc, ropa: ropaSvc}
 }
 

@@ -781,11 +781,26 @@
       "add": "Identify risk",
       "remove": "Remove",
       "score": "Score {score} (likelihood {likelihood} x impact {impact})",
+      "residual": "Residual: {level} — score {score} (likelihood {likelihood} x impact {impact})",
       "levels": {
         "low": "Low",
         "medium": "Medium",
         "high": "High",
         "very_high": "Very high"
+      },
+      "controls": {
+        "show": "Mitigation measures",
+        "hide": "Hide measures",
+        "empty": "No measures linked yet",
+        "pick": "Pick a control from the catalog",
+        "ownerPlaceholder": "Owner user id (optional)",
+        "add": "Link measure",
+        "statuses": {
+          "existing": "Already in place",
+          "planned": "Planned",
+          "implemented": "Implemented",
+          "not_effective": "Not effective"
+        }
       }
     },
     "history": "History",

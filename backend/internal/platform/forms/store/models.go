@@ -3208,6 +3208,7 @@ type RiskRisk struct {
 	UpdatedAt          pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy          pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion         int32              `db:"row_version" json:"row_version"`
+	ResidualLevel      *string            `db:"residual_level" json:"residual_level"`
 }
 
 // มาตรการที่ผูกกับความเสี่ยง

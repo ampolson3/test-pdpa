@@ -334,6 +334,10 @@ export {
   useIdentifyRisk,
   useUpdateRisk,
   useRemoveAssessmentRisk,
+  useRiskControls,
+  useAddRiskControl,
+  useUpdateRiskControlStatus,
+  useRemoveRiskControl,
   dpiaReportHref,
   type DpiaScreeningRule,
   type DpiaAssessment,
@@ -347,6 +351,9 @@ export {
   type DpiaRisk,
   type DpiaRiskInput,
   type DpiaRiskCatalogItem,
+  type DpiaRiskControl,
+  type DpiaRiskControlInput,
+  type DpiaRiskControlStatus,
 } from "./dpia";
 export {
   useDsarRequestTypes,

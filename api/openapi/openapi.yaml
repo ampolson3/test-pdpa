@@ -9683,6 +9683,186 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /admin/v1/dpia/assessments/{id}/risks/{riskId}/controls:
+    get:
+      operationId: dpiaListRiskControls
+      tags: [dpia]
+      summary: 'DPIA-07: every mitigation measure linked to this risk'
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: riskId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpiaRiskControl'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dpiaAddRiskControl
+      tags: [dpia]
+      summary: 'DPIA-07: link a mitigation measure from the ม.37(1) catalog; owner + due date opens a tracked task'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: riskId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DpiaRiskControlInput'
+      responses:
+        '201':
+          description: Linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaRiskControl'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpia/assessments/{id}/risks/{riskId}/controls/{controlId}:
+    put:
+      operationId: dpiaUpdateRiskControlStatus
+      tags: [dpia]
+      summary: 'DPIA-07: change a linked control''s own status (e.g. planned -> implemented)'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: riskId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: controlId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              additionalProperties: false
+              properties:
+                status: {$ref: '#/components/schemas/DpiaRiskControlStatus'}
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaRiskControl'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+    delete:
+      operationId: dpiaRemoveRiskControl
+      tags: [dpia]
+      summary: 'DPIA-07: unlink a mitigation measure; the risk''s residual score is recomputed'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: riskId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: controlId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/dpia/templates:
     get:
       operationId: dpiaListTemplates
@@ -12531,6 +12711,41 @@ components:
         status:
           type: string
           enum: [open, in_treatment, accepted, closed]
+        residual_likelihood:
+          type: [integer, 'null']
+          description: 'DPIA-07: set once at least one control is linked; recomputed automatically whenever the linked control set changes.'
+        residual_impact: {type: [integer, 'null']}
+        residual_score: {type: [number, 'null']}
+        residual_level:
+          type: [string, 'null']
+          enum: [low, medium, high, very_high, null]
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    DpiaRiskControlInput:
+      type: object
+      description: 'DPIA-07: link a control from the ม.37(1) catalog (GET /admin/v1/ropa/security-controls) to a risk.'
+      required: [control_id]
+      additionalProperties: false
+      properties:
+        control_id: {$ref: '#/components/schemas/Uuid'}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        due_at: {type: string, format: date}
+    DpiaRiskControlStatus:
+      type: string
+      enum: [existing, planned, implemented, not_effective]
+    DpiaRiskControl:
+      type: object
+      required: [risk_id, control_id, control_code, control_name, control_category, status, row_version, created_at]
+      properties:
+        risk_id: {$ref: '#/components/schemas/Uuid'}
+        control_id: {$ref: '#/components/schemas/Uuid'}
+        control_code: {type: string}
+        control_name: {type: string}
+        control_category: {type: string}
+        status: {$ref: '#/components/schemas/DpiaRiskControlStatus'}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        due_at: {type: [string, 'null'], format: date}
+        task_id: {$ref: '#/components/schemas/Uuid'}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
     DpiaNecessity:

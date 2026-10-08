@@ -13,7 +13,7 @@ import (
 )
 
 const getRisk = `-- name: GetRisk :one
-SELECT id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id, asset_id, vendor_id, likelihood, impact, inherent_score, residual_likelihood, residual_impact, residual_score, level, treatment, status, review_at, created_at, created_by, updated_at, updated_by, row_version FROM risk.risks WHERE id = $1
+SELECT id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id, asset_id, vendor_id, likelihood, impact, inherent_score, residual_likelihood, residual_impact, residual_score, level, treatment, status, review_at, created_at, created_by, updated_at, updated_by, row_version, residual_level FROM risk.risks WHERE id = $1
 `
 
 func (q *Queries) GetRisk(ctx context.Context, id uuid.UUID) (RiskRisk, error) {
@@ -45,6 +45,7 @@ func (q *Queries) GetRisk(ctx context.Context, id uuid.UUID) (RiskRisk, error) {
 		&i.UpdatedAt,
 		&i.UpdatedBy,
 		&i.RowVersion,
+		&i.ResidualLevel,
 	)
 	return i, err
 }
@@ -55,7 +56,7 @@ INSERT INTO risk.risks (id, tenant_id, source_type, source_id, title, descriptio
     likelihood, impact, inherent_score, level, status, created_by, updated_by)
 VALUES ($1, NULLIF(current_setting('app.tenant_id', true), '')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'open',
         NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
-RETURNING id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id, asset_id, vendor_id, likelihood, impact, inherent_score, residual_likelihood, residual_impact, residual_score, level, treatment, status, review_at, created_at, created_by, updated_at, updated_by, row_version
+RETURNING id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id, asset_id, vendor_id, likelihood, impact, inherent_score, residual_likelihood, residual_impact, residual_score, level, treatment, status, review_at, created_at, created_by, updated_at, updated_by, row_version, residual_level
 `
 
 type InsertRiskParams struct {
@@ -116,12 +117,13 @@ func (q *Queries) InsertRisk(ctx context.Context, arg InsertRiskParams) (RiskRis
 		&i.UpdatedAt,
 		&i.UpdatedBy,
 		&i.RowVersion,
+		&i.ResidualLevel,
 	)
 	return i, err
 }
 
 const listRisksByIDs = `-- name: ListRisksByIDs :many
-SELECT id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id, asset_id, vendor_id, likelihood, impact, inherent_score, residual_likelihood, residual_impact, residual_score, level, treatment, status, review_at, created_at, created_by, updated_at, updated_by, row_version FROM risk.risks WHERE id = ANY ($1::uuid[]) ORDER BY created_at
+SELECT id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id, asset_id, vendor_id, likelihood, impact, inherent_score, residual_likelihood, residual_impact, residual_score, level, treatment, status, review_at, created_at, created_by, updated_at, updated_by, row_version, residual_level FROM risk.risks WHERE id = ANY ($1::uuid[]) ORDER BY created_at
 `
 
 func (q *Queries) ListRisksByIDs(ctx context.Context, ids []uuid.UUID) ([]RiskRisk, error) {
@@ -159,6 +161,7 @@ func (q *Queries) ListRisksByIDs(ctx context.Context, ids []uuid.UUID) ([]RiskRi
 			&i.UpdatedAt,
 			&i.UpdatedBy,
 			&i.RowVersion,
+			&i.ResidualLevel,
 		); err != nil {
 			return nil, err
 		}
@@ -170,13 +173,69 @@ func (q *Queries) ListRisksByIDs(ctx context.Context, ids []uuid.UUID) ([]RiskRi
 	return items, nil
 }
 
+const setResidualRisk = `-- name: SetResidualRisk :one
+UPDATE risk.risks SET residual_likelihood = $2, residual_impact = $3, residual_score = $4, residual_level = $5, updated_at = now()
+WHERE id = $1
+RETURNING id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id, asset_id, vendor_id, likelihood, impact, inherent_score, residual_likelihood, residual_impact, residual_score, level, treatment, status, review_at, created_at, created_by, updated_at, updated_by, row_version, residual_level
+`
+
+type SetResidualRiskParams struct {
+	ID                 uuid.UUID      `db:"id" json:"id"`
+	ResidualLikelihood *int16         `db:"residual_likelihood" json:"residual_likelihood"`
+	ResidualImpact     *int16         `db:"residual_impact" json:"residual_impact"`
+	ResidualScore      pgtype.Numeric `db:"residual_score" json:"residual_score"`
+	ResidualLevel      *string        `db:"residual_level" json:"residual_level"`
+}
+
+// DPIA-07: the residual likelihood/impact/score/level — recomputed (service-side, via Classify) every time
+// the risk's linked controls change, so it's never left stale after a mitigation is added or removed.
+func (q *Queries) SetResidualRisk(ctx context.Context, arg SetResidualRiskParams) (RiskRisk, error) {
+	row := q.db.QueryRow(ctx, setResidualRisk,
+		arg.ID,
+		arg.ResidualLikelihood,
+		arg.ResidualImpact,
+		arg.ResidualScore,
+		arg.ResidualLevel,
+	)
+	var i RiskRisk
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.SourceType,
+		&i.SourceID,
+		&i.Title,
+		&i.Description,
+		&i.OwnerUserID,
+		&i.ActivityID,
+		&i.AssetID,
+		&i.VendorID,
+		&i.Likelihood,
+		&i.Impact,
+		&i.InherentScore,
+		&i.ResidualLikelihood,
+		&i.ResidualImpact,
+		&i.ResidualScore,
+		&i.Level,
+		&i.Treatment,
+		&i.Status,
+		&i.ReviewAt,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.RowVersion,
+		&i.ResidualLevel,
+	)
+	return i, err
+}
+
 const updateRisk = `-- name: UpdateRisk :one
 UPDATE risk.risks SET
     title = $2, description = $3, owner_user_id = $4, likelihood = $5, impact = $6, inherent_score = $7,
     level = $8, treatment = $9, status = $10, updated_at = now(),
     updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
 WHERE id = $1 AND row_version = $11
-RETURNING id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id, asset_id, vendor_id, likelihood, impact, inherent_score, residual_likelihood, residual_impact, residual_score, level, treatment, status, review_at, created_at, created_by, updated_at, updated_by, row_version
+RETURNING id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id, asset_id, vendor_id, likelihood, impact, inherent_score, residual_likelihood, residual_impact, residual_score, level, treatment, status, review_at, created_at, created_by, updated_at, updated_by, row_version, residual_level
 `
 
 type UpdateRiskParams struct {
@@ -234,6 +293,7 @@ func (q *Queries) UpdateRisk(ctx context.Context, arg UpdateRiskParams) (RiskRis
 		&i.UpdatedAt,
 		&i.UpdatedBy,
 		&i.RowVersion,
+		&i.ResidualLevel,
 	)
 	return i, err
 }

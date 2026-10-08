@@ -349,6 +349,62 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 		map[string]any{"title": "a", "likelihood": 1, "impact": 1}, map[string]string{"If-Match": `"2"`}); code != 404 {
 		t.Errorf("update risk from a round it isn't linked to: %d, want 404", code)
 	}
+
+	// DPIA-07: link a mitigation measure to the risk, mark it implemented and watch the residual
+	// likelihood/score recompute, then unlink it — same risk, still on the in_progress round above.
+	// The control's own id is resolved directly through riskSvc (the ROPA-09 catalog endpoint lives on a
+	// different router, not mounted by this contract test).
+	controlsPath := riskPath + "/controls"
+	var controlID uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		controls, err := riskSvc.ListControls(ctx)
+		if err != nil {
+			return err
+		}
+		for _, c := range controls {
+			if c.Code == "ORG_POLICY" {
+				controlID = c.ID
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if controlID == uuid.Nil {
+		t.Fatalf("ORG_POLICY control not found in catalog")
+	}
+
+	if code, _ := do("POST", controlsPath, &reader2, map[string]any{"control_id": controlID}, nil); code != 403 {
+		t.Errorf("add control with read-only permission: %d, want 403", code)
+	}
+	code, body = do("POST", controlsPath, &admin, map[string]any{"control_id": controlID}, nil)
+	if code != 201 || !strings.Contains(body, `"status":"planned"`) || !strings.Contains(body, `"control_code":"ORG_POLICY"`) {
+		t.Fatalf("add control: %d %s", code, body)
+	}
+	if code, body := do("GET", controlsPath, &reader2, nil, nil); code != 200 || !strings.Contains(body, controlID.String()) {
+		t.Errorf("list risk controls: %d %s", code, body)
+	}
+	controlPath := controlsPath + "/" + controlID.String()
+	if code, _ := do("PUT", controlPath, &admin, map[string]any{"status": "implemented"}, nil); code != 428 {
+		t.Errorf("update control status without If-Match: %d, want 428", code)
+	}
+	if code, body := do("PUT", controlPath, &admin, map[string]any{"status": "implemented"}, map[string]string{"If-Match": `"1"`}); code != 200 ||
+		!strings.Contains(body, `"status":"implemented"`) {
+		t.Errorf("update control status: %d %s", code, body)
+	}
+	if code, body := do("GET", risksPath, &reader2, nil, nil); code != 200 || !strings.Contains(body, `"residual_likelihood":2`) {
+		t.Errorf("risk after implementing one control: %d %s, want residual_likelihood 2 (3-1)", code, body)
+	}
+	if code, _ := do("DELETE", controlPath, &reader2, nil, nil); code != 403 {
+		t.Errorf("remove control with read-only permission: %d, want 403", code)
+	}
+	if code, _ := do("DELETE", controlPath, &admin, nil, nil); code != 204 {
+		t.Errorf("remove control: %d, want 204", code)
+	}
+	if code, body := do("GET", controlsPath, &reader2, nil, nil); code != 200 || strings.Contains(body, controlID.String()) {
+		t.Errorf("list risk controls after remove: %d %s, want empty", code, body)
+	}
+
 	if code, _ := do("DELETE", riskPath, &reader2, nil, nil); code != 403 {
 		t.Errorf("remove risk with read-only permission: %d, want 403", code)
 	}

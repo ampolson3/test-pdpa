@@ -28,8 +28,14 @@ SELECT pg_advisory_xact_lock(hashtext('dpo.task_no:' || current_setting('app.ten
 SELECT count(*)::int FROM dpo.tasks WHERE task_no LIKE @prefix::text || '%';
 
 -- name: InsertTask :one
-INSERT INTO dpo.tasks (id, tenant_id, task_no, title, description, source_type, source_id, priority, created_by, updated_by)
+-- assignee_user_id/due_at are optional (DPIA-07's own "กำหนดผู้รับผิดชอบและวันเสร็จ → task"; every earlier
+-- caller leaves both null, landing status 'created' as before) — status becomes 'assigned' only when an
+-- assignee is actually given at creation.
+INSERT INTO dpo.tasks (id, tenant_id, task_no, title, description, source_type, source_id, priority,
+    assignee_user_id, due_at, status, created_by, updated_by)
 VALUES (@id, current_setting('app.tenant_id')::uuid, @task_no, @title, @description, @source_type, @source_id, @priority,
+    sqlc.narg(assignee_user_id), sqlc.narg(due_at),
+    CASE WHEN sqlc.narg(assignee_user_id)::uuid IS NOT NULL THEN 'assigned' ELSE 'created' END,
     @actor, @actor)
 RETURNING id, task_no, title, description, source_type, source_id, status, priority, assignee_user_id, reviewer_user_id,
     org_unit_id, due_at, completed_at, row_version, created_at;

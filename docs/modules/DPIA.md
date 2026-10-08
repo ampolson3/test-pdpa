@@ -335,6 +335,65 @@ the `@pdpa/i18n` ICU message tests both verified clean.
 
 **Acceptance criteria:** ความเสี่ยงคงเหลือคำนวณใหม่เมื่อเพิ่มมาตรการ
 
+**Implementation — done.** `risk.risk_controls` (risk_id + control_id, already fully specified in the
+baseline migrations — owner_user_id, due_at, task_id, status all already there) links a `risk.risks` row
+(DPIA-06) to one of ROPA-09's own `risk.controls` catalog entries — the "คลัง control" the module doc names
+is that same catalog, not a new one; DPIA-07 reuses it rather than building a second. Migration 00056 adds
+only `risk.risks.residual_level` (text, same CHECK as the existing inherent `level` column) for symmetry —
+`residual_likelihood`/`residual_impact`/`residual_score` were already on the table from DPIA-06's own
+migration, unused until now.
+
+The residual-risk formula itself is not specified anywhere in the module doc or `docs/legal/pdpa-rules.md` —
+treated as a configurable business default, not a legal rule needing a `docs/decisions.md` entry (CLAUDE.md's
+own distinction: a tunable value gets a documented default, not a blocking question): each **implemented**
+control (status = `implemented`; `existing`/`planned`/`not_effective` don't count) reduces the residual
+likelihood by one level, floored at 1 — impact is left at the inherent value unchanged, since a control from
+this catalog (encryption, pseudonymization, access restriction, retention reduction) makes harm less likely,
+not less severe if it still happens. `recomputeResidual` (in `internal/risk/service/risk_controls.go`) is
+called after every `AddRiskControl`/`UpdateRiskControlStatus`/`RemoveRiskControl` and reclassifies against the
+tenant's current RRA-02 matrix via the same `Classify` function DPIA-06's own `IdentifyRisk`/`UpdateRisk`
+already use — never cached, so a later matrix change or control-status edit is always reflected on the next
+read, exactly like the acceptance criterion requires.
+
+"ผู้รับผิดชอบและวันเสร็จ → task": giving a control link both an owner and a due date opens one `dpo.tasks`
+row (`source_type = "risk"`, numbered `SEC-<year>-NNNN` in the same bucket DPO-09's own remediation tasks
+use) via a new `OpenRiskControlTask` on `dpo/service`. This is the third import-cycle-avoidance case in this
+codebase's risk/dpo/dsar/ropa neighborhood: `risk/service` cannot import `dpo/service` directly (`dpo` already
+imports `dsar`, which imports `ropa`, which imports `risk/service` for ROPA-09's `Control` type — a direct
+reverse import would cycle), so `risk/service` declares its own local `DpoTasks` interface (rule 9), satisfied
+structurally by `dposervice.Service.OpenRiskControlTask` with a direct field assignment
+(`riskSvc.Dpo = dpoSvc` in `cmd/api/main.go`) — no adapter type needed, the same shape RRA-03's own
+`DpiaTrigger` already established in the opposite direction. The shared `dpo.tasks` `InsertTask` query gained
+optional `assignee_user_id`/`due_at` params (both existing call sites — DPO-09's own remediation task, PNG-07's
+consent task — pass neither, so their behaviour is unchanged).
+
+`AddRiskControl` checks the control id is a real catalog row and, when given, that the owner is a real active
+user of the tenant (rule 1's FK-visibility pattern, via the already-exported `iamservice.Names`) before
+writing; the risk_id+control_id unique constraint is wrapped in `pdb.Savepoint` (ROPA-03/VEN-01's own
+established pattern) so re-linking an already-linked control doesn't abort the request transaction.
+`dpia.Service` wraps the whole thing (`AddRiskControl`/`ListRiskControls`/`UpdateRiskControlStatus`/
+`RemoveRiskControl` in `internal/dpia/service/risks.go`) with the same `canEditRisks`/`requireLinkedRisk`
+guards DPIA-06 already built, so a control can only be linked to a risk of an `in_progress`/`in_review`
+assessment, and only to a risk actually linked to *this* assessment — dpia never writes `risk.risk_controls`
+directly (rule 9).
+
+API: `GET`/`POST /admin/v1/dpia/assessments/{id}/risks/{riskId}/controls`,
+`PUT`/`DELETE .../controls/{controlId}` (ETag/If-Match on the status update) — same shape as DPIA-06's own
+risk sub-resource. `DpiaRisk`'s wire schema gained `residual_likelihood`/`residual_impact`/`residual_score`/
+`residual_level` (all nil until at least one control is linked). UI: each risk row on `/ropa/activities/{id}`'s
+DPIA risk panel shows its residual level once computed and expands into a controls panel — catalog dropdown
+(reusing the same `useSecurityControls` hook ROPA-09's own picker uses), owner/due-date inputs, a per-control
+status `<select>`, and remove. Tests: unit (the acceptance criterion directly — residual recomputes on add,
+floors at 1 with multiple implemented controls, recomputes on remove and on status change; unknown control/
+owner refused; duplicate link refused without poisoning the transaction; owner+due-date opens a real
+`dpo.tasks` row; two-tenant isolation of the link and the underlying risk), integration through
+`dpia.Service`'s own wrapper (editable-status gate, cross-assessment risk rejection), HTTP contract
+(401/403/201/200/204/428/200) through the real validator. Full backend `go test -count=1 -p 1 ./...` exits 0
+(no regressions anywhere in the branch); `pnpm --filter @pdpa/admin build` and the `@pdpa/i18n` ICU message
+tests both verified clean. Not done: DPIA-08 (the sibling "extend" feature named in the module's own relation
+list) — recommending which controls to add, not just linking a chosen one — is a separate Should feature, not
+part of this acceptance criterion.
+
 <a id="dpia-09"></a>
 ### DPIA-09 เชิญผู้ร่วมประเมิน
 

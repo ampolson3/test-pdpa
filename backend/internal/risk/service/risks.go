@@ -36,10 +36,16 @@ type Risk struct {
 	Impact        int
 	InherentScore float64
 	Level         string
-	Treatment     string // mitigate | accept | transfer | avoid
-	Status        string // open | in_treatment | accepted | closed
-	RowVersion    int32
-	CreatedAt     time.Time
+	// Residual* are DPIA-07's own fields — nil until at least one control is linked (AddRiskControl),
+	// recomputed automatically whenever the linked control set changes (never set directly by a caller).
+	ResidualLikelihood *int
+	ResidualImpact     *int
+	ResidualScore      *float64
+	ResidualLevel      *string
+	Treatment          string // mitigate | accept | transfer | avoid
+	Status             string // open | in_treatment | accepted | closed
+	RowVersion         int32
+	CreatedAt          time.Time
 }
 
 var validTreatments = map[string]bool{"": true, "mitigate": true, "accept": true, "transfer": true, "avoid": true}
@@ -192,7 +198,21 @@ func toRisk(r riskstore.RiskRisk) Risk {
 	out := Risk{
 		ID: r.ID, SourceType: r.SourceType, SourceID: uuidPtr(r.SourceID), Title: r.Title, Description: derefStr(r.Description),
 		OwnerUserID: uuidPtr(r.OwnerUserID), ActivityID: uuidPtr(r.ActivityID), Likelihood: int(r.Likelihood), Impact: int(r.Impact),
-		InherentScore: f.Float64, Level: r.Level, Treatment: derefStr(r.Treatment), Status: r.Status, RowVersion: r.RowVersion,
+		InherentScore: f.Float64, Level: r.Level, ResidualLevel: r.ResidualLevel,
+		Treatment: derefStr(r.Treatment), Status: r.Status, RowVersion: r.RowVersion,
+	}
+	if r.ResidualLikelihood != nil {
+		v := int(*r.ResidualLikelihood)
+		out.ResidualLikelihood = &v
+	}
+	if r.ResidualImpact != nil {
+		v := int(*r.ResidualImpact)
+		out.ResidualImpact = &v
+	}
+	if r.ResidualScore.Valid {
+		rf, _ := r.ResidualScore.Float64Value()
+		v := rf.Float64
+		out.ResidualScore = &v
 	}
 	if r.CreatedAt.Valid {
 		out.CreatedAt = r.CreatedAt.Time

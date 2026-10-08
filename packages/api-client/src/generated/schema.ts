@@ -3183,6 +3183,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpia/assessments/{id}/risks/{riskId}/controls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPIA-07: every mitigation measure linked to this risk */
+        get: operations["dpiaListRiskControls"];
+        put?: never;
+        /** DPIA-07: link a mitigation measure from the ม.37(1) catalog; owner + due date opens a tracked task */
+        post: operations["dpiaAddRiskControl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpia/assessments/{id}/risks/{riskId}/controls/{controlId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** DPIA-07: change a linked control's own status (e.g. planned -> implemented) */
+        put: operations["dpiaUpdateRiskControlStatus"];
+        post?: never;
+        /** DPIA-07: unlink a mitigation measure; the risk's residual score is recomputed */
+        delete: operations["dpiaRemoveRiskControl"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpia/templates": {
         parameters: {
             query?: never;
@@ -4597,6 +4633,35 @@ export interface components {
             treatment?: "mitigate" | "accept" | "transfer" | "avoid" | null;
             /** @enum {string} */
             status: "open" | "in_treatment" | "accepted" | "closed";
+            /** @description DPIA-07: set once at least one control is linked; recomputed automatically whenever the linked control set changes. */
+            residual_likelihood?: number | null;
+            residual_impact?: number | null;
+            residual_score?: number | null;
+            /** @enum {string|null} */
+            residual_level?: "low" | "medium" | "high" | "very_high" | null;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @description DPIA-07: link a control from the ม.37(1) catalog (GET /admin/v1/ropa/security-controls) to a risk. */
+        DpiaRiskControlInput: {
+            control_id: components["schemas"]["Uuid"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            /** Format: date */
+            due_at?: string;
+        };
+        /** @enum {string} */
+        DpiaRiskControlStatus: "existing" | "planned" | "implemented" | "not_effective";
+        DpiaRiskControl: {
+            risk_id: components["schemas"]["Uuid"];
+            control_id: components["schemas"]["Uuid"];
+            control_code: string;
+            control_name: string;
+            control_category: string;
+            status: components["schemas"]["DpiaRiskControlStatus"];
+            owner_user_id?: components["schemas"]["Uuid"];
+            /** Format: date */
+            due_at?: string | null;
+            task_id?: components["schemas"]["Uuid"];
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
         };
@@ -14217,6 +14282,144 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    dpiaListRiskControls: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                riskId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpiaRiskControl"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpiaAddRiskControl: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                riskId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpiaRiskControlInput"];
+            };
+        };
+        responses: {
+            /** @description Linked */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaRiskControl"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpiaUpdateRiskControlStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                riskId: components["schemas"]["Uuid"];
+                controlId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    status: components["schemas"]["DpiaRiskControlStatus"];
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaRiskControl"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dpiaRemoveRiskControl: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                riskId: components["schemas"]["Uuid"];
+                controlId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     dpiaListTemplates: {

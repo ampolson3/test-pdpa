@@ -118,22 +118,27 @@ func (q *Queries) InsertSecurityAssessment(ctx context.Context, arg InsertSecuri
 }
 
 const insertTask = `-- name: InsertTask :one
-INSERT INTO dpo.tasks (id, tenant_id, task_no, title, description, source_type, source_id, priority, created_by, updated_by)
+INSERT INTO dpo.tasks (id, tenant_id, task_no, title, description, source_type, source_id, priority,
+    assignee_user_id, due_at, status, created_by, updated_by)
 VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7,
-    $8, $8)
+    $8, $9,
+    CASE WHEN $8::uuid IS NOT NULL THEN 'assigned' ELSE 'created' END,
+    $10, $10)
 RETURNING id, task_no, title, description, source_type, source_id, status, priority, assignee_user_id, reviewer_user_id,
     org_unit_id, due_at, completed_at, row_version, created_at
 `
 
 type InsertTaskParams struct {
-	ID          uuid.UUID   `db:"id" json:"id"`
-	TaskNo      string      `db:"task_no" json:"task_no"`
-	Title       string      `db:"title" json:"title"`
-	Description *string     `db:"description" json:"description"`
-	SourceType  string      `db:"source_type" json:"source_type"`
-	SourceID    pgtype.UUID `db:"source_id" json:"source_id"`
-	Priority    string      `db:"priority" json:"priority"`
-	Actor       pgtype.UUID `db:"actor" json:"actor"`
+	ID             uuid.UUID   `db:"id" json:"id"`
+	TaskNo         string      `db:"task_no" json:"task_no"`
+	Title          string      `db:"title" json:"title"`
+	Description    *string     `db:"description" json:"description"`
+	SourceType     string      `db:"source_type" json:"source_type"`
+	SourceID       pgtype.UUID `db:"source_id" json:"source_id"`
+	Priority       string      `db:"priority" json:"priority"`
+	AssigneeUserID pgtype.UUID `db:"assignee_user_id" json:"assignee_user_id"`
+	DueAt          pgtype.Date `db:"due_at" json:"due_at"`
+	Actor          pgtype.UUID `db:"actor" json:"actor"`
 }
 
 type InsertTaskRow struct {
@@ -154,6 +159,9 @@ type InsertTaskRow struct {
 	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
+// assignee_user_id/due_at are optional (DPIA-07's own "กำหนดผู้รับผิดชอบและวันเสร็จ → task"; every earlier
+// caller leaves both null, landing status 'created' as before) — status becomes 'assigned' only when an
+// assignee is actually given at creation.
 func (q *Queries) InsertTask(ctx context.Context, arg InsertTaskParams) (InsertTaskRow, error) {
 	row := q.db.QueryRow(ctx, insertTask,
 		arg.ID,
@@ -163,6 +171,8 @@ func (q *Queries) InsertTask(ctx context.Context, arg InsertTaskParams) (InsertT
 		arg.SourceType,
 		arg.SourceID,
 		arg.Priority,
+		arg.AssigneeUserID,
+		arg.DueAt,
 		arg.Actor,
 	)
 	var i InsertTaskRow
