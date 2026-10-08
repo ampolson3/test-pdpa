@@ -1138,6 +1138,7 @@
       "scoreError": "Failed to compute: {detail}",
       "score": "Score {score} (likelihood {likelihood} x impact {impact})",
       "noFactors": "No additional risk factors",
+      "dpiaTriggered": "High risk level — a DPIA has been opened automatically (RRA-03). See the DPIA section below.",
       "levels": {
         "low": "Low",
         "medium": "Medium",

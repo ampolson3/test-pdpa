@@ -36,6 +36,13 @@ type Ropa interface {
 	Signals(ctx context.Context, id uuid.UUID) (ActivitySignals, error)
 }
 
+// DpiaTrigger is RRA-03: risk hands a fresh high/very_high score to dpia so it can open a DPIA round —
+// a plain local interface rather than importing dpia/service back (rule 9: dpia already imports this
+// package for ROPA-09's Control type). dpiaservice.Service.TriggerFromRiskScore implements this directly.
+type DpiaTrigger interface {
+	TriggerFromRiskScore(ctx context.Context, activityID uuid.UUID, score float64, level string) error
+}
+
 // Factor is one contribution to the score, named so the UI can explain why an activity scored the way it
 // did — RRA-01's own acceptance criterion ("อธิบายปัจจัยที่ทำให้สูงได้").
 type Factor struct {
@@ -139,6 +146,11 @@ func (s *Service) Score(ctx context.Context, activityID uuid.UUID) (ActivityScor
 	})
 	if err != nil {
 		return ActivityScore{}, err
+	}
+	if s.DpiaTrigger != nil {
+		if err := s.DpiaTrigger.TriggerFromRiskScore(ctx, activityID, score, level); err != nil {
+			return ActivityScore{}, err
+		}
 	}
 	return toActivityScore(row, factors), nil
 }

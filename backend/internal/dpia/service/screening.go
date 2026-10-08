@@ -55,6 +55,8 @@ type Assessment struct {
 	ScreeningResult string // required | recommended | not_required
 	ScreeningReason string
 	Score           float64
+	RiskLevel       string // set when this round was opened by RRA-03's risk-score trigger (high | very_high)
+	OwnerUserID     *uuid.UUID
 	Factors         []forms.Contribution
 	RowVersion      int32
 	CreatedAt       time.Time
@@ -366,7 +368,8 @@ func toAssessment(r dpiastore.AssessAssessment, factors []forms.Contribution) As
 		ID: r.ID, TemplateID: r.TemplateID, FormVersionID: r.FormVersionID, Title: r.Title,
 		ActivityID: uuidVal(r.ActivityID), RoundNo: int(r.RoundNo), PreviousID: uuidPtr(r.PreviousID),
 		Status: r.Status, ScreeningResult: derefStr(r.ScreeningResult), ScreeningReason: derefStr(r.ScreeningReason),
-		Score: score, Factors: factors, RowVersion: r.RowVersion, CreatedAt: r.CreatedAt.Time,
+		Score: score, RiskLevel: derefStr(r.RiskLevel), OwnerUserID: uuidPtr(r.OwnerUserID),
+		Factors: factors, RowVersion: r.RowVersion, CreatedAt: r.CreatedAt.Time,
 	}
 }
 

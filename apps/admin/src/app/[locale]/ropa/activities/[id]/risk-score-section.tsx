@@ -49,6 +49,11 @@ export function RiskScoreSection({ client, activityId }: { client: ReturnType<ty
             </span>
             <span className="text-slate-600">{t("riskScore.score", { score: current.score, likelihood: current.likelihood, impact: current.impact })}</span>
           </div>
+          {(current.level === "high" || current.level === "very_high") && (
+            <p className="rounded bg-orange-50 px-3 py-2 text-sm text-orange-900" role="status">
+              {t("riskScore.dpiaTriggered")}
+            </p>
+          )}
           {current.factors.length === 0 ? (
             <p className="text-slate-500">{t("riskScore.noFactors")}</p>
           ) : (

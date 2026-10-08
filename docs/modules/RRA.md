@@ -157,9 +157,10 @@ score and surfaces the new factors on the very next call; no default matrix is r
 is refused; reading before any score exists is `ErrNotFound`; two-tenant isolation of both scoring and
 reading), HTTP contract (401/403/404/201/200) through the real validator + AuthZ, using the real
 `wiring.RiskRopa` adapter rather than a test double, so the adapter itself is exercised end to end. Not done:
-RRA-03 (auto-trigger a DPIA for a high-scoring activity), RRA-06 (control-driven residual score, where
-`risk.risk_factors`/weights would actually fit), RRA-07 (remediation tasks from gaps), RRA-12 (scheduled
-re-assessment) — all sibling features layered on this same `risk.activity_scores` row, not built here.
+RRA-06 (control-driven residual score, where `risk.risk_factors`/weights would actually fit), RRA-07
+(remediation tasks from gaps), RRA-12 (scheduled re-assessment) — sibling features layered on this same
+`risk.activity_scores` row, not built here. RRA-03 (below) is the one sibling this pass did build, since
+`Score` is the only thing that could ever call it.
 
 <a id="rra-02"></a>
 ### RRA-02 ตั้งค่า risk matrix
@@ -234,6 +235,53 @@ committing.
 **Frontend (Next.js):** แจ้งเตือนในหน้ากิจกรรม
 
 **Acceptance criteria:** กิจกรรมเสี่ยงสูงมี DPIA ถูกสร้างอัตโนมัติ
+
+**Implementation — done.** `risk/service` gained a second local interface alongside RRA-01's own `Ropa`:
+`DpiaTrigger` (`TriggerFromRiskScore(ctx, activityID, score, level) error`) — the same import-cycle-breaking
+pattern as `Ropa`, but in the opposite direction: `internal/dpia/service` already imports `internal/risk/service`
+for ROPA-09's `Control` type, so `risk/service` cannot import `dpia/service` back (rule 9). Unlike RRA-01's
+`Ropa` (which needed `internal/wiring.RiskRopa`, a structural adapter over two concrete services), no wiring
+adapter is needed here: `dpiaservice.Service.TriggerFromRiskScore` itself matches the interface's exact method
+set, so `cmd/api/main.go` just assigns `riskSvc.DpiaTrigger = dpiaSvc` directly, right after `dpiaSvc` is
+built. `Score` (RRA-01) calls it after successfully persisting the new `risk.activity_scores` row — "a high
+score" is read literally as *this* scoring call's own fresh level, not a separately re-read value, since
+`Score` already has it in hand.
+
+`TriggerFromRiskScore` is a no-op for anything other than `high`/`very_high` (low/medium should never open a
+DPIA). For a qualifying score, it opens a `assess.assessments` row directly at `in_progress` — no screening
+questionnaire to re-answer, since the risk engine's own number already establishes the need —
+`screening_result` forced to `"required"`, `risk_level`/`score` carried straight from RRA-01's own
+classification (both columns already existed on the table, unused until now), and `owner_user_id` copied from
+the activity's own owner (`ropaservice.Activity.OwnerUserID`, nil-safe — an activity without one just gets an
+unassigned DPIA, the same as a manually-screened one). Idempotency (`Score` runs on every page view and every
+"recompute" click, so this can't spawn a new round each time): a second high/very_high score while the
+activity's latest round is still in an open ST-05#2 status (`screening`/`in_progress`/`in_review`/
+`needs_review`) is silently skipped; once that round reaches a closed state (`not_required`/`approved`/
+`rejected`/`closed`), a fresh high score opens a new round chained to it (`round_no`/`previous_id`), the same
+chaining DPIA-01's own re-screening already uses. The activity FK is checked under the caller's own RLS via
+the existing `s.Ropa.GetActivity` before anything is written (rule 1); a cross-tenant activity id is refused
+as `ErrInvalid`, not a 500 or a leak.
+
+No new API endpoint: this is a side effect of `POST /admin/v1/ropa/activities/{id}/risk-score` (RRA-01's own
+`RiskScoreActivity`), not a separate feature surface. "แจ้งเตือนในหน้ากิจกรรม" (frontend's own note) is a
+banner on the existing `RiskScoreSection` (`/ropa/activities/{id}`) shown whenever the current score reads
+high/very_high, pointing down at the DPIA section already on that same page (DPIA-01/04/05/10/14's own
+`DpiaScreeningSection`) — no second API call needed, since that section already lists the activity's
+assessments and will show the freshly-opened round itself; `Assessment` (dpia/service) gained `RiskLevel`/
+`OwnerUserID` fields (both previously unread, now surfaced through `GET /admin/v1/dpia/assessments`) so a
+round opened this way is visibly distinguishable from a manually-screened one. Tests: unit
+(`internal/dpia/service/risktrigger_test.go` — the acceptance criterion directly: a high score opens
+in_progress/required with the right risk_level/score/owner; low/medium/empty levels are no-ops; a second high
+score while one round is still open does not duplicate; a fresh score after the prior round closed opens a
+correctly chained round 2; an unknown activity id is refused; two-tenant isolation), an integration test
+(`internal/risk/service/dpiatrigger_integration_test.go`) wiring a real `riskSvc.DpiaTrigger = dpiaSvc` exactly
+as `cmd/api/main.go` does and proving `Score` on a genuinely high-scoring activity (sensitive data + a
+vulnerable subject type + high volume + a cross-border transfer + a recipient + no controls, against the
+default 3x3 matrix) opens a real DPIA round end to end — not a mock. `pnpm --filter @pdpa/admin build` and the
+`@pdpa/i18n` ICU message tests both verified clean. Not done: a dedicated notification (PLT-04) to the
+activity owner — the module doc's own frontend note only asks for a banner "ในหน้ากิจกรรม" (on the activity
+page itself), which this delivers; add a push notification once a screen actually asks for one, the same
+"no consumer yet" deferral this codebase uses elsewhere.
 
 <a id="rra-04"></a>
 ### RRA-04 วิเคราะห์ช่องว่างทางกฎหมายอัตโนมัติ
