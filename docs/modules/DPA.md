@@ -174,6 +174,48 @@ unconditionally needs S3+clamd this environment doesn't have. Migration verified
 
 **หมายเหตุ:** สร้าง agreement engine ครั้งเดียว ใช้ร่วม DSA
 
+**Implementation — done.** `internal/agreement` is the agreement engine itself — the first, and by design the
+only, Go package for it; DSA (not built yet) will be a second `agreement_type` on the same tables and the
+same `CreateWizard`, not a new package, per the module's own "สร้าง agreement engine ครั้งเดียว ใช้ร่วม DSA"
+note. `agreement.agreements`/`agreement.parties`/`agreement.agreement_activities` (and the other agreement
+tables DPA-03/04/05 will use) were already fully specified in the baseline migrations — no new migration.
+`agreementservice.CreateWizard` is the acceptance criterion in one call: validates `vendor_id` (via the new
+`Vendor` interface's `GetVendor`, then the vendor's own `party_id` through `Org.GetExternalParty` — rule 1,
+FKs bypass RLS), `legal_entity_id` (`Org.GetLegalEntity`) and every `activity_ids` entry (`Ropa.GetActivity`)
+before anything is written; composes the document through `docs.Service.Create` (rule 9 — agreement never
+writes `platform.documents` directly), which already resolves a DPA-01 template's content when `template_id`
+is given, or starts blank when it's omitted — that omission *is* "โหมดกรอกเอง" (manual mode), needing no
+separate code path; derives the counterparty's own role from ours (controller↔processor, joint_controller↔
+joint_controller — the wire schema accepts only `ours`, never asks for the counterparty's); and numbers the
+agreement `{TYPE}-{year}-NNNN` with the same per-tenant-per-year advisory-lock pattern breach's own incident
+numbering already established (`LockAgreementNumbering` + `CountAgreementsWithPrefix`). Only `agreement_type
+= "dpa"` is actually wired to a feature today — `dsa`/`joint_controller`/`inbound_dpa` are real values already
+in the table's own CHECK constraint (for when those modules exist) and are refused as "not yet supported" (422)
+rather than silently accepted, the same "leave the column, build the real thing later" deferral ROPA-01's own
+`discovered_by_finding_id` already used. `agreement.parties`'s own `party_role` CHECK is wider than this
+feature's two controller/processor outcomes (it also allows `joint_controller`, used when `our_role` is
+`joint_controller`), so no CHECK or migration change was needed either.
+
+API: `GET`/`POST /admin/v1/agreements` (cursor pagination, `agreement_type`/`vendor_id` filters — the same
+shape every other module's own list endpoints already use), `GET /admin/v1/agreements/{id}` (includes
+`activity_ids`) — all on the already-seeded `agreement.dpa.*` permissions (no new code). UI: a new page,
+`/agreements` (the module doc's own "wizard สร้างสัญญา + editor" note) — an inline create form (agreement
+type, our role, vendor, legal entity, title, an optional DPA-01 published template, an activity checklist
+drawn from ROPA's own activity list, auto-renew/renewal-notice-days) and a type-filtered list linking to each
+agreement's detail page, which shows its parties/activities/renewal settings and a link straight into the
+composed document's own PLT-16 editor (`/documents/{document_id}`) — DPA-02's own "+ editor" note is PLT-16's
+existing editor, not a second one; a link from `/vendors/{id}` points back to `/agreements`. Tests: unit
+(the acceptance criterion directly — one call from a vendor + its activities produces a real agreement with
+a composed document, the right parties row and every activity linked; the three FK-visibility checks refuse
+an unknown id instead of hitting the database's own FK constraint; counterparty-role derivation for all three
+`our_role` values; agreement numbering; an unsupported `agreement_type` like `dsa` refused; list filters by
+type/vendor; two-tenant isolation), HTTP contract (401/403/400 schema/422 incl. the unsupported-type case/
+201/200/404) through the real validator + AuthZ. `pnpm --filter @pdpa/admin build`/`tsc` and the `@pdpa/i18n`
+ICU message tests both verified clean. Not done: DPA-03 (mandatory-clause gate before approval), DPA-04
+(RoPA-sourced processing-detail annex), DPA-05 (transfer clauses), DPA-10 (registry + expiry alerts), DPA-11
+(the vendor-page read-side view of an agreement's own activities — this feature built the write side it will
+read from) — all sibling features layered on the same `agreement.agreements` row, not built here.
+
 <a id="dpa-03"></a>
 ### DPA-03 ข้อกำหนดที่ต้องมี
 

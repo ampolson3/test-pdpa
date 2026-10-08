@@ -21,6 +21,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
+	agreementhttp "pdpa-platform/internal/agreement/http"
+	agreementservice "pdpa-platform/internal/agreement/service"
 	breachhttp "pdpa-platform/internal/breach/http"
 	breach "pdpa-platform/internal/breach/service"
 	consenthttp "pdpa-platform/internal/consent/http"
@@ -230,10 +232,10 @@ func run() error {
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
-	riskSvc := riskservice.New() // ROPA-09: the ม.37(1) security-measures catalog (no RRA module yet)
-	ropaTemplatesSvc := templatesservice.New() // RTG-01: the platform's standard activity library (read-only)
+	riskSvc := riskservice.New()                                                                              // ROPA-09: the ม.37(1) security-measures catalog (no RRA module yet)
+	ropaTemplatesSvc := templatesservice.New()                                                                // RTG-01: the platform's standard activity library (read-only)
 	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc} // ROPA-05: create an activity from one of these templates
-	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc} // VEN-01: vendor/processor registry
+	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc}                                         // VEN-01: vendor/processor registry
 	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc}
 	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read" // DPO-01 appointment order / PDPC evidence
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
@@ -242,8 +244,8 @@ func run() error {
 	consentSvc := &consentservice.Service{Versioning: versioningSvc, Events: &events.Publisher{River: riverClient},
 		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc, Verification: iamSvc} // CON-11: guardian OTP (IAM-05)
 	consentSvc.RegisterVersioning()
-	ropaSvc.Consent = consentSvc                                                     // ROPA-03: evidence of explicit consent for sensitive-data purposes
-	dpoSvc.Forms = formsSvc                                                          // DPO-09: the security-measures checklist
+	ropaSvc.Consent = consentSvc                                                                                         // ROPA-03: evidence of explicit consent for sensitive-data purposes
+	dpoSvc.Forms = formsSvc                                                                                              // DPO-09: the security-measures checklist
 	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc, Audit: auditSvc, PDF: render.FromEnv()} // DPIA-01/02: screening on the "assessment" form type; DPIA-04: RoPA-sourced description; DPIA-15: PDF/Word report
 	// DPIA-14: comments, attachments and an activity feed (PLT-07) on the assessment, satisfying the "ผู้แก้ไข
 	// และวันที่" half of the acceptance criterion for free — the diff endpoint covers the other half.
@@ -263,6 +265,7 @@ func run() error {
 		fileSvc.EntityPermissions[k] = v
 	}
 	breachSvc := wiring.Breach(notifySvc, fileSvc, riverClient, auditSvc, keyring, docsSvc)
+	agreementSvc := &agreementservice.Service{Docs: docsSvc, Org: orgSvc, Vendor: vendorSvc, Ropa: ropaSvc, Audit: auditSvc} // DPA-02: the agreement engine (shared with DSA later)
 	noticeSvc := &noticeservice.Service{Audit: auditSvc, Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc, Files: fileSvc, Notify: notifySvc, River: riverClient,
 		Dpo: dpoSvc, Consent: consentSvc, // PNG-07: re-consent task + material-change alert
 		EnforceChecklist: os.Getenv("NOTICE_CHECKLIST_ENFORCE") != "false", EnforceTranslationSync: os.Getenv("NOTICE_TRANSLATION_SYNC_ENFORCE") != "false"}
@@ -288,7 +291,7 @@ func run() error {
 		},
 	})
 	fileSvc.EntityPermissions["dsar_request"] = "dsar.request.read"
-	dpoSvc.Dsar = dsarSvc      // DPO-05: DSAR's 30-day SLA on the notification center
+	dpoSvc.Dsar = dsarSvc     // DPO-05: DSAR's 30-day SLA on the notification center
 	dpoSvc.Breach = breachSvc // DPO-05: breach's 72-hour PDPC clock on the notification center
 
 	// Public consent forms (BP-01) and published notices (PNG-06): tenant and principal from the public key,
@@ -383,6 +386,11 @@ func run() error {
 			[]dpiahttp.StrictMiddlewareFunc{authz.StrictMiddleware[dpiahttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			dpiahttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		dpiahttp.HandlerWithOptions(strictDpia, dpiahttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictAgreement := agreementhttp.NewStrictHandlerWithOptions(agreementhttp.NewStrict(agreementSvc),
+			[]agreementhttp.StrictMiddlewareFunc{authz.StrictMiddleware[agreementhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			agreementhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		agreementhttp.HandlerWithOptions(strictAgreement, agreementhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictConsent := consenthttp.NewStrictHandlerWithOptions(consenthttp.NewStrict(consentSvc),
 			[]consenthttp.StrictMiddlewareFunc{authz.StrictMiddleware[consenthttp.StrictHandlerFunc](authzCache, requiredPermission)},

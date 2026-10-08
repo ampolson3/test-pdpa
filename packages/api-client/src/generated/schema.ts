@@ -3424,6 +3424,41 @@ export interface paths {
         patch: operations["vendorUpdateVendor"];
         trace?: never;
     };
+    "/admin/v1/agreements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's DPA/DSA agreements, newest first (DPA-02) */
+        get: operations["agreementListAgreements"];
+        put?: never;
+        /** DPA-02: compose a complete draft agreement from a vendor and its RoPA activities in one call — "โหมดกรอกเอง" is simply leaving template_id unset */
+        post: operations["agreementCreateAgreement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/agreements/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One agreement with its linked activity ids (DPA-02) */
+        get: operations["agreementGetAgreement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4125,6 +4160,69 @@ export interface components {
             offboarded_at?: string | null;
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * @description agreement.agreements' own CHECK constraint — only 'dpa' is wired to a feature so far (DPA-02); dsa/joint_controller/inbound_dpa are real values for when those modules exist.
+         * @enum {string}
+         */
+        AgreementType: "dpa" | "dsa" | "joint_controller" | "inbound_dpa";
+        /**
+         * @example {
+         *       "agreement_type": "dpa",
+         *       "our_role": "controller",
+         *       "vendor_id": "00000000-0000-0000-0000-000000000000",
+         *       "legal_entity_id": "00000000-0000-0000-0000-000000000000",
+         *       "activity_ids": [],
+         *       "title": "ข้อตกลงการประมวลผลข้อมูลส่วนบุคคลกับผู้ให้บริการระบบเงินเดือน"
+         *     }
+         */
+        AgreementCreateInput: {
+            agreement_type: components["schemas"]["AgreementType"];
+            /**
+             * @description Our own role under this agreement — the counterparty's role is derived (controller <-> processor, joint_controller <-> joint_controller)
+             * @enum {string}
+             */
+            our_role: "controller" | "processor" | "joint_controller";
+            /** @description The VEN-01 vendor this agreement is with — its own party_id becomes the counterparty */
+            vendor_id: components["schemas"]["Uuid"];
+            /** @description Our own legal entity (ORG-01) */
+            legal_entity_id: components["schemas"]["Uuid"];
+            /**
+             * @description RoPA processing activities this agreement covers
+             * @default []
+             */
+            activity_ids: components["schemas"]["Uuid"][];
+            /** @description A published agreement template (DPA-01) to start the document from; omit for "โหมดกรอกเอง" (manual mode, a blank document) */
+            template_id?: components["schemas"]["Uuid"];
+            title: string;
+            /** Format: date */
+            effective_from?: string;
+            /** @default false */
+            auto_renew: boolean;
+            /** @default 60 */
+            renewal_notice_days: number;
+        };
+        Agreement: {
+            id: components["schemas"]["Uuid"];
+            agreement_type: components["schemas"]["AgreementType"];
+            agreement_no: string;
+            title: string;
+            /** @enum {string} */
+            our_role: "controller" | "processor" | "joint_controller";
+            counterparty_id: components["schemas"]["Uuid"];
+            vendor_id?: components["schemas"]["Uuid"] | null;
+            template_id?: components["schemas"]["Uuid"] | null;
+            /** @description The PLT-16 document this agreement wraps — edit/export/publish through /admin/v1/platform/documents/{document_id} */
+            document_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "draft" | "in_review" | "approved" | "out_for_signature" | "active" | "expired" | "terminated";
+            /** Format: date */
+            effective_from?: string | null;
+            auto_renew: boolean;
+            renewal_notice_days: number;
+            activity_ids: components["schemas"]["Uuid"][];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
         };
         /** @enum {string} */
         DataInventorySource: "direct" | "indirect" | "derived";
@@ -14469,6 +14567,98 @@ export interface operations {
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    agreementListAgreements: {
+        parameters: {
+            query?: {
+                agreement_type?: "dpa" | "dsa" | "joint_controller" | "inbound_dpa";
+                vendor_id?: components["schemas"]["Uuid"];
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Agreement"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    agreementCreateAgreement: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementCreateInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Agreement"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    agreementGetAgreement: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Agreement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

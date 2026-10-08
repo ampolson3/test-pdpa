@@ -10342,6 +10342,120 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/agreements:
+    get:
+      operationId: agreementListAgreements
+      tags: [agreement]
+      summary: The tenant's DPA/DSA agreements, newest first (DPA-02)
+      x-permission: agreement.dpa.read
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: agreement_type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [dpa, dsa, joint_controller, inbound_dpa]
+        - name: vendor_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Agreement'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: agreementCreateAgreement
+      tags: [agreement]
+      summary: 'DPA-02: compose a complete draft agreement from a vendor and its RoPA activities in one call — "โหมดกรอกเอง" is simply leaving template_id unset'
+      x-permission: agreement.dpa.create
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgreementCreateInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/agreements/{id}:
+    get:
+      operationId: agreementGetAgreement
+      tags: [agreement]
+      summary: One agreement with its linked activity ids (DPA-02)
+      x-permission: agreement.dpa.read
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     adminJwt:
@@ -11595,6 +11709,69 @@ components:
         offboarded_at: {type: [string, 'null'], format: date-time}
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
+    AgreementType:
+      type: string
+      description: 'agreement.agreements'' own CHECK constraint — only ''dpa'' is wired to a feature so far (DPA-02); dsa/joint_controller/inbound_dpa are real values for when those modules exist.'
+      enum: [dpa, dsa, joint_controller, inbound_dpa]
+    AgreementCreateInput:
+      type: object
+      required: [agreement_type, our_role, vendor_id, legal_entity_id, title]
+      properties:
+        agreement_type: {$ref: '#/components/schemas/AgreementType'}
+        our_role:
+          type: string
+          enum: [controller, processor, joint_controller]
+          description: Our own role under this agreement — the counterparty's role is derived (controller <-> processor, joint_controller <-> joint_controller)
+        vendor_id: {$ref: '#/components/schemas/Uuid', description: 'The VEN-01 vendor this agreement is with — its own party_id becomes the counterparty'}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid', description: Our own legal entity (ORG-01), for the document's merge fields}
+        activity_ids:
+          type: array
+          items: {$ref: '#/components/schemas/Uuid'}
+          default: []
+          description: RoPA processing activities this agreement covers
+        template_id: {$ref: '#/components/schemas/Uuid', description: 'A published agreement template (DPA-01) to start the document from; omit for "โหมดกรอกเอง" (manual mode, a blank document)'}
+        title: {type: string, minLength: 1, maxLength: 300}
+        effective_from: {type: string, format: date}
+        auto_renew: {type: boolean, default: false}
+        renewal_notice_days: {type: integer, minimum: 0, default: 60}
+      example:
+        agreement_type: dpa
+        our_role: controller
+        vendor_id: 00000000-0000-0000-0000-000000000000
+        legal_entity_id: 00000000-0000-0000-0000-000000000000
+        activity_ids: []
+        title: ข้อตกลงการประมวลผลข้อมูลส่วนบุคคลกับผู้ให้บริการระบบเงินเดือน
+    Agreement:
+      type: object
+      required: [id, agreement_type, agreement_no, title, our_role, counterparty_id, document_id, status,
+        auto_renew, renewal_notice_days, activity_ids, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        agreement_type: {$ref: '#/components/schemas/AgreementType'}
+        agreement_no: {type: string}
+        title: {type: string}
+        our_role:
+          type: string
+          enum: [controller, processor, joint_controller]
+        counterparty_id: {$ref: '#/components/schemas/Uuid'}
+        vendor_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        template_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        document_id: {$ref: '#/components/schemas/Uuid', description: 'The PLT-16 document this agreement wraps — edit/export/publish through /admin/v1/platform/documents/{document_id}'}
+        status:
+          type: string
+          enum: [draft, in_review, approved, out_for_signature, active, expired, terminated]
+        effective_from:
+          type: [string, 'null']
+          format: date
+        auto_renew: {type: boolean}
+        renewal_notice_days: {type: integer}
+        activity_ids:
+          type: array
+          items: {$ref: '#/components/schemas/Uuid'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
     DataInventorySource:
       type: string
       enum: [direct, indirect, derived]

@@ -873,6 +873,7 @@
     "more": "โหลดเพิ่ม",
     "open": "เปิด",
     "backToList": "← กลับไปทะเบียนคู่ค้า",
+    "agreementsLink": "ดูข้อตกลง DPA / DSA (DPA-02) →",
     "statuses": {
       "prospect": "ผู้มุ่งหวัง",
       "onboarding": "กำลังประเมิน",
@@ -908,6 +909,73 @@
       "nextAssessmentAt": "ประเมินรอบถัดไป"
     },
     "assessmentTemplatesLink": "คลังแบบประเมินคู่ค้า"
+  },
+  "agreements": {
+    "signInRequired": "กรุณาเข้าสู่ระบบ",
+    "forbidden": "คุณไม่มีสิทธิ์ดูข้อตกลง",
+    "title": "ข้อตกลง DPA / DSA",
+    "intro": "สร้างข้อตกลงการประมวลผลข้อมูลส่วนบุคคล (DPA) จากคู่ค้าและกิจกรรม RoPA — แบบอัตโนมัติจาก template หรือกรอกเอง",
+    "newAgreement": "สร้างข้อตกลงใหม่",
+    "filterType": "ประเภท",
+    "allTypes": "ทุกประเภท",
+    "loading": "กำลังโหลด…",
+    "loadError": "โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่",
+    "empty": "ยังไม่มีข้อตกลง",
+    "more": "โหลดเพิ่ม",
+    "open": "เปิด",
+    "backToList": "← กลับไปข้อตกลง",
+    "types": {
+      "dpa": "DPA (ข้อตกลงการประมวลผล)",
+      "dsa": "DSA (ข้อตกลงแบ่งปันข้อมูล)",
+      "joint_controller": "ผู้ควบคุมร่วม",
+      "inbound_dpa": "DPA ขาเข้า"
+    },
+    "roles": {
+      "controller": "ผู้ควบคุมข้อมูล",
+      "processor": "ผู้ประมวลผลข้อมูล",
+      "joint_controller": "ผู้ควบคุมร่วม"
+    },
+    "statuses": {
+      "draft": "ร่าง",
+      "active": "ใช้งาน",
+      "expired": "หมดอายุ",
+      "terminated": "สิ้นสุด"
+    },
+    "table": {
+      "agreementNo": "เลขที่",
+      "title": "ชื่อ",
+      "type": "ประเภท",
+      "ourRole": "บทบาทของเรา",
+      "status": "สถานะ"
+    },
+    "detail": {
+      "autoRenew": "ต่ออายุอัตโนมัติ",
+      "yes": "ใช่",
+      "no": "ไม่",
+      "renewalNoticeDays": "แจ้งเตือนก่อนหมดอายุ (วัน)",
+      "effectiveFrom": "มีผลตั้งแต่",
+      "activities": "กิจกรรม RoPA ที่ครอบคลุม",
+      "noActivities": "ยังไม่ได้ผูกกับกิจกรรมใด",
+      "openDocument": "เปิดเอกสาร →"
+    },
+    "form": {
+      "details": "รายละเอียดข้อตกลง",
+      "agreementType": "ประเภทข้อตกลง",
+      "ourRole": "บทบาทของเรา",
+      "vendor": "คู่ค้า (VEN-01)",
+      "legalEntity": "นิติบุคคลของเรา",
+      "agreementTitle": "ชื่อข้อตกลง",
+      "template": "Template (DPA-01)",
+      "manualMode": "โหมดกรอกเอง (ไม่ใช้ template)",
+      "renewalNoticeDays": "แจ้งเตือนก่อนหมดอายุ (วัน)",
+      "autoRenew": "ต่ออายุอัตโนมัติ",
+      "activities": "กิจกรรม RoPA ที่ครอบคลุม",
+      "noActivities": "ยังไม่มีกิจกรรมในระบบ",
+      "choose": "เลือก…",
+      "save": "สร้างข้อตกลง",
+      "cancel": "ยกเลิก",
+      "saveError": "สร้างไม่สำเร็จ: {detail}"
+    }
   },
   "dataInventory": {
     "signInRequired": "กรุณาเข้าสู่ระบบ",

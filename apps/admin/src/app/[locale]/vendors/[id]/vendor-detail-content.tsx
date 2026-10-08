@@ -110,6 +110,10 @@ export function VendorDetailContent({ id }: { id: string }) {
           canUpdate && <div className="sm:col-span-2"><Button variant="secondary" onClick={startEdit}>{t("form.edit")}</Button></div>
         )}
       </section>
+
+      <section>
+        <Link className="text-sky-700 underline" href="/agreements">{t("agreementsLink")}</Link>
+      </section>
     </main>
   );
 }

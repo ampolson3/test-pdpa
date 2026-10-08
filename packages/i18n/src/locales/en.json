@@ -873,6 +873,7 @@
     "more": "Load more",
     "open": "Open",
     "backToList": "← Back to vendor registry",
+    "agreementsLink": "View DPA / DSA agreements (DPA-02) →",
     "statuses": {
       "prospect": "Prospect",
       "onboarding": "Onboarding",
@@ -908,6 +909,73 @@
       "nextAssessmentAt": "Next assessment"
     },
     "assessmentTemplatesLink": "Vendor assessment template library"
+  },
+  "agreements": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view agreements.",
+    "title": "DPA / DSA Agreements",
+    "intro": "Draft a data processing agreement (DPA) from a vendor and its RoPA activities — automatically from a template, or filled in manually.",
+    "newAgreement": "Create agreement",
+    "filterType": "Type",
+    "allTypes": "All types",
+    "loading": "Loading…",
+    "loadError": "Failed to load. Please try again.",
+    "empty": "No agreements yet.",
+    "more": "Load more",
+    "open": "Open",
+    "backToList": "← Back to agreements",
+    "types": {
+      "dpa": "DPA (processing agreement)",
+      "dsa": "DSA (data sharing agreement)",
+      "joint_controller": "Joint controller",
+      "inbound_dpa": "Inbound DPA"
+    },
+    "roles": {
+      "controller": "Controller",
+      "processor": "Processor",
+      "joint_controller": "Joint controller"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "active": "Active",
+      "expired": "Expired",
+      "terminated": "Terminated"
+    },
+    "table": {
+      "agreementNo": "No.",
+      "title": "Title",
+      "type": "Type",
+      "ourRole": "Our role",
+      "status": "Status"
+    },
+    "detail": {
+      "autoRenew": "Auto-renew",
+      "yes": "Yes",
+      "no": "No",
+      "renewalNoticeDays": "Renewal notice (days)",
+      "effectiveFrom": "Effective from",
+      "activities": "Covered RoPA activities",
+      "noActivities": "No activities linked yet.",
+      "openDocument": "Open document →"
+    },
+    "form": {
+      "details": "Agreement details",
+      "agreementType": "Agreement type",
+      "ourRole": "Our role",
+      "vendor": "Vendor (VEN-01)",
+      "legalEntity": "Our legal entity",
+      "agreementTitle": "Agreement title",
+      "template": "Template (DPA-01)",
+      "manualMode": "Manual mode (no template)",
+      "renewalNoticeDays": "Renewal notice (days)",
+      "autoRenew": "Auto-renew",
+      "activities": "Covered RoPA activities",
+      "noActivities": "No activities in the system yet.",
+      "choose": "Choose…",
+      "save": "Create agreement",
+      "cancel": "Cancel",
+      "saveError": "Failed to create: {detail}"
+    }
   },
   "dataInventory": {
     "signInRequired": "Please sign in.",
