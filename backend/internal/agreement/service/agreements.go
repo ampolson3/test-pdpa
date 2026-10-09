@@ -264,6 +264,13 @@ func uuidPtr(v pgtype.UUID) *uuid.UUID {
 	return &id
 }
 
+func pgUUIDVal(v pgtype.UUID) uuid.UUID {
+	if !v.Valid {
+		return uuid.UUID{}
+	}
+	return uuid.UUID(v.Bytes)
+}
+
 func pgDate(t *time.Time) pgtype.Date {
 	if t == nil {
 		return pgtype.Date{}

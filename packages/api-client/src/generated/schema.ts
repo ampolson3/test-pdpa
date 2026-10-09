@@ -3548,6 +3548,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/agreements/{id}/clauses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPA-03: every clause attached to an agreement, in position order */
+        get: operations["agreementListClauses"];
+        put?: never;
+        /** DPA-03: attach a published clause from the library to this agreement (only while it is still a draft) */
+        post: operations["agreementAddClause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/agreements/{id}/clauses/{clauseRowId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** DPA-03: detach a clause from this agreement (only while it is still a draft) */
+        delete: operations["agreementRemoveClause"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/agreements/{id}/missing-clauses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPA-03: ม.40 mandatory clauses not yet attached to this agreement, computed live (the submit-for-approval gate's own read side) */
+        get: operations["agreementMissingClauses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/risk/matrices": {
         parameters: {
             query?: never;
@@ -4367,6 +4419,30 @@ export interface components {
             activity_ids: components["schemas"]["Uuid"][];
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
+        };
+        AgreementClauseInput: {
+            /** @description A published clause from the clause library (DPA-01) */
+            clause_id: components["schemas"]["Uuid"];
+            /** @description Omit to append after every clause already attached */
+            position?: number;
+        };
+        AgreementClause: {
+            id: components["schemas"]["Uuid"];
+            agreement_id: components["schemas"]["Uuid"];
+            clause_id: components["schemas"]["Uuid"];
+            clause_code: string;
+            clause_title: string;
+            legal_ref: string;
+            clause_version_no?: number;
+            is_mandatory: boolean;
+            position: number;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @description DPA-03: one agreement.mandatory_rules entry not yet attached to this agreement — PLT-08's generic submit endpoint refuses to move the document to in_review while this list is non-empty */
+        AgreementMissingClause: {
+            clause_code: string;
+            legal_ref: string;
         };
         /**
          * @description risk.activity_scores.level's own CHECK constraint — the only four values any matrix may ever classify a score into
@@ -15218,6 +15294,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Agreement"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    agreementListClauses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AgreementClause"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    agreementAddClause: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementClauseInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementClause"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    agreementRemoveClause: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                clauseRowId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    agreementMissingClauses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AgreementMissingClause"][];
+                    };
                 };
             };
             401: components["responses"]["Unauthorized"];

@@ -75,6 +75,62 @@ func (h *Strict) AgreementGetAgreement(ctx context.Context, req AgreementGetAgre
 	return AgreementGetAgreement200JSONResponse(toAgreementWire(a)), nil
 }
 
+func (h *Strict) AgreementListClauses(ctx context.Context, req AgreementListClausesRequestObject) (AgreementListClausesResponseObject, error) {
+	list, err := h.svc.ListClauses(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := AgreementListClauses200JSONResponse{Data: make([]AgreementClause, 0, len(list))}
+	for _, c := range list {
+		resp.Data = append(resp.Data, toClauseWire(c))
+	}
+	return resp, nil
+}
+
+func (h *Strict) AgreementAddClause(ctx context.Context, req AgreementAddClauseRequestObject) (AgreementAddClauseResponseObject, error) {
+	in := agreementservice.AddClauseInput{ClauseID: req.Body.ClauseId}
+	if req.Body.Position != nil {
+		in.Position = int16(*req.Body.Position)
+	}
+	c, err := h.svc.AddClause(ctx, req.Id, in)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return AgreementAddClause201JSONResponse(toClauseWire(c)), nil
+}
+
+func (h *Strict) AgreementRemoveClause(ctx context.Context, req AgreementRemoveClauseRequestObject) (AgreementRemoveClauseResponseObject, error) {
+	if err := h.svc.RemoveClause(ctx, req.Id, req.ClauseRowId); err != nil {
+		return nil, problem(err)
+	}
+	return AgreementRemoveClause204Response{}, nil
+}
+
+func (h *Strict) AgreementMissingClauses(ctx context.Context, req AgreementMissingClausesRequestObject) (AgreementMissingClausesResponseObject, error) {
+	list, err := h.svc.MissingMandatoryClauses(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := AgreementMissingClauses200JSONResponse{Data: make([]AgreementMissingClause, 0, len(list))}
+	for _, m := range list {
+		resp.Data = append(resp.Data, AgreementMissingClause{ClauseCode: m.Code, LegalRef: m.LegalRef})
+	}
+	return resp, nil
+}
+
+func toClauseWire(c agreementservice.Clause) AgreementClause {
+	w := AgreementClause{
+		Id: c.ID, AgreementId: c.AgreementID, ClauseId: c.ClauseID, ClauseCode: c.ClauseCode, ClauseTitle: c.ClauseTitle,
+		LegalRef: c.LegalRef, IsMandatory: c.IsMandatory, Position: int(c.Position), RowVersion: int(c.RowVersion),
+		CreatedAt: c.CreatedAt.UTC(),
+	}
+	if c.ClauseVersionNo != 0 {
+		n := int(c.ClauseVersionNo)
+		w.ClauseVersionNo = &n
+	}
+	return w
+}
+
 func toCreateInput(b AgreementCreateInput) agreementservice.CreateInput {
 	in := agreementservice.CreateInput{
 		AgreementType: string(b.AgreementType),

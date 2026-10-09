@@ -44,9 +44,12 @@ type Vendor interface {
 }
 
 // Ropa is what agreement reads from the ropa module (rule 9) — every linked activity must be the caller's
-// own, visible under RLS, before its id is written to agreement_activities.
+// own, visible under RLS, before its id is written to agreement_activities. ListActivityTransfers backs
+// DPA-03's own cross-border-transfer mandatory-clause condition: whether any activity this agreement covers
+// has a real transfer on record (ROPA-08).
 type Ropa interface {
 	GetActivity(ctx context.Context, id uuid.UUID) (ropaservice.Activity, error)
+	ListActivityTransfers(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityTransfer, error)
 }
 
 // Service runs the agreement module for the tenant of the transaction in ctx. Docs is a direct concrete

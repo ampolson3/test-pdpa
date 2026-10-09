@@ -39,6 +39,7 @@ gen:
 	cd backend/internal/dsar/http && oapi-codegen -config oapi-codegen.yaml -o dsar.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/vendormgmt/http && oapi-codegen -config oapi-codegen.yaml -o vendor.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/dpia/http && oapi-codegen -config oapi-codegen.yaml -o dpia.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/agreement/http && oapi-codegen -config oapi-codegen.yaml -o agreement.gen.go ../../../../api/openapi/openapi.yaml
 	pnpm gen:api-client
 	cd backend && go build ./...
 

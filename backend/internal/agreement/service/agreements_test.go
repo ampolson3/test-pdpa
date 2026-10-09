@@ -15,6 +15,7 @@ import (
 	"pdpa-platform/internal/pkg/dbtest"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/docs"
+	"pdpa-platform/internal/platform/versioning"
 	ropaservice "pdpa-platform/internal/ropa/service"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
 	"pdpa-platform/internal/wiring"
@@ -33,6 +34,7 @@ type env struct {
 	org    *orgservice.Service
 	vendor *vendorservice.Service
 	ropa   *ropaservice.Service
+	ver    *versioning.Service
 }
 
 func setup(t *testing.T, suffix string) env {
@@ -44,7 +46,9 @@ func setup(t *testing.T, suffix string) env {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
-				`DELETE FROM agreement.agreement_activities`, `DELETE FROM agreement.parties`, `DELETE FROM agreement.agreements`,
+				`DELETE FROM agreement.clauses`, `DELETE FROM agreement.agreement_activities`, `DELETE FROM agreement.parties`,
+				`DELETE FROM agreement.agreements`, `DELETE FROM ropa.activity_transfers`,
+				`DELETE FROM platform.approvals`, `DELETE FROM platform.record_versions`,
 				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM vendor.vendors`, `DELETE FROM org.org_units`,
 				`UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`,
@@ -62,7 +66,8 @@ func setup(t *testing.T, suffix string) env {
 	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
 	docsSvc.RegisterVersioning()
 	svc := &agreementservice.Service{Docs: docsSvc, Org: orgSvc, Vendor: vendorSvc, Ropa: ropaSvc, Audit: audit.New()}
-	return env{app: app, tenant: tenant, svc: svc, org: orgSvc, vendor: vendorSvc, ropa: ropaSvc}
+	docsSvc.SetSubmitValidate("dpa", svc.CheckSubmittable) // DPA-03: ม.40 mandatory clauses gate Submit
+	return env{app: app, tenant: tenant, svc: svc, org: orgSvc, vendor: vendorSvc, ropa: ropaSvc, ver: versioningSvc}
 }
 
 func (e env) in(t *testing.T, fn func(ctx context.Context) error) {

@@ -237,6 +237,57 @@ read from) — all sibling features layered on the same `agreement.agreements` r
 
 **Acceptance criteria:** สัญญาที่ขาด clause บังคับส่งอนุมัติไม่ได้
 
+**Implementation — done.** The "คลัง control" this feature draws from is PLT-16's own clause library
+(`platform.clause_library` — DPA-01's own template already sits on the same document composer, this feature
+is the first to use the library's per-clause rows). Migration 00057 seeds nine clauses the module doc's own
+ม.40(1)-(3)/37(2)/28-29 topic list names (`dpa.processing_on_instructions`, `confidentiality`,
+`security_measures`, `breach_notification`, `sub_processors`, `dsar_assistance`, `return_or_destroy`,
+`audit_rights`, `cross_border_transfer`), each `is_mandatory = true`, `applies_to = {dpa}`, published, and
+flagged DRAFT (rule 8, the same "seed a draft pending review" move ORG-07/ROPA-09/PNG-03/DPIA-01/RTG-01/
+VEN-04/DPA-01 already made) — and nine matching `agreement.mandatory_rules` rows (`agreement_type = 'dpa'`),
+already fully specified in the baseline migrations and unused until now. `agreement.clauses` is the join: a
+new `internal/agreement/service/clauses.go` (`AddClause`/`ListClauses`/`RemoveClause`, same
+`agreement.dpa.read`/`.update` permissions DPA-02 already registered — no new code) links a published
+library clause to an agreement, only while it's still `draft`.
+
+The acceptance criterion itself ("ส่งอนุมัติไม่ได้") needed a pre-*submit* gate, not a pre-*publish* one —
+PLT-08's own `versioning.Policy` only had `OnPublish` and (via `docs.Service.SetValidate`, PNG-02's own
+mechanism) a publish-time check; nothing ran before `Submit` moved a draft to `in_review`. `versioning.Policy`
+gained a new `Validate` field, called inside `Submit` right after the draft-status check — the submit-time
+counterpart of `SetValidate`, and (per `docs.Service`'s own new `SetSubmitValidate` setter, wired the same
+lazy-lookup way `SetValidate`/`SetOnPublished` already are) available to every PLT-08 document type, not just
+"dpa". `agreement.Service.CheckSubmittable` resolves the document id PLT-08 hands it back to its own
+agreement row (`GetAgreementByDocumentID`, new query) and compares `agreement.clauses`' attached codes
+against `agreement.mandatory_rules` for that `agreement_type` — missing ones become `ErrMissingMandatoryClauses`
+(`Unwrap() -> versioning.ErrInvalidRequest`, the same 422 reporting pattern PNG-02's own `ErrChecklistIncomplete`
+established), which `versioning.Submit` now returns straight from the generic `/admin/v1/platform/record-versions/
+{id}/submit` endpoint shared by every PLT-08 consumer.
+
+`agreement.mandatory_rules.condition` is a small, deliberately narrow jsonb shape
+(`{"requires_transfer": true}`) rather than a general condition language with nothing yet to need one: only
+`cross_border_transfer` is conditional — it applies only once a linked RoPA activity actually has a transfer
+on record (`Ropa.ListActivityTransfers`, the already-exported ROPA-08 method, rule 9 — agreement never reads
+`ropa.activity_transfers` directly), re-checked live on every call, never cached. Every other rule always
+applies. `CountAgreementClauses`/`ListAgreementClauseCodes` join `platform.clause_library` directly in SQL for
+its own display columns (code/title/legal_ref) — the same "join a global reference table, not another
+module's tenant data" exception ROPA-01's own `org.data_categories` join already established; the
+cross-border check itself goes through `Ropa`'s own interface precisely because `ropa.activity_transfers` is
+real tenant data, not a reference table.
+
+API: `GET`/`POST /admin/v1/agreements/{id}/clauses`, `DELETE /admin/v1/agreements/{id}/clauses/{clauseRowId}`,
+`GET /admin/v1/agreements/{id}/missing-clauses` (the module doc's own "แผงตรวจ clause ที่ขาด", computed live,
+never persisted). UI: a clause panel on `/agreements/{id}` — the missing-clause list (amber banner while
+non-empty, a confirmation once clear), attached clauses with remove, and an add form drawing from the
+published `dpa`-applicable clauses in the library (`useClauses`, PLT-16's own hook). Also fixed in passing:
+`make gen`'s `oapi-codegen` target had no line for `internal/agreement/http` at all since DPA-02 added the
+package — the same gap DSAR-03 already found and fixed for `internal/dsar/http`; added here too. Tests: unit
+(the acceptance criterion directly — missing clauses block `CheckSubmittable`/the real `versioning.Submit`
+call until every required one is attached; the cross-border rule applies only once a transfer is recorded and
+clears once attached; `AddClause` refuses outside `draft`, an unpublished/unknown clause id, and a duplicate
+code; two-tenant isolation of both the link and the missing-clause read), HTTP contract (401/403/404/422/201/
+200/204) through the real validator + AuthZ. Full backend `go test -count=1 -p 1 ./...` and
+`pnpm --filter @pdpa/admin build` both verified clean.
+
 <a id="dpa-04"></a>
 ### DPA-04 ภาคผนวกรายละเอียดการประมวลผล
 

@@ -52,7 +52,7 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
-				`DELETE FROM agreement.agreement_activities`, `DELETE FROM agreement.parties`, `DELETE FROM agreement.agreements`,
+				`DELETE FROM agreement.clauses`, `DELETE FROM agreement.agreement_activities`, `DELETE FROM agreement.parties`, `DELETE FROM agreement.agreements`,
 				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM vendor.vendors`, `UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`,
 				`DELETE FROM org.external_parties`, `DELETE FROM platform.audit_log`,
@@ -221,5 +221,42 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", "/admin/v1/agreements?agreement_type=dpa", &reader, nil, nil); code != 200 || !strings.Contains(body, created.Id.String()) {
 		t.Errorf("list filtered by type: %d %s", code, body)
+	}
+
+	// DPA-03: mandatory-clause panel.
+	if code, body := do("GET", item+"/missing-clauses", &reader, nil, nil); code != 200 || !strings.Contains(body, "dpa.confidentiality") {
+		t.Errorf("missing-clauses: %d %s, want dpa.confidentiality listed", code, body)
+	}
+	var clauseID uuid.UUID
+	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		return pdb.MustTxFromContext(ctx).QueryRow(ctx,
+			`SELECT id FROM platform.clause_library WHERE code = 'dpa.confidentiality' AND tenant_id IS NULL`).Scan(&clauseID)
+	})
+	if code, _ := do("POST", item+"/clauses", &reader, map[string]any{"clause_id": clauseID}, nil); code != 403 {
+		t.Errorf("add clause with read only: %d, want 403", code)
+	}
+	code, body = do("POST", item+"/clauses", &admin, map[string]any{"clause_id": clauseID}, nil)
+	if code != 201 || !strings.Contains(body, `"clause_code":"dpa.confidentiality"`) {
+		t.Fatalf("add clause: %d %s", code, body)
+	}
+	var addedClause agreementhttp.AgreementClause
+	_ = json.Unmarshal([]byte(body), &addedClause)
+	if code, body := do("GET", item+"/clauses", &reader, nil, nil); code != 200 || !strings.Contains(body, `"clause_code":"dpa.confidentiality"`) {
+		t.Errorf("list clauses: %d %s", code, body)
+	}
+	if code, body := do("GET", item+"/missing-clauses", &reader, nil, nil); code != 200 || strings.Contains(body, "dpa.confidentiality") {
+		t.Errorf("missing-clauses after attach: %d %s, want dpa.confidentiality no longer listed", code, body)
+	}
+	if code, _ := do("POST", item+"/clauses", &admin, map[string]any{"clause_id": uuid.New()}, nil); code != 422 {
+		t.Errorf("add unknown clause: %d, want 422", code)
+	}
+	if code, _ := do("DELETE", item+"/clauses/"+addedClause.Id.String(), &reader, nil, nil); code != 403 {
+		t.Errorf("remove clause with read only: %d, want 403", code)
+	}
+	if code, _ := do("DELETE", item+"/clauses/"+addedClause.Id.String(), &admin, nil, nil); code != 204 {
+		t.Errorf("remove clause: %d", code)
+	}
+	if code, body := do("GET", item+"/clauses", &reader, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list clauses after remove: %d %s", code, body)
 	}
 }

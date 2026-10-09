@@ -10826,6 +10826,146 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/agreements/{id}/clauses:
+    get:
+      operationId: agreementListClauses
+      tags: [agreement]
+      summary: 'DPA-03: every clause attached to an agreement, in position order'
+      x-permission: agreement.dpa.read
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AgreementClause'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: agreementAddClause
+      tags: [agreement]
+      summary: 'DPA-03: attach a published clause from the library to this agreement (only while it is still a draft)'
+      x-permission: agreement.dpa.update
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgreementClauseInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementClause'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/agreements/{id}/clauses/{clauseRowId}:
+    delete:
+      operationId: agreementRemoveClause
+      tags: [agreement]
+      summary: 'DPA-03: detach a clause from this agreement (only while it is still a draft)'
+      x-permission: agreement.dpa.update
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: clauseRowId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/agreements/{id}/missing-clauses:
+    get:
+      operationId: agreementMissingClauses
+      tags: [agreement]
+      summary: 'DPA-03: ม.40 mandatory clauses not yet attached to this agreement, computed live (the submit-for-approval gate''s own read side)'
+      x-permission: agreement.dpa.read
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AgreementMissingClause'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/risk/matrices:
     get:
       operationId: riskListMatrices
@@ -12374,6 +12514,37 @@ components:
           items: {$ref: '#/components/schemas/Uuid'}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    AgreementClauseInput:
+      type: object
+      required: [clause_id]
+      properties:
+        clause_id: {$ref: '#/components/schemas/Uuid', description: A published clause from the clause library (DPA-01)}
+        position:
+          type: integer
+          minimum: 1
+          description: Omit to append after every clause already attached
+    AgreementClause:
+      type: object
+      required: [id, agreement_id, clause_id, clause_code, clause_title, legal_ref, is_mandatory, position, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        agreement_id: {$ref: '#/components/schemas/Uuid'}
+        clause_id: {$ref: '#/components/schemas/Uuid'}
+        clause_code: {type: string}
+        clause_title: {type: string}
+        legal_ref: {type: string}
+        clause_version_no: {type: integer}
+        is_mandatory: {type: boolean}
+        position: {type: integer}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    AgreementMissingClause:
+      type: object
+      required: [clause_code, legal_ref]
+      description: 'DPA-03: one agreement.mandatory_rules entry not yet attached to this agreement — PLT-08''s generic submit endpoint refuses to move the document to in_review while this list is non-empty'
+      properties:
+        clause_code: {type: string}
+        legal_ref: {type: string}
     RiskLevel:
       type: string
       description: risk.activity_scores.level's own CHECK constraint — the only four values any matrix may ever classify a score into

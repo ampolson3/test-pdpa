@@ -1,9 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
-import { createApiClient, useAgreement } from "@pdpa/api-client";
+import {
+  createApiClient,
+  useAgreement,
+  useAgreementClauses,
+  useMissingClauses,
+  useAddAgreementClause,
+  useRemoveAgreementClause,
+  useClauses,
+  type ApiClient,
+} from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 
 const STATUS_STYLE: Record<string, string> = {
@@ -60,7 +69,99 @@ export function AgreementDetailContent({ id }: { id: string }) {
         )}
       </section>
 
+      <ClausePanel client={client} agreementId={id} isDraft={a.status === "draft"} />
+
       <Link className="inline-block rounded-md bg-sky-700 px-3 py-1.5 text-white" href={`/documents/${a.document_id}`}>{t("detail.openDocument")}</Link>
     </main>
+  );
+}
+
+/** DPA-03: the mandatory-clause panel — what's attached, what's still missing (blocks PLT-08's own
+ *  submit-for-approval endpoint), and an add form drawing from the published clause library (DPA-01). */
+function ClausePanel({ client, agreementId, isDraft }: { client: ApiClient; agreementId: string; isDraft: boolean }) {
+  const t = useTranslations("agreements");
+  const canUpdate = usePermission("agreement.dpa.update");
+  const [selected, setSelected] = useState("");
+  const clauses = useAgreementClauses(client, agreementId);
+  const missing = useMissingClauses(client, agreementId);
+  const library = useClauses(client, { applies_to: "dpa", published_only: true });
+  const addClause = useAddAgreementClause(client, agreementId);
+  const removeClause = useRemoveAgreementClause(client, agreementId);
+
+  const attachedCodes = new Set((clauses.data ?? []).map((c) => c.clause_code));
+  const available = (library.data ?? []).filter((c) => !attachedCodes.has(c.code));
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.clauses.title")}</h2>
+
+      {missing.data && missing.data.length > 0 && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-amber-900">
+          <p className="font-medium">{t("detail.clauses.missingTitle")}</p>
+          <ul className="list-inside list-disc">
+            {missing.data.map((m) => (
+              <li key={m.clause_code}>
+                {m.clause_code} ({m.legal_ref})
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {missing.data && missing.data.length === 0 && (
+        <p className="text-emerald-700">{t("detail.clauses.allAttached")}</p>
+      )}
+
+      <ul className="divide-y divide-slate-100 rounded-md border border-slate-200">
+        {(clauses.data ?? []).map((c) => (
+          <li key={c.id} className="flex items-center justify-between gap-2 p-2">
+            <div>
+              <p className="font-medium">{c.clause_title || c.clause_code}</p>
+              <p className="text-xs text-slate-500">
+                {c.clause_code} · {c.legal_ref}
+                {c.is_mandatory ? ` · ${t("detail.clauses.mandatory")}` : ""}
+              </p>
+            </div>
+            {canUpdate && isDraft && (
+              <button
+                type="button"
+                className="text-xs text-red-700 underline"
+                onClick={() => removeClause.mutate(c.id)}
+              >
+                {t("detail.clauses.remove")}
+              </button>
+            )}
+          </li>
+        ))}
+        {(clauses.data ?? []).length === 0 && <li className="p-2 text-slate-500">{t("detail.clauses.empty")}</li>}
+      </ul>
+
+      {canUpdate && isDraft && (
+        <div className="flex items-center gap-2">
+          <select
+            className="flex-1 rounded-md border border-slate-300 px-2 py-1"
+            value={selected}
+            onChange={(e) => setSelected(e.target.value)}
+          >
+            <option value="">{t("detail.clauses.pick")}</option>
+            {available.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.body.th.title}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={!selected || addClause.isPending}
+            className="rounded-md bg-sky-700 px-3 py-1.5 text-white disabled:opacity-50"
+            onClick={() => {
+              addClause.mutate({ clause_id: selected });
+              setSelected("");
+            }}
+          >
+            {t("detail.clauses.add")}
+          </button>
+        </div>
+      )}
+    </section>
   );
 }

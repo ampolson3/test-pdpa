@@ -102,10 +102,11 @@ type Service struct {
 	PDF        render.PDFRenderer // nil: PDFs are not produced (the version's render_status says failed)
 	Now        func() time.Time
 
-	mu          sync.RWMutex
-	policies    map[string]Policy
-	validators  map[string]func(ctx context.Context, id uuid.UUID, d Draft, previous *Draft) error
-	onPublished map[string]func(ctx context.Context, id uuid.UUID, u PublishedUpdate) error
+	mu               sync.RWMutex
+	policies         map[string]Policy
+	validators       map[string]func(ctx context.Context, id uuid.UUID, d Draft, previous *Draft) error
+	submitValidators map[string]func(ctx context.Context, id uuid.UUID) error
+	onPublished      map[string]func(ctx context.Context, id uuid.UUID, u PublishedUpdate) error
 }
 
 // PublishedUpdate is what SetOnPublished's hook sees right after a document type's generic publish step froze
@@ -140,6 +141,26 @@ func (s *Service) validator(docType string) func(ctx context.Context, id uuid.UU
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.validators[docType]
+}
+
+// SetSubmitValidate registers an extra pre-submit check for a document type (DPA-03's own mandatory-clause
+// gate) — the submit-time counterpart of SetValidate, wired through versioning.Policy.Validate at
+// RegisterVersioning time so PLT-08's generic submit endpoint enforces it before a draft moves to in_review,
+// same sequencing rule as SetValidate (call once at start-up, after both this type's Register and the
+// owning module's own service exist).
+func (s *Service) SetSubmitValidate(docType string, fn func(ctx context.Context, id uuid.UUID) error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.submitValidators == nil {
+		s.submitValidators = map[string]func(ctx context.Context, id uuid.UUID) error{}
+	}
+	s.submitValidators[docType] = fn
+}
+
+func (s *Service) submitValidator(docType string) func(ctx context.Context, id uuid.UUID) error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.submitValidators[docType]
 }
 
 // SetOnPublished registers a document type's own after-publish step, run in the same transaction right after
@@ -214,6 +235,12 @@ func (s *Service) RegisterVersioning() {
 			ReadPermission: p.Read, EditPermission: p.Update, PublishPermission: p.Publish,
 			Steps: []versioning.Step{{Role: p.Approver}},
 			Title: s.title,
+			Validate: func(ctx context.Context, id uuid.UUID) error {
+				if v := s.submitValidator(docType); v != nil {
+					return v(ctx, id)
+				}
+				return nil
+			},
 			OnPublish: func(ctx context.Context, id uuid.UUID, snapshot json.RawMessage) error {
 				return s.publish(ctx, docType, id, snapshot)
 			},

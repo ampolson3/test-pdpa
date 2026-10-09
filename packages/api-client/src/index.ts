@@ -63,9 +63,16 @@ export {
   useAgreements,
   useAgreement,
   useCreateAgreement,
+  useAgreementClauses,
+  useMissingClauses,
+  useAddAgreementClause,
+  useRemoveAgreementClause,
   type Agreement,
   type AgreementCreateInput,
   type AgreementType,
+  type AgreementClause,
+  type AgreementClauseInput,
+  type AgreementMissingClause,
 } from "./agreements";
 export {
   useRiskMatrices,

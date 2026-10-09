@@ -28,6 +28,10 @@ VALUES (NULLIF(current_setting('app.tenant_id', true), '')::uuid, @agreement_id,
 -- name: GetAgreement :one
 SELECT * FROM agreement.agreements WHERE id = $1;
 
+-- name: GetAgreementByDocumentID :one
+-- DPA-03's own pre-submit gate resolves the agreement wrapping the PLT-16 document being submitted.
+SELECT * FROM agreement.agreements WHERE document_id = $1;
+
 -- name: ListAgreementPartiesForAgreement :many
 SELECT * FROM agreement.parties WHERE agreement_id = $1 ORDER BY created_at;
 

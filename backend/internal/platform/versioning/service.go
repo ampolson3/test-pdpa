@@ -54,6 +54,11 @@ type Policy struct {
 	Steps             []Step // at least one: every version is checked by someone other than its maker
 	// Title names the record in the approval inbox and notifications (optional).
 	Title func(ctx context.Context, entityID uuid.UUID) (string, error)
+	// Validate runs an extra pre-submit check (an error here blocks Submit, before the diff is computed and
+	// approval steps are opened) — the submit-time counterpart of docs.Service's own publish-time
+	// SetValidate, for a gate that belongs to submission rather than publication (DPA-03's mandatory-clause
+	// check: a contract missing a required clause can't be sent for approval). Optional; nil skips the check.
+	Validate func(ctx context.Context, entityID uuid.UUID) error
 	// OnPublish applies the published snapshot to the module's record, in the same transaction.
 	OnPublish func(ctx context.Context, entityID uuid.UUID, snapshot json.RawMessage) error
 }
@@ -279,6 +284,11 @@ func (s *Service) Submit(ctx context.Context, id uuid.UUID, rowVersion int32) (V
 	}
 	if v.Status != "draft" {
 		return Version{}, ErrInvalidTransition
+	}
+	if p.Validate != nil {
+		if err := p.Validate(ctx, v.EntityID); err != nil {
+			return Version{}, err
+		}
 	}
 	var base json.RawMessage
 	if pub, err := s.Published(ctx, v.EntityType, v.EntityID); err == nil {

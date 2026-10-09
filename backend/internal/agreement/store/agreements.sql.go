@@ -60,6 +60,44 @@ func (q *Queries) GetAgreement(ctx context.Context, id uuid.UUID) (AgreementAgre
 	return i, err
 }
 
+const getAgreementByDocumentID = `-- name: GetAgreementByDocumentID :one
+SELECT id, tenant_id, agreement_type, agreement_no, title, our_role, counterparty_id, vendor_id, template_id, document_id, sharing_direction, is_government, status, effective_from, effective_to, auto_renew, renewal_notice_days, signed_at, terminated_at, termination_reason, created_at, created_by, updated_at, updated_by, row_version FROM agreement.agreements WHERE document_id = $1
+`
+
+// DPA-03's own pre-submit gate resolves the agreement wrapping the PLT-16 document being submitted.
+func (q *Queries) GetAgreementByDocumentID(ctx context.Context, documentID uuid.UUID) (AgreementAgreement, error) {
+	row := q.db.QueryRow(ctx, getAgreementByDocumentID, documentID)
+	var i AgreementAgreement
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AgreementType,
+		&i.AgreementNo,
+		&i.Title,
+		&i.OurRole,
+		&i.CounterpartyID,
+		&i.VendorID,
+		&i.TemplateID,
+		&i.DocumentID,
+		&i.SharingDirection,
+		&i.IsGovernment,
+		&i.Status,
+		&i.EffectiveFrom,
+		&i.EffectiveTo,
+		&i.AutoRenew,
+		&i.RenewalNoticeDays,
+		&i.SignedAt,
+		&i.TerminatedAt,
+		&i.TerminationReason,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
 const insertAgreement = `-- name: InsertAgreement :one
 INSERT INTO agreement.agreements (id, tenant_id, agreement_type, agreement_no, title, our_role, counterparty_id,
     vendor_id, template_id, document_id, auto_renew, renewal_notice_days, effective_from, created_by, updated_by)

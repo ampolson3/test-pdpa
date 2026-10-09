@@ -989,7 +989,17 @@
       "effectiveFrom": "Effective from",
       "activities": "Covered RoPA activities",
       "noActivities": "No activities linked yet.",
-      "openDocument": "Open document →"
+      "openDocument": "Open document →",
+      "clauses": {
+        "title": "Mandatory clauses",
+        "missingTitle": "Missing mandatory clauses — this document cannot be submitted for approval until these are attached",
+        "allAttached": "Every mandatory clause is attached.",
+        "mandatory": "mandatory",
+        "remove": "Remove",
+        "empty": "No clauses attached yet.",
+        "pick": "Choose a clause from the library...",
+        "add": "Attach"
+      }
     },
     "form": {
       "details": "Agreement details",
