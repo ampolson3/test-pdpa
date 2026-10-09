@@ -227,6 +227,31 @@ compile-only, consistent with every other agreement-module test in this session.
 
 **Acceptance criteria:** มี template ครบ 4 แบบ TH/EN
 
+**Implementation — done.** No new Go code at all, the exact shape DPA-01's own migration already took for
+"dpa": PLT-16's document composer already registers the `"dsa"` doc type (`internal/wiring.Docs`,
+`agreement.dsa.*` permissions — read/create/update/publish already seeded to LEGAL in the baseline RBAC)
+and already has its own generic, doc-type-agnostic template library (`internal/platform/docs/library.go`'s
+`ListTemplates`/`CreateTemplate`/`UpdateTemplate`/`PublishTemplate` on `platform.templates`) that takes
+`doc_type` as an ordinary parameter — nothing ties it to "dpa" specifically. Migration 00060
+(`docs/decisions.md` Q-34) seeds the module doc's own four named variants as global (`tenant_id NULL`)
+published rows, codes `one_way`/`two_way`/`government`/`research`: one-way disclosure, two-way exchange,
+a government-agency variant (citing the receiving agency's own statutory authority alongside ม.24/26/27),
+and a research variant (citing ม.24(1) and requiring anonymization/pseudonymization before use or
+publication) — each covering parties and roles, purpose, legal basis, usage restrictions (ม.27), security
+measures (ม.37(2)), breach notification, data subject rights, and return/destruction/retention, with
+`org_name_th`/`org_name_en`/`dpo_name`/`dpo_email` merge fields resolved the same way every other PLT-16
+document already does. Content opens with a `[ร่าง — ...]`/`[DRAFT — ...]` banner paragraph (rule 8 — legal
+wording stays flagged until Legal reviews it, the same "seed a draft pending review" move
+ORG-07/ROPA-09/PNG-03/DPIA-01/RTG-01/VEN-04/DPA-01 already made). Frontend: the existing
+`/documents/templates` page needed no change — a LEGAL user already sees `"dsa"` as an option there and can
+view, clone or author further `dsa` templates with it. Tests: `TestStandardDsaTemplates_SeededReady` (the
+acceptance criterion directly — all four templates published, global, with both Thai and English content)
+and `TestStandardDsaTemplates_VisibleToAnyTenant` (a second, entirely separate tenant sees all four too,
+with nothing of its own) — both compile-checked clean; this environment has no reachable Postgres this
+pass, so unlike DPA-01's own migration they were not run against a real database (the same limitation
+DSA-01/DSA-02 already noted for the agreement module this session) — the JSON content of all four rows was
+validated as well-formed with a standalone script before being written into the migration.
+
 <a id="dsa-04"></a>
 ### DSA-04 สร้างเอกสารอัตโนมัติจาก RoPA
 
