@@ -323,6 +323,33 @@ ran compile-only, consistent with every other agreement-module test this session
 
 **Acceptance criteria:** ข้อตกลงที่ขาด clause บังคับส่งอนุมัติไม่ได้
 
+**Implementation — done.** `platform.clause_library` + `agreement.mandatory_rules` — the same "คลัง control"
+DPA-03's own migration 00057 already built — were already `agreement_type`-agnostic: every read path in
+`internal/agreement/service/clauses.go` (`MissingMandatoryClauses`/`missingMandatoryClauses`/
+`CheckSubmittable`/`AddClause`) keys off the agreement's own `agreement_type` column, never hardcodes "dpa".
+So this feature needed almost no new Go service code — only new seed data plus one new wiring line.
+Migration `00061_dsa_mandatory_clauses.sql` seeds nine clause topics for `agreement_type='dsa'`, each
+flagged DRAFT (rule 8, `docs/decisions.md` Q-35): `dsa.purpose_limitation`/`dsa.no_excess_use`/
+`dsa.dsar_support`/`dsa.retention_and_destruction`/`dsa.onward_disclosure`/`dsa.termination` (ม.27),
+`dsa.security_measures` (ม.37(2)), `dsa.breach_notification` (ม.37(4), by the same analogy DPA-03 already
+drew for its own breach clause), and `dsa.cross_border_transfer` (ม.28-29) — the only conditional rule
+(`condition: {"requires_transfer": true}`), mirroring DPA-03's own `cross_border_transfer` rule exactly;
+`agreementHasTransfer` already reads this live from `Ropa.ListActivityTransfers` per linked activity
+(rule 9), so no change was needed there either. `cmd/api/main.go` gained the symmetric
+`docsSvc.SetSubmitValidate("dsa", agreementSvc.CheckSubmittable)` line right after the existing "dpa" one —
+the acceptance criterion's own gate, reused unchanged. Frontend: `ClausePanel`
+(`apps/admin/.../agreements/[id]/agreement-detail-content.tsx`) took its `applies_to`/permission-code
+filter from a hardcoded `"dpa"` to the agreement's own `agreement_type` (new `agreementType` prop, the
+same dynamic-filter fix DSA-04 already made for `useDocumentTemplates`'s `doc_type`), so the same panel now
+also lists/attaches "dsa" clauses and checks `agreement.dsa.update` rather than `agreement.dpa.update` for
+a DSA agreement. Tests: `internal/agreement/service/dsa_clauses_test.go`'s
+`TestMissingMandatoryClauses_DsaBlocksUntilAttached` mirrors DPA-03's own clause test exactly — a fresh
+"dsa" agreement (no transfer on record) is missing all eight unconditional clauses and `CheckSubmittable`
+refuses with `ErrMissingMandatoryClauses`; attaching all eight clears the list and lets the document submit.
+`go build`/`go vet`/`gofmt` clean; `tsc --noEmit`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` all verified clean — no reachable Postgres/Redis this pass, so the Go test
+ran compile-only, consistent with every other agreement-module test this session.
+
 <a id="dsa-11"></a>
 ### DSA-11 ทะเบียนข้อตกลงและแจ้งเตือนหมดอายุ
 

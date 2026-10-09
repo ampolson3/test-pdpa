@@ -22,6 +22,7 @@ import {
   type ApiClient,
   type Agreement,
   type AgreementPartyInput,
+  type AgreementType,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 
@@ -84,7 +85,7 @@ export function AgreementDetailContent({ id }: { id: string }) {
 
       <PartiesPanel client={client} agreementId={id} />
 
-      <ClausePanel client={client} agreementId={id} isDraft={a.status === "draft"} />
+      <ClausePanel client={client} agreementId={id} agreementType={a.agreement_type} isDraft={a.status === "draft"} />
 
       <ProcessingScheduleSection client={client} agreementId={id} />
 
@@ -317,14 +318,18 @@ function PartiesPanel({ client, agreementId }: { client: ApiClient; agreementId:
 }
 
 /** DPA-03: the mandatory-clause panel — what's attached, what's still missing (blocks PLT-08's own
- *  submit-for-approval endpoint), and an add form drawing from the published clause library (DPA-01). */
-function ClausePanel({ client, agreementId, isDraft }: { client: ApiClient; agreementId: string; isDraft: boolean }) {
+ *  submit-for-approval endpoint), and an add form drawing from the published clause library (DPA-01).
+ *  DSA-05: agreementType is read from the agreement itself, not hardcoded to "dpa", so the same panel
+ *  works for a "dsa" agreement's own clause library and its own agreement.dsa.update permission. */
+function ClausePanel({ client, agreementId, agreementType, isDraft }: { client: ApiClient; agreementId: string; agreementType: AgreementType; isDraft: boolean }) {
   const t = useTranslations("agreements");
-  const canUpdate = usePermission("agreement.dpa.update");
+  const canUpdate = usePermission(`agreement.${agreementType}.update`);
   const [selected, setSelected] = useState("");
   const clauses = useAgreementClauses(client, agreementId);
   const missing = useMissingClauses(client, agreementId);
-  const library = useClauses(client, { applies_to: "dpa", published_only: true });
+  // mandatory_rules/clause_library are only seeded for "dpa"/"dsa" (DPA-03/DSA-05); joint_controller/
+  // inbound_dpa have no mandatory-clause library yet, so the filter degrades to an empty result for those.
+  const library = useClauses(client, { applies_to: agreementType as "dpa" | "dsa", published_only: true });
   const addClause = useAddAgreementClause(client, agreementId);
   const removeClause = useRemoveAgreementClause(client, agreementId);
 
