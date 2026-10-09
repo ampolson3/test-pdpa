@@ -204,7 +204,7 @@ func TestCreateWizard_ValidatesFKs(t *testing.T) {
 		{AgreementType: "dpa", OurRole: "controller", VendorID: unknown, LegalEntityID: leID, Title: "t"},
 		{AgreementType: "dpa", OurRole: "controller", VendorID: vendorID, LegalEntityID: unknown, Title: "t"},
 		{AgreementType: "dpa", OurRole: "controller", VendorID: vendorID, LegalEntityID: leID, ActivityIDs: []uuid.UUID{unknown}, Title: "t"},
-		{AgreementType: "dsa", OurRole: "controller", VendorID: vendorID, LegalEntityID: leID, Title: "t"}, // real CHECK value, not yet supported
+		{AgreementType: "dsa", OurRole: "controller", CounterpartyPartyID: unknown, CounterpartyRole: "receiving", LegalEntityID: leID, Title: "t"}, // DSA-04: unknown counterparty party
 		{AgreementType: "dpa", OurRole: "bogus", VendorID: vendorID, LegalEntityID: leID, Title: "t"},
 		{AgreementType: "dpa", OurRole: "controller", VendorID: vendorID, LegalEntityID: leID, Title: ""},
 	}

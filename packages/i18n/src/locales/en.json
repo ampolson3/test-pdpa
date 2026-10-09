@@ -1083,6 +1083,8 @@
       "agreementType": "Agreement type",
       "ourRole": "Our role",
       "vendor": "Vendor (VEN-01)",
+      "counterpartyParty": "Counterparty",
+      "counterpartyRole": "Counterparty's role",
       "legalEntity": "Our legal entity",
       "agreementTitle": "Agreement title",
       "template": "Template (DPA-01)",

@@ -218,7 +218,14 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 	if code, body := do("POST", "/admin/v1/agreements", &admin, map[string]any{
 		"agreement_type": "dsa", "our_role": "controller", "vendor_id": vendorID, "legal_entity_id": legalEntityID, "title": "x",
 	}, nil); code != 422 {
-		t.Errorf("unsupported agreement_type dsa: %d %s, want 422", code, body)
+		t.Errorf("dsa with no counterparty_party_id/counterparty_role: %d %s, want 422", code, body)
+	}
+	// DSA-04: a real dsa agreement, from an ORG-06 counterparty (not a vendor) + the same RoPA activities.
+	if code, body := do("POST", "/admin/v1/agreements", &admin, map[string]any{
+		"agreement_type": "dsa", "our_role": "controller", "counterparty_party_id": thirdPartyID, "counterparty_role": "receiving",
+		"legal_entity_id": legalEntityID, "title": "DSA กับหน่วยงานพันธมิตร",
+	}, nil); code != 201 || !strings.Contains(body, `"agreement_type":"dsa"`) {
+		t.Errorf("create dsa: %d %s, want 201 agreement_type:dsa", code, body)
 	}
 	code, body := do("POST", "/admin/v1/agreements", &admin, newAgreement, nil)
 	if code != 201 || !strings.Contains(body, `"agreement_type":"dpa"`) {

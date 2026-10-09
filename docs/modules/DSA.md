@@ -273,6 +273,35 @@ validated as well-formed with a standalone script before being written into the 
 
 **Acceptance criteria:** ข้อตกลงดึงวัตถุประสงค์ ประเภทข้อมูล ฐาน และระยะเวลาจาก RoPA ถูกต้อง
 
+**Implementation — done.** Two halves, one already built and one genuinely new. The "pull from RoPA" half
+is DPA-04's own `ProcessingSchedule` (`internal/agreement/service/schedule.go`) — already
+agreement_type-agnostic (reads an agreement's own `ActivityIDs`, never checks `agreement_type`), so it
+already satisfies this feature's literal acceptance criterion for a "dsa" agreement with zero new code: the
+same live annex (purposes + lawful basis, data categories, retention, security measures) that DPA-04 proved
+correct against real RoPA data now works unchanged for DSA.
+
+The genuinely new half is actually *creating* a "dsa" agreement at all: DPA-02's `CreateWizard` only ever
+supported `agreement_type = "dpa"`, and its whole counterparty model is a VEN-01 vendor — wrong fit for
+DSA, since a DSA counterparty (another controller, a government agency, a researcher) need not be a tracked
+vendor relationship. `CreateInput` gained `CounterpartyPartyID`/`CounterpartyRole` alongside the existing
+`VendorID`: for `"dpa"` the counterparty is still resolved through `Vendor.GetVendor` with its role derived
+from `OurRole` (unchanged); for `"dsa"` the counterparty is any `Org.GetExternalParty` (rule 1 — visible
+under RLS) with an *explicit* `party_role` (disclosing/receiving/joint_controller/controller/processor —
+DSA-02's own set), since there is no controller↔processor flip to derive it from. `supportedAgreementTypes`
+now includes `"dsa"`. API: `vendor_id` is no longer required on `POST /admin/v1/agreements` — give it for
+`dpa`, or `counterparty_party_id`+`counterparty_role` for `dsa`. UI: the `/agreements` wizard's vendor picker
+is replaced with a counterparty-party + counterparty-role picker whenever `dsa` is selected, and the
+template dropdown now filters by the chosen type (previously hard-coded to `"dpa"`). Tests: unit
+(`dsa_wizard_test.go` — the acceptance criterion directly: a dsa agreement created from an ORG-06
+counterparty (not a vendor) and a RoPA activity has that counterparty on `ListParties` with the given role,
+and its `ProcessingSchedule` resolves without error; missing/invalid `counterparty_role` refused;
+`agreements_test.go`'s own FK-validation table updated for the new dsa shape), HTTP contract
+(`handler_test.go` — a real 201 `dsa` create through `counterparty_party_id`+`counterparty_role`, replacing
+the old "dsa not yet supported" 422 case with a real validation 422 for a dsa request missing those fields).
+`go build`/`go vet`/`gofmt` clean; `tsc --noEmit`, `pnpm --filter @pdpa/admin build` and
+`pnpm --filter @pdpa/i18n test` all verified clean — no reachable Postgres/Redis this pass, so the Go tests
+ran compile-only, consistent with every other agreement-module test this session.
+
 <a id="dsa-05"></a>
 ### DSA-05 ข้อกำหนดที่ต้องมี
 

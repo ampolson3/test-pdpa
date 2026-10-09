@@ -13,8 +13,10 @@ import {
   useActivities,
   useDocumentTemplates,
   useAgreementTypeCheck,
+  useExternalParties,
   type AgreementType,
   type AgreementCounterpartyRole,
+  type AgreementPartyInput,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 
@@ -36,6 +38,8 @@ type Draft = {
   agreement_type: AgreementType;
   our_role: "controller" | "processor" | "joint_controller";
   vendor_id: string;
+  counterparty_party_id: string;
+  counterparty_role: AgreementPartyInput["party_role"] | "";
   legal_entity_id: string;
   template_id: string;
   title: string;
@@ -45,8 +49,8 @@ type Draft = {
 };
 
 const blank: Draft = {
-  agreement_type: "dpa", our_role: "controller", vendor_id: "", legal_entity_id: "", template_id: "",
-  title: "", activity_ids: new Set(), auto_renew: false, renewal_notice_days: "",
+  agreement_type: "dpa", our_role: "controller", vendor_id: "", counterparty_party_id: "", counterparty_role: "",
+  legal_entity_id: "", template_id: "", title: "", activity_ids: new Set(), auto_renew: false, renewal_notice_days: "",
 };
 
 /** DPA-02's wizard: pick a VEN-01 vendor + its RoPA activities (and optionally a DPA-01 published
@@ -63,17 +67,23 @@ export function AgreementsContent() {
   const [typeFilter, setTypeFilter] = useState<AgreementType | "">("");
   const list = useAgreements(client, { agreementType: typeFilter || undefined });
   const vendors = useVendors(client, {});
+  const externalParties = useExternalParties(client, {});
   const entities = useLegalEntities(client);
   const activities = useActivities(client, {});
-  const templates = useDocumentTemplates(client, { doc_type: "dpa", published_only: true });
-  const create = useCreateAgreement(client);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const templates = useDocumentTemplates(client, {
+    doc_type: draft?.agreement_type === "dsa" ? "dsa" : "dpa",
+    published_only: true,
+  });
+  const create = useCreateAgreement(client);
 
   if (!canRead) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
 
   const rows = list.data?.pages.flatMap((p) => p.data) ?? [];
   const vendorRows = vendors.data?.pages.flatMap((p) => p.data) ?? [];
+  const externalPartyRows = externalParties.data?.pages.flatMap((p) => p.data) ?? [];
   const activityRows = activities.data?.pages.flatMap((p) => p.data) ?? [];
+  const isDsa = draft?.agreement_type === "dsa";
 
   const toggleActivity = (id: string) => {
     if (!draft) return;
@@ -83,11 +93,19 @@ export function AgreementsContent() {
     setDraft({ ...draft, activity_ids: next });
   };
 
+  const counterpartyReady = draft?.agreement_type === "dsa"
+    ? !!draft.counterparty_party_id && !!draft.counterparty_role
+    : !!draft?.vendor_id;
+  const canSubmit = !!draft && counterpartyReady && !!draft.legal_entity_id && !!draft.title.trim();
+
   const submit = () => {
-    if (!draft || !draft.vendor_id || !draft.legal_entity_id || !draft.title.trim()) return;
+    if (!draft || !canSubmit) return;
     create.mutate(
       {
-        agreement_type: draft.agreement_type, our_role: draft.our_role, vendor_id: draft.vendor_id,
+        agreement_type: draft.agreement_type, our_role: draft.our_role,
+        vendor_id: draft.agreement_type === "dsa" ? undefined : draft.vendor_id,
+        counterparty_party_id: draft.agreement_type === "dsa" ? draft.counterparty_party_id : undefined,
+        counterparty_role: draft.agreement_type === "dsa" ? draft.counterparty_role || undefined : undefined,
         legal_entity_id: draft.legal_entity_id, title: draft.title,
         template_id: draft.template_id || undefined,
         activity_ids: Array.from(draft.activity_ids),
@@ -143,12 +161,32 @@ export function AgreementsContent() {
               <option value="joint_controller">{t("roles.joint_controller")}</option>
             </select>
           </label>
-          <label><span className="block text-slate-600">{t("form.vendor")}</span>
-            <select className={INPUT} value={draft.vendor_id} onChange={(e) => setDraft({ ...draft, vendor_id: e.target.value })}>
-              <option value="">{t("form.choose")}</option>
-              {vendorRows.map((v) => <option key={v.id} value={v.id}>{v.service_description}</option>)}
-            </select>
-          </label>
+          {isDsa ? (
+            <>
+              <label><span className="block text-slate-600">{t("form.counterpartyParty")}</span>
+                <select className={INPUT} value={draft.counterparty_party_id} onChange={(e) => setDraft({ ...draft, counterparty_party_id: e.target.value })}>
+                  <option value="">{t("form.choose")}</option>
+                  {externalPartyRows.map((p) => <option key={p.id} value={p.id}>{p.name_th}</option>)}
+                </select>
+              </label>
+              <label><span className="block text-slate-600">{t("form.counterpartyRole")}</span>
+                <select className={INPUT} value={draft.counterparty_role}
+                  onChange={(e) => setDraft({ ...draft, counterparty_role: e.target.value as Draft["counterparty_role"] })}>
+                  <option value="">{t("form.choose")}</option>
+                  {(["disclosing", "receiving", "joint_controller", "controller", "processor"] as const).map((r) => (
+                    <option key={r} value={r}>{t(`detail.parties.roles.${r}`)}</option>
+                  ))}
+                </select>
+              </label>
+            </>
+          ) : (
+            <label><span className="block text-slate-600">{t("form.vendor")}</span>
+              <select className={INPUT} value={draft.vendor_id} onChange={(e) => setDraft({ ...draft, vendor_id: e.target.value })}>
+                <option value="">{t("form.choose")}</option>
+                {vendorRows.map((v) => <option key={v.id} value={v.id}>{v.service_description}</option>)}
+              </select>
+            </label>
+          )}
           <label><span className="block text-slate-600">{t("form.legalEntity")}</span>
             <select className={INPUT} value={draft.legal_entity_id} onChange={(e) => setDraft({ ...draft, legal_entity_id: e.target.value })}>
               <option value="">{t("form.choose")}</option>
@@ -184,7 +222,7 @@ export function AgreementsContent() {
           </div>
           {create.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("form.saveError", { detail: detail(create.error) })}</p>}
           <div className="flex gap-2 sm:col-span-2">
-            <Button onClick={submit} disabled={create.isPending || !draft.vendor_id || !draft.legal_entity_id || !draft.title.trim()}>{t("form.save")}</Button>
+            <Button onClick={submit} disabled={create.isPending || !canSubmit}>{t("form.save")}</Button>
             <Button variant="secondary" onClick={() => { create.reset(); setDraft(null); }}>{t("form.cancel")}</Button>
           </div>
         </fieldset>

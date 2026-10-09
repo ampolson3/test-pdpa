@@ -71,6 +71,33 @@ func (e AgreementStatus) Valid() bool {
 	}
 }
 
+// Defines values for AgreementCreateInputCounterpartyRole.
+const (
+	AgreementCreateInputCounterpartyRoleController      AgreementCreateInputCounterpartyRole = "controller"
+	AgreementCreateInputCounterpartyRoleDisclosing      AgreementCreateInputCounterpartyRole = "disclosing"
+	AgreementCreateInputCounterpartyRoleJointController AgreementCreateInputCounterpartyRole = "joint_controller"
+	AgreementCreateInputCounterpartyRoleProcessor       AgreementCreateInputCounterpartyRole = "processor"
+	AgreementCreateInputCounterpartyRoleReceiving       AgreementCreateInputCounterpartyRole = "receiving"
+)
+
+// Valid indicates whether the value is a known member of the AgreementCreateInputCounterpartyRole enum.
+func (e AgreementCreateInputCounterpartyRole) Valid() bool {
+	switch e {
+	case AgreementCreateInputCounterpartyRoleController:
+		return true
+	case AgreementCreateInputCounterpartyRoleDisclosing:
+		return true
+	case AgreementCreateInputCounterpartyRoleJointController:
+		return true
+	case AgreementCreateInputCounterpartyRoleProcessor:
+		return true
+	case AgreementCreateInputCounterpartyRoleReceiving:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AgreementCreateInputOurRole.
 const (
 	AgreementCreateInputOurRoleController      AgreementCreateInputOurRole = "controller"
@@ -553,7 +580,7 @@ type Agreement struct {
 	ActivityIds []Uuid `json:"activity_ids"`
 	AgreementNo string `json:"agreement_no"`
 
-	// AgreementType agreement.agreements' own CHECK constraint — only 'dpa' is wired to a feature so far (DPA-02); dsa/joint_controller/inbound_dpa are real values for when those modules exist.
+	// AgreementType agreement.agreements' own CHECK constraint — 'dpa' (DPA-02) and 'dsa' (DSA-04) are wired to CreateWizard; joint_controller/inbound_dpa are real values for when those modules exist.
 	AgreementType AgreementType `json:"agreement_type"`
 	AutoRenew     bool          `json:"auto_renew"`
 
@@ -616,20 +643,26 @@ type AgreementClauseInput struct {
 	Position *int `json:"position,omitempty"`
 }
 
-// AgreementCreateInput defines model for AgreementCreateInput.
+// AgreementCreateInput For agreement_type=dpa, give vendor_id (the counterparty role is derived from our_role). For agreement_type=dsa (DSA-04), give counterparty_party_id + counterparty_role instead — a DSA counterparty need not be a tracked VEN-01 vendor.
 type AgreementCreateInput struct {
 	// ActivityIds RoPA processing activities this agreement covers
 	ActivityIds *[]Uuid `json:"activity_ids,omitempty"`
 
-	// AgreementType agreement.agreements' own CHECK constraint — only 'dpa' is wired to a feature so far (DPA-02); dsa/joint_controller/inbound_dpa are real values for when those modules exist.
-	AgreementType AgreementType       `json:"agreement_type"`
-	AutoRenew     *bool               `json:"auto_renew,omitempty"`
-	EffectiveFrom *openapi_types.Date `json:"effective_from,omitempty"`
+	// AgreementType agreement.agreements' own CHECK constraint — 'dpa' (DPA-02) and 'dsa' (DSA-04) are wired to CreateWizard; joint_controller/inbound_dpa are real values for when those modules exist.
+	AgreementType AgreementType `json:"agreement_type"`
+	AutoRenew     *bool         `json:"auto_renew,omitempty"`
+
+	// CounterpartyPartyId agreement_type=dsa only — any ORG-06 external party this agreement is with
+	CounterpartyPartyId *Uuid `json:"counterparty_party_id,omitempty"`
+
+	// CounterpartyRole agreement_type=dsa only — the counterparty's own role on the agreement
+	CounterpartyRole *AgreementCreateInputCounterpartyRole `json:"counterparty_role,omitempty"`
+	EffectiveFrom    *openapi_types.Date                   `json:"effective_from,omitempty"`
 
 	// LegalEntityId Our own legal entity (ORG-01)
 	LegalEntityId Uuid `json:"legal_entity_id"`
 
-	// OurRole Our own role under this agreement — the counterparty's role is derived (controller <-> processor, joint_controller <-> joint_controller)
+	// OurRole Our own role under this agreement — for agreement_type=dpa the counterparty's role is derived (controller <-> processor, joint_controller <-> joint_controller)
 	OurRole           AgreementCreateInputOurRole `json:"our_role"`
 	RenewalNoticeDays *int                        `json:"renewal_notice_days,omitempty"`
 
@@ -637,11 +670,14 @@ type AgreementCreateInput struct {
 	TemplateId *Uuid  `json:"template_id,omitempty"`
 	Title      string `json:"title"`
 
-	// VendorId The VEN-01 vendor this agreement is with — its own party_id becomes the counterparty
-	VendorId Uuid `json:"vendor_id"`
+	// VendorId agreement_type=dpa only — the VEN-01 vendor this agreement is with; its own party_id becomes the counterparty
+	VendorId *Uuid `json:"vendor_id,omitempty"`
 }
 
-// AgreementCreateInputOurRole Our own role under this agreement — the counterparty's role is derived (controller <-> processor, joint_controller <-> joint_controller)
+// AgreementCreateInputCounterpartyRole agreement_type=dsa only — the counterparty's own role on the agreement
+type AgreementCreateInputCounterpartyRole string
+
+// AgreementCreateInputOurRole Our own role under this agreement — for agreement_type=dpa the counterparty's role is derived (controller <-> processor, joint_controller <-> joint_controller)
 type AgreementCreateInputOurRole string
 
 // AgreementMissingClause DPA-03: one agreement.mandatory_rules entry not yet attached to this agreement — PLT-08's generic submit endpoint refuses to move the document to in_review while this list is non-empty
@@ -738,7 +774,7 @@ type AgreementScheduleInput struct {
 	RenewalNoticeDays int                 `json:"renewal_notice_days"`
 }
 
-// AgreementType agreement.agreements' own CHECK constraint — only 'dpa' is wired to a feature so far (DPA-02); dsa/joint_controller/inbound_dpa are real values for when those modules exist.
+// AgreementType agreement.agreements' own CHECK constraint — 'dpa' (DPA-02) and 'dsa' (DSA-04) are wired to CreateWizard; joint_controller/inbound_dpa are real values for when those modules exist.
 type AgreementType string
 
 // AgreementTypeRecommendation defines model for AgreementTypeRecommendation.

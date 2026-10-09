@@ -4509,11 +4509,12 @@ export interface components {
             required_assessment_codes: string[];
         };
         /**
-         * @description agreement.agreements' own CHECK constraint — only 'dpa' is wired to a feature so far (DPA-02); dsa/joint_controller/inbound_dpa are real values for when those modules exist.
+         * @description agreement.agreements' own CHECK constraint — 'dpa' (DPA-02) and 'dsa' (DSA-04) are wired to CreateWizard; joint_controller/inbound_dpa are real values for when those modules exist.
          * @enum {string}
          */
         AgreementType: "dpa" | "dsa" | "joint_controller" | "inbound_dpa";
         /**
+         * @description For agreement_type=dpa, give vendor_id (the counterparty role is derived from our_role). For agreement_type=dsa (DSA-04), give counterparty_party_id + counterparty_role instead — a DSA counterparty need not be a tracked VEN-01 vendor.
          * @example {
          *       "agreement_type": "dpa",
          *       "our_role": "controller",
@@ -4526,12 +4527,19 @@ export interface components {
         AgreementCreateInput: {
             agreement_type: components["schemas"]["AgreementType"];
             /**
-             * @description Our own role under this agreement — the counterparty's role is derived (controller <-> processor, joint_controller <-> joint_controller)
+             * @description Our own role under this agreement — for agreement_type=dpa the counterparty's role is derived (controller <-> processor, joint_controller <-> joint_controller)
              * @enum {string}
              */
             our_role: "controller" | "processor" | "joint_controller";
-            /** @description The VEN-01 vendor this agreement is with — its own party_id becomes the counterparty */
-            vendor_id: components["schemas"]["Uuid"];
+            /** @description agreement_type=dpa only — the VEN-01 vendor this agreement is with; its own party_id becomes the counterparty */
+            vendor_id?: components["schemas"]["Uuid"];
+            /** @description agreement_type=dsa only — any ORG-06 external party this agreement is with */
+            counterparty_party_id?: components["schemas"]["Uuid"];
+            /**
+             * @description agreement_type=dsa only — the counterparty's own role on the agreement
+             * @enum {string}
+             */
+            counterparty_role?: "disclosing" | "receiving" | "joint_controller" | "controller" | "processor";
             /** @description Our own legal entity (ORG-01) */
             legal_entity_id: components["schemas"]["Uuid"];
             /**

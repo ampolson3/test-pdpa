@@ -234,10 +234,18 @@ func toCreateInput(b AgreementCreateInput) agreementservice.CreateInput {
 	in := agreementservice.CreateInput{
 		AgreementType: string(b.AgreementType),
 		OurRole:       string(b.OurRole),
-		VendorID:      b.VendorId,
 		LegalEntityID: b.LegalEntityId,
 		TemplateID:    b.TemplateId,
 		Title:         b.Title,
+	}
+	if b.VendorId != nil {
+		in.VendorID = *b.VendorId
+	}
+	if b.CounterpartyPartyId != nil {
+		in.CounterpartyPartyID = *b.CounterpartyPartyId
+	}
+	if b.CounterpartyRole != nil {
+		in.CounterpartyRole = string(*b.CounterpartyRole)
 	}
 	if b.ActivityIds != nil {
 		in.ActivityIDs = *b.ActivityIds

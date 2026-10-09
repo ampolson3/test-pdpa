@@ -19,10 +19,10 @@ import (
 var agreementTypes = map[string]bool{"dpa": true, "dsa": true, "joint_controller": true, "inbound_dpa": true}
 
 // supportedAgreementTypes are the types this pass actually wires to a document type/counterparty-role
-// convention — "dsa"/"joint_controller"/"inbound_dpa" are real values in the DB's own CHECK constraint
-// (for when those modules exist) but have no owning feature yet, the same "leave the column, build the
-// real thing later" deferral ROPA-01's own discovered_by_finding_id already used.
-var supportedAgreementTypes = map[string]bool{"dpa": true}
+// convention — "joint_controller"/"inbound_dpa" are real values in the DB's own CHECK constraint (for when
+// those modules exist) but have no owning feature yet, the same "leave the column, build the real thing
+// later" deferral ROPA-01's own discovered_by_finding_id already used.
+var supportedAgreementTypes = map[string]bool{"dpa": true, "dsa": true}
 
 var ourRoles = map[string]bool{"controller": true, "processor": true, "joint_controller": true}
 
@@ -47,22 +47,28 @@ type Agreement struct {
 	CreatedAt         time.Time
 }
 
-// CreateInput is DPA-02's wizard: pick a VEN-01 vendor and zero or more RoPA activities, optionally a
-// published template, and the system drafts a complete DPA document in one call (the acceptance
-// criterion — "within 10 minutes" means "one call", the same reading PNG-01's own "within 30 minutes"
-// acceptance criterion used). Leaving TemplateID nil is DPA-02's own "โหมดกรอกเอง" (manual mode): the
-// document starts blank, same as any other PLT-16 document created without a template.
+// CreateInput is DPA-02's wizard, widened by DSA-04 to also draft a DSA: pick a counterparty and zero or
+// more RoPA activities, optionally a published template, and the system drafts a complete agreement
+// document in one call (the acceptance criterion — "within 10 minutes" means "one call", the same reading
+// PNG-01's own "within 30 minutes" acceptance criterion used). Leaving TemplateID nil is DPA-02's own
+// "โหมดกรอกเอง" (manual mode): the document starts blank, same as any other PLT-16 document created
+// without a template. The counterparty is modeled differently per type, since a DSA counterparty need not
+// be a tracked VEN-01 vendor at all (it is simply another controller, a government agency or a
+// researcher): VendorID + the derived counterpartyRole(OurRole) for "dpa", or CounterpartyPartyID (any
+// ORG-06 external party) + an explicit CounterpartyRole for "dsa".
 type CreateInput struct {
-	AgreementType     string
-	OurRole           string
-	VendorID          uuid.UUID
-	LegalEntityID     uuid.UUID // our own entity, for the document's merge fields
-	ActivityIDs       []uuid.UUID
-	TemplateID        *uuid.UUID
-	Title             string
-	EffectiveFrom     *time.Time
-	AutoRenew         bool
-	RenewalNoticeDays int
+	AgreementType       string
+	OurRole             string
+	VendorID            uuid.UUID
+	CounterpartyPartyID uuid.UUID
+	CounterpartyRole    string
+	LegalEntityID       uuid.UUID // our own entity, for the document's merge fields
+	ActivityIDs         []uuid.UUID
+	TemplateID          *uuid.UUID
+	Title               string
+	EffectiveFrom       *time.Time
+	AutoRenew           bool
+	RenewalNoticeDays   int
 }
 
 func counterpartyRole(ourRole string) (string, error) {
@@ -91,10 +97,6 @@ func (s *Service) CreateWizard(ctx context.Context, in CreateInput) (Agreement, 
 	if !ourRoles[in.OurRole] {
 		return Agreement{}, fmt.Errorf("%w: our_role", ErrInvalid)
 	}
-	cpRole, err := counterpartyRole(in.OurRole)
-	if err != nil {
-		return Agreement{}, err
-	}
 	title := strings.TrimSpace(in.Title)
 	if title == "" {
 		return Agreement{}, fmt.Errorf("%w: title", ErrInvalid)
@@ -103,12 +105,37 @@ func (s *Service) CreateWizard(ctx context.Context, in CreateInput) (Agreement, 
 		return Agreement{}, fmt.Errorf("%w: renewal_notice_days", ErrInvalid)
 	}
 
-	vendor, err := s.Vendor.GetVendor(ctx, in.VendorID)
-	if err != nil {
-		return Agreement{}, fmt.Errorf("%w: vendor_id", ErrInvalid)
-	}
-	if _, err := s.Org.GetExternalParty(ctx, vendor.PartyID); err != nil {
-		return Agreement{}, fmt.Errorf("%w: vendor_id", ErrInvalid)
+	// The counterparty is modeled differently per type: "dpa" is always with a tracked VEN-01 vendor, its
+	// role derived from our own (controller<->processor); "dsa" (DSA-04) is with any ORG-06 external party
+	// — a government agency or a researcher need not be a vendor at all — so its party_role is given
+	// explicitly rather than derived.
+	var counterpartyPartyID uuid.UUID
+	var cpRole string
+	var vendorIDParam pgtype.UUID
+	switch in.AgreementType {
+	case "dpa":
+		vendor, err := s.Vendor.GetVendor(ctx, in.VendorID)
+		if err != nil {
+			return Agreement{}, fmt.Errorf("%w: vendor_id", ErrInvalid)
+		}
+		if _, err := s.Org.GetExternalParty(ctx, vendor.PartyID); err != nil {
+			return Agreement{}, fmt.Errorf("%w: vendor_id", ErrInvalid)
+		}
+		cpRole, err = counterpartyRole(in.OurRole)
+		if err != nil {
+			return Agreement{}, err
+		}
+		counterpartyPartyID = vendor.PartyID
+		vendorIDParam = pgUUID(&in.VendorID)
+	case "dsa":
+		if _, err := s.Org.GetExternalParty(ctx, in.CounterpartyPartyID); err != nil {
+			return Agreement{}, fmt.Errorf("%w: counterparty_party_id", ErrInvalid)
+		}
+		if !partyRoles[in.CounterpartyRole] {
+			return Agreement{}, fmt.Errorf("%w: counterparty_role", ErrInvalid)
+		}
+		counterpartyPartyID = in.CounterpartyPartyID
+		cpRole = in.CounterpartyRole
 	}
 	if _, err := s.Org.GetLegalEntity(ctx, in.LegalEntityID); err != nil {
 		return Agreement{}, fmt.Errorf("%w: legal_entity_id", ErrInvalid)
@@ -144,7 +171,7 @@ func (s *Service) CreateWizard(ctx context.Context, in CreateInput) (Agreement, 
 	}
 	row, err := q.InsertAgreement(ctx, agreementstore.InsertAgreementParams{
 		ID: id, AgreementType: in.AgreementType, AgreementNo: fmt.Sprintf("%s%04d", prefix, n+1), Title: title, OurRole: in.OurRole,
-		CounterpartyID: vendor.PartyID, VendorID: pgUUID(&in.VendorID), TemplateID: pgUUID(in.TemplateID), DocumentID: doc.ID,
+		CounterpartyID: counterpartyPartyID, VendorID: vendorIDParam, TemplateID: pgUUID(in.TemplateID), DocumentID: doc.ID,
 		AutoRenew: in.AutoRenew, RenewalNoticeDays: int16(renewalDays), EffectiveFrom: pgDate(in.EffectiveFrom),
 	})
 	if err != nil {
@@ -156,7 +183,7 @@ func (s *Service) CreateWizard(ctx context.Context, in CreateInput) (Agreement, 
 		return Agreement{}, err
 	}
 	if _, err := q.InsertAgreementParty(ctx, agreementstore.InsertAgreementPartyParams{
-		ID: partyID, AgreementID: id, PartyID: pgUUID(&vendor.PartyID), PartyRole: cpRole,
+		ID: partyID, AgreementID: id, PartyID: pgUUID(&counterpartyPartyID), PartyRole: cpRole,
 	}); err != nil {
 		return Agreement{}, err
 	}
@@ -167,7 +194,7 @@ func (s *Service) CreateWizard(ctx context.Context, in CreateInput) (Agreement, 
 	}
 
 	if err := s.audit(ctx, "agreement.agreement.create", id, nil, map[string]any{
-		"agreement_type": in.AgreementType, "agreement_no": row.AgreementNo, "vendor_id": in.VendorID, "activity_count": len(in.ActivityIDs),
+		"agreement_type": in.AgreementType, "agreement_no": row.AgreementNo, "counterparty_party_id": counterpartyPartyID, "activity_count": len(in.ActivityIDs),
 	}); err != nil {
 		return Agreement{}, err
 	}
