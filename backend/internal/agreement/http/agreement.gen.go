@@ -116,6 +116,27 @@ func (e AgreementType) Valid() bool {
 	}
 }
 
+// Defines values for AgreementTypeRecommendationAgreementType.
+const (
+	AgreementTypeRecommendationAgreementTypeDpa             AgreementTypeRecommendationAgreementType = "dpa"
+	AgreementTypeRecommendationAgreementTypeDsa             AgreementTypeRecommendationAgreementType = "dsa"
+	AgreementTypeRecommendationAgreementTypeJointController AgreementTypeRecommendationAgreementType = "joint_controller"
+)
+
+// Valid indicates whether the value is a known member of the AgreementTypeRecommendationAgreementType enum.
+func (e AgreementTypeRecommendationAgreementType) Valid() bool {
+	switch e {
+	case AgreementTypeRecommendationAgreementTypeDpa:
+		return true
+	case AgreementTypeRecommendationAgreementTypeDsa:
+		return true
+	case AgreementTypeRecommendationAgreementTypeJointController:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for FormConditionOp.
 const (
 	Answered    FormConditionOp = "answered"
@@ -230,6 +251,45 @@ func (e AgreementCreateAgreementParamsAcceptLanguage) Valid() bool {
 	case AgreementCreateAgreementParamsAcceptLanguageEn:
 		return true
 	case AgreementCreateAgreementParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgreementTypeCheckParamsCounterpartyRole.
+const (
+	AgreementTypeCheckParamsCounterpartyRoleController      AgreementTypeCheckParamsCounterpartyRole = "controller"
+	AgreementTypeCheckParamsCounterpartyRoleJointController AgreementTypeCheckParamsCounterpartyRole = "joint_controller"
+	AgreementTypeCheckParamsCounterpartyRoleProcessor       AgreementTypeCheckParamsCounterpartyRole = "processor"
+)
+
+// Valid indicates whether the value is a known member of the AgreementTypeCheckParamsCounterpartyRole enum.
+func (e AgreementTypeCheckParamsCounterpartyRole) Valid() bool {
+	switch e {
+	case AgreementTypeCheckParamsCounterpartyRoleController:
+		return true
+	case AgreementTypeCheckParamsCounterpartyRoleJointController:
+		return true
+	case AgreementTypeCheckParamsCounterpartyRoleProcessor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgreementTypeCheckParamsAcceptLanguage.
+const (
+	AgreementTypeCheckParamsAcceptLanguageEn AgreementTypeCheckParamsAcceptLanguage = "en"
+	AgreementTypeCheckParamsAcceptLanguageTh AgreementTypeCheckParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the AgreementTypeCheckParamsAcceptLanguage enum.
+func (e AgreementTypeCheckParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case AgreementTypeCheckParamsAcceptLanguageEn:
+		return true
+	case AgreementTypeCheckParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -533,6 +593,21 @@ type AgreementScheduleInput struct {
 // AgreementType agreement.agreements' own CHECK constraint — only 'dpa' is wired to a feature so far (DPA-02); dsa/joint_controller/inbound_dpa are real values for when those modules exist.
 type AgreementType string
 
+// AgreementTypeRecommendation defines model for AgreementTypeRecommendation.
+type AgreementTypeRecommendation struct {
+	// AgreementType The recommended value for Agreement.agreement_type
+	AgreementType AgreementTypeRecommendationAgreementType `json:"agreement_type"`
+
+	// LegalRef The PDPA section this recommendation is based on
+	LegalRef string `json:"legal_ref"`
+
+	// ReasonCode An i18n key under agreements.typeCheck.reasons for the human-readable explanation
+	ReasonCode string `json:"reason_code"`
+}
+
+// AgreementTypeRecommendationAgreementType The recommended value for Agreement.agreement_type
+type AgreementTypeRecommendationAgreementType string
+
 // FieldError defines model for FieldError.
 type FieldError struct {
 	Code    string  `json:"code"`
@@ -633,6 +708,21 @@ type AgreementCreateAgreementParams struct {
 // AgreementCreateAgreementParamsAcceptLanguage defines parameters for AgreementCreateAgreement.
 type AgreementCreateAgreementParamsAcceptLanguage string
 
+// AgreementTypeCheckParams defines parameters for AgreementTypeCheck.
+type AgreementTypeCheckParams struct {
+	// CounterpartyRole The data recipient's role — processor (ม.40 → DPA), controller (ม.27 → DSA), or joint_controller
+	CounterpartyRole AgreementTypeCheckParamsCounterpartyRole `form:"counterparty_role" json:"counterparty_role"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *AgreementTypeCheckParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// AgreementTypeCheckParamsCounterpartyRole defines parameters for AgreementTypeCheck.
+type AgreementTypeCheckParamsCounterpartyRole string
+
+// AgreementTypeCheckParamsAcceptLanguage defines parameters for AgreementTypeCheck.
+type AgreementTypeCheckParamsAcceptLanguage string
+
 // AgreementVendorContractStatusParams defines parameters for AgreementVendorContractStatus.
 type AgreementVendorContractStatusParams struct {
 	VendorId Uuid `form:"vendor_id" json:"vendor_id"`
@@ -727,6 +817,9 @@ type ServerInterface interface {
 	// AgreementCreateAgreement DPA-02: compose a complete draft agreement from a vendor and its RoPA activities in one call — "โหมดกรอกเอง" is simply leaving template_id unset
 	// (POST /admin/v1/agreements)
 	AgreementCreateAgreement(w http.ResponseWriter, r *http.Request, params AgreementCreateAgreementParams)
+	// AgreementTypeCheck DSA-01: recommend DPA, DSA or a joint-controller agreement from the data recipient's role
+	// (GET /admin/v1/agreements/type-check)
+	AgreementTypeCheck(w http.ResponseWriter, r *http.Request, params AgreementTypeCheckParams)
 	// AgreementVendorContractStatus VEN-11: whether a vendor who is a processor has at least one DPA on record
 	// (GET /admin/v1/agreements/vendor-contract-status)
 	AgreementVendorContractStatus(w http.ResponseWriter, r *http.Request, params AgreementVendorContractStatusParams)
@@ -766,6 +859,12 @@ func (_ Unimplemented) AgreementListAgreements(w http.ResponseWriter, r *http.Re
 // AgreementCreateAgreement DPA-02: compose a complete draft agreement from a vendor and its RoPA activities in one call — "โหมดกรอกเอง" is simply leaving template_id unset
 // (POST /admin/v1/agreements)
 func (_ Unimplemented) AgreementCreateAgreement(w http.ResponseWriter, r *http.Request, params AgreementCreateAgreementParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AgreementTypeCheck DSA-01: recommend DPA, DSA or a joint-controller agreement from the data recipient's role
+// (GET /admin/v1/agreements/type-check)
+func (_ Unimplemented) AgreementTypeCheck(w http.ResponseWriter, r *http.Request, params AgreementTypeCheckParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -951,6 +1050,60 @@ func (siw *ServerInterfaceWrapper) AgreementCreateAgreement(w http.ResponseWrite
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AgreementCreateAgreement(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AgreementTypeCheck operation middleware
+func (siw *ServerInterfaceWrapper) AgreementTypeCheck(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AgreementTypeCheckParams
+
+	// ------------- Required query parameter "counterparty_role" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "counterparty_role", r.URL.Query(), &params.CounterpartyRole, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "counterparty_role"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "counterparty_role", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage AgreementTypeCheckParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AgreementTypeCheck(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1525,6 +1678,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/admin/v1/agreements/vendor-contract-status", wrapper.AgreementVendorContractStatus)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/agreements/type-check", wrapper.AgreementTypeCheck)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/agreements/{id}/clauses", wrapper.AgreementListClauses)
 	})
 	r.Group(func(r chi.Router) {
@@ -1690,6 +1846,76 @@ type AgreementCreateAgreement422ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response AgreementCreateAgreement422ApplicationProblemPlusJSONResponse) VisitAgreementCreateAgreementResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AgreementTypeCheckRequestObject struct {
+	Params AgreementTypeCheckParams
+}
+
+type AgreementTypeCheckResponseObject interface {
+	VisitAgreementTypeCheckResponse(w http.ResponseWriter) error
+}
+
+type AgreementTypeCheck200JSONResponse AgreementTypeRecommendation
+
+func (response AgreementTypeCheck200JSONResponse) VisitAgreementTypeCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AgreementTypeCheck401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response AgreementTypeCheck401ApplicationProblemPlusJSONResponse) VisitAgreementTypeCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AgreementTypeCheck403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response AgreementTypeCheck403ApplicationProblemPlusJSONResponse) VisitAgreementTypeCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AgreementTypeCheck422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response AgreementTypeCheck422ApplicationProblemPlusJSONResponse) VisitAgreementTypeCheckResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -2399,6 +2625,9 @@ type StrictServerInterface interface {
 	// AgreementCreateAgreement DPA-02: compose a complete draft agreement from a vendor and its RoPA activities in one call — "โหมดกรอกเอง" is simply leaving template_id unset
 	// (POST /admin/v1/agreements)
 	AgreementCreateAgreement(ctx context.Context, request AgreementCreateAgreementRequestObject) (AgreementCreateAgreementResponseObject, error)
+	// AgreementTypeCheck DSA-01: recommend DPA, DSA or a joint-controller agreement from the data recipient's role
+	// (GET /admin/v1/agreements/type-check)
+	AgreementTypeCheck(ctx context.Context, request AgreementTypeCheckRequestObject) (AgreementTypeCheckResponseObject, error)
 	// AgreementVendorContractStatus VEN-11: whether a vendor who is a processor has at least one DPA on record
 	// (GET /admin/v1/agreements/vendor-contract-status)
 	AgreementVendorContractStatus(ctx context.Context, request AgreementVendorContractStatusRequestObject) (AgreementVendorContractStatusResponseObject, error)
@@ -2516,6 +2745,32 @@ func (sh *strictHandler) AgreementCreateAgreement(w http.ResponseWriter, r *http
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(AgreementCreateAgreementResponseObject); ok {
 		if err := validResponse.VisitAgreementCreateAgreementResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AgreementTypeCheck operation middleware
+func (sh *strictHandler) AgreementTypeCheck(w http.ResponseWriter, r *http.Request, params AgreementTypeCheckParams) {
+	var request AgreementTypeCheckRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AgreementTypeCheck(ctx, request.(AgreementTypeCheckRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AgreementTypeCheck")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AgreementTypeCheckResponseObject); ok {
+		if err := validResponse.VisitAgreementTypeCheckResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

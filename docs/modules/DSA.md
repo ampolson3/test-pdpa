@@ -125,6 +125,36 @@
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่างหลัก)
 
+**Implementation — done.** The first feature on the DSA module, built directly on the existing `agreement`
+module (migration 00015) rather than a new schema: `agreement.agreements.agreement_type` already has
+`dpa`/`dsa`/`joint_controller`/`inbound_dpa` in its own CHECK constraint, and `our_role`/`counterpartyRole`
+already express the controller↔processor relationship (DPA-02's own `counterpartyRole` helper) — so this
+feature's whole job is a single pure decision function, no migration, no persisted state.
+
+`internal/agreement/service/type_check.go`'s `RecommendAgreementType(counterpartyRole)` is the literal
+acceptance criterion: ask one question (the data recipient's role) and return the recommended
+`agreement_type` with its PDPA basis — `processor` → `dpa` (ม.40, a processor acting on our instructions),
+`controller` → `dsa` (ม.27, another independent controller receiving or sharing data with us),
+`joint_controller` → `joint_controller` (also ม.27, but a distinct legal relationship from an ordinary DSA,
+so it keeps its own `agreement_type` value rather than being folded into `"dsa"`). Being pure (no
+transaction, no database, no tenant context) makes the acceptance criterion itself ("correct recommendation
+for every role") a direct table test.
+
+API: `GET /admin/v1/agreements/type-check?counterparty_role=...` → `{agreement_type, legal_ref, reason_code}`.
+Gated on `agreement.dsa.read` (already seeded for LEGAL/OWNER/DPO/PRIVACY/AUDIT/GUEST — this feature's own
+actors), not `agreement.dpa.read`, since the question is "which agreement do I need" and the answer can be a
+DSA — asking under the DPA permission would be backwards. UI: a small "Agreement type check" widget on
+`/agreements` (shown only to callers with `agreement.dsa.read`) — pick the counterparty's role, click check,
+see the recommended type + legal reference + a plain-language reason (`agreements.typeCheck.reasons.*`,
+th/en) immediately; no RoPA/vendor to pick, no modal, consistent with "within one click" being the whole
+point of a check this small. Tests: unit (`type_check_test.go` — the acceptance criterion directly, a table
+test over all three roles checking both `agreement_type` and `legal_ref`; an unknown/empty role refused as
+`ErrInvalid`), HTTP contract (`handler_test.go` — 200 for all three roles through the real validator +
+AuthZ, 401 with no principal, 403 for a caller without `agreement.dsa.read`) — the unit tests ran and passed
+against this environment's real toolchain; the HTTP contract test compiles clean but is skipped without a
+reachable Redis, consistent with every other agreement-module contract test in this pass.
+`pnpm --filter @pdpa/admin build`/`tsc` and the `@pdpa/i18n` ICU message tests all verified clean.
+
 <a id="dsa-02"></a>
 ### DSA-02 ข้อมูลคู่สัญญาและบทบาท
 

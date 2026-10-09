@@ -3600,6 +3600,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/agreements/type-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DSA-01: recommend DPA, DSA or a joint-controller agreement from the data recipient's role */
+        get: operations["agreementTypeCheck"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/agreements/{id}/clauses": {
         parameters: {
             query?: never;
@@ -4546,6 +4563,17 @@ export interface components {
             is_processor: boolean;
             /** @description Whether this vendor has at least one DPA (any status) on record */
             has_dpa: boolean;
+        };
+        AgreementTypeRecommendation: {
+            /**
+             * @description The recommended value for Agreement.agreement_type
+             * @enum {string}
+             */
+            agreement_type: "dpa" | "dsa" | "joint_controller";
+            /** @description The PDPA section this recommendation is based on */
+            legal_ref: string;
+            /** @description The counterparty_role this was computed from, for the frontend's own agreements.typeCheck.reasons.* i18n key */
+            reason_code: string;
         };
         AgreementClauseInput: {
             /** @description A published clause from the clause library (DPA-01) */
@@ -15587,6 +15615,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VendorContractStatus"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    agreementTypeCheck: {
+        parameters: {
+            query: {
+                /** @description The data recipient's role — processor (ม.40 → DPA), controller (ม.27 → DSA), or joint_controller */
+                counterparty_role: "processor" | "controller" | "joint_controller";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementTypeRecommendation"];
                 };
             };
             401: components["responses"]["Unauthorized"];

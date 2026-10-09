@@ -75,6 +75,7 @@ export {
   useProcessingSchedule,
   useSetAgreementSchedule,
   useVendorContractStatus,
+  useAgreementTypeCheck,
   type Agreement,
   type AgreementCreateInput,
   type AgreementType,
@@ -84,6 +85,8 @@ export {
   type AgreementProcessingSchedule,
   type AgreementScheduleInput,
   type VendorContractStatus,
+  type AgreementTypeRecommendation,
+  type AgreementCounterpartyRole,
 } from "./agreements";
 export {
   useRiskMatrices,

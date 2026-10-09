@@ -102,9 +102,11 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 		}
 	}
 	reader := uuid.New()
+	noPerm := uuid.New()
 	grants := map[string][]string{
-		tenant.UserID.String(): {"agreement.dpa.read", "agreement.dpa.create", "agreement.dpa.update"},
-		reader.String():        {"agreement.dpa.read"},
+		tenant.UserID.String(): {"agreement.dpa.read", "agreement.dpa.create", "agreement.dpa.update", "agreement.dsa.read"},
+		reader.String():        {"agreement.dpa.read", "agreement.dsa.read"},
+		noPerm.String():        {},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
@@ -307,6 +309,27 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 	// VEN-11: now that a DPA exists for this vendor, has_dpa reads true.
 	if code, body := do("GET", status, &reader, nil, nil); code != 200 || !strings.Contains(body, `"has_dpa":true`) {
 		t.Errorf("vendor-contract-status after DPA created: %d %s, want has_dpa:true", code, body)
+	}
+
+	// DSA-01: the type-check wizard — correct recommendation per counterparty role, through the real
+	// validator + AuthZ (agreement.dsa.read, not agreement.dpa.read).
+	if code, body := do("GET", "/admin/v1/agreements/type-check?counterparty_role=processor", &reader, nil, nil); code != 200 ||
+		!strings.Contains(body, `"agreement_type":"dpa"`) || !strings.Contains(body, `"legal_ref":"`+"ม.40"+`"`) {
+		t.Errorf("type-check processor: %d %s, want agreement_type:dpa, legal_ref:ม.40", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/agreements/type-check?counterparty_role=controller", &reader, nil, nil); code != 200 ||
+		!strings.Contains(body, `"agreement_type":"dsa"`) || !strings.Contains(body, `"legal_ref":"`+"ม.27"+`"`) {
+		t.Errorf("type-check controller: %d %s, want agreement_type:dsa, legal_ref:ม.27", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/agreements/type-check?counterparty_role=joint_controller", &reader, nil, nil); code != 200 ||
+		!strings.Contains(body, `"agreement_type":"joint_controller"`) {
+		t.Errorf("type-check joint_controller: %d %s, want agreement_type:joint_controller", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/agreements/type-check?counterparty_role=processor", nil, nil, nil); code != 401 {
+		t.Errorf("type-check no principal: %d, want 401", code)
+	}
+	if code, _ := do("GET", "/admin/v1/agreements/type-check?counterparty_role=processor", &noPerm, nil, nil); code != 403 {
+		t.Errorf("type-check without agreement.dsa.read: %d, want 403", code)
 	}
 }
 

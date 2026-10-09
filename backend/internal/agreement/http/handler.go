@@ -127,6 +127,18 @@ func (h *Strict) AgreementVendorContractStatus(ctx context.Context, req Agreemen
 	return AgreementVendorContractStatus200JSONResponse{VendorId: st.VendorID, IsProcessor: st.IsProcessor, HasDpa: st.HasDPA}, nil
 }
 
+func (h *Strict) AgreementTypeCheck(ctx context.Context, req AgreementTypeCheckRequestObject) (AgreementTypeCheckResponseObject, error) {
+	rec, err := agreementservice.RecommendAgreementType(string(req.Params.CounterpartyRole))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return AgreementTypeCheck200JSONResponse{
+		AgreementType: AgreementTypeRecommendationAgreementType(rec.AgreementType),
+		LegalRef:      rec.LegalRef,
+		ReasonCode:    rec.ReasonCode,
+	}, nil
+}
+
 func (h *Strict) AgreementSetSchedule(ctx context.Context, req AgreementSetScheduleRequestObject) (AgreementSetScheduleResponseObject, error) {
 	rv, err := parseETag(req.Params.IfMatch)
 	if err != nil {

@@ -12,7 +12,9 @@ import {
   useLegalEntities,
   useActivities,
   useDocumentTemplates,
+  useAgreementTypeCheck,
   type AgreementType,
+  type AgreementCounterpartyRole,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 
@@ -54,7 +56,10 @@ export function AgreementsContent() {
   const t = useTranslations("agreements");
   const canRead = usePermission("agreement.dpa.read");
   const canCreate = usePermission("agreement.dpa.create");
+  const canCheckType = usePermission("agreement.dsa.read");
   const client = useMemo(() => createApiClient("/api/bff"), []);
+  const typeCheck = useAgreementTypeCheck(client);
+  const [checkRole, setCheckRole] = useState<AgreementCounterpartyRole>("processor");
   const [typeFilter, setTypeFilter] = useState<AgreementType | "">("");
   const list = useAgreements(client, { agreementType: typeFilter || undefined });
   const vendors = useVendors(client, {});
@@ -102,6 +107,26 @@ export function AgreementsContent() {
         </div>
         {canCreate && <Button onClick={() => { create.reset(); setDraft({ ...blank, activity_ids: new Set() }); }} data-testid="new-agreement">{t("newAgreement")}</Button>}
       </header>
+
+      {canCheckType && (
+        <fieldset className="flex flex-wrap items-end gap-3 rounded-md border border-slate-200 bg-white p-4" data-testid="agreement-type-check">
+          <legend className="px-1 font-semibold">{t("typeCheck.title")}</legend>
+          <label><span className="block text-slate-600">{t("typeCheck.counterpartyRole")}</span>
+            <select className={INPUT} value={checkRole} onChange={(e) => setCheckRole(e.target.value as AgreementCounterpartyRole)}>
+              <option value="processor">{t("roles.processor")}</option>
+              <option value="controller">{t("roles.controller")}</option>
+              <option value="joint_controller">{t("roles.joint_controller")}</option>
+            </select>
+          </label>
+          <Button variant="secondary" onClick={() => typeCheck.mutate(checkRole)} disabled={typeCheck.isPending}>{t("typeCheck.check")}</Button>
+          {typeCheck.data && (
+            <p className="w-full text-slate-700" data-testid="agreement-type-check-result">
+              {t("typeCheck.result", { type: t(`types.${typeCheck.data.agreement_type}`), ref: typeCheck.data.legal_ref })}
+              {" — "}{t(`typeCheck.reasons.${typeCheck.data.reason_code}`)}
+            </p>
+          )}
+        </fieldset>
+      )}
 
       {draft && (
         <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2" data-testid="agreement-wizard">

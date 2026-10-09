@@ -10,6 +10,8 @@ export type AgreementMissingClause = components["schemas"]["AgreementMissingClau
 export type AgreementProcessingSchedule = components["schemas"]["AgreementProcessingSchedule"];
 export type AgreementScheduleInput = components["schemas"]["AgreementScheduleInput"];
 export type VendorContractStatus = components["schemas"]["VendorContractStatus"];
+export type AgreementTypeRecommendation = components["schemas"]["AgreementTypeRecommendation"];
+export type AgreementCounterpartyRole = "processor" | "controller" | "joint_controller";
 
 const agreementsKey = ["agreement", "agreements"] as const;
 
@@ -154,6 +156,19 @@ export function useVendorContractStatus(client: ApiClient, vendorId: string | un
     queryFn: async () => {
       const { data, error } = await client.GET("/admin/v1/agreements/vendor-contract-status", {
         params: { query: { vendor_id: vendorId! } },
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** GET /admin/v1/agreements/type-check (DSA-01) — picked on demand from the wizard, one role at a time. */
+export function useAgreementTypeCheck(client: ApiClient) {
+  return useMutation({
+    mutationFn: async (counterpartyRole: AgreementCounterpartyRole) => {
+      const { data, error } = await client.GET("/admin/v1/agreements/type-check", {
+        params: { query: { counterparty_role: counterpartyRole } },
       });
       if (error) throw error;
       return data;

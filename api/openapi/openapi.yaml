@@ -10975,6 +10975,37 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/agreements/type-check:
+    get:
+      operationId: agreementTypeCheck
+      tags: [agreement]
+      summary: 'DSA-01: recommend DPA, DSA or a joint-controller agreement from the data recipient''s role'
+      x-permission: agreement.dsa.read
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: counterparty_role
+          in: query
+          required: true
+          description: The data recipient's role — processor (ม.40 → DPA), controller (ม.27 → DSA), or joint_controller
+          schema:
+            type: string
+            enum: [processor, controller, joint_controller]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementTypeRecommendation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/agreements/{id}/clauses:
     get:
       operationId: agreementListClauses
@@ -12752,6 +12783,20 @@ components:
         has_dpa:
           description: Whether this vendor has at least one DPA (any status) on record
           type: boolean
+    AgreementTypeRecommendation:
+      type: object
+      required: [agreement_type, legal_ref, reason_code]
+      properties:
+        agreement_type:
+          description: The recommended value for Agreement.agreement_type
+          type: string
+          enum: [dpa, dsa, joint_controller]
+        legal_ref:
+          description: The PDPA section this recommendation is based on
+          type: string
+        reason_code:
+          description: The counterparty_role this was computed from, for the frontend's own agreements.typeCheck.reasons.* i18n key
+          type: string
     AgreementClauseInput:
       type: object
       required: [clause_id]

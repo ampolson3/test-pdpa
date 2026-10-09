@@ -1078,6 +1078,17 @@
       "save": "Create agreement",
       "cancel": "Cancel",
       "saveError": "Failed to create: {detail}"
+    },
+    "typeCheck": {
+      "title": "Agreement type check (DSA-01)",
+      "counterpartyRole": "Data recipient's role",
+      "check": "Check",
+      "result": "Recommended: {type} ({ref})",
+      "reasons": {
+        "processor": "The recipient processes data on our instructions, so ม.40 requires a DPA.",
+        "controller": "The recipient is another independent data controller, so ม.27 requires a DSA.",
+        "joint_controller": "The recipient jointly determines the purposes of processing with us, so ม.27 requires a joint-controller agreement."
+      }
     }
   },
   "riskMatrices": {
