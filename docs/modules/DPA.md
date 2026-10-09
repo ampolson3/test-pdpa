@@ -358,6 +358,47 @@ suite and `pnpm --filter @pdpa/admin build` both verified clean.
 
 **Acceptance criteria:** สัญญาใกล้หมดอายุถูกแจ้งเตือนตามเวลาที่ตั้ง
 
+**Implementation — done, scoped to exactly this acceptance criterion.** `agreement.agreements` already had
+`status`/`effective_from`/`effective_to`/`auto_renew`/`renewal_notice_days` fully specified in the baseline
+migrations (ST-04#1's own 7-state lifecycle), but nothing had ever written `effective_to` or any status past
+the DB's own `draft` default — DPA-02's `CreateWizard` only ever set `effective_from`. This pass adds exactly
+the registry's own mutable fields and the reminder, not the rest of ST-04#1 (approve/send-for-signature/sign
+are DPA-06/07/08/09's own job, Should-priority and not built — building a real e-signature integration to let
+`active` ever happen would be far beyond this feature's literal acceptance criterion). `internal/agreement/
+service/renewal.go`'s `SetSchedule` (`agreement.dpa.update`, shared with DPA-02 — no new permission) is the
+first ever update path on an agreement's core row: ETag-gated like every other module's update endpoint, it
+sets `effective_from`/`effective_to`/`auto_renew`/`renewal_notice_days` and reschedules the single reminder
+checkpoint in the same call.
+
+The reminder itself follows DSAR-07/PNG-04's own established pattern exactly rather than reaching for the full
+PLT-05 workflow engine the module doc's own backend note mentions: `RenewalReminderAt(effectiveTo,
+renewalNoticeDays)` is a pure, clock-testable function; `scheduleRenewalReminder` enqueues one River job
+(`agreement.renewal_reminder`, unique by args) at that moment, or immediately if it has already passed (a
+late-recorded end date still alerts once, at once); `FireRenewalReminder` re-reads the agreement and no-ops if
+its own `effective_to`/`renewal_notice_days` no longer match what the job was scheduled for (changing the
+dates naturally reschedules — a stale tick from before the change is harmless) or if the agreement was
+terminated. It notifies role LEGAL (the module doc's own actor; SCHED is the job itself, not an RBAC role) —
+the same "default recipients until real per-record routing exists" fallback BRE-07/PNG-04/DSAR-07 already use,
+since there is no per-agreement owner column to route to more precisely. Migration 00059 seeds
+`agreement.renewal_reminder` (th/en × in_app/email) — operational text, no DRAFT marker (rule 8 is about legal
+wording shown to a counterparty or the PDPC, not an internal reminder). `agreementservice.Service` gained
+`Notify`/`River` fields (nil in any wiring that never calls `SetSchedule`/doesn't need the worker, the same
+optional-field pattern `dsarservice.Service` already uses) and `cmd/worker` now builds its own minimal
+`agreementSvc` (`Audit`/`Notify`/`River` only) registering `agreementservice.ReminderWorker` — the first
+agreement wiring in `cmd/worker` at all.
+
+API: `PATCH /admin/v1/agreements/{id}/schedule` (ETag/If-Match), `effective_to` added to the `Agreement` wire
+schema (was missing even for reads). UI: a "Registry: start/end dates & renewal" section on `/agreements/{id}`
+with an edit form for all four fields, next to the existing read-only metadata block. Tests: unit
+(`RenewalReminderAt`'s own boundary math; `SetSchedule`'s round-trip, stale-ETag refusal, negative
+`renewal_notice_days` refusal, and that it leaves a real `river_job` row scheduled at the right moment;
+`FireRenewalReminder`'s real `platform.notifications` row for a seeded LEGAL-role user, plus its no-op guards
+for a stale schedule and an unknown agreement), HTTP contract (401/403/404/412/422/428/200) through the real
+validator + AuthZ. `sqlc generate`/`oapi-codegen`/`openapi-typescript` were run for real; `pnpm --filter
+@pdpa/admin build`/`tsc` and the `@pdpa/i18n` ICU message tests both verified clean. Not verified against a
+real Postgres in this pass (no reachable database in this environment) — the same gap this session's own
+earlier VEN-02 note already flagged.
+
 <a id="dpa-11"></a>
 ### DPA-11 ผูก DPA กับคู่ค้าและกิจกรรม
 

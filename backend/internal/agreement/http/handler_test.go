@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -268,4 +269,31 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 	if code, _ := do("GET", "/admin/v1/agreements/"+uuid.New().String()+"/processing-schedule", &admin, nil, nil); code != 404 {
 		t.Errorf("processing-schedule unknown agreement: %d, want 404", code)
 	}
+
+	// DPA-10: registry start/end dates and renewal settings.
+	schedule := item + "/schedule"
+	if code, _ := do("PATCH", schedule, &admin, map[string]any{"renewal_notice_days": 60}, nil); code != 428 {
+		t.Errorf("set schedule, no If-Match: %d, want 428", code)
+	}
+	if code, _ := do("PATCH", schedule, &admin, map[string]any{"renewal_notice_days": 60}, map[string]string{"If-Match": `"99"`}); code != 412 {
+		t.Errorf("set schedule, stale version: %d, want 412", code)
+	}
+	if code, body := do("PATCH", schedule, &reader, map[string]any{"renewal_notice_days": 60}, map[string]string{"If-Match": etagOf(int(created.RowVersion))}); code != 403 {
+		t.Errorf("set schedule with read only: %d %s, want 403", code, body)
+	}
+	code, body = do("PATCH", schedule, &admin, map[string]any{"effective_from": "2026-01-01", "effective_to": "2027-01-01", "auto_renew": true, "renewal_notice_days": 60},
+		map[string]string{"If-Match": etagOf(int(created.RowVersion))})
+	if code != 200 || !strings.Contains(body, `"effective_to":"2027-01-01"`) || !strings.Contains(body, `"auto_renew":true`) {
+		t.Fatalf("set schedule: %d %s", code, body)
+	}
+	var scheduled agreementhttp.Agreement
+	_ = json.Unmarshal([]byte(body), &scheduled)
+	if code, _ := do("PATCH", schedule, &admin, map[string]any{"renewal_notice_days": -1}, map[string]string{"If-Match": etagOf(int(scheduled.RowVersion))}); code != 422 {
+		t.Errorf("set schedule, negative renewal_notice_days: %d, want 422", code)
+	}
+	if code, _ := do("PATCH", "/admin/v1/agreements/"+uuid.New().String()+"/schedule", &admin, map[string]any{"renewal_notice_days": 60}, map[string]string{"If-Match": `"0"`}); code != 404 {
+		t.Errorf("set schedule, unknown agreement: %d, want 404", code)
+	}
 }
+
+func etagOf(v int) string { return `"` + strconv.Itoa(v) + `"` }

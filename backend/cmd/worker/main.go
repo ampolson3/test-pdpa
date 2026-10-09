@@ -16,6 +16,7 @@ import (
 
 	"github.com/riverqueue/river"
 
+	agreementservice "pdpa-platform/internal/agreement/service"
 	breach "pdpa-platform/internal/breach/service"
 	dsarservice "pdpa-platform/internal/dsar/service"
 	notice "pdpa-platform/internal/notice/service"
@@ -108,6 +109,8 @@ func run() error {
 	river.AddWorker(workers, &notice.DueWorker{Service: noticeSvc})
 	dsarSvc := &dsarservice.Service{Audit: auditservice.New(), Notify: notifySvc, River: inserter} // DSAR-07: SLA reminder
 	river.AddWorker(workers, &dsarservice.ReminderWorker{Service: dsarSvc})
+	agreementSvc := &agreementservice.Service{Audit: auditservice.New(), Notify: notifySvc, River: inserter} // DPA-10: expiry reminder
+	river.AddWorker(workers, &agreementservice.ReminderWorker{Service: agreementSvc})
 	// PLT-16: PDF / Word of published documents (Gotenberg via GOTENBERG_URL, or a local Chromium via CHROMIUM_PATH).
 	river.AddWorker(workers, &docs.Renderer{Service: wiring.Docs(nil, fileStore(store, inserter), inserter, auditservice.New(), render.FromEnv()), Logger: slog.Default()})
 

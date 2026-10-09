@@ -52,3 +52,13 @@ WHERE (sqlc.narg(agreement_type)::text IS NULL OR agreement_type = sqlc.narg(agr
     AND (sqlc.narg(cursor_at)::timestamptz IS NULL OR (created_at, id) < (sqlc.narg(cursor_at), sqlc.narg(cursor_id)::uuid))
 ORDER BY created_at DESC, id DESC
 LIMIT @lim;
+
+-- name: UpdateAgreementSchedule :one
+-- DPA-10: the registry's own start/end dates and renewal settings — the only mutable fields this pass
+-- exposes on an agreement (status transitions belong to DPA-06/07/08/09, not built yet).
+UPDATE agreement.agreements
+SET effective_from = @effective_from, effective_to = @effective_to, auto_renew = @auto_renew,
+    renewal_notice_days = @renewal_notice_days, row_version = row_version + 1,
+    updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE id = @id AND row_version = @row_version
+RETURNING *;

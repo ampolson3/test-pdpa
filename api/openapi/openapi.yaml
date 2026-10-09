@@ -10899,6 +10899,53 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/agreements/{id}/schedule:
+    patch:
+      operationId: agreementSetSchedule
+      tags: [agreement]
+      summary: 'DPA-10: set the registry''s own start/end dates and renewal settings — reschedules the expiry reminder'
+      x-permission: agreement.dpa.update
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgreementScheduleInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/agreements/{id}/clauses:
     get:
       operationId: agreementListClauses
@@ -12639,6 +12686,9 @@ components:
         effective_from:
           type: [string, 'null']
           format: date
+        effective_to:
+          type: [string, 'null']
+          format: date
         auto_renew: {type: boolean}
         renewal_notice_days: {type: integer}
         activity_ids:
@@ -12646,6 +12696,24 @@ components:
           items: {$ref: '#/components/schemas/Uuid'}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    AgreementScheduleInput:
+      type: object
+      required: [renewal_notice_days]
+      properties:
+        effective_from:
+          type: [string, 'null']
+          format: date
+        effective_to:
+          description: DPA-10's own end date — the renewal reminder (agreement.renewal_reminder) is scheduled renewal_notice_days before this
+          type: [string, 'null']
+          format: date
+        auto_renew: {type: boolean, default: false}
+        renewal_notice_days: {type: integer, minimum: 0}
+      example:
+        effective_from: '2026-01-01'
+        effective_to: '2027-01-01'
+        auto_renew: false
+        renewal_notice_days: 60
     AgreementClauseInput:
       type: object
       required: [clause_id]

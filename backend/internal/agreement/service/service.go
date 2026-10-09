@@ -12,12 +12,15 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/docs"
+	"pdpa-platform/internal/platform/notify"
 	riskservice "pdpa-platform/internal/risk/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
@@ -27,8 +30,9 @@ import (
 const EntityType = "agreement"
 
 var (
-	ErrNotFound = errors.New("agreement: not found")
-	ErrInvalid  = errors.New("agreement: invalid")
+	ErrNotFound        = errors.New("agreement: not found")
+	ErrInvalid         = errors.New("agreement: invalid")
+	ErrVersionMismatch = errors.New("agreement: version mismatch")
 )
 
 // Org is what agreement reads from the org module (rule 9): the counterparty and our own legal entity must
@@ -75,6 +79,10 @@ type Service struct {
 	Vendor Vendor
 	Ropa   Ropa
 	Audit  *audit.Service
+	// Notify/River back DPA-10's own renewal reminder (agreement.renewal_reminder) — nil in any wiring
+	// that never calls SetSchedule/needs the worker (mirrors dsarservice.Service's own optional fields).
+	Notify *notify.Service
+	River  *river.Client[pgx.Tx]
 }
 
 func (s *Service) audit(ctx context.Context, action string, id uuid.UUID, before, after any) error {

@@ -39,6 +39,7 @@ type Agreement struct {
 	DocumentID        uuid.UUID
 	Status            string
 	EffectiveFrom     *time.Time
+	EffectiveTo       *time.Time
 	AutoRenew         bool
 	RenewalNoticeDays int
 	ActivityIDs       []uuid.UUID
@@ -266,6 +267,10 @@ func toAgreement(r agreementstore.AgreementAgreement, activityIDs []uuid.UUID) A
 	if r.EffectiveFrom.Valid {
 		t := r.EffectiveFrom.Time
 		a.EffectiveFrom = &t
+	}
+	if r.EffectiveTo.Valid {
+		t := r.EffectiveTo.Time
+		a.EffectiveTo = &t
 	}
 	return a
 }

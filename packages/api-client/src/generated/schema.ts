@@ -3566,6 +3566,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/agreements/{id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** DPA-10: set the registry's own start/end dates and renewal settings — reschedules the expiry reminder */
+        patch: operations["agreementSetSchedule"];
+        trace?: never;
+    };
     "/admin/v1/agreements/{id}/clauses": {
         parameters: {
             query?: never;
@@ -4479,11 +4496,33 @@ export interface components {
             status: "draft" | "in_review" | "approved" | "out_for_signature" | "active" | "expired" | "terminated";
             /** Format: date */
             effective_from?: string | null;
+            /** Format: date */
+            effective_to?: string | null;
             auto_renew: boolean;
             renewal_notice_days: number;
             activity_ids: components["schemas"]["Uuid"][];
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * @example {
+         *       "effective_from": "2026-01-01",
+         *       "effective_to": "2027-01-01",
+         *       "auto_renew": false,
+         *       "renewal_notice_days": 60
+         *     }
+         */
+        AgreementScheduleInput: {
+            /** Format: date */
+            effective_from?: string | null;
+            /**
+             * Format: date
+             * @description DPA-10's own end date — the renewal reminder (agreement.renewal_reminder) is scheduled renewal_notice_days before this
+             */
+            effective_to?: string | null;
+            /** @default false */
+            auto_renew: boolean;
+            renewal_notice_days: number;
         };
         AgreementClauseInput: {
             /** @description A published clause from the clause library (DPA-01) */
@@ -15463,6 +15502,45 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    agreementSetSchedule: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementScheduleInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Agreement"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     agreementListClauses: {

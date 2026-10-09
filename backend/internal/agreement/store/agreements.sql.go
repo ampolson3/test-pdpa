@@ -398,3 +398,63 @@ func (q *Queries) LockAgreementNumbering(ctx context.Context, prefix string) err
 	_, err := q.db.Exec(ctx, lockAgreementNumbering, prefix)
 	return err
 }
+
+const updateAgreementSchedule = `-- name: UpdateAgreementSchedule :one
+UPDATE agreement.agreements
+SET effective_from = $1, effective_to = $2, auto_renew = $3,
+    renewal_notice_days = $4, row_version = row_version + 1,
+    updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE id = $5 AND row_version = $6
+RETURNING id, tenant_id, agreement_type, agreement_no, title, our_role, counterparty_id, vendor_id, template_id, document_id, sharing_direction, is_government, status, effective_from, effective_to, auto_renew, renewal_notice_days, signed_at, terminated_at, termination_reason, created_at, created_by, updated_at, updated_by, row_version
+`
+
+type UpdateAgreementScheduleParams struct {
+	EffectiveFrom     pgtype.Date `db:"effective_from" json:"effective_from"`
+	EffectiveTo       pgtype.Date `db:"effective_to" json:"effective_to"`
+	AutoRenew         bool        `db:"auto_renew" json:"auto_renew"`
+	RenewalNoticeDays int16       `db:"renewal_notice_days" json:"renewal_notice_days"`
+	ID                uuid.UUID   `db:"id" json:"id"`
+	RowVersion        int32       `db:"row_version" json:"row_version"`
+}
+
+// DPA-10: the registry's own start/end dates and renewal settings — the only mutable fields this pass
+// exposes on an agreement (status transitions belong to DPA-06/07/08/09, not built yet).
+func (q *Queries) UpdateAgreementSchedule(ctx context.Context, arg UpdateAgreementScheduleParams) (AgreementAgreement, error) {
+	row := q.db.QueryRow(ctx, updateAgreementSchedule,
+		arg.EffectiveFrom,
+		arg.EffectiveTo,
+		arg.AutoRenew,
+		arg.RenewalNoticeDays,
+		arg.ID,
+		arg.RowVersion,
+	)
+	var i AgreementAgreement
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AgreementType,
+		&i.AgreementNo,
+		&i.Title,
+		&i.OurRole,
+		&i.CounterpartyID,
+		&i.VendorID,
+		&i.TemplateID,
+		&i.DocumentID,
+		&i.SharingDirection,
+		&i.IsGovernment,
+		&i.Status,
+		&i.EffectiveFrom,
+		&i.EffectiveTo,
+		&i.AutoRenew,
+		&i.RenewalNoticeDays,
+		&i.SignedAt,
+		&i.TerminatedAt,
+		&i.TerminationReason,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.RowVersion,
+	)
+	return i, err
+}

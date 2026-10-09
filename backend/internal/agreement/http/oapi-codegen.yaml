@@ -13,3 +13,4 @@ output-options:
     - agreementRemoveClause
     - agreementMissingClauses
     - agreementProcessingSchedule
+    - agreementSetSchedule

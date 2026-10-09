@@ -237,7 +237,7 @@ DPA-01,DPA,Template DPA มาตรฐาน,DPA templates,Must,P2,สร้า
 DPA-02,DPA,สร้างแบบกรอกเองและแบบอัตโนมัติ,Manual & automatic generation,Must,P2,สร้าง,ม.40,LEGAL PROC,L,M,Y,10,5,1.8,2.0,5.2,"DPA-01, VEN-01, ROPA-03",BP-10,docs/modules/DPA.md#dpa-02,สร้างร่าง DPA จากคู่ค้าและกิจกรรมได้ภายใน 10 นาที,done
 DPA-03,DPA,ข้อกำหนดที่ต้องมี,Mandatory clauses,Must,P2,ข้อกำหนด,"ม.40(1)-(3), ม.28-29",LEGAL,S,S,N,3,3,0.7,0,2.1,DPA-02,BP-10,docs/modules/DPA.md#dpa-03,สัญญาที่ขาด clause บังคับส่งอนุมัติไม่ได้,done
 DPA-04,DPA,ภาคผนวกรายละเอียดการประมวลผล,Processing schedule,Must,P2,ข้อกำหนด,ม.40,LEGAL,S,S,N,3,3,0.7,0,2.1,DPA-02,BP-10,docs/modules/DPA.md#dpa-04,ภาคผนวกตรงกับข้อมูล RoPA ของกิจกรรมที่เลือก,done
-DPA-10,DPA,ทะเบียน DPA และแจ้งเตือนหมดอายุ,DPA register & expiry alerts,Must,P2,ติดตาม,ม.40,LEGAL SCHED,S,M,N,3,5,1.0,0,2.8,DPA-02,BP-10,docs/modules/DPA.md#dpa-10,สัญญาใกล้หมดอายุถูกแจ้งเตือนตามเวลาที่ตั้ง,todo
+DPA-10,DPA,ทะเบียน DPA และแจ้งเตือนหมดอายุ,DPA register & expiry alerts,Must,P2,ติดตาม,ม.40,LEGAL SCHED,S,M,N,3,5,1.0,0,2.8,DPA-02,BP-10,docs/modules/DPA.md#dpa-10,สัญญาใกล้หมดอายุถูกแจ้งเตือนตามเวลาที่ตั้ง,done
 DPA-11,DPA,ผูก DPA กับคู่ค้าและกิจกรรม,Link to vendor & RoPA,Must,P2,ติดตาม,ม.40,PROC DPO,S,S,N,3,3,0.7,0,2.1,VEN-01,BP-10,docs/modules/DPA.md#dpa-11,เปิดคู่ค้าแล้วเห็น DPA และกิจกรรมที่เกี่ยวข้อง,done
 DPA-05,DPA,ข้อสัญญาการโอนต่างประเทศ,Cross-border clauses,Should,P3,ข้อกำหนด,ประกาศ สคส. ตามมาตรา 29 พ.ศ. 2566,LEGAL DPO,S,XS,N,3,1,0.5,0,1.4,DPX-06,BP-10,docs/modules/DPA.md#dpa-05,สัญญาที่มีการโอนต่างประเทศมี clause ครบ,todo
 DPA-06,DPA,แก้ไขเอกสารในระบบ,In-app editor,Should,P3,ข้อกำหนด,แนวปฏิบัติตลาด,LEGAL,S,M,N,3,5,1.0,0,2.8,PLT-16,BP-10,docs/modules/DPA.md#dpa-06,ปรับรูปแบบแล้วไฟล์ที่ส่งออกตรงกับที่เห็น,todo

@@ -8,6 +8,7 @@ export type AgreementClause = components["schemas"]["AgreementClause"];
 export type AgreementClauseInput = components["schemas"]["AgreementClauseInput"];
 export type AgreementMissingClause = components["schemas"]["AgreementMissingClause"];
 export type AgreementProcessingSchedule = components["schemas"]["AgreementProcessingSchedule"];
+export type AgreementScheduleInput = components["schemas"]["AgreementScheduleInput"];
 
 const agreementsKey = ["agreement", "agreements"] as const;
 
@@ -123,5 +124,22 @@ export function useProcessingSchedule(client: ApiClient, agreementId: string | u
       if (error) throw error;
       return data;
     },
+  });
+}
+
+/** PATCH /admin/v1/agreements/{id}/schedule — DPA-10: the registry's own start/end dates and renewal
+ * settings; reschedules the expiry reminder. */
+export function useSetAgreementSchedule(client: ApiClient, agreementId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { rowVersion: number; input: AgreementScheduleInput }) => {
+      const { data, error } = await client.PATCH("/admin/v1/agreements/{id}/schedule", {
+        params: { path: { id: agreementId }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...agreementsKey, agreementId] }),
   });
 }

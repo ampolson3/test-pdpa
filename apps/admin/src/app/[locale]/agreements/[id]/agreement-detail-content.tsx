@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
+import { Button } from "@pdpa/ui";
 import {
   createApiClient,
   useAgreement,
@@ -12,7 +13,9 @@ import {
   useRemoveAgreementClause,
   useClauses,
   useProcessingSchedule,
+  useSetAgreementSchedule,
   type ApiClient,
+  type Agreement,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 
@@ -55,7 +58,10 @@ export function AgreementDetailContent({ id }: { id: string }) {
         <div><dt className="text-slate-500">{t("detail.autoRenew")}</dt><dd>{a.auto_renew ? t("detail.yes") : t("detail.no")}</dd></div>
         <div><dt className="text-slate-500">{t("detail.renewalNoticeDays")}</dt><dd>{a.renewal_notice_days}</dd></div>
         {a.effective_from && <div><dt className="text-slate-500">{t("detail.effectiveFrom")}</dt><dd>{a.effective_from}</dd></div>}
+        {a.effective_to && <div><dt className="text-slate-500">{t("detail.effectiveTo")}</dt><dd>{a.effective_to}</dd></div>}
       </dl>
+
+      <RenewalScheduleSection client={client} agreement={a} />
 
       <section className="space-y-2">
         <h2 className="font-semibold">{t("detail.activities")}</h2>
@@ -76,6 +82,80 @@ export function AgreementDetailContent({ id }: { id: string }) {
 
       <Link className="inline-block rounded-md bg-sky-700 px-3 py-1.5 text-white" href={`/documents/${a.document_id}`}>{t("detail.openDocument")}</Link>
     </main>
+  );
+}
+
+const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
+
+function detail(e: unknown): string {
+  return typeof e === "object" && e !== null ? [(e as { title?: string }).title, (e as { detail?: string }).detail].filter(Boolean).join(" — ") : "";
+}
+
+/** DPA-10: the registry's own start/end dates and renewal settings — editing effective_to/renewal_notice_days
+ *  reschedules the single expiry reminder (notifies role LEGAL) server-side. */
+function RenewalScheduleSection({ client, agreement }: { client: ApiClient; agreement: Agreement }) {
+  const t = useTranslations("agreements");
+  const canUpdate = usePermission("agreement.dpa.update");
+  const setSchedule = useSetAgreementSchedule(client, agreement.id);
+  const [editing, setEditing] = useState(false);
+  const [effectiveFrom, setEffectiveFrom] = useState("");
+  const [effectiveTo, setEffectiveTo] = useState("");
+  const [autoRenew, setAutoRenew] = useState(false);
+  const [renewalNoticeDays, setRenewalNoticeDays] = useState(60);
+
+  const startEdit = () => {
+    setSchedule.reset();
+    setEffectiveFrom(agreement.effective_from ?? "");
+    setEffectiveTo(agreement.effective_to ?? "");
+    setAutoRenew(agreement.auto_renew);
+    setRenewalNoticeDays(agreement.renewal_notice_days);
+    setEditing(true);
+  };
+
+  const submit = () => {
+    setSchedule.mutate(
+      {
+        rowVersion: agreement.row_version,
+        input: {
+          effective_from: effectiveFrom || null,
+          effective_to: effectiveTo || null,
+          auto_renew: autoRenew,
+          renewal_notice_days: renewalNoticeDays,
+        },
+      },
+      { onSuccess: () => setEditing(false) },
+    );
+  };
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.renewalSchedule.title")}</h2>
+
+      {!agreement.effective_to && !editing && <p className="text-slate-500">{t("detail.renewalSchedule.noEndDate")}</p>}
+
+      {editing ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block"><span className="block text-slate-600">{t("detail.renewalSchedule.effectiveFrom")}</span>
+            <input type="date" className={INPUT} value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} /></label>
+          <label className="block"><span className="block text-slate-600">{t("detail.renewalSchedule.effectiveTo")}</span>
+            <input type="date" className={INPUT} value={effectiveTo} onChange={(e) => setEffectiveTo(e.target.value)} /></label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={autoRenew} onChange={(e) => setAutoRenew(e.target.checked)} />
+            <span className="text-slate-600">{t("detail.renewalSchedule.autoRenew")}</span>
+          </label>
+          <label className="block"><span className="block text-slate-600">{t("detail.renewalSchedule.renewalNoticeDays")}</span>
+            <input type="number" min={0} className={INPUT} value={renewalNoticeDays}
+              onChange={(e) => setRenewalNoticeDays(Number(e.target.value))} /></label>
+          {setSchedule.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("detail.renewalSchedule.saveError", { detail: detail(setSchedule.error) })}</p>}
+          <div className="flex gap-2 sm:col-span-2">
+            <Button onClick={submit} disabled={setSchedule.isPending}>{t("detail.renewalSchedule.save")}</Button>
+            <Button variant="secondary" onClick={() => setEditing(false)}>{t("detail.renewalSchedule.cancel")}</Button>
+          </div>
+        </div>
+      ) : (
+        canUpdate && <Button variant="secondary" onClick={startEdit}>{t("detail.renewalSchedule.edit")}</Button>
+      )}
+    </section>
   );
 }
 

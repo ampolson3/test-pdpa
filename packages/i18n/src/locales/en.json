@@ -1023,9 +1023,22 @@
       "no": "No",
       "renewalNoticeDays": "Renewal notice (days)",
       "effectiveFrom": "Effective from",
+      "effectiveTo": "Effective to",
       "activities": "Covered RoPA activities",
       "noActivities": "No activities linked yet.",
       "openDocument": "Open document →",
+      "renewalSchedule": {
+        "title": "Registry: start/end dates & renewal",
+        "effectiveFrom": "Effective from",
+        "effectiveTo": "Effective to",
+        "noEndDate": "No end date set — no expiry reminder is scheduled.",
+        "autoRenew": "Auto-renew",
+        "renewalNoticeDays": "Send a reminder this many days before the end date",
+        "edit": "Edit dates",
+        "save": "Save",
+        "cancel": "Cancel",
+        "saveError": "Couldn't save: {detail}"
+      },
       "clauses": {
         "title": "Mandatory clauses",
         "missingTitle": "Missing mandatory clauses — this document cannot be submitted for approval until these are attached",

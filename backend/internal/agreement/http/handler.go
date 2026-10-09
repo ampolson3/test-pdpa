@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
@@ -118,6 +119,41 @@ func (h *Strict) AgreementMissingClauses(ctx context.Context, req AgreementMissi
 	return resp, nil
 }
 
+func (h *Strict) AgreementSetSchedule(ctx context.Context, req AgreementSetScheduleRequestObject) (AgreementSetScheduleResponseObject, error) {
+	rv, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	in := agreementservice.ScheduleInput{RenewalNoticeDays: req.Body.RenewalNoticeDays}
+	if req.Body.AutoRenew != nil {
+		in.AutoRenew = *req.Body.AutoRenew
+	}
+	if req.Body.EffectiveFrom != nil {
+		t := req.Body.EffectiveFrom.Time
+		in.EffectiveFrom = &t
+	}
+	if req.Body.EffectiveTo != nil {
+		t := req.Body.EffectiveTo.Time
+		in.EffectiveTo = &t
+	}
+	a, err := h.svc.SetSchedule(ctx, req.Id, rv, in)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return AgreementSetSchedule200JSONResponse{Body: toAgreementWire(a), Headers: AgreementSetSchedule200ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
+func etag(v int32) *string {
+	s := `"` + strconv.Itoa(int(v)) + `"`
+	return &s
+}
+
+func parseETag(h string) (int32, error) {
+	h = strings.TrimPrefix(strings.TrimSpace(h), "W/")
+	v, err := strconv.ParseInt(strings.Trim(h, `"`), 10, 32)
+	return int32(v), err
+}
+
 func toClauseWire(c agreementservice.Clause) AgreementClause {
 	w := AgreementClause{
 		Id: c.ID, AgreementId: c.AgreementID, ClauseId: c.ClauseID, ClauseCode: c.ClauseCode, ClauseTitle: c.ClauseTitle,
@@ -176,6 +212,10 @@ func toAgreementWire(a agreementservice.Agreement) Agreement {
 		d := openapi_types.Date{Time: *a.EffectiveFrom}
 		w.EffectiveFrom = &d
 	}
+	if a.EffectiveTo != nil {
+		d := openapi_types.Date{Time: *a.EffectiveTo}
+		w.EffectiveTo = &d
+	}
 	return w
 }
 
@@ -206,6 +246,8 @@ func problem(err error) error {
 		return httpx.NotFound()
 	case errors.Is(err, agreementservice.ErrInvalid):
 		return httpx.UnprocessableEntity("agreement.invalid_input", err.Error())
+	case errors.Is(err, agreementservice.ErrVersionMismatch):
+		return httpx.VersionMismatch()
 	}
 	return err
 }
