@@ -10712,6 +10712,79 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/vendors/{id}/intakes:
+    get:
+      operationId: vendorListIntakes
+      tags: [vendor]
+      summary: A vendor's tiering rounds, newest first (VEN-02)
+      x-permission: vendor.vendor.read
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VendorIntake'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: vendorRecordIntake
+      tags: [vendor]
+      summary: Answer the intake questionnaire once — the system computes the tier and the assessment templates it now requires (VEN-02)
+      x-permission: vendor.vendor.update
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorIntakeInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorIntakeResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/agreements:
     get:
       operationId: agreementListAgreements
@@ -12480,6 +12553,36 @@ components:
         offboarded_at: {type: [string, 'null'], format: date-time}
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
+    VendorIntakeInput:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          description: Answers to the published "intake" form's questions (VEN-02) — data_volume, sensitive_data, system_access_level, cross_border_transfer by default
+          type: object
+          additionalProperties: true
+      example:
+        answers: {data_volume: medium, sensitive_data: 'no', system_access_level: read_write, cross_border_transfer: 'no'}
+    VendorIntake:
+      type: object
+      required: [id, vendor_id, form_submission_id, inherent_score, tier_result, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        vendor_id: {$ref: '#/components/schemas/Uuid'}
+        form_submission_id: {$ref: '#/components/schemas/Uuid'}
+        inherent_score: {type: number}
+        tier_result: {$ref: '#/components/schemas/VendorTier'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    VendorIntakeResult:
+      type: object
+      required: [intake, required_assessment_codes]
+      properties:
+        intake: {$ref: '#/components/schemas/VendorIntake'}
+        required_assessment_codes:
+          description: VEN-04's assessment template codes (vendor_pdpa/vendor_security/vendor_transfer) this tier now calls for
+          type: array
+          items: {type: string}
     AgreementType:
       type: string
       description: 'agreement.agreements'' own CHECK constraint — only ''dpa'' is wired to a feature so far (DPA-02); dsa/joint_controller/inbound_dpa are real values for when those modules exist.'

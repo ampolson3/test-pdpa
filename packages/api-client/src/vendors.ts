@@ -5,6 +5,9 @@ export type Vendor = components["schemas"]["Vendor"];
 export type VendorInput = components["schemas"]["VendorInput"];
 export type VendorStatus = components["schemas"]["VendorStatus"];
 export type VendorTier = components["schemas"]["VendorTier"];
+export type VendorIntake = components["schemas"]["VendorIntake"];
+export type VendorIntakeInput = components["schemas"]["VendorIntakeInput"];
+export type VendorIntakeResult = components["schemas"]["VendorIntakeResult"];
 
 const vendorsKey = ["vendor", "vendors"] as const;
 
@@ -55,5 +58,36 @@ export function useSaveVendor(client: ApiClient) {
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: vendorsKey }),
+  });
+}
+
+/** GET /admin/v1/vendors/{id}/intakes (VEN-02) — a vendor's tiering rounds, newest first. */
+export function useVendorIntakes(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, vendorId ?? "", "intakes"],
+    enabled: !!vendorId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/vendors/{id}/intakes", { params: { path: { id: vendorId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/intakes — answer the intake questionnaire once; the system computes the tier. */
+export function useRecordVendorIntake(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: VendorIntakeInput) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/intakes", {
+        params: { path: { id: vendorId } },
+        body: input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId] });
+    },
   });
 }

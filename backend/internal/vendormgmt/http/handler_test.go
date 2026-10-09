@@ -23,6 +23,7 @@ import (
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/validate"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/forms"
 	vendorhttp "pdpa-platform/internal/vendormgmt/http"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
 )
@@ -56,7 +57,10 @@ func TestVendorEndpoints_Contract(t *testing.T) {
 		})
 	})
 	orgSvc := &orgservice.Service{Audit: audit.New()}
-	svc := &vendorservice.Service{Audit: audit.New(), Org: orgSvc}
+	formsSvc := &forms.Service{}
+	formsSvc.Register("intake", forms.Policy{Read: "vendor.vendor.read", Create: "vendor.vendor.approve",
+		Update: "vendor.vendor.approve", Publish: "vendor.vendor.approve", Respond: "vendor.vendor.update"})
+	svc := &vendorservice.Service{Audit: audit.New(), Org: orgSvc, Forms: formsSvc}
 
 	var party orgservice.ExternalParty
 	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
@@ -206,6 +210,34 @@ func TestVendorEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("PATCH", update, &admin, map[string]any{"party_id": uuid.New(), "service_description": "x"}, map[string]string{"If-Match": etagOf(int(created.RowVersion) + 1)}); code != 422 {
 		t.Errorf("update unknown party: %d %s, want 422", code, body)
+	}
+
+	// VEN-02: intake tiering, against the real global "intake" form seeded by migration 00058.
+	intakes := item + "/intakes"
+	if code, body := do("GET", intakes, &reader, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list intakes (none yet): %d %s", code, body)
+	}
+	criticalAnswers := map[string]any{"answers": map[string]any{
+		"data_volume": "very_large", "sensitive_data": "yes", "system_access_level": "admin", "cross_border_transfer": "yes"}}
+	if code, body := do("POST", intakes, &reader, criticalAnswers, nil); code != 403 {
+		t.Errorf("record intake with read only: %d %s, want 403", code, body)
+	}
+	code, body = do("POST", intakes, &admin, criticalAnswers, nil)
+	if code != 201 || !strings.Contains(body, `"tier_result":"critical"`) || !strings.Contains(body, "vendor_pdpa") {
+		t.Fatalf("record intake: %d %s", code, body)
+	}
+	if code, body := do("GET", item, &admin, nil, nil); code != 200 || !strings.Contains(body, `"tier":"critical"`) {
+		t.Errorf("vendor tier after intake: %d %s", code, body)
+	}
+	if code, body := do("GET", intakes, &admin, nil, nil); code != 200 || !strings.Contains(body, `"tier_result":"critical"`) {
+		t.Errorf("list intakes: %d %s", code, body)
+	}
+	incompleteAnswers := map[string]any{"answers": map[string]any{"data_volume": "small"}}
+	if code, body := do("POST", intakes, &admin, incompleteAnswers, nil); code != 422 {
+		t.Errorf("record intake with missing answers: %d %s, want 422", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/vendors/"+uuid.New().String()+"/intakes", &admin, nil, nil); code != 404 {
+		t.Errorf("list intakes for unknown vendor: %d, want 404", code)
 	}
 }
 

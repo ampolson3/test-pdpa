@@ -8,7 +8,7 @@ import (
 
 // Forms builds the form & assessment engine (PLT-06) with the form types whose permissions exist: each
 // type uses the codes of the module that owns it (no permission of its own). Types without an owning
-// module's codes (breach, intake, quiz) are not offered until that module registers them.
+// module's codes (breach, quiz) are not offered until that module registers them.
 func Forms(n *notify.Service, a *audit.Service) *forms.Service {
 	s := &forms.Service{Notify: n, Audit: a}
 	s.Register("assessment", forms.Policy{Read: "assessment.template.read", Create: "assessment.template.create",
@@ -28,5 +28,10 @@ func Forms(n *notify.Service, a *audit.Service) *forms.Service {
 	// dpo module (forms.Service.Record) — dpo.risk.* since a failed item is a risk-register-adjacent finding.
 	s.Register("security", forms.Policy{Read: "dpo.risk.read", Create: "dpo.risk.create",
 		Update: "dpo.risk.update", Publish: "dpo.risk.approve", Respond: "dpo.risk.create"})
+	// Vendor tiering intake (VEN-02): the DPO designs and publishes the questionnaire; PROC/OWNER record a
+	// vendor's one-shot answers through the vendor module (forms.Service.Record), with bands
+	// low/medium/high/critical.
+	s.Register("intake", forms.Policy{Read: "vendor.vendor.read", Create: "vendor.vendor.approve",
+		Update: "vendor.vendor.approve", Publish: "vendor.vendor.approve", Respond: "vendor.vendor.update"})
 	return s
 }

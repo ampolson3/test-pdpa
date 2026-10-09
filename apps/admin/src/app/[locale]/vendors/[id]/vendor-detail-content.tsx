@@ -4,7 +4,15 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
-import { createApiClient, useVendor, useSaveVendor, useExternalParties, useAgreements } from "@pdpa/api-client";
+import {
+  createApiClient,
+  useVendor,
+  useSaveVendor,
+  useExternalParties,
+  useAgreements,
+  useVendorIntakes,
+  useRecordVendorIntake,
+} from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
@@ -12,6 +20,13 @@ const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1
 function detail(e: unknown): string {
   return typeof e === "object" && e !== null ? [(e as { title?: string }).title, (e as { detail?: string }).detail].filter(Boolean).join(" — ") : "";
 }
+
+const TIER_STYLE: Record<string, string> = {
+  low: "bg-emerald-100 text-emerald-800",
+  medium: "bg-amber-100 text-amber-800",
+  high: "bg-orange-100 text-orange-800",
+  critical: "bg-red-100 text-red-800",
+};
 
 const STATUS_STYLE: Record<string, string> = {
   prospect: "bg-slate-100 text-slate-700",
@@ -147,6 +162,107 @@ export function VendorDetailContent({ id }: { id: string }) {
         )}
         <Link className="text-sky-700 underline" href="/agreements">{t("agreementsLink")}</Link>
       </section>
+
+      <IntakePanel client={client} vendorId={v.id} canUpdate={canUpdate} />
     </main>
+  );
+}
+
+const SELECT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
+
+/** VEN-02: answer the intake questionnaire once; the system computes the tier (and which VEN-04
+ *  assessment templates it now requires) rather than leaving that to a human's own reading. */
+function IntakePanel({ client, vendorId, canUpdate }: { client: ReturnType<typeof createApiClient>; vendorId: string; canUpdate: boolean }) {
+  const t = useTranslations("vendors");
+  const intakes = useVendorIntakes(client, vendorId);
+  const record = useRecordVendorIntake(client, vendorId);
+  const [open, setOpen] = useState(false);
+  const [dataVolume, setDataVolume] = useState("small");
+  const [sensitiveData, setSensitiveData] = useState(false);
+  const [systemAccessLevel, setSystemAccessLevel] = useState("none");
+  const [crossBorderTransfer, setCrossBorderTransfer] = useState(false);
+
+  const rows = intakes.data?.data ?? [];
+
+  const submit = () => {
+    record.mutate(
+      {
+        answers: {
+          data_volume: dataVolume,
+          sensitive_data: sensitiveData ? "yes" : "no",
+          system_access_level: systemAccessLevel,
+          cross_border_transfer: crossBorderTransfer ? "yes" : "no",
+        },
+      },
+      { onSuccess: () => setOpen(false) },
+    );
+  };
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.intake.title")}</h2>
+
+      {rows.length === 0 ? <p className="text-slate-500">{t("detail.intake.empty")}</p> : (
+        <div className="space-y-1">
+          <h3 className="text-xs font-medium text-slate-500">{t("detail.intake.history")}</h3>
+          <ul className="divide-y divide-slate-100 text-sm">
+            {rows.map((in_) => (
+              <li key={in_.id} className="flex items-center justify-between gap-2 py-1">
+                <span className={`rounded px-2 py-0.5 text-xs ${TIER_STYLE[in_.tier_result] ?? "bg-slate-100 text-slate-700"}`}>
+                  {t(`tiers.${in_.tier_result}`)}
+                </span>
+                <span className="text-slate-500">{t("detail.intake.historyScore", { score: in_.inherent_score })}</span>
+                <span className="text-slate-500">{t("detail.intake.historyDate", { date: new Date(in_.created_at).toLocaleDateString() })}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {record.isSuccess && (
+        <div className="rounded-md bg-emerald-50 p-2 text-sm text-emerald-800">
+          <p>{t("detail.intake.result", { tier: t(`tiers.${record.data.intake.tier_result}`), score: record.data.intake.inherent_score })}</p>
+          <p>
+            {record.data.required_assessment_codes.length > 0
+              ? t("detail.intake.requiredAssessments", { codes: record.data.required_assessment_codes.join(", ") })
+              : t("detail.intake.requiredAssessmentsNone")}
+          </p>
+        </div>
+      )}
+
+      {canUpdate && (open ? (
+        <div className="space-y-3 border-t border-slate-100 pt-3">
+          <label className="block"><span className="block text-slate-600">{t("detail.intake.dataVolume")}</span>
+            <select className={SELECT} value={dataVolume} onChange={(e) => setDataVolume(e.target.value)}>
+              {(["small", "medium", "large", "very_large"] as const).map((v) => (
+                <option key={v} value={v}>{t(`detail.intake.dataVolumeOptions.${v}`)}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={sensitiveData} onChange={(e) => setSensitiveData(e.target.checked)} />
+            <span className="text-slate-600">{t("detail.intake.sensitiveData")}</span>
+          </label>
+          <label className="block"><span className="block text-slate-600">{t("detail.intake.systemAccessLevel")}</span>
+            <select className={SELECT} value={systemAccessLevel} onChange={(e) => setSystemAccessLevel(e.target.value)}>
+              {(["none", "read_only", "read_write", "admin"] as const).map((v) => (
+                <option key={v} value={v}>{t(`detail.intake.systemAccessLevelOptions.${v}`)}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={crossBorderTransfer} onChange={(e) => setCrossBorderTransfer(e.target.checked)} />
+            <span className="text-slate-600">{t("detail.intake.crossBorderTransfer")}</span>
+          </label>
+          {record.isError && <p className="text-red-700" role="alert">{t("detail.intake.submitError", { detail: detail(record.error) })}</p>}
+          <div className="flex gap-2">
+            <Button onClick={submit} disabled={record.isPending}>{t("detail.intake.submit")}</Button>
+            <Button variant="secondary" onClick={() => setOpen(false)}>{t("form.cancel")}</Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="secondary" onClick={() => setOpen(true)}>{t("detail.intake.newRound")}</Button>
+      ))}
+    </section>
   );
 }

@@ -13,6 +13,7 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/pkg/dbtest"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/forms"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
 )
 
@@ -39,7 +40,10 @@ func setup(t *testing.T, suffix string) env {
 		})
 	})
 	org := &orgservice.Service{Audit: audit.New()}
-	return env{app: app, tenant: tenant, svc: &vendorservice.Service{Audit: audit.New(), Org: org}, org: org}
+	formsSvc := &forms.Service{}
+	formsSvc.Register("intake", forms.Policy{Read: "vendor.vendor.read", Create: "vendor.vendor.approve",
+		Update: "vendor.vendor.approve", Publish: "vendor.vendor.approve", Respond: "vendor.vendor.update"})
+	return env{app: app, tenant: tenant, svc: &vendorservice.Service{Audit: audit.New(), Org: org, Forms: formsSvc}, org: org}
 }
 
 func (e env) in(t *testing.T, fn func(ctx context.Context) error) {
@@ -89,9 +93,9 @@ func TestVendors_CRUDAndValidation(t *testing.T) {
 		bogusParty, bogusOwner := uuid.New(), uuid.New()
 		for name, in := range map[string]vendorservice.Vendor{
 			"no service description": {PartyID: party.ID},
-			"unknown party":           {PartyID: bogusParty, ServiceDescription: "x"},
-			"unknown owner":           {PartyID: party.ID, ServiceDescription: "x", RelationshipOwnerID: &bogusOwner},
-			"bad country":             {PartyID: party.ID, ServiceDescription: "x", ProcessingCountries: []string{"thx"}},
+			"unknown party":          {PartyID: bogusParty, ServiceDescription: "x"},
+			"unknown owner":          {PartyID: party.ID, ServiceDescription: "x", RelationshipOwnerID: &bogusOwner},
+			"bad country":            {PartyID: party.ID, ServiceDescription: "x", ProcessingCountries: []string{"thx"}},
 		} {
 			if _, err := e.svc.SaveVendor(ctx, in, 0); !errors.Is(err, vendorservice.ErrInvalid) {
 				t.Errorf("%s: %v, want ErrInvalid", name, err)

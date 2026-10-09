@@ -3513,6 +3513,24 @@ export interface paths {
         patch: operations["vendorUpdateVendor"];
         trace?: never;
     };
+    "/admin/v1/vendors/{id}/intakes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A vendor's tiering rounds, newest first (VEN-02) */
+        get: operations["vendorListIntakes"];
+        put?: never;
+        /** Answer the intake questionnaire once — the system computes the tier and the assessment templates it now requires (VEN-02) */
+        post: operations["vendorRecordIntake"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/agreements": {
         parameters: {
             query?: never;
@@ -4373,6 +4391,36 @@ export interface components {
             offboarded_at?: string | null;
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * @example {
+         *       "answers": {
+         *         "data_volume": "medium",
+         *         "sensitive_data": "no",
+         *         "system_access_level": "read_write",
+         *         "cross_border_transfer": "no"
+         *       }
+         *     }
+         */
+        VendorIntakeInput: {
+            /** @description Answers to the published "intake" form's questions (VEN-02) — data_volume, sensitive_data, system_access_level, cross_border_transfer by default */
+            answers: {
+                [key: string]: unknown;
+            };
+        };
+        VendorIntake: {
+            id: components["schemas"]["Uuid"];
+            vendor_id: components["schemas"]["Uuid"];
+            form_submission_id: components["schemas"]["Uuid"];
+            inherent_score: number;
+            tier_result: components["schemas"]["VendorTier"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        VendorIntakeResult: {
+            intake: components["schemas"]["VendorIntake"];
+            /** @description VEN-04's assessment template codes (vendor_pdpa/vendor_security/vendor_transfer) this tier now calls for */
+            required_assessment_codes: string[];
         };
         /**
          * @description agreement.agreements' own CHECK constraint — only 'dpa' is wired to a feature so far (DPA-02); dsa/joint_controller/inbound_dpa are real values for when those modules exist.
@@ -15259,6 +15307,70 @@ export interface operations {
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    vendorListIntakes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["VendorIntake"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    vendorRecordIntake: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorIntakeInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorIntakeResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     agreementListAgreements: {

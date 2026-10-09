@@ -18,6 +18,7 @@ import (
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/forms"
 )
 
 var (
@@ -34,6 +35,7 @@ type Org interface {
 type Service struct {
 	Audit *audit.Service
 	Org   Org
+	Forms *forms.Service
 }
 
 func (s *Service) audit(ctx context.Context, action string, id uuid.UUID, before, after any) error {

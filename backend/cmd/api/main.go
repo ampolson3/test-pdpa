@@ -250,6 +250,7 @@ func run() error {
 	consentSvc.RegisterVersioning()
 	ropaSvc.Consent = consentSvc                                                                                                        // ROPA-03: evidence of explicit consent for sensitive-data purposes
 	dpoSvc.Forms = formsSvc                                                                                                             // DPO-09: the security-measures checklist
+	vendorSvc.Forms = formsSvc                                                                                                          // VEN-02: the intake tiering questionnaire ("intake" form type)
 	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc, Audit: auditSvc, PDF: render.FromEnv(), Risk: riskSvc} // DPIA-01/02: screening on the "assessment" form type; DPIA-04: RoPA-sourced description; DPIA-15: PDF/Word report; DPIA-06: risk identification & scoring
 	riskSvc.DpiaTrigger = dpiaSvc                                                                                                       // RRA-03: a high/very_high risk score opens a DPIA round
 	// DPIA-14: comments, attachments and an activity feed (PLT-07) on the assessment, satisfying the "ผู้แก้ไข

@@ -9,3 +9,5 @@ output-options:
     - vendorCreateVendor
     - vendorGetVendor
     - vendorUpdateVendor
+    - vendorListIntakes
+    - vendorRecordIntake

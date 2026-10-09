@@ -174,6 +174,53 @@ newly introduced here).
 
 **Acceptance criteria:** tier ถูกคำนวณตามเกณฑ์และกำหนดแบบประเมินที่ต้องส่ง
 
+**Implementation — done.** `internal/vendormgmt/service/intake.go` (`vendor.vendor.*`, shared with VEN-01 — no
+new permission code) reuses PLT-06 exactly the way the module doc's own backend note calls for ("แบบ intake →
+คำนวณ tier อัตโนมัติ → กำหนดชุดแบบประเมิน"): `platform.form_definitions.form_type` already allowed `'intake'`
+and `internal/wiring/forms.go`'s own comment had named it "reserved but unregistered" since PLT-06 shipped —
+this feature registers it (`vendor.vendor.approve` to design/publish, matching DPO-09's own "the DPO designs
+and publishes, staff record a run" split; `vendor.vendor.update` to respond, matching VEN-01's own actor line
+"PROC DPO"). `vendor.intakes`/`vendor.vendors.tier` were already fully specified in the baseline migrations —
+no new table. Migration 00058 (`docs/decisions.md` Q-33) seeds one global `"intake"`-type form, code
+`vendor_intake`: four questions (`data_volume`/`sensitive_data`/`system_access_level`/`cross_border_transfer`,
+the four factors ม.37(1)/ม.40 and the module doc's own "ประเภทและปริมาณข้อมูล ข้อมูลอ่อนไหว และการโอนต่างประเทศ"
+name directly) scored into bands keyed exactly `low`/`medium`/`high`/`critical` — matching
+`vendor.intakes.tier_result`'s own CHECK constraint, so `forms.Result.Band` lands on `tier_result` with no
+separate mapping step (the same CHECK-matching move DPIA-01's own screening bands used for
+`assess.assessments.status`).
+
+`RecordIntake` is the one-shot path every intake answers through — `forms.Service.Record` (the mechanism
+breach risk assessments and DPO-09's security checklist already use for a form filled in one atomic call, not
+through PLT-06's draft/section-assignment admin flow), resolving the published `vendor_intake` form via a new
+`publishedIntakeVersion` (mirrors DPIA-01's own `screeningVersion`: current *published* version only, a
+tenant's own same-coded override preferred over the global default). The resulting `vendor.intakes` row and
+`vendor.vendors.tier`/`next_assessment_at` update happen in the same call; `RequiredAssessmentCodes(tier,
+crossBorderTransfer)` is a pure function naming VEN-04's own seeded template codes
+(`vendor_pdpa`/`vendor_security`/`vendor_transfer`, migration 00053) a tier now calls for — a tunable business
+default, not a legally-mandated rule (no `docs/decisions.md` entry: changing which tier requires which
+template changes no data model or legally-required behaviour), documented inline: every tier but `low` gets
+`vendor_pdpa`, `high`/`critical` also get `vendor_security`, and `vendor_transfer` is required whenever the
+intake's own `cross_border_transfer` answer was `"yes"` regardless of tier — an otherwise low-risk engagement
+that still moves data abroad still needs that specific check. `reassessmentInterval(tier)` is a second tunable
+default (6/12/18/24 months by tier) feeding `next_assessment_at` — a scheduling convenience, not the legal
+deadline VEN-10's own periodic re-assessment feature (not built) will eventually drive from a real schedule.
+
+API: `GET`/`POST /admin/v1/vendors/{id}/intakes` (list — newest first — and record; no pagination, a vendor's
+own tiering history is short), same shape as every other module's child-table endpoints. UI: a "Risk tiering"
+section on `/vendors/{id}` (VEN-01's own single profile page, per its "include" relationship with this
+feature) — past rounds with a tier badge, an inline intake form (the four questions above), and the computed
+tier + required-template codes shown right after submitting. Tests: unit (the acceptance criterion directly —
+a low-risk answer set lands `low` with no required template, a maximally-risky one lands `critical` with all
+three VEN-04 codes required; `RequiredAssessmentCodes`'s boundary cases per tier/cross-border combination;
+missing required answers refused; unknown vendor refused; two-tenant isolation of both the vendor and its
+intake history — the seeded global form itself stays visible to every tenant by design, the same ORG-07
+master-data pattern), HTTP contract (401/403/404/422/201/200) through the real validator + AuthZ.
+`pnpm --filter @pdpa/admin build`/`tsc` and the `@pdpa/i18n` ICU message tests both verified clean; not
+verified against a real Postgres in this pass (no reachable database in this environment) — `sqlc generate`
+and `oapi-codegen` were run for real and produced the exact store/HTTP code checked in (confirmed byte-identical
+to what was hand-written first), so only the DB-backed test run itself is unverified, the same gap the
+session's own earlier notes on Docker/Keycloak-less local stacks already flag elsewhere.
+
 <a id="ven-04"></a>
 ### VEN-04 คลังแบบประเมินคู่ค้า
 

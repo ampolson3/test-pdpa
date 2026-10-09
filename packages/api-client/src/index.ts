@@ -54,10 +54,15 @@ export {
   useVendors,
   useVendor,
   useSaveVendor,
+  useVendorIntakes,
+  useRecordVendorIntake,
   type Vendor,
   type VendorInput,
   type VendorStatus,
   type VendorTier,
+  type VendorIntake,
+  type VendorIntakeInput,
+  type VendorIntakeResult,
 } from "./vendors";
 export {
   useAgreements,

@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
+	"pdpa-platform/internal/platform/forms"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
 
 	"pdpa-platform/internal/pkg/httpx"
@@ -85,6 +86,32 @@ func (h *Strict) VendorUpdateVendor(ctx context.Context, req VendorUpdateVendorR
 		return nil, problem(err)
 	}
 	return VendorUpdateVendor200JSONResponse{Body: toVendorWire(v), Headers: VendorUpdateVendor200ResponseHeaders{ETag: etag(v.RowVersion)}}, nil
+}
+
+func (h *Strict) VendorListIntakes(ctx context.Context, req VendorListIntakesRequestObject) (VendorListIntakesResponseObject, error) {
+	list, err := h.svc.ListIntakes(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := VendorListIntakes200JSONResponse{Data: make([]VendorIntake, 0, len(list))}
+	for _, in := range list {
+		resp.Data = append(resp.Data, toVendorIntakeWire(in))
+	}
+	return resp, nil
+}
+
+func (h *Strict) VendorRecordIntake(ctx context.Context, req VendorRecordIntakeRequestObject) (VendorRecordIntakeResponseObject, error) {
+	in, required, err := h.svc.RecordIntake(ctx, req.Id, forms.Answers(req.Body.Answers))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return VendorRecordIntake201JSONResponse{Intake: toVendorIntakeWire(in), RequiredAssessmentCodes: required}, nil
+}
+
+func toVendorIntakeWire(in vendorservice.Intake) VendorIntake {
+	return VendorIntake{Id: in.ID, VendorId: in.VendorID, FormSubmissionId: in.FormSubmissionID,
+		InherentScore: float32(in.InherentScore), TierResult: VendorTier(in.TierResult),
+		RowVersion: int(in.RowVersion), CreatedAt: in.CreatedAt.UTC()}
 }
 
 func toVendorInput(b VendorInput) vendorservice.Vendor {
@@ -168,6 +195,8 @@ func problem(err error) error {
 		return httpx.VersionMismatch()
 	case errors.Is(err, vendorservice.ErrInvalid):
 		return httpx.UnprocessableEntity("vendor.invalid_input", err.Error())
+	case errors.Is(err, vendorservice.ErrNoIntakeForm):
+		return httpx.UnprocessableEntity("vendor.no_intake_form", err.Error())
 	}
 	return err
 }

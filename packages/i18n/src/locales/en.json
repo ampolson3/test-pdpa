@@ -947,6 +947,35 @@
         "title": "DPA / DSA agreements",
         "empty": "No agreements linked to this vendor yet.",
         "activities": "Activities"
+      },
+      "intake": {
+        "title": "Risk tiering (intake questionnaire)",
+        "empty": "Not tiered yet — answer the intake questionnaire below.",
+        "newRound": "Answer intake questionnaire",
+        "dataVolume": "Volume of personal data accessed",
+        "dataVolumeOptions": {
+          "small": "Small (< 1,000 records)",
+          "medium": "Medium (1,000–100,000 records)",
+          "large": "Large (100,000–1,000,000 records)",
+          "very_large": "Very large (> 1,000,000 records)"
+        },
+        "sensitiveData": "Accesses sensitive personal data (ม.26)",
+        "systemAccessLevel": "Level of system access",
+        "systemAccessLevelOptions": {
+          "none": "No direct system access",
+          "read_only": "Read-only",
+          "read_write": "Read and write",
+          "admin": "Administrative access"
+        },
+        "crossBorderTransfer": "Involves a cross-border data transfer",
+        "submit": "Compute tier",
+        "submitError": "Couldn't record the intake: {detail}",
+        "result": "Tier: {tier} (score {score})",
+        "requiredAssessments": "Assessment templates now required: {codes}",
+        "requiredAssessmentsNone": "No further assessment template required for this tier.",
+        "history": "Past tiering rounds",
+        "historyScore": "score {score}",
+        "historyDate": "{date}"
       }
     }
   },
