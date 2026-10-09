@@ -208,7 +208,7 @@ RRA-01,RRA,ประเมินความเสี่ยงรายกิจ
 RRA-02,RRA,ตั้งค่า risk matrix,Configurable risk matrix,Must,P2,ประเมิน,แนวปฏิบัติตลาด,DPO,M,M,Y,5,5,1.2,2.0,3.5,PLT-01,,docs/modules/RRA.md#rra-02,เปลี่ยน matrix แล้วคะแนนทุกโมดูลคำนวณตามค่าใหม่,done
 RRA-03,RRA,ส่งต่อทำ DPIA อัตโนมัติ,DPIA trigger,Must,P2,ประเมิน,TDPG 4.0-P,SCHED OWNER,S,XS,N,3,1,0.5,0,1.4,DPIA-01,,docs/modules/RRA.md#rra-03,กิจกรรมเสี่ยงสูงมี DPIA ถูกสร้างอัตโนมัติ,done
 RRA-04,RRA,วิเคราะห์ช่องว่างทางกฎหมายอัตโนมัติ,Automated legal gap analysis,Must,P2,ช่องว่าง,"ม.23, ม.24, ม.26, ม.28-29, ม.39",DPO SCHED,M,M,Y,5,5,1.2,2.0,3.5,"ROPA-03, PNG-01",,docs/modules/RRA.md#rra-04,ช่องว่างทุกประเภทใน rule ถูกตรวจพบในชุดข้อมูลทดสอบ,todo
-RRA-06,RRA,มาตรการควบคุมและความเสี่ยงคงเหลือ,Controls & residual risk,Must,P2,จัดการ,ม.37(1),DPO OWNER,S,S,N,3,3,0.7,0,2.1,RRA-02,,docs/modules/RRA.md#rra-06,ความเสี่ยงคงเหลือลดลงตามมาตรการที่ผูก,todo
+RRA-06,RRA,มาตรการควบคุมและความเสี่ยงคงเหลือ,Controls & residual risk,Must,P2,จัดการ,ม.37(1),DPO OWNER,S,S,N,3,3,0.7,0,2.1,RRA-02,,docs/modules/RRA.md#rra-06,ความเสี่ยงคงเหลือลดลงตามมาตรการที่ผูก,done
 RRA-07,RRA,สร้างงานแก้ไขจากช่องว่าง,Remediation tasks,Must,P2,จัดการ,แนวปฏิบัติตลาด,DPO OWNER,S,S,N,3,3,0.7,0,2.1,PLT-05,,docs/modules/RRA.md#rra-07,ปิดงานแล้วช่องว่างหายไปเมื่อ rule ผ่าน,todo
 RRA-05,RRA,Checklist ตรวจสอบกิจกรรม,Activity checklist,Should,P3,ช่องว่าง,แนวปฏิบัติตลาด,OWNER DPO,S,S,N,3,3,0.7,0,2.1,PLT-06,,docs/modules/RRA.md#rra-05,คำถามและคำตอบถูกเก็บในกิจกรรม,todo
 RRA-08,RRA,ยอมรับความเสี่ยงพร้อมผู้อนุมัติ,Risk acceptance,Should,P3,จัดการ,แนวปฏิบัติตลาด,EXEC DPO,S,S,N,3,3,0.7,0,2.1,PLT-08,,docs/modules/RRA.md#rra-08,การยอมรับหมดอายุและเตือนทบทวนตามวันที่ตั้ง,todo

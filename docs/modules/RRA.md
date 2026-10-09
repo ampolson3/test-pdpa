@@ -327,6 +327,31 @@ page itself), which this delivers; add a push notification once a screen actuall
 
 **Acceptance criteria:** ความเสี่ยงคงเหลือลดลงตามมาตรการที่ผูก
 
+**Implementation — done, no new code (ใช้ร่วม DPIA-07 ตามที่ module doc ระบุไว้).** The module doc's own
+backend note already says this feature reuses DPIA-07, and that's literally true: `internal/risk/service/
+risk_controls.go` (`AddRiskControl`/`ListRiskControls`/`UpdateRiskControlStatus`/`RemoveRiskControl`,
+`recomputeResidual`) was built directly on `risk.Service` — generic across every risk, not DPIA-specific —
+precisely because `risk.risks` is documented as a shared register fed from "DPIA / RoPA / คู่ค้า / เหตุละเมิด /
+audit" sources, not an assessment-only table. DPIA-07's own test suite already proves the acceptance criterion
+with no DPIA assessment involved at all: `manualRisk` in `internal/risk/service/risk_controls_test.go`
+identifies a risk with `SourceType: "manual"` (not through `dpia.Service`'s wrapper), and
+`TestAddRiskControl_RecomputesResidual`/`TestAddRiskControl_FloorsAtOne`/`TestRemoveRiskControl_
+RecomputesResidual` all run against it directly — the exact "link an existing/needed measure to a risk, then
+the residual recomputes" flow this feature's own description and acceptance criterion ask for, independent of
+which module created the risk.
+
+What's deliberately not built: a standalone RRA "หน้าความเสี่ยง" (risk page) outside the DPIA screening
+section — the module doc's own frontend note calls for "ส่วนมาตรการในหน้าความเสี่ยง" (a measures section *on*
+the risk's own page), but no RRA feature yet creates a risk independently of a DPIA round to have such a page
+for: RRA-04 (automated legal gap analysis, the other real source the schema anticipates) and RRA-09 (the
+personal-data risk register, which is where a generic "all risks" list/detail page belongs) are both still
+Should/not-yet-built. Until one of those exists, every real risk in this system is a DPIA-06 one, already
+served by the DPIA screening section's own risk-and-controls panel — building a second, parallel UI for a
+case that cannot occur yet would be exactly the kind of speculative work this codebase avoids elsewhere
+(e.g. ROPA-01's own deferred `discovered_by_finding_id`). Marked done as documentation only (backlog + module
+doc) — no migration, code or test changes needed, the same move ROPA-07 already made for a feature already
+fully covered by a sibling's own implementation.
+
 <a id="rra-07"></a>
 ### RRA-07 สร้างงานแก้ไขจากช่องว่าง
 
