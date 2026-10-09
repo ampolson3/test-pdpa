@@ -248,7 +248,7 @@ DPA-12,DPA,แจ้งเตือนผู้ประมวลผลที่
 DPA-13,DPA,ติดตามการคืน/ทำลายข้อมูลเมื่อสิ้นสุด,Return / deletion tracking,Should,P3,ติดตาม,"ม.37(3), ม.40",VENDOR PROC,S,S,N,3,3,0.7,0,2.1,IAM-04,BP-10,docs/modules/DPA.md#dpa-13,ปิดสัญญาได้เมื่อได้รับใบยืนยัน,todo
 DPA-14,DPA,ตรวจ DPA ที่ได้รับจากลูกค้า,Inbound DPA review,Nice,P4,ผู้ประมวลผล,ม.40,LEGAL,S,S,N,3,3,0.7,0,2.1,PLT-06,BP-10,docs/modules/DPA.md#dpa-14,ผลตรวจระบุ clause ที่ขาดหรือเสี่ยง,todo
 DSA-01,DSA,ตรวจว่าต้องใช้ DSA หรือ DPA,Agreement type check,Must,P2,ตั้งต้น,"ม.27, ม.40",OWNER LEGAL,S,S,N,3,3,0.7,0,2.1,PLT-06,BP-10,docs/modules/DSA.md#dsa-01,ผลแนะนำถูกต้องตามบทบาททุกกรณีทดสอบ,done
-DSA-02,DSA,ข้อมูลคู่สัญญาและบทบาท,Parties & roles,Must,P2,ตั้งต้น,ม.27,LEGAL,S,S,N,3,3,0.7,0,2.1,ORG-06,BP-10,docs/modules/DSA.md#dsa-02,รองรับข้อตกลงที่มีมากกว่าสองฝ่าย,todo
+DSA-02,DSA,ข้อมูลคู่สัญญาและบทบาท,Parties & roles,Must,P2,ตั้งต้น,ม.27,LEGAL,S,S,N,3,3,0.7,0,2.1,ORG-06,BP-10,docs/modules/DSA.md#dsa-02,รองรับข้อตกลงที่มีมากกว่าสองฝ่าย,done
 DSA-03,DSA,Template DSA มาตรฐาน,DSA templates,Must,P2,สร้าง,"ม.27 วรรคสอง, ม.37(2)",LEGAL,S,S,N,3,3,0.7,0,2.1,"DPA-02, T34",BP-10,docs/modules/DSA.md#dsa-03,มี template ครบ 4 แบบ TH/EN,todo
 DSA-04,DSA,สร้างเอกสารอัตโนมัติจาก RoPA,Auto-generate from RoPA,Must,P2,สร้าง,ม.39,LEGAL OWNER,S,S,N,3,3,0.7,0,2.1,DPA-02,BP-10,docs/modules/DSA.md#dsa-04,ข้อตกลงดึงวัตถุประสงค์ ประเภทข้อมูล ฐาน และระยะเวลาจาก RoPA ถูกต้อง,todo
 DSA-05,DSA,ข้อกำหนดที่ต้องมี,Mandatory clauses,Must,P2,ข้อกำหนด,"ม.27, ม.28-29, ม.37(2)",LEGAL,S,XS,N,3,1,0.5,0,1.4,DSA-03,BP-10,docs/modules/DSA.md#dsa-05,ข้อตกลงที่ขาด clause บังคับส่งอนุมัติไม่ได้,todo

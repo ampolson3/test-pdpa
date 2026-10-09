@@ -11111,6 +11111,109 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/agreements/{id}/parties:
+    get:
+      operationId: agreementListParties
+      tags: [agreement]
+      summary: 'DSA-02: every party on this agreement — the counterparty CreateWizard wrote plus any added since'
+      x-permission: agreement.dpa.read
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AgreementParty'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: agreementAddParty
+      tags: [agreement]
+      summary: 'DSA-02: add another party — an external party or one of our own legal entities (joint controller) — so an agreement can carry more than two parties'
+      x-permission: agreement.dpa.update
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgreementPartyInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementParty'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/agreements/{id}/parties/{partyRowId}:
+    delete:
+      operationId: agreementRemoveParty
+      tags: [agreement]
+      summary: 'DSA-02: drop a party from this agreement'
+      x-permission: agreement.dpa.update
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: partyRowId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/agreements/{id}/missing-clauses:
     get:
       operationId: agreementMissingClauses
@@ -12819,6 +12922,33 @@ components:
         clause_version_no: {type: integer}
         is_mandatory: {type: boolean}
         position: {type: integer}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    AgreementPartyInput:
+      type: object
+      required: [party_role]
+      description: 'DSA-02: exactly one of party_id or legal_entity_id is required'
+      properties:
+        party_id: {$ref: '#/components/schemas/Uuid', description: An org.external_parties counterparty}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid', description: One of our own legal entities, named as a party in its own right (the joint-controller case)}
+        party_role:
+          type: string
+          enum: [disclosing, receiving, joint_controller, controller, processor]
+        signatory_name: {type: string}
+        signatory_email: {type: string, format: email}
+    AgreementParty:
+      type: object
+      required: [id, agreement_id, party_role, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        agreement_id: {$ref: '#/components/schemas/Uuid'}
+        party_id: {$ref: '#/components/schemas/Uuid'}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        party_role:
+          type: string
+          enum: [disclosing, receiving, joint_controller, controller, processor]
+        signatory_name: {type: string}
+        signatory_email: {type: string}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
     AgreementMissingClause:

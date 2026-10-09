@@ -3652,6 +3652,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/agreements/{id}/parties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DSA-02: every party on this agreement — the counterparty CreateWizard wrote plus any added since */
+        get: operations["agreementListParties"];
+        put?: never;
+        /** DSA-02: add another party — an external party or one of our own legal entities (joint controller) — so an agreement can carry more than two parties */
+        post: operations["agreementAddParty"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/agreements/{id}/parties/{partyRowId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** DSA-02: drop a party from this agreement */
+        delete: operations["agreementRemoveParty"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/agreements/{id}/missing-clauses": {
         parameters: {
             query?: never;
@@ -4591,6 +4626,30 @@ export interface components {
             clause_version_no?: number;
             is_mandatory: boolean;
             position: number;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @description DSA-02: exactly one of party_id or legal_entity_id is required */
+        AgreementPartyInput: {
+            /** @description An org.external_parties counterparty */
+            party_id?: components["schemas"]["Uuid"];
+            /** @description One of our own legal entities */
+            legal_entity_id?: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            party_role: "disclosing" | "receiving" | "joint_controller" | "controller" | "processor";
+            signatory_name?: string;
+            /** Format: email */
+            signatory_email?: string;
+        };
+        AgreementParty: {
+            id: components["schemas"]["Uuid"];
+            agreement_id: components["schemas"]["Uuid"];
+            party_id?: components["schemas"]["Uuid"];
+            legal_entity_id?: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            party_role: "disclosing" | "receiving" | "joint_controller" | "controller" | "processor";
+            signatory_name?: string;
+            signatory_email?: string;
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
         };
@@ -15741,6 +15800,97 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    agreementListParties: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AgreementParty"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    agreementAddParty: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementPartyInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementParty"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    agreementRemoveParty: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                partyRowId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     agreementMissingClauses: {

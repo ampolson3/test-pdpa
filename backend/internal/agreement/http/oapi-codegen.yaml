@@ -16,3 +16,6 @@ output-options:
     - agreementSetSchedule
     - agreementVendorContractStatus
     - agreementTypeCheck
+    - agreementListParties
+    - agreementAddParty
+    - agreementRemoveParty

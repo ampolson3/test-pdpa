@@ -1059,6 +1059,23 @@
         "retention": "Retention",
         "months": "months",
         "securityMeasures": "Security measures"
+      },
+      "parties": {
+        "title": "Parties",
+        "empty": "No parties yet.",
+        "remove": "Remove",
+        "kindExternal": "External party",
+        "kindOurs": "Our own legal entity (joint controller)",
+        "pick": "Choose...",
+        "add": "Add party",
+        "saveError": "Failed to add party: {detail}",
+        "roles": {
+          "disclosing": "Disclosing party",
+          "receiving": "Receiving party",
+          "joint_controller": "Joint controller",
+          "controller": "Controller",
+          "processor": "Processor"
+        }
       }
     },
     "form": {

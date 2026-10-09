@@ -67,3 +67,15 @@ RETURNING *;
 -- VEN-11: whether a vendor has at least one agreement of a given type on record (any status — even a draft
 -- in progress counts as "has one").
 SELECT count(*)::int FROM agreement.agreements WHERE vendor_id = @vendor_id AND agreement_type = @agreement_type;
+
+-- name: InsertAgreementPartyFull :one
+-- DSA-02: add any party beyond the first counterparty InsertAgreementParty already wrote — an external
+-- party (@party_id) or one of our own legal entities (@legal_entity_id, for a joint-controller arrangement
+-- naming us as one of several controllers), with its own role and optional signatory.
+INSERT INTO agreement.parties (id, tenant_id, agreement_id, party_id, legal_entity_id, party_role, signatory_name, signatory_email, created_by, updated_by)
+VALUES (@id, NULLIF(current_setting('app.tenant_id', true), '')::uuid, @agreement_id, @party_id, @legal_entity_id, @party_role,
+    @signatory_name, @signatory_email, NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
+RETURNING *;
+
+-- name: DeleteAgreementParty :execrows
+DELETE FROM agreement.parties WHERE id = @id AND agreement_id = @agreement_id;

@@ -41,6 +41,23 @@ func (q *Queries) CountAgreementsWithPrefix(ctx context.Context, prefix string) 
 	return column_1, err
 }
 
+const deleteAgreementParty = `-- name: DeleteAgreementParty :execrows
+DELETE FROM agreement.parties WHERE id = $1 AND agreement_id = $2
+`
+
+type DeleteAgreementPartyParams struct {
+	ID          uuid.UUID `db:"id" json:"id"`
+	AgreementID uuid.UUID `db:"agreement_id" json:"agreement_id"`
+}
+
+func (q *Queries) DeleteAgreementParty(ctx context.Context, arg DeleteAgreementPartyParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteAgreementParty, arg.ID, arg.AgreementID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getAgreement = `-- name: GetAgreement :one
 SELECT id, tenant_id, agreement_type, agreement_no, title, our_role, counterparty_id, vendor_id, template_id, document_id, sharing_direction, is_government, status, effective_from, effective_to, auto_renew, renewal_notice_days, signed_at, terminated_at, termination_reason, created_at, created_by, updated_at, updated_by, row_version FROM agreement.agreements WHERE id = $1
 `
@@ -221,6 +238,55 @@ func (q *Queries) InsertAgreementParty(ctx context.Context, arg InsertAgreementP
 		arg.AgreementID,
 		arg.PartyID,
 		arg.PartyRole,
+	)
+	var i AgreementParty
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AgreementID,
+		&i.PartyID,
+		&i.LegalEntityID,
+		&i.PartyRole,
+		&i.SignatoryName,
+		&i.SignatoryEmail,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
+const insertAgreementPartyFull = `-- name: InsertAgreementPartyFull :one
+INSERT INTO agreement.parties (id, tenant_id, agreement_id, party_id, legal_entity_id, party_role, signatory_name, signatory_email, created_by, updated_by)
+VALUES ($1, NULLIF(current_setting('app.tenant_id', true), '')::uuid, $2, $3, $4, $5,
+    $6, $7, NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
+RETURNING id, tenant_id, agreement_id, party_id, legal_entity_id, party_role, signatory_name, signatory_email, created_at, created_by, updated_at, updated_by, row_version
+`
+
+type InsertAgreementPartyFullParams struct {
+	ID             uuid.UUID   `db:"id" json:"id"`
+	AgreementID    uuid.UUID   `db:"agreement_id" json:"agreement_id"`
+	PartyID        pgtype.UUID `db:"party_id" json:"party_id"`
+	LegalEntityID  pgtype.UUID `db:"legal_entity_id" json:"legal_entity_id"`
+	PartyRole      string      `db:"party_role" json:"party_role"`
+	SignatoryName  *string     `db:"signatory_name" json:"signatory_name"`
+	SignatoryEmail *string     `db:"signatory_email" json:"signatory_email"`
+}
+
+// DSA-02: add any party beyond the first counterparty InsertAgreementParty already wrote — an external
+// party (@party_id) or one of our own legal entities (@legal_entity_id, for a joint-controller arrangement
+// naming us as one of several controllers), with its own role and optional signatory.
+func (q *Queries) InsertAgreementPartyFull(ctx context.Context, arg InsertAgreementPartyFullParams) (AgreementParty, error) {
+	row := q.db.QueryRow(ctx, insertAgreementPartyFull,
+		arg.ID,
+		arg.AgreementID,
+		arg.PartyID,
+		arg.LegalEntityID,
+		arg.PartyRole,
+		arg.SignatoryName,
+		arg.SignatoryEmail,
 	)
 	var i AgreementParty
 	err := row.Scan(

@@ -176,6 +176,36 @@ reachable Redis, consistent with every other agreement-module contract test in t
 
 **Acceptance criteria:** รองรับข้อตกลงที่มีมากกว่าสองฝ่าย
 
+**Implementation — done.** `agreement.parties` (migration 00015) was already fully specified — party_id
+(an ORG-06 external party), legal_entity_id (one of our own, for the joint-controller case), party_role,
+signatory — and DPA-02's own `CreateWizard` already wrote exactly one row there (the counterparty), but
+nothing read, added to, or removed from that table afterward: `ListAgreementPartiesForAgreement` existed
+only as a query raw tests called directly. This feature is the CRUD the acceptance criterion needs —
+`internal/agreement/service/parties.go`'s `ListParties`/`AddParty`/`RemoveParty` — no new migration, two new
+sqlc queries (`InsertAgreementPartyFull`, `DeleteAgreementParty`).
+
+`AddParty` takes exactly one of `party_id`/`legal_entity_id` (refused otherwise as `ErrInvalid`), checked
+visible under RLS the same way DPA-02's own counterparty/legal-entity checks already are (rule 1, via the
+existing `Org.GetExternalParty`/`Org.GetLegalEntity`), and a `party_role` from the table's own CHECK set
+(`disclosing`/`receiving`/`joint_controller`/`controller`/`processor`). Unlike DPA-03's clauses (locked to
+`status = "draft"` since they feed a submit-time completeness check), parties carry no such gate — adding or
+removing one never blocks anything else, so every status can still manage its own party list.
+
+API: `GET`/`POST /admin/v1/agreements/{id}/parties`, `DELETE /admin/v1/agreements/{id}/parties/{partyRowId}`
+— on the already-seeded `agreement.dpa.read`/`.update` (same convention every other agreement sub-resource
+endpoint already uses, since `CreateWizard` still only actually creates `agreement_type = "dpa"` rows; a
+real per-type permission split is DSA-04's problem, not this one's). UI: a "Parties" panel on
+`/agreements/{id}`, right above the clause panel — the counterparty from creation plus an add form (pick an
+external party or one of our own legal entities, then a role) and a remove link per row. Tests: unit
+(`parties_test.go` — the acceptance criterion directly: an agreement starts with one party and grows past
+two with both an external party and our own legal entity as joint controller; both-set/neither-set/unknown
+role/unknown party refused; remove then re-remove is `ErrNotFound`; two-tenant isolation, including that
+tenant B can't even resolve tenant A's agreement id), HTTP contract (`handler_test.go` — 200/201/204/403/404/422
+through the real validator + AuthZ). `go build`/`go vet`/`gofmt` clean; `tsc --noEmit`,
+`pnpm --filter @pdpa/admin build` and `pnpm --filter @pdpa/i18n test` all verified clean — DB-backed test
+execution wasn't available in this environment (no reachable Postgres/Redis this pass), so these ran
+compile-only, consistent with every other agreement-module test in this session.
+
 <a id="dsa-03"></a>
 ### DSA-03 Template DSA มาตรฐาน
 

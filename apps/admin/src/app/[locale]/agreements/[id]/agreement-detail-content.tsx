@@ -14,8 +14,14 @@ import {
   useClauses,
   useProcessingSchedule,
   useSetAgreementSchedule,
+  useAgreementParties,
+  useAddAgreementParty,
+  useRemoveAgreementParty,
+  useExternalParties,
+  useLegalEntities,
   type ApiClient,
   type Agreement,
+  type AgreementPartyInput,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 
@@ -75,6 +81,8 @@ export function AgreementDetailContent({ id }: { id: string }) {
           </ul>
         )}
       </section>
+
+      <PartiesPanel client={client} agreementId={id} />
 
       <ClausePanel client={client} agreementId={id} isDraft={a.status === "draft"} />
 
@@ -226,6 +234,84 @@ function ProcessingScheduleSection({ client, agreementId }: { client: ApiClient;
           </div>
         </div>
       ))}
+    </section>
+  );
+}
+
+const PARTY_ROLES = ["disclosing", "receiving", "joint_controller", "controller", "processor"] as const;
+
+/** DSA-02: every party on the agreement — the counterparty CreateWizard wrote plus any added since, each
+ *  either an external party (ORG-06) or one of our own legal entities named as a joint controller. The
+ *  acceptance criterion itself is just this panel existing: an agreement can carry more than two. */
+function PartiesPanel({ client, agreementId }: { client: ApiClient; agreementId: string }) {
+  const t = useTranslations("agreements");
+  const canUpdate = usePermission("agreement.dpa.update");
+  const parties = useAgreementParties(client, agreementId);
+  const externalParties = useExternalParties(client, {});
+  const legalEntities = useLegalEntities(client);
+  const addParty = useAddAgreementParty(client, agreementId);
+  const removeParty = useRemoveAgreementParty(client, agreementId);
+
+  const [partyKind, setPartyKind] = useState<"external" | "ours">("external");
+  const [partyRefId, setPartyRefId] = useState("");
+  const [partyRole, setPartyRole] = useState<AgreementPartyInput["party_role"]>("receiving");
+
+  const externalRows = externalParties.data?.pages.flatMap((p) => p.data) ?? [];
+
+  const submit = () => {
+    if (!partyRefId) return;
+    addParty.mutate(
+      {
+        party_id: partyKind === "external" ? partyRefId : undefined,
+        legal_entity_id: partyKind === "ours" ? partyRefId : undefined,
+        party_role: partyRole,
+      },
+      { onSuccess: () => setPartyRefId("") },
+    );
+  };
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.parties.title")}</h2>
+
+      <ul className="divide-y divide-slate-100 rounded-md border border-slate-200">
+        {(parties.data ?? []).map((p) => (
+          <li key={p.id} className="flex items-center justify-between gap-2 p-2">
+            <div>
+              <p className="font-medium">{t(`detail.parties.roles.${p.party_role}`)}</p>
+              {p.signatory_name && <p className="text-xs text-slate-500">{p.signatory_name}</p>}
+            </div>
+            {canUpdate && (
+              <button type="button" className="text-xs text-red-700 underline" onClick={() => removeParty.mutate(p.id)}>
+                {t("detail.parties.remove")}
+              </button>
+            )}
+          </li>
+        ))}
+        {(parties.data ?? []).length === 0 && <li className="p-2 text-slate-500">{t("detail.parties.empty")}</li>}
+      </ul>
+
+      {canUpdate && (
+        <div className="flex flex-wrap items-center gap-2">
+          <select className="rounded-md border border-slate-300 px-2 py-1" value={partyKind}
+            onChange={(e) => { setPartyKind(e.target.value as "external" | "ours"); setPartyRefId(""); }}>
+            <option value="external">{t("detail.parties.kindExternal")}</option>
+            <option value="ours">{t("detail.parties.kindOurs")}</option>
+          </select>
+          <select className="flex-1 rounded-md border border-slate-300 px-2 py-1" value={partyRefId} onChange={(e) => setPartyRefId(e.target.value)}>
+            <option value="">{t("detail.parties.pick")}</option>
+            {partyKind === "external"
+              ? externalRows.map((p) => <option key={p.id} value={p.id}>{p.name_th}</option>)
+              : (legalEntities.data ?? []).map((le) => <option key={le.id} value={le.id}>{le.name_th}</option>)}
+          </select>
+          <select className="rounded-md border border-slate-300 px-2 py-1" value={partyRole}
+            onChange={(e) => setPartyRole(e.target.value as AgreementPartyInput["party_role"])}>
+            {PARTY_ROLES.map((r) => <option key={r} value={r}>{t(`detail.parties.roles.${r}`)}</option>)}
+          </select>
+          <Button onClick={submit} disabled={!partyRefId || addParty.isPending}>{t("detail.parties.add")}</Button>
+        </div>
+      )}
+      {addParty.isError && <p className="text-red-700" role="alert">{t("detail.parties.saveError", { detail: detail(addParty.error) })}</p>}
     </section>
   );
 }

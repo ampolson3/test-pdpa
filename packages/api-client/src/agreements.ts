@@ -11,6 +11,8 @@ export type AgreementProcessingSchedule = components["schemas"]["AgreementProces
 export type AgreementScheduleInput = components["schemas"]["AgreementScheduleInput"];
 export type VendorContractStatus = components["schemas"]["VendorContractStatus"];
 export type AgreementTypeRecommendation = components["schemas"]["AgreementTypeRecommendation"];
+export type AgreementParty = components["schemas"]["AgreementParty"];
+export type AgreementPartyInput = components["schemas"]["AgreementPartyInput"];
 export type AgreementCounterpartyRole = "processor" | "controller" | "joint_controller";
 
 const agreementsKey = ["agreement", "agreements"] as const;
@@ -113,6 +115,46 @@ export function useRemoveAgreementClause(client: ApiClient, agreementId: string)
       if (error) throw error;
     },
     onSuccess: () => invalidateClauses(qc, agreementId),
+  });
+}
+
+/** GET /admin/v1/agreements/{id}/parties (DSA-02) — every party, the original counterparty plus any added. */
+export function useAgreementParties(client: ApiClient, agreementId: string | undefined) {
+  return useQuery({
+    queryKey: [...agreementsKey, agreementId ?? "", "parties"],
+    enabled: !!agreementId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/agreements/{id}/parties", { params: { path: { id: agreementId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/agreements/{id}/parties — add a party beyond the original counterparty. */
+export function useAddAgreementParty(client: ApiClient, agreementId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: AgreementPartyInput) => {
+      const { data, error } = await client.POST("/admin/v1/agreements/{id}/parties", { params: { path: { id: agreementId } }, body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...agreementsKey, agreementId, "parties"] }),
+  });
+}
+
+/** DELETE /admin/v1/agreements/{id}/parties/{partyRowId}. */
+export function useRemoveAgreementParty(client: ApiClient, agreementId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (partyRowId: string) => {
+      const { error } = await client.DELETE("/admin/v1/agreements/{id}/parties/{partyRowId}", {
+        params: { path: { id: agreementId, partyRowId } },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...agreementsKey, agreementId, "parties"] }),
   });
 }
 

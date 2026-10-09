@@ -72,7 +72,7 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 	docsSvc.RegisterVersioning()
 	svc := &agreementservice.Service{Docs: docsSvc, Org: orgSvc, Vendor: vendorSvc, Ropa: ropaSvc, Audit: audit.New()}
 
-	var legalEntityID, vendorID uuid.UUID
+	var legalEntityID, vendorID, thirdPartyID uuid.UUID
 	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
 		le, err := orgSvc.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ทดสอบ จำกัด", IsController: true}, 0)
 		if err != nil {
@@ -85,6 +85,11 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 		}
 		v, err := vendorSvc.SaveVendor(ctx, vendorservice.Vendor{PartyID: party.ID, ServiceDescription: "ประมวลผล", IsProcessor: true}, 0)
 		vendorID = v.ID
+		if err != nil {
+			return err
+		}
+		third, err := orgSvc.SaveExternalParty(ctx, orgservice.ExternalParty{PartyType: "controller", NameTh: "ผู้ควบคุมอีกราย", CountryCode: "TH"}, 0)
+		thirdPartyID = third.ID
 		return err
 	})
 
@@ -309,6 +314,42 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 	// VEN-11: now that a DPA exists for this vendor, has_dpa reads true.
 	if code, body := do("GET", status, &reader, nil, nil); code != 200 || !strings.Contains(body, `"has_dpa":true`) {
 		t.Errorf("vendor-contract-status after DPA created: %d %s, want has_dpa:true", code, body)
+	}
+
+	// DSA-02: an agreement can carry more than two parties.
+	parties := item + "/parties"
+	if code, body := do("GET", parties, &reader, nil, nil); code != 200 || !strings.Contains(body, `"party_role":"processor"`) {
+		t.Errorf("list parties after create: %d %s, want the counterparty with party_role:processor", code, body)
+	}
+	if code, _ := do("POST", parties, &reader, map[string]any{"party_id": thirdPartyID, "party_role": "receiving"}, nil); code != 403 {
+		t.Errorf("add party with read only: %d, want 403", code)
+	}
+	code, body = do("POST", parties, &admin, map[string]any{"party_id": thirdPartyID, "party_role": "receiving"}, nil)
+	if code != 201 || !strings.Contains(body, `"party_role":"receiving"`) {
+		t.Fatalf("add party: %d %s", code, body)
+	}
+	var addedParty agreementhttp.AgreementParty
+	_ = json.Unmarshal([]byte(body), &addedParty)
+	if code, _ := do("POST", parties, &admin, map[string]any{"legal_entity_id": legalEntityID, "party_role": "joint_controller"}, nil); code != 201 {
+		t.Errorf("add our own legal entity as a joint controller: %d, want 201", code)
+	}
+	if code, _ := do("POST", parties, &admin, map[string]any{"party_role": "receiving"}, nil); code != 422 {
+		t.Errorf("add party with neither party_id nor legal_entity_id: %d, want 422", code)
+	}
+	if code, body := do("GET", parties, &reader, nil, nil); code != 200 || strings.Count(body, `"party_role"`) != 3 {
+		t.Errorf("list parties after adding two more: %d %s, want 3 parties", code, body)
+	}
+	if code, _ := do("DELETE", parties+"/"+addedParty.Id.String(), &reader, nil, nil); code != 403 {
+		t.Errorf("remove party with read only: %d, want 403", code)
+	}
+	if code, _ := do("DELETE", parties+"/"+addedParty.Id.String(), &admin, nil, nil); code != 204 {
+		t.Errorf("remove party: %d, want 204", code)
+	}
+	if code, _ := do("DELETE", parties+"/"+addedParty.Id.String(), &admin, nil, nil); code != 404 {
+		t.Errorf("remove party again: %d, want 404", code)
+	}
+	if code, _ := do("GET", "/admin/v1/agreements/"+uuid.New().String()+"/parties", &admin, nil, nil); code != 404 {
+		t.Errorf("list parties, unknown agreement: %d, want 404", code)
 	}
 
 	// DSA-01: the type-check wizard — correct recommendation per counterparty role, through the real

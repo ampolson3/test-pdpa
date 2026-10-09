@@ -127,6 +127,49 @@ func (h *Strict) AgreementVendorContractStatus(ctx context.Context, req Agreemen
 	return AgreementVendorContractStatus200JSONResponse{VendorId: st.VendorID, IsProcessor: st.IsProcessor, HasDpa: st.HasDPA}, nil
 }
 
+func toPartyWire(p agreementservice.Party) AgreementParty {
+	return AgreementParty{
+		Id: p.ID, AgreementId: p.AgreementID, PartyId: p.PartyID, LegalEntityId: p.LegalEntityID,
+		PartyRole: AgreementPartyPartyRole(p.PartyRole), SignatoryName: p.SignatoryName, SignatoryEmail: p.SignatoryEmail,
+		RowVersion: int(p.RowVersion), CreatedAt: p.CreatedAt.UTC(),
+	}
+}
+
+func (h *Strict) AgreementListParties(ctx context.Context, req AgreementListPartiesRequestObject) (AgreementListPartiesResponseObject, error) {
+	list, err := h.svc.ListParties(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := AgreementListParties200JSONResponse{Data: make([]AgreementParty, 0, len(list))}
+	for _, p := range list {
+		resp.Data = append(resp.Data, toPartyWire(p))
+	}
+	return resp, nil
+}
+
+func (h *Strict) AgreementAddParty(ctx context.Context, req AgreementAddPartyRequestObject) (AgreementAddPartyResponseObject, error) {
+	in := agreementservice.AddPartyInput{
+		PartyID: req.Body.PartyId, LegalEntityID: req.Body.LegalEntityId, PartyRole: string(req.Body.PartyRole),
+		SignatoryName: req.Body.SignatoryName,
+	}
+	if req.Body.SignatoryEmail != nil {
+		e := string(*req.Body.SignatoryEmail)
+		in.SignatoryEmail = &e
+	}
+	p, err := h.svc.AddParty(ctx, req.Id, in)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return AgreementAddParty201JSONResponse(toPartyWire(p)), nil
+}
+
+func (h *Strict) AgreementRemoveParty(ctx context.Context, req AgreementRemovePartyRequestObject) (AgreementRemovePartyResponseObject, error) {
+	if err := h.svc.RemoveParty(ctx, req.Id, req.PartyRowId); err != nil {
+		return nil, problem(err)
+	}
+	return AgreementRemoveParty204Response{}, nil
+}
+
 func (h *Strict) AgreementTypeCheck(ctx context.Context, req AgreementTypeCheckRequestObject) (AgreementTypeCheckResponseObject, error) {
 	rec, err := agreementservice.RecommendAgreementType(string(req.Params.CounterpartyRole))
 	if err != nil {

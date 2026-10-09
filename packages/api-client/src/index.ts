@@ -76,6 +76,9 @@ export {
   useSetAgreementSchedule,
   useVendorContractStatus,
   useAgreementTypeCheck,
+  useAgreementParties,
+  useAddAgreementParty,
+  useRemoveAgreementParty,
   type Agreement,
   type AgreementCreateInput,
   type AgreementType,
@@ -87,6 +90,8 @@ export {
   type VendorContractStatus,
   type AgreementTypeRecommendation,
   type AgreementCounterpartyRole,
+  type AgreementParty,
+  type AgreementPartyInput,
 } from "./agreements";
 export {
   useRiskMatrices,
