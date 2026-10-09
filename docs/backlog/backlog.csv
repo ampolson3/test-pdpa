@@ -252,7 +252,7 @@ DSA-02,DSA,ข้อมูลคู่สัญญาและบทบาท,Pa
 DSA-03,DSA,Template DSA มาตรฐาน,DSA templates,Must,P2,สร้าง,"ม.27 วรรคสอง, ม.37(2)",LEGAL,S,S,N,3,3,0.7,0,2.1,"DPA-02, T34",BP-10,docs/modules/DSA.md#dsa-03,มี template ครบ 4 แบบ TH/EN,done
 DSA-04,DSA,สร้างเอกสารอัตโนมัติจาก RoPA,Auto-generate from RoPA,Must,P2,สร้าง,ม.39,LEGAL OWNER,S,S,N,3,3,0.7,0,2.1,DPA-02,BP-10,docs/modules/DSA.md#dsa-04,ข้อตกลงดึงวัตถุประสงค์ ประเภทข้อมูล ฐาน และระยะเวลาจาก RoPA ถูกต้อง,done
 DSA-05,DSA,ข้อกำหนดที่ต้องมี,Mandatory clauses,Must,P2,ข้อกำหนด,"ม.27, ม.28-29, ม.37(2)",LEGAL,S,XS,N,3,1,0.5,0,1.4,DSA-03,BP-10,docs/modules/DSA.md#dsa-05,ข้อตกลงที่ขาด clause บังคับส่งอนุมัติไม่ได้,done
-DSA-11,DSA,ทะเบียนข้อตกลงและแจ้งเตือนหมดอายุ,Agreement register & expiry alerts,Must,P2,ติดตาม,ม.37(2),LEGAL SCHED,XS,S,N,1,3,0.5,0,1.4,DPA-10,BP-10,docs/modules/DSA.md#dsa-11,ข้อตกลงใกล้หมดอายุถูกแจ้งเตือน,todo
+DSA-11,DSA,ทะเบียนข้อตกลงและแจ้งเตือนหมดอายุ,Agreement register & expiry alerts,Must,P2,ติดตาม,ม.37(2),LEGAL SCHED,XS,S,N,1,3,0.5,0,1.4,DPA-10,BP-10,docs/modules/DSA.md#dsa-11,ข้อตกลงใกล้หมดอายุถูกแจ้งเตือน,done
 DSA-06,DSA,คลังข้อความสัญญา,Clause library,Should,P3,ข้อกำหนด,แนวปฏิบัติตลาด,LEGAL,S,M,N,3,5,1.0,0,2.8,PLT-16,BP-10,docs/modules/DSA.md#dsa-06,แก้ clause แล้วเอกสารใหม่ใช้เวอร์ชันล่าสุด,todo
 DSA-07,DSA,ภาคผนวกประกอบข้อตกลง,Annexes,Should,P3,ข้อกำหนด,แนวปฏิบัติตลาด,LEGAL OWNER,S,S,N,3,3,0.7,0,2.1,"DSA-04, DFG-08",BP-10,docs/modules/DSA.md#dsa-07,ภาคผนวกแนบภาพแผนผังล่าสุดได้,todo
 DSA-08,DSA,ตรวจทานและอนุมัติ,Review & approval,Should,P3,กำกับ,แนวปฏิบัติตลาด,DPO LEGAL,XS,XS,N,1,1,0.2,0,0.7,DPA-07,BP-10,docs/modules/DSA.md#dsa-08,ส่งลงนามได้หลังอนุมัติเท่านั้น,todo

@@ -371,6 +371,26 @@ ran compile-only, consistent with every other agreement-module test this session
 
 **Acceptance criteria:** ข้อตกลงใกล้หมดอายุถูกแจ้งเตือน
 
+**Implementation — done.** The module doc's own backend note says it plainly: "ทะเบียน DSA (ใช้ร่วมกับ
+DPA-10)". DPA-10's own registry/reminder mechanism (`internal/agreement/service/renewal.go`'s
+`SetSchedule`/`scheduleRenewalReminder`/`FireRenewalReminder`/`ReminderWorker`) never branches on
+`agreement_type` — it reads and writes the shared `agreement.agreements` row generically — so the exact same
+single River checkpoint, `PATCH /admin/v1/agreements/{id}/schedule` endpoint, and `/agreements` list page
+(status/dates/type filter, built since DSA-01) already serve "dsa" agreements with zero new backend code or
+migration. The one real gap this feature closed: `RenewalScheduleSection` on the agreement detail page
+(`apps/admin/.../agreements/[id]/agreement-detail-content.tsx`) hardcoded its edit-permission check to
+`agreement.dpa.update`, so a DSA agreement's own registry section would (for a hypothetical role holding only
+`agreement.dsa.update`, not `agreement.dpa.update`) never show its edit button — fixed the same way DSA-05
+fixed `ClausePanel`'s own permission check, reading `agreement.${agreement.agreement_type}.update` instead.
+Tests: `dsa_renewal_test.go`'s `TestFireRenewalReminder_WorksForDsaAgreementsToo` mirrors DPA-10's own
+`TestFireRenewalReminder_NotifiesLegalAndNoopsWhenStale` exactly but on a "dsa" agreement created through
+DSA-04's `CreateWizard` path — proving the acceptance criterion directly: `SetSchedule` leaves a real
+`river_job` row scheduled at the right moment, and `FireRenewalReminder` writes a real `platform.notifications`
+row for role LEGAL, for a "dsa" agreement exactly like it already does for "dpa". `go build`/`go vet`/`gofmt`
+clean; `tsc --noEmit`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` all verified
+clean — no reachable Postgres/Redis this pass, so the Go test ran compile-only, consistent with every other
+agreement-module test this session.
+
 <a id="dsa-06"></a>
 ### DSA-06 คลังข้อความสัญญา
 

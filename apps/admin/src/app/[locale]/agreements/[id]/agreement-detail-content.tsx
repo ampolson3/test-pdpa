@@ -101,10 +101,13 @@ function detail(e: unknown): string {
 }
 
 /** DPA-10: the registry's own start/end dates and renewal settings — editing effective_to/renewal_notice_days
- *  reschedules the single expiry reminder (notifies role LEGAL) server-side. */
+ *  reschedules the single expiry reminder (notifies role LEGAL) server-side.
+ *  DSA-11: the reminder mechanism itself (SetSchedule/FireRenewalReminder) is already agreement_type-agnostic
+ *  server-side ("ใช้ร่วมกับ DPA-10" per the module doc) — the permission check here reads the agreement's own
+ *  agreement_type instead of hardcoding "dpa", so a DSA agreement's registry is editable too. */
 function RenewalScheduleSection({ client, agreement }: { client: ApiClient; agreement: Agreement }) {
   const t = useTranslations("agreements");
-  const canUpdate = usePermission("agreement.dpa.update");
+  const canUpdate = usePermission(`agreement.${agreement.agreement_type}.update`);
   const setSchedule = useSetAgreementSchedule(client, agreement.id);
   const [editing, setEditing] = useState(false);
   const [effectiveFrom, setEffectiveFrom] = useState("");
