@@ -999,6 +999,16 @@
         "empty": "No clauses attached yet.",
         "pick": "Choose a clause from the library...",
         "add": "Attach"
+      },
+      "schedule": {
+        "title": "Processing schedule annex",
+        "empty": "No activities linked yet — add one to populate this annex.",
+        "purposes": "Purposes",
+        "data": "Data categories & subject groups",
+        "sensitive": "sensitive",
+        "retention": "Retention",
+        "months": "months",
+        "securityMeasures": "Security measures"
       }
     },
     "form": {

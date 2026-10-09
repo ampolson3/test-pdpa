@@ -18,6 +18,7 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/docs"
+	riskservice "pdpa-platform/internal/risk/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
 )
@@ -31,10 +32,14 @@ var (
 )
 
 // Org is what agreement reads from the org module (rule 9): the counterparty and our own legal entity must
-// both be visible under the caller's RLS before their ids are ever written (FKs bypass RLS).
+// both be visible under the caller's RLS before their ids are ever written (FKs bypass RLS). GetMaster/
+// ListMaster back DPA-04's own processing-schedule annex (data category / subject type / lawful basis names
+// — the same master-data read DPIA-04's own ActivityDescription already uses).
 type Org interface {
 	GetExternalParty(ctx context.Context, id uuid.UUID) (orgservice.ExternalParty, error)
 	GetLegalEntity(ctx context.Context, id uuid.UUID) (orgservice.LegalEntity, error)
+	GetMaster(ctx context.Context, kind string, id uuid.UUID) (orgservice.MasterItem, error)
+	ListMaster(ctx context.Context, kind string) ([]orgservice.MasterItem, error)
 }
 
 // Vendor is what agreement reads from the vendormgmt module (rule 9) — a DPA always starts from a VEN-01
@@ -46,10 +51,18 @@ type Vendor interface {
 // Ropa is what agreement reads from the ropa module (rule 9) — every linked activity must be the caller's
 // own, visible under RLS, before its id is written to agreement_activities. ListActivityTransfers backs
 // DPA-03's own cross-border-transfer mandatory-clause condition: whether any activity this agreement covers
-// has a real transfer on record (ROPA-08).
+// has a real transfer on record (ROPA-08). ListActivityPurposes/ListActivityData/ListRetentionRules/
+// ListActivityControls/ListControls back DPA-04's own processing-schedule annex (purposes, data, retention,
+// security measures per linked activity — the same exported methods ROPA-03/08/09's own completeness checks
+// and DPIA-04's own ActivityDescription already call).
 type Ropa interface {
 	GetActivity(ctx context.Context, id uuid.UUID) (ropaservice.Activity, error)
 	ListActivityTransfers(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityTransfer, error)
+	ListActivityPurposes(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityPurpose, error)
+	ListActivityData(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityData, error)
+	ListRetentionRules(ctx context.Context, activityID uuid.UUID) ([]ropaservice.RetentionRule, error)
+	ListActivityControls(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityControl, error)
+	ListControls(ctx context.Context) ([]riskservice.Control, error)
 }
 
 // Service runs the agreement module for the tenant of the transaction in ctx. Docs is a direct concrete

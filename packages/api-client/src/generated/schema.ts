@@ -3600,6 +3600,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/agreements/{id}/processing-schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPA-04: the ม.40 processing-schedule annex, composed live from every RoPA activity this agreement covers */
+        get: operations["agreementProcessingSchedule"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/risk/matrices": {
         parameters: {
             query?: never;
@@ -4443,6 +4460,41 @@ export interface components {
         AgreementMissingClause: {
             clause_code: string;
             legal_ref: string;
+        };
+        /** @description DPA-04: the ม.40 processing-schedule annex — data categories, data subject groups, purposes, retention and security measures per linked RoPA activity, composed live on every read, never persisted (same reasoning DPIA-04's own live description already used). */
+        AgreementProcessingSchedule: {
+            activities: {
+                activity_id: components["schemas"]["Uuid"];
+                activity_code: string;
+                activity_name: string;
+                purposes: {
+                    text: string;
+                    lawful_basis_code: string;
+                    lawful_basis_name_th: string;
+                    lawful_basis_name_en?: string;
+                }[];
+                data: {
+                    category_name_th: string;
+                    category_name_en?: string;
+                    subject_type_name_th: string;
+                    subject_type_name_en?: string;
+                    is_sensitive: boolean;
+                }[];
+                retention: {
+                    category_name_th?: string;
+                    category_name_en?: string;
+                    retention_months?: number | null;
+                    retention_basis: string;
+                    trigger_event: string;
+                    disposal_method: string;
+                }[];
+                security_measures: {
+                    code: string;
+                    name: string;
+                    category: string;
+                    description?: string;
+                }[];
+            }[];
         };
         /**
          * @description risk.activity_scores.level's own CHECK constraint — the only four values any matrix may ever classify a score into
@@ -15416,6 +15468,34 @@ export interface operations {
                     "application/json": {
                         data: components["schemas"]["AgreementMissingClause"][];
                     };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    agreementProcessingSchedule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementProcessingSchedule"];
                 };
             };
             401: components["responses"]["Unauthorized"];

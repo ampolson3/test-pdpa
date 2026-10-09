@@ -7,6 +7,7 @@ export type AgreementType = components["schemas"]["AgreementType"];
 export type AgreementClause = components["schemas"]["AgreementClause"];
 export type AgreementClauseInput = components["schemas"]["AgreementClauseInput"];
 export type AgreementMissingClause = components["schemas"]["AgreementMissingClause"];
+export type AgreementProcessingSchedule = components["schemas"]["AgreementProcessingSchedule"];
 
 const agreementsKey = ["agreement", "agreements"] as const;
 
@@ -108,5 +109,19 @@ export function useRemoveAgreementClause(client: ApiClient, agreementId: string)
       if (error) throw error;
     },
     onSuccess: () => invalidateClauses(qc, agreementId),
+  });
+}
+
+/** GET /admin/v1/agreements/{id}/processing-schedule — DPA-04's own ม.40 annex, composed live from every
+ * RoPA activity the agreement covers. */
+export function useProcessingSchedule(client: ApiClient, agreementId: string | undefined) {
+  return useQuery({
+    queryKey: [...agreementsKey, agreementId ?? "", "processing-schedule"],
+    enabled: !!agreementId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/agreements/{id}/processing-schedule", { params: { path: { id: agreementId! } } });
+      if (error) throw error;
+      return data;
+    },
   });
 }

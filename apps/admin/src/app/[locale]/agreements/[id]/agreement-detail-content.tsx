@@ -11,6 +11,7 @@ import {
   useAddAgreementClause,
   useRemoveAgreementClause,
   useClauses,
+  useProcessingSchedule,
   type ApiClient,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
@@ -71,8 +72,81 @@ export function AgreementDetailContent({ id }: { id: string }) {
 
       <ClausePanel client={client} agreementId={id} isDraft={a.status === "draft"} />
 
+      <ProcessingScheduleSection client={client} agreementId={id} />
+
       <Link className="inline-block rounded-md bg-sky-700 px-3 py-1.5 text-white" href={`/documents/${a.document_id}`}>{t("detail.openDocument")}</Link>
     </main>
+  );
+}
+
+/** DPA-04: the ม.40 processing-schedule annex, composed live from every RoPA activity the agreement
+ *  covers — read-only, nothing here is ever saved (it always matches the activity's current RoPA data). */
+function ProcessingScheduleSection({ client, agreementId }: { client: ApiClient; agreementId: string }) {
+  const t = useTranslations("agreements");
+  const schedule = useProcessingSchedule(client, agreementId);
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.schedule.title")}</h2>
+      {schedule.isPending && <p className="text-slate-500">{t("loading")}</p>}
+      {schedule.data && schedule.data.activities.length === 0 && (
+        <p className="text-slate-500">{t("detail.schedule.empty")}</p>
+      )}
+      {(schedule.data?.activities ?? []).map((sa) => (
+        <div key={sa.activity_id} className="space-y-2 rounded-md border border-slate-100 p-3">
+          <p className="font-medium">
+            {sa.activity_name} <span className="text-xs text-slate-500">({sa.activity_code})</span>
+          </p>
+
+          <div>
+            <p className="text-xs font-medium text-slate-500">{t("detail.schedule.purposes")}</p>
+            <ul className="list-inside list-disc text-sm">
+              {sa.purposes.map((p, i) => (
+                <li key={i}>
+                  {p.text} — {p.lawful_basis_name_th || p.lawful_basis_code}
+                </li>
+              ))}
+              {sa.purposes.length === 0 && <li className="list-none text-slate-400">—</li>}
+            </ul>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium text-slate-500">{t("detail.schedule.data")}</p>
+            <ul className="list-inside list-disc text-sm">
+              {sa.data.map((d, i) => (
+                <li key={i}>
+                  {d.category_name_th} / {d.subject_type_name_th}
+                  {d.is_sensitive ? ` (${t("detail.schedule.sensitive")})` : ""}
+                </li>
+              ))}
+              {sa.data.length === 0 && <li className="list-none text-slate-400">—</li>}
+            </ul>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium text-slate-500">{t("detail.schedule.retention")}</p>
+            <ul className="list-inside list-disc text-sm">
+              {sa.retention.map((r, i) => (
+                <li key={i}>
+                  {r.category_name_th ?? "—"}: {r.retention_months ?? "—"} {t("detail.schedule.months")} ({r.retention_basis}, {r.disposal_method})
+                </li>
+              ))}
+              {sa.retention.length === 0 && <li className="list-none text-slate-400">—</li>}
+            </ul>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium text-slate-500">{t("detail.schedule.securityMeasures")}</p>
+            <ul className="list-inside list-disc text-sm">
+              {sa.security_measures.map((m, i) => (
+                <li key={i}>{m.name}</li>
+              ))}
+              {sa.security_measures.length === 0 && <li className="list-none text-slate-400">—</li>}
+            </ul>
+          </div>
+        </div>
+      ))}
+    </section>
   );
 }
 

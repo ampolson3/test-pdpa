@@ -24,6 +24,7 @@ import (
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/validate"
 	audit "pdpa-platform/internal/platform/audit/service"
+	riskservice "pdpa-platform/internal/risk/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
 	"pdpa-platform/internal/wiring"
@@ -64,7 +65,7 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 	})
 	orgSvc := &orgservice.Service{Audit: audit.New()}
 	vendorSvc := &vendorservice.Service{Audit: audit.New(), Org: orgSvc}
-	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc}
+	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: &riskservice.Service{Audit: audit.New()}}
 	versioningSvc := wiring.Versioning(nil, audit.New())
 	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
 	docsSvc.RegisterVersioning()
@@ -258,5 +259,13 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", item+"/clauses", &reader, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
 		t.Errorf("list clauses after remove: %d %s", code, body)
+	}
+
+	// DPA-04: the processing-schedule annex — empty here since newAgreement linked no activities.
+	if code, body := do("GET", item+"/processing-schedule", &reader, nil, nil); code != 200 || !strings.Contains(body, `"activities":[]`) {
+		t.Errorf("processing-schedule: %d %s, want an empty activities list", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/agreements/"+uuid.New().String()+"/processing-schedule", &admin, nil, nil); code != 404 {
+		t.Errorf("processing-schedule unknown agreement: %d, want 404", code)
 	}
 }

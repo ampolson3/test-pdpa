@@ -10966,6 +10966,35 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/agreements/{id}/processing-schedule:
+    get:
+      operationId: agreementProcessingSchedule
+      tags: [agreement]
+      summary: 'DPA-04: the ม.40 processing-schedule annex, composed live from every RoPA activity this agreement covers'
+      x-permission: agreement.dpa.read
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementProcessingSchedule'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/risk/matrices:
     get:
       operationId: riskListMatrices
@@ -12545,6 +12574,63 @@ components:
       properties:
         clause_code: {type: string}
         legal_ref: {type: string}
+    AgreementProcessingSchedule:
+      type: object
+      description: 'DPA-04: the ม.40 processing-schedule annex — data categories, data subject groups, purposes, retention and security measures per linked RoPA activity, composed live on every read, never persisted (same reasoning DPIA-04''s own live description already used).'
+      required: [activities]
+      properties:
+        activities:
+          type: array
+          items:
+            type: object
+            required: [activity_id, activity_code, activity_name, purposes, data, retention, security_measures]
+            properties:
+              activity_id: {$ref: '#/components/schemas/Uuid'}
+              activity_code: {type: string}
+              activity_name: {type: string}
+              purposes:
+                type: array
+                items:
+                  type: object
+                  required: [text, lawful_basis_code, lawful_basis_name_th]
+                  properties:
+                    text: {type: string}
+                    lawful_basis_code: {type: string}
+                    lawful_basis_name_th: {type: string}
+                    lawful_basis_name_en: {type: string}
+              data:
+                type: array
+                items:
+                  type: object
+                  required: [category_name_th, subject_type_name_th, is_sensitive]
+                  properties:
+                    category_name_th: {type: string}
+                    category_name_en: {type: string}
+                    subject_type_name_th: {type: string}
+                    subject_type_name_en: {type: string}
+                    is_sensitive: {type: boolean}
+              retention:
+                type: array
+                items:
+                  type: object
+                  required: [retention_basis, trigger_event, disposal_method]
+                  properties:
+                    category_name_th: {type: string}
+                    category_name_en: {type: string}
+                    retention_months: {type: [integer, 'null']}
+                    retention_basis: {type: string}
+                    trigger_event: {type: string}
+                    disposal_method: {type: string}
+              security_measures:
+                type: array
+                items:
+                  type: object
+                  required: [code, name, category]
+                  properties:
+                    code: {type: string}
+                    name: {type: string}
+                    category: {type: string}
+                    description: {type: string}
     RiskLevel:
       type: string
       description: risk.activity_scores.level's own CHECK constraint — the only four values any matrix may ever classify a score into

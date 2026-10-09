@@ -16,6 +16,7 @@ import (
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/docs"
 	"pdpa-platform/internal/platform/versioning"
+	riskservice "pdpa-platform/internal/risk/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
 	"pdpa-platform/internal/wiring"
@@ -48,6 +49,8 @@ func setup(t *testing.T, suffix string) env {
 			for _, q := range []string{
 				`DELETE FROM agreement.clauses`, `DELETE FROM agreement.agreement_activities`, `DELETE FROM agreement.parties`,
 				`DELETE FROM agreement.agreements`, `DELETE FROM ropa.activity_transfers`,
+				`DELETE FROM ropa.activity_controls`, `DELETE FROM ropa.retention_rules`,
+				`DELETE FROM ropa.activity_data`, `DELETE FROM ropa.activity_purposes`,
 				`DELETE FROM platform.approvals`, `DELETE FROM platform.record_versions`,
 				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM vendor.vendors`, `DELETE FROM org.org_units`,
@@ -61,7 +64,7 @@ func setup(t *testing.T, suffix string) env {
 	})
 	orgSvc := &orgservice.Service{Audit: audit.New()}
 	vendorSvc := &vendorservice.Service{Audit: audit.New(), Org: orgSvc}
-	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc}
+	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: &riskservice.Service{Audit: audit.New()}}
 	versioningSvc := wiring.Versioning(nil, audit.New())
 	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
 	docsSvc.RegisterVersioning()

@@ -67,12 +67,14 @@ export {
   useMissingClauses,
   useAddAgreementClause,
   useRemoveAgreementClause,
+  useProcessingSchedule,
   type Agreement,
   type AgreementCreateInput,
   type AgreementType,
   type AgreementClause,
   type AgreementClauseInput,
   type AgreementMissingClause,
+  type AgreementProcessingSchedule,
 } from "./agreements";
 export {
   useRiskMatrices,

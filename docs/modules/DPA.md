@@ -309,6 +309,34 @@ code; two-tenant isolation of both the link and the missing-clause read), HTTP c
 
 **Acceptance criteria:** ภาคผนวกตรงกับข้อมูล RoPA ของกิจกรรมที่เลือก
 
+**Implementation — done.** `internal/agreement/service/schedule.go`'s `ProcessingSchedule` composes the
+annex — the module doc's own topic list (data categories, data subject groups, purposes, retention periods
+and security measures) per RoPA activity this agreement covers — computed live on every call, never
+persisted (the same reasoning DPIA-04's own `ActivityDescription` already used: there is nothing to go stale,
+so "ภาคผนวกตรงกับข้อมูล RoPA" needs no separate sync step). `agreement.annexes` already has an
+`annex_type = 'processing_schedule'` CHECK value and a `content` jsonb column for exactly this, but nothing
+writes to it here — a live read satisfies the literal acceptance criterion without inventing a freeze/attach
+step no screen has asked for yet (the same "leave the column for the sibling feature that needs it" deferral
+this codebase uses throughout); a later feature that needs a frozen copy (e.g. for DOCX export) can add that
+without touching this read path.
+
+`agreement.Service`'s `Org`/`Ropa` interfaces (rule 9) both grew the exact methods DPIA-04's own description
+composer already calls — `Org.GetMaster`/`ListMaster` (data category / subject type / lawful basis names)
+and `Ropa.ListActivityPurposes`/`ListActivityData`/`ListRetentionRules`/`ListActivityControls`/`ListControls`
+(purposes, data, retention, and — DPA-04's own addition beyond DPIA-04's scope — ROPA-09's security-measure
+links, resolved to catalog code/name/category through `Ropa.ListControls`, the same thin pass-through to
+`risk/service` ROPA-09 already built). No new migration, permission or endpoint beyond the one read.
+
+API: `GET /admin/v1/agreements/{id}/processing-schedule` (`agreement.dpa.read`, no ETag — nothing here is
+ever written back). UI: a read-only "Processing schedule annex" section on `/agreements/{id}`, below the
+clause panel (DPA-03) — one block per linked activity with purposes/data/retention/security-measures lists,
+an empty-state message when the agreement has no linked activities yet. Tests: unit (the acceptance criterion
+directly — the schedule's purposes/data/retention/security-measures for a linked activity match exactly what
+was written to that activity's own RoPA rows, resolved through the same master-data/catalog names; an
+agreement with no linked activities returns an empty list, not an error; two-tenant isolation), HTTP contract
+(200 with an empty list, 404 for an unknown agreement) through the real validator + AuthZ. Full backend test
+suite and `pnpm --filter @pdpa/admin build` both verified clean.
+
 <a id="dpa-10"></a>
 ### DPA-10 ทะเบียน DPA และแจ้งเตือนหมดอายุ
 
