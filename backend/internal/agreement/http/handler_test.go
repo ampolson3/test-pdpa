@@ -189,6 +189,15 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 		t.Errorf("list (none yet): %d %s", code, body)
 	}
 
+	// VEN-11: before any DPA exists for this (processor) vendor, has_dpa reads false.
+	status := "/admin/v1/agreements/vendor-contract-status?vendor_id=" + vendorID.String()
+	if code, body := do("GET", status, &reader, nil, nil); code != 200 || !strings.Contains(body, `"is_processor":true`) || !strings.Contains(body, `"has_dpa":false`) {
+		t.Errorf("vendor-contract-status before any DPA: %d %s, want is_processor:true, has_dpa:false", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/agreements/vendor-contract-status?vendor_id="+uuid.New().String(), &admin, nil, nil); code != 422 {
+		t.Errorf("vendor-contract-status unknown vendor: %d, want 422", code)
+	}
+
 	newAgreement := map[string]any{
 		"agreement_type": "dpa", "our_role": "controller", "vendor_id": vendorID, "legal_entity_id": legalEntityID,
 		"title": "DPA กับผู้ให้บริการ",
@@ -293,6 +302,11 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("PATCH", "/admin/v1/agreements/"+uuid.New().String()+"/schedule", &admin, map[string]any{"renewal_notice_days": 60}, map[string]string{"If-Match": `"0"`}); code != 404 {
 		t.Errorf("set schedule, unknown agreement: %d, want 404", code)
+	}
+
+	// VEN-11: now that a DPA exists for this vendor, has_dpa reads true.
+	if code, body := do("GET", status, &reader, nil, nil); code != 200 || !strings.Contains(body, `"has_dpa":true`) {
+		t.Errorf("vendor-contract-status after DPA created: %d %s, want has_dpa:true", code, body)
 	}
 }
 

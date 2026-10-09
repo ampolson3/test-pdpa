@@ -12,6 +12,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countAgreementsForVendorByType = `-- name: CountAgreementsForVendorByType :one
+SELECT count(*)::int FROM agreement.agreements WHERE vendor_id = $1 AND agreement_type = $2
+`
+
+type CountAgreementsForVendorByTypeParams struct {
+	VendorID      pgtype.UUID `db:"vendor_id" json:"vendor_id"`
+	AgreementType string      `db:"agreement_type" json:"agreement_type"`
+}
+
+// VEN-11: whether a vendor has at least one agreement of a given type on record (any status — even a draft
+// in progress counts as "has one").
+func (q *Queries) CountAgreementsForVendorByType(ctx context.Context, arg CountAgreementsForVendorByTypeParams) (int32, error) {
+	row := q.db.QueryRow(ctx, countAgreementsForVendorByType, arg.VendorID, arg.AgreementType)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const countAgreementsWithPrefix = `-- name: CountAgreementsWithPrefix :one
 SELECT count(*)::int FROM agreement.agreements WHERE agreement_no LIKE $1::text || '%'
 `

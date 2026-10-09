@@ -9,6 +9,7 @@ export type AgreementClauseInput = components["schemas"]["AgreementClauseInput"]
 export type AgreementMissingClause = components["schemas"]["AgreementMissingClause"];
 export type AgreementProcessingSchedule = components["schemas"]["AgreementProcessingSchedule"];
 export type AgreementScheduleInput = components["schemas"]["AgreementScheduleInput"];
+export type VendorContractStatus = components["schemas"]["VendorContractStatus"];
 
 const agreementsKey = ["agreement", "agreements"] as const;
 
@@ -141,5 +142,21 @@ export function useSetAgreementSchedule(client: ApiClient, agreementId: string) 
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [...agreementsKey, agreementId] }),
+  });
+}
+
+/** GET /admin/v1/agreements/vendor-contract-status — VEN-11: flags a processor vendor with no DPA on
+ * record, computed live from the agreement registry (never persisted, so it can't go stale). */
+export function useVendorContractStatus(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...agreementsKey, "vendor-contract-status", vendorId ?? ""],
+    enabled: !!vendorId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/agreements/vendor-contract-status", {
+        params: { query: { vendor_id: vendorId! } },
+      });
+      if (error) throw error;
+      return data;
+    },
   });
 }

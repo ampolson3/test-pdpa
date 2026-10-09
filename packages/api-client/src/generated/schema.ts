@@ -3583,6 +3583,23 @@ export interface paths {
         patch: operations["agreementSetSchedule"];
         trace?: never;
     };
+    "/admin/v1/agreements/vendor-contract-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** VEN-11: whether a vendor who is a processor has at least one DPA on record */
+        get: operations["agreementVendorContractStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/agreements/{id}/clauses": {
         parameters: {
             query?: never;
@@ -4523,6 +4540,12 @@ export interface components {
             /** @default false */
             auto_renew: boolean;
             renewal_notice_days: number;
+        };
+        VendorContractStatus: {
+            vendor_id: components["schemas"]["Uuid"];
+            is_processor: boolean;
+            /** @description Whether this vendor has at least one DPA (any status) on record */
+            has_dpa: boolean;
         };
         AgreementClauseInput: {
             /** @description A published clause from the clause library (DPA-01) */
@@ -15541,6 +15564,34 @@ export interface operations {
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    agreementVendorContractStatus: {
+        parameters: {
+            query: {
+                vendor_id: components["schemas"]["Uuid"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorContractStatus"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     agreementListClauses: {

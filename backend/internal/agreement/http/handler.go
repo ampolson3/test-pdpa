@@ -119,6 +119,14 @@ func (h *Strict) AgreementMissingClauses(ctx context.Context, req AgreementMissi
 	return resp, nil
 }
 
+func (h *Strict) AgreementVendorContractStatus(ctx context.Context, req AgreementVendorContractStatusRequestObject) (AgreementVendorContractStatusResponseObject, error) {
+	st, err := h.svc.VendorContractStatus(ctx, req.Params.VendorId)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return AgreementVendorContractStatus200JSONResponse{VendorId: st.VendorID, IsProcessor: st.IsProcessor, HasDpa: st.HasDPA}, nil
+}
+
 func (h *Strict) AgreementSetSchedule(ctx context.Context, req AgreementSetScheduleRequestObject) (AgreementSetScheduleResponseObject, error) {
 	rv, err := parseETag(req.Params.IfMatch)
 	if err != nil {

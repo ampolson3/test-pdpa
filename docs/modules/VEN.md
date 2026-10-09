@@ -347,6 +347,36 @@ proved) — both run against the real seeded migration on a real Postgres. Migra
 
 **Acceptance criteria:** คู่ค้าที่เป็นผู้ประมวลผลแต่ไม่มี DPA ถูกแจ้งเตือน
 
+**Implementation — done.** Scoped to exactly the literal acceptance criterion (a processor vendor without a
+DPA is flagged), read against the module doc's own frontend note — "แท็บความเชื่อมโยงของคู่ค้า" names the
+vendor's *own* (singular) linkage tab, not a cross-vendor monitoring list — so this is a single-vendor check
+callable from one vendor's detail page, not a new paginated "vendors without DPA" list endpoint.
+
+`internal/agreement/service/vendor_status.go` (new): `VendorContractStatus(ctx, vendorID)` — `agreement`
+already imports `vendormgmt` (its `Vendor` interface's `GetVendor`, used since DPA-10), so per rule 9 this
+cross-cutting check (vendor.is_processor + agreement.agreements existence) lives on the `agreement` side of
+that one-way dependency, not inside `vendormgmt` (which must never import `agreement` back). A new sqlc
+query, `CountAgreementsForVendorByType` (`backend/db/queries/agreement/agreements.sql`, no migration — both
+tables and their `vendor_id`/`agreement_type`/`is_processor` columns already existed), is a live `count(*)`,
+not a stored flag: computed fresh on every call, so it can never go stale the way a persisted flag would —
+the same rule DSAR-07's `SLAStatus` and ROPA-08's own conditional completeness item already follow. An
+unknown/not-visible-under-RLS vendor id is `ErrInvalid` (422), proving tenant isolation the same way every
+other FK-visibility check in this codebase does.
+
+API: `GET /admin/v1/agreements/vendor-contract-status?vendor_id=...` (`agreement.dpa.read`, no new permission
+code) → `{vendor_id, is_processor, has_dpa}`. UI: `useVendorContractStatus` (api-client) queried from
+`/vendors/{id}`'s detail page; an amber warning banner renders right above the existing "DPA / DSA
+agreements" section only when `is_processor && !has_dpa` (`vendors.detail.agreements.missingDpaWarning`,
+th/en). Tests: unit (`vendor_status_test.go` — the acceptance criterion directly: a processor vendor reads
+`has_dpa=false` before any agreement exists and `true` right after one is created via `CreateWizard`, with
+no change to `is_processor`; an unknown vendor id is refused; two-tenant isolation, including that tenant B
+can't even resolve tenant A's vendor id), HTTP contract (`handler_test.go` — 200 before/after with the exact
+`is_processor`/`has_dpa` values, 422 for an unknown vendor id) through the real validator + AuthZ chain.
+`go build`/`go vet`/`gofmt` clean; `tsc --noEmit`, `pnpm --filter @pdpa/admin build` and
+`pnpm --filter @pdpa/i18n test` all verified clean. Not built: "ผลประเมิน" (assessment results) on the same
+tab — VEN-05/07/08 (vendor risk assessment) aren't built yet, so there's nothing to show; add that section
+once one of those features exists, the same "no consumer yet" deferral this codebase uses elsewhere.
+
 <a id="ven-03"></a>
 ### VEN-03 ผู้ประมวลผลช่วง
 

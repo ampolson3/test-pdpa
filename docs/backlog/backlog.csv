@@ -224,7 +224,7 @@ VEN-04,VEN,คลังแบบประเมินคู่ค้า,Question
 VEN-05,VEN,พอร์ทัลให้คู่ค้าตอบแบบประเมิน,Vendor portal,Must,P2,ประเมิน,แนวปฏิบัติตลาด,VENDOR,M,M,Y,5,5,1.2,2.0,3.5,"IAM-04, PLT-17",BP-09,docs/modules/VEN.md#ven-05,คู่ค้าตอบได้โดยไม่ต้องมีบัญชีผู้ใช้เต็มรูปแบบ,todo
 VEN-07,VEN,คำนวณคะแนนความเสี่ยงอัตโนมัติ,Automated scoring,Must,P2,ผลประเมิน,แนวปฏิบัติตลาด,SEC DPO,M,S,N,5,3,1.0,0,2.8,"VEN-04, RRA-02",BP-09,docs/modules/VEN.md#ven-07,คะแนนคำนวณถูกต้องตามน้ำหนักทุกกรณีทดสอบ,todo
 VEN-08,VEN,อนุมัติหรือปฏิเสธคู่ค้า,Approval workflow,Must,P2,ผลประเมิน,แนวปฏิบัติตลาด,DPO EXEC,S,S,N,3,3,0.7,0,2.1,PLT-08,BP-09,docs/modules/VEN.md#ven-08,อนุมัติแบบมีเงื่อนไขสร้างแผนแก้ไขอัตโนมัติ,todo
-VEN-11,VEN,ผูกคู่ค้ากับสัญญาและกิจกรรม,Link to DPA / DSA / RoPA,Must,P2,ติดตาม,ม.40,PROC DPO,S,S,N,3,3,0.7,0,2.1,"DPA-10, ROPA-08",BP-09,docs/modules/VEN.md#ven-11,คู่ค้าที่เป็นผู้ประมวลผลแต่ไม่มี DPA ถูกแจ้งเตือน,todo
+VEN-11,VEN,ผูกคู่ค้ากับสัญญาและกิจกรรม,Link to DPA / DSA / RoPA,Must,P2,ติดตาม,ม.40,PROC DPO,S,S,N,3,3,0.7,0,2.1,"DPA-10, ROPA-08",BP-09,docs/modules/VEN.md#ven-11,คู่ค้าที่เป็นผู้ประมวลผลแต่ไม่มี DPA ถูกแจ้งเตือน,done
 VEN-03,VEN,ผู้ประมวลผลช่วง,Sub-processor management,Should,P3,ทะเบียน,ม.40,VENDOR DPO,S,S,N,3,3,0.7,0,2.1,VEN-01,BP-09,docs/modules/VEN.md#ven-03,ผู้ประมวลผลช่วงที่ยังไม่อนุมัติแสดงเตือน,todo
 VEN-06,VEN,ตรวจหลักฐานและใบรับรอง,Evidence & certificates,Should,P3,ประเมิน,แนวปฏิบัติตลาด,VENDOR SEC,S,S,N,3,3,0.7,0,2.1,VEN-01,BP-09,docs/modules/VEN.md#ven-06,ใบรับรองใกล้หมดอายุถูกแจ้งเตือนล่วงหน้า,todo
 VEN-09,VEN,แผนแก้ไขข้อบกพร่องของคู่ค้า,Vendor remediation plan,Should,P3,ผลประเมิน,แนวปฏิบัติตลาด,VENDOR PROC,S,S,N,3,3,0.7,0,2.1,IAM-04,BP-09,docs/modules/VEN.md#ven-09,คู่ค้าอัปเดตความคืบหน้าผ่านลิงก์ได้,todo

@@ -946,7 +946,8 @@
       "agreements": {
         "title": "DPA / DSA agreements",
         "empty": "No agreements linked to this vendor yet.",
-        "activities": "Activities"
+        "activities": "Activities",
+        "missingDpaWarning": "This vendor is a processor but has no DPA on record (ม.40 requires one)."
       },
       "intake": {
         "title": "Risk tiering (intake questionnaire)",

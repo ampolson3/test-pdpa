@@ -74,6 +74,7 @@ export {
   useRemoveAgreementClause,
   useProcessingSchedule,
   useSetAgreementSchedule,
+  useVendorContractStatus,
   type Agreement,
   type AgreementCreateInput,
   type AgreementType,
@@ -82,6 +83,7 @@ export {
   type AgreementMissingClause,
   type AgreementProcessingSchedule,
   type AgreementScheduleInput,
+  type VendorContractStatus,
 } from "./agreements";
 export {
   useRiskMatrices,

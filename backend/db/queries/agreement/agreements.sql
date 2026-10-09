@@ -62,3 +62,8 @@ SET effective_from = @effective_from, effective_to = @effective_to, auto_renew =
     updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
 WHERE id = @id AND row_version = @row_version
 RETURNING *;
+
+-- name: CountAgreementsForVendorByType :one
+-- VEN-11: whether a vendor has at least one agreement of a given type on record (any status — even a draft
+-- in progress counts as "has one").
+SELECT count(*)::int FROM agreement.agreements WHERE vendor_id = @vendor_id AND agreement_type = @agreement_type;

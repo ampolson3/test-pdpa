@@ -12,6 +12,7 @@ import {
   useAgreements,
   useVendorIntakes,
   useRecordVendorIntake,
+  useVendorContractStatus,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 
@@ -50,6 +51,7 @@ export function VendorDetailContent({ id }: { id: string }) {
   const vendor = useVendor(client, id);
   const parties = useExternalParties(client);
   const agreements = useAgreements(client, { vendorId: id });
+  const contractStatus = useVendorContractStatus(client, id);
   const save = useSaveVendor(client);
   const [editing, setEditing] = useState(false);
   const [serviceDescription, setServiceDescription] = useState("");
@@ -127,6 +129,12 @@ export function VendorDetailContent({ id }: { id: string }) {
           canUpdate && <div className="sm:col-span-2"><Button variant="secondary" onClick={startEdit}>{t("form.edit")}</Button></div>
         )}
       </section>
+
+      {contractStatus.data?.is_processor && !contractStatus.data.has_dpa && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-amber-900" role="alert">
+          {t("detail.agreements.missingDpaWarning")}
+        </div>
+      )}
 
       <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4">
         <h2 className="font-semibold">{t("detail.agreements.title")}</h2>
