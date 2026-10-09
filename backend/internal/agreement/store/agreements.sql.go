@@ -223,6 +223,38 @@ func (q *Queries) InsertAgreementParty(ctx context.Context, arg InsertAgreementP
 	return i, err
 }
 
+const listActivityIDsForAgreements = `-- name: ListActivityIDsForAgreements :many
+SELECT agreement_id, activity_id FROM agreement.agreement_activities WHERE agreement_id = ANY($1::uuid[]) ORDER BY agreement_id, activity_id
+`
+
+type ListActivityIDsForAgreementsRow struct {
+	AgreementID uuid.UUID `db:"agreement_id" json:"agreement_id"`
+	ActivityID  uuid.UUID `db:"activity_id" json:"activity_id"`
+}
+
+// DPA-11: the activities linked to each of a page of agreements, in one query — used by ListAgreements so
+// a vendor's own agreement list (filtered by vendor_id) always shows its linked activities too, the same
+// way GetAgreement already does for one agreement.
+func (q *Queries) ListActivityIDsForAgreements(ctx context.Context, agreementIds []uuid.UUID) ([]ListActivityIDsForAgreementsRow, error) {
+	rows, err := q.db.Query(ctx, listActivityIDsForAgreements, agreementIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListActivityIDsForAgreementsRow
+	for rows.Next() {
+		var i ListActivityIDsForAgreementsRow
+		if err := rows.Scan(&i.AgreementID, &i.ActivityID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAgreementActivityIDs = `-- name: ListAgreementActivityIDs :many
 SELECT activity_id FROM agreement.agreement_activities WHERE agreement_id = $1 ORDER BY activity_id
 `

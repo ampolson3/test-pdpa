@@ -204,8 +204,9 @@ type AgreementFilter struct {
 
 const agreementPageSize = 50
 
-// ListAgreements lists the tenant's own agreements, newest first, optionally filtered by type or vendor
-// (DPA-11's own "open a vendor and see its agreements" will reuse this filter).
+// ListAgreements lists the tenant's own agreements, newest first, optionally filtered by type or vendor —
+// DPA-11's own "open a vendor and see its agreements" is this filter, with each row's own linked activities
+// (ActivityIDs) populated too.
 func (s *Service) ListAgreements(ctx context.Context, f AgreementFilter) ([]Agreement, *AgreementCursor, error) {
 	limit := f.Limit
 	if limit <= 0 || limit > agreementPageSize {
@@ -225,14 +226,34 @@ func (s *Service) ListAgreements(ctx context.Context, f AgreementFilter) ([]Agre
 		return nil, nil, err
 	}
 	out := make([]Agreement, 0, len(rows))
+	var next *AgreementCursor
 	for i, r := range rows {
 		if i == limit {
 			last := out[len(out)-1]
-			return out, &AgreementCursor{CreatedAt: last.CreatedAt, ID: last.ID}, nil
+			next = &AgreementCursor{CreatedAt: last.CreatedAt, ID: last.ID}
+			break
 		}
 		out = append(out, toAgreement(r, nil))
 	}
-	return out, nil, nil
+
+	// DPA-11: a vendor's own agreement list always shows its linked activities too (the same data
+	// GetAgreement already returns for one agreement) — one batch query for the whole page, not N+1.
+	ids := make([]uuid.UUID, len(out))
+	for i, a := range out {
+		ids[i] = a.ID
+	}
+	links, err := agreementstore.New(pdb.MustTxFromContext(ctx)).ListActivityIDsForAgreements(ctx, ids)
+	if err != nil {
+		return nil, nil, err
+	}
+	byAgreement := make(map[uuid.UUID][]uuid.UUID, len(out))
+	for _, l := range links {
+		byAgreement[l.AgreementID] = append(byAgreement[l.AgreementID], l.ActivityID)
+	}
+	for i := range out {
+		out[i].ActivityIDs = byAgreement[out[i].ID]
+	}
+	return out, next, nil
 }
 
 func toAgreement(r agreementstore.AgreementAgreement, activityIDs []uuid.UUID) Agreement {

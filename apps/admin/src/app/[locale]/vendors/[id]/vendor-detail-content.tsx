@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
-import { createApiClient, useVendor, useSaveVendor, useExternalParties } from "@pdpa/api-client";
+import { createApiClient, useVendor, useSaveVendor, useExternalParties, useAgreements } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
@@ -28,11 +28,13 @@ const STATUS_STYLE: Record<string, string> = {
  *  sections to this same page once built, rather than scattering vendor data across separate screens. */
 export function VendorDetailContent({ id }: { id: string }) {
   const t = useTranslations("vendors");
+  const ta = useTranslations("agreements");
   const canRead = usePermission("vendor.vendor.read");
   const canUpdate = usePermission("vendor.vendor.update");
   const client = useMemo(() => createApiClient("/api/bff"), []);
   const vendor = useVendor(client, id);
   const parties = useExternalParties(client);
+  const agreements = useAgreements(client, { vendorId: id });
   const save = useSaveVendor(client);
   const [editing, setEditing] = useState(false);
   const [serviceDescription, setServiceDescription] = useState("");
@@ -111,7 +113,38 @@ export function VendorDetailContent({ id }: { id: string }) {
         )}
       </section>
 
-      <section>
+      <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4">
+        <h2 className="font-semibold">{t("detail.agreements.title")}</h2>
+        {(agreements.data?.pages.flatMap((p) => p.data) ?? []).length === 0 ? (
+          <p className="text-slate-500">{t("detail.agreements.empty")}</p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {agreements.data!.pages.flatMap((p) => p.data).map((ag) => (
+              <li key={ag.id} className="space-y-1 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Link className="font-medium text-sky-700 underline" href={`/agreements/${ag.id}`}>
+                    {ag.title}
+                  </Link>
+                  <span className="text-xs text-slate-500">{ta(`statuses.${ag.status}`)}</span>
+                </div>
+                <p className="text-xs text-slate-500">{ag.agreement_no}</p>
+                {ag.activity_ids.length > 0 && (
+                  <p className="text-xs text-slate-500">
+                    {t("detail.agreements.activities")}:{" "}
+                    {ag.activity_ids.map((aid, i) => (
+                      <span key={aid}>
+                        {i > 0 && ", "}
+                        <Link className="underline" href={`/ropa/activities/${aid}`}>
+                          {aid}
+                        </Link>
+                      </span>
+                    ))}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
         <Link className="text-sky-700 underline" href="/agreements">{t("agreementsLink")}</Link>
       </section>
     </main>

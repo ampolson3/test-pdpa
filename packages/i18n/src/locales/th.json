@@ -941,7 +941,14 @@
       "tierNotSet": "ยังไม่จัดระดับ",
       "nextAssessmentAt": "ประเมินรอบถัดไป"
     },
-    "assessmentTemplatesLink": "คลังแบบประเมินคู่ค้า"
+    "assessmentTemplatesLink": "คลังแบบประเมินคู่ค้า",
+    "detail": {
+      "agreements": {
+        "title": "ข้อตกลง DPA / DSA",
+        "empty": "ยังไม่มีข้อตกลงที่ผูกกับคู่ค้ารายนี้",
+        "activities": "กิจกรรม"
+      }
+    }
   },
   "agreements": {
     "signInRequired": "กรุณาเข้าสู่ระบบ",

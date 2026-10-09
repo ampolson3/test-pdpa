@@ -941,7 +941,14 @@
       "tierNotSet": "Not tiered yet",
       "nextAssessmentAt": "Next assessment"
     },
-    "assessmentTemplatesLink": "Vendor assessment template library"
+    "assessmentTemplatesLink": "Vendor assessment template library",
+    "detail": {
+      "agreements": {
+        "title": "DPA / DSA agreements",
+        "empty": "No agreements linked to this vendor yet.",
+        "activities": "Activities"
+      }
+    }
   },
   "agreements": {
     "signInRequired": "Please sign in.",

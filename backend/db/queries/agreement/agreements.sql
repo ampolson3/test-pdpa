@@ -38,6 +38,12 @@ SELECT * FROM agreement.parties WHERE agreement_id = $1 ORDER BY created_at;
 -- name: ListAgreementActivityIDs :many
 SELECT activity_id FROM agreement.agreement_activities WHERE agreement_id = $1 ORDER BY activity_id;
 
+-- name: ListActivityIDsForAgreements :many
+-- DPA-11: the activities linked to each of a page of agreements, in one query — used by ListAgreements so
+-- a vendor's own agreement list (filtered by vendor_id) always shows its linked activities too, the same
+-- way GetAgreement already does for one agreement.
+SELECT agreement_id, activity_id FROM agreement.agreement_activities WHERE agreement_id = ANY(@agreement_ids::uuid[]) ORDER BY agreement_id, activity_id;
+
 -- name: ListAgreements :many
 -- Newest first; keyset cursor on (created_at, id).
 SELECT * FROM agreement.agreements

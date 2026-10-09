@@ -379,6 +379,30 @@ suite and `pnpm --filter @pdpa/admin build` both verified clean.
 
 **Acceptance criteria:** เปิดคู่ค้าแล้วเห็น DPA และกิจกรรมที่เกี่ยวข้อง
 
+**Implementation — done (ผลประเมินยังไม่มีให้แสดง).** The relationship this feature needs
+(agreement ↔ vendor ↔ activity) was already fully built by DPA-02 — `agreement.agreements.vendor_id` and
+`agreement.agreement_activities` — and DPA-02's own `ListAgreements` already had a `vendor_id` filter with a
+doc comment flagging it as "DPA-11's own 'open a vendor and see its agreements' will reuse this filter". What
+was missing: the list endpoint never populated each row's `activity_ids` (only `GetAgreement`, one row at a
+time, did) — `ListAgreements` left it `nil` to avoid an N+1 query per page. Fixed with one batch query,
+`ListActivityIDsForAgreements` (`agreement_id = ANY($1)`), grouped in Go and attached to each row of the
+*already-fetched* page — no extra round trip per agreement, same cost as before for a page with no vendor
+filter (an empty id slice is a legal, empty-result `ANY()` call). No new migration, permission or endpoint:
+`GET /admin/v1/agreements?vendor_id=...` already existed; it just returns complete rows now.
+
+UI: `/vendors/{id}` (VEN-01's own foundation page, built explicitly for exactly this — "sibling features...
+add their own sections to this same page") gained a "DPA / DSA agreements" section — one row per linked
+agreement (title, number, status, and its own linked RoPA activities as links to `/ropa/activities/{id}`),
+replacing the bare "go look at /agreements yourself" link DPA-02 had left there, which stays as a secondary
+link to the full list. "ผลประเมิน" (assessment results) from the module doc's own description is deliberately
+not shown: `vendor.vendor_assessments.assessment_id` already points at `assess.assessments` (DPIA-10's own
+generic review/approval machinery), but no feature populates a vendor assessment yet — VEN-07 ("Automated
+scoring") is the sibling feature that would create one; there is nothing to read until it exists, the same
+"no consumer yet" deferral this codebase uses throughout (e.g. ROPA-01's own `discovered_by_finding_id`).
+Tests: unit (the acceptance criterion directly — listing by `vendor_id` returns each agreement's own linked
+activity ids, matching exactly what `GetAgreement` already returns for one of them; an unfiltered/type-filtered
+list still works unchanged), full backend test suite and `pnpm --filter @pdpa/admin build` both verified clean.
+
 <a id="dpa-05"></a>
 ### DPA-05 ข้อสัญญาการโอนต่างประเทศ
 

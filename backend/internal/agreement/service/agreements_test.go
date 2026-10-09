@@ -251,6 +251,38 @@ func TestListAgreements_FilterByTypeAndVendor(t *testing.T) {
 	})
 }
 
+// TestListAgreements_IncludesLinkedActivities is DPA-11's own acceptance criterion: opening a vendor (i.e.
+// listing its agreements via the vendor_id filter) shows each agreement's own linked RoPA activities too,
+// not just a bare agreement row — the same activity_ids GetAgreement already returns for one agreement.
+func TestListAgreements_IncludesLinkedActivities(t *testing.T) {
+	e := setup(t, "dpaListActivities")
+	var leID, vendorID, activityID uuid.UUID
+	e.in(t, func(ctx context.Context) error {
+		leID, vendorID, activityID = fixture(t, ctx, e)
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		_, err := e.svc.CreateWizard(ctx, agreementservice.CreateInput{
+			AgreementType: "dpa", OurRole: "controller", VendorID: vendorID, LegalEntityID: leID,
+			ActivityIDs: []uuid.UUID{activityID}, Title: "A",
+		})
+		return err
+	})
+	e.in(t, func(ctx context.Context) error {
+		list, _, err := e.svc.ListAgreements(ctx, agreementservice.AgreementFilter{VendorID: &vendorID})
+		if err != nil {
+			return err
+		}
+		if len(list) != 1 {
+			t.Fatalf("list by vendor = %d items, want 1", len(list))
+		}
+		if len(list[0].ActivityIDs) != 1 || list[0].ActivityIDs[0] != activityID {
+			t.Errorf("activity_ids = %v, want [%s]", list[0].ActivityIDs, activityID)
+		}
+		return nil
+	})
+}
+
 // TestTwoTenantIsolation: tenant B cannot read tenant A's agreement by id, and tenant B's own list never
 // shows tenant A's rows (CLAUDE.md rule 1).
 func TestTwoTenantIsolation(t *testing.T) {
