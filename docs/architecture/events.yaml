@@ -225,9 +225,12 @@ events:
   - request_type
   - due_at
   - status
+  - reason_code
+  - activity_refs
   consumers:
   - ITSM / CRM (subtask)
   - DPO
+  - ROPA-10 (logs the rejection against each referenced processing activity)
 - name: breach.reported
   producer: breach
   data:

@@ -1,0 +1,384 @@
+package agreementhttp_test
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
+
+	agreementhttp "pdpa-platform/internal/agreement/http"
+	agreementservice "pdpa-platform/internal/agreement/service"
+	orgservice "pdpa-platform/internal/org/service"
+	"pdpa-platform/internal/pkg/authz"
+	pdb "pdpa-platform/internal/pkg/db"
+	"pdpa-platform/internal/pkg/dbtest"
+	"pdpa-platform/internal/pkg/httpx"
+	"pdpa-platform/internal/pkg/validate"
+	audit "pdpa-platform/internal/platform/audit/service"
+	riskservice "pdpa-platform/internal/risk/service"
+	ropaservice "pdpa-platform/internal/ropa/service"
+	vendorservice "pdpa-platform/internal/vendormgmt/service"
+	"pdpa-platform/internal/wiring"
+)
+
+func envOr(k, d string) string {
+	if v := os.Getenv(k); v != "" {
+		return v
+	}
+	return d
+}
+
+// Contract test for the agreement endpoints (DPA-02) behind the real OpenAPI validator and AuthZ.
+func TestAgreementEndpoints_Contract(t *testing.T) {
+	ctx := context.Background()
+	rdb := redis.NewClient(&redis.Options{Addr: envOr("TEST_REDIS_ADDR", "localhost:6379")})
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		t.Skipf("no Redis: %v", err)
+	}
+	t.Cleanup(func() { rdb.Close() })
+	app := dbtest.Pool(t)
+	tenant := dbtest.SeedTenant(t, ctx, app, dbtest.PlatformPool(t), "agreementhttp")
+
+	owner := dbtest.OwnerPool(t)
+	t.Cleanup(func() {
+		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
+			tx := pdb.MustTxFromContext(ctx)
+			for _, q := range []string{
+				`DELETE FROM agreement.clauses`, `DELETE FROM agreement.agreement_activities`, `DELETE FROM agreement.parties`, `DELETE FROM agreement.agreements`,
+				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
+				`DELETE FROM vendor.vendors`, `UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`,
+				`DELETE FROM org.external_parties`, `DELETE FROM platform.audit_log`,
+			} {
+				_, _ = tx.Exec(ctx, q)
+			}
+			return nil
+		})
+	})
+	orgSvc := &orgservice.Service{Audit: audit.New()}
+	vendorSvc := &vendorservice.Service{Audit: audit.New(), Org: orgSvc}
+	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: &riskservice.Service{Audit: audit.New()}}
+	versioningSvc := wiring.Versioning(nil, audit.New())
+	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
+	docsSvc.RegisterVersioning()
+	svc := &agreementservice.Service{Docs: docsSvc, Org: orgSvc, Vendor: vendorSvc, Ropa: ropaSvc, Audit: audit.New()}
+
+	var legalEntityID, vendorID, thirdPartyID uuid.UUID
+	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		le, err := orgSvc.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ทดสอบ จำกัด", IsController: true}, 0)
+		if err != nil {
+			return err
+		}
+		legalEntityID = le.ID
+		party, err := orgSvc.SaveExternalParty(ctx, orgservice.ExternalParty{PartyType: "processor", NameTh: "ผู้ให้บริการ", CountryCode: "US"}, 0)
+		if err != nil {
+			return err
+		}
+		v, err := vendorSvc.SaveVendor(ctx, vendorservice.Vendor{PartyID: party.ID, ServiceDescription: "ประมวลผล", IsProcessor: true}, 0)
+		vendorID = v.ID
+		if err != nil {
+			return err
+		}
+		third, err := orgSvc.SaveExternalParty(ctx, orgservice.ExternalParty{PartyType: "controller", NameTh: "ผู้ควบคุมอีกราย", CountryCode: "TH"}, 0)
+		thirdPartyID = third.ID
+		return err
+	})
+
+	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	validateMw, _ := validate.Middleware(spec, nil)
+	perms := map[string]string{}
+	for _, item := range spec.Paths.Map() {
+		for _, op := range item.Operations() {
+			if code, ok := op.Extensions["x-permission"].(string); ok {
+				perms[strings.ToUpper(op.OperationID[:1])+op.OperationID[1:]] = code
+			}
+		}
+	}
+	reader := uuid.New()
+	noPerm := uuid.New()
+	grants := map[string][]string{
+		tenant.UserID.String(): {"agreement.dpa.read", "agreement.dpa.create", "agreement.dpa.update", "agreement.dsa.read"},
+		reader.String():        {"agreement.dpa.read", "agreement.dsa.read"},
+		noPerm.String():        {},
+	}
+	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
+		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
+	})
+	t.Cleanup(func() {
+		for uid := range grants {
+			_ = cache.Invalidate(context.Background(), tenant.ID.String(), uid)
+		}
+	})
+
+	r := chi.NewRouter()
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if u := req.Header.Get("X-Test-User"); u != "" {
+				req = req.WithContext(httpx.WithPrincipal(req.Context(), httpx.Principal{TenantID: tenant.ID.String(), UserID: u, ActorType: "user"}))
+			}
+			next.ServeHTTP(w, req)
+		})
+	})
+	r.Use(validateMw)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			p, ok := httpx.PrincipalFromContext(req.Context())
+			if !ok {
+				next.ServeHTTP(w, req)
+				return
+			}
+			_ = pdb.WithTenantTx(req.Context(), app, p.TenantID, p.UserID, func(ctx context.Context) error {
+				next.ServeHTTP(w, req.WithContext(ctx))
+				return nil
+			})
+		})
+	})
+	strict := agreementhttp.NewStrictHandlerWithOptions(agreementhttp.NewStrict(svc),
+		[]agreementhttp.StrictMiddlewareFunc{authz.StrictMiddleware[agreementhttp.StrictHandlerFunc](cache, func(op string) (string, bool) { c, ok := perms[op]; return c, ok })},
+		agreementhttp.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				if p, ok := err.(httpx.Problem); ok {
+					httpx.WriteProblem(w, r, p)
+					return
+				}
+				httpx.WriteProblem(w, r, httpx.Internal())
+			},
+		})
+	agreementhttp.HandlerWithOptions(strict, agreementhttp.ChiServerOptions{BaseRouter: r})
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	do := func(method, path string, user *uuid.UUID, body any, headers map[string]string) (int, string) {
+		var buf bytes.Buffer
+		if body != nil {
+			_ = json.NewEncoder(&buf).Encode(body)
+		}
+		req, _ := http.NewRequest(method, srv.URL+path, &buf)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if user != nil {
+			req.Header.Set("X-Test-User", user.String())
+		}
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		var out bytes.Buffer
+		_, _ = out.ReadFrom(res.Body)
+		return res.StatusCode, out.String()
+	}
+	admin := tenant.UserID
+
+	if code, _ := do("GET", "/admin/v1/agreements", nil, nil, nil); code != 401 {
+		t.Errorf("no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", "/admin/v1/agreements", &reader, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list (none yet): %d %s", code, body)
+	}
+
+	// VEN-11: before any DPA exists for this (processor) vendor, has_dpa reads false.
+	status := "/admin/v1/agreements/vendor-contract-status?vendor_id=" + vendorID.String()
+	if code, body := do("GET", status, &reader, nil, nil); code != 200 || !strings.Contains(body, `"is_processor":true`) || !strings.Contains(body, `"has_dpa":false`) {
+		t.Errorf("vendor-contract-status before any DPA: %d %s, want is_processor:true, has_dpa:false", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/agreements/vendor-contract-status?vendor_id="+uuid.New().String(), &admin, nil, nil); code != 422 {
+		t.Errorf("vendor-contract-status unknown vendor: %d, want 422", code)
+	}
+
+	newAgreement := map[string]any{
+		"agreement_type": "dpa", "our_role": "controller", "vendor_id": vendorID, "legal_entity_id": legalEntityID,
+		"title": "DPA กับผู้ให้บริการ",
+	}
+	if code, _ := do("POST", "/admin/v1/agreements", &reader, newAgreement, nil); code != 403 {
+		t.Errorf("create with read only: %d, want 403", code)
+	}
+	if code, body := do("POST", "/admin/v1/agreements", &admin, map[string]any{"agreement_type": "dpa"}, nil); code != 400 {
+		t.Errorf("missing required fields: %d %s, want 400 (schema)", code, body)
+	}
+	if code, body := do("POST", "/admin/v1/agreements", &admin, map[string]any{
+		"agreement_type": "dsa", "our_role": "controller", "vendor_id": vendorID, "legal_entity_id": legalEntityID, "title": "x",
+	}, nil); code != 422 {
+		t.Errorf("dsa with no counterparty_party_id/counterparty_role: %d %s, want 422", code, body)
+	}
+	// DSA-04: a real dsa agreement, from an ORG-06 counterparty (not a vendor) + the same RoPA activities.
+	if code, body := do("POST", "/admin/v1/agreements", &admin, map[string]any{
+		"agreement_type": "dsa", "our_role": "controller", "counterparty_party_id": thirdPartyID, "counterparty_role": "receiving",
+		"legal_entity_id": legalEntityID, "title": "DSA กับหน่วยงานพันธมิตร",
+	}, nil); code != 201 || !strings.Contains(body, `"agreement_type":"dsa"`) {
+		t.Errorf("create dsa: %d %s, want 201 agreement_type:dsa", code, body)
+	}
+	code, body := do("POST", "/admin/v1/agreements", &admin, newAgreement, nil)
+	if code != 201 || !strings.Contains(body, `"agreement_type":"dpa"`) {
+		t.Fatalf("create: %d %s", code, body)
+	}
+	var created agreementhttp.Agreement
+	_ = json.Unmarshal([]byte(body), &created)
+	item := "/admin/v1/agreements/" + created.Id.String()
+
+	if code, body := do("GET", item, &reader, nil, nil); code != 200 || !strings.Contains(body, `"document_id"`) {
+		t.Errorf("get: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/agreements/"+uuid.New().String(), &admin, nil, nil); code != 404 {
+		t.Errorf("unknown agreement: %d, want 404", code)
+	}
+	if code, body := do("GET", "/admin/v1/agreements", &reader, nil, nil); code != 200 || !strings.Contains(body, created.Id.String()) {
+		t.Errorf("list: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/agreements?agreement_type=dpa", &reader, nil, nil); code != 200 || !strings.Contains(body, created.Id.String()) {
+		t.Errorf("list filtered by type: %d %s", code, body)
+	}
+
+	// DPA-03: mandatory-clause panel.
+	if code, body := do("GET", item+"/missing-clauses", &reader, nil, nil); code != 200 || !strings.Contains(body, "dpa.confidentiality") {
+		t.Errorf("missing-clauses: %d %s, want dpa.confidentiality listed", code, body)
+	}
+	var clauseID uuid.UUID
+	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		return pdb.MustTxFromContext(ctx).QueryRow(ctx,
+			`SELECT id FROM platform.clause_library WHERE code = 'dpa.confidentiality' AND tenant_id IS NULL`).Scan(&clauseID)
+	})
+	if code, _ := do("POST", item+"/clauses", &reader, map[string]any{"clause_id": clauseID}, nil); code != 403 {
+		t.Errorf("add clause with read only: %d, want 403", code)
+	}
+	code, body = do("POST", item+"/clauses", &admin, map[string]any{"clause_id": clauseID}, nil)
+	if code != 201 || !strings.Contains(body, `"clause_code":"dpa.confidentiality"`) {
+		t.Fatalf("add clause: %d %s", code, body)
+	}
+	var addedClause agreementhttp.AgreementClause
+	_ = json.Unmarshal([]byte(body), &addedClause)
+	if code, body := do("GET", item+"/clauses", &reader, nil, nil); code != 200 || !strings.Contains(body, `"clause_code":"dpa.confidentiality"`) {
+		t.Errorf("list clauses: %d %s", code, body)
+	}
+	if code, body := do("GET", item+"/missing-clauses", &reader, nil, nil); code != 200 || strings.Contains(body, "dpa.confidentiality") {
+		t.Errorf("missing-clauses after attach: %d %s, want dpa.confidentiality no longer listed", code, body)
+	}
+	if code, _ := do("POST", item+"/clauses", &admin, map[string]any{"clause_id": uuid.New()}, nil); code != 422 {
+		t.Errorf("add unknown clause: %d, want 422", code)
+	}
+	if code, _ := do("DELETE", item+"/clauses/"+addedClause.Id.String(), &reader, nil, nil); code != 403 {
+		t.Errorf("remove clause with read only: %d, want 403", code)
+	}
+	if code, _ := do("DELETE", item+"/clauses/"+addedClause.Id.String(), &admin, nil, nil); code != 204 {
+		t.Errorf("remove clause: %d", code)
+	}
+	if code, body := do("GET", item+"/clauses", &reader, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list clauses after remove: %d %s", code, body)
+	}
+
+	// DPA-04: the processing-schedule annex — empty here since newAgreement linked no activities.
+	if code, body := do("GET", item+"/processing-schedule", &reader, nil, nil); code != 200 || !strings.Contains(body, `"activities":[]`) {
+		t.Errorf("processing-schedule: %d %s, want an empty activities list", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/agreements/"+uuid.New().String()+"/processing-schedule", &admin, nil, nil); code != 404 {
+		t.Errorf("processing-schedule unknown agreement: %d, want 404", code)
+	}
+
+	// DPA-10: registry start/end dates and renewal settings.
+	schedule := item + "/schedule"
+	if code, _ := do("PATCH", schedule, &admin, map[string]any{"renewal_notice_days": 60}, nil); code != 428 {
+		t.Errorf("set schedule, no If-Match: %d, want 428", code)
+	}
+	if code, _ := do("PATCH", schedule, &admin, map[string]any{"renewal_notice_days": 60}, map[string]string{"If-Match": `"99"`}); code != 412 {
+		t.Errorf("set schedule, stale version: %d, want 412", code)
+	}
+	if code, body := do("PATCH", schedule, &reader, map[string]any{"renewal_notice_days": 60}, map[string]string{"If-Match": etagOf(int(created.RowVersion))}); code != 403 {
+		t.Errorf("set schedule with read only: %d %s, want 403", code, body)
+	}
+	code, body = do("PATCH", schedule, &admin, map[string]any{"effective_from": "2026-01-01", "effective_to": "2027-01-01", "auto_renew": true, "renewal_notice_days": 60},
+		map[string]string{"If-Match": etagOf(int(created.RowVersion))})
+	if code != 200 || !strings.Contains(body, `"effective_to":"2027-01-01"`) || !strings.Contains(body, `"auto_renew":true`) {
+		t.Fatalf("set schedule: %d %s", code, body)
+	}
+	var scheduled agreementhttp.Agreement
+	_ = json.Unmarshal([]byte(body), &scheduled)
+	if code, _ := do("PATCH", schedule, &admin, map[string]any{"renewal_notice_days": -1}, map[string]string{"If-Match": etagOf(int(scheduled.RowVersion))}); code != 422 {
+		t.Errorf("set schedule, negative renewal_notice_days: %d, want 422", code)
+	}
+	if code, _ := do("PATCH", "/admin/v1/agreements/"+uuid.New().String()+"/schedule", &admin, map[string]any{"renewal_notice_days": 60}, map[string]string{"If-Match": `"0"`}); code != 404 {
+		t.Errorf("set schedule, unknown agreement: %d, want 404", code)
+	}
+
+	// VEN-11: now that a DPA exists for this vendor, has_dpa reads true.
+	if code, body := do("GET", status, &reader, nil, nil); code != 200 || !strings.Contains(body, `"has_dpa":true`) {
+		t.Errorf("vendor-contract-status after DPA created: %d %s, want has_dpa:true", code, body)
+	}
+
+	// DSA-02: an agreement can carry more than two parties.
+	parties := item + "/parties"
+	if code, body := do("GET", parties, &reader, nil, nil); code != 200 || !strings.Contains(body, `"party_role":"processor"`) {
+		t.Errorf("list parties after create: %d %s, want the counterparty with party_role:processor", code, body)
+	}
+	if code, _ := do("POST", parties, &reader, map[string]any{"party_id": thirdPartyID, "party_role": "receiving"}, nil); code != 403 {
+		t.Errorf("add party with read only: %d, want 403", code)
+	}
+	code, body = do("POST", parties, &admin, map[string]any{"party_id": thirdPartyID, "party_role": "receiving"}, nil)
+	if code != 201 || !strings.Contains(body, `"party_role":"receiving"`) {
+		t.Fatalf("add party: %d %s", code, body)
+	}
+	var addedParty agreementhttp.AgreementParty
+	_ = json.Unmarshal([]byte(body), &addedParty)
+	if code, _ := do("POST", parties, &admin, map[string]any{"legal_entity_id": legalEntityID, "party_role": "joint_controller"}, nil); code != 201 {
+		t.Errorf("add our own legal entity as a joint controller: %d, want 201", code)
+	}
+	if code, _ := do("POST", parties, &admin, map[string]any{"party_role": "receiving"}, nil); code != 422 {
+		t.Errorf("add party with neither party_id nor legal_entity_id: %d, want 422", code)
+	}
+	if code, body := do("GET", parties, &reader, nil, nil); code != 200 || strings.Count(body, `"party_role"`) != 3 {
+		t.Errorf("list parties after adding two more: %d %s, want 3 parties", code, body)
+	}
+	if code, _ := do("DELETE", parties+"/"+addedParty.Id.String(), &reader, nil, nil); code != 403 {
+		t.Errorf("remove party with read only: %d, want 403", code)
+	}
+	if code, _ := do("DELETE", parties+"/"+addedParty.Id.String(), &admin, nil, nil); code != 204 {
+		t.Errorf("remove party: %d, want 204", code)
+	}
+	if code, _ := do("DELETE", parties+"/"+addedParty.Id.String(), &admin, nil, nil); code != 404 {
+		t.Errorf("remove party again: %d, want 404", code)
+	}
+	if code, _ := do("GET", "/admin/v1/agreements/"+uuid.New().String()+"/parties", &admin, nil, nil); code != 404 {
+		t.Errorf("list parties, unknown agreement: %d, want 404", code)
+	}
+
+	// DSA-01: the type-check wizard — correct recommendation per counterparty role, through the real
+	// validator + AuthZ (agreement.dsa.read, not agreement.dpa.read).
+	if code, body := do("GET", "/admin/v1/agreements/type-check?counterparty_role=processor", &reader, nil, nil); code != 200 ||
+		!strings.Contains(body, `"agreement_type":"dpa"`) || !strings.Contains(body, `"legal_ref":"`+"ม.40"+`"`) {
+		t.Errorf("type-check processor: %d %s, want agreement_type:dpa, legal_ref:ม.40", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/agreements/type-check?counterparty_role=controller", &reader, nil, nil); code != 200 ||
+		!strings.Contains(body, `"agreement_type":"dsa"`) || !strings.Contains(body, `"legal_ref":"`+"ม.27"+`"`) {
+		t.Errorf("type-check controller: %d %s, want agreement_type:dsa, legal_ref:ม.27", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/agreements/type-check?counterparty_role=joint_controller", &reader, nil, nil); code != 200 ||
+		!strings.Contains(body, `"agreement_type":"joint_controller"`) {
+		t.Errorf("type-check joint_controller: %d %s, want agreement_type:joint_controller", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/agreements/type-check?counterparty_role=processor", nil, nil, nil); code != 401 {
+		t.Errorf("type-check no principal: %d, want 401", code)
+	}
+	if code, _ := do("GET", "/admin/v1/agreements/type-check?counterparty_role=processor", &noPerm, nil, nil); code != 403 {
+		t.Errorf("type-check without agreement.dsa.read: %d, want 403", code)
+	}
+}
+
+func etagOf(v int) string { return `"` + strconv.Itoa(v) + `"` }

@@ -54,7 +54,7 @@ pdpa-platform/
 | DPO | งานของ DPO (DPO Module) | `backend/internal/dpo` | dpo | `/admin/v1/dpo` | admin: /dpo/*, /dashboard |
 | DPIA | แบบประเมินผลกระทบ (DPIA) | `backend/internal/assess` | assess | `/admin/v1/assessments` | admin: /assessments/*; portal: /guest/assessment/[token] |
 | RRA | ประเมินความเสี่ยงกิจกรรม (ROPA Risk Assessment) | `backend/internal/risk` | risk | `/admin/v1/risk` | admin: /risk/* |
-| VEN | ประเมินคู่ค้า (Vendor Assessment) | `backend/internal/vendor` | vendor | `/admin/v1/vendors` | admin: /vendors/*; portal: /guest/vendor/[token] |
+| VEN | ประเมินคู่ค้า (Vendor Assessment) | `backend/internal/vendormgmt` (ไม่ใช่ `vendor` — ชื่อไดเรกทอรี "vendor" ชนกับการจัดการ vendor directory ของ Go toolchain เอง, VEN-01) | vendor | `/admin/v1/vendors` | admin: /vendors/*; portal: /guest/vendor/[token] |
 | DPA | ข้อตกลงการประมวลผลข้อมูล (DPA) | `backend/internal/agreement` | agreement | `/admin/v1/agreements` | admin: /agreements/dpa/* |
 | DSA | ข้อตกลงการแบ่งปันข้อมูล (DSA) | `backend/internal/agreement` | agreement | `/admin/v1/agreements` | admin: /agreements/dsa/* |
 | DPX | DPO ส่วนต่อขยาย (DPO Extension) | `backend/internal/gov` | gov | `/admin/v1/governance` | admin: /governance/*; portal: /learn |
@@ -80,6 +80,7 @@ backend/internal/<module>/
 - FK constraint ของ PostgreSQL ไม่ผ่าน RLS: ก่อนบันทึก id ที่อ้างถึงแถวอื่นใน tenant ให้ตรวจว่า id นั้นมองเห็นได้ภายใต้ RLS (helper `store.MustExist…` / `SELECT … FOR KEY SHARE`) และมี test ว่าอ้าง id ของ tenant อื่นแล้วได้ 404 / 422
 - ห้าม import `internal/<other>/store` หรือ `internal/<other>/service` implementation — ใช้ interface ที่ module นั้นประกาศ (ตรวจด้วย depguard / go-arch-lint ใน CI)
 - งานที่ต้อง retry / ใช้เวลานาน → enqueue River job ใน transaction เดียวกัน (`InsertTx`) · job args มี `tenant_id` เสมอ
+- job framework อยู่ที่ `internal/platform/jobs` (PLT-10): args ของ job ต่อ tenant ฝัง `jobs.TenantArgs` · enqueue ด้วย `jobs.Enqueue(ctx, client, args, opts)` ซึ่งใช้ tx จาก context และปฏิเสธ job ของ tenant อื่น · worker สร้างด้วย `jobs.NewWorkerClient` ซึ่งมี `TenantTxMiddleware` เปิด `WithTenantTx` 1 ครั้งต่อ job จาก `tenant_id` ใน args (worker อ่าน tx ด้วย `db.MustTxFromContext`; job ที่ไม่มี tenant_id และไม่อยู่ใน `jobs.GlobalKinds` ถูก cancel) · job args เก็บใน `river_job` แบบไม่เข้ารหัสและไม่มี RLS จึงใส่ได้เฉพาะ id ห้ามมีข้อมูลส่วนบุคคล · worker ต้อง idempotent (at-least-once: job ที่ถูกตัดกลางคันจะรันซ้ำ) · job ที่ต้องไม่ซ้ำใช้ `UniqueOpts{ByArgs: true}` (tenant_id อยู่ใน args จึง unique ต่อ tenant) · periodic job รันเฉพาะ leader
 - เวลา: ใช้ clock ที่ inject ได้ (ทดสอบ SLA / 72 ชม. / 30 วัน ได้โดยไม่รอเวลาจริง)
 
 ## Middleware ของ Go API (ตามลำดับ)

@@ -1,0 +1,48 @@
+package: ropahttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - ropaListAssets
+    - ropaCreateAsset
+    - ropaGetAsset
+    - ropaUpdateAsset
+    - ropaListDataInventory
+    - ropaCreateDataInventoryItem
+    - ropaGetDataInventoryItem
+    - ropaUpdateDataInventoryItem
+    - ropaListActivities
+    - ropaExportProcessorActivities
+    - ropaCreateActivity
+    - ropaCreateActivityFromTemplate
+    - ropaCreateActivitiesFromTemplates
+    - ropaGetActivity
+    - ropaUpdateActivity
+    - ropaSubmitActivity
+    - ropaListActivityPurposes
+    - ropaAddActivityPurpose
+    - ropaDeleteActivityPurpose
+    - ropaListActivityData
+    - ropaAddActivityData
+    - ropaDeleteActivityData
+    - ropaListRetentionRules
+    - ropaAddRetentionRule
+    - ropaDeleteRetentionRule
+    - ropaListActivityRecipients
+    - ropaAddActivityRecipient
+    - ropaDeleteActivityRecipient
+    - ropaListActivityRejections
+    - ropaListActivityTransfers
+    - ropaAddActivityTransfer
+    - ropaDeleteActivityTransfer
+    - ropaListSecurityControls
+    - ropaListActivityControls
+    - ropaAddActivityControl
+    - ropaDeleteActivityControl
+    - ropaListTemplateSets
+    - ropaListActivityTemplates
+    - ropaGetActivityTemplate
+    - ropaSuggestTemplateItems
+    - ropaApplySuggestedItems

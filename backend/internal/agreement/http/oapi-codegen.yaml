@@ -1,0 +1,21 @@
+package: agreementhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - agreementListAgreements
+    - agreementCreateAgreement
+    - agreementGetAgreement
+    - agreementListClauses
+    - agreementAddClause
+    - agreementRemoveClause
+    - agreementMissingClauses
+    - agreementProcessingSchedule
+    - agreementSetSchedule
+    - agreementVendorContractStatus
+    - agreementTypeCheck
+    - agreementListParties
+    - agreementAddParty
+    - agreementRemoveParty

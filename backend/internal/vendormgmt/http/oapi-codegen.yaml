@@ -1,0 +1,13 @@
+package: vendorhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - vendorListVendors
+    - vendorCreateVendor
+    - vendorGetVendor
+    - vendorUpdateVendor
+    - vendorListIntakes
+    - vendorRecordIntake

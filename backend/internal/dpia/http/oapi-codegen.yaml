@@ -1,0 +1,36 @@
+package: dpiahttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - dpiaGetScreeningRules
+    - dpiaSaveScreeningRules
+    - dpiaScreenActivity
+    - dpiaListAssessments
+    - dpiaGetRegistry
+    - dpiaGetAssessment
+    - dpiaGetAssessmentDescription
+    - dpiaGetAssessmentDiff
+    - dpiaGetReport
+    - dpiaTransitionAssessment
+    - dpiaListOpinions
+    - dpiaRecordOpinion
+    - dpiaRiskCatalog
+    - dpiaListAssessmentRisks
+    - dpiaIdentifyRisk
+    - dpiaUpdateRisk
+    - dpiaRemoveAssessmentRisk
+    - dpiaListRiskControls
+    - dpiaAddRiskControl
+    - dpiaUpdateRiskControlStatus
+    - dpiaRemoveRiskControl
+    - dpiaGetNecessity
+    - dpiaAssessNecessity
+    - dpiaListTemplates
+    - dpiaCreateTemplate
+    - dpiaGetTemplate
+    - dpiaCloneTemplate
+    - dpiaPublishTemplate
+    - dpiaRetireTemplate

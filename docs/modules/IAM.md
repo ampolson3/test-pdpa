@@ -336,6 +336,8 @@
 
 **Acceptance criteria:** ตรวจได้ว่าใครเปลี่ยนสิทธิ์ของใคร เมื่อไร และส่งออกได้
 
+**Implementation (ORG-19):** `backend/internal/platform/audit/service/search.go` + `audit/http` — `GET /admin/v1/platform/audit-log` (`admin.audit.read`; กรองตามผู้กระทำ, ประเภท/รหัสรายการ, action ขึ้นต้นด้วย (โมดูล), ช่วงเวลา, `kind` = changes (ค่าเริ่มต้น) / requests (แถวต่อคำขอ API) / all; ใหม่สุดก่อน, cursor) · ชื่อผู้กระทำและชื่อเจ้าของรายการเมื่อ `entity_type = user` (รวมผู้ใช้ที่ปิดบัญชีแล้ว, `iamservice.AllNames`) · `GET …/export` (`admin.audit.export`) CSV UTF-8 BOM ไม่เกิน 50,000 แถว (ค่า config; มากกว่านั้น 422 `audit.export_too_large`) ป้องกัน formula injection และบันทึกการส่งออกเป็น `platform.audit.export` · `POST …/verify` ตรวจ hash chain ทันที · หน้าจอ `/settings/audit` · BFF ส่งต่อ `Content-Disposition` แล้ว · ส่งออกแบบ async ผ่านศูนย์ดาวน์โหลด (`export_jobs`) ยังไม่ทำ
+
 <a id="iam-04"></a>
 ### IAM-04 สิทธิ์ผู้ใช้ภายนอก (guest)
 

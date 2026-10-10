@@ -169,6 +169,32 @@
 
 **Acceptance criteria:** คำขอทุกช่องทางเข้าคิวเดียวกันและระบุช่องทางที่มา
 
+**Implementation:** Most of this was already in place from DSAR-13's own intake slice: `CreateRequest` already
+accepted any of the seven `channel` values (web/email/phone/branch/letter/line/api) and an `on_behalf` flag,
+and every request — whatever its channel — lands in the same `dsar.requests` table, visible through the same
+`ListRequests`/`GET /admin/v1/dsar/requests` the UI already used. What was actually missing against the
+literal acceptance criterion: the admin UI's intake form hard-coded `on_behalf: false` (staff had no way to
+mark a request as recorded on the data subject's own behalf) and the `/requests` list never showed a
+request's channel at all — so "ระบุช่องทางที่มา" (shows its origin channel) wasn't actually visible anywhere,
+even though the data was already stored. Fixed both: a "ลงคำขอแทนเจ้าของข้อมูล" checkbox on the intake form
+now sets `on_behalf` for real (natural for a phone/branch/letter/LINE intake, where staff are the ones typing
+it in), and `/requests` gained a "ช่องทาง" column showing each request's channel with a "ลงแทน" badge when
+`on_behalf` is true — "คำขอทุกช่องทางเข้าคิวเดียวกัน" is now also visibly true, not just true in the database.
+No migration, no new endpoint, no new permission — this was a frontend gap closing a backend capability that
+already existed. "แนบไฟล์" (attach a file at intake, e.g. a scanned letter) needed no new code either: every
+`dsar_request` is already a registered PLT-07 collaboration record (DSAR-17), so staff can attach a file to
+the request immediately after creating it via the existing "ประวัติ" panel — a second step, not a field on the
+create form itself, since PLT-09 attachments need a real entity id to attach to and the create form is a
+single atomic call. "รับคำขอผ่าน API จากแอป" (an external app submitting requests through `/api/v1`) is
+deliberately not built: that surface needs API-client authentication (ORG-16, not started) the same way
+CON-16's own `/api/v1` + webhooks are deferred for the same reason — the `channel: "api"` value is already in
+the CHECK constraint and already selectable by staff logging a call from an external system by hand, so a real
+`/api/v1` consumer can be layered on top later without touching this schema. Tests: unit (the acceptance
+criterion directly — every channel value round-trips through `CreateRequest` and is visible in the same
+`ListRequests` call, `on_behalf` is set correctly per channel), `pnpm --filter @pdpa/admin build`/`tsc` clean.
+Verified live: created a real `channel: "phone"`, `on_behalf: true` request through the running admin app and
+confirmed the list shows "โทรศัพท์" with a "ลงแทน" badge on that row.
+
 <a id="dsar-03"></a>
 ### DSAR-03 ครอบคลุมสิทธิทุกประเภท
 
@@ -189,6 +215,30 @@
 **Frontend (Next.js):** ตัวเลือกประเภทสิทธิในฟอร์มและหน้าคำขอ
 
 **Acceptance criteria:** ทุกประเภทสิทธิมี workflow และหนังสือตอบของตนเอง
+
+**Implementation:** DSAR-13 already gave all 9 right types a shared ST-02 workflow and their own response
+letter (purpose-keyed body with `{{request_type_name}}` substituted — "ของตนเอง" in the sense that every
+type's own name and number appear in its own generated letter). This feature adds the "ขั้นตอนเฉพาะของแต่ละ
+สิทธิ" half the backend note names: `rightSubtaskAction` (`backend/internal/dsar/service/subtasks.go`) maps
+each right type's code to the DSAR-08 subtask action its per-system work should carry (ม.30 access → search,
+ม.31 portability → export, ม.32 objection → stop_marketing, ม.33 erasure → delete, ม.34 restriction →
+restrict, ม.35-36 rectification → rectify, ม.19 withdraw_consent → restrict, complaint/inquiry → review).
+`Transition`'s `in_progress` edge now takes `asset_ids` (`dsar.subtasks.asset_id` → `ropa.assets`, already in
+the baseline schema but unused until now — "ทุกระบบที่มีข้อมูล (จาก RoPA / data map)" literally, not RoPA
+processing activities) and opens one subtask per asset via `openRightSubtasks` — "คำขอเดินครบทุกขั้นตอน"
+against every system involved, generalizing DSAR-08's own erasure-only example across every right type.
+`access`'s own ม.30 requirement ("ขอสำเนาต้องแจ้งแหล่งที่มา") is a new optional `data_source` field on
+`CreateRequest` (stored in `dsar.requests.details` jsonb, previously unused), appended as its own disclosure
+paragraph on the generated result letter (`letters.go`'s `appendDataSourceParagraph`) only for `access`
+requests that set it. `dsar.completed` — already in `docs/architecture/events.yaml` with "ITSM / CRM
+(subtask)" as a named consumer, but nothing published it — now fires on every completion (ม.32/34's "แจ้ง
+ระบบปลายทาง"/"หยุดทันทีและแจ้งระบบปลายทาง"), so a downstream subscriber can flag suppression/stop marketing
+once the DSAR closes, for whichever right type needs it. API: `data_source` on `DsarRequestInput`/`DsarRequest`,
+`asset_ids` on `DsarTransitionInput`, `asset_id` on `DsarSubtask`. UI: an access-only "แหล่งที่มาของข้อมูล"
+field on the intake form, an asset multi-select on the in_progress action panel (`/requests`). Tests: unit
+(access/erasure open the right action per linked asset, an unknown asset_id refused, dsar.completed published
+on every completion, the access letter discloses a given data_source verbatim — two-tenant isolation via the
+existing harness), HTTP contract (422 for an unknown asset, 200 opening a real subtask, data_source round-trip).
 
 <a id="dsar-04"></a>
 ### DSAR-04 ยื่นคำขอแทนเจ้าของข้อมูล
@@ -234,6 +284,45 @@
 
 **หมายเหตุ:** ThaID / NDID ต่อยอดผ่าน ORG-15
 
+**Implementation (DSAR-06):** `dsar.verifications` was already fully specified in the baseline migrations
+(`method` otp_sms/otp_email/id_document/in_person/idp/thaid, `subject_verification_id` → `iam.
+subject_verifications`, `masked_id_file_id` → `platform.files`, status pending/passed/failed) — no new
+migration; this builds only the (admin-side, no portal yet — same deferral IAM-05's own OTP service used)
+service and endpoints against it. OTP reuses IAM-05 directly: `StartOTPVerification` decrypts the request's
+own `requester_contact_enc` (PLT-13, never logged — rule 3) and calls `iamservice.StartVerification` with
+`Purpose: "dsar"` (already in IAM-05's own purpose list); `ConfirmOTPVerification` calls `VerifyOTP` — a
+wrong code is a harmless retry (IAM-05's own 5-attempt cap, D-01), only once IAM-05 itself gives up
+(too-many-attempts or expired) does the `dsar.verifications` row get marked `failed`. "ตรวจกับข้อมูลในระบบ"
+for OTP is implicit: the code goes to the contact already on file for this exact request, so a correct code
+proves the requester controls that channel.
+
+The acceptance criterion's "เลขบัตรในไฟล์ที่เก็บถูกปกปิดเสมอ" is literal, not an OCR claim: no OCR library is
+available in this environment (no Tesseract, no cloud OCR service configured — `decisions.md` Q-30), so
+rather than guess at unavailable tooling, staff mark the rectangle(s) over the ID number themselves;
+`SubmitIDDocumentVerification` decodes the uploaded JPEG/PNG (Go's own `image`/`image/draw` stdlib, no new
+dependency), draws an opaque black box over each rectangle (refusing one that reaches outside the image
+rather than silently clipping it), and only the *redacted* bytes are ever saved — via `files.Service.
+SaveGenerated`, already attached to the request — the caller's raw upload is never attached to anything and
+simply expires through PLT-09's own 24h orphan cleanup. `ConfirmIDDocument` is staff's own pass/fail judgement
+after checking the redacted card (there is no trusted national-id database to automate this against from
+here). Either path's first call on a `received` request moves it `received` → `verifying` (ST-02, already
+declared); a pass stamps `dsar.requests.verified_at` (the acceptance criterion's other half) and moves
+`verifying` → `in_review`. `internal/dsar/service/identity.go`'s small `Files` interface (rule 9) is backed
+directly by `*files.Service` in `cmd/api/main.go` (already constructed), alongside `Verification
+*iamservice.Service` (already constructed for `/me` and IAM-05).
+
+API: `GET /admin/v1/dsar/requests/{id}/verifications` (list, oldest first), `POST .../verifications/otp`
+(201), `POST .../verifications/{verificationId}/confirm-otp` (200), `POST .../verifications/id-document`
+(201, body: `raw_file_id` + one or more pixel `redactions`), `POST .../verifications/{verificationId}/decide`
+(200, staff pass/fail) — all `dsar.request.update`, no new permission code. UI: a "ยืนยันตัวตน" toggle per row
+on `/requests` — a list of past attempts, an OTP form (method + code), and an ID-document form (`FileUploader`
++ four numeric rectangle fields + a save button, then pass/fail buttons once pending). Tests: unit (OTP pass
+stamps `verified_at` and transitions to `in_review`; a wrong code is a harmless retry; redaction blacks out
+exactly the given rectangle and nothing else, proven by decoding the saved bytes back to pixels; an
+out-of-bounds rectangle is refused; re-deciding an already-decided verification is refused; two-tenant
+isolation), HTTP contract (401/403/404/400/201/200 through the real validator), `pnpm --filter @pdpa/admin
+build` verified clean.
+
 <a id="dsar-07"></a>
 ### DSAR-07 นับเวลา SLA 30 วัน
 
@@ -276,6 +365,49 @@
 
 **Acceptance criteria:** คำขอเดินครบทุกขั้นตอนและปิดได้เมื่อ subtask เสร็จทั้งหมด
 
+**Implementation:** `internal/dsar/service/subtasks.go` (`dsar.subtask.*`, already fully seeded in the baseline
+permission migration — no new permission code) — CRUD on `dsar.subtasks` (already fully specified in the
+baseline migrations). The acceptance criterion is the gate added to `Transition`'s own `in_progress →
+completed` edge (DSAR-13): it now additionally requires every subtask of the request to be `done` or
+`not_applicable` — a request with none is vacuously "all done" (DSAR-13's own completed tests never created
+any), one with any `open`/`in_progress` subtask is refused `dsar.invalid_transition`. "คำขอเดินครบทุกขั้นตอน"
+needed no new code: ST-02's full graph was already encoded by DSAR-13, and DSAR-06/11 already built the
+`received → ... → completed` path this walks.
+
+`dsar.subtasks.status` is its own small local machine (`open → in_progress → done|not_applicable`, or straight
+`open → done|not_applicable` for a subtask quick enough to finish in one step — `docs/states/state-machines.yaml#DSAR-08subtask`),
+not routed through the full PLT-05 workflow engine: `dsar.request_types.workflow_definition_id` exists for
+that in the schema, but DSAR never adopted it (DSAR-13's own module-doc note explains why — the engine's
+assignee is baked into its Definition JSON at the type level, which doesn't fit a per-record subtask list),
+so wiring a second engine in for just this gate would be a bigger change than the acceptance criterion needs.
+"แก้ได้เฉพาะงานที่ได้รับมอบหมาย" (docs/security/permissions.md's own note on `dsar.subtask`): a caller holding
+only `.update` (IT/OWNER/LEGAL/GUEST in the seeded RBAC) may change a subtask assigned to them directly, or to
+an `iam.groups` group they belong to (`iamservice.GroupIDsOf`); `.execute` (DPO/PRIVACY) bypasses that check.
+Creating an assigned subtask notifies the assignee (PLT-04, migration 00052's `dsar.subtask_assigned`
+template, operational text — no DRAFT marker, rule 8) — "มอบหมายงานย่อยให้เจ้าของระบบหรือทีม". A subtask's
+optional evidence is the caller's own clean PLT-09 upload, attached via `files.Service.Attach` against the
+already-registered `dsar_request` entity type (DSAR-17's own `fileSvc.EntityPermissions["dsar_request"]`).
+
+"ตั้ง rule อัตโนมัติตามประเภทและบริษัท" (an automatic default-subtask rule per request type) is deliberately
+not built: no column models it and no screen needs it yet — the module doc's own description names it, but the
+literal acceptance criterion is only about subtask completion gating closure, which is fully exercised without
+one. Add it (most naturally as a `default_subtask_actions` column on `dsar.request_types`, applied when a
+request enters `in_progress`) once a real request for it exists, the same "no consumer yet" deferral this
+codebase uses elsewhere.
+
+API: `GET`/`POST /admin/v1/dsar/requests/{id}/subtasks`, `POST .../subtasks/{subtaskId}/status` (ETag/If-Match),
+`DELETE .../subtasks/{subtaskId}` — same shapes as every other module's child-table endpoints. UI: a "งานย่อย"
+toggle per row on `/requests` — a status table, an inline create form (action + a user or group picker, reusing
+PLT-05's own `useGroupSearch`), and per-row start/done/not-applicable/remove actions. Tests: unit (the
+acceptance criterion directly — a request with an open subtask cannot complete, closes once it's done, a
+request with none is unaffected; action/assignee/group validation; the access-restriction rule for user and
+group assignees and its `.execute` bypass; delete; two-tenant isolation), HTTP contract (401/403/400/201/200/
+204/404/409/412/428). Verified live: created a real request and subtask through the running admin app against
+the real API, moved it `open → done`, and confirmed the row's actions correctly reduced to just "remove" once
+terminal. Found and fixed while live-testing a separate, pre-existing bug this same pass surfaced: `/requests`'
+row `<Fragment>` had no `key` of its own (only the inner `<tr>` did) — React warned "Each child in a list
+should have a unique key prop"; fixed by moving the key onto the `Fragment`.
+
 <a id="dsar-11"></a>
 ### DSAR-11 ปฏิเสธคำขอพร้อมเหตุผล
 
@@ -297,6 +429,24 @@
 
 **Acceptance criteria:** การปฏิเสธต้องมีเหตุผลและผู้อนุมัติ และถูกบันทึกเข้า RoPA อัตโนมัติ
 
+**Implementation:** built on top of DSAR-13's `Transition`/ST-02: entering `rejected` already required a
+reason; this feature added the second half of the acceptance criterion. "ผู้อนุมัติ" (an approver) is
+enforced as a permission gate — the caller must additionally hold `dsar.request.approve` (already-seeded,
+no new code), not just `dsar.request.execute` — rather than a separate propose/confirm maker-checker round,
+since DSAR-13's `rejected` transition is already a single explicit action a DPO takes with a reason attached,
+not a multi-step draft. "ลงบันทึกใน RoPA อัตโนมัติ" is deliberately *not* done here: `TransitionInput` gained
+an optional `ActivityIDs []uuid.UUID` (the RoPA processing activities this rejection concerns — FK-checked via
+a new `Ropa` interface, rule 9), and rejecting now publishes `dsar.rejected` (PLT-11 outbox) with those
+activity ids and the reason code — but DSAR never writes to the `ropa` schema itself; the actual write is
+ROPA-10's own job, subscribing to this event (module boundary, rule 9). `docs/architecture/events.yaml`'s
+`dsar.rejected` entry (a generic SA-authored template shared by all `dsar.*` lifecycle events) was extended
+with `reason_code` and `activity_refs` — the two fields ROPA-10 actually needs that the generic template
+didn't carry — and the catalog regenerated (`go generate ./internal/platform/events`). Tests: unit (rejecting
+without `dsar.request.approve` is refused with `ErrForbidden`/403, an unknown activity id is refused, the
+outbox row carries the reason and activity ref, redelivery-safety is ROPA-10's job to prove), HTTP contract.
+UI: the reject panel on `/requests` gained an activity multi-select (shown only when rejecting), passed as
+`activity_ids` on the transition call.
+
 <a id="dsar-13"></a>
 ### DSAR-13 template หนังสือตอบกลับ
 
@@ -317,6 +467,55 @@
 **Frontend (Next.js):** เลือก template + แก้ก่อนส่ง
 
 **Acceptance criteria:** หนังสือตอบถูกสร้างอัตโนมัติตามประเภทสิทธิและผลการพิจารณา
+
+**Implementation:** `internal/dsar` — the first module on the `dsar` schema. Building the acceptance criterion
+needed a real `dsar.requests` row with a status/outcome to generate from, so this pass also carries the
+minimal slice of DSAR-01/02/06/07/08/11's job DSAR-13 depends on — creating a request and moving it through
+ST-02's real transition graph — deliberately scoped no further: full intake channels, identity verification,
+the workflow/subtask engine, business-day SLA countdown and the reject-with-reason UI are sibling features
+layered on top later (the same "build the minimal slice a feature needs, not its whole dependency" move ROPA-01
+made ahead of ROPA-02). `dsar.request_types` and `platform.templates`/the `dsar_letter` PLT-16 document type
+(`dsar.request.*` permissions) were all already fully specified in the baseline migrations and
+`internal/wiring.Docs` — this pass only seeds data (migration 00043: the 9 fixed right-type rows, plus an
+`ALTER TABLE ... ADD COLUMN name_en` since the baseline only carried a Thai name and the letter is bilingual)
+and 6 DRAFT response-letter template rows (`platform.templates`, `template_type = 'dsar_response'`) — one per
+*purpose* (result / rejection / request_info, the module doc's own "ดำเนินการแล้ว / ปฏิเสธ / ขอข้อมูลเพิ่ม"),
+not per (type × purpose): `{{request_type_name}}` is substituted with the request's own type name at
+generation time, so one body correctly reads as being about access for an access request and erasure for an
+erasure request without 27 near-duplicate bodies to keep in sync — flagged DRAFT per rule 8, same pattern as
+ORG-07/ROPA-09/PNG-03.
+
+`Service.Transition` encodes ST-02's full 8-state, 17-edge graph (`docs/states/state-machines.yaml#ST-02`)
+even though this feature only exercises a subset of it — cheap to encode correctly once, so DSAR-06/08/11
+build on a real machine later instead of reinventing one; no verification, subtask-completeness or
+SLA-overdue guard is enforced on the intermediate edges yet (those modules don't exist), only the two
+data-carrying guards this feature needs (`outcome` required to enter `completed`, a reason required to enter
+`rejected`). Entering `awaiting_info`/`completed`/`rejected` auto-generates the matching response letter — a
+PLT-16 `dsar_letter` document draft, composed from the purpose's template with the requester's name (decrypted
+via PLT-13, `Keyring.Decrypt` — the same class/context pattern CON-13's identifiers already established),
+request number and type name substituted in as plain text (not PLT-16's `mergeField` mechanism, which only
+resolves org/DPO fields live at every render — these values are specific to this one immutable letter
+instance). The generated document is still just a draft: DPO reviews and edits it before ever sending it
+("เลือก template + แก้ก่อนส่ง") through PLT-16's own existing approve/publish flow — actually recording that a
+letter was sent (`dsar.communications`) is left to whichever later feature owns delivery tracking, the same
+"leave the FK to build the real thing later" move ROPA-01 made for `discovered_by_finding_id`.
+
+`due_at` is `received_at` plus the request type's `sla_days` as *calendar* days — a placeholder; the real
+business-day countdown (Songkran-aware, like every other deadline in this codebase) is DSAR-07's job.
+Permissions reuse the already-seeded `dsar.request.*` (no new codes): `read`/`create`/`execute` gate the three
+endpoints, and the letter-generation step inside `Transition` additionally needs `dsar.request.update` (the
+`dsar_letter` document type's own `Create`/`Update` permission per `internal/wiring/docs.go`) since it's really
+PLT-16's document-composer write happening underneath. API: `GET /admin/v1/dsar/request-types`,
+`GET/POST /admin/v1/dsar/requests`, `GET /admin/v1/dsar/requests/{id}`,
+`POST /admin/v1/dsar/requests/{id}/transition` (ETag/If-Match; 409 `dsar.invalid_transition` for a graph edge
+that doesn't exist, 422 `dsar.invalid_input` for a missing outcome/reason). UI `/requests`: an intake form,
+a status-filtered list with the SLA due date, and an inline action panel per request (next-status picker +
+outcome/rejection-reason fields) that links straight to the generated letter's document editor when one is
+produced. Tests: unit (`ListRequestTypes` covers all 9 codes, `CreateRequest` validation and numbering, the
+acceptance criterion directly — completing/rejecting a request generates a letter carrying the decrypted
+requester name, the request's own type name and its request number in both languages — a rejected letter
+carries the reason, an invalid ST-02 edge refused, two-tenant isolation), HTTP contract
+(401/403/400/404/409/412/422/428).
 
 <a id="dsar-14"></a>
 ### DSAR-14 ส่งข้อมูลให้เจ้าของข้อมูลอย่างปลอดภัย

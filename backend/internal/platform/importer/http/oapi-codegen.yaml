@@ -1,0 +1,13 @@
+package: importerhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - platformListImports
+    - platformCreateImport
+    - platformGetImport
+    - platformSetImportMapping
+    - platformConfirmImport
+    - platformDownloadImportErrors

@@ -1,0 +1,19 @@
+package: noticehttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - noticeListTemplateGroups
+    - noticeListNotices
+    - noticeCreateNotice
+    - noticeGetNotice
+    - noticeGetChecklist
+    - noticeGetTranslationStatus
+    - noticeListVersions
+    - noticeSetPublishIntent
+    - noticeListIndirectCollections
+    - noticeRegisterIndirectCollection
+    - noticeGetIndirectCollection
+    - noticeRecordIndirectNotice

@@ -17,6 +17,9 @@ type config struct {
 	OpenAPISpecPath    string
 	OTelEndpoint       string
 	CORSAllowedOrigins []string
+	// TrustedProxies: load balancers / reverse proxies whose X-Forwarded-For is believed (decisions.md D-23),
+	// IPs or CIDRs, comma separated. Empty: the TCP peer is the client.
+	TrustedProxies string
 }
 
 func loadConfig() config {
@@ -29,6 +32,7 @@ func loadConfig() config {
 		OpenAPISpecPath:    env("OPENAPI_SPEC_PATH", "api/openapi/openapi.yaml"),
 		OTelEndpoint:       env("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
 		CORSAllowedOrigins: strings.Split(env("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001"), ","),
+		TrustedProxies:     env("TRUSTED_PROXIES", ""),
 	}
 }
 
