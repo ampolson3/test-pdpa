@@ -110,6 +110,14 @@ export {
   type RiskFactorContribution,
 } from "./activityRiskScores";
 export {
+  useGapRules,
+  useOpenGapFindings,
+  useActivityGapFindings,
+  useAnalyzeActivity,
+  type RiskGapRule,
+  type RiskGapFinding,
+} from "./gapFindings";
+export {
   useDataInventory,
   useSaveDataInventoryItem,
   type DataInventoryItem,

@@ -12,6 +12,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const activityHasNotice = `-- name: ActivityHasNotice :one
+SELECT EXISTS (SELECT 1 FROM notice.notice_activity_links WHERE activity_id = $1) AS covered
+`
+
+// RRA-04: whether any notice (regardless of status) links this RoPA activity.
+func (q *Queries) ActivityHasNotice(ctx context.Context, activityID uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, activityHasNotice, activityID)
+	var covered bool
+	err := row.Scan(&covered)
+	return covered, err
+}
+
 const getNotice = `-- name: GetNotice :one
 SELECT id, legal_entity_id, subject_type_id, notice_type, title, slug, document_id, status, current_version_id,
     owner_user_id, review_cycle_months, public_key, pending_is_material_change, pending_changes_purpose,

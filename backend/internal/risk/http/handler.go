@@ -90,6 +90,71 @@ func (h *Strict) RiskScoreActivity(ctx context.Context, req RiskScoreActivityReq
 	return RiskScoreActivity201JSONResponse(toScoreWire(s)), nil
 }
 
+func (h *Strict) RiskListGapRules(ctx context.Context, req RiskListGapRulesRequestObject) (RiskListGapRulesResponseObject, error) {
+	list, err := h.svc.ListGapRules(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp := RiskListGapRules200JSONResponse{Data: make([]RiskGapRule, 0, len(list))}
+	for _, r := range list {
+		resp.Data = append(resp.Data, toGapRuleWire(r))
+	}
+	return resp, nil
+}
+
+func (h *Strict) RiskListOpenGapFindings(ctx context.Context, req RiskListOpenGapFindingsRequestObject) (RiskListOpenGapFindingsResponseObject, error) {
+	list, err := h.svc.ListOpenGapFindings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp := RiskListOpenGapFindings200JSONResponse{Data: make([]RiskGapFinding, 0, len(list))}
+	for _, f := range list {
+		resp.Data = append(resp.Data, toGapFindingWire(f))
+	}
+	return resp, nil
+}
+
+func (h *Strict) RiskListActivityGapFindings(ctx context.Context, req RiskListActivityGapFindingsRequestObject) (RiskListActivityGapFindingsResponseObject, error) {
+	list, err := h.svc.ListGapFindingsForActivity(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := RiskListActivityGapFindings200JSONResponse{Data: make([]RiskGapFinding, 0, len(list))}
+	for _, f := range list {
+		resp.Data = append(resp.Data, toGapFindingWire(f))
+	}
+	return resp, nil
+}
+
+func (h *Strict) RiskAnalyzeActivity(ctx context.Context, req RiskAnalyzeActivityRequestObject) (RiskAnalyzeActivityResponseObject, error) {
+	list, err := h.svc.AnalyzeActivity(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := RiskAnalyzeActivity200JSONResponse{Data: make([]RiskGapFinding, 0, len(list))}
+	for _, f := range list {
+		resp.Data = append(resp.Data, toGapFindingWire(f))
+	}
+	return resp, nil
+}
+
+func toGapRuleWire(r riskservice.GapRule) RiskGapRule {
+	return RiskGapRule{Id: r.ID, Code: r.Code, Name: r.Name, Severity: RiskGapRuleSeverity(r.Severity), LegalRef: r.LegalRef}
+}
+
+func toGapFindingWire(f riskservice.GapFinding) RiskGapFinding {
+	w := RiskGapFinding{Id: f.ID, RuleId: f.RuleID, RuleCode: f.RuleCode, ActivityId: f.ActivityID,
+		Status: RiskGapFindingStatus(f.Status), DetectedAt: f.DetectedAt.UTC()}
+	if f.ResolvedAt != nil {
+		t := f.ResolvedAt.UTC()
+		w.ResolvedAt = &t
+	}
+	if f.TaskID != nil {
+		w.TaskId = f.TaskID
+	}
+	return w
+}
+
 func toScoreWire(s riskservice.ActivityScore) ActivityRiskScore {
 	w := ActivityRiskScore{Id: s.ID, ActivityId: s.ActivityID, MatrixId: s.MatrixID, Likelihood: s.Likelihood,
 		Impact: s.Impact, Score: float32(s.Score), Level: RiskLevel(s.Level), ComputedAt: s.ComputedAt.UTC(),

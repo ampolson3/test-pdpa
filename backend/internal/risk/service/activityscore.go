@@ -29,11 +29,17 @@ type ActivitySignals struct {
 	ControlCount           int
 }
 
-// Ropa is what risk reads from the ropa module (rule 9) to score one activity.
+// Ropa is what risk reads from the ropa module (rule 9) to score one activity and, for RRA-04, to run
+// the gap-analysis rules against it.
 type Ropa interface {
 	// ActivityVisible reports whether id is a real activity visible under the caller's RLS.
 	ActivityVisible(ctx context.Context, id uuid.UUID) (bool, error)
 	Signals(ctx context.Context, id uuid.UUID) (ActivitySignals, error)
+	// MissingItems is ROPA-03's own live completeness check, reused by RRA-04's no_lawful_basis/
+	// no_retention/transfer_no_basis/sensitive_no_consent gap rules instead of recomputing them.
+	MissingItems(ctx context.Context, id uuid.UUID) ([]string, error)
+	// ListActivityIDs is every activity visible to the caller's tenant — RRA-04's sweep source.
+	ListActivityIDs(ctx context.Context) ([]uuid.UUID, error)
 }
 
 // DpiaTrigger is RRA-03: risk hands a fresh high/very_high score to dpia so it can open a DPIA round —

@@ -76,24 +76,66 @@ func (e RiskFactorContributionContributesTo) Valid() bool {
 	}
 }
 
+// Defines values for RiskGapFindingStatus.
+const (
+	Open     RiskGapFindingStatus = "open"
+	Resolved RiskGapFindingStatus = "resolved"
+	Waived   RiskGapFindingStatus = "waived"
+)
+
+// Valid indicates whether the value is a known member of the RiskGapFindingStatus enum.
+func (e RiskGapFindingStatus) Valid() bool {
+	switch e {
+	case Open:
+		return true
+	case Resolved:
+		return true
+	case Waived:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskGapRuleSeverity.
+const (
+	RiskGapRuleSeverityHigh   RiskGapRuleSeverity = "high"
+	RiskGapRuleSeverityLow    RiskGapRuleSeverity = "low"
+	RiskGapRuleSeverityMedium RiskGapRuleSeverity = "medium"
+)
+
+// Valid indicates whether the value is a known member of the RiskGapRuleSeverity enum.
+func (e RiskGapRuleSeverity) Valid() bool {
+	switch e {
+	case RiskGapRuleSeverityHigh:
+		return true
+	case RiskGapRuleSeverityLow:
+		return true
+	case RiskGapRuleSeverityMedium:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RiskLevel.
 const (
-	High     RiskLevel = "high"
-	Low      RiskLevel = "low"
-	Medium   RiskLevel = "medium"
-	VeryHigh RiskLevel = "very_high"
+	RiskLevelHigh     RiskLevel = "high"
+	RiskLevelLow      RiskLevel = "low"
+	RiskLevelMedium   RiskLevel = "medium"
+	RiskLevelVeryHigh RiskLevel = "very_high"
 )
 
 // Valid indicates whether the value is a known member of the RiskLevel enum.
 func (e RiskLevel) Valid() bool {
 	switch e {
-	case High:
+	case RiskLevelHigh:
 		return true
-	case Low:
+	case RiskLevelLow:
 		return true
-	case Medium:
+	case RiskLevelMedium:
 		return true
-	case VeryHigh:
+	case RiskLevelVeryHigh:
 		return true
 	default:
 		return false
@@ -112,6 +154,42 @@ func (e AcceptLanguage) Valid() bool {
 	case AcceptLanguageEn:
 		return true
 	case AcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskListOpenGapFindingsParamsAcceptLanguage.
+const (
+	RiskListOpenGapFindingsParamsAcceptLanguageEn RiskListOpenGapFindingsParamsAcceptLanguage = "en"
+	RiskListOpenGapFindingsParamsAcceptLanguageTh RiskListOpenGapFindingsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RiskListOpenGapFindingsParamsAcceptLanguage enum.
+func (e RiskListOpenGapFindingsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RiskListOpenGapFindingsParamsAcceptLanguageEn:
+		return true
+	case RiskListOpenGapFindingsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskListGapRulesParamsAcceptLanguage.
+const (
+	RiskListGapRulesParamsAcceptLanguageEn RiskListGapRulesParamsAcceptLanguage = "en"
+	RiskListGapRulesParamsAcceptLanguageTh RiskListGapRulesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RiskListGapRulesParamsAcceptLanguage enum.
+func (e RiskListGapRulesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RiskListGapRulesParamsAcceptLanguageEn:
+		return true
+	case RiskListGapRulesParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -202,6 +280,42 @@ func (e RiskUpdateMatrixParamsAcceptLanguage) Valid() bool {
 	case RiskUpdateMatrixParamsAcceptLanguageEn:
 		return true
 	case RiskUpdateMatrixParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskAnalyzeActivityParamsAcceptLanguage.
+const (
+	RiskAnalyzeActivityParamsAcceptLanguageEn RiskAnalyzeActivityParamsAcceptLanguage = "en"
+	RiskAnalyzeActivityParamsAcceptLanguageTh RiskAnalyzeActivityParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RiskAnalyzeActivityParamsAcceptLanguage enum.
+func (e RiskAnalyzeActivityParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RiskAnalyzeActivityParamsAcceptLanguageEn:
+		return true
+	case RiskAnalyzeActivityParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskListActivityGapFindingsParamsAcceptLanguage.
+const (
+	RiskListActivityGapFindingsParamsAcceptLanguageEn RiskListActivityGapFindingsParamsAcceptLanguage = "en"
+	RiskListActivityGapFindingsParamsAcceptLanguageTh RiskListActivityGapFindingsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RiskListActivityGapFindingsParamsAcceptLanguage enum.
+func (e RiskListActivityGapFindingsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RiskListActivityGapFindingsParamsAcceptLanguageEn:
+		return true
+	case RiskListActivityGapFindingsParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -311,6 +425,46 @@ type RiskFactorContribution struct {
 // RiskFactorContributionContributesTo defines model for RiskFactorContribution.ContributesTo.
 type RiskFactorContributionContributesTo string
 
+// RiskGapFinding defines model for RiskGapFinding.
+type RiskGapFinding struct {
+	// ActivityId UUIDv7 generated by the API
+	ActivityId Uuid `json:"activity_id"`
+
+	// DetectedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	DetectedAt Timestamp `json:"detected_at"`
+
+	// Id UUIDv7 generated by the API
+	Id Uuid `json:"id"`
+
+	// ResolvedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	ResolvedAt *Timestamp `json:"resolved_at,omitempty"`
+	RuleCode   string     `json:"rule_code"`
+
+	// RuleId UUIDv7 generated by the API
+	RuleId Uuid                 `json:"rule_id"`
+	Status RiskGapFindingStatus `json:"status"`
+
+	// TaskId UUIDv7 generated by the API
+	TaskId *Uuid `json:"task_id,omitempty"`
+}
+
+// RiskGapFindingStatus defines model for RiskGapFinding.Status.
+type RiskGapFindingStatus string
+
+// RiskGapRule defines model for RiskGapRule.
+type RiskGapRule struct {
+	Code string `json:"code"`
+
+	// Id UUIDv7 generated by the API
+	Id       Uuid                `json:"id"`
+	LegalRef string              `json:"legal_ref"`
+	Name     string              `json:"name"`
+	Severity RiskGapRuleSeverity `json:"severity"`
+}
+
+// RiskGapRuleSeverity defines model for RiskGapRule.Severity.
+type RiskGapRuleSeverity string
+
 // RiskLevel risk.activity_scores.level's own CHECK constraint — the only four values any matrix may ever classify a score into
 type RiskLevel string
 
@@ -381,6 +535,24 @@ type Unauthorized = Problem
 // UnprocessableEntity RFC 9457 problem details with a stable machine-readable `code`
 type UnprocessableEntity = Problem
 
+// RiskListOpenGapFindingsParams defines parameters for RiskListOpenGapFindings.
+type RiskListOpenGapFindingsParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RiskListOpenGapFindingsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RiskListOpenGapFindingsParamsAcceptLanguage defines parameters for RiskListOpenGapFindings.
+type RiskListOpenGapFindingsParamsAcceptLanguage string
+
+// RiskListGapRulesParams defines parameters for RiskListGapRules.
+type RiskListGapRulesParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RiskListGapRulesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RiskListGapRulesParamsAcceptLanguage defines parameters for RiskListGapRules.
+type RiskListGapRulesParamsAcceptLanguage string
+
 // RiskListMatricesParams defines parameters for RiskListMatrices.
 type RiskListMatricesParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -432,6 +604,24 @@ type RiskUpdateMatrixParams struct {
 // RiskUpdateMatrixParamsAcceptLanguage defines parameters for RiskUpdateMatrix.
 type RiskUpdateMatrixParamsAcceptLanguage string
 
+// RiskAnalyzeActivityParams defines parameters for RiskAnalyzeActivity.
+type RiskAnalyzeActivityParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RiskAnalyzeActivityParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RiskAnalyzeActivityParamsAcceptLanguage defines parameters for RiskAnalyzeActivity.
+type RiskAnalyzeActivityParamsAcceptLanguage string
+
+// RiskListActivityGapFindingsParams defines parameters for RiskListActivityGapFindings.
+type RiskListActivityGapFindingsParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RiskListActivityGapFindingsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RiskListActivityGapFindingsParamsAcceptLanguage defines parameters for RiskListActivityGapFindings.
+type RiskListActivityGapFindingsParamsAcceptLanguage string
+
 // RiskGetLatestActivityScoreParams defines parameters for RiskGetLatestActivityScore.
 type RiskGetLatestActivityScoreParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -458,6 +648,12 @@ type RiskUpdateMatrixJSONRequestBody = RiskMatrixInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// RiskListOpenGapFindings The tenant-wide gap register (RRA-04) — every open finding across every activity, newest first
+	// (GET /admin/v1/risk/gap-findings)
+	RiskListOpenGapFindings(w http.ResponseWriter, r *http.Request, params RiskListOpenGapFindingsParams)
+	// RiskListGapRules Every active legal-gap rule (RRA-04) — code, severity and the legal article it cites
+	// (GET /admin/v1/risk/gap-rules)
+	RiskListGapRules(w http.ResponseWriter, r *http.Request, params RiskListGapRulesParams)
 	// RiskListMatrices The tenant's own likelihood x impact risk matrices, default first (RRA-02)
 	// (GET /admin/v1/risk/matrices)
 	RiskListMatrices(w http.ResponseWriter, r *http.Request, params RiskListMatricesParams)
@@ -473,6 +669,12 @@ type ServerInterface interface {
 	// RiskUpdateMatrix Change a risk matrix's own levels, thresholds or default flag — the acceptance criterion itself (RRA-02), since Classify always reads the current row live, never a cached score
 	// (PUT /admin/v1/risk/matrices/{id})
 	RiskUpdateMatrix(w http.ResponseWriter, r *http.Request, id Uuid, params RiskUpdateMatrixParams)
+	// RiskAnalyzeActivity Re-run every active gap rule against this activity's current RoPA data now (RRA-04) — the acceptance criterion itself, since every rule type must be detected
+	// (POST /admin/v1/ropa/activities/{id}/gap-analysis)
+	RiskAnalyzeActivity(w http.ResponseWriter, r *http.Request, id Uuid, params RiskAnalyzeActivityParams)
+	// RiskListActivityGapFindings This activity's own gap findings (RRA-04), as last analyzed — read-only, no recomputation
+	// (GET /admin/v1/ropa/activities/{id}/gap-findings)
+	RiskListActivityGapFindings(w http.ResponseWriter, r *http.Request, id Uuid, params RiskListActivityGapFindingsParams)
 	// RiskGetLatestActivityScore The activity's most recently computed risk score, without recomputing (RRA-01)
 	// (GET /admin/v1/ropa/activities/{id}/risk-score)
 	RiskGetLatestActivityScore(w http.ResponseWriter, r *http.Request, id Uuid, params RiskGetLatestActivityScoreParams)
@@ -484,6 +686,18 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// RiskListOpenGapFindings The tenant-wide gap register (RRA-04) — every open finding across every activity, newest first
+// (GET /admin/v1/risk/gap-findings)
+func (_ Unimplemented) RiskListOpenGapFindings(w http.ResponseWriter, r *http.Request, params RiskListOpenGapFindingsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RiskListGapRules Every active legal-gap rule (RRA-04) — code, severity and the legal article it cites
+// (GET /admin/v1/risk/gap-rules)
+func (_ Unimplemented) RiskListGapRules(w http.ResponseWriter, r *http.Request, params RiskListGapRulesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // RiskListMatrices The tenant's own likelihood x impact risk matrices, default first (RRA-02)
 // (GET /admin/v1/risk/matrices)
@@ -515,6 +729,18 @@ func (_ Unimplemented) RiskUpdateMatrix(w http.ResponseWriter, r *http.Request, 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// RiskAnalyzeActivity Re-run every active gap rule against this activity's current RoPA data now (RRA-04) — the acceptance criterion itself, since every rule type must be detected
+// (POST /admin/v1/ropa/activities/{id}/gap-analysis)
+func (_ Unimplemented) RiskAnalyzeActivity(w http.ResponseWriter, r *http.Request, id Uuid, params RiskAnalyzeActivityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RiskListActivityGapFindings This activity's own gap findings (RRA-04), as last analyzed — read-only, no recomputation
+// (GET /admin/v1/ropa/activities/{id}/gap-findings)
+func (_ Unimplemented) RiskListActivityGapFindings(w http.ResponseWriter, r *http.Request, id Uuid, params RiskListActivityGapFindingsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // RiskGetLatestActivityScore The activity's most recently computed risk score, without recomputing (RRA-01)
 // (GET /admin/v1/ropa/activities/{id}/risk-score)
 func (_ Unimplemented) RiskGetLatestActivityScore(w http.ResponseWriter, r *http.Request, id Uuid, params RiskGetLatestActivityScoreParams) {
@@ -535,6 +761,88 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// RiskListOpenGapFindings operation middleware
+func (siw *ServerInterfaceWrapper) RiskListOpenGapFindings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RiskListOpenGapFindingsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RiskListOpenGapFindingsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RiskListOpenGapFindings(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RiskListGapRules operation middleware
+func (siw *ServerInterfaceWrapper) RiskListGapRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RiskListGapRulesParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RiskListGapRulesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RiskListGapRules(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // RiskListMatrices operation middleware
 func (siw *ServerInterfaceWrapper) RiskListMatrices(w http.ResponseWriter, r *http.Request) {
@@ -814,6 +1122,106 @@ func (siw *ServerInterfaceWrapper) RiskUpdateMatrix(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// RiskAnalyzeActivity operation middleware
+func (siw *ServerInterfaceWrapper) RiskAnalyzeActivity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RiskAnalyzeActivityParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RiskAnalyzeActivityParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RiskAnalyzeActivity(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RiskListActivityGapFindings operation middleware
+func (siw *ServerInterfaceWrapper) RiskListActivityGapFindings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RiskListActivityGapFindingsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RiskListActivityGapFindingsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RiskListActivityGapFindings(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RiskGetLatestActivityScore operation middleware
 func (siw *ServerInterfaceWrapper) RiskGetLatestActivityScore(w http.ResponseWriter, r *http.Request) {
 
@@ -1048,6 +1456,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/ropa/activities/{id}/risk-score", wrapper.RiskScoreActivity)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/risk/gap-rules", wrapper.RiskListGapRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/risk/gap-findings", wrapper.RiskListOpenGapFindings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/ropa/activities/{id}/gap-findings", wrapper.RiskListActivityGapFindings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/activities/{id}/gap-analysis", wrapper.RiskAnalyzeActivity)
+	})
 
 	return r
 }
@@ -1065,6 +1485,118 @@ type PreconditionRequiredApplicationProblemPlusJSONResponse Problem
 type UnauthorizedApplicationProblemPlusJSONResponse Problem
 
 type UnprocessableEntityApplicationProblemPlusJSONResponse Problem
+
+type RiskListOpenGapFindingsRequestObject struct {
+	Params RiskListOpenGapFindingsParams
+}
+
+type RiskListOpenGapFindingsResponseObject interface {
+	VisitRiskListOpenGapFindingsResponse(w http.ResponseWriter) error
+}
+
+type RiskListOpenGapFindings200JSONResponse struct {
+	Data []RiskGapFinding `json:"data"`
+}
+
+func (response RiskListOpenGapFindings200JSONResponse) VisitRiskListOpenGapFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListOpenGapFindings401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RiskListOpenGapFindings401ApplicationProblemPlusJSONResponse) VisitRiskListOpenGapFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListOpenGapFindings403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RiskListOpenGapFindings403ApplicationProblemPlusJSONResponse) VisitRiskListOpenGapFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListGapRulesRequestObject struct {
+	Params RiskListGapRulesParams
+}
+
+type RiskListGapRulesResponseObject interface {
+	VisitRiskListGapRulesResponse(w http.ResponseWriter) error
+}
+
+type RiskListGapRules200JSONResponse struct {
+	Data []RiskGapRule `json:"data"`
+}
+
+func (response RiskListGapRules200JSONResponse) VisitRiskListGapRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListGapRules401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RiskListGapRules401ApplicationProblemPlusJSONResponse) VisitRiskListGapRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListGapRules403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RiskListGapRules403ApplicationProblemPlusJSONResponse) VisitRiskListGapRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type RiskListMatricesRequestObject struct {
 	Params RiskListMatricesParams
@@ -1543,6 +2075,152 @@ func (response RiskUpdateMatrix428ApplicationProblemPlusJSONResponse) VisitRiskU
 	return err
 }
 
+type RiskAnalyzeActivityRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RiskAnalyzeActivityParams
+}
+
+type RiskAnalyzeActivityResponseObject interface {
+	VisitRiskAnalyzeActivityResponse(w http.ResponseWriter) error
+}
+
+type RiskAnalyzeActivity200JSONResponse struct {
+	Data []RiskGapFinding `json:"data"`
+}
+
+func (response RiskAnalyzeActivity200JSONResponse) VisitRiskAnalyzeActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskAnalyzeActivity401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RiskAnalyzeActivity401ApplicationProblemPlusJSONResponse) VisitRiskAnalyzeActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskAnalyzeActivity403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RiskAnalyzeActivity403ApplicationProblemPlusJSONResponse) VisitRiskAnalyzeActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskAnalyzeActivity404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RiskAnalyzeActivity404ApplicationProblemPlusJSONResponse) VisitRiskAnalyzeActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListActivityGapFindingsRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RiskListActivityGapFindingsParams
+}
+
+type RiskListActivityGapFindingsResponseObject interface {
+	VisitRiskListActivityGapFindingsResponse(w http.ResponseWriter) error
+}
+
+type RiskListActivityGapFindings200JSONResponse struct {
+	Data []RiskGapFinding `json:"data"`
+}
+
+func (response RiskListActivityGapFindings200JSONResponse) VisitRiskListActivityGapFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListActivityGapFindings401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RiskListActivityGapFindings401ApplicationProblemPlusJSONResponse) VisitRiskListActivityGapFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListActivityGapFindings403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RiskListActivityGapFindings403ApplicationProblemPlusJSONResponse) VisitRiskListActivityGapFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListActivityGapFindings404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RiskListActivityGapFindings404ApplicationProblemPlusJSONResponse) VisitRiskListActivityGapFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type RiskGetLatestActivityScoreRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params RiskGetLatestActivityScoreParams
@@ -1701,6 +2379,12 @@ func (response RiskScoreActivity422ApplicationProblemPlusJSONResponse) VisitRisk
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// RiskListOpenGapFindings The tenant-wide gap register (RRA-04) — every open finding across every activity, newest first
+	// (GET /admin/v1/risk/gap-findings)
+	RiskListOpenGapFindings(ctx context.Context, request RiskListOpenGapFindingsRequestObject) (RiskListOpenGapFindingsResponseObject, error)
+	// RiskListGapRules Every active legal-gap rule (RRA-04) — code, severity and the legal article it cites
+	// (GET /admin/v1/risk/gap-rules)
+	RiskListGapRules(ctx context.Context, request RiskListGapRulesRequestObject) (RiskListGapRulesResponseObject, error)
 	// RiskListMatrices The tenant's own likelihood x impact risk matrices, default first (RRA-02)
 	// (GET /admin/v1/risk/matrices)
 	RiskListMatrices(ctx context.Context, request RiskListMatricesRequestObject) (RiskListMatricesResponseObject, error)
@@ -1716,6 +2400,12 @@ type StrictServerInterface interface {
 	// RiskUpdateMatrix Change a risk matrix's own levels, thresholds or default flag — the acceptance criterion itself (RRA-02), since Classify always reads the current row live, never a cached score
 	// (PUT /admin/v1/risk/matrices/{id})
 	RiskUpdateMatrix(ctx context.Context, request RiskUpdateMatrixRequestObject) (RiskUpdateMatrixResponseObject, error)
+	// RiskAnalyzeActivity Re-run every active gap rule against this activity's current RoPA data now (RRA-04) — the acceptance criterion itself, since every rule type must be detected
+	// (POST /admin/v1/ropa/activities/{id}/gap-analysis)
+	RiskAnalyzeActivity(ctx context.Context, request RiskAnalyzeActivityRequestObject) (RiskAnalyzeActivityResponseObject, error)
+	// RiskListActivityGapFindings This activity's own gap findings (RRA-04), as last analyzed — read-only, no recomputation
+	// (GET /admin/v1/ropa/activities/{id}/gap-findings)
+	RiskListActivityGapFindings(ctx context.Context, request RiskListActivityGapFindingsRequestObject) (RiskListActivityGapFindingsResponseObject, error)
 	// RiskGetLatestActivityScore The activity's most recently computed risk score, without recomputing (RRA-01)
 	// (GET /admin/v1/ropa/activities/{id}/risk-score)
 	RiskGetLatestActivityScore(ctx context.Context, request RiskGetLatestActivityScoreRequestObject) (RiskGetLatestActivityScoreResponseObject, error)
@@ -1761,6 +2451,58 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// RiskListOpenGapFindings operation middleware
+func (sh *strictHandler) RiskListOpenGapFindings(w http.ResponseWriter, r *http.Request, params RiskListOpenGapFindingsParams) {
+	var request RiskListOpenGapFindingsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RiskListOpenGapFindings(ctx, request.(RiskListOpenGapFindingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RiskListOpenGapFindings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RiskListOpenGapFindingsResponseObject); ok {
+		if err := validResponse.VisitRiskListOpenGapFindingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RiskListGapRules operation middleware
+func (sh *strictHandler) RiskListGapRules(w http.ResponseWriter, r *http.Request, params RiskListGapRulesParams) {
+	var request RiskListGapRulesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RiskListGapRules(ctx, request.(RiskListGapRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RiskListGapRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RiskListGapRulesResponseObject); ok {
+		if err := validResponse.VisitRiskListGapRulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // RiskListMatrices operation middleware
@@ -1903,6 +2645,60 @@ func (sh *strictHandler) RiskUpdateMatrix(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RiskUpdateMatrixResponseObject); ok {
 		if err := validResponse.VisitRiskUpdateMatrixResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RiskAnalyzeActivity operation middleware
+func (sh *strictHandler) RiskAnalyzeActivity(w http.ResponseWriter, r *http.Request, id Uuid, params RiskAnalyzeActivityParams) {
+	var request RiskAnalyzeActivityRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RiskAnalyzeActivity(ctx, request.(RiskAnalyzeActivityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RiskAnalyzeActivity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RiskAnalyzeActivityResponseObject); ok {
+		if err := validResponse.VisitRiskAnalyzeActivityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RiskListActivityGapFindings operation middleware
+func (sh *strictHandler) RiskListActivityGapFindings(w http.ResponseWriter, r *http.Request, id Uuid, params RiskListActivityGapFindingsParams) {
+	var request RiskListActivityGapFindingsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RiskListActivityGapFindings(ctx, request.(RiskListActivityGapFindingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RiskListActivityGapFindings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RiskListActivityGapFindingsResponseObject); ok {
+		if err := validResponse.VisitRiskListActivityGapFindingsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

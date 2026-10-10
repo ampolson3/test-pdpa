@@ -1149,6 +1149,27 @@
       "saveError": "Failed to save: {detail}"
     }
   },
+  "gapRegister": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view the gap register.",
+    "title": "Legal gap register",
+    "intro": "Every open legal-gap finding across all processing activities, from the last analysis run on each — follow the link to fix it on the activity itself.",
+    "loading": "Loading…",
+    "loadError": "Failed to load. Please try again.",
+    "empty": "No open gaps.",
+    "viewActivity": "View activity",
+    "severity": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "table": {
+      "rule": "Gap",
+      "severity": "Severity",
+      "activity": "Activity",
+      "detectedAt": "Detected"
+    }
+  },
   "dataInventory": {
     "signInRequired": "Please sign in.",
     "forbidden": "You don't have permission to view the personal data inventory.",
@@ -1264,7 +1285,32 @@
       "controls": "Security measures",
       "rejections": "DSAR rejections (ม.39(7))",
       "riskScore": "Risk score (RRA-01)",
-      "suggestions": "Suggested defaults from a standard activity (RTG-06)"
+      "suggestions": "Suggested defaults from a standard activity (RTG-06)",
+      "gaps": "Legal gaps (RRA-04)"
+    },
+    "gaps": {
+      "analyze": "Check for gaps",
+      "analyzeError": "Could not analyze: {detail}",
+      "viewRegister": "View gap register",
+      "none": "No gaps found",
+      "notAnalyzedYet": "Not analyzed yet — press \"Check for gaps\" to start",
+      "severity": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "status": {
+        "open": "Open",
+        "resolved": "Resolved",
+        "waived": "Waived"
+      },
+      "rules": {
+        "no_lawful_basis": "The activity has no purpose or lawful basis",
+        "no_retention": "The activity has no retention period or disposal method",
+        "no_notice_coverage": "No privacy notice covers this activity yet",
+        "transfer_no_basis": "Data is transferred abroad with no logged transfer basis",
+        "sensitive_no_consent": "Sensitive data is processed with no evidence of explicit consent"
+      }
     },
     "suggestions": {
       "chooseTemplate": "Pick a standard activity similar to this one",

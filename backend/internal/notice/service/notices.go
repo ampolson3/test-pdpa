@@ -78,6 +78,15 @@ type WizardInput struct {
 	TemplateGroup string
 }
 
+// ActivityHasNotice is RRA-04's own read (rule 9: risk reads notice only through this exported method,
+// never notice.notice_activity_links directly) — whether any notice, published or not, already names this
+// RoPA activity. A draft-only notice still counts: the gap this answers ("ไม่มีประกาศที่ครอบคลุม") is about a
+// notice existing to be finished and published, not about publish status itself, which PNG-02/05's own
+// gates already enforce before publish.
+func (s *Service) ActivityHasNotice(ctx context.Context, activityID uuid.UUID) (bool, error) {
+	return noticestore.New(pdb.MustTxFromContext(ctx)).ActivityHasNotice(ctx, activityID)
+}
+
 func (s *Service) ListNotices(ctx context.Context, f NoticeFilter) ([]Notice, *NoticeCursor, error) {
 	limit := f.Limit
 	if limit <= 0 || limit > noticePageSize {

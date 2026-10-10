@@ -404,3 +404,170 @@ func TestActivityRiskScoreEndpoints_Contract(t *testing.T) {
 		t.Errorf("score unknown activity: %d, want 404", code)
 	}
 }
+
+// Contract test for the gap-analysis endpoints (RRA-04) behind the real OpenAPI validator and AuthZ.
+func TestGapAnalysisEndpoints_Contract(t *testing.T) {
+	ctx := context.Background()
+	rdb := redis.NewClient(&redis.Options{Addr: envOr("TEST_REDIS_ADDR", "localhost:6379")})
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		t.Skipf("no Redis: %v", err)
+	}
+	t.Cleanup(func() { rdb.Close() })
+	app := dbtest.Pool(t)
+	tenant := dbtest.SeedTenant(t, ctx, app, dbtest.PlatformPool(t), "riskgaphttp")
+
+	owner := dbtest.OwnerPool(t)
+	t.Cleanup(func() {
+		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
+			tx := pdb.MustTxFromContext(ctx)
+			for _, q := range []string{
+				`DELETE FROM risk.gap_findings`, `DELETE FROM ropa.processing_activities`, `DELETE FROM org.org_units`,
+				`UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`,
+				`DELETE FROM platform.audit_log`,
+			} {
+				_, _ = tx.Exec(ctx, q)
+			}
+			return nil
+		})
+	})
+	orgSvc := &orgservice.Service{Audit: audit.New()}
+	riskSvc := &riskservice.Service{Audit: audit.New()}
+	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: riskSvc}
+	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}
+
+	var activityID uuid.UUID
+	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
+			Permissions: []string{"org.structure.read", "org.structure.update", "ropa.activity.create"}})
+		le, err := orgSvc.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ทดสอบ จำกัด", IsController: true}, 0)
+		if err != nil {
+			return err
+		}
+		unit, err := orgSvc.CreateOrgUnit(ctx, orgservice.OrgUnit{LegalEntityID: le.ID, Code: "HR", NameTh: "HR", UnitType: "department"})
+		if err != nil {
+			return err
+		}
+		a, err := ropaSvc.SaveActivity(ctx, ropaservice.Activity{LegalEntityID: le.ID, OrgUnitID: unit.ID, Code: "HR-GAPHTTP", Name: "ทดสอบช่องว่าง", Role: "controller"}, 0)
+		activityID = a.ID
+		return err
+	})
+
+	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	validateMw, _ := validate.Middleware(spec, nil)
+	perms := map[string]string{}
+	for _, item := range spec.Paths.Map() {
+		for _, op := range item.Operations() {
+			if code, ok := op.Extensions["x-permission"].(string); ok {
+				perms[strings.ToUpper(op.OperationID[:1])+op.OperationID[1:]] = code
+			}
+		}
+	}
+	reader := uuid.New()
+	grants := map[string][]string{
+		tenant.UserID.String(): {"ropa.risk.read", "ropa.risk.create"},
+		reader.String():        {"ropa.risk.read"},
+	}
+	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
+		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
+	})
+	t.Cleanup(func() {
+		for uid := range grants {
+			_ = cache.Invalidate(context.Background(), tenant.ID.String(), uid)
+		}
+	})
+
+	r := chi.NewRouter()
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if u := req.Header.Get("X-Test-User"); u != "" {
+				req = req.WithContext(httpx.WithPrincipal(req.Context(), httpx.Principal{TenantID: tenant.ID.String(), UserID: u, ActorType: "user"}))
+			}
+			next.ServeHTTP(w, req)
+		})
+	})
+	r.Use(validateMw)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			p, ok := httpx.PrincipalFromContext(req.Context())
+			if !ok {
+				next.ServeHTTP(w, req)
+				return
+			}
+			_ = pdb.WithTenantTx(req.Context(), app, p.TenantID, p.UserID, func(ctx context.Context) error {
+				next.ServeHTTP(w, req.WithContext(ctx))
+				return nil
+			})
+		})
+	})
+	strict := riskhttp.NewStrictHandlerWithOptions(riskhttp.NewStrict(riskSvc),
+		[]riskhttp.StrictMiddlewareFunc{authz.StrictMiddleware[riskhttp.StrictHandlerFunc](cache, func(op string) (string, bool) { c, ok := perms[op]; return c, ok })},
+		riskhttp.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				if p, ok := err.(httpx.Problem); ok {
+					httpx.WriteProblem(w, r, p)
+					return
+				}
+				httpx.WriteProblem(w, r, httpx.Internal())
+			},
+		})
+	riskhttp.HandlerWithOptions(strict, riskhttp.ChiServerOptions{BaseRouter: r})
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	do := func(method, path string, user *uuid.UUID, body any, headers map[string]string) (int, string) {
+		var buf bytes.Buffer
+		if body != nil {
+			_ = json.NewEncoder(&buf).Encode(body)
+		}
+		req, _ := http.NewRequest(method, srv.URL+path, &buf)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if user != nil {
+			req.Header.Set("X-Test-User", user.String())
+		}
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		var out bytes.Buffer
+		_, _ = out.ReadFrom(res.Body)
+		return res.StatusCode, out.String()
+	}
+	admin := tenant.UserID
+	analyzePath := "/admin/v1/ropa/activities/" + activityID.String() + "/gap-analysis"
+	findingsPath := "/admin/v1/ropa/activities/" + activityID.String() + "/gap-findings"
+
+	if code, _ := do("GET", "/admin/v1/risk/gap-rules", nil, nil, nil); code != 401 {
+		t.Errorf("gap-rules, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", "/admin/v1/risk/gap-rules", &reader, nil, nil); code != 200 || !strings.Contains(body, `"no_lawful_basis"`) {
+		t.Errorf("gap-rules: %d %s", code, body)
+	}
+	if code, _ := do("POST", analyzePath, &reader, nil, nil); code != 403 {
+		t.Errorf("analyze with read only: %d, want 403", code)
+	}
+	code, body := do("POST", analyzePath, &admin, nil, nil)
+	if code != 200 || !strings.Contains(body, `"no_lawful_basis"`) {
+		t.Fatalf("analyze (no purpose set, should find no_lawful_basis): %d %s", code, body)
+	}
+	if code, body := do("GET", findingsPath, &reader, nil, nil); code != 200 || !strings.Contains(body, `"status":"open"`) {
+		t.Errorf("activity findings: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/risk/gap-findings", &reader, nil, nil); code != 200 || !strings.Contains(body, activityID.String()) {
+		t.Errorf("tenant-wide open findings: %d %s", code, body)
+	}
+	if code, _ := do("POST", "/admin/v1/ropa/activities/"+uuid.New().String()+"/gap-analysis", &admin, nil, nil); code != 404 {
+		t.Errorf("analyze unknown activity: %d, want 404", code)
+	}
+}

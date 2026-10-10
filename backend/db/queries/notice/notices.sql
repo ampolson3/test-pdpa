@@ -44,6 +44,10 @@ ON CONFLICT DO NOTHING;
 -- name: ListNoticeActivityLinks :many
 SELECT activity_id FROM notice.notice_activity_links WHERE notice_id = $1 ORDER BY activity_id;
 
+-- name: ActivityHasNotice :one
+-- RRA-04: whether any notice (regardless of status) links this RoPA activity.
+SELECT EXISTS (SELECT 1 FROM notice.notice_activity_links WHERE activity_id = $1) AS covered;
+
 -- name: GetNoticeByDocumentID :one
 SELECT id, legal_entity_id, subject_type_id, notice_type, title, slug, document_id, status, current_version_id,
     owner_user_id, review_cycle_months, public_key, pending_is_material_change, pending_changes_purpose,

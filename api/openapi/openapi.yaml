@@ -11578,6 +11578,128 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/risk/gap-rules:
+    get:
+      operationId: riskListGapRules
+      tags: [risk]
+      summary: Every active legal-gap rule (RRA-04) — code, severity and the legal article it cites
+      x-permission: ropa.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/RiskGapRule'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/risk/gap-findings:
+    get:
+      operationId: riskListOpenGapFindings
+      tags: [risk]
+      summary: The tenant-wide gap register (RRA-04) — every open finding across every activity, newest first
+      x-permission: ropa.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/RiskGapFinding'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/ropa/activities/{id}/gap-findings:
+    get:
+      operationId: riskListActivityGapFindings
+      tags: [risk]
+      summary: This activity's own gap findings (RRA-04), as last analyzed — read-only, no recomputation
+      x-permission: ropa.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/RiskGapFinding'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/activities/{id}/gap-analysis:
+    post:
+      operationId: riskAnalyzeActivity
+      tags: [risk]
+      summary: Re-run every active gap rule against this activity's current RoPA data now (RRA-04) — the acceptance criterion itself, since every rule type must be detected
+      x-permission: ropa.risk.create
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK — every gap currently present, open or already-open; a gap that no longer applies is resolved automatically and left out
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/RiskGapFinding'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 components:
   securitySchemes:
     adminJwt:
@@ -13170,6 +13292,31 @@ components:
           items: {$ref: '#/components/schemas/RiskFactorContribution'}
           description: Every RoPA signal that raised likelihood or impact — RRA-01's own "explain the factors" acceptance criterion
         computed_at: {$ref: '#/components/schemas/Timestamp'}
+    RiskGapRule:
+      type: object
+      required: [id, code, name, severity, legal_ref]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        code: {type: string}
+        name: {type: string}
+        severity:
+          type: string
+          enum: [low, medium, high]
+        legal_ref: {type: string}
+    RiskGapFinding:
+      type: object
+      required: [id, rule_id, rule_code, activity_id, status, detected_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        rule_id: {$ref: '#/components/schemas/Uuid'}
+        rule_code: {type: string}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        status:
+          type: string
+          enum: [open, resolved, waived]
+        detected_at: {$ref: '#/components/schemas/Timestamp'}
+        resolved_at: {$ref: '#/components/schemas/Timestamp'}
+        task_id: {$ref: '#/components/schemas/Uuid'}
     DataInventorySource:
       type: string
       enum: [direct, indirect, derived]

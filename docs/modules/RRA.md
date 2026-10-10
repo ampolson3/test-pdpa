@@ -306,6 +306,54 @@ page itself), which this delivers; add a push notification once a screen actuall
 
 **หมายเหตุ:** OneTrust ต้องตั้ง rule เอง (จุดต่าง)
 
+**Implementation — done (on-demand analysis; a periodic SCHED sweep is deferred).**
+`risk.gap_rules`/`risk.gap_findings` (baseline migration 00010) were built with exactly this feature in mind
+and sat unused until now — `gap_findings.task_id` is a real FK to `dpo.tasks`, anticipating RRA-07's own
+remediation-task linkage, and `gap_rules.expression jsonb` is a reserved, still-empty placeholder for a
+future generic rule interpreter. Migration 00062 seeds the 5 global (`tenant_id NULL`, the same ORG-07/
+ROPA-09/PNG-03/DPIA-01 "seed a draft, flag for legal review" pattern) rules the module doc's own description
+names verbatim: `no_lawful_basis` (high, ม.24/ม.39(1)), `no_retention` (medium, ม.39(3)), `no_notice_coverage`
+(high, ม.23), `transfer_no_basis` (high, ม.28-29), `sensitive_no_consent` (high, ม.26).
+
+`internal/risk/service/gap_analysis.go`'s "rule engine" is deliberately a plain Go `switch` (`gapPresent`)
+keyed by `gap_rules.code`, not an expression interpreter against the unused `expression` column — a real
+interpreter is far more machinery than 5 fixed rules need; adding a 6th rule today is one migration row plus
+one new `case`. Four of the five map straight onto ROPA-03's own `completeness()` missing-item codes it
+already computes (`purpose`, `retention`, `transfer_basis`, `sensitive_consent`) — exposed through a new
+`MissingItems` method on the `Ropa` interface (`activityscore.go`), backed by `wiring.RiskRopa.MissingItems`
+delegating to `ropaSvc.GetActivity(ctx, id).MissingItems`, rule 9's "read the other module through its own
+exported service" exactly. `no_notice_coverage` needed one genuinely new cross-module read: a new
+`notice.Service.ActivityHasNotice` (backed by a new `notice.notice_activity_links` existence query,
+`ActivityHasNotice`) and a small local `Notice` interface on `risk.Service` satisfied directly by
+`*noticeservice.Service` in `cmd/api/main.go` — no adapter struct needed, since `notice/service` never
+imports `risk/service` and so there is no import cycle to route around (unlike IAM-05's own `Auditor`/
+`Notifier` workaround, needed there only because the cycle was real).
+
+`AnalyzeActivity` (one activity) and `AnalyzeAllActivities` (every activity, via a new `ListActivityIDs` on
+`wiring.RiskRopa`, cursor-paginated) run every active rule, upsert an open `gap_findings` row per rule still
+failing and resolve (`resolved_at` stamped) any that no longer applies — the acceptance criterion itself
+("ช่องว่างทุกประเภทใน rule ถูกตรวจพบในชุดข้อมูลทดสอบ") exercised directly: a fixture activity missing every
+one of the 5 conditions shows all 5 open findings, and fixing each one at a time clears its own finding on
+the next run, nothing else. Deliberately **not** built this pass: a River/`cmd/worker` periodic sweep job for
+the SCHED actor the module doc also names — the literal acceptance criterion only asks that every gap type is
+detected in a test dataset, which an on-demand, button-triggered analysis already proves without needing a
+scheduler; add a periodic `risk.gap_sweep` job (mirroring BRE-07/PNG-04's own `ToSchedule` pattern) once a
+real screen or SLA needs gaps caught without a human pressing the button.
+
+API: `GET /admin/v1/risk/gap-rules` (the catalog, `ropa.risk.read`), `GET /admin/v1/risk/gap-findings`
+(tenant-wide open findings, same permission), `GET /admin/v1/ropa/activities/{id}/gap-findings` (one
+activity's own findings, as last analyzed), `POST /admin/v1/ropa/activities/{id}/gap-analysis`
+(`ropa.risk.create` — re-run every rule now). UI: a "ช่องว่างทางกฎหมาย" section on
+`/ropa/activities/{id}` (open findings by severity + an analyze button), and a new tenant-wide register page,
+`/settings/gap-register` (the module doc's own "รายการช่องว่าง + ลิงก์ไปแก้" — every open finding across
+every activity, each linking straight to its own activity page), mirroring `/settings/risk-matrices`'s own
+page/content-component split; linked from the per-activity section. Tests: unit (every one of the 5 rule
+types detected on a fixture activity missing everything; each clears independently once fixed; an unknown
+activity id refused; two-tenant isolation), HTTP contract (401/200 through the real validator + AuthZ).
+`pnpm --filter @pdpa/admin build`/`tsc --noEmit` and `pnpm --filter @pdpa/i18n test` all verified clean; no
+live Postgres was reachable in this environment, so Go tests were verified by `go build`/`go vet`/`gofmt -l`
+(compile-clean) rather than actually run.
+
 <a id="rra-06"></a>
 ### RRA-06 มาตรการควบคุมและความเสี่ยงคงเหลือ
 

@@ -3810,6 +3810,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/risk/gap-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every active legal-gap rule (RRA-04) — code, severity and the legal article it cites */
+        get: operations["riskListGapRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/risk/gap-findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant-wide gap register (RRA-04) — every open finding across every activity, newest first */
+        get: operations["riskListOpenGapFindings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/gap-findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** This activity's own gap findings (RRA-04), as last analyzed — read-only, no recomputation */
+        get: operations["riskListActivityGapFindings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/gap-analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-run every active gap rule against this activity's current RoPA data now (RRA-04) — the acceptance criterion itself, since every rule type must be detected */
+        post: operations["riskAnalyzeActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4784,6 +4852,25 @@ export interface components {
             /** @description Every RoPA signal that raised likelihood or impact — RRA-01's own "explain the factors" acceptance criterion */
             factors: components["schemas"]["RiskFactorContribution"][];
             computed_at: components["schemas"]["Timestamp"];
+        };
+        RiskGapRule: {
+            id: components["schemas"]["Uuid"];
+            code: string;
+            name: string;
+            /** @enum {string} */
+            severity: "low" | "medium" | "high";
+            legal_ref: string;
+        };
+        RiskGapFinding: {
+            id: components["schemas"]["Uuid"];
+            rule_id: components["schemas"]["Uuid"];
+            rule_code: string;
+            activity_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "open" | "resolved" | "waived";
+            detected_at: components["schemas"]["Timestamp"];
+            resolved_at?: components["schemas"]["Timestamp"];
+            task_id?: components["schemas"]["Uuid"];
         };
         /** @enum {string} */
         DataInventorySource: "direct" | "indirect" | "derived";
@@ -16333,6 +16420,120 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    riskListGapRules: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RiskGapRule"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    riskListOpenGapFindings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RiskGapFinding"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    riskListActivityGapFindings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RiskGapFinding"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    riskAnalyzeActivity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK — every gap currently present, open or already-open; a gap that no longer applies is resolved automatically and left out */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RiskGapFinding"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

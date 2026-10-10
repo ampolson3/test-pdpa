@@ -280,6 +280,7 @@ func run() error {
 		EnforceChecklist: os.Getenv("NOTICE_CHECKLIST_ENFORCE") != "false", EnforceTranslationSync: os.Getenv("NOTICE_TRANSLATION_SYNC_ENFORCE") != "false"}
 	docsSvc.SetValidate("notice", noticeSvc.CheckPublishable)                                // PNG-02: ม.23 checklist gates the notice's document publish
 	docsSvc.SetOnPublished("notice", noticeSvc.OnDocumentPublished)                          // PNG-06: version history + the public page's key
+	riskSvc.Notice = noticeSvc                                                               // RRA-04: "no covering notice" gap rule
 	fileSvc.EntityPermissions[noticeservice.IndirectCollectionType] = "notice.indirect.read" // PNG-04 notice evidence
 	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                  // BRE-12 evidence
 	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read"   // BRE-10 recipient lists

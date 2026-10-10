@@ -28,9 +28,10 @@ type Control struct {
 
 type Service struct {
 	Audit       *audit.Service
-	Ropa        Ropa        // RRA-01: scoring an activity (nil until a caller needs Score/LatestScore)
+	Ropa        Ropa        // RRA-01/04: scoring and gap-analyzing an activity (nil until a caller needs one)
 	DpiaTrigger DpiaTrigger // RRA-03: open a DPIA when an activity scores high/very_high (nil until dpia registers itself)
 	Dpo         DpoTasks    // DPIA-07: open a remediation task when a control gets an owner/due date (nil until dpo registers itself)
+	Notice      Notice      // RRA-04: whether a notice already covers an activity (nil until notice registers itself)
 }
 
 func New() *Service { return &Service{} }

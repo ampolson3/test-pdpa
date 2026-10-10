@@ -12,3 +12,7 @@ output-options:
     - riskDeleteMatrix
     - riskGetLatestActivityScore
     - riskScoreActivity
+    - riskListGapRules
+    - riskListOpenGapFindings
+    - riskListActivityGapFindings
+    - riskAnalyzeActivity
