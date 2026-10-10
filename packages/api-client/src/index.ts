@@ -155,13 +155,16 @@ export {
   type ActivityRejection,
   type ProcessingActivityFromTemplateInput,
   type ProcessingActivityBatchFromTemplatesInput,
+  type RopaApplySuggestedItemsInput,
 } from "./activities";
 export {
   useTemplateSets,
   useActivityTemplates,
   useActivityTemplate,
+  useTemplateSuggestions,
   type RopaTemplateSet,
   type RopaActivityTemplate,
+  type RopaTemplateSuggestions,
 } from "./activity-templates";
 export {
   useNotices,

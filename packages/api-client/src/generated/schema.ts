@@ -2592,6 +2592,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/activities/{id}/apply-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RTG-06 — write only the suggested purpose/data/retention items (by index, from ropaSuggestTemplateItems) the user confirmed onto this activity */
+        post: operations["ropaApplySuggestedItems"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/activities/{id}/data": {
         parameters: {
             query?: never;
@@ -2844,6 +2861,23 @@ export interface paths {
         };
         /** One standard activity template, with its full ม.39 defaults and rationale (RTG-01) */
         get: operations["ropaGetActivityTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/templates/activities/{activityTemplateId}/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RTG-06 — the template's own purposes/data/retention, each decorated with a rationale citing a real legal article (ม.24/26/39) — read-only, nothing is written here */
+        get: operations["ropaSuggestTemplateItems"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5289,6 +5323,64 @@ export interface components {
             };
             legal_refs: string[];
             version_no: number;
+        };
+        /** @description RTG-06: index is this item's position — echo it back in RopaApplySuggestedItemsInput.purposes to confirm it. */
+        RopaSuggestedPurpose: {
+            index: number;
+            purpose_text: string;
+            lawful_basis_code: string;
+            lawful_basis_name_th: string;
+            rationale: string;
+        };
+        RopaSuggestedData: {
+            index: number;
+            data_category_code: string;
+            data_category_name: string;
+            subject_type_code: string;
+            subject_type_name: string;
+            is_sensitive: boolean;
+            /** @enum {string} */
+            source: "direct" | "indirect";
+            rationale: string;
+        };
+        RopaSuggestedRetention: {
+            index: number;
+            retention_months?: number;
+            retention_basis: string;
+            trigger_event: string;
+            disposal_method: string;
+            rationale: string;
+        };
+        /** @description RTG-06: one template's purposes/data/retention, each decorated with a rationale citing a real legal article (ม.24/26/39) — read-only; nothing is saved until RopaApplySuggestedItemsInput confirms specific items. */
+        RopaTemplateSuggestions: {
+            template_id: components["schemas"]["Uuid"];
+            template_code: string;
+            template_name: string;
+            purposes: components["schemas"]["RopaSuggestedPurpose"][];
+            data: components["schemas"]["RopaSuggestedData"][];
+            retention: components["schemas"]["RopaSuggestedRetention"][];
+        };
+        /**
+         * @description RTG-06: indices into the matching RopaTemplateSuggestions arrays — anything left out is never written.
+         * @example {
+         *       "activity_template_id": "00000000-0000-0000-0000-000000000000",
+         *       "purposes": [
+         *         0
+         *       ],
+         *       "data": [
+         *         0,
+         *         1
+         *       ],
+         *       "retention": [
+         *         0
+         *       ]
+         *     }
+         */
+        RopaApplySuggestedItemsInput: {
+            activity_template_id: components["schemas"]["Uuid"];
+            purposes?: number[];
+            data?: number[];
+            retention?: number[];
         };
         ActivityRejection: {
             id: components["schemas"]["Uuid"];
@@ -13140,6 +13232,40 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    ropaApplySuggestedItems: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RopaApplySuggestedItemsInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingActivity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
     ropaListActivityData: {
         parameters: {
             query?: never;
@@ -13731,6 +13857,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RopaActivityTemplate"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaSuggestTemplateItems: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                activityTemplateId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaTemplateSuggestions"];
                 };
             };
             401: components["responses"]["Unauthorized"];

@@ -27,6 +27,7 @@ export type ActivityControlInput = components["schemas"]["ActivityControlInput"]
 export type ActivityRejection = components["schemas"]["ActivityRejection"];
 export type ProcessingActivityFromTemplateInput = components["schemas"]["ProcessingActivityFromTemplateInput"];
 export type ProcessingActivityBatchFromTemplatesInput = components["schemas"]["ProcessingActivityBatchFromTemplatesInput"];
+export type RopaApplySuggestedItemsInput = components["schemas"]["RopaApplySuggestedItemsInput"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const activitiesKey = ["ropa", "activities"] as const;
@@ -204,6 +205,18 @@ export function useActivityMutations(client: ApiClient, id?: string) {
         const { data, error } = await client.POST("/admin/v1/ropa/activities/batch-from-templates", { body });
         if (error) throw error;
         return data?.data;
+      },
+      onSuccess: refresh,
+    }),
+    /** RTG-06: write only the suggested purpose/data/retention items (by index) the user confirmed. */
+    applySuggestedItems: useMutation({
+      mutationFn: async (v: { activityId: string; input: RopaApplySuggestedItemsInput }) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/apply-suggestions", {
+          params: { path: { id: v.activityId } },
+          body: v.input,
+        });
+        if (error) throw error;
+        return data;
       },
       onSuccess: refresh,
     }),

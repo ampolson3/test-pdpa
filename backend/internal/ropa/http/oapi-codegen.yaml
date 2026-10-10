@@ -44,3 +44,5 @@ output-options:
     - ropaListTemplateSets
     - ropaListActivityTemplates
     - ropaGetActivityTemplate
+    - ropaSuggestTemplateItems
+    - ropaApplySuggestedItems

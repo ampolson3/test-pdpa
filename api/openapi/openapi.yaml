@@ -7964,6 +7964,45 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/activities/{id}/apply-suggestions:
+    post:
+      operationId: ropaApplySuggestedItems
+      tags: [ropa]
+      summary: RTG-06 — write only the suggested purpose/data/retention items (by index, from ropaSuggestTemplateItems) the user confirmed onto this activity
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RopaApplySuggestedItemsInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingActivity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/ropa/activities/{id}/data:
     get:
       operationId: ropaListActivityData
@@ -8632,6 +8671,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RopaActivityTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/templates/activities/{activityTemplateId}/suggest:
+    get:
+      operationId: ropaSuggestTemplateItems
+      tags: [ropa]
+      summary: RTG-06 — the template's own purposes/data/retention, each decorated with a rationale citing a real legal article (ม.24/26/39) — read-only, nothing is written here
+      x-permission: ropa.template.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: activityTemplateId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RopaTemplateSuggestions'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -13784,6 +13852,77 @@ components:
           type: array
           items: {type: string}
         version_no: {type: integer}
+    RopaSuggestedPurpose:
+      type: object
+      description: 'RTG-06: index is this item''s position — echo it back in RopaApplySuggestedItemsInput.purposes to confirm it.'
+      required: [index, purpose_text, lawful_basis_code, lawful_basis_name_th, rationale]
+      properties:
+        index: {type: integer}
+        purpose_text: {type: string}
+        lawful_basis_code: {type: string}
+        lawful_basis_name_th: {type: string}
+        rationale: {type: string}
+    RopaSuggestedData:
+      type: object
+      required: [index, data_category_code, data_category_name, subject_type_code, subject_type_name, is_sensitive, source, rationale]
+      properties:
+        index: {type: integer}
+        data_category_code: {type: string}
+        data_category_name: {type: string}
+        subject_type_code: {type: string}
+        subject_type_name: {type: string}
+        is_sensitive: {type: boolean}
+        source:
+          type: string
+          enum: [direct, indirect]
+        rationale: {type: string}
+    RopaSuggestedRetention:
+      type: object
+      required: [index, retention_basis, trigger_event, disposal_method, rationale]
+      properties:
+        index: {type: integer}
+        retention_months: {type: integer}
+        retention_basis: {type: string}
+        trigger_event: {type: string}
+        disposal_method: {type: string}
+        rationale: {type: string}
+    RopaTemplateSuggestions:
+      type: object
+      description: 'RTG-06: one template''s purposes/data/retention, each decorated with a rationale citing a real legal article (ม.24/26/39) — read-only; nothing is saved until RopaApplySuggestedItemsInput confirms specific items.'
+      required: [template_id, template_code, template_name, purposes, data, retention]
+      properties:
+        template_id: {$ref: '#/components/schemas/Uuid'}
+        template_code: {type: string}
+        template_name: {type: string}
+        purposes:
+          type: array
+          items: {$ref: '#/components/schemas/RopaSuggestedPurpose'}
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/RopaSuggestedData'}
+        retention:
+          type: array
+          items: {$ref: '#/components/schemas/RopaSuggestedRetention'}
+    RopaApplySuggestedItemsInput:
+      type: object
+      description: 'RTG-06: indices into the matching RopaTemplateSuggestions arrays — anything left out is never written.'
+      required: [activity_template_id]
+      properties:
+        activity_template_id: {$ref: '#/components/schemas/Uuid'}
+        purposes:
+          type: array
+          items: {type: integer}
+        data:
+          type: array
+          items: {type: integer}
+        retention:
+          type: array
+          items: {type: integer}
+      example:
+        activity_template_id: 00000000-0000-0000-0000-000000000000
+        purposes: [0]
+        data: [0, 1]
+        retention: [0]
     ActivityRejection:
       type: object
       required: [id, activity_id, dsar_request_id, reason_code, rejected_at]

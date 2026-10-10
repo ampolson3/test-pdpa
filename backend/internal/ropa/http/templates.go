@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	ropaservice "pdpa-platform/internal/ropa/service"
 	templatesservice "pdpa-platform/internal/ropa/templates"
 )
 
@@ -49,6 +50,36 @@ func (h *Strict) RopaGetActivityTemplate(ctx context.Context, req RopaGetActivit
 		return nil, err
 	}
 	return RopaGetActivityTemplate200JSONResponse(w), nil
+}
+
+func (h *Strict) RopaSuggestTemplateItems(ctx context.Context, req RopaSuggestTemplateItemsRequestObject) (RopaSuggestTemplateItemsResponseObject, error) {
+	sugg, err := h.svc.Suggest(ctx, req.ActivityTemplateId)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RopaSuggestTemplateItems200JSONResponse(toTemplateSuggestionsWire(sugg)), nil
+}
+
+func toTemplateSuggestionsWire(sugg ropaservice.TemplateSuggestions) RopaTemplateSuggestions {
+	w := RopaTemplateSuggestions{TemplateId: sugg.TemplateID, TemplateCode: sugg.TemplateCode, TemplateName: sugg.TemplateName}
+	for i, p := range sugg.Purposes {
+		w.Purposes = append(w.Purposes, RopaSuggestedPurpose{
+			Index: i, PurposeText: p.PurposeText, LawfulBasisCode: p.LawfulBasisCode, LawfulBasisNameTh: p.LawfulBasisNameTh, Rationale: p.Rationale,
+		})
+	}
+	for i, d := range sugg.Data {
+		w.Data = append(w.Data, RopaSuggestedData{
+			Index: i, DataCategoryCode: d.DataCategoryCode, DataCategoryName: d.DataCategoryName, SubjectTypeCode: d.SubjectTypeCode,
+			SubjectTypeName: d.SubjectTypeName, IsSensitive: d.IsSensitive, Source: RopaSuggestedDataSource(d.Source), Rationale: d.Rationale,
+		})
+	}
+	for i, r := range sugg.Retention {
+		w.Retention = append(w.Retention, RopaSuggestedRetention{
+			Index: i, RetentionMonths: r.RetentionMonths, RetentionBasis: r.RetentionBasis, TriggerEvent: r.TriggerEvent,
+			DisposalMethod: r.DisposalMethod, Rationale: r.Rationale,
+		})
+	}
+	return w
 }
 
 func toTemplateSetWire(s templatesservice.TemplateSet) RopaTemplateSet {

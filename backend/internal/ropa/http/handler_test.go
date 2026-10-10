@@ -302,6 +302,38 @@ func TestAssetEndpoints_Contract(t *testing.T) {
 		t.Errorf("template-created activity's purposes: %d %s", code, body)
 	}
 
+	// RTG-06 suggested defaults with rationale: read-only suggestions, then a selective, confirmed apply
+	// onto a second, blank activity (fromTpl above already has everything from ROPA-05's own bulk copy).
+	suggestURL := "/admin/v1/ropa/templates/activities/" + recruitmentTemplateID.String() + "/suggest"
+	if code, _ := do("GET", suggestURL, nil, nil, nil); code != 401 {
+		t.Errorf("suggest, no principal: %d, want 401", code)
+	}
+	code, body = do("GET", suggestURL, &admin, nil, nil)
+	if code != 200 || !strings.Contains(body, `"lawful_basis_code":"CONTRACT"`) || !strings.Contains(body, "ม.") {
+		t.Fatalf("suggest: %d %s", code, body)
+	}
+	var blank ropahttp.ProcessingActivity
+	code, body = do("POST", actBase, &admin, map[string]any{"legal_entity_id": legalEntityID, "org_unit_id": orgUnitID, "code": "HR-SUG-01", "name": "กิจกรรมเปล่า", "role": "controller"}, nil)
+	if code != 201 {
+		t.Fatalf("create blank activity: %d %s", code, body)
+	}
+	_ = json.Unmarshal([]byte(body), &blank)
+	applyURL := actBase + "/" + blank.Id.String() + "/apply-suggestions"
+	applyBody := map[string]any{"activity_template_id": recruitmentTemplateID, "purposes": []int{0}}
+	if code, _ := do("POST", applyURL, &viewer, applyBody, nil); code != 403 {
+		t.Errorf("apply suggestions with read permission only: %d, want 403", code)
+	}
+	code, body = do("POST", applyURL, &admin, applyBody, nil)
+	if code != 200 || !strings.Contains(body, `"completeness"`) {
+		t.Fatalf("apply suggestions: %d %s", code, body)
+	}
+	if code, body := do("GET", actBase+"/"+blank.Id.String()+"/purposes", &admin, nil, nil); code != 200 || !strings.Contains(body, `"lawful_basis_code":"CONTRACT"`) {
+		t.Errorf("selectively-applied purpose: %d %s", code, body)
+	}
+	if code, body := do("GET", actBase+"/"+blank.Id.String()+"/data", &admin, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("data was never selected, expected none: %d %s", code, body)
+	}
+
 	// RTG-04 one-click generation: several templates against one department in one call
 	var tenTemplateIDs []uuid.UUID
 	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {

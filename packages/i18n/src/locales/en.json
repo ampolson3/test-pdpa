@@ -1263,7 +1263,26 @@
       "transfers": "Cross-border transfers",
       "controls": "Security measures",
       "rejections": "DSAR rejections (ม.39(7))",
-      "riskScore": "Risk score (RRA-01)"
+      "riskScore": "Risk score (RRA-01)",
+      "suggestions": "Suggested defaults from a standard activity (RTG-06)"
+    },
+    "suggestions": {
+      "chooseTemplate": "Pick a standard activity similar to this one",
+      "jobCategory": "Job category",
+      "allCategories": "All categories",
+      "template": "Standard activity",
+      "choose": "— Choose —",
+      "loadError": "Could not load suggestions",
+      "noneYet": "Pick a standard activity above to see suggestions",
+      "purposesHeading": "Suggested purposes and lawful bases",
+      "dataHeading": "Suggested data categories",
+      "retentionHeading": "Suggested retention",
+      "noItems": "No suggestions in this category",
+      "apply": "Confirm selected items",
+      "applyError": "Could not save: {detail}",
+      "applySuccess": "Selected items added to the activity",
+      "sensitiveTag": "Sensitive data",
+      "monthsLabel": "{months} months"
     },
     "riskScore": {
       "recompute": "Recompute",

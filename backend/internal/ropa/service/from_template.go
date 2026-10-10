@@ -59,18 +59,8 @@ type templateDefaults struct {
 // itself only treats as conditional on role, so an otherwise-complete controller-role activity (the
 // overwhelming majority of the 51 seeded activities) is already at 100% right after creation.
 func (s *Service) CreateActivityFromTemplate(ctx context.Context, templateID, legalEntityID, orgUnitID uuid.UUID, code string, ownerUserID *uuid.UUID) (Activity, error) {
-	if s.Templates == nil {
-		return Activity{}, fmt.Errorf("%w: activity_template_id", ErrInvalid)
-	}
-	tpl, err := s.Templates.GetActivityTemplate(ctx, templateID)
+	tpl, d, err := s.loadTemplateDefaults(ctx, templateID)
 	if err != nil {
-		if errors.Is(err, templatesservice.ErrNotFound) {
-			return Activity{}, fmt.Errorf("%w: activity_template_id", ErrInvalid)
-		}
-		return Activity{}, err
-	}
-	var d templateDefaults
-	if err := json.Unmarshal(tpl.Defaults, &d); err != nil {
 		return Activity{}, err
 	}
 
@@ -130,6 +120,28 @@ func (s *Service) CreateActivityFromTemplate(ctx context.Context, templateID, le
 		return Activity{}, err
 	}
 	return final, s.audit(ctx, "ropa.activity.create_from_template", out.ID, nil, map[string]any{"activity_template_id": templateID, "code": tpl.Code})
+}
+
+// loadTemplateDefaults resolves one RTG-01 template id to its own ActivityTemplate row plus its decoded
+// `defaults` jsonb — the lookup+decode step CreateActivityFromTemplate and RTG-06's own Suggest/
+// ApplySuggestedItems all need, factored out so the "unknown template id" → ErrInvalid mapping stays in
+// one place.
+func (s *Service) loadTemplateDefaults(ctx context.Context, templateID uuid.UUID) (templatesservice.ActivityTemplate, templateDefaults, error) {
+	if s.Templates == nil {
+		return templatesservice.ActivityTemplate{}, templateDefaults{}, fmt.Errorf("%w: activity_template_id", ErrInvalid)
+	}
+	tpl, err := s.Templates.GetActivityTemplate(ctx, templateID)
+	if err != nil {
+		if errors.Is(err, templatesservice.ErrNotFound) {
+			return templatesservice.ActivityTemplate{}, templateDefaults{}, fmt.Errorf("%w: activity_template_id", ErrInvalid)
+		}
+		return templatesservice.ActivityTemplate{}, templateDefaults{}, err
+	}
+	var d templateDefaults
+	if err := json.Unmarshal(tpl.Defaults, &d); err != nil {
+		return templatesservice.ActivityTemplate{}, templateDefaults{}, err
+	}
+	return tpl, d, nil
 }
 
 func (s *Service) masterIDByCode(ctx context.Context, kind, code string) (uuid.UUID, error) {

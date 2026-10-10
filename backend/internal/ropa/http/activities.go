@@ -86,6 +86,25 @@ func (h *Strict) RopaCreateActivitiesFromTemplates(ctx context.Context, req Ropa
 	return resp, nil
 }
 
+func (h *Strict) RopaApplySuggestedItems(ctx context.Context, req RopaApplySuggestedItemsRequestObject) (RopaApplySuggestedItemsResponseObject, error) {
+	b := *req.Body
+	in := ropaservice.ApplySuggestedItemsInput{TemplateID: b.ActivityTemplateId}
+	if b.Purposes != nil {
+		in.Purposes = *b.Purposes
+	}
+	if b.Data != nil {
+		in.Data = *b.Data
+	}
+	if b.Retention != nil {
+		in.Retention = *b.Retention
+	}
+	a, err := h.svc.ApplySuggestedItems(ctx, req.Id, in)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RopaApplySuggestedItems200JSONResponse(toActivityWire(a)), nil
+}
+
 func (h *Strict) RopaGetActivity(ctx context.Context, req RopaGetActivityRequestObject) (RopaGetActivityResponseObject, error) {
 	a, err := h.svc.GetActivity(ctx, req.Id)
 	if err != nil {

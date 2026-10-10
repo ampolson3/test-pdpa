@@ -31,6 +31,7 @@ import {
 } from "@pdpa/api-client";
 import { DpiaScreeningSection } from "./dpia-screening-section";
 import { RiskScoreSection } from "./risk-score-section";
+import { Rtg06SuggestionsSection } from "./rtg06-suggestions-section";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
 const ROLES: ActivityRole[] = ["controller", "processor"];
@@ -383,6 +384,8 @@ export function ActivityDetailContent({ id, currentUserId }: { id: string; curre
           </div>
         )}
       </section>
+
+      <Rtg06SuggestionsSection client={client} activityId={id} />
 
       <RiskScoreSection client={client} activityId={id} />
 
