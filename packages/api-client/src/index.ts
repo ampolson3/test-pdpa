@@ -56,6 +56,8 @@ export {
   useSaveVendor,
   useVendorIntakes,
   useRecordVendorIntake,
+  useVendorAssessments,
+  useRecordVendorAssessment,
   type Vendor,
   type VendorInput,
   type VendorStatus,
@@ -63,6 +65,8 @@ export {
   type VendorIntake,
   type VendorIntakeInput,
   type VendorIntakeResult,
+  type VendorAssessment,
+  type VendorRecordAssessmentInput,
 } from "./vendors";
 export {
   useAgreements,

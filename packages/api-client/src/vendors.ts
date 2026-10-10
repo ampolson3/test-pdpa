@@ -8,6 +8,8 @@ export type VendorTier = components["schemas"]["VendorTier"];
 export type VendorIntake = components["schemas"]["VendorIntake"];
 export type VendorIntakeInput = components["schemas"]["VendorIntakeInput"];
 export type VendorIntakeResult = components["schemas"]["VendorIntakeResult"];
+export type VendorAssessment = components["schemas"]["VendorAssessment"];
+export type VendorRecordAssessmentInput = components["schemas"]["VendorRecordAssessmentInput"];
 
 const vendorsKey = ["vendor", "vendors"] as const;
 
@@ -89,5 +91,35 @@ export function useRecordVendorIntake(client: ApiClient, vendorId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId] });
     },
+  });
+}
+
+/** GET /admin/v1/vendors/{id}/assessments (VEN-07) — a vendor's own assessment cycles, newest first. */
+export function useVendorAssessments(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, vendorId ?? "", "assessments"],
+    enabled: !!vendorId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/vendors/{id}/assessments", { params: { path: { id: vendorId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/assessments — answer one of VEN-04's published vendor templates once; the
+ *  system computes the score and the residual risk level on the tenant's own matrix (RRA-02). */
+export function useRecordVendorAssessment(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: VendorRecordAssessmentInput) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/assessments", {
+        params: { path: { id: vendorId } },
+        body: input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "assessments"] }),
   });
 }

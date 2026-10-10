@@ -104,6 +104,40 @@ func Classify(m RiskMatrix, likelihood, impact int) (score float64, level string
 	return score, "", fmt.Errorf("%w: no threshold covers score %v", ErrInvalid, score)
 }
 
+// ClassifyScore is Classify's one-dimensional counterpart for VEN-07's own "สรุประดับความเสี่ยง": a
+// vendor assessment produces a single weighted-answer score, not a likelihood x impact pair to multiply,
+// but it still needs to land on this same tenant's own thresholds so a vendor's risk reads on the same
+// scale as everything else risk/service classifies. ratio is 0 (no risk signal, every answer scored the
+// best it could) to 1 (the worst possible answers) — the caller computes it as 1 - score/maxScore, scaled
+// here onto the same 1..(likelihood x impact) point range Classify's own grid uses, then classified
+// against the identical Thresholds ladder. No SA spec defined this mapping — flagged for review in VEN.md.
+func ClassifyScore(m RiskMatrix, ratio float64) (level string, err error) {
+	if ratio < 0 || ratio > 1 {
+		return "", fmt.Errorf("%w: ratio", ErrInvalid)
+	}
+	if len(m.Thresholds) == 0 {
+		return "", fmt.Errorf("%w: matrix has no thresholds", ErrInvalid)
+	}
+	maxScore := float64(len(m.LikelihoodLevels) * len(m.ImpactLevels))
+	score := ratio * maxScore
+	// Classify's own grid never scores below 1 (likelihood and impact are both >= 1), so a matrix's
+	// lowest threshold only ever needs to cover from 1 upward (normalize()'s own rule) — but ratio 0
+	// (every answer scored the best it could) lands exactly on 0, below that floor. Rather than treat a
+	// perfect score as an error, it floors at the matrix's own most lenient threshold.
+	lowest := m.Thresholds[0]
+	for _, th := range m.Thresholds {
+		if th.MinScore < lowest.MinScore {
+			lowest = th
+		}
+	}
+	for i := len(m.Thresholds) - 1; i >= 0; i-- {
+		if score >= m.Thresholds[i].MinScore {
+			return m.Thresholds[i].Level, nil
+		}
+	}
+	return lowest.Level, nil
+}
+
 func (s *Service) audit(ctx context.Context, action, entityType string, id uuid.UUID, before, after any) error {
 	if s.Audit == nil {
 		return nil

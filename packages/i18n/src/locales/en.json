@@ -977,6 +977,15 @@
         "history": "Past tiering rounds",
         "historyScore": "score {score}",
         "historyDate": "{date}"
+      },
+      "assessments": {
+        "title": "Assessment cycles (VEN-07)",
+        "empty": "No assessment cycles recorded yet.",
+        "noTemplate": "No published vendor assessment template is available.",
+        "submit": "Submit assessment",
+        "submitError": "Couldn't record the assessment: {detail}",
+        "cycle": "Cycle {n}",
+        "score": "score {score}"
       }
     }
   },

@@ -14,11 +14,13 @@ import (
 
 	"github.com/google/uuid"
 
+	dpiaservice "pdpa-platform/internal/dpia/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/forms"
+	riskservice "pdpa-platform/internal/risk/service"
 )
 
 var (
@@ -36,6 +38,12 @@ type Service struct {
 	Audit *audit.Service
 	Org   Org
 	Forms *forms.Service
+	// Dpia/Risk are direct concrete dependencies, not local interfaces: no module in either direction
+	// imports vendormgmt, so there is no cycle to route around. VEN-07 uses them to answer one of
+	// VEN-04's own assess.assessments templates (dpia owns that schema, rule 9) and classify the
+	// resulting score against the tenant's own RRA-02 risk matrix.
+	Dpia *dpiaservice.Service
+	Risk *riskservice.Service
 }
 
 func (s *Service) audit(ctx context.Context, action string, id uuid.UUID, before, after any) error {

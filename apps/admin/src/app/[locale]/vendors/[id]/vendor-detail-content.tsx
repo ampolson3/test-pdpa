@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
+import { FormRenderer, type FormSchema, type Language, type Scoring } from "@pdpa/form-renderer";
 import {
   createApiClient,
   useVendor,
@@ -13,7 +14,12 @@ import {
   useVendorIntakes,
   useRecordVendorIntake,
   useVendorContractStatus,
+  useVendorAssessments,
+  useRecordVendorAssessment,
+  useDpiaTemplates,
+  useForm,
 } from "@pdpa/api-client";
+import { useRendererMessages } from "@/components/form-messages";
 import { Link } from "@/i18n/routing";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
@@ -172,7 +178,78 @@ export function VendorDetailContent({ id }: { id: string }) {
       </section>
 
       <IntakePanel client={client} vendorId={v.id} canUpdate={canUpdate} />
+      <AssessmentPanel client={client} vendorId={v.id} />
     </main>
+  );
+}
+
+const RESIDUAL_STYLE: Record<string, string> = {
+  low: "bg-emerald-100 text-emerald-800",
+  medium: "bg-amber-100 text-amber-800",
+  high: "bg-orange-100 text-orange-800",
+  critical: "bg-red-100 text-red-800",
+};
+
+/** VEN-07: answer one of VEN-04's published vendor templates once and see the score + residual risk
+ *  level (RRA-02) it classifies to, plus every past cycle. */
+function AssessmentPanel({ client, vendorId }: { client: ReturnType<typeof createApiClient>; vendorId: string }) {
+  const t = useTranslations("vendors");
+  const locale = useLocale() as Language;
+  const canRead = usePermission("vendor.vendor.read");
+  const canRecord = usePermission("vendor.vendor.update");
+  const canReadTemplates = usePermission("assessment.template.read");
+  const list = useVendorAssessments(client, vendorId);
+  const templates = useDpiaTemplates(client, "vendor");
+  const published = (templates.data?.data ?? []).filter((tpl) => tpl.status === "published");
+  const [templateId, setTemplateId] = useState("");
+  const chosen = templateId || published[0]?.id;
+  const chosenTemplate = published.find((tpl) => tpl.id === chosen);
+  const form = useForm(client, chosenTemplate?.form_id);
+  const record = useRecordVendorAssessment(client, vendorId);
+  const messages = useRendererMessages(locale);
+  const version = form.data?.versions?.find((ver) => ver.id === form.data?.current_version_id);
+
+  if (!canRead) return null;
+  const rows = list.data?.data ?? [];
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.assessments.title")}</h2>
+
+      {canRecord && canReadTemplates && (
+        <div className="space-y-3 border-b border-slate-100 pb-3" data-testid="assessment-form">
+          {published.length === 0 ? <p className="text-amber-800">{t("detail.assessments.noTemplate")}</p> : (
+            <select className={SELECT} value={chosen ?? ""} onChange={(e) => setTemplateId(e.target.value)}>
+              {published.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.name}</option>)}
+            </select>
+          )}
+          {version && chosenTemplate && (
+            <FormRenderer schema={version.schema as FormSchema} scoring={version.scoring as Scoring | null} language={locale} messages={messages} showScore
+              idPrefix="vendor-assessment"
+              onSubmit={async (answers) => { await record.mutateAsync({ template_code: chosenTemplate.code, answers }); }}
+              actions={({ submit, busy }) => <Button type="button" onClick={submit} disabled={busy || record.isPending} data-testid="assess-submit">{t("detail.assessments.submit")}</Button>} />
+          )}
+          {record.isError && <p className="text-red-700" role="alert">{t("detail.assessments.submitError", { detail: detail(record.error) })}</p>}
+        </div>
+      )}
+
+      {list.isPending ? <p className="text-slate-500">{t("loading")}</p> : rows.length === 0 ? (
+        <p className="text-slate-500">{t("detail.assessments.empty")}</p>
+      ) : (
+        <ul className="divide-y divide-slate-100 text-sm">
+          {rows.map((a) => (
+            <li key={a.id} className="flex items-center justify-between gap-2 py-2">
+              <span className="text-slate-500">{t("detail.assessments.cycle", { n: a.cycle_no })}</span>
+              <span className={`rounded px-2 py-0.5 text-xs font-semibold ${RESIDUAL_STYLE[a.residual_level] ?? "bg-slate-100 text-slate-700"}`}>
+                {t(`tiers.${a.residual_level}`)}
+              </span>
+              <span className="text-slate-500">{t("detail.assessments.score", { score: a.score })}</span>
+              <span className="text-xs text-slate-500">{new Date(a.created_at).toLocaleDateString()}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

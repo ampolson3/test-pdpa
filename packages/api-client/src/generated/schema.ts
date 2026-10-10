@@ -3599,6 +3599,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/vendors/{id}/assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A vendor's own assessment cycles, newest first (VEN-07) */
+        get: operations["vendorListAssessments"];
+        put?: never;
+        /** Answer one of VEN-04's published vendor templates once: the score and the resulting risk level on this tenant's own matrix (VEN-07) */
+        post: operations["vendorRecordAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/agreements": {
         parameters: {
             query?: never;
@@ -4660,6 +4678,45 @@ export interface components {
             intake: components["schemas"]["VendorIntake"];
             /** @description VEN-04's assessment template codes (vendor_pdpa/vendor_security/vendor_transfer) this tier now calls for */
             required_assessment_codes: string[];
+        };
+        /**
+         * @example {
+         *       "template_code": "vendor_pdpa",
+         *       "answers": {
+         *         "has_dpo": "yes",
+         *         "has_retention_policy": "yes",
+         *         "has_breach_process": "no",
+         *         "has_subprocessor_list": "yes",
+         *         "has_dpa_signed": "yes"
+         *       }
+         *     }
+         */
+        VendorRecordAssessmentInput: {
+            /** @description One of VEN-04's own seeded assessment_type=vendor template codes (e.g. vendor_pdpa, vendor_security, vendor_transfer) */
+            template_code: string;
+            /** @description Answers to that template's published form questions */
+            answers: {
+                [key: string]: unknown;
+            };
+        };
+        VendorAssessment: {
+            id: components["schemas"]["Uuid"];
+            vendor_id: components["schemas"]["Uuid"];
+            assessment_id: components["schemas"]["Uuid"];
+            cycle_no: number;
+            submitted_at?: components["schemas"]["Timestamp"];
+            score: number;
+            /** @enum {string} */
+            residual_level: "low" | "medium" | "high" | "critical";
+            /**
+             * @description Set only once VEN-08 (not built yet) records a decision
+             * @enum {string|null}
+             */
+            decision?: "approved" | "conditional" | "rejected" | null;
+            decided_by?: components["schemas"]["Uuid"];
+            decided_at?: components["schemas"]["Timestamp"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
         };
         /**
          * @description agreement.agreements' own CHECK constraint — 'dpa' (DPA-02) and 'dsa' (DSA-04) are wired to CreateWizard; joint_controller/inbound_dpa are real values for when those modules exist.
@@ -15899,6 +15956,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VendorIntakeResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    vendorListAssessments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["VendorAssessment"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    vendorRecordAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorRecordAssessmentInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorAssessment"];
                 };
             };
             400: components["responses"]["BadRequest"];

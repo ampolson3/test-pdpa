@@ -977,6 +977,15 @@
         "history": "ประวัติการจัดระดับ",
         "historyScore": "คะแนน {score}",
         "historyDate": "{date}"
+      },
+      "assessments": {
+        "title": "รอบการประเมิน (VEN-07)",
+        "empty": "ยังไม่มีรอบการประเมินที่บันทึก",
+        "noTemplate": "ยังไม่มีแบบประเมินคู่ค้าที่เผยแพร่",
+        "submit": "ส่งแบบประเมิน",
+        "submitError": "บันทึกผลประเมินไม่สำเร็จ: {detail}",
+        "cycle": "รอบที่ {n}",
+        "score": "คะแนน {score}"
       }
     }
   },

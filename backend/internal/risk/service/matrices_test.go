@@ -123,6 +123,39 @@ func TestClassify_PureAndLive(t *testing.T) {
 	}
 }
 
+// TestClassifyScore_RatioOntoSameThresholds is VEN-07's own "สรุประดับความเสี่ยง": a single weighted-
+// answer ratio (not a likelihood x impact pair) still lands on the exact same matrix thresholds, scaled
+// onto the same 1..9 point range matrix3x3 uses, and a perfect score floors at the lowest level rather
+// than erroring.
+func TestClassifyScore_RatioOntoSameThresholds(t *testing.T) {
+	m := matrix3x3()
+	cases := []struct {
+		ratio float64
+		want  string
+	}{
+		{0, "low"},          // score 0, floored
+		{1.0 / 9, "low"},    // score 1
+		{4.0 / 9, "medium"}, // score 4
+		{7.0 / 9, "high"},   // score 7
+		{1, "high"},         // score 9
+	}
+	for _, c := range cases {
+		got, err := riskservice.ClassifyScore(m, c.ratio)
+		if err != nil {
+			t.Fatalf("ratio %v: %v", c.ratio, err)
+		}
+		if got != c.want {
+			t.Errorf("ratio %v: level = %q, want %q", c.ratio, got, c.want)
+		}
+	}
+	if _, err := riskservice.ClassifyScore(m, -0.1); err == nil {
+		t.Error("ratio below 0 should be refused")
+	}
+	if _, err := riskservice.ClassifyScore(m, 1.1); err == nil {
+		t.Error("ratio above 1 should be refused")
+	}
+}
+
 // TestSaveMatrix_OneDefaultPerTenant proves the swap is atomic: setting a new default always leaves
 // exactly one, whichever order the saves happen in, and the partial unique index (migration 00055) is
 // never hit from inside the service itself.

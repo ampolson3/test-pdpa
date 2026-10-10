@@ -253,6 +253,7 @@ func run() error {
 	vendorSvc.Forms = formsSvc                                                                                                          // VEN-02: the intake tiering questionnaire ("intake" form type)
 	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc, Audit: auditSvc, PDF: render.FromEnv(), Risk: riskSvc} // DPIA-01/02: screening on the "assessment" form type; DPIA-04: RoPA-sourced description; DPIA-15: PDF/Word report; DPIA-06: risk identification & scoring
 	riskSvc.DpiaTrigger = dpiaSvc                                                                                                       // RRA-03: a high/very_high risk score opens a DPIA round
+	vendorSvc.Dpia, vendorSvc.Risk = dpiaSvc, riskSvc                                                                                   // VEN-07: answer a VEN-04 template and classify the score on the tenant's own risk matrix
 	// DPIA-14: comments, attachments and an activity feed (PLT-07) on the assessment, satisfying the "ผู้แก้ไข
 	// และวันที่" half of the acceptance criterion for free — the diff endpoint covers the other half.
 	collabSvc.Register("dpia_assessment", collab.Policy{

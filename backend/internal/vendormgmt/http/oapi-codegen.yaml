@@ -11,3 +11,5 @@ output-options:
     - vendorUpdateVendor
     - vendorListIntakes
     - vendorRecordIntake
+    - vendorListAssessments
+    - vendorRecordAssessment

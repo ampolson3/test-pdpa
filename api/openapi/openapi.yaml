@@ -10929,6 +10929,79 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/vendors/{id}/assessments:
+    get:
+      operationId: vendorListAssessments
+      tags: [vendor]
+      summary: A vendor's own assessment cycles, newest first (VEN-07)
+      x-permission: vendor.vendor.read
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VendorAssessment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: vendorRecordAssessment
+      tags: [vendor]
+      summary: 'Answer one of VEN-04''s published vendor templates once: the score and the resulting risk level on this tenant''s own matrix (VEN-07)'
+      x-permission: vendor.vendor.update
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorRecordAssessmentInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorAssessment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/agreements:
     get:
       operationId: agreementListAgreements
@@ -13095,6 +13168,41 @@ components:
           description: VEN-04's assessment template codes (vendor_pdpa/vendor_security/vendor_transfer) this tier now calls for
           type: array
           items: {type: string}
+    VendorRecordAssessmentInput:
+      type: object
+      required: [template_code, answers]
+      properties:
+        template_code:
+          description: One of VEN-04's own seeded assessment_type=vendor template codes (e.g. vendor_pdpa, vendor_security, vendor_transfer)
+          type: string
+        answers:
+          description: Answers to that template's published form questions
+          type: object
+          additionalProperties: true
+      example:
+        template_code: vendor_pdpa
+        answers: {has_dpo: 'yes', has_retention_policy: 'yes', has_breach_process: 'no', has_subprocessor_list: 'yes', has_dpa_signed: 'yes'}
+    VendorAssessment:
+      type: object
+      required: [id, vendor_id, assessment_id, cycle_no, score, residual_level, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        vendor_id: {$ref: '#/components/schemas/Uuid'}
+        assessment_id: {$ref: '#/components/schemas/Uuid'}
+        cycle_no: {type: integer}
+        submitted_at: {$ref: '#/components/schemas/Timestamp'}
+        score: {type: number}
+        residual_level:
+          type: string
+          enum: [low, medium, high, critical]
+        decision:
+          type: [string, 'null']
+          description: Set only once VEN-08 (not built yet) records a decision
+          enum: [approved, conditional, rejected, null]
+        decided_by: {$ref: '#/components/schemas/Uuid'}
+        decided_at: {$ref: '#/components/schemas/Timestamp'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
     AgreementType:
       type: string
       description: 'agreement.agreements'' own CHECK constraint — ''dpa'' (DPA-02) and ''dsa'' (DSA-04) are wired to CreateWizard; joint_controller/inbound_dpa are real values for when those modules exist.'

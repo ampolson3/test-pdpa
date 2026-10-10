@@ -305,6 +305,84 @@ proved) — both run against the real seeded migration on a real Postgres. Migra
 
 **Acceptance criteria:** คะแนนคำนวณถูกต้องตามน้ำหนักทุกกรณีทดสอบ
 
+**Implementation — done.** The scoring/weighting itself needed no new machinery: VEN-04's own templates are
+plain PLT-06 "assessment" forms (yes_no questions with weighted option scores into bands —
+`forms.Evaluate`'s existing scoring engine), so "คิดคะแนนจากคำตอบและน้ำหนักคำถาม" is already correct the
+moment a vendor's answers are run through it. What this feature actually builds is the two missing pieces:
+somewhere for a *vendor's* answered run to live (not a DPIA activity's), and a residual-risk-level mapping
+on top of the raw score.
+
+`vendor.vendor_assessments.assessment_id` is a NOT NULL FK into `assess.assessments` — the same table DPIA
+owns and already uses for its own screening/necessity rounds, with `subject_type='vendor'` already in that
+table's own CHECK constraint, unused until now. Per rule 9 (a module reads/writes only its own schema),
+vendormgmt never touches `assess.*` directly — `dpiaservice.Service` gained a new, subject-type-agnostic
+counterpart to DPIA-01's own `Screen`: `RecordSubjectAssessment(ctx, templateID, subjectType, subjectID,
+title, answers)` (`backend/internal/dpia/service/subject_assessment.go`, new file). It reuses the existing
+unexported `screeningVersion` helper (confirms the template is published, resolves its current form version)
+and the existing generic `InsertAssessment` sqlc query — both already took `subject_type`/`subject_id` as
+separate parameters from the `activity_id` convenience column, so no schema or query change was needed there
+either.
+
+"สรุประดับความเสี่ยง...และความเสี่ยงคงเหลือ" is answered by reusing RRA-02's own risk-matrix machinery rather
+than inventing a second scoring scale: `riskservice.ClassifyScore(matrix, ratio)`
+(`backend/internal/risk/service/matrices.go`, new function, a one-dimensional counterpart to the existing
+`Classify(matrix, likelihood, impact)`) takes `ratio = 1 - score/maxScore` (0 = every answer scored the best
+it could, 1 = the worst possible), scales it onto the same `1..(len(LikelihoodLevels)*len(ImpactLevels))`
+point range `Classify`'s own grid already uses, then walks the identical `Thresholds` ladder — so a vendor's
+residual risk reads on the exact same tenant-configured scale (3×3/4×4/5×5, custom threshold labels) as every
+other risk classification in the system. No SA spec defined this score→level mapping — flagged for review
+here, the same "invent structure, flag for review" move this codebase already made for PLT-05/PLT-06's JSON
+formats. Real edge case found and fixed while writing `ClassifyScore`: a perfect score (ratio=0, so score=0)
+falls below every threshold, since a matrix's thresholds are only guaranteed to cover from `MinScore >= 1`
+upward (`normalize()`'s own rule, assuming `Classify`'s likelihood×impact grid which never scores below 1) —
+originally this returned an error for the *best possible* outcome, exactly backwards; fixed to floor at the
+matrix's own lowest/most lenient threshold instead of erroring.
+
+`ClassifyScore`'s vocabulary (`low/medium/high/very_high`, matching `risk.activity_scores.level`'s own CHECK)
+doesn't quite match `vendor.vendor_assessments.residual_level`'s CHECK (`low/medium/high/critical`) — fixed in
+`RecordAssessment` with an explicit translation (`"very_high"` → `"critical"`) right after classifying, with
+a comment explaining why, rather than widening either CHECK to match the other.
+
+`vendormgmt.Service` gained two direct concrete fields, `Dpia *dpiaservice.Service` and `Risk
+*riskservice.Service` — not local rule-9 interfaces, since neither `dpia` nor `risk` imports `vendormgmt` in
+either direction (confirmed by grep), so there's no cycle to route around; wired once in `cmd/api/main.go`
+right after both services exist. `internal/vendormgmt/service/assessments.go`'s `RecordAssessment(ctx,
+vendorID, templateCode, answers)` resolves the vendor (`GetVendor`), resolves the template by code among
+`s.Dpia.ListTemplates(ctx, "vendor")` filtered to `status == "published"`, calls `RecordSubjectAssessment`,
+classifies the resulting ratio against the tenant's own default risk matrix, computes the next `cycle_no` per
+vendor (`NextVendorAssessmentCycle`, a plain `MAX(cycle_no)+1` scan) and inserts the row wrapped in
+`pdb.Savepoint` (the established pattern for a write that can hit a real unique/check constraint without
+aborting the whole request transaction). `decision`/`decided_by`/`decided_at` are left NULL — deliberately
+not built here: that's VEN-08's job (approve/reject/conditional, not yet built), the same "build only the
+minimal slice this feature needs" pattern this codebase uses throughout (e.g. ROPA-01 deferring
+`discovered_by_finding_id`). The forms engine's own `forms.Service.Record` performs no permission check
+itself (confirmed by reading its source — the `Policy.Respond` field modules register in
+`internal/wiring/forms.go` is documentation only, for a hypothetical generic endpoint no module actually
+calls through); every module, VEN-07 included, gates the write through its own HTTP endpoint's own
+`x-permission` instead — `vendor.vendor.update`, no new permission code.
+
+API: `GET`/`POST /admin/v1/vendors/{id}/assessments` (no pagination, same shape as VEN-02's own
+`/intakes` — a vendor's own assessment history is never long). UI: an "Assessments" panel on `/vendors/{id}`,
+right after VEN-02's own intake panel — a published-template picker (reusing DPIA-03's own
+`useDpiaTemplates(client, "vendor")` hook) feeding the shared `FormRenderer` component (the same
+DPO-09/VEN-02 pattern: answer once, atomically, no draft/section-assignment flow), then a list of past cycles
+with their score and residual-risk badge (reusing the existing `tiers.*` i18n keys, since VEN-04's own
+low/medium/high/critical enum coincides exactly with `vendor_assessments.residual_level`).
+
+Tests: unit (`assessments_test.go` — the acceptance criterion directly: answering every question with the
+best option scores the maximum and classifies "low"; answering every question with the worst option scores
+zero and classifies "high"; cycle numbers increment correctly across rounds and `ListAssessments`/
+`GetAssessment` round-trip; an unknown template code is refused; a vendor with no risk matrix configured is
+refused; two-tenant isolation), `TestClassifyScore_RatioOntoSameThresholds` in `risk/service` (the ratio=0/1
+boundary cases and the floor-instead-of-error fix, plus out-of-range ratios refused), HTTP contract
+(401/403/201/200/422/404) through the real validator + AuthZ chain. `go build`/`go vet`/`gofmt` clean;
+`tsc --noEmit` and `pnpm --filter @pdpa/admin build` both verified clean — no Postgres/Redis reachable in
+this environment this round, so tests are compile-verified only, the same caveat VEN-01/VEN-02/VEN-11 already
+recorded. Not done: VEN-08's own decision workflow (approve/reject/conditional on a recorded assessment,
+`vendor.remediation_items` for a conditional approval's remediation plan) and VEN-05's guest-portal answer
+path (needs IAM-04/PLT-17, not built) — both sibling features layered on the same `vendor_assessments` row,
+not built here.
+
 <a id="ven-08"></a>
 ### VEN-08 อนุมัติหรือปฏิเสธคู่ค้า
 

@@ -108,6 +108,45 @@ func (h *Strict) VendorRecordIntake(ctx context.Context, req VendorRecordIntakeR
 	return VendorRecordIntake201JSONResponse{Intake: toVendorIntakeWire(in), RequiredAssessmentCodes: required}, nil
 }
 
+func (h *Strict) VendorListAssessments(ctx context.Context, req VendorListAssessmentsRequestObject) (VendorListAssessmentsResponseObject, error) {
+	list, err := h.svc.ListAssessments(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := VendorListAssessments200JSONResponse{Data: make([]VendorAssessment, 0, len(list))}
+	for _, a := range list {
+		resp.Data = append(resp.Data, toVendorAssessmentWire(a))
+	}
+	return resp, nil
+}
+
+func (h *Strict) VendorRecordAssessment(ctx context.Context, req VendorRecordAssessmentRequestObject) (VendorRecordAssessmentResponseObject, error) {
+	a, err := h.svc.RecordAssessment(ctx, req.Id, req.Body.TemplateCode, forms.Answers(req.Body.Answers))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return VendorRecordAssessment201JSONResponse(toVendorAssessmentWire(a)), nil
+}
+
+func toVendorAssessmentWire(a vendorservice.VendorAssessment) VendorAssessment {
+	w := VendorAssessment{Id: a.ID, VendorId: a.VendorID, AssessmentId: a.AssessmentID, CycleNo: a.CycleNo,
+		Score: float32(a.Score), ResidualLevel: VendorAssessmentResidualLevel(a.ResidualLevel),
+		DecidedBy: a.DecidedBy, RowVersion: int(a.RowVersion), CreatedAt: a.CreatedAt.UTC()}
+	if a.Decision != "" {
+		d := VendorAssessmentDecision(a.Decision)
+		w.Decision = &d
+	}
+	if a.SubmittedAt != nil {
+		t := a.SubmittedAt.UTC()
+		w.SubmittedAt = &t
+	}
+	if a.DecidedAt != nil {
+		t := a.DecidedAt.UTC()
+		w.DecidedAt = &t
+	}
+	return w
+}
+
 func toVendorIntakeWire(in vendorservice.Intake) VendorIntake {
 	return VendorIntake{Id: in.ID, VendorId: in.VendorID, FormSubmissionId: in.FormSubmissionID,
 		InherentScore: float32(in.InherentScore), TierResult: VendorTier(in.TierResult),

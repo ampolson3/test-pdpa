@@ -59,33 +59,81 @@ func (e FormConditionOp) Valid() bool {
 	}
 }
 
+// Defines values for VendorAssessmentDecision.
+const (
+	VendorAssessmentDecisionApproved    VendorAssessmentDecision = "approved"
+	VendorAssessmentDecisionConditional VendorAssessmentDecision = "conditional"
+	VendorAssessmentDecisionLessThannil VendorAssessmentDecision = "<nil>"
+	VendorAssessmentDecisionRejected    VendorAssessmentDecision = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the VendorAssessmentDecision enum.
+func (e VendorAssessmentDecision) Valid() bool {
+	switch e {
+	case VendorAssessmentDecisionApproved:
+		return true
+	case VendorAssessmentDecisionConditional:
+		return true
+	case VendorAssessmentDecisionLessThannil:
+		return true
+	case VendorAssessmentDecisionRejected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VendorAssessmentResidualLevel.
+const (
+	VendorAssessmentResidualLevelCritical VendorAssessmentResidualLevel = "critical"
+	VendorAssessmentResidualLevelHigh     VendorAssessmentResidualLevel = "high"
+	VendorAssessmentResidualLevelLow      VendorAssessmentResidualLevel = "low"
+	VendorAssessmentResidualLevelMedium   VendorAssessmentResidualLevel = "medium"
+)
+
+// Valid indicates whether the value is a known member of the VendorAssessmentResidualLevel enum.
+func (e VendorAssessmentResidualLevel) Valid() bool {
+	switch e {
+	case VendorAssessmentResidualLevelCritical:
+		return true
+	case VendorAssessmentResidualLevelHigh:
+		return true
+	case VendorAssessmentResidualLevelLow:
+		return true
+	case VendorAssessmentResidualLevelMedium:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for VendorStatus.
 const (
-	Approved    VendorStatus = "approved"
-	Conditional VendorStatus = "conditional"
-	Offboarding VendorStatus = "offboarding"
-	Onboarding  VendorStatus = "onboarding"
-	Prospect    VendorStatus = "prospect"
-	Rejected    VendorStatus = "rejected"
-	Terminated  VendorStatus = "terminated"
+	VendorStatusApproved    VendorStatus = "approved"
+	VendorStatusConditional VendorStatus = "conditional"
+	VendorStatusOffboarding VendorStatus = "offboarding"
+	VendorStatusOnboarding  VendorStatus = "onboarding"
+	VendorStatusProspect    VendorStatus = "prospect"
+	VendorStatusRejected    VendorStatus = "rejected"
+	VendorStatusTerminated  VendorStatus = "terminated"
 )
 
 // Valid indicates whether the value is a known member of the VendorStatus enum.
 func (e VendorStatus) Valid() bool {
 	switch e {
-	case Approved:
+	case VendorStatusApproved:
 		return true
-	case Conditional:
+	case VendorStatusConditional:
 		return true
-	case Offboarding:
+	case VendorStatusOffboarding:
 		return true
-	case Onboarding:
+	case VendorStatusOnboarding:
 		return true
-	case Prospect:
+	case VendorStatusProspect:
 		return true
-	case Rejected:
+	case VendorStatusRejected:
 		return true
-	case Terminated:
+	case VendorStatusTerminated:
 		return true
 	default:
 		return false
@@ -94,22 +142,22 @@ func (e VendorStatus) Valid() bool {
 
 // Defines values for VendorTier.
 const (
-	Critical VendorTier = "critical"
-	High     VendorTier = "high"
-	Low      VendorTier = "low"
-	Medium   VendorTier = "medium"
+	VendorTierCritical VendorTier = "critical"
+	VendorTierHigh     VendorTier = "high"
+	VendorTierLow      VendorTier = "low"
+	VendorTierMedium   VendorTier = "medium"
 )
 
 // Valid indicates whether the value is a known member of the VendorTier enum.
 func (e VendorTier) Valid() bool {
 	switch e {
-	case Critical:
+	case VendorTierCritical:
 		return true
-	case High:
+	case VendorTierHigh:
 		return true
-	case Low:
+	case VendorTierLow:
 		return true
-	case Medium:
+	case VendorTierMedium:
 		return true
 	default:
 		return false
@@ -200,6 +248,42 @@ func (e VendorUpdateVendorParamsAcceptLanguage) Valid() bool {
 	case VendorUpdateVendorParamsAcceptLanguageEn:
 		return true
 	case VendorUpdateVendorParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VendorListAssessmentsParamsAcceptLanguage.
+const (
+	VendorListAssessmentsParamsAcceptLanguageEn VendorListAssessmentsParamsAcceptLanguage = "en"
+	VendorListAssessmentsParamsAcceptLanguageTh VendorListAssessmentsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the VendorListAssessmentsParamsAcceptLanguage enum.
+func (e VendorListAssessmentsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case VendorListAssessmentsParamsAcceptLanguageEn:
+		return true
+	case VendorListAssessmentsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VendorRecordAssessmentParamsAcceptLanguage.
+const (
+	VendorRecordAssessmentParamsAcceptLanguageEn VendorRecordAssessmentParamsAcceptLanguage = "en"
+	VendorRecordAssessmentParamsAcceptLanguageTh VendorRecordAssessmentParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the VendorRecordAssessmentParamsAcceptLanguage enum.
+func (e VendorRecordAssessmentParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case VendorRecordAssessmentParamsAcceptLanguageEn:
+		return true
+	case VendorRecordAssessmentParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -305,6 +389,43 @@ type Vendor struct {
 	UpdatedAt Timestamp `json:"updated_at"`
 }
 
+// VendorAssessment defines model for VendorAssessment.
+type VendorAssessment struct {
+	// AssessmentId UUIDv7 generated by the API
+	AssessmentId Uuid `json:"assessment_id"`
+
+	// CreatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	CreatedAt Timestamp `json:"created_at"`
+	CycleNo   int       `json:"cycle_no"`
+
+	// DecidedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	DecidedAt *Timestamp `json:"decided_at,omitempty"`
+
+	// DecidedBy UUIDv7 generated by the API
+	DecidedBy *Uuid `json:"decided_by,omitempty"`
+
+	// Decision Set only once VEN-08 (not built yet) records a decision
+	Decision *VendorAssessmentDecision `json:"decision,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id            Uuid                          `json:"id"`
+	ResidualLevel VendorAssessmentResidualLevel `json:"residual_level"`
+	RowVersion    int                           `json:"row_version"`
+	Score         float32                       `json:"score"`
+
+	// SubmittedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	SubmittedAt *Timestamp `json:"submitted_at,omitempty"`
+
+	// VendorId UUIDv7 generated by the API
+	VendorId Uuid `json:"vendor_id"`
+}
+
+// VendorAssessmentDecision Set only once VEN-08 (not built yet) records a decision
+type VendorAssessmentDecision string
+
+// VendorAssessmentResidualLevel defines model for VendorAssessment.ResidualLevel.
+type VendorAssessmentResidualLevel string
+
 // VendorInput defines model for VendorInput.
 type VendorInput struct {
 	// DataAccess Free-form notes on what data this vendor can access — no fixed shape yet (ม.40)
@@ -350,6 +471,15 @@ type VendorIntakeResult struct {
 
 	// RequiredAssessmentCodes VEN-04's assessment template codes (vendor_pdpa/vendor_security/vendor_transfer) this tier now calls for
 	RequiredAssessmentCodes []string `json:"required_assessment_codes"`
+}
+
+// VendorRecordAssessmentInput defines model for VendorRecordAssessmentInput.
+type VendorRecordAssessmentInput struct {
+	// Answers Answers to that template's published form questions
+	Answers map[string]interface{} `json:"answers"`
+
+	// TemplateCode One of VEN-04's own seeded assessment_type=vendor template codes (e.g. vendor_pdpa, vendor_security, vendor_transfer)
+	TemplateCode string `json:"template_code"`
 }
 
 // VendorStatus ST-06. VEN-01 only ever creates prospect — every other transition belongs to a sibling feature (VEN-02/05/07/08/09/14) not built yet.
@@ -428,6 +558,24 @@ type VendorUpdateVendorParams struct {
 // VendorUpdateVendorParamsAcceptLanguage defines parameters for VendorUpdateVendor.
 type VendorUpdateVendorParamsAcceptLanguage string
 
+// VendorListAssessmentsParams defines parameters for VendorListAssessments.
+type VendorListAssessmentsParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *VendorListAssessmentsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// VendorListAssessmentsParamsAcceptLanguage defines parameters for VendorListAssessments.
+type VendorListAssessmentsParamsAcceptLanguage string
+
+// VendorRecordAssessmentParams defines parameters for VendorRecordAssessment.
+type VendorRecordAssessmentParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *VendorRecordAssessmentParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// VendorRecordAssessmentParamsAcceptLanguage defines parameters for VendorRecordAssessment.
+type VendorRecordAssessmentParamsAcceptLanguage string
+
 // VendorListIntakesParams defines parameters for VendorListIntakes.
 type VendorListIntakesParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -452,6 +600,9 @@ type VendorCreateVendorJSONRequestBody = VendorInput
 // VendorUpdateVendorJSONRequestBody defines body for VendorUpdateVendor for application/json ContentType.
 type VendorUpdateVendorJSONRequestBody = VendorInput
 
+// VendorRecordAssessmentJSONRequestBody defines body for VendorRecordAssessment for application/json ContentType.
+type VendorRecordAssessmentJSONRequestBody = VendorRecordAssessmentInput
+
 // VendorRecordIntakeJSONRequestBody defines body for VendorRecordIntake for application/json ContentType.
 type VendorRecordIntakeJSONRequestBody = VendorIntakeInput
 
@@ -469,6 +620,12 @@ type ServerInterface interface {
 	// VendorUpdateVendor Change a vendor's profile — never its status/tier (ST-06's own transitions, owned by sibling features)
 	// (PATCH /admin/v1/vendors/{id})
 	VendorUpdateVendor(w http.ResponseWriter, r *http.Request, id Uuid, params VendorUpdateVendorParams)
+	// VendorListAssessments A vendor's own assessment cycles, newest first (VEN-07)
+	// (GET /admin/v1/vendors/{id}/assessments)
+	VendorListAssessments(w http.ResponseWriter, r *http.Request, id Uuid, params VendorListAssessmentsParams)
+	// VendorRecordAssessment Answer one of VEN-04's published vendor templates once: the score and the resulting risk level on this tenant's own matrix (VEN-07)
+	// (POST /admin/v1/vendors/{id}/assessments)
+	VendorRecordAssessment(w http.ResponseWriter, r *http.Request, id Uuid, params VendorRecordAssessmentParams)
 	// VendorListIntakes A vendor's tiering rounds, newest first (VEN-02)
 	// (GET /admin/v1/vendors/{id}/intakes)
 	VendorListIntakes(w http.ResponseWriter, r *http.Request, id Uuid, params VendorListIntakesParams)
@@ -502,6 +659,18 @@ func (_ Unimplemented) VendorGetVendor(w http.ResponseWriter, r *http.Request, i
 // VendorUpdateVendor Change a vendor's profile — never its status/tier (ST-06's own transitions, owned by sibling features)
 // (PATCH /admin/v1/vendors/{id})
 func (_ Unimplemented) VendorUpdateVendor(w http.ResponseWriter, r *http.Request, id Uuid, params VendorUpdateVendorParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// VendorListAssessments A vendor's own assessment cycles, newest first (VEN-07)
+// (GET /admin/v1/vendors/{id}/assessments)
+func (_ Unimplemented) VendorListAssessments(w http.ResponseWriter, r *http.Request, id Uuid, params VendorListAssessmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// VendorRecordAssessment Answer one of VEN-04's published vendor templates once: the score and the resulting risk level on this tenant's own matrix (VEN-07)
+// (POST /admin/v1/vendors/{id}/assessments)
+func (_ Unimplemented) VendorRecordAssessment(w http.ResponseWriter, r *http.Request, id Uuid, params VendorRecordAssessmentParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -770,6 +939,106 @@ func (siw *ServerInterfaceWrapper) VendorUpdateVendor(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// VendorListAssessments operation middleware
+func (siw *ServerInterfaceWrapper) VendorListAssessments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params VendorListAssessmentsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage VendorListAssessmentsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VendorListAssessments(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VendorRecordAssessment operation middleware
+func (siw *ServerInterfaceWrapper) VendorRecordAssessment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params VendorRecordAssessmentParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage VendorRecordAssessmentParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VendorRecordAssessment(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // VendorListIntakes operation middleware
 func (siw *ServerInterfaceWrapper) VendorListIntakes(w http.ResponseWriter, r *http.Request) {
 
@@ -1000,6 +1269,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/vendors/{id}/intakes", wrapper.VendorRecordIntake)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/vendors/{id}/assessments", wrapper.VendorListAssessments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/vendors/{id}/assessments", wrapper.VendorRecordAssessment)
 	})
 
 	return r
@@ -1400,6 +1675,183 @@ func (response VendorUpdateVendor428ApplicationProblemPlusJSONResponse) VisitVen
 	return err
 }
 
+type VendorListAssessmentsRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params VendorListAssessmentsParams
+}
+
+type VendorListAssessmentsResponseObject interface {
+	VisitVendorListAssessmentsResponse(w http.ResponseWriter) error
+}
+
+type VendorListAssessments200JSONResponse struct {
+	Data []VendorAssessment `json:"data"`
+}
+
+func (response VendorListAssessments200JSONResponse) VisitVendorListAssessmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorListAssessments401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response VendorListAssessments401ApplicationProblemPlusJSONResponse) VisitVendorListAssessmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorListAssessments403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response VendorListAssessments403ApplicationProblemPlusJSONResponse) VisitVendorListAssessmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorListAssessments404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response VendorListAssessments404ApplicationProblemPlusJSONResponse) VisitVendorListAssessmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorRecordAssessmentRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params VendorRecordAssessmentParams
+	Body   *VendorRecordAssessmentJSONRequestBody
+}
+
+type VendorRecordAssessmentResponseObject interface {
+	VisitVendorRecordAssessmentResponse(w http.ResponseWriter) error
+}
+
+type VendorRecordAssessment201JSONResponse VendorAssessment
+
+func (response VendorRecordAssessment201JSONResponse) VisitVendorRecordAssessmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorRecordAssessment400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response VendorRecordAssessment400ApplicationProblemPlusJSONResponse) VisitVendorRecordAssessmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorRecordAssessment401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response VendorRecordAssessment401ApplicationProblemPlusJSONResponse) VisitVendorRecordAssessmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorRecordAssessment403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response VendorRecordAssessment403ApplicationProblemPlusJSONResponse) VisitVendorRecordAssessmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorRecordAssessment404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response VendorRecordAssessment404ApplicationProblemPlusJSONResponse) VisitVendorRecordAssessmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorRecordAssessment422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response VendorRecordAssessment422ApplicationProblemPlusJSONResponse) VisitVendorRecordAssessmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type VendorListIntakesRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params VendorListIntakesParams
@@ -1591,6 +2043,12 @@ type StrictServerInterface interface {
 	// VendorUpdateVendor Change a vendor's profile — never its status/tier (ST-06's own transitions, owned by sibling features)
 	// (PATCH /admin/v1/vendors/{id})
 	VendorUpdateVendor(ctx context.Context, request VendorUpdateVendorRequestObject) (VendorUpdateVendorResponseObject, error)
+	// VendorListAssessments A vendor's own assessment cycles, newest first (VEN-07)
+	// (GET /admin/v1/vendors/{id}/assessments)
+	VendorListAssessments(ctx context.Context, request VendorListAssessmentsRequestObject) (VendorListAssessmentsResponseObject, error)
+	// VendorRecordAssessment Answer one of VEN-04's published vendor templates once: the score and the resulting risk level on this tenant's own matrix (VEN-07)
+	// (POST /admin/v1/vendors/{id}/assessments)
+	VendorRecordAssessment(ctx context.Context, request VendorRecordAssessmentRequestObject) (VendorRecordAssessmentResponseObject, error)
 	// VendorListIntakes A vendor's tiering rounds, newest first (VEN-02)
 	// (GET /admin/v1/vendors/{id}/intakes)
 	VendorListIntakes(ctx context.Context, request VendorListIntakesRequestObject) (VendorListIntakesResponseObject, error)
@@ -1751,6 +2209,67 @@ func (sh *strictHandler) VendorUpdateVendor(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(VendorUpdateVendorResponseObject); ok {
 		if err := validResponse.VisitVendorUpdateVendorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VendorListAssessments operation middleware
+func (sh *strictHandler) VendorListAssessments(w http.ResponseWriter, r *http.Request, id Uuid, params VendorListAssessmentsParams) {
+	var request VendorListAssessmentsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VendorListAssessments(ctx, request.(VendorListAssessmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VendorListAssessments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VendorListAssessmentsResponseObject); ok {
+		if err := validResponse.VisitVendorListAssessmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VendorRecordAssessment operation middleware
+func (sh *strictHandler) VendorRecordAssessment(w http.ResponseWriter, r *http.Request, id Uuid, params VendorRecordAssessmentParams) {
+	var request VendorRecordAssessmentRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body VendorRecordAssessmentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VendorRecordAssessment(ctx, request.(VendorRecordAssessmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VendorRecordAssessment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VendorRecordAssessmentResponseObject); ok {
+		if err := validResponse.VisitVendorRecordAssessmentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
