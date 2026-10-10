@@ -12,6 +12,42 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getGapFinding = `-- name: GetGapFinding :one
+SELECT id, tenant_id, rule_id, activity_id, status, detected_at, resolved_at, task_id, row_version
+FROM risk.gap_findings
+WHERE id = $1
+`
+
+type GetGapFindingRow struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	TenantID   uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	RuleID     uuid.UUID          `db:"rule_id" json:"rule_id"`
+	ActivityID uuid.UUID          `db:"activity_id" json:"activity_id"`
+	Status     string             `db:"status" json:"status"`
+	DetectedAt pgtype.Timestamptz `db:"detected_at" json:"detected_at"`
+	ResolvedAt pgtype.Timestamptz `db:"resolved_at" json:"resolved_at"`
+	TaskID     pgtype.UUID        `db:"task_id" json:"task_id"`
+	RowVersion int32              `db:"row_version" json:"row_version"`
+}
+
+// RRA-07: load one finding by id (e.g. to resolve its activity when a remediation task closes).
+func (q *Queries) GetGapFinding(ctx context.Context, id uuid.UUID) (GetGapFindingRow, error) {
+	row := q.db.QueryRow(ctx, getGapFinding, id)
+	var i GetGapFindingRow
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.RuleID,
+		&i.ActivityID,
+		&i.Status,
+		&i.DetectedAt,
+		&i.ResolvedAt,
+		&i.TaskID,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
 const getOpenGapFinding = `-- name: GetOpenGapFinding :one
 SELECT id, tenant_id, rule_id, activity_id, status, detected_at, resolved_at, task_id, row_version
 FROM risk.gap_findings
@@ -263,6 +299,48 @@ type ResolveGapFindingRow struct {
 func (q *Queries) ResolveGapFinding(ctx context.Context, id uuid.UUID) (ResolveGapFindingRow, error) {
 	row := q.db.QueryRow(ctx, resolveGapFinding, id)
 	var i ResolveGapFindingRow
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.RuleID,
+		&i.ActivityID,
+		&i.Status,
+		&i.DetectedAt,
+		&i.ResolvedAt,
+		&i.TaskID,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
+const setGapFindingTask = `-- name: SetGapFindingTask :one
+UPDATE risk.gap_findings
+SET task_id = $2, row_version = row_version + 1
+WHERE id = $1
+RETURNING id, tenant_id, rule_id, activity_id, status, detected_at, resolved_at, task_id, row_version
+`
+
+type SetGapFindingTaskParams struct {
+	ID     uuid.UUID   `db:"id" json:"id"`
+	TaskID pgtype.UUID `db:"task_id" json:"task_id"`
+}
+
+type SetGapFindingTaskRow struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	TenantID   uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	RuleID     uuid.UUID          `db:"rule_id" json:"rule_id"`
+	ActivityID uuid.UUID          `db:"activity_id" json:"activity_id"`
+	Status     string             `db:"status" json:"status"`
+	DetectedAt pgtype.Timestamptz `db:"detected_at" json:"detected_at"`
+	ResolvedAt pgtype.Timestamptz `db:"resolved_at" json:"resolved_at"`
+	TaskID     pgtype.UUID        `db:"task_id" json:"task_id"`
+	RowVersion int32              `db:"row_version" json:"row_version"`
+}
+
+// RRA-07: link the finding to the dpo.tasks remediation job opened against it.
+func (q *Queries) SetGapFindingTask(ctx context.Context, arg SetGapFindingTaskParams) (SetGapFindingTaskRow, error) {
+	row := q.db.QueryRow(ctx, setGapFindingTask, arg.ID, arg.TaskID)
+	var i SetGapFindingTaskRow
 	err := row.Scan(
 		&i.ID,
 		&i.TenantID,

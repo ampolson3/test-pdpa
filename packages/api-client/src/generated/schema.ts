@@ -2974,6 +2974,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpo/tasks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One dpo.tasks remediation job by id (RRA-07's own tracking view, shared by every source that opens one) */
+        get: operations["dpoGetTask"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpo/tasks/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RRA-07: move a task through created -> assigned -> in_review -> done -> closed; closing a "ropa_gap" task re-checks that finding's rule */
+        post: operations["dpoUpdateTaskStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpia/screening-rules": {
         parameters: {
             query?: never;
@@ -3872,6 +3906,23 @@ export interface paths {
         put?: never;
         /** Re-run every active gap rule against this activity's current RoPA data now (RRA-04) — the acceptance criterion itself, since every rule type must be detected */
         post: operations["riskAnalyzeActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/risk/gap-findings/{id}/remediate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RRA-07: open a dpo.tasks remediation job against an open gap finding, with an assignee, due date and priority */
+        post: operations["riskRemediateGapFinding"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4956,10 +5007,29 @@ export interface components {
             title: string;
             description?: string;
             /** @enum {string} */
+            source_type?: "ropa_gap" | "dpia" | "audit" | "breach" | "risk" | "vendor" | "agreement" | "consent" | "manual";
+            source_id?: components["schemas"]["Uuid"];
+            /** @enum {string} */
             status: "created" | "assigned" | "in_review" | "done" | "closed";
             /** @enum {string} */
             priority: "low" | "medium" | "high" | "urgent";
+            assignee_user_id?: components["schemas"]["Uuid"];
+            /** Format: date */
+            due_at?: string | null;
+            completed_at?: components["schemas"]["Timestamp"];
+            row_version: number;
             created_at: components["schemas"]["Timestamp"];
+        };
+        DpoTaskStatusInput: {
+            /** @enum {string} */
+            status: "created" | "assigned" | "in_review" | "done" | "closed";
+        };
+        RiskRemediateFindingInput: {
+            assignee_user_id?: components["schemas"]["Uuid"];
+            /** Format: date */
+            due_at?: string;
+            /** @enum {string} */
+            priority?: "low" | "medium" | "high" | "urgent";
         };
         DpoSecurityAssessment: {
             id: components["schemas"]["Uuid"];
@@ -14235,6 +14305,73 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    dpoGetTask: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoRemediationTask"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpoUpdateTaskStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpoTaskStatusInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoRemediationTask"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
     dpiaGetScreeningRules: {
         parameters: {
             query?: never;
@@ -16534,6 +16671,39 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    riskRemediateGapFinding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RiskRemediateFindingInput"];
+            };
+        };
+        responses: {
+            /** @description OK — the finding, now linked to the opened task */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskGapFinding"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
 }

@@ -27,6 +27,7 @@ import (
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/forms"
+	riskservice "pdpa-platform/internal/risk/service"
 )
 
 // AppointmentEntityType is the PLT-09 attachment entity for both a signed appointment order and any
@@ -38,6 +39,7 @@ var (
 	ErrNotFound        = errors.New("dpo: not found")
 	ErrVersionMismatch = errors.New("dpo: version mismatch")
 	ErrFileNotUsable   = errors.New("dpo: file not usable")
+	ErrForbidden       = errors.New("dpo: forbidden")
 )
 
 var dpoTypes = []string{"internal", "external", "group"}
@@ -61,7 +63,13 @@ type Service struct {
 	Forms  *forms.Service // DPO-09's security-measures checklist (PLT-06); nil until that feature is wired
 	Dsar   *dsarservice.Service
 	Breach *breachservice.Service
-	Now    func() time.Time
+	// Risk is a direct concrete dependency, not a local interface: dpo already imports dsar, which
+	// imports ropa, which imports risk/service (for ROPA-09's controls catalog), so this is not a new
+	// cycle — the same reasoning that already lets Dsar/Breach above be concrete fields. Used only by
+	// RRA-07: closing a "ropa_gap" task re-checks that finding's activity and clears the gap if the rule
+	// no longer applies.
+	Risk *riskservice.Service
+	Now  func() time.Time
 }
 
 // Appointment is one DPO appointment (ม.41): internal (an existing iam.users row), external (a named person

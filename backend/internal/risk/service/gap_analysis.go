@@ -3,12 +3,14 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	iamservice "pdpa-platform/internal/iam/service"
 	pdb "pdpa-platform/internal/pkg/db"
 	riskstore "pdpa-platform/internal/risk/store"
 )
@@ -198,6 +200,90 @@ func (s *Service) ListGapFindingsForActivity(ctx context.Context, activityID uui
 		out = append(out, toGapFinding(r.ID, r.RuleID, codeByID[r.RuleID], r.ActivityID, r.Status, r.DetectedAt, r.ResolvedAt, r.TaskID))
 	}
 	return out, nil
+}
+
+// GetGapFinding returns one finding by id, RLS-scoped to the caller's tenant like every other read here.
+func (s *Service) GetGapFinding(ctx context.Context, id uuid.UUID) (GapFinding, error) {
+	row, err := riskstore.New(pdb.MustTxFromContext(ctx)).GetGapFinding(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return GapFinding{}, ErrNotFound
+	}
+	if err != nil {
+		return GapFinding{}, err
+	}
+	rules, err := s.ListGapRules(ctx)
+	if err != nil {
+		return GapFinding{}, err
+	}
+	code := ""
+	for _, r := range rules {
+		if r.ID == row.RuleID {
+			code = r.Code
+			break
+		}
+	}
+	return toGapFinding(row.ID, row.RuleID, code, row.ActivityID, row.Status, row.DetectedAt, row.ResolvedAt, row.TaskID), nil
+}
+
+var validTaskPriorities = map[string]bool{"low": true, "medium": true, "high": true, "urgent": true}
+
+// RemediateFinding is RRA-07's own "เลือกช่องว่าง → สร้างงาน": the finding must still be open and, if
+// given, the assignee must be a real active user of this tenant; the opened dpo.tasks job is linked back
+// onto the finding's own (until now unused) task_id column. The other half of the acceptance criterion —
+// closing that task re-checks the rule and clears the finding once it passes — lives on the dpo side
+// (dpo/service's own task-status transition calls back into AnalyzeActivity), not here.
+func (s *Service) RemediateFinding(ctx context.Context, findingID uuid.UUID, assigneeUserID *uuid.UUID, dueAt *time.Time, priority string) (GapFinding, error) {
+	finding, err := s.GetGapFinding(ctx, findingID)
+	if err != nil {
+		return GapFinding{}, err
+	}
+	if finding.Status != "open" {
+		return GapFinding{}, fmt.Errorf("%w: finding is not open", ErrInvalid)
+	}
+	if priority == "" {
+		priority = "medium"
+	}
+	if !validTaskPriorities[priority] {
+		return GapFinding{}, fmt.Errorf("%w: priority", ErrInvalid)
+	}
+	if assigneeUserID != nil {
+		names, err := iamservice.Names(ctx, []uuid.UUID{*assigneeUserID})
+		if err != nil {
+			return GapFinding{}, err
+		}
+		if _, ok := names[*assigneeUserID]; !ok {
+			return GapFinding{}, fmt.Errorf("%w: assignee_user_id", ErrInvalid)
+		}
+	}
+	if s.Dpo == nil {
+		return GapFinding{}, errors.New("risk: no task service configured")
+	}
+	rules, err := s.ListGapRules(ctx)
+	if err != nil {
+		return GapFinding{}, err
+	}
+	ruleName := finding.RuleCode
+	for _, r := range rules {
+		if r.ID == finding.RuleID {
+			ruleName = r.Name
+			break
+		}
+	}
+	taskID, err := s.Dpo.OpenGapRemediationTask(ctx, findingID, "แก้ไขช่องว่าง: "+ruleName,
+		fmt.Sprintf("แก้ไขช่องว่างทางกฎหมายที่ตรวจพบ: %s", ruleName), assigneeUserID, dueAt, priority)
+	if err != nil {
+		return GapFinding{}, err
+	}
+	row, err := riskstore.New(pdb.MustTxFromContext(ctx)).SetGapFindingTask(ctx,
+		riskstore.SetGapFindingTaskParams{ID: findingID, TaskID: pgUUID(&taskID)})
+	if err != nil {
+		return GapFinding{}, err
+	}
+	if err := s.audit(ctx, "risk.gap_finding.remediate", "gap_finding", findingID, nil,
+		map[string]any{"task_id": taskID}); err != nil {
+		return GapFinding{}, err
+	}
+	return toGapFinding(row.ID, row.RuleID, finding.RuleCode, row.ActivityID, row.Status, row.DetectedAt, row.ResolvedAt, row.TaskID), nil
 }
 
 // ListOpenGapFindings is the tenant-wide gap register (RRA-04's own "รายการช่องว่าง" list) — every open

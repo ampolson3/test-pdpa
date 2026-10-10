@@ -73,7 +73,9 @@ func decodeCursor(s string) (time.Time, uuid.UUID, error) {
 	return t, u, err
 }
 
-func encodeAppointmentCursor(c dposervice.AppointmentCursor) string { return encodeCursor(c.CreatedAt, c.ID) }
+func encodeAppointmentCursor(c dposervice.AppointmentCursor) string {
+	return encodeCursor(c.CreatedAt, c.ID)
+}
 
 func decodeAppointmentCursor(s string) (dposervice.AppointmentCursor, error) {
 	t, u, err := decodeCursor(s)
@@ -85,6 +87,8 @@ func problem(err error) error {
 	switch {
 	case errors.Is(err, dposervice.ErrNotFound):
 		return httpx.NotFound()
+	case errors.Is(err, dposervice.ErrForbidden):
+		return httpx.AuthzDenied()
 	case errors.Is(err, dposervice.ErrVersionMismatch):
 		return httpx.VersionMismatch()
 	case errors.Is(err, dposervice.ErrFileNotUsable):

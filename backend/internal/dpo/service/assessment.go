@@ -47,17 +47,22 @@ type Assessment struct {
 	Tasks            []Task
 }
 
-// Task is a dpo.tasks remediation item, most of it auto-opened by Assess for a failed checklist control.
+// Task is a dpo.tasks remediation item, most of it auto-opened by Assess for a failed checklist control
+// (and, as of RRA-07, by a caller choosing to remediate a legal-gap finding directly).
 type Task struct {
-	ID          uuid.UUID
-	TaskNo      string
-	Title       string
-	Description string
-	SourceType  string
-	SourceID    *uuid.UUID
-	Status      string
-	Priority    string
-	CreatedAt   time.Time
+	ID             uuid.UUID
+	TaskNo         string
+	Title          string
+	Description    string
+	SourceType     string
+	SourceID       *uuid.UUID
+	Status         string
+	Priority       string
+	AssigneeUserID *uuid.UUID
+	DueAt          *time.Time
+	CompletedAt    *time.Time
+	RowVersion     int32
+	CreatedAt      time.Time
 }
 
 // assessmentVersion resolves a form to its current published version, checked usable: it must be DPO-09's
@@ -278,6 +283,14 @@ func toAssessment(r dpostore.InsertSecurityAssessmentRow, tasks []Task) Assessme
 }
 
 func toTask(r dpostore.InsertTaskRow) Task {
-	return Task{ID: r.ID, TaskNo: r.TaskNo, Title: r.Title, Description: deref(r.Description), SourceType: r.SourceType,
-		SourceID: uuidPtr(r.SourceID), Status: r.Status, Priority: r.Priority, CreatedAt: r.CreatedAt.Time}
+	t := Task{ID: r.ID, TaskNo: r.TaskNo, Title: r.Title, Description: deref(r.Description), SourceType: r.SourceType,
+		SourceID: uuidPtr(r.SourceID), Status: r.Status, Priority: r.Priority, AssigneeUserID: uuidPtr(r.AssigneeUserID),
+		RowVersion: r.RowVersion, CreatedAt: r.CreatedAt.Time}
+	if r.DueAt.Valid {
+		t.DueAt = &r.DueAt.Time
+	}
+	if r.CompletedAt.Valid {
+		t.CompletedAt = &r.CompletedAt.Time
+	}
+	return t
 }

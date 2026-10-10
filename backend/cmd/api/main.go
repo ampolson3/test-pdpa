@@ -239,9 +239,9 @@ func run() error {
 	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc} // ROPA-05: create an activity from one of these templates
 	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}                                                // RRA-01: score an activity from its own RoPA data
 	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc}                                         // VEN-01: vendor/processor registry
-	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc}
-	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read" // DPO-01 appointment order / PDPC evidence
-	riskSvc.Dpo = dpoSvc                                                             // DPIA-07: owner + due date on a control opens a dpo.tasks job
+	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc, Risk: riskSvc}                // RRA-07: closing a "ropa_gap" task re-checks the rule
+	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read"                          // DPO-01 appointment order / PDPC evidence
+	riskSvc.Dpo = dpoSvc                                                                                      // DPIA-07/RRA-07: owner + due date on a control, or a gap finding, opens a dpo.tasks job
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
 	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
 	formsSvc := wiring.Forms(notifySvc, auditSvc)

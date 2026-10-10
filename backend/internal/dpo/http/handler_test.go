@@ -268,3 +268,159 @@ func TestAppointmentEndpoints_Contract(t *testing.T) {
 		t.Errorf("deadlines: %d %s", code, body)
 	}
 }
+
+// TestTaskEndpoints_Contract is RRA-07's own HTTP contract test for the generic dpo.tasks tracking view:
+// a caller without dpo.task.read/update is refused, and the status transition goes through the real
+// validator + AuthZ chain (ETag/If-Match, 428/412/422).
+func TestTaskEndpoints_Contract(t *testing.T) {
+	ctx := context.Background()
+	rdb := redis.NewClient(&redis.Options{Addr: envOr("TEST_REDIS_ADDR", "localhost:6379")})
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		t.Skipf("no Redis: %v", err)
+	}
+	t.Cleanup(func() { rdb.Close() })
+	app := dbtest.Pool(t)
+	tenant := dbtest.SeedTenant(t, ctx, app, dbtest.PlatformPool(t), "dpotaskhttp")
+
+	owner := dbtest.OwnerPool(t)
+	t.Cleanup(func() {
+		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
+			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM dpo.tasks`)
+			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
+			return err
+		})
+	})
+	svc := &dposervice.Service{Audit: audit.New()}
+
+	var taskID uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(), Permissions: []string{}})
+		id, err := svc.OpenGapRemediationTask(ctx, uuid.New(), "แก้ไขช่องว่างทดสอบ", "", nil, nil, "high")
+		taskID = id
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	validateMw, _ := validate.Middleware(spec, nil)
+	perms := map[string]string{}
+	for _, item := range spec.Paths.Map() {
+		for _, op := range item.Operations() {
+			if code, ok := op.Extensions["x-permission"].(string); ok {
+				perms[strings.ToUpper(op.OperationID[:1])+op.OperationID[1:]] = code
+			}
+		}
+	}
+	noAccess := uuid.New()
+	grants := map[string][]string{
+		tenant.UserID.String(): {"dpo.task.read", "dpo.task.update", "dpo.task.execute"},
+		noAccess.String():      {},
+	}
+	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
+		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
+	})
+	t.Cleanup(func() {
+		for uid := range grants {
+			_ = cache.Invalidate(context.Background(), tenant.ID.String(), uid)
+		}
+	})
+
+	r := chi.NewRouter()
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if u := req.Header.Get("X-Test-User"); u != "" {
+				req = req.WithContext(httpx.WithPrincipal(req.Context(), httpx.Principal{TenantID: tenant.ID.String(), UserID: u, ActorType: "user"}))
+			}
+			next.ServeHTTP(w, req)
+		})
+	})
+	r.Use(validateMw)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			p, ok := httpx.PrincipalFromContext(req.Context())
+			if !ok {
+				next.ServeHTTP(w, req)
+				return
+			}
+			_ = pdb.WithTenantTx(req.Context(), app, p.TenantID, p.UserID, func(ctx context.Context) error {
+				next.ServeHTTP(w, req.WithContext(ctx))
+				return nil
+			})
+		})
+	})
+	strict := dpohttp.NewStrictHandlerWithOptions(dpohttp.NewStrict(svc),
+		[]dpohttp.StrictMiddlewareFunc{authz.StrictMiddleware[dpohttp.StrictHandlerFunc](cache, func(op string) (string, bool) { c, ok := perms[op]; return c, ok })},
+		dpohttp.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				if p, ok := err.(httpx.Problem); ok {
+					httpx.WriteProblem(w, r, p)
+					return
+				}
+				httpx.WriteProblem(w, r, httpx.Internal())
+			},
+		})
+	dpohttp.HandlerWithOptions(strict, dpohttp.ChiServerOptions{BaseRouter: r})
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	do := func(method, path string, user *uuid.UUID, body any, headers map[string]string) (int, string) {
+		var buf bytes.Buffer
+		if body != nil {
+			_ = json.NewEncoder(&buf).Encode(body)
+		}
+		req, _ := http.NewRequest(method, srv.URL+path, &buf)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if user != nil {
+			req.Header.Set("X-Test-User", user.String())
+		}
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		var out bytes.Buffer
+		_, _ = out.ReadFrom(res.Body)
+		return res.StatusCode, out.String()
+	}
+	admin := tenant.UserID
+	item := "/admin/v1/dpo/tasks/" + taskID.String()
+
+	if code, _ := do("GET", item, nil, nil, nil); code != 401 {
+		t.Errorf("no principal: %d, want 401", code)
+	}
+	if code, _ := do("GET", item, &noAccess, nil, nil); code != 403 {
+		t.Errorf("without dpo.task.read: %d, want 403", code)
+	}
+	if code, body := do("GET", item, &admin, nil, nil); code != 200 || !strings.Contains(body, `"status":"created"`) {
+		t.Errorf("get: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/dpo/tasks/"+uuid.New().String(), &admin, nil, nil); code != 404 {
+		t.Errorf("unknown task: %d, want 404", code)
+	}
+	if code, _ := do("POST", item+"/status", &admin, map[string]string{"status": "in_review"}, nil); code != 428 {
+		t.Errorf("update without If-Match: %d, want 428", code)
+	}
+	if code, _ := do("POST", item+"/status", &admin, map[string]string{"status": "in_review"}, map[string]string{"If-Match": `"9"`}); code != 412 {
+		t.Errorf("stale If-Match: %d, want 412", code)
+	}
+	if code, body := do("POST", item+"/status", &admin, map[string]string{"status": "in_review"}, map[string]string{"If-Match": `"1"`}); code != 200 ||
+		!strings.Contains(body, `"status":"in_review"`) {
+		t.Errorf("update: %d %s", code, body)
+	}
+	if code, _ := do("POST", item+"/status", &noAccess, map[string]string{"status": "done"}, map[string]string{"If-Match": `"2"`}); code != 403 {
+		t.Errorf("update without any dpo.task permission: %d, want 403", code)
+	}
+}

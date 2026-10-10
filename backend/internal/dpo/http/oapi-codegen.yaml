@@ -13,3 +13,5 @@ output-options:
     - dpoListAssessments
     - dpoRecordAssessment
     - dpoGetAssessment
+    - dpoGetTask
+    - dpoUpdateTaskStatus

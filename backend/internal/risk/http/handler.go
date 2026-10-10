@@ -7,6 +7,9 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 
 	riskservice "pdpa-platform/internal/risk/service"
 
@@ -136,6 +139,27 @@ func (h *Strict) RiskAnalyzeActivity(ctx context.Context, req RiskAnalyzeActivit
 		resp.Data = append(resp.Data, toGapFindingWire(f))
 	}
 	return resp, nil
+}
+
+func (h *Strict) RiskRemediateGapFinding(ctx context.Context, req RiskRemediateGapFindingRequestObject) (RiskRemediateGapFindingResponseObject, error) {
+	var assignee *uuid.UUID
+	var dueAt *time.Time
+	priority := ""
+	if req.Body != nil {
+		assignee = req.Body.AssigneeUserId
+		if req.Body.DueAt != nil {
+			t := req.Body.DueAt.Time
+			dueAt = &t
+		}
+		if req.Body.Priority != nil {
+			priority = string(*req.Body.Priority)
+		}
+	}
+	f, err := h.svc.RemediateFinding(ctx, req.Id, assignee, dueAt, priority)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RiskRemediateGapFinding200JSONResponse(toGapFindingWire(f)), nil
 }
 
 func toGapRuleWire(r riskservice.GapRule) RiskGapRule {

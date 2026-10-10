@@ -3,6 +3,7 @@ import type { ApiClient, components } from "./client";
 
 export type RiskGapRule = components["schemas"]["RiskGapRule"];
 export type RiskGapFinding = components["schemas"]["RiskGapFinding"];
+export type RiskRemediateFindingInput = components["schemas"]["RiskRemediateFindingInput"];
 
 const activityFindingsKey = (activityId: string) => ["risk", "gap-findings", activityId] as const;
 
@@ -52,6 +53,26 @@ export function useAnalyzeActivity(client: ApiClient) {
       const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/gap-analysis", { params: { path: { id: activityId } } });
       if (error) throw error;
       return { activityId, findings: data.data };
+    },
+    onSuccess: ({ activityId }) => {
+      qc.invalidateQueries({ queryKey: activityFindingsKey(activityId) });
+      qc.invalidateQueries({ queryKey: ["risk", "gap-findings", "open"] });
+    },
+  });
+}
+
+/** POST /admin/v1/risk/gap-findings/{id}/remediate (RRA-07) — open a tracked dpo.tasks job against an
+ *  open finding, with an assignee, due date and priority. */
+export function useRemediateGapFinding(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, activityId, input }: { id: string; activityId: string; input: RiskRemediateFindingInput }) => {
+      const { data, error } = await client.POST("/admin/v1/risk/gap-findings/{id}/remediate", {
+        params: { path: { id } },
+        body: input,
+      });
+      if (error) throw error;
+      return { activityId, finding: data };
     },
     onSuccess: ({ activityId }) => {
       qc.invalidateQueries({ queryKey: activityFindingsKey(activityId) });

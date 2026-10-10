@@ -114,9 +114,12 @@ export {
   useOpenGapFindings,
   useActivityGapFindings,
   useAnalyzeActivity,
+  useRemediateGapFinding,
   type RiskGapRule,
   type RiskGapFinding,
+  type RiskRemediateFindingInput,
 } from "./gapFindings";
+export { useTask, useUpdateTaskStatus, type DpoTaskStatus } from "./tasks";
 export {
   useDataInventory,
   useSaveDataInventoryItem,

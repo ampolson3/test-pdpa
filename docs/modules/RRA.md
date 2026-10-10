@@ -421,6 +421,57 @@ fully covered by a sibling's own implementation.
 
 **Acceptance criteria:** ปิดงานแล้วช่องว่างหายไปเมื่อ rule ผ่าน
 
+**Implementation — done.** `risk.gap_findings.task_id` was a real FK to `dpo.tasks` since the baseline
+migration, built specifically for this feature; `dpo.tasks.source_type` already had `'ropa_gap'` in its own
+CHECK constraint, also unused until now. The module doc's own two actions map onto the two services that
+already sit either side of that FK: risk owns the "เลือกช่องว่าง → สร้างงาน" half, dpo owns "ติดตามจนปิด".
+
+`risk/service/gap_analysis.go` gained `GetGapFinding` (one finding by id, RLS-scoped) and
+`RemediateFinding(ctx, findingID, assigneeUserID, dueAt, priority)`: the finding must still be `open`, a given
+assignee must be a real active user of the tenant (`iamservice.Names`, the same check DPIA-07's own
+`AddRiskControl` already makes), and priority must be one of `dpo.tasks`' own four values. It then opens the
+job through `risk/service`'s existing `DpoTasks` local interface (RRA-06/DPIA-07's own cross-module-write
+pattern) — extended with a second method, `OpenGapRemediationTask`, alongside DPIA-07's `OpenRiskControlTask`
+— and writes the new task id back onto the finding's `task_id` via a new `SetGapFindingTask` query. No new
+adapter: `risk.Service.Dpo` was already a field of this interface type.
+
+`dpo/service/gap_tasks.go` implements `OpenGapRemediationTask` ("GAP-\<year\>-NNNN", source_type `ropa_gap`,
+the same per-tenant-per-year advisory-lock numbering every other `dpo.tasks` opener already uses) and adds
+the module's first real status-transition surface: `GetTask` and `UpdateTaskStatus`, checked against a small
+local state machine (`created → assigned → in_review → done → closed`, declared here since no other feature
+had ever driven this column through an API before). `requireTaskAccess` is `docs/security/permissions.md`'s
+own note on `dpo.task` ("แก้ได้เฉพาะงานที่ได้รับมอบหมาย") applied literally: a caller holding `dpo.task.execute`
+(DPO/PRIVACY in the seeded RBAC) may move any task; everyone else holding only `dpo.task.update`
+(LEGAL/OWNER/IT/SEC) may move only a task actually assigned to them — the same two-tier shape DSAR-08's own
+`requireSubtaskAccess` already established. `dpo.Service` gained a direct concrete `Risk *riskservice.Service`
+field (not a local interface, following the same reasoning Dsar/Breach already use on this struct: `dpo`
+already imports `dsar`, which imports `ropa`, which imports `risk/service`, so this is not a new import cycle)
+— when a `ropa_gap` task is closed, `UpdateTaskStatus` resolves the finding's `activity_id` through
+`risk.GetGapFinding` and calls `risk.AnalyzeActivity` on it. The task always closes; the finding only clears
+if the rule genuinely no longer fires — exactly the acceptance criterion's own distinction between "the task
+was closed" and "the gap is actually gone".
+
+API: `POST /admin/v1/risk/gap-findings/{id}/remediate` (`ropa.risk.create`, the same permission RRA-04's own
+analyze endpoint uses — this is still a risk-module write, the `dpo.tasks` row is an internal side effect, the
+same reasoning DPIA-07's own `AddRiskControl` endpoint already uses for `assessment.dpia.update`); `GET
+/admin/v1/dpo/tasks/{id}` and `POST /admin/v1/dpo/tasks/{id}/status` (ETag/If-Match, `dpo.task.read`/
+`dpo.task.update`) — generic enough for any future `dpo.tasks` opener to reuse, not just this one.
+`DpoRemediationTask`'s wire schema widened additively (`source_type`, `source_id`, `assignee_user_id`,
+`due_at`, `completed_at`, `row_version`) — it was already returned nested inside `DpoSecurityAssessment`, so
+nothing existing broke. UI: the `/settings/gap-register` page (RRA-04) gained an assignee picker (the same
+`useMentionSearch` pattern VEN-01's own owner picker uses) + due date + priority form per open finding with
+no task yet, and, once one exists, a status badge with an "advance" button that walks the same state machine
+one step at a time, ending in "ปิดงาน" — closing it re-triggers the backend recheck and the row naturally
+drops off the register once the finding actually resolves. Tests: unit (RemediateFinding opens and links a
+real task; unknown assignee/bad priority/already-resolved/unknown finding all refused; two-tenant isolation;
+every `UpdateTaskStatus` edge allowed/refused; version mismatch; the access-restriction rule including its
+`dpo.task.execute` bypass; and the acceptance criterion itself end to end — fixing the actual gap then
+walking the task through to `closed` leaves the finding `resolved`, proving the clear happens because the
+rule passed, not merely because the task closed), HTTP contract (401/403/404/412/428/200) through the real
+validator + AuthZ on both the risk and dpo endpoints. `pnpm --filter @pdpa/admin build`/`tsc --noEmit` and
+`pnpm --filter @pdpa/i18n test` verified clean; as throughout this session, no live Postgres was reachable
+here, so the Go tests were verified by `go build`/`go vet`/`gofmt -l` (compile-clean) rather than actually run.
+
 <a id="rra-05"></a>
 ### RRA-05 Checklist ตรวจสอบกิจกรรม
 

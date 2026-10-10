@@ -1167,7 +1167,34 @@
       "rule": "ช่องว่าง",
       "severity": "ความรุนแรง",
       "activity": "กิจกรรม",
-      "detectedAt": "วันที่ตรวจพบ"
+      "detectedAt": "วันที่ตรวจพบ",
+      "task": "งานแก้ไข"
+    },
+    "remediate": {
+      "open": "สร้างงานแก้ไข",
+      "submit": "สร้างงาน",
+      "assigneeSearch": "ค้นหาผู้ดำเนินการ…",
+      "priority": {
+        "low": "ต่ำ",
+        "medium": "กลาง",
+        "high": "สูง",
+        "urgent": "เร่งด่วน"
+      },
+      "error": "สร้างงานไม่สำเร็จ: {detail}"
+    },
+    "task": {
+      "loading": "กำลังโหลด…",
+      "loadError": "โหลดงานไม่สำเร็จ",
+      "advance": "ดำเนินการต่อ",
+      "close": "ปิดงาน",
+      "updateError": "อัปเดตงานไม่สำเร็จ: {detail}",
+      "status": {
+        "created": "สร้างแล้ว",
+        "assigned": "มอบหมายแล้ว",
+        "in_review": "กำลังตรวจสอบ",
+        "done": "เสร็จแล้ว",
+        "closed": "ปิดแล้ว"
+      }
     }
   },
   "dataInventory": {

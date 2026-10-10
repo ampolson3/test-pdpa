@@ -1167,7 +1167,34 @@
       "rule": "Gap",
       "severity": "Severity",
       "activity": "Activity",
-      "detectedAt": "Detected"
+      "detectedAt": "Detected",
+      "task": "Remediation task"
+    },
+    "remediate": {
+      "open": "Open task",
+      "submit": "Create task",
+      "assigneeSearch": "Search assignee…",
+      "priority": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "urgent": "Urgent"
+      },
+      "error": "Could not open the task: {detail}"
+    },
+    "task": {
+      "loading": "Loading…",
+      "loadError": "Failed to load the task.",
+      "advance": "Advance",
+      "close": "Close",
+      "updateError": "Could not update the task: {detail}",
+      "status": {
+        "created": "Created",
+        "assigned": "Assigned",
+        "in_review": "In review",
+        "done": "Done",
+        "closed": "Closed"
+      }
     }
   },
   "dataInventory": {

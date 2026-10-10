@@ -9012,6 +9012,82 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dpo/tasks/{id}:
+    get:
+      operationId: dpoGetTask
+      tags: [dpo]
+      summary: One dpo.tasks remediation job by id (RRA-07's own tracking view, shared by every source that opens one)
+      x-permission: dpo.task.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoRemediationTask'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/dpo/tasks/{id}/status:
+    post:
+      operationId: dpoUpdateTaskStatus
+      tags: [dpo]
+      summary: 'RRA-07: move a task through created -> assigned -> in_review -> done -> closed; closing a "ropa_gap" task re-checks that finding''s rule'
+      x-permission: dpo.task.update
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DpoTaskStatusInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoRemediationTask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/dpia/screening-rules:
     get:
       operationId: dpiaGetScreeningRules
@@ -11700,6 +11776,42 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/risk/gap-findings/{id}/remediate:
+    post:
+      operationId: riskRemediateGapFinding
+      tags: [risk]
+      summary: 'RRA-07: open a dpo.tasks remediation job against an open gap finding, with an assignee, due date and priority'
+      x-permission: ropa.risk.create
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskRemediateFindingInput'
+      responses:
+        '200':
+          description: OK — the finding, now linked to the opened task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskGapFinding'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 components:
   securitySchemes:
     adminJwt:
@@ -13395,15 +13507,36 @@ components:
         updated_at: {$ref: '#/components/schemas/Timestamp'}
     DpoRemediationTask:
       type: object
-      required: [id, task_no, title, status, priority, created_at]
+      required: [id, task_no, title, status, priority, row_version, created_at]
       properties:
         id: {$ref: '#/components/schemas/Uuid'}
         task_no: {type: string}
         title: {type: string}
         description: {type: string}
+        source_type:
+          type: string
+          enum: [ropa_gap, dpia, audit, breach, risk, vendor, agreement, consent, manual]
+        source_id: {$ref: '#/components/schemas/Uuid'}
         status: {type: string, enum: [created, assigned, in_review, done, closed]}
         priority: {type: string, enum: [low, medium, high, urgent]}
+        assignee_user_id: {$ref: '#/components/schemas/Uuid'}
+        due_at: {type: [string, 'null'], format: date}
+        completed_at: {$ref: '#/components/schemas/Timestamp'}
+        row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    DpoTaskStatusInput:
+      type: object
+      required: [status]
+      additionalProperties: false
+      properties:
+        status: {type: string, enum: [created, assigned, in_review, done, closed]}
+    RiskRemediateFindingInput:
+      type: object
+      additionalProperties: false
+      properties:
+        assignee_user_id: {$ref: '#/components/schemas/Uuid'}
+        due_at: {type: string, format: date}
+        priority: {type: string, enum: [low, medium, high, urgent]}
     DpoSecurityAssessment:
       type: object
       required: [id, legal_entity_id, form_submission_id, score, result, factors, assessed_at]

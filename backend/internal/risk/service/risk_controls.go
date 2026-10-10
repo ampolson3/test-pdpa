@@ -40,6 +40,9 @@ var validControlStatuses = map[string]bool{"existing": true, "planned": true, "i
 // needed — the same shape as RRA-03's own DpiaTrigger, just pointed the other way.
 type DpoTasks interface {
 	OpenRiskControlTask(ctx context.Context, riskID uuid.UUID, title, description string, assigneeUserID *uuid.UUID, dueAt *time.Time) (uuid.UUID, error)
+	// OpenGapRemediationTask is RRA-07's own task-opening call: a legal-gap finding, given an assignee,
+	// due date and priority, opens one dpo.tasks job ("ropa_gap" source) instead of DPIA-07's "risk" one.
+	OpenGapRemediationTask(ctx context.Context, findingID uuid.UUID, title, description string, assigneeUserID *uuid.UUID, dueAt *time.Time, priority string) (uuid.UUID, error)
 }
 
 // AddRiskControl links a control from the catalog to a risk, optionally with an owner and due date — giving

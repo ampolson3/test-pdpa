@@ -35,3 +35,16 @@ SELECT id, tenant_id, rule_id, activity_id, status, detected_at, resolved_at, ta
 FROM risk.gap_findings
 WHERE status = 'open'
 ORDER BY detected_at DESC;
+
+-- name: GetGapFinding :one
+-- RRA-07: load one finding by id (e.g. to resolve its activity when a remediation task closes).
+SELECT id, tenant_id, rule_id, activity_id, status, detected_at, resolved_at, task_id, row_version
+FROM risk.gap_findings
+WHERE id = $1;
+
+-- name: SetGapFindingTask :one
+-- RRA-07: link the finding to the dpo.tasks remediation job opened against it.
+UPDATE risk.gap_findings
+SET task_id = $2, row_version = row_version + 1
+WHERE id = $1
+RETURNING id, tenant_id, rule_id, activity_id, status, detected_at, resolved_at, task_id, row_version;
