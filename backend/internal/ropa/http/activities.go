@@ -87,6 +87,27 @@ func (h *Strict) RopaCreateActivitiesFromTemplates(ctx context.Context, req Ropa
 	return resp, nil
 }
 
+func (h *Strict) RopaCreateActivityFromWizard(ctx context.Context, req RopaCreateActivityFromWizardRequestObject) (RopaCreateActivityFromWizardResponseObject, error) {
+	b := *req.Body
+	in := ropaservice.WizardInput{
+		LegalEntityID: b.LegalEntityId, OrgUnitID: b.OrgUnitId, Code: b.Code, Name: b.Name, OwnerUserID: b.OwnerUserId,
+		Purpose: b.Purpose, LegalReason: ropaservice.WizardLegalReason(b.LegalReason), ConsentPurposeID: b.ConsentPurposeId,
+		SubjectTypeID: b.SubjectTypeId, DataCategoryIDs: b.DataCategoryIds, Retention: ropaservice.WizardRetentionChoice(b.Retention),
+		RecipientPartyID: b.RecipientPartyId,
+	}
+	if b.RecipientKind != nil {
+		in.RecipientKind = ropaservice.WizardRecipientKind(*b.RecipientKind)
+	}
+	if b.RecipientNote != nil {
+		in.RecipientNote = *b.RecipientNote
+	}
+	a, err := h.svc.CreateActivityFromWizard(ctx, in)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RopaCreateActivityFromWizard201JSONResponse{Body: toActivityWire(a), Headers: RopaCreateActivityFromWizard201ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
 func (h *Strict) RopaApplySuggestedItems(ctx context.Context, req RopaApplySuggestedItemsRequestObject) (RopaApplySuggestedItemsResponseObject, error) {
 	b := *req.Body
 	in := ropaservice.ApplySuggestedItemsInput{TemplateID: b.ActivityTemplateId}

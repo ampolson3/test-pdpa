@@ -2505,6 +2505,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/activities/from-wizard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** RTG-05 — create a processing activity by answering plain-language questions (no RoPA/legal jargon), each mapped to a real RoPA field */
+        post: operations["ropaCreateActivityFromWizard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/activities/processor-export": {
         parameters: {
             query?: never;
@@ -5593,6 +5610,58 @@ export interface components {
             org_unit_id: components["schemas"]["Uuid"];
             code: string;
             owner_user_id?: components["schemas"]["Uuid"];
+        };
+        /**
+         * @description RTG-05's plain-language stand-in for a lawful basis (ม.24/26) — no legal jargon required.
+         * @enum {string}
+         */
+        ProcessingActivityWizardLegalReason: "consent" | "contract" | "law" | "benefit";
+        /**
+         * @description RTG-05's plain-language stand-in for a retention rule (ม.37(3)).
+         * @enum {string}
+         */
+        ProcessingActivityWizardRetention: "until_withdrawn" | "contract_plus_1y" | "five_years" | "ten_years";
+        /**
+         * @description RTG-05's plain-language stand-in for a recipient role (ม.39). Omit entirely when nothing is shared this round.
+         * @enum {string}
+         */
+        ProcessingActivityWizardRecipientKind: "processor" | "other_controller" | "government";
+        /**
+         * @example {
+         *       "legal_entity_id": "00000000-0000-0000-0000-000000000000",
+         *       "org_unit_id": "00000000-0000-0000-0000-000000000000",
+         *       "code": "HR-02",
+         *       "name": "ระบบติดตามผลงานพนักงาน",
+         *       "purpose": "ใช้ประเมินผลงานประจำปีและพิจารณาปรับตำแหน่ง",
+         *       "legal_reason": "contract",
+         *       "subject_type_id": "00000000-0000-0000-0000-000000000000",
+         *       "data_category_ids": [
+         *         "00000000-0000-0000-0000-000000000000"
+         *       ],
+         *       "retention": "contract_plus_1y"
+         *     }
+         */
+        ProcessingActivityWizardInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            org_unit_id: components["schemas"]["Uuid"];
+            code: string;
+            /** @description เรียกกิจกรรมนี้ว่าอะไร */
+            name: string;
+            owner_user_id?: components["schemas"]["Uuid"];
+            /** @description เก็บข้อมูลนี้ไปทำอะไร */
+            purpose: string;
+            legal_reason: components["schemas"]["ProcessingActivityWizardLegalReason"];
+            /** @description Required when legal_reason is "consent" (ROPA-06) — a real CON module purpose this activity's consent is collected against. */
+            consent_purpose_id?: components["schemas"]["Uuid"];
+            /** @description ข้อมูลนี้เป็นของใคร */
+            subject_type_id: components["schemas"]["Uuid"];
+            /** @description เก็บข้อมูลอะไรบ้าง */
+            data_category_ids: components["schemas"]["Uuid"][];
+            retention: components["schemas"]["ProcessingActivityWizardRetention"];
+            recipient_kind?: components["schemas"]["ProcessingActivityWizardRecipientKind"];
+            /** @description Required when recipient_kind is set. */
+            recipient_party_id?: components["schemas"]["Uuid"];
+            recipient_note?: string;
         };
         /**
          * @example {
@@ -13513,6 +13582,38 @@ export interface operations {
                     "application/json": {
                         data: components["schemas"]["ProcessingActivity"][];
                     };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaCreateActivityFromWizard: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProcessingActivityWizardInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingActivity"];
                 };
             };
             400: components["responses"]["BadRequest"];

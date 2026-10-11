@@ -29,6 +29,10 @@ export type ActivityRejection = components["schemas"]["ActivityRejection"];
 export type ProcessingActivityFromTemplateInput = components["schemas"]["ProcessingActivityFromTemplateInput"];
 export type ProcessingActivityBatchFromTemplatesInput = components["schemas"]["ProcessingActivityBatchFromTemplatesInput"];
 export type RopaApplySuggestedItemsInput = components["schemas"]["RopaApplySuggestedItemsInput"];
+export type ProcessingActivityWizardInput = components["schemas"]["ProcessingActivityWizardInput"];
+export type ProcessingActivityWizardLegalReason = components["schemas"]["ProcessingActivityWizardLegalReason"];
+export type ProcessingActivityWizardRetention = components["schemas"]["ProcessingActivityWizardRetention"];
+export type ProcessingActivityWizardRecipientKind = components["schemas"]["ProcessingActivityWizardRecipientKind"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const activitiesKey = ["ropa", "activities"] as const;
@@ -206,6 +210,16 @@ export function useActivityMutations(client: ApiClient, id?: string) {
         const { data, error } = await client.POST("/admin/v1/ropa/activities/batch-from-templates", { body });
         if (error) throw error;
         return data?.data;
+      },
+      onSuccess: refresh,
+    }),
+    /** RTG-05: create an activity by answering plain-language questions — no RoPA/legal jargon, each
+     * answer is mapped to a real RoPA field (purpose, lawful basis, data, retention, optional recipient). */
+    createFromWizard: useMutation({
+      mutationFn: async (body: ProcessingActivityWizardInput) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/from-wizard", { body });
+        if (error) throw error;
+        return data;
       },
       onSuccess: refresh,
     }),

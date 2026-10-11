@@ -193,6 +193,10 @@ export {
   type ProcessingActivityFromTemplateInput,
   type ProcessingActivityBatchFromTemplatesInput,
   type RopaApplySuggestedItemsInput,
+  type ProcessingActivityWizardInput,
+  type ProcessingActivityWizardLegalReason,
+  type ProcessingActivityWizardRetention,
+  type ProcessingActivityWizardRecipientKind,
 } from "./activities";
 export {
   useTemplateSets,

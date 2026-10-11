@@ -1481,7 +1481,8 @@
     },
     "rejectionsHint": "Logged automatically from DSAR requests rejected against this activity",
     "noRejections": "No rejections logged against this activity yet",
-    "browseTemplates": "Standard activity library"
+    "browseTemplates": "Standard activity library",
+    "useWizard": "Use wizard"
   },
   "notices": {
     "signInRequired": "Please sign in",
@@ -2739,6 +2740,73 @@
         "cancel": "Cancel",
         "saveError": "Could not close: {detail}"
       }
+    }
+  },
+  "ropaWizard": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to use the RoPA wizard.",
+    "title": "Build a RoPA entry — plain language",
+    "intro": "Answer a few everyday questions — no legal terms needed — and the system fills in the formal record.",
+    "choose": "— select —",
+    "back": "Back",
+    "next": "Next",
+    "create": "Create",
+    "createError": "Could not create: {detail}",
+    "steps": {
+      "basics": "Basics",
+      "purpose": "Why",
+      "data": "What data",
+      "retention": "How long",
+      "recipient": "Who else sees it",
+      "summary": "Review"
+    },
+    "basics": {
+      "name": "What do you call this activity?",
+      "namePlaceholder": "e.g. Employee performance tracking",
+      "code": "A short code (for internal reference)",
+      "legalEntity": "Which company is this for?",
+      "orgUnit": "Which department owns it?"
+    },
+    "purpose": {
+      "why": "What are you collecting this data to do?",
+      "whyPlaceholder": "e.g. To review employee performance each year",
+      "reason": "Why are you allowed to collect it?",
+      "reasons": {
+        "consent": "The person agreed to let us collect it",
+        "contract": "We need it to carry out a contract or agreement",
+        "law": "A law requires us to keep it",
+        "benefit": "It's a legitimate business need of ours"
+      },
+      "consentPurpose": "Which consent purpose is this tied to?"
+    },
+    "data": {
+      "subjectType": "Whose data is this?",
+      "whatData": "What kind of data do you collect?",
+      "sensitive": "sensitive"
+    },
+    "retention": {
+      "howLong": "How long do you keep it?",
+      "choices": {
+        "until_withdrawn": "Until the person withdraws consent or asks us to delete it",
+        "contract_plus_1y": "For as long as the relationship/contract lasts, plus 1 more year",
+        "five_years": "5 years (general policy)",
+        "ten_years": "10 years (e.g. accounting/tax records)"
+      }
+    },
+    "recipient": {
+      "intro": "Does anyone outside your team receive this data?",
+      "who": "Who receives it?",
+      "none": "No one else — keep it within our team",
+      "kinds": {
+        "processor": "A service provider we hired (acting on our behalf)",
+        "other_controller": "Another organization using it for its own purposes",
+        "government": "A government body / required by law"
+      },
+      "party": "Which organization?",
+      "note": "A short note on what's shared"
+    },
+    "summary": {
+      "title": "Review before creating"
     }
   }
 }

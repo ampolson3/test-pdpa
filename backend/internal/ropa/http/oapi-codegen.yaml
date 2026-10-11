@@ -18,6 +18,7 @@ output-options:
     - ropaCreateActivity
     - ropaCreateActivityFromTemplate
     - ropaCreateActivitiesFromTemplates
+    - ropaCreateActivityFromWizard
     - ropaGetActivity
     - ropaUpdateActivity
     - ropaSubmitActivity

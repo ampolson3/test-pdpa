@@ -131,28 +131,28 @@ func (e ActivityStatus) Valid() bool {
 
 // Defines values for ActivityTransferBasis.
 const (
-	Adequacy        ActivityTransferBasis = "adequacy"
-	Bcr             ActivityTransferBasis = "bcr"
-	Certification   ActivityTransferBasis = "certification"
-	Consent         ActivityTransferBasis = "consent"
-	Exemption       ActivityTransferBasis = "exemption"
-	StandardClauses ActivityTransferBasis = "standard_clauses"
+	ActivityTransferBasisAdequacy        ActivityTransferBasis = "adequacy"
+	ActivityTransferBasisBcr             ActivityTransferBasis = "bcr"
+	ActivityTransferBasisCertification   ActivityTransferBasis = "certification"
+	ActivityTransferBasisConsent         ActivityTransferBasis = "consent"
+	ActivityTransferBasisExemption       ActivityTransferBasis = "exemption"
+	ActivityTransferBasisStandardClauses ActivityTransferBasis = "standard_clauses"
 )
 
 // Valid indicates whether the value is a known member of the ActivityTransferBasis enum.
 func (e ActivityTransferBasis) Valid() bool {
 	switch e {
-	case Adequacy:
+	case ActivityTransferBasisAdequacy:
 		return true
-	case Bcr:
+	case ActivityTransferBasisBcr:
 		return true
-	case Certification:
+	case ActivityTransferBasisCertification:
 		return true
-	case Consent:
+	case ActivityTransferBasisConsent:
 		return true
-	case Exemption:
+	case ActivityTransferBasisExemption:
 		return true
-	case StandardClauses:
+	case ActivityTransferBasisStandardClauses:
 		return true
 	default:
 		return false
@@ -396,6 +396,75 @@ func (e ProcessingActivityMissingItems) Valid() bool {
 	}
 }
 
+// Defines values for ProcessingActivityWizardLegalReason.
+const (
+	ProcessingActivityWizardLegalReasonBenefit  ProcessingActivityWizardLegalReason = "benefit"
+	ProcessingActivityWizardLegalReasonConsent  ProcessingActivityWizardLegalReason = "consent"
+	ProcessingActivityWizardLegalReasonContract ProcessingActivityWizardLegalReason = "contract"
+	ProcessingActivityWizardLegalReasonLaw      ProcessingActivityWizardLegalReason = "law"
+)
+
+// Valid indicates whether the value is a known member of the ProcessingActivityWizardLegalReason enum.
+func (e ProcessingActivityWizardLegalReason) Valid() bool {
+	switch e {
+	case ProcessingActivityWizardLegalReasonBenefit:
+		return true
+	case ProcessingActivityWizardLegalReasonConsent:
+		return true
+	case ProcessingActivityWizardLegalReasonContract:
+		return true
+	case ProcessingActivityWizardLegalReasonLaw:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProcessingActivityWizardRecipientKind.
+const (
+	ProcessingActivityWizardRecipientKindGovernment      ProcessingActivityWizardRecipientKind = "government"
+	ProcessingActivityWizardRecipientKindOtherController ProcessingActivityWizardRecipientKind = "other_controller"
+	ProcessingActivityWizardRecipientKindProcessor       ProcessingActivityWizardRecipientKind = "processor"
+)
+
+// Valid indicates whether the value is a known member of the ProcessingActivityWizardRecipientKind enum.
+func (e ProcessingActivityWizardRecipientKind) Valid() bool {
+	switch e {
+	case ProcessingActivityWizardRecipientKindGovernment:
+		return true
+	case ProcessingActivityWizardRecipientKindOtherController:
+		return true
+	case ProcessingActivityWizardRecipientKindProcessor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProcessingActivityWizardRetention.
+const (
+	ContractPlus1y ProcessingActivityWizardRetention = "contract_plus_1y"
+	FiveYears      ProcessingActivityWizardRetention = "five_years"
+	TenYears       ProcessingActivityWizardRetention = "ten_years"
+	UntilWithdrawn ProcessingActivityWizardRetention = "until_withdrawn"
+)
+
+// Valid indicates whether the value is a known member of the ProcessingActivityWizardRetention enum.
+func (e ProcessingActivityWizardRetention) Valid() bool {
+	switch e {
+	case ContractPlus1y:
+		return true
+	case FiveYears:
+		return true
+	case TenYears:
+		return true
+	case UntilWithdrawn:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RopaActivityTemplateRole.
 const (
 	RopaActivityTemplateRoleController RopaActivityTemplateRole = "controller"
@@ -570,6 +639,24 @@ func (e RopaCreateActivityFromTemplateParamsAcceptLanguage) Valid() bool {
 	case RopaCreateActivityFromTemplateParamsAcceptLanguageEn:
 		return true
 	case RopaCreateActivityFromTemplateParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaCreateActivityFromWizardParamsAcceptLanguage.
+const (
+	RopaCreateActivityFromWizardParamsAcceptLanguageEn RopaCreateActivityFromWizardParamsAcceptLanguage = "en"
+	RopaCreateActivityFromWizardParamsAcceptLanguageTh RopaCreateActivityFromWizardParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaCreateActivityFromWizardParamsAcceptLanguage enum.
+func (e RopaCreateActivityFromWizardParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaCreateActivityFromWizardParamsAcceptLanguageEn:
+		return true
+	case RopaCreateActivityFromWizardParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -1692,6 +1779,57 @@ type ProcessingActivityInput struct {
 	Role            ActivityRole `json:"role"`
 }
 
+// ProcessingActivityWizardInput defines model for ProcessingActivityWizardInput.
+type ProcessingActivityWizardInput struct {
+	Code string `json:"code"`
+
+	// ConsentPurposeId Required when legal_reason is "consent" (ROPA-06) — a real CON module purpose this activity's consent is collected against.
+	ConsentPurposeId *Uuid `json:"consent_purpose_id,omitempty"`
+
+	// DataCategoryIds เก็บข้อมูลอะไรบ้าง
+	DataCategoryIds []Uuid `json:"data_category_ids"`
+
+	// LegalEntityId UUIDv7 generated by the API
+	LegalEntityId Uuid `json:"legal_entity_id"`
+
+	// LegalReason RTG-05's plain-language stand-in for a lawful basis (ม.24/26) — no legal jargon required.
+	LegalReason ProcessingActivityWizardLegalReason `json:"legal_reason"`
+
+	// Name เรียกกิจกรรมนี้ว่าอะไร
+	Name string `json:"name"`
+
+	// OrgUnitId UUIDv7 generated by the API
+	OrgUnitId Uuid `json:"org_unit_id"`
+
+	// OwnerUserId UUIDv7 generated by the API
+	OwnerUserId *Uuid `json:"owner_user_id,omitempty"`
+
+	// Purpose เก็บข้อมูลนี้ไปทำอะไร
+	Purpose string `json:"purpose"`
+
+	// RecipientKind RTG-05's plain-language stand-in for a recipient role (ม.39). Omit entirely when nothing is shared this round.
+	RecipientKind *ProcessingActivityWizardRecipientKind `json:"recipient_kind,omitempty"`
+	RecipientNote *string                                `json:"recipient_note,omitempty"`
+
+	// RecipientPartyId Required when recipient_kind is set.
+	RecipientPartyId *Uuid `json:"recipient_party_id,omitempty"`
+
+	// Retention RTG-05's plain-language stand-in for a retention rule (ม.37(3)).
+	Retention ProcessingActivityWizardRetention `json:"retention"`
+
+	// SubjectTypeId ข้อมูลนี้เป็นของใคร
+	SubjectTypeId Uuid `json:"subject_type_id"`
+}
+
+// ProcessingActivityWizardLegalReason RTG-05's plain-language stand-in for a lawful basis (ม.24/26) — no legal jargon required.
+type ProcessingActivityWizardLegalReason string
+
+// ProcessingActivityWizardRecipientKind RTG-05's plain-language stand-in for a recipient role (ม.39). Omit entirely when nothing is shared this round.
+type ProcessingActivityWizardRecipientKind string
+
+// ProcessingActivityWizardRetention RTG-05's plain-language stand-in for a retention rule (ม.37(3)).
+type ProcessingActivityWizardRetention string
+
 // RetentionRule defines model for RetentionRule.
 type RetentionRule struct {
 	// ActivityId UUIDv7 generated by the API
@@ -1915,6 +2053,15 @@ type RopaCreateActivityFromTemplateParams struct {
 
 // RopaCreateActivityFromTemplateParamsAcceptLanguage defines parameters for RopaCreateActivityFromTemplate.
 type RopaCreateActivityFromTemplateParamsAcceptLanguage string
+
+// RopaCreateActivityFromWizardParams defines parameters for RopaCreateActivityFromWizard.
+type RopaCreateActivityFromWizardParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaCreateActivityFromWizardParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RopaCreateActivityFromWizardParamsAcceptLanguage defines parameters for RopaCreateActivityFromWizard.
+type RopaCreateActivityFromWizardParamsAcceptLanguage string
 
 // RopaExportProcessorActivitiesParams defines parameters for RopaExportProcessorActivities.
 type RopaExportProcessorActivitiesParams struct {
@@ -2302,6 +2449,9 @@ type RopaCreateActivitiesFromTemplatesJSONRequestBody = ProcessingActivityBatchF
 // RopaCreateActivityFromTemplateJSONRequestBody defines body for RopaCreateActivityFromTemplate for application/json ContentType.
 type RopaCreateActivityFromTemplateJSONRequestBody = ProcessingActivityFromTemplateInput
 
+// RopaCreateActivityFromWizardJSONRequestBody defines body for RopaCreateActivityFromWizard for application/json ContentType.
+type RopaCreateActivityFromWizardJSONRequestBody = ProcessingActivityWizardInput
+
 // RopaUpdateActivityJSONRequestBody defines body for RopaUpdateActivity for application/json ContentType.
 type RopaUpdateActivityJSONRequestBody = ProcessingActivityInput
 
@@ -2355,6 +2505,9 @@ type ServerInterface interface {
 	// RopaCreateActivityFromTemplate Create a processing activity from an RTG-01 standard-activity template (ROPA-05) — purposes, data, retention and security controls are filled in from the template's ม.39 defaults
 	// (POST /admin/v1/ropa/activities/from-template)
 	RopaCreateActivityFromTemplate(w http.ResponseWriter, r *http.Request, params RopaCreateActivityFromTemplateParams)
+	// RopaCreateActivityFromWizard RTG-05 — create a processing activity by answering plain-language questions (no RoPA/legal jargon), each mapped to a real RoPA field
+	// (POST /admin/v1/ropa/activities/from-wizard)
+	RopaCreateActivityFromWizard(w http.ResponseWriter, r *http.Request, params RopaCreateActivityFromWizardParams)
 	// RopaExportProcessorActivities Export every processor-role activity (ROPA-04, ม.40(3)) as CSV — the export itself is audited
 	// (GET /admin/v1/ropa/activities/processor-export)
 	RopaExportProcessorActivities(w http.ResponseWriter, r *http.Request, params RopaExportProcessorActivitiesParams)
@@ -2496,6 +2649,12 @@ func (_ Unimplemented) RopaCreateActivitiesFromTemplates(w http.ResponseWriter, 
 // RopaCreateActivityFromTemplate Create a processing activity from an RTG-01 standard-activity template (ROPA-05) — purposes, data, retention and security controls are filled in from the template's ม.39 defaults
 // (POST /admin/v1/ropa/activities/from-template)
 func (_ Unimplemented) RopaCreateActivityFromTemplate(w http.ResponseWriter, r *http.Request, params RopaCreateActivityFromTemplateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaCreateActivityFromWizard RTG-05 — create a processing activity by answering plain-language questions (no RoPA/legal jargon), each mapped to a real RoPA field
+// (POST /admin/v1/ropa/activities/from-wizard)
+func (_ Unimplemented) RopaCreateActivityFromWizard(w http.ResponseWriter, r *http.Request, params RopaCreateActivityFromWizardParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2956,6 +3115,47 @@ func (siw *ServerInterfaceWrapper) RopaCreateActivityFromTemplate(w http.Respons
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RopaCreateActivityFromTemplate(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaCreateActivityFromWizard operation middleware
+func (siw *ServerInterfaceWrapper) RopaCreateActivityFromWizard(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaCreateActivityFromWizardParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaCreateActivityFromWizardParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaCreateActivityFromWizard(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5276,6 +5476,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/admin/v1/ropa/activities/batch-from-templates", wrapper.RopaCreateActivitiesFromTemplates)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/activities/from-wizard", wrapper.RopaCreateActivityFromWizard)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/ropa/activities/processor-export", wrapper.RopaExportProcessorActivities)
 	})
 	r.Group(func(r chi.Router) {
@@ -5714,6 +5917,103 @@ type RopaCreateActivityFromTemplate422ApplicationProblemPlusJSONResponse struct 
 }
 
 func (response RopaCreateActivityFromTemplate422ApplicationProblemPlusJSONResponse) VisitRopaCreateActivityFromTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCreateActivityFromWizardRequestObject struct {
+	Params RopaCreateActivityFromWizardParams
+	Body   *RopaCreateActivityFromWizardJSONRequestBody
+}
+
+type RopaCreateActivityFromWizardResponseObject interface {
+	VisitRopaCreateActivityFromWizardResponse(w http.ResponseWriter) error
+}
+
+type RopaCreateActivityFromWizard201ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaCreateActivityFromWizard201JSONResponse struct {
+	Body    ProcessingActivity
+	Headers RopaCreateActivityFromWizard201ResponseHeaders
+}
+
+func (response RopaCreateActivityFromWizard201JSONResponse) VisitRopaCreateActivityFromWizardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCreateActivityFromWizard400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCreateActivityFromWizard400ApplicationProblemPlusJSONResponse) VisitRopaCreateActivityFromWizardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCreateActivityFromWizard401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCreateActivityFromWizard401ApplicationProblemPlusJSONResponse) VisitRopaCreateActivityFromWizardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCreateActivityFromWizard403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCreateActivityFromWizard403ApplicationProblemPlusJSONResponse) VisitRopaCreateActivityFromWizardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCreateActivityFromWizard422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCreateActivityFromWizard422ApplicationProblemPlusJSONResponse) VisitRopaCreateActivityFromWizardResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -8990,6 +9290,9 @@ type StrictServerInterface interface {
 	// RopaCreateActivityFromTemplate Create a processing activity from an RTG-01 standard-activity template (ROPA-05) — purposes, data, retention and security controls are filled in from the template's ม.39 defaults
 	// (POST /admin/v1/ropa/activities/from-template)
 	RopaCreateActivityFromTemplate(ctx context.Context, request RopaCreateActivityFromTemplateRequestObject) (RopaCreateActivityFromTemplateResponseObject, error)
+	// RopaCreateActivityFromWizard RTG-05 — create a processing activity by answering plain-language questions (no RoPA/legal jargon), each mapped to a real RoPA field
+	// (POST /admin/v1/ropa/activities/from-wizard)
+	RopaCreateActivityFromWizard(ctx context.Context, request RopaCreateActivityFromWizardRequestObject) (RopaCreateActivityFromWizardResponseObject, error)
 	// RopaExportProcessorActivities Export every processor-role activity (ROPA-04, ม.40(3)) as CSV — the export itself is audited
 	// (GET /admin/v1/ropa/activities/processor-export)
 	RopaExportProcessorActivities(ctx context.Context, request RopaExportProcessorActivitiesRequestObject) (RopaExportProcessorActivitiesResponseObject, error)
@@ -9263,6 +9566,39 @@ func (sh *strictHandler) RopaCreateActivityFromTemplate(w http.ResponseWriter, r
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RopaCreateActivityFromTemplateResponseObject); ok {
 		if err := validResponse.VisitRopaCreateActivityFromTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaCreateActivityFromWizard operation middleware
+func (sh *strictHandler) RopaCreateActivityFromWizard(w http.ResponseWriter, r *http.Request, params RopaCreateActivityFromWizardParams) {
+	var request RopaCreateActivityFromWizardRequestObject
+
+	request.Params = params
+
+	var body RopaCreateActivityFromWizardJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaCreateActivityFromWizard(ctx, request.(RopaCreateActivityFromWizardRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaCreateActivityFromWizard")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaCreateActivityFromWizardResponseObject); ok {
+		if err := validResponse.VisitRopaCreateActivityFromWizardResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
