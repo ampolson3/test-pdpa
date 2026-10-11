@@ -159,6 +159,72 @@
 
 **Acceptance criteria:** การโอนต่างประเทศทุกเส้นทางมีผล TIA อ้างอิง
 
+**Implementation — done.** The module doc's own Go package (`internal/gov`) owns training/policy/audit/
+retention/disposal/regulator-letter/AI-registry content (`gov` schema) — none of it related to this
+feature. The real table this feature writes to, `ropa.activity_transfers.tia_assessment_id` (FK →
+`assess.assessments.id`), was already fully specified in the baseline migrations as part of ROPA-08's own
+schema, unused until now — per rule 1 (a module reads/writes only its own schema), this feature's code
+lives in `internal/ropa`, not `internal/gov`, following the migration/schema reality over the module doc's
+own package assignment (CLAUDE.md's own source-priority order: migrations > docs/states > docs/modules).
+
+No new migration for the linking mechanism itself: `assess.templates.assessment_type`'s own CHECK
+constraint already listed `'tia'` since the baseline (migration 00011), unused — the exact same "reserved
+but unused" pattern VEN-04 (`docs/decisions.md` Q-31) found for `assessment_type='vendor'`. Migration 00063
+(`docs/decisions.md` Q-36) seeds one global (`tenant_id NULL`), published TIA questionnaire — `transfer_tia`,
+6 yes_no questions on destination-country adequacy, binding safeguards (BCR/SCC), certification, government
+access risk, onward-transfer risk, and enforceability of data subject rights — on the exact same PLT-06
+`"assessment"` form type DPIA-03's own generic template library (`CRUD`/`clone`/`publish`/`retire` on
+`assess.templates`) already serves without any new code, since it was never hardcoded to one
+`assessment_type`. The questionnaire's own wording is a draft pending legal review (name carries
+"(ร่าง — รอฝ่ายกฎหมายตรวจ)" directly in the data, rule 8), summarized from this feature's own description and
+ม.28-29's transfer mechanisms, not copied from an official PDPC form.
+
+`internal/ropa/service/transfers.go` gained `RecordTransferAssessment(ctx, activityID, transferID,
+templateCode, answers)` — VEN-07's own `RecordAssessment` pattern, transplanted: resolve the published
+template by code among `assessment_type='tia'` templates, run the answers through dpia's generic
+`RecordSubjectAssessment` (`subject_type='transfer'`, already in `assess.assessments`' own CHECK constraint
+alongside `'vendor'`/`'activity'`/etc., unused until now), then link the resulting assessment id back onto
+the transfer row (`SetTransferTIA`, a plain `UPDATE ... WHERE id = $1 AND activity_id = $2`) — no scoring/
+classification step like VEN-07's own `ClassifyScore`, since this feature's acceptance criterion is only
+"has a referenced TIA," not a risk-level verdict.
+
+Real import-direction constraint, not a design choice: `dpia/service` already imports `ropa/service`
+directly (for its own `Ropa` interface's return types — `ropaservice.Activity`, `ropaservice.
+ActivityTransfer`, etc.), so `ropa/service` importing `dpia/service` back would cycle — the identical
+situation `internal/wiring/risk.go`'s own `RiskRopa` adapter already documents for `risk/service` ↔
+`ropa/service`. Fixed the same way: `ropa/service` declares its own small local `Dpia` interface
+(`ListTemplates`/`RecordSubjectAssessment`) plus two mirror structs (`DpiaTemplate`, `TiaResult` — just the
+fields this feature needs, not a full copy of dpia's own types), and a new `internal/wiring.RopaDpia`
+adapter (built where both concrete packages are already safely importable) converts between them —
+`ropaSvc.Dpia = wiring.RopaDpia{Dpia: dpiaSvc}` wired once in `cmd/api/main.go`, nil in `cmd/worker` (no job
+there ever records a TIA).
+
+The acceptance criterion itself ("ทุกเส้นทางมีผล TIA อ้างอิง") is a new conditional item in ROPA-03's own
+`completeness()`, right next to ROPA-08's own `transfer_basis` item: any `ropa.activity_transfers` row with
+no `tia_assessment_id` yet flags `tia_missing` and blocks `/submit` (ROPA-03's own
+`len(a.MissingItems) > 0` guard already covers every conditional item, no new code there) — unconditional
+on whether a recipient is foreign-coded, since every *logged* transfer (by definition, to another country)
+needs its own TIA, not just the ones ROPA-08's own foreign-recipient-coverage check happens to flag.
+
+API: `POST /admin/v1/ropa/activities/{id}/transfers/{transferId}/tia` (`ropa.activity.update`, same
+permission as logging the transfer itself; 422 for an unknown/unpublished template_code, 404 for an
+unknown transfer) → the updated `ActivityTransfer` (now carrying `tia_assessment_id`). UI: `/ropa/activities/
+{id}`'s existing transfers section (`activity-detail-content.tsx`) renders a new `TiaPanel`
+(`tia-panel.tsx`, the same `FormRenderer` + `useDpiaTemplates("tia")` + `useForm` pattern VEN-07/VEN-08's
+own vendor-assessment panels already use) under each transfer row — a "TIA recorded" badge once set, an
+inline answer form otherwise. Tests: unit (the acceptance criterion directly — a logged transfer flags
+`tia_missing` until a TIA is recorded, linking clears it and `ListActivityTransfers` reports the id back;
+answers scored either direction; an unknown template_code or transfer id refused; two-tenant isolation),
+HTTP contract (401/403/200/404/422) through the real validator + AuthZ chain. `go build`/`go vet`/`gofmt`
+clean; `tsc --noEmit` and `pnpm --filter @pdpa/admin build` both verified clean — no Postgres/Redis
+reachable in this environment this round, so tests are compile-verified only, the same caveat VEN-07/VEN-08
+already recorded. Not done: a standalone "/governance" TIA registry page listing every TIA across
+activities (the module doc's own frontend note just says "หน้า TIA," read here as the inline panel on each
+transfer route it actually names in the acceptance criterion — a cross-activity register has no acceptance
+criterion of its own yet) and classifying the TIA's own score into a risk verdict (ม.28/29 doesn't define
+scoring bands the way RRA-02's matrix does, and the acceptance criterion only asks that a TIA exist, not
+that it pass a threshold).
+
 <a id="dpx-01"></a>
 ### DPX-01 อบรมและทดสอบพนักงาน
 

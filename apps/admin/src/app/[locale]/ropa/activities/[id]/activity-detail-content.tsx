@@ -33,6 +33,7 @@ import { DpiaScreeningSection } from "./dpia-screening-section";
 import { RiskScoreSection } from "./risk-score-section";
 import { Rtg06SuggestionsSection } from "./rtg06-suggestions-section";
 import { GapAnalysisSection } from "./gap-analysis-section";
+import { TiaPanel } from "./tia-panel";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
 const ROLES: ActivityRole[] = ["controller", "processor"];
@@ -320,11 +321,14 @@ export function ActivityDetailContent({ id, currentUserId }: { id: string; curre
         <h2 className="font-semibold">{t("sections.transfers")}</h2>
         <ul className="divide-y divide-slate-100">
           {transfers.data?.map((tr) => (
-            <li key={tr.id} className="flex items-center justify-between py-2">
-              <span>
-                {countries.data?.find((c) => c.code === tr.country_code)?.name_th ?? tr.country_code} — {t(`transferBases.${tr.transfer_basis}`)}
-              </span>
-              {editable && <button className="text-red-700 underline" onClick={() => m.deleteTransfer.mutate(tr.id)}>{t("remove")}</button>}
+            <li key={tr.id} className="py-2">
+              <div className="flex items-center justify-between">
+                <span>
+                  {countries.data?.find((c) => c.code === tr.country_code)?.name_th ?? tr.country_code} — {t(`transferBases.${tr.transfer_basis}`)}
+                </span>
+                {editable && <button className="text-red-700 underline" onClick={() => m.deleteTransfer.mutate(tr.id)}>{t("remove")}</button>}
+              </div>
+              <TiaPanel client={client} activityId={id} transfer={tr} editable={editable} />
             </li>
           ))}
         </ul>

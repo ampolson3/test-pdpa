@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"pdpa-platform/internal/platform/forms"
 	ropaservice "pdpa-platform/internal/ropa/service"
 
 	"pdpa-platform/internal/pkg/httpx"
@@ -304,9 +305,18 @@ func (h *Strict) RopaDeleteActivityTransfer(ctx context.Context, req RopaDeleteA
 	return RopaDeleteActivityTransfer204Response{}, nil
 }
 
+func (h *Strict) RopaRecordTransferTia(ctx context.Context, req RopaRecordTransferTiaRequestObject) (RopaRecordTransferTiaResponseObject, error) {
+	out, err := h.svc.RecordTransferAssessment(ctx, req.Id, req.TransferId, req.Body.TemplateCode, forms.Answers(req.Body.Answers))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RopaRecordTransferTia200JSONResponse(toTransferWire(out)), nil
+}
+
 func toTransferWire(tr ropaservice.ActivityTransfer) ActivityTransfer {
 	return ActivityTransfer{Id: tr.ID, ActivityId: tr.ActivityID, RecipientId: tr.RecipientID, CountryCode: tr.CountryCode,
-		TransferBasis: ActivityTransferBasis(tr.TransferBasis), Safeguards: ptr(tr.Safeguards), RowVersion: int(tr.RowVersion), CreatedAt: tr.CreatedAt.UTC()}
+		TransferBasis: ActivityTransferBasis(tr.TransferBasis), Safeguards: ptr(tr.Safeguards), TiaAssessmentId: tr.TiaAssessmentID,
+		RowVersion: int(tr.RowVersion), CreatedAt: tr.CreatedAt.UTC()}
 }
 
 func toActivityInput(b ProcessingActivityInput) ropaservice.Activity {

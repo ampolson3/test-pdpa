@@ -20,6 +20,7 @@ export type ActivityRecipientRole = components["schemas"]["ActivityRecipientRole
 export type ActivityTransfer = components["schemas"]["ActivityTransfer"];
 export type ActivityTransferInput = components["schemas"]["ActivityTransferInput"];
 export type ActivityTransferBasis = components["schemas"]["ActivityTransferBasis"];
+export type RopaRecordTransferTiaInput = components["schemas"]["RopaRecordTransferTiaInput"];
 export type SecurityControl = components["schemas"]["SecurityControl"];
 export type SecurityControlCategory = components["schemas"]["SecurityControlCategory"];
 export type ActivityControl = components["schemas"]["ActivityControl"];
@@ -302,6 +303,19 @@ export function useActivityMutations(client: ApiClient, id?: string) {
       mutationFn: async (transferId: string) => {
         const { error } = await client.DELETE("/admin/v1/ropa/activities/{id}/transfers/{transferId}", { params: { path: { id: id!, transferId } } });
         if (error) throw error;
+      },
+      onSuccess: refresh,
+    }),
+    /** DPX-06: run a transfer impact assessment (TIA) for one logged cross-border transfer; links
+     * tia_assessment_id back onto the transfer and clears the activity's own "tia_missing" item. */
+    recordTransferTia: useMutation({
+      mutationFn: async (v: { transferId: string; input: RopaRecordTransferTiaInput }) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/transfers/{transferId}/tia", {
+          params: { path: { id: id!, transferId: v.transferId } },
+          body: v.input,
+        });
+        if (error) throw error;
+        return data;
       },
       onSuccess: refresh,
     }),

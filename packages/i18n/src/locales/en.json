@@ -1426,7 +1426,15 @@
       "recipient_basis": "Some recipients are missing a disclosure basis",
       "sensitive_consent": "Sensitive data but no purpose linked to explicit consent",
       "transfer_basis": "A foreign recipient has no logged transfer and legal basis",
-      "security_controls": "No security measure referenced yet (ม.37(1))"
+      "security_controls": "No security measure referenced yet (ม.37(1))",
+      "tia_missing": "A logged transfer has no transfer impact assessment (TIA) yet"
+    },
+    "tia": {
+      "recorded": "TIA recorded",
+      "missing": "No TIA recorded yet",
+      "noTemplate": "No published TIA template is available",
+      "submit": "Record TIA",
+      "submitError": "Couldn't record the TIA: {detail}"
     },
     "form": {
       "details": "Details",

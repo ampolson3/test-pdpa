@@ -168,6 +168,7 @@ export {
   type ActivityTransfer,
   type ActivityTransferInput,
   type ActivityTransferBasis,
+  type RopaRecordTransferTiaInput,
   type SecurityControl,
   type SecurityControlCategory,
   type ActivityControl,

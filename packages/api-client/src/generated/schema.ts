@@ -2749,6 +2749,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/activities/{id}/transfers/{transferId}/tia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run a transfer impact assessment (TIA) for one logged cross-border transfer (DPX-06, ม.28-29) */
+        post: operations["ropaRecordTransferTia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/security-controls": {
         parameters: {
             query?: never;
@@ -5565,8 +5582,18 @@ export interface components {
             country_code: string;
             transfer_basis: components["schemas"]["ActivityTransferBasis"];
             safeguards?: string;
+            /** @description Set once DPX-06 has recorded a transfer impact assessment for this route */
+            tia_assessment_id?: components["schemas"]["Uuid"] | null;
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
+        };
+        RopaRecordTransferTiaInput: {
+            /** @description One of DPX-06's own seeded assessment_type=tia template codes (e.g. transfer_tia) */
+            template_code: string;
+            /** @description Answers to that template's published form questions */
+            answers: {
+                [key: string]: unknown;
+            };
         };
         /** @enum {string} */
         SecurityControlCategory: "organizational" | "technical" | "physical" | "access_control" | "legal";
@@ -13918,6 +13945,41 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    ropaRecordTransferTia: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                transferId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RopaRecordTransferTiaInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityTransfer"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     ropaListSecurityControls: {

@@ -414,11 +414,11 @@ func (s *Service) completeness(ctx context.Context, a Activity) (int, []string, 
 
 	// ROPA-08 (ม.28/29): a recipient outside Thailand is a cross-border transfer that needs its own
 	// logged mechanism (ropa.activity_transfers) — one uncovered foreign recipient is enough to warn.
+	transfers, err := q.ListActivityTransfers(ctx, a.ID)
+	if err != nil {
+		return 0, nil, err
+	}
 	if len(recipients) > 0 {
-		transfers, err := q.ListActivityTransfers(ctx, a.ID)
-		if err != nil {
-			return 0, nil, err
-		}
 		covered := make(map[uuid.UUID]bool, len(transfers))
 		for _, t := range transfers {
 			if t.RecipientID.Valid {
@@ -434,6 +434,15 @@ func (s *Service) completeness(ctx context.Context, a Activity) (int, []string, 
 				missing = append(missing, "transfer_basis")
 				break
 			}
+		}
+	}
+
+	// DPX-06 (ม.28-29): every logged transfer route needs its own referenced TIA — "การโอนต่างประเทศทุก
+	// เส้นทางมีผล TIA อ้างอิง" literally. One transfer with no tia_assessment_id yet is enough to warn.
+	for _, t := range transfers {
+		if !t.TiaAssessmentID.Valid {
+			missing = append(missing, "tia_missing")
+			break
 		}
 	}
 

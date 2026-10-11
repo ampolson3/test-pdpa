@@ -29,12 +29,52 @@ func (q *Queries) DeleteActivityTransfer(ctx context.Context, arg DeleteActivity
 	return result.RowsAffected(), nil
 }
 
+const getActivityTransfer = `-- name: GetActivityTransfer :one
+SELECT id, activity_id, recipient_id, country_code, transfer_basis, safeguards, tia_assessment_id, row_version, created_at
+FROM ropa.activity_transfers
+WHERE id = $1 AND activity_id = $2
+`
+
+type GetActivityTransferParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	ActivityID uuid.UUID `db:"activity_id" json:"activity_id"`
+}
+
+type GetActivityTransferRow struct {
+	ID              uuid.UUID          `db:"id" json:"id"`
+	ActivityID      uuid.UUID          `db:"activity_id" json:"activity_id"`
+	RecipientID     pgtype.UUID        `db:"recipient_id" json:"recipient_id"`
+	CountryCode     string             `db:"country_code" json:"country_code"`
+	TransferBasis   string             `db:"transfer_basis" json:"transfer_basis"`
+	Safeguards      *string            `db:"safeguards" json:"safeguards"`
+	TiaAssessmentID pgtype.UUID        `db:"tia_assessment_id" json:"tia_assessment_id"`
+	RowVersion      int32              `db:"row_version" json:"row_version"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+func (q *Queries) GetActivityTransfer(ctx context.Context, arg GetActivityTransferParams) (GetActivityTransferRow, error) {
+	row := q.db.QueryRow(ctx, getActivityTransfer, arg.ID, arg.ActivityID)
+	var i GetActivityTransferRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActivityID,
+		&i.RecipientID,
+		&i.CountryCode,
+		&i.TransferBasis,
+		&i.Safeguards,
+		&i.TiaAssessmentID,
+		&i.RowVersion,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const insertActivityTransfer = `-- name: InsertActivityTransfer :one
 INSERT INTO ropa.activity_transfers (id, tenant_id, activity_id, recipient_id, country_code, transfer_basis,
     safeguards, created_by, updated_by)
 VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6,
     NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
-RETURNING id, activity_id, recipient_id, country_code, transfer_basis, safeguards, row_version, created_at
+RETURNING id, activity_id, recipient_id, country_code, transfer_basis, safeguards, tia_assessment_id, row_version, created_at
 `
 
 type InsertActivityTransferParams struct {
@@ -47,14 +87,15 @@ type InsertActivityTransferParams struct {
 }
 
 type InsertActivityTransferRow struct {
-	ID            uuid.UUID          `db:"id" json:"id"`
-	ActivityID    uuid.UUID          `db:"activity_id" json:"activity_id"`
-	RecipientID   pgtype.UUID        `db:"recipient_id" json:"recipient_id"`
-	CountryCode   string             `db:"country_code" json:"country_code"`
-	TransferBasis string             `db:"transfer_basis" json:"transfer_basis"`
-	Safeguards    *string            `db:"safeguards" json:"safeguards"`
-	RowVersion    int32              `db:"row_version" json:"row_version"`
-	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	ID              uuid.UUID          `db:"id" json:"id"`
+	ActivityID      uuid.UUID          `db:"activity_id" json:"activity_id"`
+	RecipientID     pgtype.UUID        `db:"recipient_id" json:"recipient_id"`
+	CountryCode     string             `db:"country_code" json:"country_code"`
+	TransferBasis   string             `db:"transfer_basis" json:"transfer_basis"`
+	Safeguards      *string            `db:"safeguards" json:"safeguards"`
+	TiaAssessmentID pgtype.UUID        `db:"tia_assessment_id" json:"tia_assessment_id"`
+	RowVersion      int32              `db:"row_version" json:"row_version"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
 func (q *Queries) InsertActivityTransfer(ctx context.Context, arg InsertActivityTransferParams) (InsertActivityTransferRow, error) {
@@ -74,6 +115,7 @@ func (q *Queries) InsertActivityTransfer(ctx context.Context, arg InsertActivity
 		&i.CountryCode,
 		&i.TransferBasis,
 		&i.Safeguards,
+		&i.TiaAssessmentID,
 		&i.RowVersion,
 		&i.CreatedAt,
 	)
@@ -81,21 +123,22 @@ func (q *Queries) InsertActivityTransfer(ctx context.Context, arg InsertActivity
 }
 
 const listActivityTransfers = `-- name: ListActivityTransfers :many
-SELECT id, activity_id, recipient_id, country_code, transfer_basis, safeguards, row_version, created_at
+SELECT id, activity_id, recipient_id, country_code, transfer_basis, safeguards, tia_assessment_id, row_version, created_at
 FROM ropa.activity_transfers
 WHERE activity_id = $1
 ORDER BY created_at
 `
 
 type ListActivityTransfersRow struct {
-	ID            uuid.UUID          `db:"id" json:"id"`
-	ActivityID    uuid.UUID          `db:"activity_id" json:"activity_id"`
-	RecipientID   pgtype.UUID        `db:"recipient_id" json:"recipient_id"`
-	CountryCode   string             `db:"country_code" json:"country_code"`
-	TransferBasis string             `db:"transfer_basis" json:"transfer_basis"`
-	Safeguards    *string            `db:"safeguards" json:"safeguards"`
-	RowVersion    int32              `db:"row_version" json:"row_version"`
-	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	ID              uuid.UUID          `db:"id" json:"id"`
+	ActivityID      uuid.UUID          `db:"activity_id" json:"activity_id"`
+	RecipientID     pgtype.UUID        `db:"recipient_id" json:"recipient_id"`
+	CountryCode     string             `db:"country_code" json:"country_code"`
+	TransferBasis   string             `db:"transfer_basis" json:"transfer_basis"`
+	Safeguards      *string            `db:"safeguards" json:"safeguards"`
+	TiaAssessmentID pgtype.UUID        `db:"tia_assessment_id" json:"tia_assessment_id"`
+	RowVersion      int32              `db:"row_version" json:"row_version"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
 func (q *Queries) ListActivityTransfers(ctx context.Context, activityID uuid.UUID) ([]ListActivityTransfersRow, error) {
@@ -114,6 +157,7 @@ func (q *Queries) ListActivityTransfers(ctx context.Context, activityID uuid.UUI
 			&i.CountryCode,
 			&i.TransferBasis,
 			&i.Safeguards,
+			&i.TiaAssessmentID,
 			&i.RowVersion,
 			&i.CreatedAt,
 		); err != nil {
@@ -125,4 +169,48 @@ func (q *Queries) ListActivityTransfers(ctx context.Context, activityID uuid.UUI
 		return nil, err
 	}
 	return items, nil
+}
+
+const setTransferTIA = `-- name: SetTransferTIA :one
+UPDATE ropa.activity_transfers
+SET tia_assessment_id = $1, updated_at = now(),
+    updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
+WHERE id = $2 AND activity_id = $3
+RETURNING id, activity_id, recipient_id, country_code, transfer_basis, safeguards, tia_assessment_id, row_version, created_at
+`
+
+type SetTransferTIAParams struct {
+	TiaAssessmentID pgtype.UUID `db:"tia_assessment_id" json:"tia_assessment_id"`
+	ID              uuid.UUID   `db:"id" json:"id"`
+	ActivityID      uuid.UUID   `db:"activity_id" json:"activity_id"`
+}
+
+type SetTransferTIARow struct {
+	ID              uuid.UUID          `db:"id" json:"id"`
+	ActivityID      uuid.UUID          `db:"activity_id" json:"activity_id"`
+	RecipientID     pgtype.UUID        `db:"recipient_id" json:"recipient_id"`
+	CountryCode     string             `db:"country_code" json:"country_code"`
+	TransferBasis   string             `db:"transfer_basis" json:"transfer_basis"`
+	Safeguards      *string            `db:"safeguards" json:"safeguards"`
+	TiaAssessmentID pgtype.UUID        `db:"tia_assessment_id" json:"tia_assessment_id"`
+	RowVersion      int32              `db:"row_version" json:"row_version"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+// DPX-06: links a cross-border transfer to the assess.assessments row its TIA was just recorded into.
+func (q *Queries) SetTransferTIA(ctx context.Context, arg SetTransferTIAParams) (SetTransferTIARow, error) {
+	row := q.db.QueryRow(ctx, setTransferTIA, arg.TiaAssessmentID, arg.ID, arg.ActivityID)
+	var i SetTransferTIARow
+	err := row.Scan(
+		&i.ID,
+		&i.ActivityID,
+		&i.RecipientID,
+		&i.CountryCode,
+		&i.TransferBasis,
+		&i.Safeguards,
+		&i.TiaAssessmentID,
+		&i.RowVersion,
+		&i.CreatedAt,
+	)
+	return i, err
 }

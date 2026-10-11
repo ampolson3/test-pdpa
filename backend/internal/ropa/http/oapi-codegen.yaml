@@ -37,6 +37,7 @@ output-options:
     - ropaListActivityTransfers
     - ropaAddActivityTransfer
     - ropaDeleteActivityTransfer
+    - ropaRecordTransferTia
     - ropaListSecurityControls
     - ropaListActivityControls
     - ropaAddActivityControl

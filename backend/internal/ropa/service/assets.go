@@ -69,6 +69,9 @@ type Service struct {
 	Consent   Consent
 	Risk      Risk
 	Templates *templatesservice.Service
+	// Dpia runs DPX-06's own transfer impact assessments (rule 9) — nil in cmd/worker, where nothing
+	// records one.
+	Dpia Dpia
 }
 
 // Asset is a system, application, database or other place personal data lives — ROPA-02's registry

@@ -2,30 +2,59 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	pdb "pdpa-platform/internal/pkg/db"
+	"pdpa-platform/internal/platform/forms"
 	ropastore "pdpa-platform/internal/ropa/store"
 )
 
 var transferBases = []string{"adequacy", "bcr", "standard_clauses", "certification", "exemption", "consent"}
 
 // ActivityTransfer is a cross-border transfer (ROPA-08, ม.28/29): the destination country and the
-// legal mechanism relied on, optionally tied to one of the activity's recipients.
+// legal mechanism relied on, optionally tied to one of the activity's recipients. TiaAssessmentID is
+// DPX-06's own addition — set once a transfer impact assessment has been recorded for this route.
 type ActivityTransfer struct {
-	ID            uuid.UUID
-	ActivityID    uuid.UUID
-	RecipientID   *uuid.UUID
-	CountryCode   string
-	TransferBasis string // adequacy | bcr | standard_clauses | certification | exemption | consent
-	Safeguards    string
-	RowVersion    int32
-	CreatedAt     time.Time
+	ID              uuid.UUID
+	ActivityID      uuid.UUID
+	RecipientID     *uuid.UUID
+	CountryCode     string
+	TransferBasis   string // adequacy | bcr | standard_clauses | certification | exemption | consent
+	Safeguards      string
+	TiaAssessmentID *uuid.UUID
+	RowVersion      int32
+	CreatedAt       time.Time
+}
+
+// DpiaTemplate mirrors dpiaservice.Template — just the fields DPX-06 needs. ropa/service cannot import
+// dpia/service directly: dpia/service already imports ropa/service (for its own Ropa interface's return
+// types), so the reverse would cycle. internal/wiring adapts the real *dpiaservice.Service to this
+// interface instead (the same pattern RiskRopa already uses for risk/service).
+type DpiaTemplate struct {
+	ID     uuid.UUID
+	Code   string
+	Status string
+	Name   string
+}
+
+// TiaResult mirrors dpiaservice.SubjectAssessmentResult — same reasoning as DpiaTemplate above.
+type TiaResult struct {
+	ID    uuid.UUID
+	Score float64
+}
+
+// Dpia is what ropa reads from the dpia module (rule 9) to run a transfer impact assessment (DPX-06)
+// against one of VEN-04/DPIA-03's own assessment_type='tia' templates without ever touching assess.* itself.
+type Dpia interface {
+	ListTemplates(ctx context.Context, assessmentType string) ([]DpiaTemplate, error)
+	RecordSubjectAssessment(ctx context.Context, templateID uuid.UUID, subjectType string, subjectID uuid.UUID, title string, answers forms.Answers) (TiaResult, error)
 }
 
 func (tr *ActivityTransfer) normalize() error {
@@ -95,6 +124,61 @@ func (s *Service) AddActivityTransfer(ctx context.Context, tr ActivityTransfer) 
 	return out, s.audit(ctx, "ropa.activity_transfer.create", tr.ActivityID, nil, transferAudit(out))
 }
 
+// RecordTransferAssessment is DPX-06's own acceptance criterion: run a published assessment_type='tia'
+// template (by its own code, e.g. "transfer_tia") against one logged cross-border transfer, then link the
+// resulting assess.assessments row back via ropa.activity_transfers.tia_assessment_id — the exact pattern
+// VEN-07's RecordAssessment already established for vendor.vendor_assessments.
+func (s *Service) RecordTransferAssessment(ctx context.Context, activityID, transferID uuid.UUID, templateCode string, answers forms.Answers) (ActivityTransfer, error) {
+	if _, err := s.mustActivity(ctx, activityID); err != nil {
+		return ActivityTransfer{}, err
+	}
+	if s.Dpia == nil {
+		return ActivityTransfer{}, errors.New("ropa: transfer assessment scoring not configured")
+	}
+	if _, err := ropastore.New(pdb.MustTxFromContext(ctx)).GetActivityTransfer(ctx, ropastore.GetActivityTransferParams{ID: transferID, ActivityID: activityID}); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ActivityTransfer{}, ErrNotFound
+		}
+		return ActivityTransfer{}, err
+	}
+
+	templates, err := s.Dpia.ListTemplates(ctx, "tia")
+	if err != nil {
+		return ActivityTransfer{}, err
+	}
+	var tpl *DpiaTemplate
+	for i := range templates {
+		if templates[i].Code == templateCode && templates[i].Status == "published" {
+			tpl = &templates[i]
+			break
+		}
+	}
+	if tpl == nil {
+		return ActivityTransfer{}, fmt.Errorf("%w: template_code", ErrInvalid)
+	}
+
+	result, err := s.Dpia.RecordSubjectAssessment(ctx, tpl.ID, "transfer", transferID, tpl.Name, answers)
+	if err != nil {
+		return ActivityTransfer{}, err
+	}
+
+	updated, err := ropastore.New(pdb.MustTxFromContext(ctx)).SetTransferTIA(ctx, ropastore.SetTransferTIAParams{
+		ID: transferID, ActivityID: activityID, TiaAssessmentID: pgUUID(&result.ID)})
+	if err != nil {
+		return ActivityTransfer{}, err
+	}
+	out := toActivityTransfer(ropastore.InsertActivityTransferRow(updated))
+	if _, _, err := s.recompute(ctx, activityID); err != nil {
+		return ActivityTransfer{}, err
+	}
+	if err := s.audit(ctx, "ropa.activity_transfer.tia", activityID,
+		map[string]any{"transfer_id": transferID, "tia_assessment_id": nil},
+		map[string]any{"transfer_id": transferID, "tia_assessment_id": result.ID, "score": result.Score}); err != nil {
+		return ActivityTransfer{}, err
+	}
+	return out, nil
+}
+
 func (s *Service) DeleteActivityTransfer(ctx context.Context, activityID, id uuid.UUID) error {
 	if _, err := s.mustActivity(ctx, activityID); err != nil {
 		return err
@@ -133,5 +217,6 @@ func transferAudit(tr ActivityTransfer) map[string]any {
 
 func toActivityTransfer(r ropastore.InsertActivityTransferRow) ActivityTransfer {
 	return ActivityTransfer{ID: r.ID, ActivityID: r.ActivityID, RecipientID: uuidPtr(r.RecipientID), CountryCode: r.CountryCode,
-		TransferBasis: r.TransferBasis, Safeguards: deref(r.Safeguards), RowVersion: r.RowVersion, CreatedAt: r.CreatedAt.Time}
+		TransferBasis: r.TransferBasis, Safeguards: deref(r.Safeguards), TiaAssessmentID: uuidPtr(r.TiaAssessmentID),
+		RowVersion: r.RowVersion, CreatedAt: r.CreatedAt.Time}
 }
