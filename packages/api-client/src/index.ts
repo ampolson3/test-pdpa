@@ -74,6 +74,22 @@ export {
   type VendorRemediationItem,
 } from "./vendors";
 export {
+  useRetentionSchedules,
+  useCreateRetentionSchedule,
+  useSetRetentionScheduleStatus,
+  useDisposalJobs,
+  useApproveDisposalJob,
+  useStartDisposalJob,
+  useCompleteDisposalJob,
+  useReleaseDisposalJobHold,
+  type RetentionSchedule,
+  type RetentionScheduleInput,
+  type RetentionScheduleStatus,
+  type DisposalJob,
+  type DisposalJobStatus,
+  type DisposalJobCompleteInput,
+} from "./governance";
+export {
   useAgreements,
   useAgreement,
   useCreateAgreement,

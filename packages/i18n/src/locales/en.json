@@ -2672,5 +2672,73 @@
     "batchCreate": "Create RoPA drafts",
     "batchSelectedCount": "{count, plural, =0{Nothing selected yet} other{# selected}}",
     "batchSummaryIntro": "This will create {count} draft activities for the chosen department."
+  },
+  "governance": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view retention & disposal management.",
+    "title": "Retention & disposal management",
+    "intro": "Retention schedules per asset (DPX-05) and the disposal jobs the daily sweep opens automatically when a schedule is due.",
+    "schedules": {
+      "title": "Retention schedules",
+      "new": "New schedule",
+      "filterStatus": "Status",
+      "allStatuses": "All statuses",
+      "statuses": {
+        "active": "Active",
+        "paused": "Paused",
+        "retired": "Retired"
+      },
+      "pause": "Pause",
+      "resume": "Resume",
+      "retire": "Retire",
+      "loadMore": "Load more",
+      "table": {
+        "asset": "Asset",
+        "nextDueAt": "Next due",
+        "status": "Status"
+      },
+      "form": {
+        "title": "New retention schedule",
+        "asset": "Asset",
+        "none": "— select —",
+        "retentionRuleId": "Retention rule ID",
+        "retentionRuleIdHint": "The RoPA retention rule's own ID (from the activity's retention section)",
+        "nextDueAt": "Next due date",
+        "save": "Save",
+        "cancel": "Cancel",
+        "saveError": "Could not save: {detail}"
+      }
+    },
+    "jobs": {
+      "title": "Disposal jobs",
+      "intro": "Created automatically when a schedule reaches its due date; a job can only be closed once evidence is attached.",
+      "filterStatus": "Status",
+      "allStatuses": "All statuses",
+      "statuses": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "in_progress": "In progress",
+        "done": "Done",
+        "on_hold": "On legal hold"
+      },
+      "approve": "Approve",
+      "start": "Start",
+      "complete": "Close",
+      "releaseHold": "Release hold",
+      "loadMore": "Load more",
+      "table": {
+        "dueAt": "Due",
+        "method": "Method",
+        "status": "Status"
+      },
+      "completeForm": {
+        "title": "Close disposal job",
+        "evidenceAttached": "Evidence attached: {name}",
+        "recordCount": "Record count (optional)",
+        "save": "Close job",
+        "cancel": "Cancel",
+        "saveError": "Could not close: {detail}"
+      }
+    }
   }
 }

@@ -93,6 +93,12 @@ FROM ropa.retention_rules
 WHERE activity_id = $1
 ORDER BY created_at;
 
+-- name: GetRetentionRule :one
+SELECT id, activity_id, data_category_id, retention_months, retention_basis, trigger_event, disposal_method,
+    row_version, created_at
+FROM ropa.retention_rules
+WHERE id = $1;
+
 -- name: InsertRetentionRule :one
 INSERT INTO ropa.retention_rules (id, tenant_id, activity_id, data_category_id, retention_months, retention_basis,
     trigger_event, disposal_method, created_by, updated_by)

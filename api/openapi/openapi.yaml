@@ -12010,6 +12010,417 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/governance/retention-schedules:
+    get:
+      operationId: govListRetentionSchedules
+      tags: [gov]
+      summary: Retention schedules (DPX-05) — one per asset's recurring disposal clock
+      x-permission: dpx.retention.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: asset_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/RetentionScheduleStatus'
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RetentionSchedule'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: govCreateRetentionSchedule
+      tags: [gov]
+      summary: Create a retention schedule against a RoPA retention rule and asset (FK-checked under RLS)
+      x-permission: dpx.retention.create
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RetentionScheduleInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionSchedule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/governance/retention-schedules/{id}:
+    get:
+      operationId: govGetRetentionSchedule
+      tags: [gov]
+      summary: One retention schedule
+      x-permission: dpx.retention.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionSchedule'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: govSetRetentionScheduleStatus
+      tags: [gov]
+      summary: Pause / resume / retire a schedule — a paused or retired schedule is never picked up by the daily due-check
+      x-permission: dpx.retention.update
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/RetentionScheduleStatus'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetentionSchedule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/disposal-jobs:
+    get:
+      operationId: govListDisposalJobs
+      tags: [gov]
+      summary: Disposal jobs (DPX-05) — created automatically by the daily due-date sweep, or manually inspected here
+      x-permission: dpx.retention.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/DisposalJobStatus'
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DisposalJob'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/governance/disposal-jobs/{id}:
+    get:
+      operationId: govGetDisposalJob
+      tags: [gov]
+      summary: One disposal job
+      x-permission: dpx.retention.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisposalJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/governance/disposal-jobs/{id}/approve:
+    post:
+      operationId: govApproveDisposalJob
+      tags: [gov]
+      summary: Approve a pending job (BP-11's confirm+approve step) — refused if the asset is under an active legal hold
+      x-permission: dpx.retention.approve
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assignee_user_id:
+                  $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisposalJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/disposal-jobs/{id}/start:
+    post:
+      operationId: govStartDisposalJob
+      tags: [gov]
+      summary: Move an approved job to in_progress (IT begins the actual disposal work)
+      x-permission: dpx.retention.execute
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisposalJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/disposal-jobs/{id}/complete:
+    post:
+      operationId: govCompleteDisposalJob
+      tags: [gov]
+      summary: Close a disposal job — the acceptance criterion's gate, refused without an evidence file
+      x-permission: dpx.retention.execute
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DisposalJobCompleteInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisposalJob'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/disposal-jobs/{id}/release-hold:
+    post:
+      operationId: govReleaseDisposalJobHold
+      tags: [gov]
+      summary: Clear an on_hold job back to pending once its legal hold has been lifted
+      x-permission: dpx.retention.approve
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisposalJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
 components:
   securitySchemes:
     adminJwt:
@@ -17128,3 +17539,90 @@ components:
               channel:
                 type: string
                 enum: [sms, email]
+    RetentionScheduleStatus:
+      type: string
+      description: A paused or retired schedule is never picked up by the daily due-date sweep.
+      enum: [active, paused, retired]
+    RetentionScheduleInput:
+      type: object
+      required: [retention_rule_id, asset_id, next_due_at]
+      properties:
+        retention_rule_id:
+          $ref: '#/components/schemas/Uuid'
+        asset_id:
+          $ref: '#/components/schemas/Uuid'
+        next_due_at:
+          type: string
+          format: date
+          description: Entered by a human (DPX-05 has no automatic trigger-event-date computation); the next cycle is re-entered manually after a disposal job completes.
+      example:
+        retention_rule_id: 00000000-0000-0000-0000-000000000000
+        asset_id: 00000000-0000-0000-0000-000000000000
+        next_due_at: '2027-01-01'
+    RetentionSchedule:
+      type: object
+      required: [id, retention_rule_id, asset_id, next_due_at, status, row_version, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        retention_rule_id:
+          $ref: '#/components/schemas/Uuid'
+        asset_id:
+          $ref: '#/components/schemas/Uuid'
+        next_due_at:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/RetentionScheduleStatus'
+        row_version:
+          type: integer
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    DisposalJobStatus:
+      type: string
+      enum: [pending, approved, in_progress, done, on_hold]
+    DisposalJob:
+      type: object
+      required: [id, schedule_id, due_at, method, status, row_version, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        schedule_id:
+          $ref: '#/components/schemas/Uuid'
+        due_at:
+          type: string
+          format: date
+        method:
+          type: string
+          enum: [delete, destroy, anonymize, return]
+        legal_hold_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        assignee_user_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        approved_by:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        status:
+          $ref: '#/components/schemas/DisposalJobStatus'
+        record_count:
+          type: [integer, 'null']
+        completed_at:
+          type: [string, 'null']
+          format: date-time
+        evidence_file_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        row_version:
+          type: integer
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    DisposalJobCompleteInput:
+      type: object
+      required: [evidence_file_id]
+      properties:
+        evidence_file_id:
+          $ref: '#/components/schemas/Uuid'
+          description: A PLT-09 file the caller already uploaded clean and unattached — closing the job without one is refused (the acceptance criterion).
+        record_count:
+          type: [integer, 'null']
+      example:
+        evidence_file_id: 00000000-0000-0000-0000-000000000000
+        record_count: 1200

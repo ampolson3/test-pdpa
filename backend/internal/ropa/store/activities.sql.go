@@ -128,6 +128,42 @@ func (q *Queries) GetActivity(ctx context.Context, id uuid.UUID) (GetActivityRow
 	return i, err
 }
 
+const getRetentionRule = `-- name: GetRetentionRule :one
+SELECT id, activity_id, data_category_id, retention_months, retention_basis, trigger_event, disposal_method,
+    row_version, created_at
+FROM ropa.retention_rules
+WHERE id = $1
+`
+
+type GetRetentionRuleRow struct {
+	ID              uuid.UUID          `db:"id" json:"id"`
+	ActivityID      uuid.UUID          `db:"activity_id" json:"activity_id"`
+	DataCategoryID  pgtype.UUID        `db:"data_category_id" json:"data_category_id"`
+	RetentionMonths *int32             `db:"retention_months" json:"retention_months"`
+	RetentionBasis  string             `db:"retention_basis" json:"retention_basis"`
+	TriggerEvent    string             `db:"trigger_event" json:"trigger_event"`
+	DisposalMethod  string             `db:"disposal_method" json:"disposal_method"`
+	RowVersion      int32              `db:"row_version" json:"row_version"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+func (q *Queries) GetRetentionRule(ctx context.Context, id uuid.UUID) (GetRetentionRuleRow, error) {
+	row := q.db.QueryRow(ctx, getRetentionRule, id)
+	var i GetRetentionRuleRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActivityID,
+		&i.DataCategoryID,
+		&i.RetentionMonths,
+		&i.RetentionBasis,
+		&i.TriggerEvent,
+		&i.DisposalMethod,
+		&i.RowVersion,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const insertActivity = `-- name: InsertActivity :one
 INSERT INTO ropa.processing_activities (id, tenant_id, legal_entity_id, org_unit_id, code, name, description, role,
     controller_party_id, owner_user_id, rights_and_access, created_by, updated_by)

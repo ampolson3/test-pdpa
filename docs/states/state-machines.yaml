@@ -1196,3 +1196,83 @@ machines:
     event: transition
     guard: null
     action: audit
+- machine: DPX-05schedule
+  title: Retention schedule (gov.retention_schedules.status)
+  column: gov.retention_schedules.status
+  states:
+  - active
+  - paused
+  - retired
+  initial:
+  - active
+  terminal:
+  - retired
+  transitions:
+  - from: active
+    to: paused
+    trigger: ผู้ใช้สั่งพัก
+    event: gov.retention_schedule.status
+    guard: null
+    action: audit
+  - from: paused
+    to: active
+    trigger: ผู้ใช้สั่งเริ่มใหม่
+    event: gov.retention_schedule.status
+    guard: null
+    action: audit
+  - from: active
+    to: retired
+    trigger: ผู้ใช้สั่งยกเลิก
+    event: gov.retention_schedule.status
+    guard: null
+    action: audit
+  - from: paused
+    to: retired
+    trigger: ผู้ใช้สั่งยกเลิก
+    event: gov.retention_schedule.status
+    guard: null
+    action: audit
+- machine: DPX-05job
+  title: Disposal job (gov.disposal_jobs.status, BP-11)
+  column: gov.disposal_jobs.status
+  states:
+  - pending
+  - approved
+  - in_progress
+  - done
+  - on_hold
+  initial:
+  - pending
+  terminal:
+  - done
+  transitions:
+  - from: pending
+    to: approved
+    trigger: อนุมัติ (BP-11 confirm+approve ควบรวมเป็นขั้นตอนเดียว)
+    event: gov.disposal_job.approve
+    guard: 'asset ไม่มี legal hold ที่ active อยู่'
+    action: audit
+  - from: approved
+    to: in_progress
+    trigger: IT เริ่มดำเนินการ
+    event: gov.disposal_job.start
+    guard: null
+    action: audit
+  - from: in_progress
+    to: done
+    trigger: ปิดงาน
+    event: gov.disposal_job.complete
+    guard: evidence_file_id เป็นไฟล์ของผู้ใช้เองที่สะอาดและยังไม่ผูกกับรายการอื่น (บังคับ)
+    action: แนบไฟล์หลักฐาน (AttachSystem) · audit
+  - from: pending
+    to: on_hold
+    trigger: สร้างงานขณะ asset มี legal hold ที่ active อยู่
+    event: gov.retention_check
+    guard: null
+    action: audit
+  - from: on_hold
+    to: pending
+    trigger: ปลด legal hold
+    event: gov.disposal_job.release_hold
+    guard: null
+    action: audit

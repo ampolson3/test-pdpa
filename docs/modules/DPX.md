@@ -138,6 +138,64 @@
 
 **Acceptance criteria:** ข้อมูลครบกำหนดสร้างงานทำลายอัตโนมัติและปิดได้เมื่อแนบหลักฐาน
 
+**Implementation — done.** `internal/gov` — the first feature on the `gov` schema: `gov.retention_schedules`
+and `gov.disposal_jobs` were both already fully specified in the baseline migrations (00017), and
+`dpx.retention.{read,create,update,delete,approve,execute}` was already seeded (migration 00019) — no new
+migration or permission code. `internal/ropa/service`'s `GetRetentionRule` (a new by-id query, mirroring
+`GetAsset`'s own role) and the already-exported `GetAsset` give `gov` its two FK-visibility checks (rule 1);
+a new `internal/dsar/service/legal_holds.go` (`ActiveHoldForAsset`) gives it the active-legal-hold check on
+`dsar.legal_holds` — no import cycle either direction (neither `dsar` nor `ropa` imports `gov`), so both are
+plain concrete-type fields on `Service`, not a `wiring`-adapter situation like DPX-06's own ropa↔dpia fix.
+
+Scope deliberately trimmed against BP-11's full diagram, each a plain engineering simplification rather
+than a `docs/decisions.md` question (none change the data model, a contract, or legally-relevant behaviour):
+BP-11's three human steps (data-owner confirm, DPO approve, IT execute) collapse into the one real
+`approved_by` column the schema actually has — `ApproveJob` is both confirm and approve at once, gated on
+`dpx.retention.approve`; a legal hold is matched by `asset_id` only, not also `data_category_id` (the
+broader match is DSAR-11's own exemption-check concern, not this feature's literal acceptance criterion);
+`next_due_at` is entered by a human when creating a schedule, with no automatic trigger-event-date
+computation (the system has no way to know when a real-world trigger event — "สิ้นสุดการจ้าง" — actually
+happened); and PLT-05's generic workflow/task engine is not used at all, the same reasoning PNG-04's own
+indirect-collection deadline already recorded — nothing here needs a per-record task assignee resolved from
+a Definition JSON.
+
+The acceptance criterion's first half ("ข้อมูลครบกำหนดสร้างงานทำลายอัตโนมัติ") is a daily sweep mirroring
+`internal/platform/audit/jobs/verify.go`'s own `VerifySweeper`/`Verifier` pair exactly: `gov.retention_sweep`
+(global, `jobs.GlobalKinds`, daily `river.PeriodicJob`, reusing `platform/audit/store`'s own
+`ListLiveTenants`) enqueues one `gov.retention_check` per tenant, which runs inside that tenant's own
+transaction (`TenantTxMiddleware`) and calls `Service.RunRetentionCheck` — every `active` schedule whose
+`next_due_at` has passed with **no disposal job still open** (`pending`/`approved`/`in_progress`/`on_hold`)
+gets a fresh one, using the schedule's own retention rule's `disposal_method`. This "no open job" check is
+what keeps the sweep idempotent day over day without needing to advance `next_due_at` itself. A schedule
+whose asset is under an active legal hold gets its job created `on_hold` directly (not `pending`), so it
+never shows up for approval until the hold lifts — `ApproveJob` re-checks the same hold and refuses with
+`ErrOnLegalHold` even if a hold appeared after the job was created `pending`.
+
+The second half ("ปิดได้เมื่อแนบหลักฐาน") is `CompleteJob`'s own gate: `evidence_file_id` is required
+(refused with `ErrEvidenceRequired` before ever touching the database), and the file must be the caller's
+own clean, still-unattached PLT-09 upload (`Files.Get` + `AttachSystem`, the exact rule every other module's
+evidence requirement already uses) — the sqlc query itself takes `evidence_file_id` as a non-nullable
+`sqlc.arg`, never `sqlc.narg`, so there is no code path that can write a `done` row without one.
+
+API: `GET`/`POST /admin/v1/governance/retention-schedules`, `PATCH .../retention-schedules/{id}` (pause/
+resume/retire, ETag/If-Match), `GET /admin/v1/governance/disposal-jobs` (+ `/{id}`), `POST .../approve`
+(refused on an active hold), `/start`, `/complete` (evidence required), `/release-hold` — cursor pagination,
+same shape as every other module's list endpoints. UI: a new page, `/governance` — a retention-schedule
+list + create form (asset picker from ROPA-02's own `useAssets`, retention rule entered by id since no
+cross-activity retention-rule picker exists yet) and a disposal-job list with inline approve/start/
+complete-with-evidence (`FileUploader`)/release-hold actions, i18n th/en. Tests: unit (the acceptance
+criterion directly — a due schedule gets exactly one job and re-running the sweep doesn't duplicate it; a
+not-yet-due schedule is left alone; a paused schedule is never picked up; a held asset's job is created
+`on_hold` and blocked from approval until the hold is released; completion refused without evidence, succeeds
+and attaches the file once given; two-tenant isolation), HTTP contract (401/403/201/200/428/422) through the
+real validator + AuthZ chain. `go build`/`go vet`/`gofmt` clean across the whole backend; `tsc --noEmit` and
+`pnpm --filter @pdpa/admin build` both verified clean — no Postgres/Redis reachable in this environment this
+round, so tests are compile-verified and skip-cleanly-verified only, the same caveat DPX-06/VEN-07/VEN-08
+already recorded. Not done: `ropa.activity_systems`-based asset linking beyond the direct `asset_id` FK
+(ROPA-02 never built CRUD on that table either — nothing to link to yet), and a standalone cross-activity
+retention-rule picker on the schedule-create form (entering the rule's own id is a deliberate stand-in until
+a screen actually needs one).
+
 <a id="dpx-06"></a>
 ### DPX-06 ประเมินการโอนข้อมูลไปต่างประเทศ (TIA)
 

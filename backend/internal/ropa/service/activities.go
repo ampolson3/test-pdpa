@@ -659,6 +659,20 @@ func (s *Service) ListRetentionRules(ctx context.Context, activityID uuid.UUID) 
 	return out, nil
 }
 
+// GetRetentionRule is DPX-05's FK-visibility check: a gov.retention_schedules row names a
+// retention_rule_id, and this proves it resolves to a rule visible under the caller's own RLS
+// before gov writes that id (rule 1), the same pattern GetAsset already serves for asset_id.
+func (s *Service) GetRetentionRule(ctx context.Context, id uuid.UUID) (RetentionRule, error) {
+	row, err := ropastore.New(pdb.MustTxFromContext(ctx)).GetRetentionRule(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return RetentionRule{}, ErrNotFound
+		}
+		return RetentionRule{}, err
+	}
+	return toRetentionRule(ropastore.InsertRetentionRuleRow(row)), nil
+}
+
 func (s *Service) AddRetentionRule(ctx context.Context, r RetentionRule) (RetentionRule, error) {
 	if err := r.normalize(); err != nil {
 		return RetentionRule{}, err

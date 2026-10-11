@@ -19,6 +19,8 @@ import (
 	agreementservice "pdpa-platform/internal/agreement/service"
 	breach "pdpa-platform/internal/breach/service"
 	dsarservice "pdpa-platform/internal/dsar/service"
+	govjobs "pdpa-platform/internal/gov/jobs"
+	govservice "pdpa-platform/internal/gov/service"
 	notice "pdpa-platform/internal/notice/service"
 	orgservice "pdpa-platform/internal/org/service"
 	pdb "pdpa-platform/internal/pkg/db"
@@ -109,6 +111,10 @@ func run() error {
 	river.AddWorker(workers, &notice.DueWorker{Service: noticeSvc})
 	dsarSvc := &dsarservice.Service{Audit: auditservice.New(), Notify: notifySvc, River: inserter} // DSAR-07: SLA reminder
 	river.AddWorker(workers, &dsarservice.ReminderWorker{Service: dsarSvc})
+	// DPX-05: the daily retention/disposal sweep (gov.retention_sweep -> gov.retention_check per tenant).
+	govSvc := &govservice.Service{Audit: auditservice.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fileStore(store, inserter), River: inserter}
+	river.AddWorker(workers, &govjobs.Checker{Gov: govSvc})
+	river.AddWorker(workers, &govjobs.Sweeper{Pool: pool})
 	agreementSvc := &agreementservice.Service{Audit: auditservice.New(), Notify: notifySvc, River: inserter} // DPA-10: expiry reminder
 	river.AddWorker(workers, &agreementservice.ReminderWorker{Service: agreementSvc})
 	// PLT-16: PDF / Word of published documents (Gotenberg via GOTENBERG_URL, or a local Chromium via CHROMIUM_PATH).
@@ -122,9 +128,10 @@ func run() error {
 	})
 
 	client, err := jobs.NewWorkerClient(pool, jobs.WorkerOptions{
-		Logger:          slog.Default(),
-		Workers:         workers,
-		PeriodicJobs:    []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob(), auditjobs.RetentionPeriodicJob(retentionMonths)},
+		Logger:  slog.Default(),
+		Workers: workers,
+		PeriodicJobs: []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob(),
+			auditjobs.RetentionPeriodicJob(retentionMonths), govjobs.SweepPeriodicJob()},
 		SoftStopTimeout: softStop,
 	})
 	if err != nil {
