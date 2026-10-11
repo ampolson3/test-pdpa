@@ -19,14 +19,16 @@ import (
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/forms"
 	riskservice "pdpa-platform/internal/risk/service"
 )
 
 var (
-	ErrNotFound        = errors.New("vendor: not found")
-	ErrInvalid         = errors.New("vendor: invalid input")
-	ErrVersionMismatch = errors.New("vendor: version mismatch")
+	ErrNotFound          = errors.New("vendor: not found")
+	ErrInvalid           = errors.New("vendor: invalid input")
+	ErrVersionMismatch   = errors.New("vendor: version mismatch")
+	ErrInvalidTransition = errors.New("vendor: invalid transition")
 )
 
 // Org is what vendor reads from the organization module (rule 9): FK visibility (rule 1) for party_id.
@@ -44,6 +46,9 @@ type Service struct {
 	// resulting score against the tenant's own RRA-02 risk matrix.
 	Dpia *dpiaservice.Service
 	Risk *riskservice.Service
+	// Events is nil in cmd/worker (nothing there decides an assessment); VEN-08 publishes the already-
+	// catalogued "vendor.approved" event on a clean approval.
+	Events *events.Publisher
 }
 
 func (s *Service) audit(ctx context.Context, action string, id uuid.UUID, before, after any) error {

@@ -3617,6 +3617,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/vendors/{id}/assessments/{assessmentId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve / reject / conditionally approve an answered assessment cycle (VEN-08) */
+        post: operations["vendorDecideAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/vendors/{id}/remediation-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A vendor's remediation plan — items opened by conditional approvals (VEN-08) */
+        get: operations["vendorListRemediationItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/agreements": {
         parameters: {
             query?: never;
@@ -4709,7 +4743,7 @@ export interface components {
             /** @enum {string} */
             residual_level: "low" | "medium" | "high" | "critical";
             /**
-             * @description Set only once VEN-08 (not built yet) records a decision
+             * @description Set once VEN-08 records a decision on this cycle
              * @enum {string|null}
              */
             decision?: "approved" | "conditional" | "rejected" | null;
@@ -4717,6 +4751,48 @@ export interface components {
             decided_at?: components["schemas"]["Timestamp"];
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * @example {
+         *       "decision": "conditional",
+         *       "remediation_items": [
+         *         {
+         *           "title": "ต้องส่งหลักฐานการเข้ารหัสข้อมูลที่พักไว้ (at rest) เพิ่มเติม",
+         *           "severity": "high",
+         *           "due_at": "2026-12-31"
+         *         }
+         *       ]
+         *     }
+         */
+        VendorDecideAssessmentInput: {
+            /** @enum {string} */
+            decision: "approved" | "conditional" | "rejected";
+            /** @description Required and non-empty when decision=conditional (VEN-08's own acceptance criterion) — ignored otherwise */
+            remediation_items?: {
+                title: string;
+                /** @enum {string} */
+                severity: "low" | "medium" | "high";
+                /** Format: date */
+                due_at?: string;
+            }[];
+        };
+        VendorRemediationItem: {
+            id: components["schemas"]["Uuid"];
+            vendor_id: components["schemas"]["Uuid"];
+            vendor_assessment_id?: components["schemas"]["Uuid"] | null;
+            title: string;
+            /** @enum {string} */
+            severity: "low" | "medium" | "high";
+            due_at?: string | null;
+            /** @enum {string} */
+            status: "open" | "in_progress" | "done" | "accepted_risk";
+            closed_at?: components["schemas"]["Timestamp"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        VendorDecideAssessmentResult: {
+            assessment: components["schemas"]["VendorAssessment"];
+            remediation_items: components["schemas"]["VendorRemediationItem"][];
         };
         /**
          * @description agreement.agreements' own CHECK constraint — 'dpa' (DPA-02) and 'dsa' (DSA-04) are wired to CreateWizard; joint_controller/inbound_dpa are real values for when those modules exist.
@@ -16027,6 +16103,72 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    vendorDecideAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                assessmentId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorDecideAssessmentInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorDecideAssessmentResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    vendorListRemediationItems: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["VendorRemediationItem"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     agreementListAgreements: {

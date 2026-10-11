@@ -58,6 +58,8 @@ export {
   useRecordVendorIntake,
   useVendorAssessments,
   useRecordVendorAssessment,
+  useDecideVendorAssessment,
+  useVendorRemediationItems,
   type Vendor,
   type VendorInput,
   type VendorStatus,
@@ -67,6 +69,9 @@ export {
   type VendorIntakeResult,
   type VendorAssessment,
   type VendorRecordAssessmentInput,
+  type VendorDecideAssessmentInput,
+  type VendorDecideAssessmentResult,
+  type VendorRemediationItem,
 } from "./vendors";
 export {
   useAgreements,

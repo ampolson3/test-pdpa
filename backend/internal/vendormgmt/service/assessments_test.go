@@ -14,7 +14,9 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/pkg/dbtest"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/forms"
+	"pdpa-platform/internal/platform/jobs"
 	riskservice "pdpa-platform/internal/risk/service"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
 	"pdpa-platform/internal/wiring"
@@ -41,9 +43,10 @@ func assessSetup(t *testing.T, suffix string) assessEnv {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
-				`DELETE FROM vendor.vendor_assessments`, `DELETE FROM assess.answers`, `DELETE FROM assess.assessments`,
-				`DELETE FROM risk.risk_matrices`, `DELETE FROM vendor.vendors`, `DELETE FROM org.external_parties`,
-				`DELETE FROM platform.audit_log`,
+				`DELETE FROM vendor.remediation_items`, `DELETE FROM vendor.vendor_assessments`, `DELETE FROM assess.answers`,
+				`DELETE FROM assess.assessments`, `DELETE FROM risk.risk_matrices`, `DELETE FROM vendor.vendors`,
+				`DELETE FROM org.external_parties`, `DELETE FROM platform.audit_log`, `DELETE FROM platform.outbox_events`,
+				`DELETE FROM river_job WHERE kind = 'outbox.dispatch'`,
 			} {
 				_, _ = tx.Exec(ctx, q)
 			}
@@ -55,11 +58,17 @@ func assessSetup(t *testing.T, suffix string) assessEnv {
 	riskSvc.Audit = audit.New()
 	formsSvc := wiring.Forms(nil, audit.New())
 	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Org: org, Audit: audit.New(), Risk: riskSvc}
-	vendorSvc := &vendorservice.Service{Audit: audit.New(), Org: org, Forms: formsSvc, Dpia: dpiaSvc, Risk: riskSvc}
+	riverClient, err := jobs.NewInsertClient(app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	vendorSvc := &vendorservice.Service{Audit: audit.New(), Org: org, Forms: formsSvc, Dpia: dpiaSvc, Risk: riskSvc,
+		Events: &events.Publisher{River: riverClient}}
 	return assessEnv{app: app, tenant: tenant, svc: vendorSvc, org: org, dpia: dpiaSvc, risk: riskSvc}
 }
 
 var assessPerms = []string{"vendor.vendor.read", "vendor.vendor.create", "vendor.vendor.update",
+	"vendor.assessment.read", "vendor.assessment.create", "vendor.assessment.approve",
 	"assessment.template.read", "ropa.risk.read", "ropa.risk.create", "ropa.risk.update"}
 
 func (e assessEnv) in(t *testing.T, fn func(ctx context.Context) error) {
@@ -216,6 +225,240 @@ func TestRecordAssessment_TwoTenantIsolation(t *testing.T) {
 		seedAssessMatrix(t, ctx, b.risk)
 		if _, err := b.svc.RecordAssessment(ctx, vendorID, "vendor_pdpa", allYes); !errors.Is(err, vendorservice.ErrNotFound) {
 			t.Errorf("tenant B recording an assessment against tenant A's vendor: %v, want ErrNotFound", err)
+		}
+		return nil
+	})
+}
+
+// seedAssessedVendor seeds a vendor matrix, creates a vendor, and answers vendor_pdpa once — the vendor
+// lands "onboarding" (ST-06#1's own "prospect -> onboarding" edge, driven by RecordAssessment) with one
+// undecided assessment cycle, which is exactly VEN-08's own starting point.
+func seedAssessedVendor(t *testing.T, ctx context.Context, e assessEnv, answers forms.Answers) (vendorservice.Vendor, vendorservice.VendorAssessment) {
+	t.Helper()
+	seedAssessMatrix(t, ctx, e.risk)
+	v := seedAssessVendor(t, ctx, e)
+	a, err := e.svc.RecordAssessment(ctx, v.ID, "vendor_pdpa", answers)
+	if err != nil {
+		t.Fatal(err)
+	}
+	v, err = e.svc.GetVendor(ctx, v.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v.Status != "onboarding" {
+		t.Fatalf("vendor status after its first assessment = %q, want onboarding", v.Status)
+	}
+	return v, a
+}
+
+// TestDecideAssessment_ApprovedTransitionsVendorAndPublishesEvent covers the clean-approval half of
+// VEN-08: the vendor moves onboarding -> approved (ST-06#1), approved_at is stamped, and the already-
+// catalogued "vendor.approved" event (docs/architecture/events.yaml) is published.
+func TestDecideAssessment_ApprovedTransitionsVendorAndPublishesEvent(t *testing.T) {
+	e := assessSetup(t, "ven08approve")
+	var vendorID, assessmentID uuid.UUID
+	e.in(t, func(ctx context.Context) error {
+		v, a := seedAssessedVendor(t, ctx, e, allYes)
+		vendorID, assessmentID = v.ID, a.ID
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		decided, items, err := e.svc.DecideAssessment(ctx, assessmentID, "approved", nil)
+		if err != nil {
+			return err
+		}
+		if decided.Decision != "approved" {
+			t.Errorf("decision = %q, want approved", decided.Decision)
+		}
+		if decided.DecidedBy == nil {
+			t.Errorf("decided_by not set")
+		}
+		if len(items) != 0 {
+			t.Errorf("approved decision created %d remediation items, want 0", len(items))
+		}
+		v, err := e.svc.GetVendor(ctx, vendorID)
+		if err != nil {
+			return err
+		}
+		if v.Status != "approved" {
+			t.Errorf("vendor status = %q, want approved", v.Status)
+		}
+		if v.ApprovedAt == nil {
+			t.Errorf("approved_at not stamped")
+		}
+		var n int
+		if err := pdb.MustTxFromContext(ctx).QueryRow(ctx,
+			`SELECT count(*)::int FROM platform.outbox_events WHERE event_type = 'vendor.approved' AND aggregate_id = $1`, vendorID).Scan(&n); err != nil {
+			return err
+		}
+		if n != 1 {
+			t.Errorf("vendor.approved outbox rows = %d, want 1", n)
+		}
+		return nil
+	})
+}
+
+// TestDecideAssessment_ConditionalOpensRemediationItems is VEN-08's own literal acceptance criterion:
+// "อนุมัติแบบมีเงื่อนไขสร้างแผนแก้ไขอัตโนมัติ" — a conditional decision automatically opens the given
+// remediation items, the vendor lands "conditional" (ST-06#1), and no "vendor.approved" event fires.
+func TestDecideAssessment_ConditionalOpensRemediationItems(t *testing.T) {
+	e := assessSetup(t, "ven08conditional")
+	var vendorID, assessmentID uuid.UUID
+	e.in(t, func(ctx context.Context) error {
+		v, a := seedAssessedVendor(t, ctx, e, allNo)
+		vendorID, assessmentID = v.ID, a.ID
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		decided, items, err := e.svc.DecideAssessment(ctx, assessmentID, "conditional", []vendorservice.RemediationItemInput{
+			{Title: "ต้องมี DPA ลงนามก่อนเริ่มงาน", Severity: "high"},
+			{Title: "ต้องมีนโยบายเก็บรักษาข้อมูลเป็นลายลักษณ์อักษร", Severity: "medium"},
+		})
+		if err != nil {
+			return err
+		}
+		if decided.Decision != "conditional" {
+			t.Errorf("decision = %q, want conditional", decided.Decision)
+		}
+		if len(items) != 2 {
+			t.Fatalf("remediation items created = %d, want 2", len(items))
+		}
+		for _, it := range items {
+			if it.Status != "open" || it.VendorAssessmentID == nil || *it.VendorAssessmentID != assessmentID {
+				t.Errorf("remediation item %q: status=%q vendor_assessment_id=%v, want open linked to %s", it.Title, it.Status, it.VendorAssessmentID, assessmentID)
+			}
+		}
+		v, err := e.svc.GetVendor(ctx, vendorID)
+		if err != nil {
+			return err
+		}
+		if v.Status != "conditional" {
+			t.Errorf("vendor status = %q, want conditional", v.Status)
+		}
+		if v.ApprovedAt != nil {
+			t.Errorf("approved_at stamped on a conditional decision")
+		}
+		var n int
+		if err := pdb.MustTxFromContext(ctx).QueryRow(ctx,
+			`SELECT count(*)::int FROM platform.outbox_events WHERE event_type = 'vendor.approved' AND aggregate_id = $1`, vendorID).Scan(&n); err != nil {
+			return err
+		}
+		if n != 0 {
+			t.Errorf("vendor.approved outbox rows = %d, want 0 for a conditional decision", n)
+		}
+		list, err := e.svc.ListRemediationItems(ctx, vendorID)
+		if err != nil {
+			return err
+		}
+		if len(list) != 2 {
+			t.Errorf("ListRemediationItems = %d, want 2", len(list))
+		}
+		return nil
+	})
+}
+
+func TestDecideAssessment_ConditionalWithoutItemsRefused(t *testing.T) {
+	e := assessSetup(t, "ven08noitems")
+	var assessmentID uuid.UUID
+	e.in(t, func(ctx context.Context) error {
+		_, a := seedAssessedVendor(t, ctx, e, allNo)
+		assessmentID = a.ID
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		if _, _, err := e.svc.DecideAssessment(ctx, assessmentID, "conditional", nil); !errors.Is(err, vendorservice.ErrInvalid) {
+			t.Errorf("conditional with no remediation items: %v, want ErrInvalid", err)
+		}
+		return nil
+	})
+}
+
+func TestDecideAssessment_RejectedTransitionsVendor(t *testing.T) {
+	e := assessSetup(t, "ven08reject")
+	var vendorID, assessmentID uuid.UUID
+	e.in(t, func(ctx context.Context) error {
+		v, a := seedAssessedVendor(t, ctx, e, allNo)
+		vendorID, assessmentID = v.ID, a.ID
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		if _, _, err := e.svc.DecideAssessment(ctx, assessmentID, "rejected", nil); err != nil {
+			return err
+		}
+		v, err := e.svc.GetVendor(ctx, vendorID)
+		if err != nil {
+			return err
+		}
+		if v.Status != "rejected" {
+			t.Errorf("vendor status = %q, want rejected", v.Status)
+		}
+		return nil
+	})
+}
+
+// TestDecideAssessment_CannotRedecide is the guard behind "WHERE decision IS NULL": a cycle already
+// decided cannot be decided again.
+func TestDecideAssessment_CannotRedecide(t *testing.T) {
+	e := assessSetup(t, "ven08redecide")
+	var assessmentID uuid.UUID
+	e.in(t, func(ctx context.Context) error {
+		_, a := seedAssessedVendor(t, ctx, e, allYes)
+		assessmentID = a.ID
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		if _, _, err := e.svc.DecideAssessment(ctx, assessmentID, "approved", nil); err != nil {
+			return err
+		}
+		if _, _, err := e.svc.DecideAssessment(ctx, assessmentID, "rejected", nil); !errors.Is(err, vendorservice.ErrInvalidTransition) {
+			t.Errorf("re-deciding an already-decided cycle: %v, want ErrInvalidTransition", err)
+		}
+		return nil
+	})
+}
+
+// TestDecideAssessment_RequiresOnboardingStatus: a vendor not currently "onboarding" (e.g. still
+// "prospect" — no assessment ever recorded) cannot be decided.
+func TestDecideAssessment_RequiresOnboardingStatus(t *testing.T) {
+	e := assessSetup(t, "ven08notonboarding")
+	var vendorID uuid.UUID
+	e.in(t, func(ctx context.Context) error {
+		seedAssessMatrix(t, ctx, e.risk)
+		vendorID = seedAssessVendor(t, ctx, e).ID
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		// Force an assessment row to decide against without ever onboarding the vendor (simulates a
+		// direct cross-tenant/edge-case row — RecordAssessment always onboards, so this exercises the
+		// guard DecideAssessment itself must still hold).
+		a, err := e.svc.RecordAssessment(ctx, vendorID, "vendor_pdpa", allYes)
+		if err != nil {
+			return err
+		}
+		q := `UPDATE vendor.vendors SET status = 'prospect' WHERE id = $1`
+		if _, err := pdb.MustTxFromContext(ctx).Exec(ctx, q, vendorID); err != nil {
+			return err
+		}
+		if _, _, err := e.svc.DecideAssessment(ctx, a.ID, "approved", nil); !errors.Is(err, vendorservice.ErrInvalidTransition) {
+			t.Errorf("deciding against a non-onboarding vendor: %v, want ErrInvalidTransition", err)
+		}
+		return nil
+	})
+}
+
+// TestDecideAssessment_TwoTenantIsolation mirrors VEN-07's own isolation test.
+func TestDecideAssessment_TwoTenantIsolation(t *testing.T) {
+	a := assessSetup(t, "ven08iso1")
+	b := assessSetup(t, "ven08iso2")
+	var assessmentID uuid.UUID
+	a.in(t, func(ctx context.Context) error {
+		_, as := seedAssessedVendor(t, ctx, a, allYes)
+		assessmentID = as.ID
+		return nil
+	})
+	b.in(t, func(ctx context.Context) error {
+		if _, _, err := b.svc.DecideAssessment(ctx, assessmentID, "approved", nil); !errors.Is(err, vendorservice.ErrNotFound) {
+			t.Errorf("tenant B deciding tenant A's assessment: %v, want ErrNotFound", err)
 		}
 		return nil
 	})

@@ -985,7 +985,32 @@
         "submit": "Submit assessment",
         "submitError": "Couldn't record the assessment: {detail}",
         "cycle": "Cycle {n}",
-        "score": "score {score}"
+        "score": "score {score}",
+        "awaitingDecision": "Awaiting a decision",
+        "decideSubmit": "Record decision",
+        "decideError": "Couldn't record the decision: {detail}",
+        "decisions": {
+          "approved": "Approved",
+          "conditional": "Approved with conditions",
+          "rejected": "Rejected"
+        },
+        "remediation": {
+          "title": "Remediation plan (VEN-08)",
+          "empty": "No remediation items yet.",
+          "titlePlaceholder": "What needs to be fixed",
+          "addItem": "Add another item",
+          "severity": {
+            "low": "Low",
+            "medium": "Medium",
+            "high": "High"
+          },
+          "status": {
+            "open": "Open",
+            "in_progress": "In progress",
+            "done": "Done",
+            "accepted_risk": "Risk accepted"
+          }
+        }
       }
     }
   },

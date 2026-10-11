@@ -8,9 +8,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	dpiaservice "pdpa-platform/internal/dpia/service"
 	pdb "pdpa-platform/internal/pkg/db"
+	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/forms"
 	riskservice "pdpa-platform/internal/risk/service"
 	vendorstore "pdpa-platform/internal/vendormgmt/store"
@@ -119,7 +121,161 @@ func (s *Service) RecordAssessment(ctx context.Context, vendorID uuid.UUID, temp
 		map[string]any{"vendor_assessment_id": row.ID, "score": result.Score, "residual_level": level}); err != nil {
 		return VendorAssessment{}, err
 	}
+	// ST-06#1's own "prospect -> onboarding" edge: "ส่งแบบประเมิน". A no-row update (vendor already past
+	// "prospect") is deliberately not an error — a reassessment of an already-onboarded/approved/
+	// conditional vendor must still be allowed to record a new cycle.
+	if onboarded, err := vendorstore.New(pdb.MustTxFromContext(ctx)).MarkVendorOnboarding(ctx, vendorID); err == nil {
+		if err := s.audit(ctx, "vendor.vendor.transition", vendorID,
+			map[string]any{"status": "prospect"}, map[string]any{"status": "onboarding"}); err != nil {
+			return VendorAssessment{}, err
+		}
+		_ = onboarded
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return VendorAssessment{}, err
+	}
 	return toVendorAssessment(row), nil
+}
+
+// RemediationItemInput is one item of a conditional approval's remediation plan (VEN-08).
+type RemediationItemInput struct {
+	Title    string
+	Severity string
+	DueAt    *time.Time
+}
+
+// RemediationItem mirrors vendor.remediation_items.
+type RemediationItem struct {
+	ID                 uuid.UUID
+	VendorID           uuid.UUID
+	VendorAssessmentID *uuid.UUID
+	Title              string
+	Severity           string
+	DueAt              *time.Time
+	Status             string
+	ClosedAt           *time.Time
+	RowVersion         int32
+	CreatedAt          time.Time
+}
+
+var remediationSeverities = map[string]bool{"low": true, "medium": true, "high": true}
+
+// DecideAssessment is VEN-08's own acceptance criterion: a human decision (approved/conditional/rejected)
+// on an answered cycle, advancing ST-06#1's "onboarding -> approved|conditional|rejected" edge in the same
+// transaction; a conditional decision automatically opens the given remediation items.
+func (s *Service) DecideAssessment(ctx context.Context, assessmentID uuid.UUID, decision string, items []RemediationItemInput) (VendorAssessment, []RemediationItem, error) {
+	if decision != "approved" && decision != "conditional" && decision != "rejected" {
+		return VendorAssessment{}, nil, fmt.Errorf("%w: decision", ErrInvalid)
+	}
+	if decision == "conditional" && len(items) == 0 {
+		return VendorAssessment{}, nil, fmt.Errorf("%w: remediation_items required for a conditional decision", ErrInvalid)
+	}
+	for _, it := range items {
+		if len(it.Title) == 0 || len([]rune(it.Title)) > 2000 || !remediationSeverities[it.Severity] {
+			return VendorAssessment{}, nil, fmt.Errorf("%w: remediation_items", ErrInvalid)
+		}
+	}
+
+	current, err := s.GetAssessment(ctx, assessmentID)
+	if err != nil {
+		return VendorAssessment{}, nil, err
+	}
+	if current.Decision != "" {
+		return VendorAssessment{}, nil, ErrInvalidTransition
+	}
+	vendor, err := s.GetVendor(ctx, current.VendorID)
+	if err != nil {
+		return VendorAssessment{}, nil, err
+	}
+	if vendor.Status != "onboarding" {
+		return VendorAssessment{}, nil, ErrInvalidTransition
+	}
+
+	q := vendorstore.New(pdb.MustTxFromContext(ctx))
+	decided, err := q.DecideVendorAssessment(ctx, vendorstore.DecideVendorAssessmentParams{ID: assessmentID, Decision: &decision})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return VendorAssessment{}, nil, ErrInvalidTransition
+	}
+	if err != nil {
+		return VendorAssessment{}, nil, err
+	}
+	if _, err := q.DecideVendorStatus(ctx, vendorstore.DecideVendorStatusParams{ID: vendor.ID, Status: decision}); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return VendorAssessment{}, nil, ErrInvalidTransition
+		}
+		return VendorAssessment{}, nil, err
+	}
+
+	var created []RemediationItem
+	for _, it := range items {
+		id, err := uuid.NewV7()
+		if err != nil {
+			return VendorAssessment{}, nil, err
+		}
+		var due pgtype.Date
+		if it.DueAt != nil {
+			due = pgtype.Date{Time: *it.DueAt, Valid: true}
+		}
+		row, err := q.InsertRemediationItem(ctx, vendorstore.InsertRemediationItemParams{
+			ID: id, VendorID: vendor.ID, VendorAssessmentID: pgUUID(&assessmentID), Title: it.Title,
+			Severity: it.Severity, DueAt: due,
+		})
+		if err != nil {
+			return VendorAssessment{}, nil, err
+		}
+		created = append(created, toRemediationItem(vendorstore.ListRemediationItemsForVendorRow(row)))
+	}
+
+	if err := s.audit(ctx, "vendor.vendor_assessment.decide", vendor.ID,
+		map[string]any{"decision": nil}, map[string]any{"decision": decision, "remediation_items": len(created)}); err != nil {
+		return VendorAssessment{}, nil, err
+	}
+
+	if decision == "approved" && s.Events != nil {
+		expiresAt := ""
+		if vendor.NextAssessmentAt != nil {
+			expiresAt = vendor.NextAssessmentAt.Format("2006-01-02")
+		}
+		tier := ""
+		if vendor.Tier != nil {
+			tier = *vendor.Tier
+		}
+		if _, err := s.Events.Publish(ctx, events.Event{Type: "vendor.approved", AggregateType: VendorEntityType, AggregateID: vendor.ID,
+			Data: map[string]any{"vendor_id": vendor.ID.String(), "tier": tier, "expires_at": expiresAt}}); err != nil {
+			return VendorAssessment{}, nil, err
+		}
+	}
+
+	return toVendorAssessment(vendorstore.InsertVendorAssessmentRow(decided)), created, nil
+}
+
+// ListRemediationItems lists a vendor's remediation plan, newest first.
+func (s *Service) ListRemediationItems(ctx context.Context, vendorID uuid.UUID) ([]RemediationItem, error) {
+	if _, err := s.GetVendor(ctx, vendorID); err != nil {
+		return nil, err
+	}
+	rows, err := vendorstore.New(pdb.MustTxFromContext(ctx)).ListRemediationItemsForVendor(ctx, vendorID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]RemediationItem, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toRemediationItem(r))
+	}
+	return out, nil
+}
+
+func toRemediationItem(r vendorstore.ListRemediationItemsForVendorRow) RemediationItem {
+	it := RemediationItem{ID: r.ID, VendorID: r.VendorID, VendorAssessmentID: uuidPtr(r.VendorAssessmentID),
+		Title: r.Title, Severity: r.Severity, Status: r.Status, RowVersion: r.RowVersion, CreatedAt: r.CreatedAt.Time}
+	if r.DueAt.Valid {
+		t := r.DueAt.Time
+		it.DueAt = &t
+	}
+	if r.ClosedAt.Valid {
+		t := r.ClosedAt.Time
+		it.ClosedAt = &t
+	}
+	return it
 }
 
 // ListAssessments lists a vendor's own assessment cycles, newest first.

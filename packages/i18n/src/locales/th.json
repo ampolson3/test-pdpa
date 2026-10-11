@@ -985,7 +985,32 @@
         "submit": "ส่งแบบประเมิน",
         "submitError": "บันทึกผลประเมินไม่สำเร็จ: {detail}",
         "cycle": "รอบที่ {n}",
-        "score": "คะแนน {score}"
+        "score": "คะแนน {score}",
+        "awaitingDecision": "รอการตัดสินใจ",
+        "decideSubmit": "บันทึกผลการตัดสินใจ",
+        "decideError": "บันทึกผลการตัดสินใจไม่สำเร็จ: {detail}",
+        "decisions": {
+          "approved": "อนุมัติ",
+          "conditional": "อนุมัติแบบมีเงื่อนไข",
+          "rejected": "ปฏิเสธ"
+        },
+        "remediation": {
+          "title": "แผนแก้ไข (VEN-08)",
+          "empty": "ยังไม่มีรายการแผนแก้ไข",
+          "titlePlaceholder": "สิ่งที่ต้องแก้ไข",
+          "addItem": "เพิ่มรายการ",
+          "severity": {
+            "low": "ต่ำ",
+            "medium": "กลาง",
+            "high": "สูง"
+          },
+          "status": {
+            "open": "เปิด",
+            "in_progress": "กำลังดำเนินการ",
+            "done": "เสร็จแล้ว",
+            "accepted_risk": "ยอมรับความเสี่ยง"
+          }
+        }
       }
     }
   },

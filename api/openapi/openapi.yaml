@@ -10934,7 +10934,7 @@ paths:
       operationId: vendorListAssessments
       tags: [vendor]
       summary: A vendor's own assessment cycles, newest first (VEN-07)
-      x-permission: vendor.vendor.read
+      x-permission: vendor.assessment.read
       x-module: vendor
       security:
         - adminJwt: []
@@ -10968,7 +10968,7 @@ paths:
       operationId: vendorRecordAssessment
       tags: [vendor]
       summary: 'Answer one of VEN-04''s published vendor templates once: the score and the resulting risk level on this tenant''s own matrix (VEN-07)'
-      x-permission: vendor.vendor.update
+      x-permission: vendor.assessment.create
       x-module: vendor
       security:
         - adminJwt: []
@@ -11002,6 +11002,87 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/vendors/{id}/assessments/{assessmentId}/decision:
+    post:
+      operationId: vendorDecideAssessment
+      tags: [vendor]
+      summary: Approve / reject / conditionally approve an answered assessment cycle (VEN-08)
+      x-permission: vendor.assessment.approve
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: assessmentId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorDecideAssessmentInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorDecideAssessmentResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/vendors/{id}/remediation-items:
+    get:
+      operationId: vendorListRemediationItems
+      tags: [vendor]
+      summary: A vendor's remediation plan — items opened by conditional approvals (VEN-08)
+      x-permission: vendor.assessment.read
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VendorRemediationItem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/agreements:
     get:
       operationId: agreementListAgreements
@@ -13197,12 +13278,59 @@ components:
           enum: [low, medium, high, critical]
         decision:
           type: [string, 'null']
-          description: Set only once VEN-08 (not built yet) records a decision
+          description: Set once VEN-08 records a decision on this cycle
           enum: [approved, conditional, rejected, null]
         decided_by: {$ref: '#/components/schemas/Uuid'}
         decided_at: {$ref: '#/components/schemas/Timestamp'}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    VendorDecideAssessmentInput:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [approved, conditional, rejected]
+        remediation_items:
+          type: array
+          description: Required and non-empty when decision=conditional (VEN-08's own acceptance criterion) — ignored otherwise
+          items:
+            type: object
+            required: [title, severity]
+            properties:
+              title: {type: string, minLength: 1, maxLength: 2000}
+              severity: {type: string, enum: [low, medium, high]}
+              due_at: {type: string, format: date}
+      example:
+        decision: conditional
+        remediation_items:
+          - title: ต้องส่งหลักฐานการเข้ารหัสข้อมูลที่พักไว้ (at rest) เพิ่มเติม
+            severity: high
+            due_at: '2026-12-31'
+    VendorRemediationItem:
+      type: object
+      required: [id, vendor_id, title, severity, status, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        vendor_id: {$ref: '#/components/schemas/Uuid'}
+        vendor_assessment_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        title: {type: string}
+        severity: {type: string, enum: [low, medium, high]}
+        due_at:
+          oneOf: [{type: string, format: date}, {type: 'null'}]
+        status: {type: string, enum: [open, in_progress, done, accepted_risk]}
+        closed_at: {$ref: '#/components/schemas/Timestamp'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    VendorDecideAssessmentResult:
+      type: object
+      required: [assessment, remediation_items]
+      properties:
+        assessment: {$ref: '#/components/schemas/VendorAssessment'}
+        remediation_items:
+          type: array
+          items: {$ref: '#/components/schemas/VendorRemediationItem'}
     AgreementType:
       type: string
       description: 'agreement.agreements'' own CHECK constraint — ''dpa'' (DPA-02) and ''dsa'' (DSA-04) are wired to CreateWizard; joint_controller/inbound_dpa are real values for when those modules exist.'

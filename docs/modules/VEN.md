@@ -359,7 +359,11 @@ minimal slice this feature needs" pattern this codebase uses throughout (e.g. RO
 itself (confirmed by reading its source — the `Policy.Respond` field modules register in
 `internal/wiring/forms.go` is documentation only, for a hypothetical generic endpoint no module actually
 calls through); every module, VEN-07 included, gates the write through its own HTTP endpoint's own
-`x-permission` instead — `vendor.vendor.update`, no new permission code.
+`x-permission` instead — `vendor.assessment.read`/`.create` (the baseline seed's own dedicated code for this
+resource; moved there from an initial, incorrect `vendor.vendor.read`/`.update` once VEN-08's own build
+surfaced the mismatch — see VEN-08's note below). `RecordAssessment` also drives ST-06#1's own
+`prospect -> onboarding` edge on a vendor's first-ever cycle (a gap VEN-08's own build found and fixed here
+too — see below); a second/later cycle on an already-onboarded vendor is a harmless no-op transition.
 
 API: `GET`/`POST /admin/v1/vendors/{id}/assessments` (no pagination, same shape as VEN-02's own
 `/intakes` — a vendor's own assessment history is never long). UI: an "Assessments" panel on `/vendors/{id}`,
@@ -403,6 +407,76 @@ not built here.
 **Frontend (Next.js):** ขั้นตอนอนุมัติคู่ค้า
 
 **Acceptance criteria:** อนุมัติแบบมีเงื่อนไขสร้างแผนแก้ไขอัตโนมัติ
+
+**Implementation — done.** VEN-08's own actor line names two roles ("ผู้ประเมินให้ความเห็น" and "ผู้มีอำนาจ
+อนุมัติ"), but the module doc's backend note itself collapses to one atomic decision call — this builds
+exactly that: `vendormgmt.Service.DecideAssessment` (`backend/internal/vendormgmt/service/assessments.go`)
+records a human decision on one of VEN-07's own answered `vendor.vendor_assessments` cycles. No new
+migration: `decision`/`decided_by`/`decided_at` on that table, `vendor.remediation_items`, and the already-
+seeded `vendor.assessment.approve` permission (DPO-only in the baseline RBAC seed — EXEC, named in the
+module doc, has no grant on `vendor.assessment.*` there, the same actor/RBAC gap DPIA-10/DPIA-05 already
+documented for their own EXEC/OWNER lines) were all already fully specified.
+
+Real permission-code bug found and fixed while building this: VEN-07's own two endpoints
+(`vendorListAssessments`/`vendorRecordAssessment`) had been gated on `vendor.vendor.read`/`.update` — the
+vendor *profile's* own permission codes — even though a dedicated `vendor.assessment.*` code
+(`vendor.assessment.{read,create,update,delete,approve,execute}`) already existed in the baseline
+permission seed for exactly this resource, with its own actor grants (SEC/PROC/PRIVACY get `.create`, DPO
+gets everything including `.approve`, GUEST gets `.read`/`.update` for VEN-05's own future guest-portal
+flow) that don't line up with `vendor.vendor.*`'s own grants at all. Left as `vendor.vendor.*`, VEN-08's own
+decide endpoint would have had no correct permission to gate on — `vendor.vendor.approve` exists but means
+"approve a vendor record," not "approve an assessment cycle." Fixed by moving both VEN-07 endpoints onto
+`vendor.assessment.read`/`.create` (rule 2: a new endpoint's code must name the resource it actually checks,
+not a nearby one that happens to work) before adding VEN-08's own `vendor.assessment.approve`-gated endpoint
+on top — a one-line `x-permission` fix in `api/openapi/openapi.yaml`, no Go or test logic affected since
+`forms.Service.Record` itself performs no permission check (confirmed by reading its source — every module,
+VEN-07 included, has always gated through its own HTTP endpoint, never the engine).
+
+The literal acceptance criterion doubles as this feature's own discovery of a real gap in VEN-01/VEN-07:
+`docs/states/state-machines.yaml#ST-06-1` (`vendor.vendors.status`) declares `prospect -> onboarding` on
+"ส่งแบบประเมิน (guest link)" and `onboarding -> approved|conditional|rejected` on "decision = ...", but
+nothing ever drove the first edge — VEN-01 only ever writes the default `prospect`, and VEN-07's own
+`RecordAssessment` (its own package doc comment already said status transitions belong to "VEN-02/05/07/08")
+never actually moved it. Fixed in the same pass: `RecordAssessment` now calls a new `MarkVendorOnboarding`
+query (`WHERE status = 'prospect'`) right after recording a cycle — a no-row update when the vendor is
+already past `prospect` is deliberately not an error, so a reassessment of an already-onboarded/approved/
+conditional vendor still succeeds. `DecideAssessment` itself enforces the second edge: refuses (`vendor.
+invalid_transition`, 409) unless the vendor is currently `onboarding` and the cycle's own `decision` is
+still `NULL` (`WHERE decision IS NULL` on the update — a concurrent second decision is a no-row update, not
+a silent overwrite), then moves the vendor to `approved`/`conditional`/`rejected` in the same transaction
+(`DecideVendorStatus`, stamping `approved_at` only for a clean approval).
+
+"อนุมัติแบบมีเงื่อนไขสร้างแผนแก้ไขอัตโนมัติ" itself: a `conditional` decision requires at least one
+`remediation_items` entry (title + severity, refused with `ErrInvalid` before anything is written otherwise)
+— each is inserted into `vendor.remediation_items` (already fully specified in the baseline migrations,
+linked via `vendor_assessment_id` back to the cycle that opened it) in the same call, `status` defaulting to
+its own column default, `'open'`. `approved`/`rejected` never touch that table. A clean `approved` decision
+also publishes the already-catalogued `vendor.approved` event (`docs/architecture/events.yaml`, producer
+`vendor`, consumers "จัดซื้อ"/"agreement" — sitting unused since the baseline) carrying `vendor_id`/`tier`/
+`expires_at` (`next_assessment_at`, VEN-02's own reassessment-interval column) through the normal outbox
+(rule 6); `vendormgmt.Service` gained an `Events *events.Publisher` field for this, nil in `cmd/worker` (no
+job there ever decides an assessment).
+
+API: `POST /admin/v1/vendors/{id}/assessments/{assessmentId}/decision` (`vendor.assessment.approve`, 409 on
+an already-decided cycle or a non-`onboarding` vendor, 422 for a bad decision value or a conditional decision
+with no items) → `{assessment, remediation_items}`; `GET /admin/v1/vendors/{id}/remediation-items`
+(`vendor.assessment.read`) for the vendor's own full plan across every cycle. UI: `/vendors/{id}`'s existing
+assessment panel (VEN-07) gained a `DecidePanel` per undecided cycle — a decision picker that reveals a
+dynamic title+severity list only for `conditional` — and a remediation-plan list below it; a decided cycle
+shows its decision as plain text instead of the panel, and a caller without `.approve` sees an "awaiting
+decision" note rather than the form. Tests: unit (the acceptance criterion directly — a conditional decision
+opens exactly the given items, linked to the right cycle, vendor lands `conditional`; a clean approval moves
+the vendor to `approved`, stamps `approved_at`, and publishes exactly one `vendor.approved` outbox row; a
+rejection moves the vendor to `rejected`; re-deciding an already-decided cycle is refused; deciding against a
+vendor not currently `onboarding` is refused; conditional with no items is refused; two-tenant isolation),
+HTTP contract (403 without `.approve`, 200 happy path for a conditional decision with real remediation items
+visible on the separate listing endpoint, 409 on redecide, 422 on conditional-with-no-items) through the real
+validator + AuthZ chain. `go build`/`go vet`/`gofmt` clean; `tsc --noEmit` and `pnpm --filter @pdpa/admin
+build` both verified clean — no Postgres/Redis reachable in this environment this round, so both the unit
+and HTTP contract tests are compile-verified only, the same caveat VEN-01/VEN-02/VEN-07/VEN-11 already
+recorded. Not done: VEN-09's own remediation-item tracking/progress UI for the vendor side (a guest-portal
+update flow, needs VEN-05/IAM-04 first) and VEN-10's periodic re-assessment trigger (`approved ->
+conditional` on "ประเมินซ้ำพบช่องว่าง") — both sibling features layered on the same tables, not built here.
 
 <a id="ven-11"></a>
 ### VEN-11 ผูกคู่ค้ากับสัญญาและกิจกรรม

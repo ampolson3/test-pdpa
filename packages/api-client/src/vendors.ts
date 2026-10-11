@@ -10,6 +10,9 @@ export type VendorIntakeInput = components["schemas"]["VendorIntakeInput"];
 export type VendorIntakeResult = components["schemas"]["VendorIntakeResult"];
 export type VendorAssessment = components["schemas"]["VendorAssessment"];
 export type VendorRecordAssessmentInput = components["schemas"]["VendorRecordAssessmentInput"];
+export type VendorDecideAssessmentInput = components["schemas"]["VendorDecideAssessmentInput"];
+export type VendorDecideAssessmentResult = components["schemas"]["VendorDecideAssessmentResult"];
+export type VendorRemediationItem = components["schemas"]["VendorRemediationItem"];
 
 const vendorsKey = ["vendor", "vendors"] as const;
 
@@ -121,5 +124,39 @@ export function useRecordVendorAssessment(client: ApiClient, vendorId: string) {
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "assessments"] }),
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/assessments/{assessmentId}/decision (VEN-08) — approve / reject /
+ *  conditionally approve an answered cycle; a conditional decision opens the given remediation items. */
+export function useDecideVendorAssessment(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { assessmentId: string; input: VendorDecideAssessmentInput }) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/assessments/{assessmentId}/decision", {
+        params: { path: { id: vendorId, assessmentId: v.assessmentId } },
+        body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "assessments"] });
+      qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "remediation-items"] });
+      qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId] });
+    },
+  });
+}
+
+/** GET /admin/v1/vendors/{id}/remediation-items (VEN-08) — a vendor's remediation plan, newest first. */
+export function useVendorRemediationItems(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, vendorId ?? "", "remediation-items"],
+    enabled: !!vendorId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/vendors/{id}/remediation-items", { params: { path: { id: vendorId! } } });
+      if (error) throw error;
+      return data;
+    },
   });
 }

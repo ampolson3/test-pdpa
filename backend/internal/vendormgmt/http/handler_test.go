@@ -24,7 +24,9 @@ import (
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/validate"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/forms"
+	"pdpa-platform/internal/platform/jobs"
 	riskservice "pdpa-platform/internal/risk/service"
 	vendorhttp "pdpa-platform/internal/vendormgmt/http"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
@@ -316,8 +318,8 @@ func TestVendorAssessmentEndpoints_Contract(t *testing.T) {
 	}
 	reader := uuid.New()
 	grants := map[string][]string{
-		tenant.UserID.String(): {"vendor.vendor.read", "vendor.vendor.update", "assessment.template.read"},
-		reader.String():        {"vendor.vendor.read", "assessment.template.read"},
+		tenant.UserID.String(): {"vendor.vendor.read", "vendor.assessment.read", "vendor.assessment.create", "assessment.template.read"},
+		reader.String():        {"vendor.vendor.read", "vendor.assessment.read", "assessment.template.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
@@ -415,5 +417,188 @@ func TestVendorAssessmentEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("GET", "/admin/v1/vendors/"+uuid.New().String()+"/assessments", &admin, nil); code != 404 {
 		t.Errorf("list assessments for unknown vendor: %d, want 404", code)
+	}
+}
+
+// TestVendorDecideAssessmentEndpoints_Contract is VEN-08's own HTTP contract test: deciding an answered
+// cycle through the real validator/AuthZ chain requires vendor.assessment.approve (not just .create), a
+// conditional decision opens real remediation items visible on their own listing endpoint, and an
+// already-decided cycle 409s on a second decision.
+func TestVendorDecideAssessmentEndpoints_Contract(t *testing.T) {
+	ctx := context.Background()
+	rdb := redis.NewClient(&redis.Options{Addr: envOr("TEST_REDIS_ADDR", "localhost:6379")})
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		t.Skipf("no Redis: %v", err)
+	}
+	t.Cleanup(func() { rdb.Close() })
+	app := dbtest.Pool(t)
+	tenant := dbtest.SeedTenant(t, ctx, app, dbtest.PlatformPool(t), "vendordecidehttp")
+
+	owner := dbtest.OwnerPool(t)
+	t.Cleanup(func() {
+		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
+			tx := pdb.MustTxFromContext(ctx)
+			for _, q := range []string{
+				`DELETE FROM vendor.remediation_items`, `DELETE FROM vendor.vendor_assessments`, `DELETE FROM assess.answers`,
+				`DELETE FROM assess.assessments`, `DELETE FROM risk.risk_matrices`, `DELETE FROM vendor.vendors`,
+				`DELETE FROM org.external_parties`, `DELETE FROM platform.audit_log`, `DELETE FROM platform.outbox_events`,
+				`DELETE FROM river_job WHERE kind = 'outbox.dispatch'`,
+			} {
+				_, _ = tx.Exec(ctx, q)
+			}
+			return nil
+		})
+	})
+	orgSvc := &orgservice.Service{Audit: audit.New()}
+	riskSvc := riskservice.New()
+	riskSvc.Audit = audit.New()
+	formsSvc := wiring.Forms(nil, audit.New())
+	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Org: orgSvc, Audit: audit.New(), Risk: riskSvc}
+	riverClient, err := jobs.NewInsertClient(app)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc := &vendorservice.Service{Audit: audit.New(), Org: orgSvc, Forms: formsSvc, Dpia: dpiaSvc, Risk: riskSvc,
+		Events: &events.Publisher{River: riverClient}}
+
+	var vendorID, assessmentID uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
+			Permissions: []string{"vendor.vendor.create", "ropa.risk.create", "vendor.assessment.create", "assessment.template.read"}})
+		if _, err := riskSvc.SaveMatrix(ctx, riskservice.RiskMatrix{
+			Name: "default", LikelihoodLevels: []string{"low", "medium", "high"}, ImpactLevels: []string{"low", "medium", "high"},
+			Thresholds: []riskservice.Threshold{{Level: "low", MinScore: 1}, {Level: "medium", MinScore: 4}, {Level: "high", MinScore: 7}},
+			IsDefault:  true,
+		}, 0); err != nil {
+			return err
+		}
+		p, err := orgSvc.SaveExternalParty(ctx, orgservice.ExternalParty{PartyType: "processor", NameTh: "ผู้ให้บริการ VEN-08", CountryCode: "US"}, 0)
+		if err != nil {
+			return err
+		}
+		v, err := svc.SaveVendor(ctx, vendorservice.Vendor{PartyID: p.ID, ServiceDescription: "ทดสอบ HTTP VEN-08"}, 0)
+		if err != nil {
+			return err
+		}
+		vendorID = v.ID
+		a, err := svc.RecordAssessment(ctx, vendorID, "vendor_pdpa", forms.Answers{"has_dpo": "no", "has_retention_policy": "no",
+			"has_breach_process": "no", "has_subprocessor_list": "no", "has_dpa_signed": "no"})
+		assessmentID = a.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	validateMw, _ := validate.Middleware(spec, nil)
+	perms := map[string]string{}
+	for _, item := range spec.Paths.Map() {
+		for _, op := range item.Operations() {
+			if code, ok := op.Extensions["x-permission"].(string); ok {
+				perms[strings.ToUpper(op.OperationID[:1])+op.OperationID[1:]] = code
+			}
+		}
+	}
+	decider := uuid.New()
+	grants := map[string][]string{
+		tenant.UserID.String(): {"vendor.vendor.read", "vendor.assessment.read"},
+		decider.String():       {"vendor.vendor.read", "vendor.assessment.read", "vendor.assessment.approve"},
+	}
+	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
+		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
+	})
+	t.Cleanup(func() {
+		for uid := range grants {
+			_ = cache.Invalidate(context.Background(), tenant.ID.String(), uid)
+		}
+	})
+
+	r := chi.NewRouter()
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if u := req.Header.Get("X-Test-User"); u != "" {
+				req = req.WithContext(httpx.WithPrincipal(req.Context(), httpx.Principal{TenantID: tenant.ID.String(), UserID: u, ActorType: "user"}))
+			}
+			next.ServeHTTP(w, req)
+		})
+	})
+	r.Use(validateMw)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			p, ok := httpx.PrincipalFromContext(req.Context())
+			if !ok {
+				next.ServeHTTP(w, req)
+				return
+			}
+			_ = pdb.WithTenantTx(req.Context(), app, p.TenantID, p.UserID, func(ctx context.Context) error {
+				next.ServeHTTP(w, req.WithContext(ctx))
+				return nil
+			})
+		})
+	})
+	strict := vendorhttp.NewStrictHandlerWithOptions(vendorhttp.NewStrict(svc),
+		[]vendorhttp.StrictMiddlewareFunc{authz.StrictMiddleware[vendorhttp.StrictHandlerFunc](cache, func(op string) (string, bool) { c, ok := perms[op]; return c, ok })},
+		vendorhttp.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				if p, ok := err.(httpx.Problem); ok {
+					httpx.WriteProblem(w, r, p)
+					return
+				}
+				httpx.WriteProblem(w, r, httpx.Internal())
+			},
+		})
+	vendorhttp.HandlerWithOptions(strict, vendorhttp.ChiServerOptions{BaseRouter: r})
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	do := func(method, path string, user *uuid.UUID, body any) (int, string) {
+		var buf bytes.Buffer
+		if body != nil {
+			_ = json.NewEncoder(&buf).Encode(body)
+		}
+		req, _ := http.NewRequest(method, srv.URL+path, &buf)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if user != nil {
+			req.Header.Set("X-Test-User", user.String())
+		}
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		var out bytes.Buffer
+		_, _ = out.ReadFrom(res.Body)
+		return res.StatusCode, out.String()
+	}
+
+	decidePath := "/admin/v1/vendors/" + vendorID.String() + "/assessments/" + assessmentID.String() + "/decision"
+	remediationPath := "/admin/v1/vendors/" + vendorID.String() + "/remediation-items"
+
+	conditionalBody := map[string]any{"decision": "conditional", "remediation_items": []map[string]any{
+		{"title": "ต้องส่งหลักฐานการเข้ารหัสข้อมูลเพิ่มเติม", "severity": "high"},
+	}}
+	if code, _ := do("POST", decidePath, &tenant.UserID, conditionalBody); code != 403 {
+		t.Errorf("decide without vendor.assessment.approve: %d, want 403", code)
+	}
+	code, resBody := do("POST", decidePath, &decider, conditionalBody)
+	if code != 200 || !strings.Contains(resBody, `"decision":"conditional"`) || !strings.Contains(resBody, `"status":"open"`) {
+		t.Fatalf("decide conditional: %d %s", code, resBody)
+	}
+	if code, resBody := do("GET", remediationPath, &tenant.UserID, nil); code != 200 || !strings.Contains(resBody, `"severity":"high"`) {
+		t.Errorf("list remediation items: %d %s", code, resBody)
+	}
+	if code, _ := do("POST", decidePath, &decider, map[string]any{"decision": "approved"}); code != 409 {
+		t.Errorf("re-deciding an already-decided cycle: %d, want 409", code)
+	}
+	if code, _ := do("POST", decidePath, &decider, map[string]any{"decision": "conditional"}); code != 422 {
+		t.Errorf("conditional with no remediation items (input validation runs before the already-decided check): %d, want 422", code)
 	}
 }

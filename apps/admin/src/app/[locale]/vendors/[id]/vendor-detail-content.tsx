@@ -16,8 +16,11 @@ import {
   useVendorContractStatus,
   useVendorAssessments,
   useRecordVendorAssessment,
+  useDecideVendorAssessment,
+  useVendorRemediationItems,
   useDpiaTemplates,
   useForm,
+  type VendorDecideAssessmentInput,
 } from "@pdpa/api-client";
 import { useRendererMessages } from "@/components/form-messages";
 import { Link } from "@/i18n/routing";
@@ -191,14 +194,18 @@ const RESIDUAL_STYLE: Record<string, string> = {
 };
 
 /** VEN-07: answer one of VEN-04's published vendor templates once and see the score + residual risk
- *  level (RRA-02) it classifies to, plus every past cycle. */
+ *  level (RRA-02) it classifies to, plus every past cycle. VEN-08: a decider (vendor.assessment.approve)
+ *  can approve / reject / conditionally approve any undecided cycle; conditional approval automatically
+ *  opens the given remediation items, shown in their own list below. */
 function AssessmentPanel({ client, vendorId }: { client: ReturnType<typeof createApiClient>; vendorId: string }) {
   const t = useTranslations("vendors");
   const locale = useLocale() as Language;
-  const canRead = usePermission("vendor.vendor.read");
-  const canRecord = usePermission("vendor.vendor.update");
+  const canRead = usePermission("vendor.assessment.read");
+  const canRecord = usePermission("vendor.assessment.create");
+  const canDecide = usePermission("vendor.assessment.approve");
   const canReadTemplates = usePermission("assessment.template.read");
   const list = useVendorAssessments(client, vendorId);
+  const remediation = useVendorRemediationItems(client, vendorId);
   const templates = useDpiaTemplates(client, "vendor");
   const published = (templates.data?.data ?? []).filter((tpl) => tpl.status === "published");
   const [templateId, setTemplateId] = useState("");
@@ -206,11 +213,13 @@ function AssessmentPanel({ client, vendorId }: { client: ReturnType<typeof creat
   const chosenTemplate = published.find((tpl) => tpl.id === chosen);
   const form = useForm(client, chosenTemplate?.form_id);
   const record = useRecordVendorAssessment(client, vendorId);
+  const decide = useDecideVendorAssessment(client, vendorId);
   const messages = useRendererMessages(locale);
   const version = form.data?.versions?.find((ver) => ver.id === form.data?.current_version_id);
 
   if (!canRead) return null;
   const rows = list.data?.data ?? [];
+  const remediationRows = remediation.data?.data ?? [];
 
   return (
     <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
@@ -238,18 +247,103 @@ function AssessmentPanel({ client, vendorId }: { client: ReturnType<typeof creat
       ) : (
         <ul className="divide-y divide-slate-100 text-sm">
           {rows.map((a) => (
-            <li key={a.id} className="flex items-center justify-between gap-2 py-2">
-              <span className="text-slate-500">{t("detail.assessments.cycle", { n: a.cycle_no })}</span>
-              <span className={`rounded px-2 py-0.5 text-xs font-semibold ${RESIDUAL_STYLE[a.residual_level] ?? "bg-slate-100 text-slate-700"}`}>
-                {t(`tiers.${a.residual_level}`)}
-              </span>
-              <span className="text-slate-500">{t("detail.assessments.score", { score: a.score })}</span>
-              <span className="text-xs text-slate-500">{new Date(a.created_at).toLocaleDateString()}</span>
+            <li key={a.id} className="space-y-2 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-slate-500">{t("detail.assessments.cycle", { n: a.cycle_no })}</span>
+                <span className={`rounded px-2 py-0.5 text-xs font-semibold ${RESIDUAL_STYLE[a.residual_level] ?? "bg-slate-100 text-slate-700"}`}>
+                  {t(`tiers.${a.residual_level}`)}
+                </span>
+                <span className="text-slate-500">{t("detail.assessments.score", { score: a.score })}</span>
+                <span className="text-xs text-slate-500">{new Date(a.created_at).toLocaleDateString()}</span>
+              </div>
+              {a.decision ? (
+                <span className="text-xs text-slate-500">{t(`detail.assessments.decisions.${a.decision}`)}</span>
+              ) : canDecide ? (
+                <DecidePanel assessmentId={a.id} onDecide={(input) => decide.mutateAsync({ assessmentId: a.id, input })} />
+              ) : (
+                <span className="text-xs text-amber-700">{t("detail.assessments.awaitingDecision")}</span>
+              )}
             </li>
           ))}
         </ul>
       )}
+
+      {decide.isError && <p className="text-red-700" role="alert">{t("detail.assessments.decideError", { detail: detail(decide.error) })}</p>}
+
+      <div className="border-t border-slate-100 pt-3">
+        <h3 className="text-sm font-semibold">{t("detail.assessments.remediation.title")}</h3>
+        {remediationRows.length === 0 ? (
+          <p className="text-slate-500 text-sm">{t("detail.assessments.remediation.empty")}</p>
+        ) : (
+          <ul className="divide-y divide-slate-100 text-sm">
+            {remediationRows.map((it) => (
+              <li key={it.id} className="flex items-center justify-between gap-2 py-2">
+                <span>{it.title}</span>
+                <span className={`rounded px-2 py-0.5 text-xs font-semibold ${RESIDUAL_STYLE[it.severity] ?? "bg-slate-100 text-slate-700"}`}>
+                  {t(`detail.assessments.remediation.severity.${it.severity}`)}
+                </span>
+                <span className="text-xs text-slate-500">{t(`detail.assessments.remediation.status.${it.status}`)}</span>
+                {it.due_at && <span className="text-xs text-slate-500">{it.due_at}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </section>
+  );
+}
+
+/** VEN-08's own acceptance criterion: choosing "conditional" requires at least one remediation item
+ *  (title + severity), opened automatically together with the decision in one call. */
+function DecidePanel({ assessmentId, onDecide }: { assessmentId: string; onDecide: (input: VendorDecideAssessmentInput) => Promise<unknown> }) {
+  const t = useTranslations("vendors");
+  const [decision, setDecision] = useState<VendorDecideAssessmentInput["decision"]>("approved");
+  const [items, setItems] = useState([{ title: "", severity: "medium" as "low" | "medium" | "high" }]);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      const body: VendorDecideAssessmentInput = { decision };
+      if (decision === "conditional") {
+        body.remediation_items = items.filter((it) => it.title.trim() !== "");
+      }
+      await onDecide(body);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-start gap-2 rounded-md bg-slate-50 p-2" data-testid={`decide-${assessmentId}`}>
+      <select className={SELECT} style={{ maxWidth: 180 }} value={decision} onChange={(e) => setDecision(e.target.value as VendorDecideAssessmentInput["decision"])}>
+        <option value="approved">{t("detail.assessments.decisions.approved")}</option>
+        <option value="conditional">{t("detail.assessments.decisions.conditional")}</option>
+        <option value="rejected">{t("detail.assessments.decisions.rejected")}</option>
+      </select>
+      {decision === "conditional" && (
+        <div className="w-full space-y-1">
+          {items.map((it, i) => (
+            <div key={i} className="flex gap-2">
+              <input className={INPUT} placeholder={t("detail.assessments.remediation.titlePlaceholder")} value={it.title}
+                onChange={(e) => setItems((prev) => prev.map((row, j) => (j === i ? { ...row, title: e.target.value } : row)))} />
+              <select className={SELECT} style={{ maxWidth: 140 }} value={it.severity}
+                onChange={(e) => setItems((prev) => prev.map((row, j) => (j === i ? { ...row, severity: e.target.value as "low" | "medium" | "high" } : row)))}>
+                <option value="low">{t("detail.assessments.remediation.severity.low")}</option>
+                <option value="medium">{t("detail.assessments.remediation.severity.medium")}</option>
+                <option value="high">{t("detail.assessments.remediation.severity.high")}</option>
+              </select>
+            </div>
+          ))}
+          <Button type="button" onClick={() => setItems((prev) => [...prev, { title: "", severity: "medium" }])}>
+            {t("detail.assessments.remediation.addItem")}
+          </Button>
+        </div>
+      )}
+      <Button type="button" onClick={submit} disabled={busy} data-testid={`decide-submit-${assessmentId}`}>
+        {t("detail.assessments.decideSubmit")}
+      </Button>
+    </div>
   );
 }
 

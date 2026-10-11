@@ -128,6 +128,56 @@ func (h *Strict) VendorRecordAssessment(ctx context.Context, req VendorRecordAss
 	return VendorRecordAssessment201JSONResponse(toVendorAssessmentWire(a)), nil
 }
 
+func (h *Strict) VendorDecideAssessment(ctx context.Context, req VendorDecideAssessmentRequestObject) (VendorDecideAssessmentResponseObject, error) {
+	var items []vendorservice.RemediationItemInput
+	if req.Body.RemediationItems != nil {
+		for _, it := range *req.Body.RemediationItems {
+			in := vendorservice.RemediationItemInput{Title: it.Title, Severity: string(it.Severity)}
+			if it.DueAt != nil {
+				t := it.DueAt.Time
+				in.DueAt = &t
+			}
+			items = append(items, in)
+		}
+	}
+	a, created, err := h.svc.DecideAssessment(ctx, req.AssessmentId, string(req.Body.Decision), items)
+	if err != nil {
+		return nil, problem(err)
+	}
+	out := make([]VendorRemediationItem, 0, len(created))
+	for _, it := range created {
+		out = append(out, toVendorRemediationItemWire(it))
+	}
+	return VendorDecideAssessment200JSONResponse{Assessment: toVendorAssessmentWire(a), RemediationItems: out}, nil
+}
+
+func (h *Strict) VendorListRemediationItems(ctx context.Context, req VendorListRemediationItemsRequestObject) (VendorListRemediationItemsResponseObject, error) {
+	list, err := h.svc.ListRemediationItems(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := VendorListRemediationItems200JSONResponse{Data: make([]VendorRemediationItem, 0, len(list))}
+	for _, it := range list {
+		resp.Data = append(resp.Data, toVendorRemediationItemWire(it))
+	}
+	return resp, nil
+}
+
+func toVendorRemediationItemWire(it vendorservice.RemediationItem) VendorRemediationItem {
+	w := VendorRemediationItem{Id: it.ID, VendorId: it.VendorID, VendorAssessmentId: it.VendorAssessmentID,
+		Title: it.Title, Severity: VendorRemediationItemSeverity(it.Severity), Status: VendorRemediationItemStatus(it.Status),
+		RowVersion: int(it.RowVersion), CreatedAt: it.CreatedAt.UTC()}
+	if it.DueAt != nil {
+		d := openapi_types.Date{Time: *it.DueAt}
+		w.DueAt = &d
+	}
+	if it.ClosedAt != nil {
+		t := it.ClosedAt.UTC()
+		w.ClosedAt = &t
+	}
+	return w
+}
+
 func toVendorAssessmentWire(a vendorservice.VendorAssessment) VendorAssessment {
 	w := VendorAssessment{Id: a.ID, VendorId: a.VendorID, AssessmentId: a.AssessmentID, CycleNo: a.CycleNo,
 		Score: float32(a.Score), ResidualLevel: VendorAssessmentResidualLevel(a.ResidualLevel),
@@ -236,6 +286,8 @@ func problem(err error) error {
 		return httpx.UnprocessableEntity("vendor.invalid_input", err.Error())
 	case errors.Is(err, vendorservice.ErrNoIntakeForm):
 		return httpx.UnprocessableEntity("vendor.no_intake_form", err.Error())
+	case errors.Is(err, vendorservice.ErrInvalidTransition):
+		return httpx.InvalidTransition("vendor")
 	}
 	return err
 }
