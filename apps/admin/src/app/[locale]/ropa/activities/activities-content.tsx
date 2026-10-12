@@ -82,6 +82,11 @@ export function ActivitiesContent() {
               {t("exportProcessorRopa")}
             </a>
           )}
+          {canRead && (
+            <Link className="rounded-md border border-slate-300 bg-white px-3 py-2 hover:bg-slate-50" href="/data-flow">
+              {t("viewDataFlow")}
+            </Link>
+          )}
           {canCreate && <Button onClick={() => { save.reset(); setDraft({ ...blank }); }}>{t("newActivity")}</Button>}
         </div>
       </header>

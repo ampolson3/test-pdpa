@@ -28,6 +28,8 @@ import (
 	consenthttp "pdpa-platform/internal/consent/http"
 	consentpublichttp "pdpa-platform/internal/consent/publichttp"
 	consentservice "pdpa-platform/internal/consent/service"
+	dataflowhttp "pdpa-platform/internal/dataflow/http"
+	dataflowservice "pdpa-platform/internal/dataflow/service"
 	dpiahttp "pdpa-platform/internal/dpia/http"
 	dpiaservice "pdpa-platform/internal/dpia/service"
 	dpohttp "pdpa-platform/internal/dpo/http"
@@ -240,6 +242,7 @@ func run() error {
 	ropaTemplatesSvc := templatesservice.New()                                                                // RTG-01: the platform's standard activity library (read-only)
 	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc} // ROPA-05: create an activity from one of these templates
 	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}                                                // RRA-01: score an activity from its own RoPA data
+	dataflowSvc := &dataflowservice.Service{Ropa: ropaSvc, Org: orgSvc}                                       // DFG-01/03: the data flow diagram, read live off RoPA
 	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc}                                         // VEN-01: vendor/processor registry
 	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc, Risk: riskSvc}                // RRA-07: closing a "ropa_gap" task re-checks the rule
 	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read"                          // DPO-01 appointment order / PDPC evidence
@@ -407,6 +410,11 @@ func run() error {
 			[]dpiahttp.StrictMiddlewareFunc{authz.StrictMiddleware[dpiahttp.StrictHandlerFunc](authzCache, requiredPermission)},
 			dpiahttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		dpiahttp.HandlerWithOptions(strictDpia, dpiahttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictDataflow := dataflowhttp.NewStrictHandlerWithOptions(dataflowhttp.NewStrict(dataflowSvc),
+			[]dataflowhttp.StrictMiddlewareFunc{authz.StrictMiddleware[dataflowhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			dataflowhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		dataflowhttp.HandlerWithOptions(strictDataflow, dataflowhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictAgreement := agreementhttp.NewStrictHandlerWithOptions(agreementhttp.NewStrict(agreementSvc),
 			[]agreementhttp.StrictMiddlewareFunc{authz.StrictMiddleware[agreementhttp.StrictHandlerFunc](authzCache, requiredPermission)},

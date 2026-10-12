@@ -101,6 +101,39 @@
 
 **Acceptance criteria:** แผนผังของ 50 กิจกรรมแสดงภายใน 3 วินาทีและตรงกับข้อมูล RoPA
 
+**Implementation (DFG-01, built together with DFG-03) — done:** `internal/dataflow/service.Graph` (no new
+migration — `dataflow.layouts`/`.snapshots` already exist for the later DFG-05/DFG-07, unused here) composes
+the diagram live from RoPA on every call, the same "never a stale copy" discipline DPIA-04/12 already
+established — no caching, no stored snapshot. Node types: `org_unit` (one per department with an activity,
+rendered as a swimlane container), `activity` (nested under its org unit, carries code/status/role/purposes/
+data categories for the UI's tooltip), `recipient` (one per distinct `org.external_parties` row an
+activity's `activity_recipients` references, via `Org.GetExternalParty` — rule 9), `country` (one per
+distinct destination), `disposal` (one per unique `retention_rules.disposal_method` an activity names).
+Edge types: `send` (activity → recipient), `transfer` (recipient/activity → country, from ROPA-08's own
+`activity_transfers`, labelled with `transfer_basis`), `destroy` (activity → its disposal node). DFG-01's
+own backend note lists a fifth node type ("ระบบ" / system) sourced from a RoPA asset — `ropa.
+processing_activities` has no FK to `ropa.assets` yet (ROPA-02's own register and ROPA-03's own activities
+were never linked), so there is nothing to draw; deferred the same way ROPA-01 deferred its own
+`discovered_by_finding_id` until a real link exists. **DFG-03's own acceptance criterion is this same pass's
+`transfer` edges**: for every recipient whose country isn't Thailand, if no `activity_transfers` row
+references that recipient, the edge goes straight to the country node with `warning: true` instead of the
+usual label — the exact "implicit, never-logged transfer" check ROPA-08's own `completeness()` already uses
+for its `transfer_basis` conditional item, just drawn instead of just flagged; logging the real transfer
+clears the warning edge and adds the labelled one. `GET /admin/v1/dataflow/graph` (`ropa.dataflow.read`,
+optional `legal_entity_id` filter, no pagination — the whole tenant diagram is meant to be viewed as one
+graph) → `internal/dataflow/http`. Frontend: `@xyflow/react` (React Flow) + `elkjs` (bundled, no web worker
+needed) — `apps/admin` `/data-flow`, linked from `/ropa/activities`; ELK's own `layered` algorithm lays out
+org-unit containers and their nested activity/disposal children, React Flow renders the swimlanes as
+`type: "group"` nodes with a small non-interactive label child (React Flow's built-in group type draws no
+text of its own); a legend covers every node/edge colour plus the warning style. Tests: unit (swimlanes +
+disposal nodes/edges match what was saved; a foreign recipient with no transfer draws the warning edge and a
+domestic one never gets a country node at all; logging the transfer clears the warning and adds the real
+edge; the `legal_entity_id` filter; two-tenant isolation), HTTP contract (401/403/200). Not done (separate
+sibling features, each with its own backlog id and unmet dependency): DFG-02 (auto-refresh on an
+`ropa.updated` event — PLT-11 is done but DFG-02 wasn't in this pass's scope), DFG-04 (processor/recipient →
+DPA/DSA contract links — depends on DPA-11/DSA-11, neither built), DFG-05 (drag-to-arrange, persisted via
+the already-existing `dataflow.layouts`), DFG-08 (image/report export).
+
 <a id="dfg-02"></a>
 ### DFG-02 อัปเดตแผนผังเมื่อข้อมูลเปลี่ยน
 
@@ -142,6 +175,10 @@
 **Frontend (Next.js):** สัญลักษณ์การโอนต่างประเทศบนแผนผัง
 
 **Acceptance criteria:** เส้นทางโอนที่ไม่มีฐานการโอนแสดงเป็นสีเตือน
+
+**Implementation (DFG-03) — done, see [DFG-01](#dfg-01)'s own implementation note:** built in the same pass
+as DFG-01 (same graph, same `transfer` edges) since both share `ROPA-08`'s data and DFG-01 «include»s DFG-03
+in the module's own use-case relations above.
 
 <a id="dfg-04"></a>
 ### DFG-04 แสดงผู้ประมวลผลและผู้รับข้อมูล

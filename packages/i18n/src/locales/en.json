@@ -1482,7 +1482,8 @@
     "rejectionsHint": "Logged automatically from DSAR requests rejected against this activity",
     "noRejections": "No rejections logged against this activity yet",
     "browseTemplates": "Standard activity library",
-    "useWizard": "Use wizard"
+    "useWizard": "Use wizard",
+    "viewDataFlow": "Data Flow Diagram"
   },
   "notices": {
     "signInRequired": "Please sign in",
@@ -2807,6 +2808,27 @@
     },
     "summary": {
       "title": "Review before creating"
+    }
+  },
+  "dataflow": {
+    "forbidden": "You do not have permission to view this page",
+    "loading": "Loading...",
+    "loadError": "Failed to load",
+    "title": "Data Flow Diagram",
+    "intro": "Generated automatically from your RoPA — org units, processing activities, recipients and destination countries",
+    "legalEntity": "Legal entity",
+    "allEntities": "All legal entities",
+    "activityCount": "{count} activities",
+    "empty": "No processing activities yet. Add an activity in RoPA first to see the diagram.",
+    "legend": {
+      "activity": "Processing activity",
+      "recipient": "Recipient",
+      "country": "Destination country",
+      "disposal": "Disposal / end-of-retention method",
+      "send": "Send",
+      "transfer": "Cross-border transfer",
+      "destroy": "Destroy / dispose",
+      "warning": "Cross-border transfer with no logged legal basis"
     }
   }
 }

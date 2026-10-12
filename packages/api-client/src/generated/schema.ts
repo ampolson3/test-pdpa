@@ -4153,6 +4153,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dataflow/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — org-unit swimlanes, activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge */
+        get: operations["dataflowGetGraph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5493,6 +5510,44 @@ export interface components {
             task_id?: components["schemas"]["Uuid"];
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
+        };
+        /** @description One box on the diagram — an org unit (a swimlane other nodes nest under via parent_id), a processing activity, an external-party recipient, or a destination country. */
+        DataflowNode: {
+            /** @description Stable within one graph response, e.g. "activity:<uuid>" — not a database id on its own. */
+            id: string;
+            /** @enum {string} */
+            type: "org_unit" | "activity" | "recipient" | "country" | "disposal";
+            label: string;
+            /** @description The containing org_unit node's id */
+            parent_id?: string;
+            activity_code?: string;
+            activity_status?: string;
+            /** @description controller or processor, for an activity node */
+            role?: string;
+            purposes?: string[];
+            data_categories?: string[];
+            recipient_role?: string;
+            disclosure_basis?: string;
+            country_code?: string;
+            disposal_methods?: string[];
+        };
+        /** @description One arrow on the diagram, between two DataflowNode ids. */
+        DataflowEdge: {
+            id: string;
+            source: string;
+            target: string;
+            /** @enum {string} */
+            type: "send" | "transfer" | "destroy";
+            label?: string;
+            /** @description DFG-03: true on a transfer edge to a foreign recipient's country with no logged ROPA-08 transfer basis — rendered in warning colour. */
+            warning: boolean;
+        };
+        /** @description DFG-01/DFG-03: the whole tenant diagram (or one legal entity's), computed live from RoPA on every call — never a stale persisted copy. */
+        DataflowGraph: {
+            nodes: components["schemas"]["DataflowNode"][];
+            edges: components["schemas"]["DataflowEdge"][];
+            activity_count: number;
+            generated_at: components["schemas"]["Timestamp"];
         };
         /** @description DPIA-05: "necessary" only once every question is answered "yes"; otherwise "needs_review" names the flagged questions. */
         DpiaNecessity: {
@@ -17670,6 +17725,34 @@ export interface operations {
             409: components["responses"]["Conflict"];
             412: components["responses"]["PreconditionFailed"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dataflowGetGraph: {
+        parameters: {
+            query?: {
+                /** @description Narrow the graph to one legal entity's activities; omitted shows every legal entity's activities together */
+                legal_entity_id?: components["schemas"]["Uuid"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataflowGraph"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
 }

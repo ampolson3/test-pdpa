@@ -29,6 +29,8 @@ tags:
     description: DPIA screening — whether a RoPA activity needs a full impact assessment (backend/internal/dpia)
   - name: risk
     description: Risk engine — configurable likelihood x impact matrices so far (backend/internal/risk)
+  - name: dataflow
+    description: Data flow diagram generated live from RoPA (backend/internal/dataflow)
   - name: platform
     description: Platform services — background jobs, files, notifications, ... (backend/internal/platform/<service>)
 paths:
@@ -12456,6 +12458,34 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dataflow/graph:
+    get:
+      operationId: dataflowGetGraph
+      tags: [dataflow]
+      summary: 'DFG-01/DFG-03: the tenant''s data flow diagram, composed live from RoPA (ROPA-03/08) on every read — org-unit swimlanes, activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge'
+      x-permission: ropa.dataflow.read
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: legal_entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+          description: Narrow the graph to one legal entity's activities; omitted shows every legal entity's activities together
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataflowGraph'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 components:
   securitySchemes:
     adminJwt:
@@ -14469,6 +14499,62 @@ components:
         task_id: {$ref: '#/components/schemas/Uuid'}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    DataflowNode:
+      type: object
+      description: One box on the diagram — an org unit (a swimlane other nodes nest under via parent_id), a processing activity, an external-party recipient, or a destination country.
+      required: [id, type, label]
+      properties:
+        id: {type: string, description: 'Stable within one graph response, e.g. "activity:<uuid>" — not a database id on its own.'}
+        type:
+          type: string
+          enum: [org_unit, activity, recipient, country, disposal]
+        label: {type: string}
+        parent_id: {type: string, description: The containing org_unit node's id, for an activity node}
+        activity_code: {type: string}
+        activity_status: {type: string}
+        role:
+          type: string
+          description: controller or processor, for an activity node
+        purposes:
+          type: array
+          items: {type: string}
+        data_categories:
+          type: array
+          items: {type: string}
+        recipient_role: {type: string}
+        disclosure_basis: {type: string}
+        country_code: {type: string}
+        disposal_methods:
+          type: array
+          items: {type: string}
+    DataflowEdge:
+      type: object
+      description: One arrow on the diagram, between two DataflowNode ids.
+      required: [id, source, target, type, warning]
+      properties:
+        id: {type: string}
+        source: {type: string}
+        target: {type: string}
+        type:
+          type: string
+          enum: [send, transfer, destroy]
+        label: {type: string}
+        warning:
+          type: boolean
+          description: 'DFG-03: true on a transfer edge to a foreign recipient''s country with no logged ROPA-08 transfer basis — rendered in warning colour.'
+    DataflowGraph:
+      type: object
+      description: 'DFG-01/DFG-03: the whole tenant diagram (or one legal entity''s), computed live from RoPA on every call — never a stale persisted copy.'
+      required: [nodes, edges, activity_count, generated_at]
+      properties:
+        nodes:
+          type: array
+          items: {$ref: '#/components/schemas/DataflowNode'}
+        edges:
+          type: array
+          items: {$ref: '#/components/schemas/DataflowEdge'}
+        activity_count: {type: integer}
+        generated_at: {$ref: '#/components/schemas/Timestamp'}
     DpiaNecessity:
       type: object
       description: 'DPIA-05: "necessary" only once every question is answered "yes"; otherwise "needs_review" names the flagged questions.'

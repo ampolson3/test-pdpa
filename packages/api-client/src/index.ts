@@ -426,6 +426,12 @@ export {
   type DpiaRiskControlStatus,
 } from "./dpia";
 export {
+  useDataflowGraph,
+  type DataflowGraph,
+  type DataflowNode,
+  type DataflowEdge,
+} from "./dataflow";
+export {
   useDsarRequestTypes,
   useDsarRequests,
   useDsarRequest,

@@ -41,6 +41,7 @@ gen:
 	cd backend/internal/dpia/http && oapi-codegen -config oapi-codegen.yaml -o dpia.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/agreement/http && oapi-codegen -config oapi-codegen.yaml -o agreement.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/gov/http && oapi-codegen -config oapi-codegen.yaml -o gov.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/dataflow/http && oapi-codegen -config oapi-codegen.yaml -o dataflow.gen.go ../../../../api/openapi/openapi.yaml
 	pnpm gen:api-client
 	cd backend && go build ./...
 
