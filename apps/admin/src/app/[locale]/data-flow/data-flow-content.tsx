@@ -256,7 +256,21 @@ export function DataFlowContent() {
             ))}
           </select>
         </label>
-        {graph.data ? <p className="text-slate-500">{t("activityCount", { count: graph.data.activity_count })}</p> : null}
+        <div className="flex items-center gap-3 text-slate-500">
+          {graph.data ? <p>{t("activityCount", { count: graph.data.activity_count })}</p> : null}
+          {graph.data ? (
+            <p data-testid="dataflow-last-updated">
+              {graph.isFetching ? t("updating") : t("lastUpdated", { time: new Date(graph.data.generated_at).toLocaleTimeString() })}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs hover:bg-slate-50"
+            onClick={() => graph.refetch()}
+          >
+            {t("refreshNow")}
+          </button>
+        </div>
       </div>
 
       <Legend />

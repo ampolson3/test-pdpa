@@ -2829,6 +2829,9 @@
       "transfer": "Cross-border transfer",
       "destroy": "Destroy / dispose",
       "warning": "Cross-border transfer with no logged legal basis"
-    }
+    },
+    "updating": "Updating...",
+    "lastUpdated": "Last updated {time} (auto-refreshes every 30s)",
+    "refreshNow": "Refresh now"
   }
 }

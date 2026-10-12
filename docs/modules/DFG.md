@@ -155,6 +155,23 @@ the already-existing `dataflow.layouts`), DFG-08 (image/report export).
 
 **Acceptance criteria:** แก้ RoPA แล้วแผนผังเปลี่ยนตามโดยไม่ต้องสร้างใหม่
 
+**Implementation (DFG-02) — done, architecturally trivial given DFG-01:** `dataflowservice.Graph` was built
+in DFG-01 to never cache or persist its result — it reads `ropa.processing_activities` and its child tables
+fresh on every call (the same discipline `dpiaservice.ActivityDescription`/`Registry` already established)
+— so there is no stale copy to rebuild, and no `ropa.updated`/`masterdata.updated` event listener to write:
+an edit is visible on the very next read, full stop. The module doc's own backend note describes the
+event-driven partial-rebuild machinery a *persisted* snapshot (`dataflow.snapshots`, DFG-07) would need to
+stay in sync without recomputing the whole thing — that doesn't apply while DFG-01 never persists anything.
+Proven directly (`TestGraph_ReflectsRoPAEditsWithoutRegenerating`): renaming an activity, moving it to a
+different department, adding a new one and the previous activity count are all visible on the immediate
+next `Graph()` call, with no action in between. What *is* this feature's own real work, the FE note's "ป้าย
+แจ้งว่าแผนผังอัปเดตแล้ว" (a badge that the diagram updated) for a viewer who leaves `/data-flow` open while
+someone edits RoPA elsewhere: `useDataflowGraph` now polls every 30s (`refetchInterval`, React Query), and
+the page shows "last updated HH:MM:SS" (from the response's own `generated_at`) that swaps to "updating..."
+during a background refetch, plus a manual "refresh now" button — no WebSocket or SSE push needed for a
+30-second staleness budget. Not done: shrinking that budget with a real push channel, which nothing in this
+feature's acceptance criterion calls for.
+
 <a id="dfg-03"></a>
 ### DFG-03 แสดงการโอนไปต่างประเทศ
 
