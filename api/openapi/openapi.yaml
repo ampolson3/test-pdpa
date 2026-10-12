@@ -14527,6 +14527,14 @@ components:
         disposal_methods:
           type: array
           items: {type: string}
+        warning:
+          type: boolean
+          description: 'DFG-04: true on a processor recipient tracked as a vendor with no agreement.agreements row of type "dpa".'
+        vendor_id: {$ref: '#/components/schemas/Uuid'}
+        agreement_ids:
+          type: array
+          items: {$ref: '#/components/schemas/Uuid'}
+          description: 'DFG-04: this recipient''s own DPA agreements, to link through to from the diagram.'
     DataflowEdge:
       type: object
       description: One arrow on the diagram, between two DataflowNode ids.

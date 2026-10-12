@@ -20,6 +20,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import ELK from "elkjs/lib/elk.bundled.js";
+import { useRouter } from "@/i18n/routing";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
 
@@ -133,14 +134,17 @@ function toFlowNode(n: DataflowNode, pos: { x: number; y: number; width: number;
           width: pos.width,
           height: pos.height,
           borderRadius: 8,
-          border: `2px solid ${NODE_COLOR[n.type] ?? "#334155"}`,
-          background: "#fff",
+          // DFG-04: a processor recipient with no logged DPA is outlined and tinted the same warning red
+          // the transfer edges already use, and clickable through to its own DPA agreement(s) when any exist.
+          border: n.warning ? "2px solid #dc2626" : `2px solid ${NODE_COLOR[n.type] ?? "#334155"}`,
+          background: n.warning ? "#fef2f2" : "#fff",
           fontSize: 12,
           padding: 6,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           textAlign: "center",
+          cursor: n.agreement_ids?.length ? "pointer" : undefined,
         },
     draggable: false,
     selectable: !isGroup,
@@ -169,6 +173,7 @@ export function DataFlowContent() {
   const t = useTranslations("dataflow");
   const canRead = usePermission("ropa.dataflow.read");
   const client = useMemo(() => createApiClient("/api/bff"), []);
+  const router = useRouter();
   const [legalEntityId, setLegalEntityId] = useState<string>();
 
   const entities = useLegalEntities(client);
@@ -283,7 +288,19 @@ export function DataFlowContent() {
         <p className="rounded-md bg-amber-50 p-3 text-amber-800">{t("empty")}</p>
       ) : (
         <div style={{ height: "70vh" }} className="rounded-md border border-slate-200 bg-white" data-testid="dataflow-canvas">
-          <ReactFlow nodes={flowNodes} edges={flowEdges} fitView nodesDraggable={false} nodesConnectable={false} edgesFocusable={false}>
+          <ReactFlow
+            nodes={flowNodes}
+            edges={flowEdges}
+            fitView
+            nodesDraggable={false}
+            nodesConnectable={false}
+            edgesFocusable={false}
+            onNodeClick={(_, node) => {
+              const dn = (node.data as { node?: DataflowNode }).node;
+              const agreementId = dn?.agreement_ids?.[0];
+              if (agreementId) router.push(`/agreements/${agreementId}`);
+            }}
+          >
             <Background />
             <Controls showInteractive={false} />
           </ReactFlow>
@@ -300,6 +317,7 @@ function Legend() {
     { color: NODE_COLOR.recipient, label: t("legend.recipient") },
     { color: NODE_COLOR.country, label: t("legend.country") },
     { color: NODE_COLOR.disposal, label: t("legend.disposal") },
+    { color: "#dc2626", label: t("legend.missingDpa") },
   ];
   const edgeItems: { color: string; label: string; dashed?: boolean }[] = [
     { color: EDGE_COLOR.send, label: t("legend.send") },

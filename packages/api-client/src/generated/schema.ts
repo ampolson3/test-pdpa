@@ -5530,6 +5530,11 @@ export interface components {
             disclosure_basis?: string;
             country_code?: string;
             disposal_methods?: string[];
+            /** @description DFG-04: true on a processor recipient tracked as a vendor with no agreement.agreements row of type "dpa". */
+            warning?: boolean;
+            vendor_id?: components["schemas"]["Uuid"];
+            /** @description DFG-04: this recipient's own DPA agreements, to link through to from the diagram. */
+            agreement_ids?: components["schemas"]["Uuid"][];
         };
         /** @description One arrow on the diagram, between two DataflowNode ids. */
         DataflowEdge: {

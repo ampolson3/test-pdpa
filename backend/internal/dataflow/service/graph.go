@@ -2,12 +2,15 @@ package service
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"time"
 
 	"github.com/google/uuid"
 
+	agreementservice "pdpa-platform/internal/agreement/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
+	vendorservice "pdpa-platform/internal/vendormgmt/service"
 )
 
 // Node is one box on the diagram.
@@ -25,6 +28,12 @@ type Node struct {
 	DisclosureBasis string
 	CountryCode     string
 	DisposalMethods []string
+	// Warning is DFG-04's own flag: a recipient node whose recipient_role is "processor" and who is tracked
+	// as a VEN-01 vendor (so there's something to check) but has no agreement.agreements row of type "dpa".
+	// A processor never tracked as a vendor at all isn't flagged — there's nothing to click through to.
+	Warning      bool
+	VendorID     *uuid.UUID
+	AgreementIDs []uuid.UUID
 }
 
 // Edge is one arrow on the diagram.
@@ -137,10 +146,16 @@ func (s *Service) Graph(ctx context.Context, legalEntityID *uuid.UUID) (Graph, e
 			}
 			if !seenRecipient[r.PartyID] {
 				seenRecipient[r.PartyID] = true
-				g.Nodes = append(g.Nodes, Node{
+				node := Node{
 					ID: recipientNodeID(r.PartyID), Type: "recipient", Label: party.NameTh,
 					RecipientRole: r.RecipientRole, DisclosureBasis: r.DisclosureBasis, CountryCode: party.CountryCode,
-				})
+				}
+				if r.RecipientRole == "processor" && s.Vendor != nil && s.Agreement != nil {
+					if err := s.flagMissingDPA(ctx, r.PartyID, &node); err != nil {
+						return Graph{}, err
+					}
+				}
+				g.Nodes = append(g.Nodes, node)
 			}
 			g.Edges = append(g.Edges, Edge{
 				ID: "send:" + a.ID.String() + ":" + r.ID.String(), Source: activityNodeID(a.ID),
@@ -201,6 +216,30 @@ func (s *Service) Graph(ctx context.Context, legalEntityID *uuid.UUID) (Graph, e
 	sort.Slice(g.Nodes, func(i, j int) bool { return g.Nodes[i].ID < g.Nodes[j].ID })
 	sort.Slice(g.Edges, func(i, j int) bool { return g.Edges[i].ID < g.Edges[j].ID })
 	return g, nil
+}
+
+// flagMissingDPA is DFG-04's own acceptance criterion: a processor-role recipient who is tracked as a
+// VEN-01 vendor but has no agreement.agreements row of type "dpa" is flagged on the node itself, the same
+// warning-colour convention DFG-03's own transfer edges already use — a processor never onboarded as a
+// vendor at all is left alone, since there's no agreement list to check or link to.
+func (s *Service) flagMissingDPA(ctx context.Context, partyID uuid.UUID, node *Node) error {
+	v, err := s.Vendor.GetVendorByPartyID(ctx, partyID)
+	if errors.Is(err, vendorservice.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	node.VendorID = &v.ID
+	agreements, _, err := s.Agreement.ListAgreements(ctx, agreementservice.AgreementFilter{AgreementType: "dpa", VendorID: &v.ID})
+	if err != nil {
+		return err
+	}
+	for _, a := range agreements {
+		node.AgreementIDs = append(node.AgreementIDs, a.ID)
+	}
+	node.Warning = len(agreements) == 0
+	return nil
 }
 
 // listAllActivities drains ropaservice.ListActivities' own cursor pagination (activityPageSize=50) rather

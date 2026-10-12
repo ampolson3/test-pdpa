@@ -218,6 +218,30 @@ in the module's own use-case relations above.
 
 **Acceptance criteria:** ผู้ประมวลผลที่ไม่มี DPA แสดงเตือนบนแผนผัง
 
+**Implementation (DFG-04) — done.** Reuses VEN-11's own existence check (`agreement.agreements` of type
+`dpa` for a vendor) rather than re-deriving it: dataflow's `Graph()` resolves each `recipient_role ==
+"processor"` recipient's own `org.external_parties` id to a VEN-01 vendor via a new
+`vendormgmt.Service.GetVendorByPartyID` (the sqlc query already existed, generated but unwired — this pass
+adds the one exported method; `uq_vendors_party_id` means at most one match, no new migration), then calls
+`agreement.Service.ListAgreements(AgreementFilter{AgreementType: "dpa", VendorID: ...})` directly (the same
+filter DPA-11 already built, rather than VEN-11's own `VendorContractStatus`, since the diagram also needs
+the real agreement ids to link through to, not just a bool). `dataflow.Service` gained `Vendor`/`Agreement`
+rule-9 interfaces, both nil-safe (existing DFG-01/03 tests and callers need no changes) — wired in
+`cmd/api/main.go` right after `agreementSvc` is constructed, since `dataflowSvc` itself is built earlier
+(late field assignment, the same pattern `riskSvc.Dpo = dpoSvc` already uses elsewhere in that file). A
+processor recipient with a vendor profile but no DPA gets `Node.Warning = true` plus its `VendorID`; one with
+a DPA gets `AgreementIDs` instead; a processor **never onboarded as a vendor at all** is left unflagged —
+there's nothing to check or click through to, so flagging it would be noise, not a real gap. `DataflowNode`'s
+wire schema gained `warning`/`vendor_id`/`agreement_ids` (additive, no existing consumer broke). Frontend:
+a flagged recipient node renders with a red border/tint (the same warning-red DFG-03's own transfer edges
+use) and, when `agreement_ids` is non-empty, a pointer cursor; clicking any node with an agreement id
+navigates straight to `/agreements/{id}` (the module doc's own "คลิก node เพื่อดูสัญญา") via React Flow's
+`onNodeClick`. Tests: unit (`TestGraph_ProcessorWithoutDPAWarning` — the acceptance criterion directly: a
+tracked-vendor processor with no DPA is flagged with its vendor id and no agreement ids; a processor never
+onboarded as a vendor is never flagged; drafting a real DPA via `agreement.Service.CreateWizard` clears the
+warning and the node carries the new agreement's id), full `go test ./internal/dataflow/...` suite and
+`pnpm --filter @pdpa/admin build` both verified clean.
+
 <a id="dfg-08"></a>
 ### DFG-08 ส่งออกภาพและรายงาน
 

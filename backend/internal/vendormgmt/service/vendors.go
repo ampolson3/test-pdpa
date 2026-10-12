@@ -118,6 +118,20 @@ func (s *Service) GetVendor(ctx context.Context, id uuid.UUID) (Vendor, error) {
 	return toVendor(r), nil
 }
 
+// GetVendorByPartyID resolves the (at most one, `uq_vendors_party_id`) vendor profile for an
+// org.external_parties row — DFG-04's own way to tell whether a RoPA recipient is tracked as a vendor at
+// all before asking agreement.Service.VendorContractStatus whether that vendor has a DPA on file.
+func (s *Service) GetVendorByPartyID(ctx context.Context, partyID uuid.UUID) (Vendor, error) {
+	r, err := vendorstore.New(pdb.MustTxFromContext(ctx)).GetVendorByPartyID(ctx, partyID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Vendor{}, ErrNotFound
+	}
+	if err != nil {
+		return Vendor{}, err
+	}
+	return toVendor(vendorstore.GetVendorRow(r)), nil
+}
+
 // SaveVendor creates (zero ID) or updates (with the If-Match version) a vendor's profile. It never
 // touches status/tier/next_assessment_at/approved_at/offboarded_at — a new vendor always lands
 // "prospect" (the column's own DB default), and every other ST-06 edge belongs to a sibling feature.

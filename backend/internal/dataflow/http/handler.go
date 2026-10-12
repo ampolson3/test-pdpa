@@ -59,6 +59,15 @@ func toGraphWire(g dataflowservice.Graph) DataflowGraph {
 		if len(n.DisposalMethods) > 0 {
 			dn.DisposalMethods = &n.DisposalMethods
 		}
+		if n.Warning {
+			dn.Warning = &n.Warning
+		}
+		if n.VendorID != nil {
+			dn.VendorId = n.VendorID
+		}
+		if len(n.AgreementIDs) > 0 {
+			dn.AgreementIds = &n.AgreementIDs
+		}
 		w.Nodes = append(w.Nodes, dn)
 	}
 	for _, e := range g.Edges {

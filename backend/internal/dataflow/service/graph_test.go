@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	agreementservice "pdpa-platform/internal/agreement/service"
 	dataflowservice "pdpa-platform/internal/dataflow/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
@@ -13,18 +14,23 @@ import (
 	"pdpa-platform/internal/pkg/dbtest"
 	audit "pdpa-platform/internal/platform/audit/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
+	vendorservice "pdpa-platform/internal/vendormgmt/service"
+	"pdpa-platform/internal/wiring"
 )
 
 type env struct {
-	app    *pgxpool.Pool
-	tenant dbtest.Tenant
-	svc    *dataflowservice.Service
-	org    *orgservice.Service
-	ropa   *ropaservice.Service
+	app       *pgxpool.Pool
+	tenant    dbtest.Tenant
+	svc       *dataflowservice.Service
+	org       *orgservice.Service
+	ropa      *ropaservice.Service
+	vendor    *vendorservice.Service
+	agreement *agreementservice.Service
 }
 
 var perms = []string{"ropa.dataflow.read", "ropa.activity.read", "ropa.activity.create", "ropa.activity.update",
-	"org.structure.read", "org.structure.create", "org.structure.update", "org.party.read", "org.party.create"}
+	"org.structure.read", "org.structure.create", "org.structure.update", "org.party.read", "org.party.create",
+	"vendor.vendor.read", "vendor.vendor.create", "agreement.dpa.read", "agreement.dpa.create", "agreement.dpa.update"}
 
 func setup(t *testing.T, suffix string) env {
 	t.Helper()
@@ -34,18 +40,29 @@ func setup(t *testing.T, suffix string) env {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
-			_, _ = tx.Exec(ctx, `DELETE FROM ropa.processing_activities`)
-			_, _ = tx.Exec(ctx, `DELETE FROM org.external_parties`)
-			_, _ = tx.Exec(ctx, `DELETE FROM org.org_units`)
-			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
-			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
-			return err
+			for _, q := range []string{
+				`DELETE FROM agreement.clauses`, `DELETE FROM agreement.agreement_activities`, `DELETE FROM agreement.parties`,
+				`DELETE FROM agreement.agreements`, `DELETE FROM platform.approvals`, `DELETE FROM platform.record_versions`,
+				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
+				`DELETE FROM vendor.vendors`, `DELETE FROM ropa.processing_activities`,
+				`DELETE FROM org.external_parties`, `DELETE FROM org.org_units`, `DELETE FROM org.legal_entities`,
+				`DELETE FROM platform.audit_log`,
+			} {
+				_, _ = tx.Exec(ctx, q)
+			}
+			return nil
 		})
 	})
 	org := &orgservice.Service{Audit: audit.New()}
 	ropa := &ropaservice.Service{Audit: audit.New(), Org: org}
-	svc := &dataflowservice.Service{Ropa: ropa, Org: org}
-	return env{app: app, tenant: tenant, svc: svc, org: org, ropa: ropa}
+	vendor := &vendorservice.Service{Audit: audit.New(), Org: org}
+	versioningSvc := wiring.Versioning(nil, audit.New())
+	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
+	docsSvc.RegisterVersioning()
+	agreement := &agreementservice.Service{Docs: docsSvc, Org: org, Vendor: vendor, Ropa: ropa, Audit: audit.New()}
+	docsSvc.SetSubmitValidate("dpa", agreement.CheckSubmittable)
+	svc := &dataflowservice.Service{Ropa: ropa, Org: org, Vendor: vendor, Agreement: agreement}
+	return env{app: app, tenant: tenant, svc: svc, org: org, ropa: ropa, vendor: vendor, agreement: agreement}
 }
 
 func (e env) in(t *testing.T, fn func(ctx context.Context) error) {

@@ -2828,7 +2828,8 @@
       "send": "Send",
       "transfer": "Cross-border transfer",
       "destroy": "Destroy / dispose",
-      "warning": "Cross-border transfer with no logged legal basis"
+      "warning": "Cross-border transfer with no logged legal basis",
+      "missingDpa": "Processor with no DPA (click to open the agreement)"
     },
     "updating": "Updating...",
     "lastUpdated": "Last updated {time} (auto-refreshes every 30s)",
