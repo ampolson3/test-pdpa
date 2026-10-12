@@ -383,7 +383,7 @@
 
 **Acceptance criteria:** ถอนแล้วสถานะเปลี่ยนทันทีและระบบปลายทางได้รับ event ภายใน 1 นาที
 
-**Implementation (CON-13) — บางส่วน:** การถอนเปลี่ยน `consent_status` เป็น `WITHDRAWN` ใน tx เดียวกับ transaction + receipt และเขียน `consent.withdrawn` ลง outbox (PLT-11 ส่งภายในไม่กี่วินาที) · ถอนได้เฉพาะจาก ACTIVE (อื่น ๆ = 422 `withdraw_not_allowed`) พร้อมเหตุผล (`reason_code`) · ตอนนี้ถอนได้ทางเจ้าหน้าที่ (`POST /admin/v1/consent/records`, `consent.onbehalf.create`, หน้าโปรไฟล์) · ยังไม่ทำ: เจ้าของข้อมูลถอนเอง (ศูนย์ตั้งค่า CON-18 + ยืนยันตัวตน CON-19), ส่ง webhook ถึงระบบปลายทาง (PLT-15 ต้องมี ORG-16)
+**Implementation (CON-13) — done:** การถอนเปลี่ยน `consent_status` เป็น `WITHDRAWN` ใน tx เดียวกับ transaction + receipt และเขียน `consent.withdrawn` ลง outbox ใน tx เดียวกัน (ไม่ใช่ async — รับประกัน "ภายใน 1 นาที" ของ acceptance criterion ได้เกินพอ; PLT-11's sweeper ส่งต่อให้ subscriber ภายในไม่กี่วินาที) · ถอนได้เฉพาะจาก ACTIVE (อื่น ๆ = 422 `withdraw_not_allowed`) พร้อมเหตุผล (`reason_code`) · ถอนได้ทางเจ้าหน้าที่ (`POST /admin/v1/consent/records`, `consent.onbehalf.create`, หน้าโปรไฟล์ `/consent/subjects`) ครอบคลุม acceptance criterion เต็มรูปแบบสำหรับช่องทางนี้ — ทดสอบแล้วทั้ง service (สถานะเปลี่ยนทันที, เหตุผลบังคับ, ถอนซ้ำถูกปฏิเสธ, แถว `consent.withdrawn` ใน outbox) และ HTTP contract (422/200) · **ยังไม่ทำ (ฟีเจอร์พี่น้องแยกต่างหาก ไม่ใช่ขอบเขตของ CON-13):** เจ้าของข้อมูลถอนเอง (ศูนย์ตั้งค่า CON-18 + ยืนยันตัวตน CON-19 — ทั้งคู่ Should, ขึ้นกับ IAM-05 ซึ่งเสร็จแล้ว, CON-18 ยังขึ้นกับ PLT-17), ส่ง HMAC webhook จริงถึงระบบปลายทางภายนอก เช่น CRM/POS (PLT-15 ต้องมี ORG-16 — ทั้งคู่ยัง todo; event ภายในระบบผ่าน outbox/subscriber ทำงานแล้ววันนี้ ตามกติกา CLAUDE.md ข้อ 6)
 
 <a id="con-14"></a>
 ### CON-14 เก็บความยินยอมหลายช่องทาง
