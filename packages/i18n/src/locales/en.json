@@ -2833,6 +2833,14 @@
     },
     "updating": "Updating...",
     "lastUpdated": "Last updated {time} (auto-refreshes every 30s)",
-    "refreshNow": "Refresh now"
+    "refreshNow": "Refresh now",
+    "export": {
+      "format": "Image format",
+      "paper": "Paper size",
+      "downloadImage": "Download diagram",
+      "language": "Report language",
+      "reportFormat": "Report format",
+      "downloadReport": "Download companion report"
+    }
   }
 }

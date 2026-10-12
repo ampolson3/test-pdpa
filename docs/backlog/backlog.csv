@@ -129,7 +129,7 @@ DFG-01,DFG,สร้างแผนผังอัตโนมัติจาก
 DFG-02,DFG,อัปเดตแผนผังเมื่อข้อมูลเปลี่ยน,Auto refresh,Must,P2,แผนผัง,ม.39,SCHED,S,S,N,3,3,0.7,0,2.1,"DFG-01, PLT-11",,docs/modules/DFG.md#dfg-02,แก้ RoPA แล้วแผนผังเปลี่ยนตามโดยไม่ต้องสร้างใหม่,done
 DFG-03,DFG,แสดงการโอนไปต่างประเทศ,Cross-border mapping,Must,P2,แผนผัง,ม.28-29; ประกาศ สคส. ตามมาตรา 28 และ 29 พ.ศ. 2566,DPO,S,M,N,3,5,1.0,0,2.8,ROPA-08,,docs/modules/DFG.md#dfg-03,เส้นทางโอนที่ไม่มีฐานการโอนแสดงเป็นสีเตือน,done
 DFG-04,DFG,แสดงผู้ประมวลผลและผู้รับข้อมูล,Processor & recipient mapping,Must,P2,แผนผัง,ม.40,DPO,S,S,N,3,3,0.7,0,2.1,"DPA-11, DSA-11",,docs/modules/DFG.md#dfg-04,ผู้ประมวลผลที่ไม่มี DPA แสดงเตือนบนแผนผัง,done
-DFG-08,DFG,ส่งออกภาพและรายงาน,Export image & report,Must,P2,ส่งออก,ม.39,DPO AUDIT,M,M,N,5,5,1.2,0,3.5,PLT-16,,docs/modules/DFG.md#dfg-08,ภาพที่ส่งออกอ่านได้ชัดในขนาด A3,todo
+DFG-08,DFG,ส่งออกภาพและรายงาน,Export image & report,Must,P2,ส่งออก,ม.39,DPO AUDIT,M,M,N,5,5,1.2,0,3.5,PLT-16,,docs/modules/DFG.md#dfg-08,ภาพที่ส่งออกอ่านได้ชัดในขนาด A3,done
 DFG-05,DFG,แก้ไขแผนผังแบบลากวาง,Drag & drop editor,Should,P3,แก้ไข,แนวปฏิบัติตลาด,DPO,S,L,Y,3,10,1.6,4.0,4.5,DFG-01,,docs/modules/DFG.md#dfg-05,ตำแหน่งที่จัดเองยังอยู่หลังข้อมูลอัปเดต,todo
 DFG-06,DFG,มุมมองหลายระดับ,Multi-view,Should,P3,แก้ไข,แนวปฏิบัติตลาด,OWNER DPO,M,M,N,5,5,1.2,0,3.5,DFG-01,,docs/modules/DFG.md#dfg-06,สลับมุมมองได้โดยข้อมูลตรงกัน,todo
 DFG-07,DFG,เผยแพร่และประวัติเวอร์ชันแผนผัง,Publish & history,Should,P3,แก้ไข,แนวปฏิบัติตลาด,DPO,S,S,N,3,3,0.7,0,2.1,PLT-08,,docs/modules/DFG.md#dfg-07,ดูแผนผังที่ publish ย้อนหลังได้,todo

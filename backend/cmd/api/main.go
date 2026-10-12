@@ -237,16 +237,16 @@ func run() error {
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
-	riskSvc := riskservice.New()                                                                              // ROPA-09's ม.37(1) controls catalog
-	riskSvc.Audit = auditSvc                                                                                  // RRA-02: risk matrix CRUD audit
-	ropaTemplatesSvc := templatesservice.New()                                                                // RTG-01: the platform's standard activity library (read-only)
-	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc} // ROPA-05: create an activity from one of these templates
-	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}                                                // RRA-01: score an activity from its own RoPA data
-	dataflowSvc := &dataflowservice.Service{Ropa: ropaSvc, Org: orgSvc}                                       // DFG-01/03: the data flow diagram, read live off RoPA
-	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc}                                         // VEN-01: vendor/processor registry
-	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc, Risk: riskSvc}                // RRA-07: closing a "ropa_gap" task re-checks the rule
-	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read"                          // DPO-01 appointment order / PDPC evidence
-	riskSvc.Dpo = dpoSvc                                                                                      // DPIA-07/RRA-07: owner + due date on a control, or a gap finding, opens a dpo.tasks job
+	riskSvc := riskservice.New()                                                                                             // ROPA-09's ม.37(1) controls catalog
+	riskSvc.Audit = auditSvc                                                                                                 // RRA-02: risk matrix CRUD audit
+	ropaTemplatesSvc := templatesservice.New()                                                                               // RTG-01: the platform's standard activity library (read-only)
+	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc}                // ROPA-05: create an activity from one of these templates
+	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}                                                               // RRA-01: score an activity from its own RoPA data
+	dataflowSvc := &dataflowservice.Service{Ropa: ropaSvc, Org: orgSvc, PDF: render.FromEnv(), Image: render.ImageFromEnv()} // DFG-01/03: the data flow diagram, read live off RoPA; DFG-08: image/report export
+	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc}                                                        // VEN-01: vendor/processor registry
+	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc, Risk: riskSvc}                               // RRA-07: closing a "ropa_gap" task re-checks the rule
+	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read"                                         // DPO-01 appointment order / PDPC evidence
+	riskSvc.Dpo = dpoSvc                                                                                                     // DPIA-07/RRA-07: owner + due date on a control, or a gap finding, opens a dpo.tasks job
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
 	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
 	formsSvc := wiring.Forms(notifySvc, auditSvc)
@@ -282,8 +282,8 @@ func run() error {
 	agreementSvc := &agreementservice.Service{Docs: docsSvc, Org: orgSvc, Vendor: vendorSvc, Ropa: ropaSvc, Audit: auditSvc,
 		Notify: notifySvc, River: riverClient} // DPA-02: the agreement engine (shared with DSA); DPA-10: expiry reminder
 	dataflowSvc.Vendor, dataflowSvc.Agreement = vendorSvc, agreementSvc // DFG-04: a processor recipient with no DPA is flagged on the diagram
-	docsSvc.SetSubmitValidate("dpa", agreementSvc.CheckSubmittable) // DPA-03: ม.40 mandatory clauses gate the agreement document's submit-for-approval
-	docsSvc.SetSubmitValidate("dsa", agreementSvc.CheckSubmittable) // DSA-05: ม.27/28-29/37(2) mandatory clauses — same type-agnostic gate as DPA-03's
+	docsSvc.SetSubmitValidate("dpa", agreementSvc.CheckSubmittable)     // DPA-03: ม.40 mandatory clauses gate the agreement document's submit-for-approval
+	docsSvc.SetSubmitValidate("dsa", agreementSvc.CheckSubmittable)     // DSA-05: ม.27/28-29/37(2) mandatory clauses — same type-agnostic gate as DPA-03's
 	noticeSvc := &noticeservice.Service{Audit: auditSvc, Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc, Files: fileSvc, Notify: notifySvc, River: riverClient,
 		Dpo: dpoSvc, Consent: consentSvc, // PNG-07: re-consent task + material-change alert
 		EnforceChecklist: os.Getenv("NOTICE_CHECKLIST_ENFORCE") != "false", EnforceTranslationSync: os.Getenv("NOTICE_TRANSLATION_SYNC_ENFORCE") != "false"}

@@ -6,3 +6,5 @@ generate:
 output-options:
   include-operation-ids:
     - dataflowGetGraph
+    - dataflowExportGraph
+    - dataflowGetReport

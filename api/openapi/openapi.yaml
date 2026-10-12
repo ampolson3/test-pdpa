@@ -12486,6 +12486,111 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/dataflow/graph/export:
+    get:
+      operationId: dataflowExportGraph
+      tags: [dataflow]
+      summary: 'DFG-08: the diagram (DFG-01/03/04''s own live Graph) as a standalone image — SVG (vector, no renderer needed), or PNG/PDF rendered through the shared platform/docs/render renderer, sized for print (always landscape)'
+      x-permission: ropa.dataflow.export
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: legal_entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [svg, png, pdf]
+        - name: paper
+          in: query
+          required: false
+          description: Page size for png/pdf (ignored for svg); defaults to a3
+          schema:
+            type: string
+            enum: [a3, a4, letter]
+      responses:
+        '200':
+          description: The image file
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          description: The requested renderer (PNG/PDF) is not configured
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /admin/v1/dataflow/report:
+    get:
+      operationId: dataflowGetReport
+      tags: [dataflow]
+      summary: 'DFG-08: the written report ("รายงานประกอบ") accompanying the diagram export — per org-unit/activity breakdown of data categories, recipients (flagging a processor with no DPA), cross-border transfers (flagging one with no basis) and disposal methods, built from the same live Graph as the image export'
+      x-permission: ropa.dataflow.export
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: legal_entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: language
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [th, en]
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [pdf, docx, html]
+      responses:
+        '200':
+          description: The report file
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          description: PDF rendering is not configured
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
 components:
   securitySchemes:
     adminJwt:

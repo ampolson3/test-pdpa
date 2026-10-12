@@ -427,6 +427,8 @@ export {
 } from "./dpia";
 export {
   useDataflowGraph,
+  dataflowExportHref,
+  dataflowReportHref,
   type DataflowGraph,
   type DataflowNode,
   type DataflowEdge,

@@ -4170,6 +4170,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dataflow/graph/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DFG-08: the diagram (DFG-01/03/04's own live Graph) as a standalone image — SVG (vector, no renderer needed), or PNG/PDF rendered through the shared platform/docs/render renderer, sized for print (always landscape) */
+        get: operations["dataflowExportGraph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dataflow/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DFG-08: the written report ("รายงานประกอบ") accompanying the diagram export — per org-unit/activity breakdown of data categories, recipients (flagging a processor with no DPA), cross-border transfers (flagging one with no basis) and disposal methods, built from the same live Graph as the image export */
+        get: operations["dataflowGetReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -17758,6 +17792,87 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    dataflowExportGraph: {
+        parameters: {
+            query: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+                format: "svg" | "png" | "pdf";
+                /** @description Page size for png/pdf (ignored for svg); defaults to a3 */
+                paper?: "a3" | "a4" | "letter";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The image file */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+            /** @description The requested renderer (PNG/PDF) is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    dataflowGetReport: {
+        parameters: {
+            query: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+                language: "th" | "en";
+                format: "pdf" | "docx" | "html";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The report file */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+            /** @description PDF rendering is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
 }

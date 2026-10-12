@@ -5,14 +5,20 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 
 	agreementservice "pdpa-platform/internal/agreement/service"
 	orgservice "pdpa-platform/internal/org/service"
+	"pdpa-platform/internal/platform/docs/render"
 	ropaservice "pdpa-platform/internal/ropa/service"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
 )
+
+// ErrInvalid is returned for a bad request parameter (export format/paper, report language) — DFG-08's own
+// input validation, following the same sentinel-error convention every other module's service uses.
+var ErrInvalid = errors.New("dataflow: invalid input")
 
 // Ropa is what dataflow reads from the ropa module (rule 9: no direct schema access). Every method here is
 // already exported by ropaservice for ROPA-03/08's own screens, so this adds no new ropa code.
@@ -46,10 +52,14 @@ type Agreement interface {
 
 // Service runs the dataflow module for the tenant of the transaction in ctx. Vendor/Agreement are optional
 // (nil skips DFG-04's own DPA check entirely) so existing callers/tests that only need DFG-01/03 need no
-// changes.
+// changes. PDF/Image are DFG-08's own renderers (render.FromEnv/render.ImageFromEnv — Gotenberg in
+// production, a local Chromium in development); nil fails only the matching export format
+// (render.ErrNoRenderer / render.ErrNoImageRenderer) — SVG export never needs either.
 type Service struct {
 	Ropa      Ropa
 	Org       Org
 	Vendor    Vendor
 	Agreement Agreement
+	PDF       render.PDFRenderer
+	Image     render.ImageRenderer
 }

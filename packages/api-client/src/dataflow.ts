@@ -22,3 +22,30 @@ export function useDataflowGraph(client: ApiClient, filter: { legal_entity_id?: 
     refetchInterval: 30_000,
   });
 }
+
+/** GET /admin/v1/dataflow/graph/export (DFG-08) — a plain href, not a query/mutation: the browser downloads
+ *  the SVG/PNG/PDF file directly, the same pattern dpiaReportHref/documentExportHref already use. `paper` is
+ *  ignored server-side for svg. */
+export function dataflowExportHref(
+  bffBaseUrl: string,
+  format: "svg" | "png" | "pdf",
+  paper: "a3" | "a4" | "letter" = "a3",
+  legalEntityId?: string,
+): string {
+  const q = new URLSearchParams({ format, paper });
+  if (legalEntityId) q.set("legal_entity_id", legalEntityId);
+  return `${bffBaseUrl}/admin/v1/dataflow/graph/export?${q}`;
+}
+
+/** GET /admin/v1/dataflow/report (DFG-08) — the written companion report ("รายงานประกอบ") to the image
+ *  export, built from the same live graph. */
+export function dataflowReportHref(
+  bffBaseUrl: string,
+  language: "th" | "en",
+  format: "pdf" | "docx" | "html",
+  legalEntityId?: string,
+): string {
+  const q = new URLSearchParams({ language, format });
+  if (legalEntityId) q.set("legal_entity_id", legalEntityId);
+  return `${bffBaseUrl}/admin/v1/dataflow/report?${q}`;
+}

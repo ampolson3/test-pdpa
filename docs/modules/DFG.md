@@ -263,6 +263,43 @@ warning and the node carries the new agreement's id), full `go test ./internal/d
 
 **Acceptance criteria:** ภาพที่ส่งออกอ่านได้ชัดในขนาด A3
 
+**Implementation (DFG-08) — done:** `internal/dataflow/service/export.go` + `report.go` (`ropa.dataflow.export`,
+already seeded — DPO `RUPE`/PRIVACY `RUE` include `E`, AUDIT `RE` — no new migration/permission). Go has no JS
+layout engine (ELK is frontend-only, DFG-01's own `elkjs`), so the export is its own deterministic left-to-right
+grid laid out server-side — org-unit lanes with their activities on the left, a shared recipients column, then
+a countries column, each activity's disposal nodes stacked beneath it — reusing exactly the same node/edge
+colours (`#0ea5e9`/`#8b5cf6`/`#f59e0b`/`#64748b`, warning `#dc2626`) `data-flow-content.tsx` already uses, so
+the exported image matches the on-screen diagram. `ExportDiagram` writes SVG directly (vector, always crisp —
+"อ่านได้ชัดในขนาด A3" needs no renderer at all for this format); PNG and PDF wrap that same SVG in a minimal
+self-contained HTML page (Sarabun embedded via a new exported `render.FontFaces()`, the same font PLT-16's own
+`render.HTML` already uses for Thai labels) and hand it to `platform/docs/render`'s shared, stateless renderers
+— two new capabilities added there for this: `render.ImageRenderer`/`Chromium.PNG`/`Gotenberg.PNG` (a plain
+headless-Chromium `--screenshot`/Gotenberg screenshot-route capture at the paper's own pixel size, 150dpi) and
+an exported `FontFaces()`. PDF reuses the existing `PDFRenderer.PDF` with `@page{size:A3|A4|Letter landscape}`
+CSS — Chromium's print-to-pdf and Gotenberg's own Chromium route (with `preferCssPageSize`) already honour a
+page's own `@page size`, the same mechanism PLT-16's `pageCSS` already relies on, so no point-size math was
+needed. The companion report (`GET /admin/v1/dataflow/report`, pdf/docx/html, th/en) is built from the *exact
+same* live `Graph()` call as the image — per org-unit, per-activity breakdown of data categories, recipients
+(flagging a processor with no DPA, DFG-04's own warning) and transfers (flagging one with no basis, DFG-03's
+own warning) and disposal methods — so the two exports can never drift apart from each other or from RoPA.
+Both `Service.PDF`/`.Image` are optional (`render.FromEnv()`/`render.ImageFromEnv()`, nil in the test harness,
+set in `cmd/api`) — SVG export and the docx/html report formats never need either; PNG/PDF fail with
+`render.ErrNoImageRenderer`/`ErrNoRenderer` (503) when neither Gotenberg nor a local Chromium is configured.
+API: `GET /admin/v1/dataflow/graph/export?format=svg|png|pdf&paper=a3|a4|letter&legal_entity_id=`,
+`GET /admin/v1/dataflow/report?format=pdf|docx|html&language=th|en&legal_entity_id=` — both plain
+`Content-Disposition: attachment` downloads, the exact pattern DPIA-15's own `dpiaGetReport` already
+established (reused handler/response-writer shape). UI: an export panel on `/data-flow` (format/paper
+selectors + a download link for the image, language/format selectors + a download link for the report),
+right under the existing legend. Tests: unit (the SVG carries both warning colours and the activity/recipient
+labels; invalid format/paper refused before any renderer check runs, so a bad paper on PDF never masquerades
+as "no renderer"; the no-renderer sentinels for PNG/PDF while SVG/docx/html still work; the report covers
+activity/recipient/transfer/disposal text in both languages, including the no-activities case), a live smoke
+test against the environment's own pre-installed headless Chromium (skipped when `CHROMIUM_PATH` is unset)
+proving the PNG/PDF bytes are real images (`PNG`/`%PDF` signatures) — **run and passing** against it. Not
+done: SSE-S3-style verification that an exported A3 image is pixel-legible (no automated way to assert visual
+legibility; the SVG is vector so it is crisp at any size by construction, and the live Chromium test proves
+the raster path actually produces a valid image at the chosen paper's pixel size).
+
 <a id="dfg-05"></a>
 ### DFG-05 แก้ไขแผนผังแบบลากวาง
 

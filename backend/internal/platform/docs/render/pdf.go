@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"time"
 )
 
@@ -21,6 +22,18 @@ type PDFRenderer interface {
 
 // ErrNoRenderer means neither Gotenberg nor a local Chromium is configured.
 var ErrNoRenderer = errors.New("render: no PDF renderer configured (GOTENBERG_URL or CHROMIUM_PATH)")
+
+// ErrNoImageRenderer means neither Gotenberg nor a local Chromium is configured for a raster screenshot —
+// DFG-08's own PNG export (PDF/SVG export never needs this: SVG is written directly, and the PDF path
+// already has its own ErrNoRenderer).
+var ErrNoImageRenderer = errors.New("render: no image renderer configured (GOTENBERG_URL or CHROMIUM_PATH)")
+
+// ImageRenderer rasters a self-contained HTML page to PNG at a fixed pixel size — DFG-08's own export, kept
+// as a separate interface from PDFRenderer since a PDF renderer prints paginated output while this captures
+// one viewport-sized screenshot (no pagination, no @page CSS).
+type ImageRenderer interface {
+	PNG(ctx context.Context, html []byte, width, height int) ([]byte, error)
+}
 
 // Gotenberg prints through a Gotenberg server's Chromium route (docs/architecture: the production renderer).
 type Gotenberg struct {
@@ -69,6 +82,47 @@ func (g *Gotenberg) PDF(ctx context.Context, html []byte) ([]byte, error) {
 	return out, nil
 }
 
+// PNG screenshots through Gotenberg's Chromium screenshot route.
+func (g *Gotenberg) PNG(ctx context.Context, html []byte, width, height int) ([]byte, error) {
+	var body bytes.Buffer
+	w := multipart.NewWriter(&body)
+	f, err := w.CreateFormFile("files", "index.html")
+	if err != nil {
+		return nil, err
+	}
+	if _, err := f.Write(html); err != nil {
+		return nil, err
+	}
+	for k, v := range map[string]string{"width": strconv.Itoa(width), "height": strconv.Itoa(height), "format": "png"} {
+		_ = w.WriteField(k, v)
+	}
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, g.URL+"/forms/chromium/screenshot/html", &body)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	c := g.Client
+	if c == nil {
+		c = &http.Client{Timeout: 60 * time.Second}
+	}
+	res, err := c.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("render: gotenberg: %w", err)
+	}
+	defer res.Body.Close()
+	out, err := io.ReadAll(io.LimitReader(res.Body, 100<<20))
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("render: gotenberg answered %d", res.StatusCode)
+	}
+	return out, nil
+}
+
 // Chromium prints with a local headless Chromium — for development and tests where no Gotenberg runs.
 type Chromium struct {
 	Path string
@@ -94,6 +148,30 @@ func (c *Chromium) PDF(ctx context.Context, html []byte) ([]byte, error) {
 	return os.ReadFile(out)
 }
 
+// PNG screenshots the page at exactly width x height device pixels — no pagination, so a diagram's own SVG
+// (sized via its viewBox, scaled to fill the body at this resolution) comes out at the resolution the caller
+// chose, not Chromium's own default viewport.
+func (c *Chromium) PNG(ctx context.Context, html []byte, width, height int) ([]byte, error) {
+	dir, err := os.MkdirTemp("", "pdpa-render-*")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(dir)
+	in, out := filepath.Join(dir, "index.html"), filepath.Join(dir, "out.png")
+	if err := os.WriteFile(in, html, 0o600); err != nil {
+		return nil, err
+	}
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, c.Path, "--headless=new", "--no-sandbox", "--disable-gpu", "--hide-scrollbars",
+		"--force-device-scale-factor=1", "--window-size="+strconv.Itoa(width)+","+strconv.Itoa(height),
+		"--user-data-dir="+filepath.Join(dir, "profile"), "--screenshot="+out, "file://"+in)
+	if msg, err := cmd.CombinedOutput(); err != nil {
+		return nil, fmt.Errorf("render: chromium: %w: %s", err, lastLine(msg))
+	}
+	return os.ReadFile(out)
+}
+
 func lastLine(b []byte) string {
 	b = bytes.TrimSpace(b)
 	if i := bytes.LastIndexByte(b, '\n'); i >= 0 {
@@ -108,6 +186,19 @@ func lastLine(b []byte) string {
 // FromEnv picks the renderer: GOTENBERG_URL, else CHROMIUM_PATH, else nil (rendering PDF then fails with
 // ErrNoRenderer; DOCX and HTML still work).
 func FromEnv() PDFRenderer {
+	if u := os.Getenv("GOTENBERG_URL"); u != "" {
+		return &Gotenberg{URL: u}
+	}
+	if p := os.Getenv("CHROMIUM_PATH"); p != "" {
+		return &Chromium{Path: p}
+	}
+	return nil
+}
+
+// ImageFromEnv mirrors FromEnv for ImageRenderer — same env vars, same precedence (Gotenberg in production,
+// a local Chromium in development; nil leaves PNG export failing with ErrNoImageRenderer while SVG/PDF still
+// work).
+func ImageFromEnv() ImageRenderer {
 	if u := os.Getenv("GOTENBERG_URL"); u != "" {
 		return &Gotenberg{URL: u}
 	}

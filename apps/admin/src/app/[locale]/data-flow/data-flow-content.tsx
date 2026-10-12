@@ -7,6 +7,8 @@ import {
   createApiClient,
   useDataflowGraph,
   useLegalEntities,
+  dataflowExportHref,
+  dataflowReportHref,
   type DataflowEdge,
   type DataflowNode,
 } from "@pdpa/api-client";
@@ -280,6 +282,8 @@ export function DataFlowContent() {
 
       <Legend />
 
+      <ExportPanel legalEntityId={legalEntityId} />
+
       {graph.isPending || !laidOut ? (
         <p className="text-slate-500">{t("loading")}</p>
       ) : graph.isError ? (
@@ -340,6 +344,81 @@ function Legend() {
           {it.label}
         </span>
       ))}
+    </div>
+  );
+}
+
+/** DFG-08: export the diagram as a standalone image (svg/png/pdf, sized for print — always A3/A4/Letter
+ *  landscape) and the written companion report (pdf/docx/html, th/en) — both plain `<a href>`s through the
+ *  BFF, the same pattern dpiaReportHref/documentExportHref already use; the browser downloads the file
+ *  directly, no client-side fetch needed. */
+function ExportPanel({ legalEntityId }: { legalEntityId?: string }) {
+  const t = useTranslations("dataflow");
+  const [format, setFormat] = useState<"svg" | "png" | "pdf">("svg");
+  const [paper, setPaper] = useState<"a3" | "a4" | "letter">("a3");
+  const [reportLang, setReportLang] = useState<"th" | "en">("th");
+  const [reportFormat, setReportFormat] = useState<"pdf" | "docx" | "html">("pdf");
+
+  return (
+    <div className="flex flex-wrap items-end gap-4 rounded-md border border-slate-200 bg-white p-3 text-xs">
+      <div className="flex items-end gap-2">
+        <label>
+          <span className="block text-slate-600">{t("export.format")}</span>
+          <select className={INPUT} value={format} onChange={(e) => setFormat(e.target.value as typeof format)}>
+            <option value="svg">SVG</option>
+            <option value="png">PNG</option>
+            <option value="pdf">PDF</option>
+          </select>
+        </label>
+        {format !== "svg" ? (
+          <label>
+            <span className="block text-slate-600">{t("export.paper")}</span>
+            <select className={INPUT} value={paper} onChange={(e) => setPaper(e.target.value as typeof paper)}>
+              <option value="a3">A3</option>
+              <option value="a4">A4</option>
+              <option value="letter">Letter</option>
+            </select>
+          </label>
+        ) : null}
+        <a
+          className="rounded-md border border-sky-300 bg-sky-50 px-3 py-1.5 text-sky-800 hover:bg-sky-100"
+          href={dataflowExportHref("/api/bff", format, paper, legalEntityId)}
+          target="_blank"
+          rel="noreferrer"
+          data-testid="dataflow-export-image"
+        >
+          {t("export.downloadImage")}
+        </a>
+      </div>
+
+      <span className="border-l border-slate-300 self-stretch" />
+
+      <div className="flex items-end gap-2">
+        <label>
+          <span className="block text-slate-600">{t("export.language")}</span>
+          <select className={INPUT} value={reportLang} onChange={(e) => setReportLang(e.target.value as typeof reportLang)}>
+            <option value="th">ไทย</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <label>
+          <span className="block text-slate-600">{t("export.reportFormat")}</span>
+          <select className={INPUT} value={reportFormat} onChange={(e) => setReportFormat(e.target.value as typeof reportFormat)}>
+            <option value="pdf">PDF</option>
+            <option value="docx">Word</option>
+            <option value="html">HTML</option>
+          </select>
+        </label>
+        <a
+          className="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50"
+          href={dataflowReportHref("/api/bff", reportLang, reportFormat, legalEntityId)}
+          target="_blank"
+          rel="noreferrer"
+          data-testid="dataflow-export-report"
+        >
+          {t("export.downloadReport")}
+        </a>
+      </div>
     </div>
   );
 }

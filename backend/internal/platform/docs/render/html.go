@@ -12,6 +12,12 @@ import (
 //go:embed fonts/*.woff2
 var fonts embed.FS
 
+// FontFaces is fontFaces exported for callers outside this package that build their own self-contained HTML
+// (not through Input/HTML) — DFG-08's diagram export is the first: a plain SVG page has no Input/Content to
+// go through HTML(), but still needs the same embedded Thai font so its node labels render identically on
+// every renderer.
+func FontFaces() string { return fontFaces() }
+
 // fontFaces embeds Sarabun (SIL OFL, fonts/OFL.txt) — Thai and Latin subsets, regular and bold — so a PDF renders the
 // same Thai glyphs wherever it is produced, with no font installed on the renderer.
 func fontFaces() string {

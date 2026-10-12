@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -143,6 +144,123 @@ func (e DataflowGetGraphParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for DataflowExportGraphParamsFormat.
+const (
+	DataflowExportGraphParamsFormatPdf DataflowExportGraphParamsFormat = "pdf"
+	DataflowExportGraphParamsFormatPng DataflowExportGraphParamsFormat = "png"
+	DataflowExportGraphParamsFormatSvg DataflowExportGraphParamsFormat = "svg"
+)
+
+// Valid indicates whether the value is a known member of the DataflowExportGraphParamsFormat enum.
+func (e DataflowExportGraphParamsFormat) Valid() bool {
+	switch e {
+	case DataflowExportGraphParamsFormatPdf:
+		return true
+	case DataflowExportGraphParamsFormatPng:
+		return true
+	case DataflowExportGraphParamsFormatSvg:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DataflowExportGraphParamsPaper.
+const (
+	A3     DataflowExportGraphParamsPaper = "a3"
+	A4     DataflowExportGraphParamsPaper = "a4"
+	Letter DataflowExportGraphParamsPaper = "letter"
+)
+
+// Valid indicates whether the value is a known member of the DataflowExportGraphParamsPaper enum.
+func (e DataflowExportGraphParamsPaper) Valid() bool {
+	switch e {
+	case A3:
+		return true
+	case A4:
+		return true
+	case Letter:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DataflowExportGraphParamsAcceptLanguage.
+const (
+	DataflowExportGraphParamsAcceptLanguageEn DataflowExportGraphParamsAcceptLanguage = "en"
+	DataflowExportGraphParamsAcceptLanguageTh DataflowExportGraphParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DataflowExportGraphParamsAcceptLanguage enum.
+func (e DataflowExportGraphParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DataflowExportGraphParamsAcceptLanguageEn:
+		return true
+	case DataflowExportGraphParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DataflowGetReportParamsLanguage.
+const (
+	DataflowGetReportParamsLanguageEn DataflowGetReportParamsLanguage = "en"
+	DataflowGetReportParamsLanguageTh DataflowGetReportParamsLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DataflowGetReportParamsLanguage enum.
+func (e DataflowGetReportParamsLanguage) Valid() bool {
+	switch e {
+	case DataflowGetReportParamsLanguageEn:
+		return true
+	case DataflowGetReportParamsLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DataflowGetReportParamsFormat.
+const (
+	DataflowGetReportParamsFormatDocx DataflowGetReportParamsFormat = "docx"
+	DataflowGetReportParamsFormatHtml DataflowGetReportParamsFormat = "html"
+	DataflowGetReportParamsFormatPdf  DataflowGetReportParamsFormat = "pdf"
+)
+
+// Valid indicates whether the value is a known member of the DataflowGetReportParamsFormat enum.
+func (e DataflowGetReportParamsFormat) Valid() bool {
+	switch e {
+	case DataflowGetReportParamsFormatDocx:
+		return true
+	case DataflowGetReportParamsFormatHtml:
+		return true
+	case DataflowGetReportParamsFormatPdf:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DataflowGetReportParamsAcceptLanguage.
+const (
+	DataflowGetReportParamsAcceptLanguageEn DataflowGetReportParamsAcceptLanguage = "en"
+	DataflowGetReportParamsAcceptLanguageTh DataflowGetReportParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DataflowGetReportParamsAcceptLanguage enum.
+func (e DataflowGetReportParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DataflowGetReportParamsAcceptLanguageEn:
+		return true
+	case DataflowGetReportParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // DataflowEdge One arrow on the diagram, between two DataflowNode ids.
 type DataflowEdge struct {
 	Id     string           `json:"id"`
@@ -249,6 +367,9 @@ type Forbidden = Problem
 // Unauthorized RFC 9457 problem details with a stable machine-readable `code`
 type Unauthorized = Problem
 
+// UnprocessableEntity RFC 9457 problem details with a stable machine-readable `code`
+type UnprocessableEntity = Problem
+
 // DataflowGetGraphParams defines parameters for DataflowGetGraph.
 type DataflowGetGraphParams struct {
 	// LegalEntityId Narrow the graph to one legal entity's activities; omitted shows every legal entity's activities together
@@ -261,11 +382,57 @@ type DataflowGetGraphParams struct {
 // DataflowGetGraphParamsAcceptLanguage defines parameters for DataflowGetGraph.
 type DataflowGetGraphParamsAcceptLanguage string
 
+// DataflowExportGraphParams defines parameters for DataflowExportGraph.
+type DataflowExportGraphParams struct {
+	LegalEntityId *Uuid                           `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+	Format        DataflowExportGraphParamsFormat `form:"format" json:"format"`
+
+	// Paper Page size for png/pdf (ignored for svg); defaults to a3
+	Paper *DataflowExportGraphParamsPaper `form:"paper,omitempty" json:"paper,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DataflowExportGraphParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DataflowExportGraphParamsFormat defines parameters for DataflowExportGraph.
+type DataflowExportGraphParamsFormat string
+
+// DataflowExportGraphParamsPaper defines parameters for DataflowExportGraph.
+type DataflowExportGraphParamsPaper string
+
+// DataflowExportGraphParamsAcceptLanguage defines parameters for DataflowExportGraph.
+type DataflowExportGraphParamsAcceptLanguage string
+
+// DataflowGetReportParams defines parameters for DataflowGetReport.
+type DataflowGetReportParams struct {
+	LegalEntityId *Uuid                           `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+	Language      DataflowGetReportParamsLanguage `form:"language" json:"language"`
+	Format        DataflowGetReportParamsFormat   `form:"format" json:"format"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DataflowGetReportParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DataflowGetReportParamsLanguage defines parameters for DataflowGetReport.
+type DataflowGetReportParamsLanguage string
+
+// DataflowGetReportParamsFormat defines parameters for DataflowGetReport.
+type DataflowGetReportParamsFormat string
+
+// DataflowGetReportParamsAcceptLanguage defines parameters for DataflowGetReport.
+type DataflowGetReportParamsAcceptLanguage string
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// DataflowGetGraph DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — org-unit swimlanes, activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge
 	// (GET /admin/v1/dataflow/graph)
 	DataflowGetGraph(w http.ResponseWriter, r *http.Request, params DataflowGetGraphParams)
+	// DataflowExportGraph DFG-08: the diagram (DFG-01/03/04's own live Graph) as a standalone image — SVG (vector, no renderer needed), or PNG/PDF rendered through the shared platform/docs/render renderer, sized for print (always landscape)
+	// (GET /admin/v1/dataflow/graph/export)
+	DataflowExportGraph(w http.ResponseWriter, r *http.Request, params DataflowExportGraphParams)
+	// DataflowGetReport DFG-08: the written report ("รายงานประกอบ") accompanying the diagram export — per org-unit/activity breakdown of data categories, recipients (flagging a processor with no DPA), cross-border transfers (flagging one with no basis) and disposal methods, built from the same live Graph as the image export
+	// (GET /admin/v1/dataflow/report)
+	DataflowGetReport(w http.ResponseWriter, r *http.Request, params DataflowGetReportParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -275,6 +442,18 @@ type Unimplemented struct{}
 // DataflowGetGraph DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — org-unit swimlanes, activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge
 // (GET /admin/v1/dataflow/graph)
 func (_ Unimplemented) DataflowGetGraph(w http.ResponseWriter, r *http.Request, params DataflowGetGraphParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DataflowExportGraph DFG-08: the diagram (DFG-01/03/04's own live Graph) as a standalone image — SVG (vector, no renderer needed), or PNG/PDF rendered through the shared platform/docs/render renderer, sized for print (always landscape)
+// (GET /admin/v1/dataflow/graph/export)
+func (_ Unimplemented) DataflowExportGraph(w http.ResponseWriter, r *http.Request, params DataflowExportGraphParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DataflowGetReport DFG-08: the written report ("รายงานประกอบ") accompanying the diagram export — per org-unit/activity breakdown of data categories, recipients (flagging a processor with no DPA), cross-border transfers (flagging one with no basis) and disposal methods, built from the same live Graph as the image export
+// (GET /admin/v1/dataflow/report)
+func (_ Unimplemented) DataflowGetReport(w http.ResponseWriter, r *http.Request, params DataflowGetReportParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -332,6 +511,166 @@ func (siw *ServerInterfaceWrapper) DataflowGetGraph(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DataflowGetGraph(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DataflowExportGraph operation middleware
+func (siw *ServerInterfaceWrapper) DataflowExportGraph(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DataflowExportGraphParams
+
+	// ------------- Optional query parameter "legal_entity_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "legal_entity_id", r.URL.Query(), &params.LegalEntityId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "legal_entity_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legal_entity_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "format" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "format", r.URL.Query(), &params.Format, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "format"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "format", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "paper" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "paper", r.URL.Query(), &params.Paper, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "paper"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "paper", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DataflowExportGraphParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DataflowExportGraph(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DataflowGetReport operation middleware
+func (siw *ServerInterfaceWrapper) DataflowGetReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DataflowGetReportParams
+
+	// ------------- Optional query parameter "legal_entity_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "legal_entity_id", r.URL.Query(), &params.LegalEntityId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "legal_entity_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legal_entity_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "language" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "language", r.URL.Query(), &params.Language, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "language"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "language", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "format" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "format", r.URL.Query(), &params.Format, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "format"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "format", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DataflowGetReportParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DataflowGetReport(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -457,6 +796,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/dataflow/graph", wrapper.DataflowGetGraph)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dataflow/graph/export", wrapper.DataflowExportGraph)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dataflow/report", wrapper.DataflowGetReport)
+	})
 
 	return r
 }
@@ -464,6 +809,8 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 type ForbiddenApplicationProblemPlusJSONResponse Problem
 
 type UnauthorizedApplicationProblemPlusJSONResponse Problem
+
+type UnprocessableEntityApplicationProblemPlusJSONResponse Problem
 
 type DataflowGetGraphRequestObject struct {
 	Params DataflowGetGraphParams
@@ -519,11 +866,213 @@ func (response DataflowGetGraph403ApplicationProblemPlusJSONResponse) VisitDataf
 	return err
 }
 
+type DataflowExportGraphRequestObject struct {
+	Params DataflowExportGraphParams
+}
+
+type DataflowExportGraphResponseObject interface {
+	VisitDataflowExportGraphResponse(w http.ResponseWriter) error
+}
+
+type DataflowExportGraph200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type DataflowExportGraph200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       DataflowExportGraph200ResponseHeaders
+	ContentLength int64
+}
+
+func (response DataflowExportGraph200ApplicationoctetStreamResponse) VisitDataflowExportGraphResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DataflowExportGraph401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowExportGraph401ApplicationProblemPlusJSONResponse) VisitDataflowExportGraphResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowExportGraph403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowExportGraph403ApplicationProblemPlusJSONResponse) VisitDataflowExportGraphResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowExportGraph422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowExportGraph422ApplicationProblemPlusJSONResponse) VisitDataflowExportGraphResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowExportGraph503ApplicationProblemPlusJSONResponse Problem
+
+func (response DataflowExportGraph503ApplicationProblemPlusJSONResponse) VisitDataflowExportGraphResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowGetReportRequestObject struct {
+	Params DataflowGetReportParams
+}
+
+type DataflowGetReportResponseObject interface {
+	VisitDataflowGetReportResponse(w http.ResponseWriter) error
+}
+
+type DataflowGetReport200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type DataflowGetReport200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       DataflowGetReport200ResponseHeaders
+	ContentLength int64
+}
+
+func (response DataflowGetReport200ApplicationoctetStreamResponse) VisitDataflowGetReportResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DataflowGetReport401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowGetReport401ApplicationProblemPlusJSONResponse) VisitDataflowGetReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowGetReport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowGetReport403ApplicationProblemPlusJSONResponse) VisitDataflowGetReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowGetReport422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowGetReport422ApplicationProblemPlusJSONResponse) VisitDataflowGetReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowGetReport503ApplicationProblemPlusJSONResponse Problem
+
+func (response DataflowGetReport503ApplicationProblemPlusJSONResponse) VisitDataflowGetReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// DataflowGetGraph DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — org-unit swimlanes, activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge
 	// (GET /admin/v1/dataflow/graph)
 	DataflowGetGraph(ctx context.Context, request DataflowGetGraphRequestObject) (DataflowGetGraphResponseObject, error)
+	// DataflowExportGraph DFG-08: the diagram (DFG-01/03/04's own live Graph) as a standalone image — SVG (vector, no renderer needed), or PNG/PDF rendered through the shared platform/docs/render renderer, sized for print (always landscape)
+	// (GET /admin/v1/dataflow/graph/export)
+	DataflowExportGraph(ctx context.Context, request DataflowExportGraphRequestObject) (DataflowExportGraphResponseObject, error)
+	// DataflowGetReport DFG-08: the written report ("รายงานประกอบ") accompanying the diagram export — per org-unit/activity breakdown of data categories, recipients (flagging a processor with no DPA), cross-border transfers (flagging one with no basis) and disposal methods, built from the same live Graph as the image export
+	// (GET /admin/v1/dataflow/report)
+	DataflowGetReport(ctx context.Context, request DataflowGetReportRequestObject) (DataflowGetReportResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -584,6 +1133,58 @@ func (sh *strictHandler) DataflowGetGraph(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DataflowGetGraphResponseObject); ok {
 		if err := validResponse.VisitDataflowGetGraphResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DataflowExportGraph operation middleware
+func (sh *strictHandler) DataflowExportGraph(w http.ResponseWriter, r *http.Request, params DataflowExportGraphParams) {
+	var request DataflowExportGraphRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DataflowExportGraph(ctx, request.(DataflowExportGraphRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DataflowExportGraph")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DataflowExportGraphResponseObject); ok {
+		if err := validResponse.VisitDataflowExportGraphResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DataflowGetReport operation middleware
+func (sh *strictHandler) DataflowGetReport(w http.ResponseWriter, r *http.Request, params DataflowGetReportParams) {
+	var request DataflowGetReportRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DataflowGetReport(ctx, request.(DataflowGetReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DataflowGetReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DataflowGetReportResponseObject); ok {
+		if err := validResponse.VisitDataflowGetReportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
