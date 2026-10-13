@@ -302,7 +302,7 @@ type DataflowNode struct {
 	Id    string `json:"id"`
 	Label string `json:"label"`
 
-	// ParentId The containing org_unit node's id
+	// ParentId The containing org_unit node's id, for an activity node
 	ParentId      *string   `json:"parent_id,omitempty"`
 	Purposes      *[]string `json:"purposes,omitempty"`
 	RecipientRole *string   `json:"recipient_role,omitempty"`

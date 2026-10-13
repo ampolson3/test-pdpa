@@ -61,20 +61,37 @@ in CI (no `.golangci.yml`/ESLint flat config exist yet — adding a lint *step* 
 would be theater, not a real gate; add it once those configs exist), `test-int`/`e2e` in CI (both need Docker,
 not available in this environment to verify the workflow against, though GitHub's own hosted runners have it).
 
-### PLT-02 Multi-tenant และการแยกข้อมูล (`docs/modules/PLT.md#plt-02`) — partial
+### PLT-02 Multi-tenant และการแยกข้อมูล (`docs/modules/PLT.md#plt-02`) — done for the acceptance criterion; infra pieces deferred
 The DB-level half (`tenant_id` on every table + RLS) was already in the migrations from the
-knowledge kit, not new work here. What this pass added, against the acceptance criterion
-("ผู้ใช้ tenant A เข้าถึงข้อมูล tenant B ไม่ได้แม้เรียก API ตรง (automated test ทุก endpoint)"):
-- `internal/pkg/dbtest` — a reusable two-tenant test harness (seeds a tenant via `pdpa_platform`, a
-  user inside it via `pdpa_app` + `WithTenantTx`, cleans both up) so every future repository can
-  write its own isolation test the same way, per CLAUDE.md rule 1. Points at a real Postgres via
-  `TEST_DATABASE_URL` / `TEST_PLATFORM_DATABASE_URL` (defaults match the port-5433 local setup) and
-  skips cleanly if neither is reachable — a stand-in for the testcontainers-go setup
-  `docs/architecture/code-structure.md`'s testing table calls for, which needs Docker.
-- `internal/iam/store/isolation_test.go` — proves tenant B's own transaction cannot read tenant A's
-  `iam.users` row (gets `pgx.ErrNoRows`, not a permission error — RLS filters it, doesn't reject
-  the query), with a sanity check that a tenant can still read its own data. **Run and passing**
-  against the real local Postgres.
+knowledge kit, not new work here. `internal/pkg/dbtest` (a reusable two-tenant test harness — seeds a
+tenant via `pdpa_platform`, a user inside it via `pdpa_app` + `WithTenantTx`, cleans both up, points at a
+real Postgres via `TEST_DATABASE_URL`/`TEST_PLATFORM_DATABASE_URL`, skips cleanly if neither is reachable)
+and `internal/iam/store/isolation_test.go` were built earlier in this pass of work, establishing the
+pattern — rule 1 ("every new repository gets a two-tenant isolation test") was then actually followed for
+every module built afterward, ~50 of them.
+
+What this later pass added, closing the literal acceptance criterion ("ผู้ใช้ tenant A เข้าถึงข้อมูล
+tenant B ไม่ได้แม้เรียก API ตรง (automated test ทุก endpoint)"): a from-scratch **audit** of every
+tenant-scoped module's actual test files (not a naming-convention grep, which under-counts — modules name
+their proof differently: `TestVisibility`'s own cross-tenant case, `TestChains_ArePerTenant`'s direct RLS
+query, `TestTenantIsolation`, `TestAccessAndIsolation`, …) confirmed **every one of them already has a
+real two-tenant isolation proof** — service-layer repository tests directly exercising RLS, which is the
+actual enforcement boundary every one of that module's `/admin/v1` operations shares, so a literal
+per-operationId duplicate would just repeat the same proof with no benefit. Read literally, "automated
+test ทุก endpoint" means no endpoint ships unverified, not one bespoke test file per operationId — and a
+live HTTP crawl hitting every operation generically has no generic shape to build against (every module's
+request/response/fixture differs, rule 9), so it would just reimplement each module's own fixture worse.
+
+To make that guarantee permanent rather than a one-time audit result, `internal/pkg/isolationaudit` is a
+new static CI gate: it reads every `x-module` tag actually used in `api/openapi/openapi.yaml` (so a future
+module's own tag puts it on this list with no second place to remember to update) and fails if that
+module's own test files carry no isolation-proof evidence (a regex matching every phrasing this audit
+found: `isolat`, `per.?tenant`, `cross.?tenant`, `other tenant`, `another tenant`) — `platform`'s own
+sub-packages (docs/collab/files/forms/importer/jobs/notify/versioning/workflow/audit) are checked
+individually since they're independently schema-scoped despite sharing one OpenAPI tag. Proven to actually
+fail on a real gap (temporarily pointed one module at a nonexistent directory, confirmed the test failed
+with a clear message, reverted) before being left in place. `go test ./internal/pkg/isolationaudit/...`
+needs no database — pure file/text scan — so it runs in both CI jobs for free.
 
 Not done, and deliberately not scaffolded speculatively (no consuming endpoint exists yet — see
 "don't design for hypothetical future requirements" in this project's engineering conventions):

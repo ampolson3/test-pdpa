@@ -191,6 +191,21 @@ environment to verify locally, though GitHub's hosted runners have it).
 
 **หมายเหตุจาก SA (ใช้แทนข้อความในแผนเมื่อขัดกัน):** role / privilege / partition ตาม `deploy/db/*.sql` และ security.md (ทดสอบแล้ว) · FK constraint ไม่ผ่าน RLS → service ต้องตรวจว่า id ที่อ้างถึงมองเห็นได้ภายใต้ RLS
 
+**Implementation (PLT-02) — done for the acceptance criterion; infra pieces deferred:** `tenant_id` + RLS on
+every table and `internal/pkg/dbtest` (two-tenant harness) were already built. A full audit of every tenant-
+scoped module's own test files — reading the actual tests, not grepping for one naming convention — found
+every one of the ~15 modules (and `platform`'s own independently schema-scoped sub-packages) already has a
+genuine two-tenant isolation proof at the service/repository layer, the real enforcement boundary every one
+of that module's `/admin/v1` operations shares — so "automated test ทุก endpoint" is read as "no endpoint
+ships without this proof somewhere in its owning module," not a literal duplicate test per operationId (that
+would just repeat the same RLS check with no benefit; a generic live HTTP crawl has no generic request/
+response shape to build against across modules, rule 9). `internal/pkg/isolationaudit` makes this permanent:
+a static CI gate reading every `x-module` tag used in `api/openapi/openapi.yaml` and failing if that module's
+test files carry no isolation evidence — verified to actually fail on a real gap before being left in place.
+Not done, deliberately (no consuming feature needs them yet): the subdomain/custom-domain/`platform.public_keys`
+tenant resolver for `/public/v1` and the portal, tenant provisioning (depends on ORG), DB-per-tenant deployment
+mode, Next.js tenant-context middleware / portal custom domain.
+
 <a id="plt-03"></a>
 ### PLT-03 ระบบหลายภาษา TH/EN
 

@@ -5552,7 +5552,7 @@ export interface components {
             /** @enum {string} */
             type: "org_unit" | "activity" | "recipient" | "country" | "disposal";
             label: string;
-            /** @description The containing org_unit node's id */
+            /** @description The containing org_unit node's id, for an activity node */
             parent_id?: string;
             activity_code?: string;
             activity_status?: string;
