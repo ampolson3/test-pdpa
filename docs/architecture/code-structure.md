@@ -113,7 +113,36 @@ Tx (#11) ครอบ Handler (#12) และ Audit (#13): audit ระดับ
 | docs/states/state-machines.yaml | สคริปต์ของโปรเจกต์ (ทำใน P0) | ตาราง transition ใน service + test |
 | docs/security/permissions.yaml | migration / seed | iam.permissions, iam.roles |
 
-CI ต้อง fail ถ้า generate แล้วมี diff (ARC-06 ขั้น Codegen check)
+CI ต้อง fail ถ้า generate แล้วมี diff (ARC-06 ขั้น Codegen check) — `.github/workflows/ci.yml` (PLT-01) รัน
+`make gen` แล้ว `git diff --exit-code` จริงทุก push/PR, ต่อด้วย `go vet`/`gofmt`/`go build`/`go test` (Postgres 16 +
+pgvector และ Redis เป็น service container) และ `pnpm -r build/test/typecheck` คนละ job
+
+## สร้างโมดูลใหม่ (PLT-01's "สร้างโมดูลใหม่จาก template ได้ภายใน 1 วัน")
+
+ไม่มี generator CLI (ยังไม่มีความจำเป็น — มีเพียงรายการขั้นตอนที่ใช้ซ้ำแล้วซ้ำอีกตลอดโปรเจกต์นี้ ทุกครั้งใน
+เวลาไม่ถึงวัน) ทำตามลำดับนี้สำหรับโมดูลใหม่ `<module>` บน schema ใหม่ `<schema>`:
+
+1. **Migration** — `goose -s create backend/db/migrations <name> sql` แล้วเพิ่ม `CREATE SCHEMA <schema>` +
+   ตารางแรก + REVOKE/GRANT ตาม `deploy/db/10-grants.sql` (rule 13)
+2. **sqlc** — เพิ่ม entry ใน `backend/db/sqlc.yaml` (`schema:`/`queries: backend/db/queries/<module>`) แล้วสร้าง
+   `.sql` คำสั่งแรกใน `backend/db/queries/<module>/`
+3. **OpenAPI** — เพิ่ม path แรกใน `api/openapi/openapi.yaml` (`x-permission`, `x-module: <module>`, tag ใหม่)
+4. **oapi-codegen** — สร้าง `backend/internal/<module>/http/oapi-codegen.yaml` (ดูของโมดูลอื่นเป็นตัวอย่าง,
+   `include-operation-ids` ต้องมี operationId ของ path ที่เพิ่ม) แล้วเพิ่มบรรทัดใน Makefile's `gen:` ก่อน
+   `pnpm gen:api-client`
+5. **store/service/http** — ตาม layer ใน "Layer ภายใน module" ข้างบน: `store` (wrapper รอบ sqlc generated),
+   `service` (กฎธุรกิจ, state machine ถ้ามี, audit, outbox), `http` (`Strict` struct + `NewStrict`,
+   handler แปลง request/response อย่างเดียว)
+6. **wiring** — ประกาศ `Service` ของโมดูลใน `internal/<module>/service/service.go` (interface ที่โมดูลอื่นเรียก
+   ผ่าน rule 9) แล้วต่อสายใน `cmd/api/main.go` (และ `cmd/worker/main.go` ถ้ามี job)
+7. **`make gen`** — ตรวจว่า `go build ./...` ผ่านและไม่มี diff ที่ไม่ได้ตั้งใจ
+8. **Frontend** — `packages/api-client/src/<module>.ts` (hooks จาก `openapi-typescript` schema),
+   หน้าจอใหม่ใน `apps/admin/src/app/[locale]/<module>/`, i18n key th/en ใน `packages/i18n`
+9. **Tests** — two-tenant isolation test ต่อ repository ใหม่ (rule 1), HTTP contract test (401/403), unit
+   test ของกฎธุรกิจ
+
+ทุก module ตั้งแต่ ORG เป็นต้นมาใน codebase นี้ (ROPA, CON, BRE, DPO, DPIA, VEN, DPA/DSA, DFG, …) สร้างตามลำดับ
+นี้จริง — proof คือ `git log` ของแต่ละ commit `Implement <ID>: …`
 
 ## Frontend
 

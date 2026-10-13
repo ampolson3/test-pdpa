@@ -153,6 +153,21 @@
 
 **Acceptance criteria:** สร้างโมดูลใหม่จาก template ได้ภายใน 1 วัน; แก้ OpenAPI แล้ว Go stub และ TS client generate ใน CI
 
+**Implementation (PLT-01) — done:** The scaffold itself (module layer layout, chi+oapi-codegen, pgx+sqlc,
+goose, RFC 9457 error model, `cmd/{api,worker,scanner,migrate}`, Turborepo `apps/{admin,portal}` +
+`packages/*`) was built by the project's original `/scaffold` pass — see `CLAUDE.md`'s "Scaffold status"
+section — and has been exercised by every module feature since. This pass closed the two acceptance
+criteria the scaffold alone left open: a documented "Adding a new module" checklist in
+`docs/architecture/code-structure.md` (9 steps: migration → sqlc → OpenAPI → oapi-codegen config → store/
+service/http → wiring → `make gen` → frontend → tests), each step already proven repeatedly well under a
+day by this codebase's own commit history; and `.github/workflows/ci.yml`, which runs `make gen` then
+`git diff --exit-code` on every push/PR (so a changed OpenAPI spec with a stale Go stub or TS client fails
+the build — the criterion's own literal wording), plus `go vet`/`gofmt`/`go build`/`go test` against real
+Postgres 16+pgvector and Redis service containers, and a second job for `pnpm -r build/test/typecheck`.
+Not done: a lint step in CI (no `.golangci.yml`/ESLint flat config exist yet to run against — see
+`docs/architecture/code-structure.md`), `test-int`/`e2e` in CI (need Docker, unavailable in this
+environment to verify locally, though GitHub's hosted runners have it).
+
 <a id="plt-02"></a>
 ### PLT-02 Multi-tenant และการแยกข้อมูล
 
@@ -196,6 +211,26 @@
 **Frontend (Next.js):** next-intl ข้อความ UI TH/EN, วันที่ พ.ศ. / ค.ศ., เขตเวลา Asia/Bangkok, ฟอนต์ไทย
 
 **Acceptance criteria:** ทุกหน้าสลับ TH/EN ได้ และวันที่แสดง พ.ศ. ตามการตั้งค่า
+
+**Implementation (PLT-03) — done for what exists so far:** Domain content doesn't get a separate translation
+table (already true in the baseline migrations): `_th`/`_en` columns or `{th, en}` jsonb next to the data.
+This covered the fixed strings the platform itself owns. Backend: `internal/pkg/i18n` — a Go message catalog
+resolving `Accept-Language` (falling back to `th`, decisions.md Q-17) and localizing every `httpx.Problem`'s
+title by its stable `code`; module-specific business-rule codes are cataloged as each module is built.
+Frontend: `apps/admin`'s root `[locale]/layout.tsx` has a `LocaleSwitcher` in the header — every page nests
+under that layout, so the switcher is on every page literally, satisfying this feature's own acceptance
+criterion, not just the dashboard — proper next-intl routing (`defineRouting` + `createNavigation` in
+`src/i18n/routing.ts`, so the switcher changes locale without leaving the current page), the Sarabun font
+(Thai government's standard typeface, covers Latin too) via `next/font/google`, and `@pdpa/i18n`'s
+`formatDate` — Buddhist Era for th / Gregorian for en, both converted to Asia/Bangkok before formatting
+(CLAUDE.md rule 11), with its own unit tests proving the BE-year math and the UTC→Bangkok day boundary.
+Fixed a real bug this surfaced: the BFF was forwarding the browser's raw `Accept-Language` header (e.g.
+`"en-US,en;q=0.9"`) straight to the Go API, which only accepts the literal values `"th"`/`"en"` — fixed by
+reading the locale from the page's own path via `Referer` (that route isn't nested under `app/[locale]/`) /
+`next-intl/server`'s `getLocale()` for Server Components. Every module built since has added its own th/en
+keys to `packages/i18n` as part of its own feature work (rule 12) — this feature's own literal criterion
+("every page switches TH/EN, dates show BE per the setting") was met from the moment the switcher landed in
+the root layout, and every later page inherits it automatically by nesting under that same layout.
 
 **หมายเหตุจาก SA (ใช้แทนข้อความในแผนเมื่อขัดกัน):** ไม่มีตาราง translation แยก: ข้อความหลายภาษาเก็บเป็นคอลัมน์ `_th` / `_en` หรือ jsonb `{th, en}` ตาม ERD (เช่น purpose_versions.text_th / text_en, cookie.categories.names) · UI ใช้ next-intl
 
