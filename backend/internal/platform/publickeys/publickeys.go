@@ -27,7 +27,9 @@ const (
 	EntityCollectionPoint = "collection_point"
 	EntityNotice          = "notice"
 	EntityDsarForm        = "dsar_form"
-	EntityBreachForm      = "breach_report_form"
+	// EntityBreachForm's value must match platform.public_keys.entity_type's own CHECK constraint
+	// (00002_platform.sql), which already named this type "breach_form" — not a value BRE-01 invented.
+	EntityBreachForm = "breach_form"
 )
 
 // Key is a resolved public key.
