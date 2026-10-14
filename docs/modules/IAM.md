@@ -206,7 +206,57 @@
 
 **Acceptance criteria:** ปิดโมดูลที่ไม่ได้ซื้อแล้วเมนูและ API ของโมดูลนั้นใช้ไม่ได้
 
-**หมายเหตุจาก SA (ใช้แทนข้อความในแผนเมื่อขัดกัน):** provider console เป็น surface `/provider/v1` ใช้ DB role `pdpa_platform` เฉพาะ package `internal/platform/provider` · บัญชี SUPER อยู่ใน tenant พิเศษ `platform` (decisions Q-19)
+**หมายเหตุจาก SA (ใช้แทนข้อความในแผนเมื่อขัดกัน):** provider console เป็น surface `/provider/v1` ใช้ DB role `pdpa_platform` เฉพาะ package `internal/platform/provider` · บัญชี SUPER อยู่ใน tenant พิเศษ `platform` (decisions D-24, ย้ายจาก Q-19)
+
+**Implementation (IAM-03) — done:** `internal/platform/provider` (service.go) is the only package in the
+whole backend holding a `pdpa_platform` (BYPASSRLS) pool — migration 00064 seeds the reserved `platform`
+tenant SUPER accounts live in (`iam.users.tenant_id` points at it like any other tenant, so AuthZ's
+ordinary per-tenant grant cache needs no special-casing for SUPER). `CreateTenant`/`GetTenant`/
+`ListTenants` (no pagination — the platform's own roster, same reasoning DPIA-12/ROPA-04's own
+platform-wide lists already used) and `SuspendTenant`/`ReactivateTenant` (a tiny trial/active <->
+suspended machine) write `platform.tenants` directly through that pool, never through the request's own
+`pdpa_app` transaction (CLAUDE.md rule 1 — that transaction is RLS-scoped to the `platform` tenant and
+can never legitimately hold another tenant's row). `CreateFirstAdmin` is the one write that *does* go
+through the ordinary `pdpa_app` + `db.WithTenantTx` path, scoped to the *new* tenant: a DB-only
+`iam.users` insert + role grant, following `cmd/devseed`'s own exact pattern — no real Keycloak account,
+since Keycloak isn't available in this environment (the same gap IAM-01 is blocked on).
+
+The acceptance criterion itself ("ปิดโมดูลที่ไม่ได้ซื้อแล้วเมนูและ API ของโมดูลนั้นใช้ไม่ได้") is
+`internal/pkg/modulegate` — a sibling of `internal/pkg/authz.StrictMiddleware`, hooked into the exact
+same oapi-codegen strict-middleware chain on every `/admin/v1` module (keyed by operationId → `x-module`,
+the same tag `internal/pkg/isolationaudit` already reads off the live OpenAPI spec). It reads the
+caller's own tenant's `platform.tenant_modules` row inside the request's already-open transaction — no
+row at all means enabled (the table is opt-out, not opt-in, so an existing tenant with nothing explicit
+set keeps working); an explicit `enabled = false` blocks with 403 `platform.module_disabled`. Two tags
+are never gated — `iam` (a locked-out tenant must still reach `/me`) and `platform` (shared plumbing,
+`/provider/v1` included) — everything else (`ropa`, `consent`, `dsar`, `breach`, `notice`, `dpo`, `dpia`,
+`risk`, `org`, `vendor`, `agreement`, `gov`, `dataflow`) is a real `PurchasableModules` code `SetTenantModule`
+can flip. `ListTenantModules` returns every purchasable code even with no row (a virtual default, `enabled:
+true, row_version: 0` — the same "defaults until first save" convention ORG-20's own `org_settings`
+established), so the console's first toggle on an untouched module can still send a real `If-Match`.
+
+API: `GET/POST /provider/v1/tenants`, `GET /provider/v1/tenants/{id}`, `POST .../suspend` / `.../reactivate`
+(ETag/If-Match), `GET /provider/v1/tenants/{id}/modules`, `PUT .../modules/{moduleCode}` (ETag/If-Match),
+`POST .../admins` — all on the already-seeded `admin.tenant.*`/`admin.user.create` permissions (no new
+permission code or migration for RBAC; `x-module: platform`, since the provider console's own CRUD is
+exactly the shared-plumbing category `modulegate` never gates). UI: `/settings/provider` — a tenant list
+with an inline create form, per-row suspend/reactivate, and a selected tenant's module-toggle list + a
+first-admin form. Known gap: this codebase has no central sidebar/nav component to literally hide a
+disabled module's *menu* item from (every settings/feature page is reached by direct URL, confirmed by
+grepping for any such component before building this) — the "menu...ใช้ไม่ได้" half of the acceptance
+criterion is satisfied by the API gate itself: a disabled module's pages fail to load or write the moment
+`modulegate` blocks their own `/admin/v1` calls, so there's nothing left to "use" even though no menu item
+is hidden. Add menu-hiding once a real nav component exists for it to hide an item from. Tests: unit
+(`internal/platform/provider/service_test.go` — create/duplicate-code, suspend/reactivate transitions +
+stale ETag, the acceptance criterion directly via `ListTenantModules`/`SetTenantModule` — default enabled,
+explicit disable persists, a stale first-time claim refused, cross-tenant independence; `CreateFirstAdmin`
++ duplicate/unknown-role/unknown-tenant), `internal/pkg/modulegate/middleware_test.go` (the gate itself: no
+row passes, explicit disable blocks with `platform.module_disabled`, `iam` never gated, cross-tenant
+isolation), HTTP contract (401/403/404/412/428/409/422/201/200 through the real validator + AuthZ). Not
+done: the subdomain/custom-domain tenant resolver and break-glass cross-tenant access `docs/decisions.md`
+D-24 names (no `/public/v1` or break-glass consumer needs either yet — PLT-02's own identical deferral);
+quota enforcement (the `quota` jsonb column round-trips through `SetTenantModule`/`ListTenantModules` but
+nothing reads it to actually cap usage — no feature has asked for that yet).
 
 <a id="org-09"></a>
 ### ORG-09 จัดการผู้ใช้

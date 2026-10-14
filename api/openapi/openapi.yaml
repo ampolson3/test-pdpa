@@ -33,6 +33,8 @@ tags:
     description: Data flow diagram generated live from RoPA (backend/internal/dataflow)
   - name: platform
     description: Platform services — background jobs, files, notifications, ... (backend/internal/platform/<service>)
+  - name: provider
+    description: Provider console (SUPER, tenant พิเศษ `platform`) — create/suspend tenants, license modules, first admin (backend/internal/platform/provider, IAM-03)
 paths:
   /admin/v1/me:
     get:
@@ -12591,6 +12593,307 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /provider/v1/tenants:
+    get:
+      operationId: providerListTenants
+      tags: [provider]
+      summary: Every tenant on the platform (IAM-03)
+      x-permission: admin.tenant.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProviderTenant'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: providerCreateTenant
+      tags: [provider]
+      summary: Create a new tenant
+      x-permission: admin.tenant.create
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderCreateTenantInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderTenant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /provider/v1/tenants/{id}:
+    get:
+      operationId: providerGetTenant
+      tags: [provider]
+      summary: One tenant
+      x-permission: admin.tenant.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderTenant'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /provider/v1/tenants/{id}/suspend:
+    post:
+      operationId: providerSuspendTenant
+      tags: [provider]
+      summary: Suspend a tenant — its own users can no longer sign in
+      x-permission: admin.tenant.update
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Suspended
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderTenant'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /provider/v1/tenants/{id}/reactivate:
+    post:
+      operationId: providerReactivateTenant
+      tags: [provider]
+      summary: Reactivate a suspended tenant
+      x-permission: admin.tenant.update
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Reactivated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderTenant'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /provider/v1/tenants/{id}/modules:
+    get:
+      operationId: providerListTenantModules
+      tags: [provider]
+      summary: Every purchasable module's license state for this tenant (IAM-03 acceptance criterion)
+      description: A module with no explicit row shows enabled = true, row_version 0 — platform.tenant_modules is opt-out, not opt-in.
+      x-permission: admin.tenant.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProviderTenantModule'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /provider/v1/tenants/{id}/modules/{moduleCode}:
+    put:
+      operationId: providerSetTenantModule
+      tags: [provider]
+      summary: Enable or disable one module for this tenant — a disabled module's menu and API become unusable
+      x-permission: admin.tenant.update
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: moduleCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderSetTenantModuleInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderTenantModule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /provider/v1/tenants/{id}/admins:
+    post:
+      operationId: providerCreateFirstAdmin
+      tags: [provider]
+      summary: Create the tenant's first admin (DB-only — no Keycloak account in this environment)
+      x-permission: admin.user.create
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderCreateAdminInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderCreateAdminResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 components:
   securitySchemes:
     adminJwt:
@@ -13749,6 +14052,60 @@ components:
       required: [target_id]
       properties:
         target_id: {$ref: '#/components/schemas/Uuid'}
+    ProviderTenant:
+      type: object
+      required: [id, code, name, status, plan_code, deployment, data_region, row_version, created_at, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        code: {type: string}
+        name: {type: string}
+        status: {type: string, enum: [trial, active, suspended, terminated]}
+        plan_code: {type: string}
+        deployment: {type: string, enum: [saas_shared, saas_dedicated, on_prem]}
+        data_region: {type: string}
+        suspended_at: {$ref: '#/components/schemas/Timestamp'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
+    ProviderCreateTenantInput:
+      type: object
+      required: [code, name, plan_code]
+      properties:
+        code: {type: string, minLength: 1, maxLength: 40}
+        name: {type: string, minLength: 1}
+        plan_code: {type: string, minLength: 1, maxLength: 40}
+    ProviderTenantModule:
+      type: object
+      required: [tenant_id, module_code, enabled, row_version]
+      properties:
+        tenant_id: {$ref: '#/components/schemas/Uuid'}
+        module_code: {type: string}
+        enabled: {type: boolean}
+        license_expires_at: {type: [string, 'null'], format: date}
+        quota: {type: object}
+        row_version: {type: integer}
+    ProviderSetTenantModuleInput:
+      type: object
+      required: [enabled]
+      properties:
+        enabled: {type: boolean}
+        license_expires_at: {type: [string, 'null'], format: date}
+        quota: {type: object}
+    ProviderCreateAdminInput:
+      type: object
+      required: [email, display_name, roles]
+      properties:
+        email: {type: string, format: email}
+        display_name: {type: string, minLength: 1}
+        roles:
+          type: array
+          minItems: 1
+          items: {type: string}
+    ProviderCreateAdminResult:
+      type: object
+      required: [user_id]
+      properties:
+        user_id: {$ref: '#/components/schemas/Uuid'}
     AssetType:
       type: string
       enum: [application, database, file_share, saas, paper, device, other]

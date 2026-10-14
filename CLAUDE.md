@@ -1812,6 +1812,64 @@ AuthZ, including a real `iam.users` row for the limited-permission test caller (
 dpo_user_id` is a real FK to `iam.users`, not satisfiable by an arbitrary uuid). `pnpm --filter @pdpa/admin
 build`/`tsc` and the `@pdpa/i18n` ICU message tests both verified clean.
 
+### IAM-03 Console ผู้ให้บริการ: tenant และแพ็กเกจ (`docs/modules/IAM.md#iam-03`) — done
+`internal/platform/provider` is the first (and, by `docs/decisions.md` D-24/CLAUDE.md rule 1, the only
+permitted) package holding a `pdpa_platform` (BYPASSRLS) pool outside `cmd/devseed`/`cmd/migrate` — this
+pass resolved decisions.md Q-19 (the user approved the proposed design: SUPER accounts in a reserved
+`platform` tenant, `/provider/v1`, the bypass pool scoped to this one package) and moved it to §1 as D-24.
+Migration 00064 seeds that reserved tenant (fixed id) — AuthZ's ordinary per-tenant grant cache then just
+works for SUPER with zero special-casing, since `iam.users.tenant_id` points at it like any other tenant's
+own id. `provider.Service.CreateTenant`/`GetTenant`/`ListTenants` (no pagination — the platform's own
+roster, same reasoning DPIA-12/ROPA-04's platform-wide lists already used) and `SuspendTenant`/
+`ReactivateTenant` (a tiny trial/active <-> suspended machine, ETag-guarded) write `platform.tenants`
+directly through the bypass pool; `CreateFirstAdmin` instead goes through the ordinary `pdpa_app` +
+`db.WithTenantTx` path scoped to the *new* tenant (a DB-only `iam.users` insert + role grant, following
+`cmd/devseed`'s own exact pattern — no real Keycloak account, same gap IAM-01 is blocked on).
+
+The acceptance criterion ("ปิดโมดูลที่ไม่ได้ซื้อแล้วเมนูและ API ของโมดูลนั้นใช้ไม่ได้") is a new sibling
+of `internal/pkg/authz.StrictMiddleware`: `internal/pkg/modulegate.Middleware`, the same generic
+oapi-codegen strict-middleware shape, keyed by operationId → `x-module` (the tag
+`internal/pkg/isolationaudit` already reads off the live spec — `cmd/api/permissions.go` gained a
+`loadModules` twin of `loadPermissions`) — wired into every `/admin/v1` and `/provider/v1` strict-handler
+chain in `cmd/api/main.go` (one `sed` pass appended it to all 24 existing registrations plus the new
+provider one). It reads the caller's tenant's own `platform.tenant_modules` row inside the request's
+already-open transaction (RLS already scopes it — no extra `tenant_id` filter needed, though the query
+still names it for defense in depth): no row means enabled (opt-out, not opt-in); `enabled = false` blocks
+with a new `httpx.ModuleDisabled` (403 `platform.module_disabled`). `iam` and `platform` are a permanent
+allow-list (a locked-out tenant must still reach `/me`; shared plumbing including `/provider/v1` itself is
+never a "module" a tenant licenses) — every other tag (`ropa`, `consent`, `dsar`, `breach`, `notice`,
+`dpo`, `dpia`, `risk`, `org`, `vendor`, `agreement`, `gov`, `dataflow`) is a real `provider.PurchasableModules`
+code. `ListTenantModules` returns every purchasable code even with no row (virtual default `enabled: true,
+row_version: 0`, the same "defaults until first save" convention ORG-20's `org_settings` already
+established), so the console's first toggle on an untouched module still sends a real `If-Match`.
+
+API: `GET`/`POST /provider/v1/tenants`, `GET /provider/v1/tenants/{id}`, `POST .../suspend`/`.../reactivate`
+(ETag/If-Match), `GET /provider/v1/tenants/{id}/modules`, `PUT .../modules/{moduleCode}` (ETag/If-Match),
+`POST .../admins` — all on the already-seeded `admin.tenant.*`/`admin.user.create` permissions (no new
+permission code or migration for RBAC; `x-module: platform`, since the console's own CRUD is exactly the
+shared-plumbing category `modulegate` never gates). UI: `/settings/provider` (tenant list + inline create
+form, per-row suspend/reactivate, a selected tenant's module-toggle list, a first-admin form) — `packages/
+api-client/src/provider.ts` hooks, th/en keys under `provider.*`. Known gap, disclosed rather than
+silently left out: this codebase has no central sidebar/nav component to literally hide a disabled
+module's *menu* item from (checked by grep before building — every settings/feature page is reached by
+direct URL); the "เมนู...ใช้ไม่ได้" half of the literal acceptance criterion is satisfied by the API gate
+alone — a disabled module's own pages fail to load or write the moment `modulegate` blocks their
+`/admin/v1` calls, so there is nothing left to meaningfully "use" even though no menu item disappears. Add
+real menu-hiding once a nav component exists for it to hide an item from. Tests: unit
+(`internal/platform/provider/service_test.go`: create + duplicate-code rejection, suspend/reactivate
+transitions + stale-ETag rejection, the acceptance criterion directly through `ListTenantModules`/
+`SetTenantModule` — default enabled, explicit disable persists, a stale first-time claim refused,
+cross-tenant independence; `CreateFirstAdmin` + duplicate-email/unknown-role/unknown-tenant),
+`internal/pkg/modulegate/middleware_test.go` (the gate itself: no row passes through, an explicit disable
+blocks with `platform.module_disabled`, `iam` is never gated, cross-tenant isolation), HTTP contract
+(401/403/404/412/428/409/422/201/200 through the real validator + AuthZ). `go build`/`go vet`/`gofmt` and
+the full `go test -p 1 ./...` suite verified clean (no regressions, no new pre-existing failures), `make
+gen` re-run with no drift, `pnpm --filter @pdpa/api-client typecheck` and `pnpm --filter @pdpa/admin
+build`/`typecheck` both clean. Not done: the subdomain/custom-domain tenant resolver and break-glass
+cross-tenant access decisions.md D-24 names (no `/public/v1` or break-glass consumer needs either yet —
+PLT-02's own identical deferral); quota enforcement (the `quota` jsonb round-trips but nothing reads it to
+cap usage yet — no feature has asked for that).
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.

@@ -1,0 +1,15 @@
+package: providerhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - providerListTenants
+    - providerCreateTenant
+    - providerGetTenant
+    - providerSuspendTenant
+    - providerReactivateTenant
+    - providerListTenantModules
+    - providerSetTenantModule
+    - providerCreateFirstAdmin

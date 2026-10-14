@@ -47,7 +47,7 @@ var moduleToDirs = map[string][]string{
 	"platform": {
 		"platform/audit/service", "platform/collab", "platform/docs", "platform/files",
 		"platform/forms", "platform/importer", "platform/jobs", "platform/notify",
-		"platform/versioning", "platform/workflow",
+		"platform/versioning", "platform/workflow", "platform/provider",
 	},
 }
 

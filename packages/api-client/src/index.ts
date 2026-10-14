@@ -380,6 +380,21 @@ export {
   type DpoDeadlineItem,
 } from "./dpo";
 export {
+  useTenants,
+  useTenant,
+  useCreateTenant,
+  useSuspendTenant,
+  useReactivateTenant,
+  useTenantModules,
+  useSetTenantModule,
+  useCreateFirstAdmin,
+  type ProviderTenant,
+  type ProviderTenantModule,
+  type ProviderCreateTenantInput,
+  type ProviderSetTenantModuleInput,
+  type ProviderCreateAdminInput,
+} from "./provider";
+export {
   useScreeningRules,
   useSaveScreeningRules,
   useScreenActivity,

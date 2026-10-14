@@ -49,6 +49,52 @@
       "cancelled": "ยกเลิก"
     }
   },
+  "provider": {
+    "title": "ศูนย์ควบคุมผู้ให้บริการ",
+    "description": "สร้างและระงับ tenant และเปิด/ปิดโมดูลที่แต่ละ tenant ซื้อ (IAM-03) — เฉพาะ SUPER",
+    "signInRequired": "กรุณาเข้าสู่ระบบเพื่อดูศูนย์ควบคุมผู้ให้บริการ",
+    "forbidden": "คุณไม่มีสิทธิ์ดูศูนย์ควบคุมผู้ให้บริการ (admin.tenant.read)",
+    "loading": "กำลังโหลด...",
+    "loadError": "โหลดรายการ tenant ไม่สำเร็จ กรุณาลองใหม่",
+    "empty": "ยังไม่มี tenant",
+    "create": {
+      "title": "สร้าง tenant",
+      "code": "โค้ด",
+      "name": "ชื่อ",
+      "planCode": "แพ็กเกจ",
+      "submit": "สร้าง"
+    },
+    "column": {
+      "code": "โค้ด",
+      "name": "ชื่อ",
+      "status": "สถานะ",
+      "planCode": "แพ็กเกจ",
+      "actions": "การทำงาน"
+    },
+    "status": {
+      "trial": "ทดลองใช้",
+      "active": "ใช้งาน",
+      "suspended": "ระงับ",
+      "terminated": "ยกเลิก"
+    },
+    "suspend": "ระงับ",
+    "reactivate": "เปิดใช้งานอีกครั้ง",
+    "manageModules": "โมดูล",
+    "modules": {
+      "title": "โมดูลที่เปิดใช้ให้ {name}",
+      "enabled": "เปิดใช้",
+      "disabled": "ปิดใช้",
+      "toggle": "โมดูลที่ปิดใช้ เมนูและ API ของโมดูลนั้นจะใช้ไม่ได้สำหรับ tenant นี้"
+    },
+    "firstAdmin": {
+      "title": "สร้างผู้ดูแลคนแรก",
+      "email": "อีเมล",
+      "displayName": "ชื่อที่แสดง",
+      "roles": "role (คั่นด้วยจุลภาค เช่น ORGADMIN)",
+      "submit": "สร้างผู้ดูแล",
+      "note": "สร้างในฐานข้อมูลเท่านั้น — ไม่มีบัญชี Keycloak ในสภาพแวดล้อมนี้"
+    }
+  },
   "files": {
     "choose": "เลือกไฟล์",
     "dropHere": "ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือก",

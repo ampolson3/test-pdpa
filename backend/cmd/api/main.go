@@ -51,6 +51,7 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/idempotency"
+	"pdpa-platform/internal/pkg/modulegate"
 	"pdpa-platform/internal/pkg/otelx"
 	"pdpa-platform/internal/pkg/ratelimit"
 	"pdpa-platform/internal/pkg/validate"
@@ -71,6 +72,8 @@ import (
 	jobshttp "pdpa-platform/internal/platform/jobs/http"
 	"pdpa-platform/internal/platform/notify"
 	notifyhttp "pdpa-platform/internal/platform/notify/http"
+	provider "pdpa-platform/internal/platform/provider"
+	providerhttp "pdpa-platform/internal/platform/provider/http"
 	"pdpa-platform/internal/platform/publickeys"
 	versioninghttp "pdpa-platform/internal/platform/versioning/http"
 	workflowhttp "pdpa-platform/internal/platform/workflow/http"
@@ -108,6 +111,14 @@ func run() error {
 	}
 	defer pool.Close()
 
+	// IAM-03: the only pool in the whole backend authenticating as pdpa_platform (BYPASSRLS), held
+	// only by internal/platform/provider — see that package's own doc comment and CLAUDE.md rule 1.
+	platformPool, err := pdb.NewPool(ctx, cfg.PlatformDatabaseURL)
+	if err != nil {
+		return err
+	}
+	defer platformPool.Close()
+
 	rdb := redis.NewClient(&redis.Options{Addr: cfg.ValkeyAddr})
 	defer rdb.Close()
 
@@ -126,6 +137,14 @@ func run() error {
 		code, ok := permissions[operationID]
 		return code, ok
 	}
+	modules, err := loadModules(spec)
+	if err != nil {
+		return err
+	}
+	requiredModule := func(operationID string) (string, bool) {
+		code, ok := modules[operationID]
+		return code, ok
+	}
 
 	validateMw, err := validate.Middleware(spec, nil)
 	if err != nil {
@@ -134,6 +153,7 @@ func run() error {
 
 	authzCache := authz.NewCachedLoader(rdb, iamservice.NewLoader(pool))
 	auditSvc := auditservice.New()
+	providerSvc := &provider.Service{Platform: platformPool, App: pool, Audit: auditSvc} // IAM-03: provider console
 	jwks := authn.NewJWKS(cfg.OIDCJWKSURL)
 	verifier := authn.NewVerifier(jwks, cfg.OIDCIssuer)
 	limiter := ratelimit.New(rdb, 100, time.Minute)
@@ -344,122 +364,131 @@ func run() error {
 		g.Use(auditSvc.TxMiddleware(pool)) // Tx (#11) + Audit (#13)
 
 		strictIam := iamhttp.NewStrictHandlerWithOptions(iamhttp.NewStrict(iamSvc),
-			[]iamhttp.StrictMiddlewareFunc{authz.StrictMiddleware[iamhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]iamhttp.StrictMiddlewareFunc{authz.StrictMiddleware[iamhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[iamhttp.StrictHandlerFunc](requiredModule)},
 			iamhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		iamhttp.HandlerWithOptions(strictIam, iamhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictFiles := fileshttp.NewStrictHandlerWithOptions(fileshttp.NewStrict(fileSvc),
-			[]fileshttp.StrictMiddlewareFunc{authz.StrictMiddleware[fileshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]fileshttp.StrictMiddlewareFunc{authz.StrictMiddleware[fileshttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[fileshttp.StrictHandlerFunc](requiredModule)},
 			fileshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		fileshttp.HandlerWithOptions(strictFiles, fileshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictJobs := jobshttp.NewStrictHandlerWithOptions(jobshttp.NewStrict(riverClient),
-			[]jobshttp.StrictMiddlewareFunc{authz.StrictMiddleware[jobshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]jobshttp.StrictMiddlewareFunc{authz.StrictMiddleware[jobshttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[jobshttp.StrictHandlerFunc](requiredModule)},
 			jobshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		jobshttp.HandlerWithOptions(strictJobs, jobshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictCollab := collabhttp.NewStrictHandlerWithOptions(collabhttp.NewStrict(collabSvc),
-			[]collabhttp.StrictMiddlewareFunc{authz.StrictMiddleware[collabhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]collabhttp.StrictMiddlewareFunc{authz.StrictMiddleware[collabhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[collabhttp.StrictHandlerFunc](requiredModule)},
 			collabhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		collabhttp.HandlerWithOptions(strictCollab, collabhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictImports := importerhttp.NewStrictHandlerWithOptions(importerhttp.NewStrict(importSvc),
-			[]importerhttp.StrictMiddlewareFunc{authz.StrictMiddleware[importerhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]importerhttp.StrictMiddlewareFunc{authz.StrictMiddleware[importerhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[importerhttp.StrictHandlerFunc](requiredModule)},
 			importerhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		importerhttp.HandlerWithOptions(strictImports, importerhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictVersioning := versioninghttp.NewStrictHandlerWithOptions(versioninghttp.NewStrict(versioningSvc),
-			[]versioninghttp.StrictMiddlewareFunc{authz.StrictMiddleware[versioninghttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]versioninghttp.StrictMiddlewareFunc{authz.StrictMiddleware[versioninghttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[versioninghttp.StrictHandlerFunc](requiredModule)},
 			versioninghttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		versioninghttp.HandlerWithOptions(strictVersioning, versioninghttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 		strictForms := formshttp.NewStrictHandlerWithOptions(formshttp.NewStrict(formsSvc),
-			[]formshttp.StrictMiddlewareFunc{authz.StrictMiddleware[formshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]formshttp.StrictMiddlewareFunc{authz.StrictMiddleware[formshttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[formshttp.StrictHandlerFunc](requiredModule)},
 			formshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		formshttp.HandlerWithOptions(strictForms, formshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictAudit := audithttp.NewStrictHandlerWithOptions(audithttp.NewStrict(auditSvc),
-			[]audithttp.StrictMiddlewareFunc{authz.StrictMiddleware[audithttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]audithttp.StrictMiddlewareFunc{authz.StrictMiddleware[audithttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[audithttp.StrictHandlerFunc](requiredModule)},
 			audithttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		audithttp.HandlerWithOptions(strictAudit, audithttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictWorkflow := workflowhttp.NewStrictHandlerWithOptions(workflowhttp.NewStrict(workflowSvc),
-			[]workflowhttp.StrictMiddlewareFunc{authz.StrictMiddleware[workflowhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]workflowhttp.StrictMiddlewareFunc{authz.StrictMiddleware[workflowhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[workflowhttp.StrictHandlerFunc](requiredModule)},
 			workflowhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		workflowhttp.HandlerWithOptions(strictWorkflow, workflowhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictOrg := orghttp.NewStrictHandlerWithOptions(orghttp.NewStrict(orgSvc),
-			[]orghttp.StrictMiddlewareFunc{authz.StrictMiddleware[orghttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]orghttp.StrictMiddlewareFunc{authz.StrictMiddleware[orghttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[orghttp.StrictHandlerFunc](requiredModule)},
 			orghttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		orghttp.HandlerWithOptions(strictOrg, orghttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictRopa := ropahttp.NewStrictHandlerWithOptions(ropahttp.NewStrict(ropaSvc, ropaTemplatesSvc),
-			[]ropahttp.StrictMiddlewareFunc{authz.StrictMiddleware[ropahttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]ropahttp.StrictMiddlewareFunc{authz.StrictMiddleware[ropahttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[ropahttp.StrictHandlerFunc](requiredModule)},
 			ropahttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		ropahttp.HandlerWithOptions(strictRopa, ropahttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictVendor := vendorhttp.NewStrictHandlerWithOptions(vendorhttp.NewStrict(vendorSvc),
-			[]vendorhttp.StrictMiddlewareFunc{authz.StrictMiddleware[vendorhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]vendorhttp.StrictMiddlewareFunc{authz.StrictMiddleware[vendorhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[vendorhttp.StrictHandlerFunc](requiredModule)},
 			vendorhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		vendorhttp.HandlerWithOptions(strictVendor, vendorhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictDpo := dpohttp.NewStrictHandlerWithOptions(dpohttp.NewStrict(dpoSvc),
-			[]dpohttp.StrictMiddlewareFunc{authz.StrictMiddleware[dpohttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]dpohttp.StrictMiddlewareFunc{authz.StrictMiddleware[dpohttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[dpohttp.StrictHandlerFunc](requiredModule)},
 			dpohttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		dpohttp.HandlerWithOptions(strictDpo, dpohttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictDpia := dpiahttp.NewStrictHandlerWithOptions(dpiahttp.NewStrict(dpiaSvc),
-			[]dpiahttp.StrictMiddlewareFunc{authz.StrictMiddleware[dpiahttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]dpiahttp.StrictMiddlewareFunc{authz.StrictMiddleware[dpiahttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[dpiahttp.StrictHandlerFunc](requiredModule)},
 			dpiahttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		dpiahttp.HandlerWithOptions(strictDpia, dpiahttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictDataflow := dataflowhttp.NewStrictHandlerWithOptions(dataflowhttp.NewStrict(dataflowSvc),
-			[]dataflowhttp.StrictMiddlewareFunc{authz.StrictMiddleware[dataflowhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]dataflowhttp.StrictMiddlewareFunc{authz.StrictMiddleware[dataflowhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[dataflowhttp.StrictHandlerFunc](requiredModule)},
 			dataflowhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		dataflowhttp.HandlerWithOptions(strictDataflow, dataflowhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictAgreement := agreementhttp.NewStrictHandlerWithOptions(agreementhttp.NewStrict(agreementSvc),
-			[]agreementhttp.StrictMiddlewareFunc{authz.StrictMiddleware[agreementhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]agreementhttp.StrictMiddlewareFunc{authz.StrictMiddleware[agreementhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[agreementhttp.StrictHandlerFunc](requiredModule)},
 			agreementhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		agreementhttp.HandlerWithOptions(strictAgreement, agreementhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictRisk := riskhttp.NewStrictHandlerWithOptions(riskhttp.NewStrict(riskSvc),
-			[]riskhttp.StrictMiddlewareFunc{authz.StrictMiddleware[riskhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]riskhttp.StrictMiddlewareFunc{authz.StrictMiddleware[riskhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[riskhttp.StrictHandlerFunc](requiredModule)},
 			riskhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		riskhttp.HandlerWithOptions(strictRisk, riskhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictGov := govhttp.NewStrictHandlerWithOptions(govhttp.NewStrict(govSvc),
-			[]govhttp.StrictMiddlewareFunc{authz.StrictMiddleware[govhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]govhttp.StrictMiddlewareFunc{authz.StrictMiddleware[govhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[govhttp.StrictHandlerFunc](requiredModule)},
 			govhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		govhttp.HandlerWithOptions(strictGov, govhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictConsent := consenthttp.NewStrictHandlerWithOptions(consenthttp.NewStrict(consentSvc),
-			[]consenthttp.StrictMiddlewareFunc{authz.StrictMiddleware[consenthttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]consenthttp.StrictMiddlewareFunc{authz.StrictMiddleware[consenthttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[consenthttp.StrictHandlerFunc](requiredModule)},
 			consenthttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		consenthttp.HandlerWithOptions(strictConsent, consenthttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictBreach := breachhttp.NewStrictHandlerWithOptions(breachhttp.NewStrict(breachSvc),
-			[]breachhttp.StrictMiddlewareFunc{authz.StrictMiddleware[breachhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]breachhttp.StrictMiddlewareFunc{authz.StrictMiddleware[breachhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[breachhttp.StrictHandlerFunc](requiredModule)},
 			breachhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		breachhttp.HandlerWithOptions(strictBreach, breachhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictDocs := docshttp.NewStrictHandlerWithOptions(docshttp.NewStrict(docsSvc),
-			[]docshttp.StrictMiddlewareFunc{authz.StrictMiddleware[docshttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]docshttp.StrictMiddlewareFunc{authz.StrictMiddleware[docshttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[docshttp.StrictHandlerFunc](requiredModule)},
 			docshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		docshttp.HandlerWithOptions(strictDocs, docshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictNotice := noticehttp.NewStrictHandlerWithOptions(noticehttp.NewStrict(noticeSvc),
-			[]noticehttp.StrictMiddlewareFunc{authz.StrictMiddleware[noticehttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]noticehttp.StrictMiddlewareFunc{authz.StrictMiddleware[noticehttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[noticehttp.StrictHandlerFunc](requiredModule)},
 			noticehttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		noticehttp.HandlerWithOptions(strictNotice, noticehttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 		strictDsar := dsarhttp.NewStrictHandlerWithOptions(dsarhttp.NewStrict(dsarSvc),
-			[]dsarhttp.StrictMiddlewareFunc{authz.StrictMiddleware[dsarhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]dsarhttp.StrictMiddlewareFunc{authz.StrictMiddleware[dsarhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[dsarhttp.StrictHandlerFunc](requiredModule)},
 			dsarhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		dsarhttp.HandlerWithOptions(strictDsar, dsarhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictNotify := notifyhttp.NewStrictHandlerWithOptions(notifyhttp.NewStrict(notifySvc),
-			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission)},
+			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[notifyhttp.StrictHandlerFunc](requiredModule)},
 			notifyhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		notifyhttp.HandlerWithOptions(strictNotify, notifyhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		// IAM-03: /provider/v1, SUPER only. Same Idempotency + Tx + AuthZ chain as every /admin/v1
+		// module above (a SUPER request's own transaction is scoped by RLS to the reserved `platform`
+		// tenant, decisions.md D-24) — only providerSvc itself, never this handler, touches the
+		// pdpa_platform bypass pool. modulegate never gates these operations (x-module: platform).
+		strictProvider := providerhttp.NewStrictHandlerWithOptions(providerhttp.NewStrict(providerSvc),
+			[]providerhttp.StrictMiddlewareFunc{authz.StrictMiddleware[providerhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[providerhttp.StrictHandlerFunc](requiredModule)},
+			providerhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		providerhttp.HandlerWithOptions(strictProvider, providerhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 	})
 
 	srv := &http.Server{

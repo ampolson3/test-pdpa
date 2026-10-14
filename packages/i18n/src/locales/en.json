@@ -49,6 +49,52 @@
       "cancelled": "Cancelled"
     }
   },
+  "provider": {
+    "title": "Provider console",
+    "description": "Create and suspend tenants, and license which modules each one has purchased (IAM-03). SUPER only.",
+    "signInRequired": "Please sign in to view the provider console.",
+    "forbidden": "You don't have permission to view the provider console (admin.tenant.read).",
+    "loading": "Loading...",
+    "loadError": "Couldn't load the tenant list. Please try again.",
+    "empty": "No tenants yet.",
+    "create": {
+      "title": "Create tenant",
+      "code": "Code",
+      "name": "Name",
+      "planCode": "Plan code",
+      "submit": "Create"
+    },
+    "column": {
+      "code": "Code",
+      "name": "Name",
+      "status": "Status",
+      "planCode": "Plan",
+      "actions": "Actions"
+    },
+    "status": {
+      "trial": "Trial",
+      "active": "Active",
+      "suspended": "Suspended",
+      "terminated": "Terminated"
+    },
+    "suspend": "Suspend",
+    "reactivate": "Reactivate",
+    "manageModules": "Modules",
+    "modules": {
+      "title": "Modules licensed to {name}",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "toggle": "A disabled module's menu and API become unusable for this tenant."
+    },
+    "firstAdmin": {
+      "title": "Create first admin",
+      "email": "Email",
+      "displayName": "Display name",
+      "roles": "Roles (comma-separated role codes, e.g. ORGADMIN)",
+      "submit": "Create admin",
+      "note": "DB-only — no Keycloak account is created in this environment."
+    }
+  },
   "files": {
     "choose": "Choose a file",
     "dropHere": "Drop a file here or click to choose",
