@@ -1827,6 +1827,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/forms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public web intake forms (DSAR-01) */
+        get: operations["dsarListIntakeForms"];
+        put?: never;
+        /** Open a new draft intake form for a legal entity (DSAR-01) */
+        post: operations["dsarCreateIntakeForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/forms/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One intake form (DSAR-01) */
+        get: operations["dsarGetIntakeForm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/forms/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Make a draft (or re-publish a retired) intake form live (DSAR-01) — issues a platform.public_keys key */
+        post: operations["dsarPublishIntakeForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/forms/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire an intake form for good (DSAR-01) — its key stops resolving, past requests are untouched */
+        post: operations["dsarRetireIntakeForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dsar/requests": {
         parameters: {
             query?: never;
@@ -2353,6 +2422,69 @@ export interface paths {
         get: operations["noticeGetPublicVersion"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/dsar-forms/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An active intake form's right-type picker (DSAR-01, no login)
+         * @description Tenant is resolved from `key` through platform.public_keys before the tenant transaction starts
+         *     (ADR-19, same mechanism as /public/v1/collection-points/{key} and /public/v1/notices/{key}).
+         */
+        get: operations["dsarGetPublicIntakeForm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/dsar-forms/{key}/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a DSAR request directly (DSAR-01's own acceptance criterion — the requester gets their request number back immediately)
+         * @description Starts DSAR-06's own OTP identity-verification attempt against the contact the requester just gave,
+         *     the included `verification` entry — confirm it at /public/v1/dsar-forms/{key}/requests/{requestId}/verify.
+         *     Replaying an Idempotency-Key returns the first result.
+         */
+        post: operations["dsarSubmitPublicRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/dsar-forms/{key}/requests/{requestId}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm the OTP sent at submission (DSAR-01 «include» DSAR-06, no login)
+         * @description A wrong code is a harmless retry (IAM-05's own 5-attempt cap, D-01); the public key of the original submission's form names the tenant.
+         */
+        post: operations["dsarConfirmPublicVerification"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6331,6 +6463,45 @@ export interface components {
             status: components["schemas"]["DsarSubtaskStatus"];
             /** @description The caller's own clean PLT-09 upload, attached as evidence when the subtask is marked done */
             evidence_file_id?: components["schemas"]["Uuid"];
+        };
+        /** @enum {string} */
+        DsarIntakeFormStatus: "draft" | "active" | "retired";
+        DsarIntakeForm: {
+            id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            name: string;
+            status: components["schemas"]["DsarIntakeFormStatus"];
+            /** @description The published form's /public/v1/dsar-forms/{key} path segment, once active at least once; absent before that */
+            public_key?: string | null;
+            row_version: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        DsarIntakeFormInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            name: string;
+        };
+        DsarPublicIntakeForm: {
+            id: components["schemas"]["Uuid"];
+            name: string;
+            request_types: components["schemas"]["DsarRequestType"][];
+        };
+        DsarPublicSubmissionInput: {
+            /** @enum {string} */
+            request_type_code: "access" | "portability" | "objection" | "erasure" | "restriction" | "rectification" | "withdraw_consent" | "complaint" | "inquiry";
+            requester_name: string;
+            /** Format: email */
+            requester_email?: string;
+            requester_phone?: string;
+            /** @description DSAR-03, ม.30 — for an access request, where the data was obtained when not collected directly from the data subject. */
+            data_source?: string;
+        };
+        DsarPublicSubmissionResult: {
+            /** @description Keep this to track the request's status — the acceptance criterion itself (returned immediately on submission) */
+            request_no: string;
+            status: components["schemas"]["DsarRequestStatus"];
+            /** @description The OTP identity-verification attempt opened right away against the contact just given (DSAR-01 «include» DSAR-06); absent if identity verification isn't wired. */
+            verification?: components["schemas"]["DsarVerification"] | null;
         };
         /** @enum {string} */
         NoticeType: "privacy_notice" | "privacy_policy" | "cookie_policy" | "cctv" | "layered_short" | "employee";
@@ -12154,6 +12325,167 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    dsarListIntakeForms: {
+        parameters: {
+            query?: {
+                status?: "draft" | "active" | "retired";
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarIntakeForm"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dsarCreateIntakeForm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarIntakeFormInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarIntakeForm"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarGetIntakeForm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarIntakeForm"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dsarPublishIntakeForm: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarIntakeForm"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dsarRetireIntakeForm: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarIntakeForm"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
     dsarListRequests: {
         parameters: {
             query?: {
@@ -13378,6 +13710,110 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    dsarGetPublicIntakeForm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                /** @description Public key of the intake form (random, at least 128 bits, base64url) */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The form's right-type picker */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarPublicIntakeForm"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dsarSubmitPublicRequest: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarPublicSubmissionInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarPublicSubmissionResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    dsarConfirmPublicVerification: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                key: string;
+                requestId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    verification_id: components["schemas"]["Uuid"];
+                    code: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarVerification"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     consentSubmitConsents: {

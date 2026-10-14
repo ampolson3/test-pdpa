@@ -6,6 +6,11 @@ generate:
 output-options:
   include-operation-ids:
     - dsarListRequestTypes
+    - dsarListIntakeForms
+    - dsarCreateIntakeForm
+    - dsarGetIntakeForm
+    - dsarPublishIntakeForm
+    - dsarRetireIntakeForm
     - dsarListRequests
     - dsarCreateRequest
     - dsarGetRequest

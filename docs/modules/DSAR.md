@@ -148,6 +148,14 @@
 
 **Acceptance criteria:** ผู้ยื่นได้เลขที่คำขอทันทีหลังส่ง
 
+**Implementation (done, see CLAUDE.md's own DSAR-01 note for the full design):** a publishable
+`dsar.intake_forms` wrapper (public key issued on publish, same role as CON-09/PNG-06's own public
+surfaces) over DSAR-13's existing `CreateRequest`, not PLT-06 — the intake fields are already fixed by
+`CreateRequestInput`, so a dynamic form schema would duplicate structure, not add anything the acceptance
+criterion needs. Submitting returns the request number immediately and opens a DSAR-06 OTP verification
+right away against the contact just given. QR/embed and form versioning are deferred (no consumer needs
+them yet).
+
 <a id="dsar-02"></a>
 ### DSAR-02 รับคำขอหลายช่องทาง
 

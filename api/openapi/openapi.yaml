@@ -5543,6 +5543,199 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/dsar/forms:
+    get:
+      operationId: dsarListIntakeForms
+      tags: [dsar]
+      summary: Public web intake forms (DSAR-01)
+      x-permission: dsar.form.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [draft, active, retired]
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarIntakeForm'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: dsarCreateIntakeForm
+      tags: [dsar]
+      summary: Open a new draft intake form for a legal entity (DSAR-01)
+      x-permission: dsar.form.create
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarIntakeFormInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarIntakeForm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/forms/{id}:
+    get:
+      operationId: dsarGetIntakeForm
+      tags: [dsar]
+      summary: One intake form (DSAR-01)
+      x-permission: dsar.form.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarIntakeForm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/dsar/forms/{id}/publish:
+    post:
+      operationId: dsarPublishIntakeForm
+      tags: [dsar]
+      summary: Make a draft (or re-publish a retired) intake form live (DSAR-01) — issues a platform.public_keys key
+      x-permission: dsar.form.publish
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarIntakeForm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dsar/forms/{id}/retire:
+    post:
+      operationId: dsarRetireIntakeForm
+      tags: [dsar]
+      summary: Retire an intake form for good (DSAR-01) — its key stops resolving, past requests are untouched
+      x-permission: dsar.form.delete
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarIntakeForm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/dsar/requests:
     get:
       operationId: dsarListRequests
@@ -7132,6 +7325,132 @@ paths:
                 $ref: '#/components/schemas/PublicNotice'
         '404':
           $ref: '#/components/responses/NotFound'
+  /public/v1/dsar-forms/{key}:
+    get:
+      operationId: dsarGetPublicIntakeForm
+      tags: [dsar]
+      summary: An active intake form's right-type picker (DSAR-01, no login)
+      description: |
+        Tenant is resolved from `key` through platform.public_keys before the tenant transaction starts
+        (ADR-19, same mechanism as /public/v1/collection-points/{key} and /public/v1/notices/{key}).
+      x-permission: public
+      x-module: dsar
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Public key of the intake form (random, at least 128 bits, base64url)
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: The form's right-type picker
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarPublicIntakeForm'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /public/v1/dsar-forms/{key}/requests:
+    post:
+      operationId: dsarSubmitPublicRequest
+      tags: [dsar]
+      summary: Submit a DSAR request directly (DSAR-01's own acceptance criterion — the requester gets their request number back immediately)
+      description: |
+        Starts DSAR-06's own OTP identity-verification attempt against the contact the requester just gave,
+        the included `verification` entry — confirm it at /public/v1/dsar-forms/{key}/requests/{requestId}/verify.
+        Replaying an Idempotency-Key returns the first result.
+      x-permission: public
+      x-module: dsar
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarPublicSubmissionInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarPublicSubmissionResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /public/v1/dsar-forms/{key}/requests/{requestId}/verify:
+    post:
+      operationId: dsarConfirmPublicVerification
+      tags: [dsar]
+      summary: Confirm the OTP sent at submission (DSAR-01 «include» DSAR-06, no login)
+      description: A wrong code is a harmless retry (IAM-05's own 5-attempt cap, D-01); the public key of the original submission's form names the tenant.
+      x-permission: public
+      x-module: dsar
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [verification_id, code]
+              additionalProperties: false
+              properties:
+                verification_id: {$ref: '#/components/schemas/Uuid'}
+                code: {type: string, minLength: 1, maxLength: 20}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarVerification'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /api/v1/consents:
     post:
       operationId: consentSubmitConsents
@@ -15764,6 +16083,66 @@ components:
         evidence_file_id:
           description: The caller's own clean PLT-09 upload, attached as evidence when the subtask is marked done
           $ref: '#/components/schemas/Uuid'
+    DsarIntakeFormStatus:
+      type: string
+      enum: [draft, active, retired]
+    DsarIntakeForm:
+      type: object
+      required: [id, legal_entity_id, name, status, row_version, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string}
+        status: {$ref: '#/components/schemas/DsarIntakeFormStatus'}
+        public_key:
+          description: The published form's /public/v1/dsar-forms/{key} path segment, once active at least once; absent before that
+          type: [string, 'null']
+        row_version: {type: integer}
+        updated_at: {type: string, format: date-time}
+    DsarIntakeFormInput:
+      type: object
+      required: [legal_entity_id, name]
+      properties:
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string, minLength: 1, maxLength: 300}
+    DsarPublicIntakeForm:
+      type: object
+      required: [id, name, request_types]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string}
+        request_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/DsarRequestType'
+    DsarPublicSubmissionInput:
+      type: object
+      required: [request_type_code, requester_name]
+      additionalProperties: false
+      properties:
+        request_type_code:
+          type: string
+          enum: [access, portability, objection, erasure, restriction, rectification, withdraw_consent, complaint, inquiry]
+        requester_name: {type: string, minLength: 1, maxLength: 300}
+        requester_email: {type: string, format: email, maxLength: 300}
+        requester_phone: {type: string, maxLength: 50}
+        data_source:
+          description: DSAR-03, ม.30 — for an access request, where the data was obtained when not collected directly from the data subject.
+          type: string
+          maxLength: 500
+    DsarPublicSubmissionResult:
+      type: object
+      required: [request_no, status]
+      properties:
+        request_no:
+          description: Keep this to track the request's status — the acceptance criterion itself (returned immediately on submission)
+          type: string
+        status: {$ref: '#/components/schemas/DsarRequestStatus'}
+        verification:
+          description: The OTP identity-verification attempt opened right away against the contact just given (DSAR-01 «include» DSAR-06); absent if identity verification isn't wired.
+          oneOf:
+            - $ref: '#/components/schemas/DsarVerification'
+            - type: 'null'
     NoticeType:
       type: string
       enum: [privacy_notice, privacy_policy, cookie_policy, cctv, layered_short, employee]

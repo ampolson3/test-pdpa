@@ -26,6 +26,7 @@ import (
 const (
 	EntityCollectionPoint = "collection_point"
 	EntityNotice          = "notice"
+	EntityDsarForm        = "dsar_form"
 )
 
 // Key is a resolved public key.
@@ -95,8 +96,9 @@ func FromContext(ctx context.Context) (Key, bool) {
 func WithKey(ctx context.Context, k Key) context.Context { return context.WithValue(ctx, ctxKey{}, k) }
 
 // pathKeyRE matches every /public/v1 route shape that carries the key as its first path segment — one
-// alternative per module that has a public page (collection points today, notices from PNG-06).
-var pathKeyRE = regexp.MustCompile(`^/public/v1/(?:collection-points|notices)/([^/]+)`)
+// alternative per module that has a public page (collection points, notices from PNG-06, dsar-forms from
+// DSAR-01).
+var pathKeyRE = regexp.MustCompile(`^/public/v1/(?:collection-points|notices|dsar-forms)/([^/]+)`)
 
 // Middleware resolves the public key of a /public/v1 request — from the path (e.g.
 // /public/v1/collection-points/{key} or /public/v1/notices/{key}) or the X-Public-Key header — refuses

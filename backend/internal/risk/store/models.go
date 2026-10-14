@@ -1432,6 +1432,21 @@ type DsarExemptionCheck struct {
 	RowVersion  int32              `db:"row_version" json:"row_version"`
 }
 
+// DSAR-01: เว็บฟอร์มสาธารณะสำหรับเจ้าของข้อมูลยื่นคำขอใช้สิทธิเอง — เมื่อ publish แล้วจะมี public_key (platform.public_keys)
+type DsarIntakeForm struct {
+	ID            uuid.UUID          `db:"id" json:"id"`
+	TenantID      uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	LegalEntityID uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	Name          string             `db:"name" json:"name"`
+	Status        string             `db:"status" json:"status"`
+	PublicKey     *string            `db:"public_key" json:"public_key"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy     pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy     pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion    int32              `db:"row_version" json:"row_version"`
+}
+
 // ข้อมูลที่ต้องเก็บตามกฎหมายอื่น (ข้อยกเว้น ม.33)
 type DsarLegalHold struct {
 	ID             uuid.UUID          `db:"id" json:"id"`

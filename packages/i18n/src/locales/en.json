@@ -2113,6 +2113,32 @@
       "historyEmpty": "Only the current version exists",
       "published": "Published",
       "view": "View"
+    },
+    "dsar": {
+      "intro": "Use this form to submit a data subject rights request directly to the organization.",
+      "requestType": "What would you like to do?",
+      "requestTypePlaceholder": "Select a right",
+      "name": "Your full name",
+      "contact": "Contact",
+      "contactHint": "Give at least one — we'll use it to verify your identity and send a confirmation.",
+      "email": "Email",
+      "phone": "Phone",
+      "dataSource": "Where did we get your data from? (optional)",
+      "dataSourceHint": "Only needed if you're asking for access and we did not collect your data directly from you.",
+      "submit": "Submit request",
+      "submitting": "Submitting…",
+      "thanks": "Your request has been received",
+      "requestNo": "Request number: {requestNo}. Keep this to track its status.",
+      "otpLabel": "Enter the verification code we just sent you",
+      "otpConfirm": "Confirm code",
+      "otpConfirmed": "Identity verified. The organization will process your request within the legally required timeframe.",
+      "errors": {
+        "missing_fields": "Please fill in the required fields and give at least one contact method.",
+        "dsar_invalid_input": "Some information is missing or invalid.",
+        "dsar_invalid_transition": "This code has already been decided or has expired.",
+        "unavailable": "We couldn't submit your request right now. Please try again shortly.",
+        "generic": "Something went wrong. Please try again."
+      }
     }
   },
   "breach": {
@@ -2904,5 +2930,26 @@
       "reportFormat": "Report format",
       "downloadReport": "Download companion report"
     }
+  },
+  "dsarForms": {
+    "title": "Public DSAR intake forms",
+    "intro": "Open a public web form so data subjects can submit a request directly, without staff recording it on their behalf (DSAR-01).",
+    "createTitle": "New intake form",
+    "name": "Name",
+    "legalEntity": "Legal entity",
+    "legalEntityPlaceholder": "Select a legal entity",
+    "create": "Create draft",
+    "status": "Status",
+    "statuses": {
+      "draft": "Draft",
+      "active": "Active",
+      "retired": "Retired"
+    },
+    "publicLink": "Public link",
+    "publish": "Publish",
+    "retire": "Retire",
+    "empty": "No intake forms yet.",
+    "forbidden": "You don't have permission to view this page.",
+    "signInRequired": "Please sign in."
   }
 }

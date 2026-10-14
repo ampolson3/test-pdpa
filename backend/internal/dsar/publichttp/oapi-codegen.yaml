@@ -1,0 +1,10 @@
+package: dsarpublichttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - dsarGetPublicIntakeForm
+    - dsarSubmitPublicRequest
+    - dsarConfirmPublicVerification

@@ -35,6 +35,7 @@ import (
 	dpohttp "pdpa-platform/internal/dpo/http"
 	dposervice "pdpa-platform/internal/dpo/service"
 	dsarhttp "pdpa-platform/internal/dsar/http"
+	dsarpublichttp "pdpa-platform/internal/dsar/publichttp"
 	dsarservice "pdpa-platform/internal/dsar/service"
 	govhttp "pdpa-platform/internal/gov/http"
 	govservice "pdpa-platform/internal/gov/service"
@@ -353,6 +354,11 @@ func run() error {
 		strictNoticePublic := noticepublichttp.NewStrictHandlerWithOptions(noticepublichttp.NewStrict(noticeSvc), nil,
 			noticepublichttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		noticepublichttp.HandlerWithOptions(strictNoticePublic, noticepublichttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+		// DSAR-01: the public web intake form — publickeys.Middleware's own path regex already distinguishes
+		// /dsar-forms/ from /collection-points/ and /notices/.
+		strictDsarPublic := dsarpublichttp.NewStrictHandlerWithOptions(dsarpublichttp.NewStrict(dsarSvc), nil,
+			dsarpublichttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		dsarpublichttp.HandlerWithOptions(strictDsarPublic, dsarpublichttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 	})
 
 	// The inbox stream (SSE) is the one route outside Idempotency + Tx: the Tx middleware buffers the

@@ -240,3 +240,61 @@ export function useDsarSubtaskMutations(client: ApiClient) {
   });
   return { create, updateStatus, remove };
 }
+
+// DSAR-01: intake forms (public web submission).
+export type DsarIntakeForm = components["schemas"]["DsarIntakeForm"];
+export type DsarIntakeFormInput = components["schemas"]["DsarIntakeFormInput"];
+export type DsarIntakeFormStatus = components["schemas"]["DsarIntakeFormStatus"];
+
+const intakeFormsKey = ["dsar", "intake-forms"] as const;
+
+/** GET /admin/v1/dsar/forms (DSAR-01). */
+export function useDsarIntakeForms(client: ApiClient, status?: DsarIntakeFormStatus) {
+  return useInfiniteQuery({
+    queryKey: [...intakeFormsKey, status ?? null],
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const { data, error } = await client.GET("/admin/v1/dsar/forms", {
+        params: { query: { status, cursor: pageParam, limit: 50 } },
+      });
+      if (error) throw error;
+      return data;
+    },
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
+  });
+}
+
+/** Create / publish / retire an intake form (DSAR-01). */
+export function useDsarIntakeFormMutations(client: ApiClient) {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: intakeFormsKey });
+  const create = useMutation({
+    mutationFn: async (input: DsarIntakeFormInput) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/forms", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  const publish = useMutation({
+    mutationFn: async (form: DsarIntakeForm) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/forms/{id}/publish", {
+        params: { path: { id: form.id }, header: ifMatch(form.row_version) },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  const retire = useMutation({
+    mutationFn: async (form: DsarIntakeForm) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/forms/{id}/retire", {
+        params: { path: { id: form.id }, header: ifMatch(form.row_version) },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  return { create, publish, retire };
+}

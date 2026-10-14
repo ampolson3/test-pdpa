@@ -1945,6 +1945,57 @@ needs it, the same way IAM-05's OTP service itself is waiting for one.
 6. Tests: unit (rules, transitions, deadlines) · integration (two-tenant RLS, repository) · contract (401/403/400/422) · E2E for the main path of the BP.
 7. Update the docs your change touched (module section, states, data dictionary, events) in the same change.
 
+### DSAR-01 แบบฟอร์มขอใช้สิทธิออนไลน์ (`docs/modules/DSAR.md#dsar-01`) — done, scoped to the literal acceptance criterion
+`dsar.intake_forms` (migration 00065) is a thin, publishable wrapper — the same role `notice.notices` (PNG-06)
+and `consent.collection_points` (CON-09) already play for their own public surfaces — a legal entity opens one
+of, issuing a `platform.public_keys` key (`publickeys.EntityDsarForm`, `pathKeyRE` widened for
+`/public/v1/dsar-forms/{key}`) once published. Deliberately **not** built on PLT-06, despite the module doc's
+own "ฟอร์มจาก PLT-06" backend note: a DSAR intake's fields are exactly `CreateRequestInput`'s own fixed shape
+(right type, name, one contact, an optional ม.30 data-source note) — a dynamic PLT-06 question schema would
+just duplicate structure that table (DSAR-13) already names directly, the same "build only the minimal slice
+this feature needs" reasoning this codebase uses throughout. `internal/dsar/service/intake.go`:
+`CreateIntakeForm`/`GetIntakeForm`/`ListIntakeForms` (plain CRUD, `dsar.form.*` — already seeded in the
+baseline permission migration, no new code), `PublishIntakeForm`/`RetireIntakeForm` (the CON-09/PNG-06
+publish-gate pattern exactly: `coalesce` the public key so a re-publish never issues a second one, refuse
+re-publishing an already-active or already-retired form).
+
+`CreatePublicSubmission` is the acceptance criterion itself ("ผู้ยื่นได้เลขที่คำขอทันทีหลังส่ง"): a thin
+wrapper over DSAR-13's own `CreateRequest` (`channel: "web"`, `on_behalf: false`) that also, right in the same
+call, sends a PLT-04 confirmation (`dsar.request_received`, migration 00065's own th/en × email/sms templates
+— operational text, no DRAFT marker, same reasoning DSAR-07/DSAR-08's own templates used) to the contact the
+requester themselves just gave, and opens a DSAR-06 OTP verification attempt right away against that same
+contact — closing this feature's own «include» DSAR-06 relationship and, in the same stroke, giving IAM-05's
+OTP service and DSAR-06's `StartOTPVerification`/`ConfirmOTPVerification` their first-ever public-portal
+consumer (both previously flagged "no consumer yet"). New public endpoint
+`POST /public/v1/dsar-forms/{key}/requests/{requestId}/verify` (`internal/dsar/publichttp`, mirroring
+`internal/notice/publichttp` exactly) confirms it, reusing `ConfirmOTPVerification` as-is — a wrong code is a
+harmless retry (IAM-05's own 5-attempt cap), exactly like the admin-side flow.
+
+API: admin `GET`/`POST /admin/v1/dsar/forms`, `GET /admin/v1/dsar/forms/{id}`, `POST .../publish` /
+`.../retire` (ETag/If-Match, `dsar.form.*`); public `GET /public/v1/dsar-forms/{key}` (the right-type picker),
+`POST .../requests` (`Idempotency-Key` required, 201 `{request_no, status, verification}`),
+`POST .../requests/{requestId}/verify`. UI: `/settings/dsar-forms` (create a draft against a legal entity,
+publish/retire, the public link shown once issued — the same `portalUrl` convention CON-09's own
+`/consent/collection-points` page uses) and a new portal page, `apps/portal/src/app/[locale]/dsar/[key]`
+(server actions, per-attempt `Idempotency-Key`, an inline OTP-confirm step once submitted — mirrors
+`/[locale]/c/[key]`'s exact server-component/action split). Tests: unit (create/publish/retire incl. the
+re-publish-keeps-the-same-key and refuse-twice cases, the acceptance criterion directly — a public submission
+returns a non-empty request number immediately and opens a pending OTP attempt the requester can confirm,
+exactly-one-contact validation, an unknown right-type code refused, a draft/retired form refused,
+two-tenant isolation), HTTP contract for both the admin forms endpoints and the public submit/confirm chain
+through the real validator + publickeys middleware + Idempotency + Tx chain (incl. an Idempotency-Key replay
+returning the original result). Not verified live against a real Postgres/Redis — this cloud session has
+neither reachable (no Docker daemon either) — every test compiles and vets clean and skips the same way the
+rest of this module's own test suite already does in this environment.
+
+Not done, deliberately, each because no screen or consumer needs it yet (the same "no consumer yet" deferral
+this codebase uses throughout): QR code / embed snippet (the module doc's own "ฝังเว็บ หรือ QR code" — the
+public link alone already satisfies the literal acceptance criterion); form versioning (there is no
+configurable form content to version, unlike PLT-06's own forms); more than one intake form's content
+differing per right type (today one form offers every seeded right type via `ListRequestTypes`); the
+`channel: "api"` / external-app submission path DSAR-02's own notes already defer for the same ORG-16
+API-client-authentication reason.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

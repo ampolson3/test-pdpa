@@ -457,6 +457,8 @@ export {
   useDsarVerificationMutations,
   useDsarSubtasks,
   useDsarSubtaskMutations,
+  useDsarIntakeForms,
+  useDsarIntakeFormMutations,
   type DsarRequestType,
   type DsarRequest,
   type DsarRequestStatus,
@@ -473,4 +475,7 @@ export {
   type DsarSubtask,
   type DsarSubtaskAction,
   type DsarSubtaskStatus,
+  type DsarIntakeForm,
+  type DsarIntakeFormInput,
+  type DsarIntakeFormStatus,
 } from "./dsar";
