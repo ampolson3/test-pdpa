@@ -269,6 +269,12 @@ existing harness), HTTP contract (422 for an unknown asset, 200 opening a real s
 
 **Acceptance criteria:** คำขอแทนต้องมีเอกสารยืนยันอำนาจก่อนดำเนินการ
 
+**Implementation (done, see CLAUDE.md's own DSAR-04 note for the full design):** `dsar.agents` (already in
+the baseline migrations — `authority_file_id` NOT NULL) plus a new `Transition` guard: an `on_behalf`
+request can't leave `verifying` for `in_review` without at least one agent record with its authority
+document attached. Staff can separately confirm the document (`VerifyAgent`), the same human-judgement call
+DSAR-06 already makes for the data subject's own identity.
+
 <a id="dsar-06"></a>
 ### DSAR-06 ยืนยันตัวตนผู้ยื่นคำขอ
 

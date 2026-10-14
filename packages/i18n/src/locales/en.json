@@ -2675,6 +2675,22 @@
         "done": "Done",
         "not_applicable": "Not applicable"
       }
+    },
+    "agent": {
+      "title": "Agent / guardian",
+      "hint": "A request made on the data subject's own behalf needs an authority-proof document before it can move past identity verification (ม.20).",
+      "authorityType": "Authority type",
+      "verifiedAt": "Verified at",
+      "verify": "Verify",
+      "recordTitle": "Record the agent",
+      "name": "Agent's name",
+      "record": "Record",
+      "types": {
+        "power_of_attorney": "Power of attorney",
+        "parent": "Parent (parental authority)",
+        "guardian": "Legal guardian",
+        "curator": "Curator"
+      }
     }
   },
   "dpoDeadlines": {

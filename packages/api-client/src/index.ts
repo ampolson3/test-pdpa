@@ -459,6 +459,8 @@ export {
   useDsarSubtaskMutations,
   useDsarIntakeForms,
   useDsarIntakeFormMutations,
+  useDsarAgents,
+  useDsarAgentMutations,
   type DsarRequestType,
   type DsarRequest,
   type DsarRequestStatus,
@@ -478,4 +480,7 @@ export {
   type DsarIntakeForm,
   type DsarIntakeFormInput,
   type DsarIntakeFormStatus,
+  type DsarAgent,
+  type DsarAuthorityType,
+  type DsarRecordAgentInput,
 } from "./dsar";

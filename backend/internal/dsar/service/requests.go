@@ -269,6 +269,16 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, rowVersion int32
 	}
 	var outcome *string
 	switch in.To {
+	case "in_review":
+		// DSAR-04's own acceptance criterion: a request made on the data subject's own behalf cannot proceed
+		// past identity verification without an authority-proof document already on record.
+		if req.OnBehalf {
+			if ok, err := s.hasAgentDocument(ctx, id); err != nil {
+				return Request{}, nil, err
+			} else if !ok {
+				return Request{}, nil, ErrAgentRequired
+			}
+		}
 	case "completed":
 		if in.Outcome == nil || !slices.Contains(outcomes[:2], *in.Outcome) {
 			return Request{}, nil, fmt.Errorf("%w: outcome (fulfilled or partially_fulfilled required)", ErrInvalid)

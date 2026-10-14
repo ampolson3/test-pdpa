@@ -217,6 +217,8 @@ func problem(err error) error {
 		return httpx.InvalidTransition("dsar")
 	case errors.Is(err, dsarservice.ErrInvalid), errors.Is(err, dsarservice.ErrRedactionOutOfBounds):
 		return httpx.UnprocessableEntity("dsar.invalid_input", err.Error())
+	case errors.Is(err, dsarservice.ErrAgentRequired):
+		return httpx.UnprocessableEntity("dsar.agent_required", err.Error())
 	}
 	return err
 }

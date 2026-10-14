@@ -16,6 +16,8 @@ import {
   useDsarVerificationMutations,
   useDsarSubtasks,
   useDsarSubtaskMutations,
+  useDsarAgents,
+  useDsarAgentMutations,
   useLegalEntities,
   useMentionSearch,
   useGroupSearch,
@@ -27,6 +29,7 @@ import {
   type DsarSlaStatus,
   type DsarVerificationMethod,
   type DsarSubtaskAction,
+  type DsarAuthorityType,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 import { RecordCollaboration } from "@/components/record-collaboration";
@@ -63,6 +66,7 @@ const STATUS_STYLE: Record<DsarRequestStatus, string> = {
 };
 
 const SUBTASK_ACTIONS: DsarSubtaskAction[] = ["search", "export", "delete", "rectify", "restrict", "stop_marketing", "review"];
+const AUTHORITY_TYPES: DsarAuthorityType[] = ["power_of_attorney", "parent", "guardian", "curator"];
 
 const SLA_STYLE: Record<DsarSlaStatus, string> = {
   on_track: "bg-emerald-100 text-emerald-800",
@@ -293,6 +297,69 @@ function VerificationPanel({ client, request, canUpdate }: { client: ReturnType<
   );
 }
 
+function AgentPanel({ client, request, canUpdate }: { client: ReturnType<typeof createApiClient>; request: DsarRequest; canUpdate: boolean }) {
+  const t = useTranslations("dsarRequests");
+  const list = useDsarAgents(client, request.id);
+  const m = useDsarAgentMutations(client);
+  const [agentName, setAgentName] = useState("");
+  const [authorityType, setAuthorityType] = useState<DsarAuthorityType>("power_of_attorney");
+  const [fileId, setFileId] = useState<string | null>(null);
+
+  const rows = list.data ?? [];
+
+  return (
+    <div className="space-y-3" data-testid="agent-panel">
+      <p className="text-xs text-slate-600">{t("agent.hint")}</p>
+      {rows.length > 0 && (
+        <table className="w-full text-xs">
+          <thead className="text-left text-slate-500">
+            <tr><th className="py-1">{t("agent.authorityType")}</th><th className="py-1">{t("agent.verifiedAt")}</th><th className="py-1" /></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.map((a) => (
+              <tr key={a.id} data-testid={`agent-row-${a.id}`}>
+                <td className="py-1">{t(`agent.types.${a.authority_type}`)}</td>
+                <td className="py-1">{a.verified_at ? new Date(a.verified_at).toLocaleString() : "—"}</td>
+                <td className="py-1">
+                  {canUpdate && !a.verified_at && (
+                    <Button variant="secondary" onClick={() => m.verify.mutate({ requestId: request.id, agentId: a.id })} disabled={m.verify.isPending} data-testid={`verify-agent-${a.id}`}>
+                      {t("agent.verify")}
+                    </Button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {canUpdate && (
+        <fieldset className="space-y-2 rounded-md border border-slate-200 p-3">
+          <legend className="px-1 text-slate-600">{t("agent.recordTitle")}</legend>
+          <label className="block text-xs">
+            {t("agent.name")}
+            <input className={INPUT} value={agentName} onChange={(e) => setAgentName(e.target.value)} data-testid="agent-name" />
+          </label>
+          <label className="block text-xs">
+            {t("agent.authorityType")}
+            <select className={INPUT} value={authorityType} onChange={(e) => setAuthorityType(e.target.value as DsarAuthorityType)} data-testid="agent-authority-type">
+              {AUTHORITY_TYPES.map((v) => <option key={v} value={v}>{t(`agent.types.${v}`)}</option>)}
+            </select>
+          </label>
+          <FileUploader accept=".pdf,.png,.jpg,.jpeg" onUploaded={(f) => setFileId(f.id)} />
+          <Button
+            onClick={() => agentName && fileId && m.record.mutate(
+              { requestId: request.id, input: { agent_name: agentName, authority_type: authorityType, authority_file_id: fileId } },
+              { onSuccess: () => { setAgentName(""); setFileId(null); } })}
+            disabled={!agentName || !fileId || m.record.isPending} data-testid="record-agent">
+            {t("agent.record")}
+          </Button>
+          {m.record.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(m.record.error) })}</p>}
+        </fieldset>
+      )}
+    </div>
+  );
+}
+
 export function RequestsContent({ currentUserId }: { currentUserId: string }) {
   const t = useTranslations("dsarRequests");
   const locale = useLocale() as Locale;
@@ -309,6 +376,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [verifyId, setVerifyId] = useState<string | null>(null);
   const [subtaskId, setSubtaskId] = useState<string | null>(null);
+  const [agentId, setAgentId] = useState<string | null>(null);
   const list = useDsarRequests(client, { status: statusFilter || undefined, search: search || undefined });
   const types = useDsarRequestTypes(client);
   const entities = useLegalEntities(client);
@@ -488,12 +556,25 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                       onClick={() => setSubtaskId(subtaskId === r.id ? null : r.id)}>
                       {subtaskId === r.id ? t("form.hide") : t("subtasks.title")}
                     </button>
+                    {r.on_behalf && (
+                      <button type="button" className="text-sky-700 underline" data-testid={`agent-toggle-${r.id}`}
+                        onClick={() => setAgentId(agentId === r.id ? null : r.id)}>
+                        {agentId === r.id ? t("form.hide") : t("agent.title")}
+                      </button>
+                    )}
                   </td>
                 </tr>
                 {verifyId === r.id && (
                   <tr>
                     <td colSpan={7} className="bg-slate-50 px-3 py-3">
                       <VerificationPanel client={client} request={r} canUpdate={canUpdate} />
+                    </td>
+                  </tr>
+                )}
+                {agentId === r.id && (
+                  <tr>
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
+                      <AgentPanel client={client} request={r} canUpdate={canUpdate} />
                     </td>
                   </tr>
                 )}

@@ -298,3 +298,45 @@ export function useDsarIntakeFormMutations(client: ApiClient) {
   });
   return { create, publish, retire };
 }
+
+// DSAR-04: the agent who submitted a request on the data subject's own behalf (ม.20), with their
+// authority-proof document.
+export type DsarAgent = components["schemas"]["DsarAgent"];
+export type DsarAuthorityType = components["schemas"]["DsarAuthorityType"];
+export type DsarRecordAgentInput = components["schemas"]["DsarRecordAgentInput"];
+
+/** GET /admin/v1/dsar/requests/{id}/agents. */
+export function useDsarAgents(client: ApiClient, requestId: string | undefined) {
+  return useQuery({
+    queryKey: ["dsar", "agents", requestId ?? ""] as const,
+    enabled: !!requestId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dsar/requests/{id}/agents", { params: { path: { id: requestId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** Record an agent (POST .../agents) and confirm their authority document (POST .../agents/{agentId}/verify). */
+export function useDsarAgentMutations(client: ApiClient) {
+  const qc = useQueryClient();
+  const invalidate = (requestId: string) => qc.invalidateQueries({ queryKey: ["dsar", "agents", requestId] });
+  const record = useMutation({
+    mutationFn: async ({ requestId, input }: { requestId: string; input: DsarRecordAgentInput }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/agents", { params: { path: { id: requestId } }, body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, { requestId }) => invalidate(requestId),
+  });
+  const verify = useMutation({
+    mutationFn: async ({ requestId, agentId }: { requestId: string; agentId: string }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/agents/{agentId}/verify", { params: { path: { id: requestId, agentId } } });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, { requestId }) => invalidate(requestId),
+  });
+  return { record, verify };
+}

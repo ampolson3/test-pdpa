@@ -1996,6 +1996,44 @@ differing per right type (today one form offers every seeded right type via `Lis
 `channel: "api"` / external-app submission path DSAR-02's own notes already defer for the same ORG-16
 API-client-authentication reason.
 
+### DSAR-04 ยื่นคำขอแทนเจ้าของข้อมูล (`docs/modules/DSAR.md#dsar-04`) — done
+`dsar.agents` was already fully specified in the baseline migrations (`authority_type` CHECK
+power_of_attorney/parent/guardian/curator, `authority_file_id` NOT NULL — a row can never exist without an
+authority-proof document attached) — no new migration, only `internal/dsar/service/agents.go` against it.
+`RecordAgent` follows DSAR-06's own `SubmitIDDocumentVerification` pattern exactly: the agent's own clean,
+still-unattached PLT-09 upload (`Files.Get` + `.EntityType == ""` check) is `Attach`ed to the request (not
+`SaveGenerated` — this is the caller's own document, not a derived one), and the agent's name is PLT-13
+write-only encrypted (rule 3) the same way the requester's own name already is. `VerifyAgent` is staff's own
+pass on the document — "ยืนยันทั้งผู้ยื่นและเจ้าของข้อมูล"'s other half, the same human-judgement call DSAR-06's
+`ConfirmIDDocument` already makes for the data subject's own identity, since there's no trusted registry to
+check a power of attorney or guardianship document against automatically — guarded to a still-unverified row
+so a redelivery/double-click is a harmless no-op, not an error.
+
+The acceptance criterion itself ("คำขอแทนต้องมีเอกสารยืนยันอำนาจก่อนดำเนินการ") is a new case in `Transition`'s
+own `switch` (`requests.go`): entering `in_review` — ST-02's own `verifying → in_review`, "ยืนยันสำเร็จ", the
+exact point DSAR-06's own identity check already gates — for an `on_behalf` request now also requires at
+least one `dsar.agents` row (`hasAgentDocument`, a plain `COUNT(*)`) or the transition is refused with a new
+`ErrAgentRequired` (422 `dsar.agent_required`) before `UpdateRequestStatus` is ever called; a direct
+(not-on-behalf) request is completely unaffected, since the guard only runs when `req.OnBehalf` is true.
+Deliberately not gated on `verified_at` being set: the literal criterion is about the *document* being on
+record before the request proceeds, not staff having already reviewed it — the same "existence, not judgement"
+reading the acceptance criterion's own wording supports; `VerifyAgent` stays a separate, non-blocking staff
+action layered on top, matching DSAR-06's own two-step verify/decide shape.
+
+API: `GET`/`POST /admin/v1/dsar/requests/{id}/agents`, `POST .../agents/{agentId}/verify` — all
+`dsar.request.*` (no new permission code). UI: `/requests` gained an "ผู้ยื่นแทน / ผู้ปกครอง" toggle, shown only
+on `on_behalf` rows — a table of past agent records + a per-row "verify" action, and a record form
+(name/authority-type/`FileUploader`) — mirroring `VerificationPanel`'s own layout exactly. Tests: unit
+(validation — bad authority_type, empty name, a file id already attached to this or another entity refused via
+the same `Files.Get` unattached-check `RecordAgent` shares with DSAR-06; the acceptance criterion directly —
+`in_review` blocked without an agent document when `on_behalf`, clears once one is recorded, no gate at all for
+a direct request; `VerifyAgent`'s idempotent redelivery and wrong-request 404; two-tenant isolation of both the
+agent list and a cross-tenant verify attempt), HTTP contract (401/403/400 schema/422/404/428/200/201) through
+the real validator + AuthZ, including the full chain end to end — blocked at 422 `dsar.agent_required`, record
+the agent, verify, then the same transition succeeds. Not verified live against a real Postgres/Redis — same
+environment limitation DSAR-01 already disclosed; every test compiles and vets clean and skips the same way the
+rest of this module's own test suite already does here.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

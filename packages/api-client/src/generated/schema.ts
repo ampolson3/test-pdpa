@@ -1965,6 +1965,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/requests/{id}/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every agent record for this request, oldest first (DSAR-04, ม.20) */
+        get: operations["dsarListAgents"];
+        put?: never;
+        /**
+         * Record who submitted this request on the data subject's own behalf, with their authority-proof document (DSAR-04, ม.20)
+         * @description The acceptance criterion itself — a request with on_behalf=true cannot leave verifying for in_review until at least one agent record with its authority document exists.
+         */
+        post: operations["dsarRecordAgent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/requests/{id}/agents/{agentId}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Staff confirm the agent's own authority document (DSAR-04 — "ยืนยันทั้งผู้ยื่นและเจ้าของข้อมูล", no trusted registry to check it against automatically) */
+        post: operations["dsarVerifyAgent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dsar/requests/{id}/verifications": {
         parameters: {
             query?: never;
@@ -6427,6 +6465,28 @@ export interface components {
         };
         DsarDecideVerificationInput: {
             pass: boolean;
+        };
+        /**
+         * @description DSAR-04, ม.20 — the agent's own authority to submit on the data subject's behalf.
+         * @enum {string}
+         */
+        DsarAuthorityType: "power_of_attorney" | "parent" | "guardian" | "curator";
+        DsarAgent: {
+            id: components["schemas"]["Uuid"];
+            request_id: components["schemas"]["Uuid"];
+            authority_type: components["schemas"]["DsarAuthorityType"];
+            authority_file_id: components["schemas"]["Uuid"];
+            /** Format: date-time */
+            verified_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            row_version: number;
+        };
+        DsarRecordAgentInput: {
+            agent_name: string;
+            authority_type: components["schemas"]["DsarAuthorityType"];
+            /** @description The agent's own clean, still-unattached PLT-09 upload (POST /admin/v1/platform/files) of the power of attorney / guardianship document */
+            authority_file_id: components["schemas"]["Uuid"];
         };
         /** @enum {string} */
         DsarSubtaskAction: "search" | "export" | "delete" | "rectify" | "restrict" | "stop_marketing" | "review";
@@ -12658,6 +12718,99 @@ export interface operations {
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dsarListAgents: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarAgent"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dsarRecordAgent: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarRecordAgentInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarAgent"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarVerifyAgent: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                agentId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarAgent"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     dsarListVerifications: {

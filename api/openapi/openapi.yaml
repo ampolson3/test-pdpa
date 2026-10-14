@@ -5953,6 +5953,114 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dsar/requests/{id}/agents:
+    get:
+      operationId: dsarListAgents
+      tags: [dsar]
+      summary: Every agent record for this request, oldest first (DSAR-04, ม.20)
+      x-permission: dsar.request.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarAgent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dsarRecordAgent
+      tags: [dsar]
+      summary: Record who submitted this request on the data subject's own behalf, with their authority-proof document (DSAR-04, ม.20)
+      description: The acceptance criterion itself — a request with on_behalf=true cannot leave verifying for in_review until at least one agent record with its authority document exists.
+      x-permission: dsar.request.update
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarRecordAgentInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarAgent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/requests/{id}/agents/{agentId}/verify:
+    post:
+      operationId: dsarVerifyAgent
+      tags: [dsar]
+      summary: Staff confirm the agent's own authority document (DSAR-04 — "ยืนยันทั้งผู้ยื่นและเจ้าของข้อมูล", no trusted registry to check it against automatically)
+      x-permission: dsar.request.update
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: agentId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarAgent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/dsar/requests/{id}/verifications:
     get:
       operationId: dsarListVerifications
@@ -16039,6 +16147,30 @@ components:
       required: [pass]
       properties:
         pass: {type: boolean}
+    DsarAuthorityType:
+      type: string
+      description: DSAR-04, ม.20 — the agent's own authority to submit on the data subject's behalf.
+      enum: [power_of_attorney, parent, guardian, curator]
+    DsarAgent:
+      type: object
+      required: [id, request_id, authority_type, authority_file_id, created_at, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        request_id: {$ref: '#/components/schemas/Uuid'}
+        authority_type: {$ref: '#/components/schemas/DsarAuthorityType'}
+        authority_file_id: {$ref: '#/components/schemas/Uuid'}
+        verified_at: {type: [string, 'null'], format: date-time}
+        created_at: {type: string, format: date-time}
+        row_version: {type: integer}
+    DsarRecordAgentInput:
+      type: object
+      required: [agent_name, authority_type, authority_file_id]
+      properties:
+        agent_name: {type: string, minLength: 1, maxLength: 300}
+        authority_type: {$ref: '#/components/schemas/DsarAuthorityType'}
+        authority_file_id:
+          description: The agent's own clean, still-unattached PLT-09 upload (POST /admin/v1/platform/files) of the power of attorney / guardianship document
+          $ref: '#/components/schemas/Uuid'
     DsarSubtaskAction:
       type: string
       enum: [search, export, delete, rectify, restrict, stop_marketing, review]
