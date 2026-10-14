@@ -109,8 +109,9 @@ func run() error {
 	river.AddWorker(workers, &breach.NoticeWorker{Service: breachSvc})
 	noticeSvc := &notice.Service{Notify: notifySvc, River: inserter} // PNG-04: 30-day indirect-collection reminders
 	river.AddWorker(workers, &notice.DueWorker{Service: noticeSvc})
-	dsarSvc := &dsarservice.Service{Audit: auditservice.New(), Notify: notifySvc, River: inserter} // DSAR-07: SLA reminder
+	dsarSvc := &dsarservice.Service{Audit: auditservice.New(), Notify: notifySvc, River: inserter, Files: fileStore(store, inserter)} // DSAR-07: SLA reminder; DSAR-14: secure delivery purge
 	river.AddWorker(workers, &dsarservice.ReminderWorker{Service: dsarSvc})
+	river.AddWorker(workers, &dsarservice.PackagePurgeWorker{Service: dsarSvc})
 	// DPX-05: the daily retention/disposal sweep (gov.retention_sweep -> gov.retention_check per tenant).
 	govSvc := &govservice.Service{Audit: auditservice.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fileStore(store, inserter), River: inserter}
 	river.AddWorker(workers, &govjobs.Checker{Gov: govSvc})

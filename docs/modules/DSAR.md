@@ -552,6 +552,46 @@ carries the reason, an invalid ST-02 edge refused, two-tenant isolation), HTTP c
 
 **Acceptance criteria:** ลิงก์หมดอายุตามที่ตั้งและมี log การดาวน์โหลด
 
+**Implementation (done):** `dsar.packages` was already fully specified in the baseline migrations
+(`token_hash`, `password_protected`, `expires_at`, `download_count`, `last_downloaded_at`, `purged_at`) —
+no new table, only migration 00067 (`platform.public_keys.entity_type` widened to add `dsar_package`, the
+same CHECK-widening pattern DPO-09/CON-11 already use). `internal/dsar/service/delivery.go`: `CreatePackage`
+wraps either the caller's own clean, still-unattached PLT-09 upload (attached here, the same "record + attach
+in one call" shape DSAR-04's `RecordAgent` uses) or a file already attached to the request (DSAR-13's own
+generated response letter); issues a `platform.public_keys` key the same way CON-09/PNG-06/DSAR-01/BRE-01's
+own public surfaces do, and a separate, second secret — a 10-character access code from an unambiguous
+alphabet, hashed into `token_hash` (SHA-256) and returned to the caller exactly once, never stored in the
+clear (rule 3). `PublicPackage`/`PublicDownload` resolve the tenant from the key before the tenant
+transaction opens; `PublicDownload` checks the code with `subtle.ConstantTimeCompare`, returns a short-lived
+signed URL via `files.Service.SignedURL`, and records `download_count`/`last_downloaded_at` plus an audit
+entry on every call — the acceptance criterion itself. A new PLT-09 trusted operation, `files.Service.
+DeleteObject` (alongside `Status`/`Open`/`SignedURL`/`SaveGenerated`/`AttachSystem`), lets the one-time
+River purge job (`dsar.package_purge`, scheduled exactly at `expires_at`, the same per-record checkpoint
+pattern BRE's SLA timers and DSAR-07's reminder use — not a periodic sweep) delete the file's bytes while
+keeping the `platform.files` row and the package's own audit trail ("object deleted, row + audit kept",
+PLT-09's own infected-file pattern). A purged or expired package reads as 404 through `PublicPackage`/
+`PublicDownload` alike — no information leaked either way. API: `GET`/`POST /admin/v1/dsar/requests/{id}/
+packages` (`dsar.package.read`/`.create`, both already seeded in the baseline permission migration); public
+`GET /public/v1/dsar-packages/{key}`, `POST /public/v1/dsar-packages/{key}/download` (`Idempotency-Key`
+required — found and fixed while building this: the first draft of the download endpoint left it off,
+missing rule 10's own "Idempotency-Key required for POST on /public/v1"). UI: `/requests` gained a
+"แพ็กเกจ" toggle per row (format/password-protected/file upload form, a one-time issued-result panel showing
+the public link and access code) and a new portal page, `apps/portal/src/app/[locale]/dsar-packages/[key]`
+(server actions, per-attempt `Idempotency-Key` on the download action — mirrors `/[locale]/dsar/[key]`'s own
+server-component/action split). Tests: unit (the acceptance criterion directly — a package expires per its
+own setting and every download is logged with count/last_downloaded_at/an audit row; correct vs. wrong access
+code; a file already attached to a different request is refused; purge deletes the file's bytes while keeping
+the row and reads as not-found afterward, a second purge is a harmless no-op; two-tenant isolation), HTTP
+contract (`internal/dsar/publichttp/handler_test.go` — 404 for an unknown key, 428 for a missing Idempotency-
+Key, 422 for a wrong access code, 200 through the real validator + publickeys + Idempotency + Tx chain, an
+Idempotency-Key replay returning the original result). Not verified live against a real Postgres/Redis — same
+environment limitation DSAR-01/DSAR-04/BRE-01 already disclosed; every test compiles and vets clean and skips
+the same way the rest of this module's own test suite already does here. Not done, deliberately (no consumer
+yet, the same deferral this codebase uses throughout): a single-use/one-download-only option (the module doc's
+own acceptance criterion has no such requirement — repeat downloads within the link's own expiry are allowed);
+a portal-side identity check before download (DSAR-06's own OTP flow is the request's identity gate, not the
+package's — the access code is this feature's own, separate secret).
+
 <a id="dsar-15"></a>
 ### DSAR-15 ส่งออกข้อมูลแบบอ่านได้ด้วยเครื่อง
 

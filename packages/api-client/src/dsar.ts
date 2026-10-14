@@ -340,3 +340,37 @@ export function useDsarAgentMutations(client: ApiClient) {
   });
   return { record, verify };
 }
+
+// DSAR-14: secure delivery packages — a loginless link wrapping an already-attached file, expiring per a
+// configured setting, optionally gated by a one-time access code.
+export type DsarPackage = components["schemas"]["DsarPackage"];
+export type DsarPackageFormat = components["schemas"]["DsarPackageFormat"];
+export type DsarCreatePackageInput = components["schemas"]["DsarCreatePackageInput"];
+export type DsarCreatePackageResult = components["schemas"]["DsarCreatePackageResult"];
+
+/** GET /admin/v1/dsar/requests/{id}/packages. */
+export function useDsarPackages(client: ApiClient, requestId: string | undefined) {
+  return useQuery({
+    queryKey: ["dsar", "packages", requestId ?? ""] as const,
+    enabled: !!requestId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dsar/requests/{id}/packages", { params: { path: { id: requestId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/dsar/requests/{id}/packages — the response carries the access code exactly once. */
+export function useDsarPackageMutations(client: ApiClient) {
+  const qc = useQueryClient();
+  const create = useMutation({
+    mutationFn: async ({ requestId, input }: { requestId: string; input: DsarCreatePackageInput }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/packages", { params: { path: { id: requestId } }, body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, { requestId }) => qc.invalidateQueries({ queryKey: ["dsar", "packages", requestId] }),
+  });
+  return { create };
+}

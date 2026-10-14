@@ -36,17 +36,39 @@ func (f *fakeNotifier) Send(ctx context.Context, req iamservice.NotifyRequest) (
 // dsar.Files to exercise SubmitIDDocumentVerification's redact-then-save flow and prove the raw bytes
 // handed to Open are never the ones SaveGenerated stores.
 type fakeFiles struct {
-	raw   map[uuid.UUID][]byte
-	saved map[uuid.UUID][]byte
+	raw      map[uuid.UUID][]byte
+	saved    map[uuid.UUID][]byte
+	attached map[uuid.UUID]files.File // DSAR-14's own "already attached to this request" fixture
+	deleted  map[uuid.UUID]bool
 }
 
-func newFakeFiles() *fakeFiles { return &fakeFiles{raw: map[uuid.UUID][]byte{}, saved: map[uuid.UUID][]byte{}} }
+func newFakeFiles() *fakeFiles {
+	return &fakeFiles{raw: map[uuid.UUID][]byte{}, saved: map[uuid.UUID][]byte{}, attached: map[uuid.UUID]files.File{}, deleted: map[uuid.UUID]bool{}}
+}
 
 func (f *fakeFiles) Get(ctx context.Context, id uuid.UUID) (files.File, error) {
+	if a, ok := f.attached[id]; ok {
+		return a, nil
+	}
 	if _, ok := f.raw[id]; !ok {
 		return files.File{}, errors.New("not found")
 	}
 	return files.File{ID: id}, nil // EntityType "" — unattached, as a fresh raw upload always is
+}
+
+// SignedURL stands in for a pre-signed download URL (DSAR-14).
+func (f *fakeFiles) SignedURL(ctx context.Context, id uuid.UUID) (string, error) {
+	if _, ok := f.attached[id]; !ok {
+		return "", errors.New("not found")
+	}
+	return "https://files.example/" + id.String(), nil
+}
+
+// DeleteObject marks a file's bytes gone (DSAR-14's own purge) without removing its fakeFiles.Get record —
+// the same "object deleted, row kept" shape the real PLT-09 trusted method follows.
+func (f *fakeFiles) DeleteObject(ctx context.Context, id uuid.UUID) error {
+	f.deleted[id] = true
+	return nil
 }
 
 func (f *fakeFiles) Open(ctx context.Context, id uuid.UUID) (io.ReadCloser, files.File, error) {
@@ -84,7 +106,12 @@ func (f *fakeFiles) SaveGenerated(ctx context.Context, fileName string, r io.Rea
 func (f *fakeFiles) Attach(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error {
 	_, err := pdb.MustTxFromContext(ctx).Exec(ctx,
 		`UPDATE platform.files SET entity_type = $2, entity_id = $3 WHERE id = $1`, id, entityType, entityID)
-	return err
+	if err != nil {
+		return err
+	}
+	eid := entityID
+	f.attached[id] = files.File{ID: id, EntityType: entityType, EntityID: &eid, AVStatus: "clean"}
+	return nil
 }
 
 func identityEnv(t *testing.T, suffix string) (env, *fakeNotifier, *fakeFiles) {

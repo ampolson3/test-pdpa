@@ -466,6 +466,8 @@ export {
   useDsarIntakeFormMutations,
   useDsarAgents,
   useDsarAgentMutations,
+  useDsarPackages,
+  useDsarPackageMutations,
   type DsarRequestType,
   type DsarRequest,
   type DsarRequestStatus,
@@ -488,4 +490,8 @@ export {
   type DsarAgent,
   type DsarAuthorityType,
   type DsarRecordAgentInput,
+  type DsarPackage,
+  type DsarPackageFormat,
+  type DsarCreatePackageInput,
+  type DsarCreatePackageResult,
 } from "./dsar";

@@ -6254,6 +6254,80 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dsar/requests/{id}/packages:
+    get:
+      operationId: dsarListPackages
+      tags: [dsar]
+      summary: Secure delivery packages sent for this request, newest first (DSAR-14)
+      x-permission: dsar.package.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarPackage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dsarCreatePackage
+      tags: [dsar]
+      summary: Package an already-attached file for secure delivery (DSAR-14) — a loginless link, expiring per the setting, optionally gated by a one-time access code
+      description: The access code is returned here in the clear exactly once — share it with the data subject through a different channel than the link itself. It is never stored or returned again.
+      x-permission: dsar.package.create
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarCreatePackageInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarCreatePackageResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/dsar/requests/{id}/verifications:
     get:
       operationId: dsarListVerifications
@@ -7827,6 +7901,77 @@ paths:
           $ref: '#/components/responses/PreconditionRequired'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /public/v1/dsar-packages/{key}:
+    get:
+      operationId: dsarGetPublicPackage
+      tags: [dsar]
+      summary: A secure delivery package's own metadata, no login (DSAR-14) — whether an access code is required, and when the link expires
+      description: |
+        Tenant is resolved from `key` through platform.public_keys before the tenant transaction starts
+        (ADR-19, same mechanism as every other /public/v1 surface). An expired or already-purged package
+        reads exactly like an unknown key — 404 either way, nothing is leaked.
+      x-permission: public
+      x-module: dsar
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarPublicPackage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /public/v1/dsar-packages/{key}/download:
+    post:
+      operationId: dsarDownloadPublicPackage
+      tags: [dsar]
+      summary: Download the package's file (DSAR-14's own acceptance criterion — the link expires per its setting and every download is logged)
+      description: |
+        Checks the access code when the package is password-protected, then returns a short-lived signed
+        download URL and records the download (count, last downloaded at, an audit log entry). A wrong code
+        is a harmless retry.
+      x-permission: public
+      x-module: dsar
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                access_code:
+                  type: string
+                  maxLength: 20
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarPublicDownloadResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /api/v1/consents:
     post:
       operationId: consentSubmitConsents
@@ -16439,6 +16584,66 @@ components:
         authority_file_id:
           description: The agent's own clean, still-unattached PLT-09 upload (POST /admin/v1/platform/files) of the power of attorney / guardianship document
           $ref: '#/components/schemas/Uuid'
+    DsarPackageFormat:
+      type: string
+      enum: [pdf, csv, json, xml, zip]
+    DsarPackage:
+      type: object
+      required: [id, request_id, file_id, format, password_protected, expires_at, download_count, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        request_id: {$ref: '#/components/schemas/Uuid'}
+        file_id: {$ref: '#/components/schemas/Uuid'}
+        format: {$ref: '#/components/schemas/DsarPackageFormat'}
+        password_protected: {type: boolean}
+        expires_at: {type: string, format: date-time}
+        download_count: {type: integer}
+        last_downloaded_at:
+          oneOf: [{type: string, format: date-time}, {type: 'null'}]
+        purged_at:
+          description: Set once the link's expiry swept its underlying file's bytes away (DSAR-14's own "ลบไฟล์อัตโนมัติเมื่อหมดอายุ")
+          oneOf: [{type: string, format: date-time}, {type: 'null'}]
+        row_version: {type: integer}
+        created_at: {type: string, format: date-time}
+    DsarCreatePackageInput:
+      type: object
+      required: [file_id, format]
+      additionalProperties: false
+      properties:
+        file_id:
+          description: Either the caller's own clean, still-unattached PLT-09 upload (attached to this request here), or a file already attached to it (DSAR-13's own generated letter, or anything DSAR-17's collaboration panel attached) — never an arbitrary file id
+          $ref: '#/components/schemas/Uuid'
+        format: {$ref: '#/components/schemas/DsarPackageFormat'}
+        password_protected: {type: boolean, default: true}
+        expires_at:
+          description: Defaults to 7 days from now when omitted
+          type: string
+          format: date-time
+    DsarCreatePackageResult:
+      type: object
+      required: [package, public_key]
+      properties:
+        package: {$ref: '#/components/schemas/DsarPackage'}
+        public_key:
+          description: The /public/v1/dsar-packages/{key} path segment — the link to share with the data subject
+          type: string
+        access_code:
+          description: Shown here exactly once — share it with the data subject through a different channel than the link itself; absent when password_protected is false
+          type: string
+    DsarPublicPackage:
+      type: object
+      required: [format, password_protected, expires_at]
+      properties:
+        format: {$ref: '#/components/schemas/DsarPackageFormat'}
+        password_protected: {type: boolean}
+        expires_at: {type: string, format: date-time}
+    DsarPublicDownloadResult:
+      type: object
+      required: [download_url]
+      properties:
+        download_url:
+          description: A short-lived, pre-signed URL for the package's own file — the acceptance criterion's own download, now logged
+          type: string
     DsarSubtaskAction:
       type: string
       enum: [search, export, delete, rectify, restrict, stop_marketing, review]

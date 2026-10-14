@@ -2163,6 +2163,21 @@
         "unavailable": "We couldn't submit your report right now. Please try again shortly.",
         "generic": "Something went wrong. Please try again."
       }
+    },
+    "dsarPackage": {
+      "title": "Secure file delivery",
+      "notFound": "This download link is not available. It may have expired.",
+      "expiresAt": "This link expires {expiresAt}.",
+      "accessCodeLabel": "Enter the access code you were given",
+      "download": "Download",
+      "downloading": "Preparing your download…",
+      "downloadReady": "Your file is ready",
+      "downloadLink": "Download now",
+      "errors": {
+        "dsar_invalid_input": "That access code is incorrect. Please try again.",
+        "unavailable": "We couldn't prepare your download right now. Please try again shortly.",
+        "generic": "Something went wrong. Please try again."
+      }
     }
   },
   "breach": {
@@ -2715,6 +2730,20 @@
         "guardian": "Legal guardian",
         "curator": "Curator"
       }
+    },
+    "package": {
+      "title": "Secure delivery",
+      "hint": "Package a file already on this request (or upload one now) as a loginless download link that expires on its own schedule and logs every download (ม.37(1)).",
+      "format": "Format",
+      "expiresAt": "Expires",
+      "downloads": "Downloads",
+      "purged": "file purged",
+      "createTitle": "Create a delivery package",
+      "passwordProtected": "Require an access code",
+      "create": "Create package",
+      "issuedTitle": "Package created — share these with the data subject",
+      "accessCode": "Access code: {code}",
+      "accessCodeHint": "Share the link and the access code through different channels. Neither is shown again."
     }
   },
   "dpoDeadlines": {

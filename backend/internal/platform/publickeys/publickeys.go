@@ -30,6 +30,9 @@ const (
 	// EntityBreachForm's value must match platform.public_keys.entity_type's own CHECK constraint
 	// (00002_platform.sql), which already named this type "breach_form" — not a value BRE-01 invented.
 	EntityBreachForm = "breach_form"
+	// EntityDsarPackage (DSAR-14): a secure delivery package — the key names the package, a second,
+	// separately-held access code (dsar.packages.token_hash) gates the actual download when required.
+	EntityDsarPackage = "dsar_package"
 )
 
 // Key is a resolved public key.
@@ -100,8 +103,8 @@ func WithKey(ctx context.Context, k Key) context.Context { return context.WithVa
 
 // pathKeyRE matches every /public/v1 route shape that carries the key as its first path segment — one
 // alternative per module that has a public page (collection points, notices from PNG-06, dsar-forms from
-// DSAR-01, breach-report-forms from BRE-01).
-var pathKeyRE = regexp.MustCompile(`^/public/v1/(?:collection-points|notices|dsar-forms|breach-report-forms)/([^/]+)`)
+// DSAR-01, breach-report-forms from BRE-01, dsar-packages from DSAR-14).
+var pathKeyRE = regexp.MustCompile(`^/public/v1/(?:collection-points|notices|dsar-forms|breach-report-forms|dsar-packages)/([^/]+)`)
 
 // Middleware resolves the public key of a /public/v1 request — from the path (e.g.
 // /public/v1/collection-points/{key} or /public/v1/notices/{key}) or the X-Public-Key header — refuses

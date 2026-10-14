@@ -2089,6 +2089,62 @@ rest of this module's own test suite already does here. `go build ./...`, `go ve
 `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` / `pnpm --filter @pdpa/portal build`
 (incl. the new `/settings/breach-report-forms` and `/[locale]/breach/[key]` routes) all verified clean.
 
+### DSAR-14 ส่งข้อมูลให้เจ้าของข้อมูลอย่างปลอดภัย (`docs/modules/DSAR.md#dsar-14`) — done
+`dsar.packages` was already fully specified in the baseline migrations (`token_hash`, `password_protected`,
+`expires_at`, `download_count`, `last_downloaded_at`, `purged_at`) and `dsar.package.*` was already seeded in
+the baseline permission migration — no new permission code, only migration 00067 widening `platform.
+public_keys.entity_type`'s CHECK to add `dsar_package` (the same widening pattern DPO-09/CON-11 already use).
+`internal/dsar/service/delivery.go`'s `CreatePackage` wraps either the caller's own clean, still-unattached
+PLT-09 upload (attached to the request here, DSAR-04's own `RecordAgent` "record + attach in one call" shape)
+or a file already attached to the request (DSAR-13's own generated response letter, or anything DSAR-17's
+collaboration panel attached) — never an arbitrary file id. It issues a `platform.public_keys` key the same
+way every other `/public/v1` surface in this codebase does (CON-09/PNG-06/DSAR-01/BRE-01), and a *second*,
+separate secret — a 10-character access code from an unambiguous alphabet (no 0/O/1/I/L), hashed into
+`token_hash` (SHA-256) and returned to the caller exactly once, never stored in the clear (rule 3) — meant to
+be relayed to the data subject through a different channel than the link itself.
+
+`PublicPackage`/`PublicDownload` resolve the tenant from the key before the tenant transaction opens, the same
+mechanism as every sibling public surface; `PublicDownload` checks the access code with
+`subtle.ConstantTimeCompare`, hands back a short-lived signed URL via a new `files.Service.SignedURL` trusted
+method, and records `download_count`/`last_downloaded_at` plus a `dsar.package.download` audit entry on every
+call — the acceptance criterion itself. A purged or expired package reads as 404 through either read path, no
+information leaked either way. Purging is a new PLT-09 trusted operation, `files.Service.DeleteObject`
+(alongside `Status`/`Open`/`SignedURL`/`SaveGenerated`/`AttachSystem`), called from a one-time River job
+(`dsar.package_purge`, scheduled exactly at `expires_at` per package via `jobs.Enqueue` + `river.InsertOpts{
+ScheduledAt: ...}` — the same per-record checkpoint pattern BRE's own SLA timers and DSAR-07's reminder use,
+not a periodic sweep like PLT-09's own `files.expire`): it deletes the file's bytes while keeping the
+`platform.files` row and the package's own audit trail — PLT-09's own "object deleted, row + audit kept"
+pattern for infected files, reused here for expiry.
+
+API: `GET`/`POST /admin/v1/dsar/requests/{id}/packages` (`dsar.package.read`/`.create`); public
+`GET /public/v1/dsar-packages/{key}`, `POST /public/v1/dsar-packages/{key}/download`. Real gap found and fixed
+while building this: the download endpoint's first draft carried no `Idempotency-Key` parameter, missing rule
+10's own "Idempotency-Key required for POST on /public/v1" — every other public POST in this codebase
+(DSAR-01's submission, BRE-01's incident report, CON-11's guardian verify) already requires one. Fixed by
+adding `$ref: '#/components/parameters/IdempotencyKey'` to the operation and re-running `make gen`; no handler
+code changed, since the 428-on-missing-header enforcement lives entirely in the OpenAPI-driven validator
+middleware, not in `publichttp/packages.go` itself. UI: `/requests` gained a "แพ็กเกจ" toggle per row (format +
+password-protected checkbox + `FileUploader`, a one-time issued-result panel with the public link and access
+code) and a new portal page, `apps/portal/src/app/[locale]/dsar-packages/[key]` (server actions, a fresh
+`Idempotency-Key` per download attempt — mirrors `/[locale]/dsar/[key]`'s own server-component/action split).
+Tests: unit (`internal/dsar/service/delivery_test.go` — the acceptance criterion directly: a package expires
+per its own setting and every download is logged with count/last_downloaded_at/an audit row; correct vs. wrong
+access code; a file already attached to a different request is refused; purge deletes the file's bytes while
+keeping the row and reads as not-found afterward through both `PublicPackage` and `PublicDownload`, a second
+purge is a harmless no-op; two-tenant isolation), HTTP contract (`internal/dsar/publichttp/handler_test.go` —
+404 for an unknown key, 428 for a missing Idempotency-Key, 422 for a wrong access code, 200 through the real
+validator + publickeys + Idempotency + Tx chain, an Idempotency-Key replay returning the original result
+unchanged). Not verified live against a real Postgres/Redis — same environment limitation DSAR-01/DSAR-04/
+BRE-01 already disclosed; every test compiles and vets clean and skips the same way the rest of this module's
+own test suite already does here. `go build ./...`, `go vet ./...`, `go test -p 1 ./...` (no regressions),
+`internal/pkg/isolationaudit`'s own CI gate, `pnpm --filter @pdpa/api-client typecheck`, and
+`pnpm --filter @pdpa/admin build` / `pnpm --filter @pdpa/portal build` (incl. the new
+`/[locale]/dsar-packages/[key]` route) all verified clean. Not done, deliberately (no consumer yet, the same
+deferral this codebase uses throughout): a single-use/one-download-only option (the acceptance criterion has
+no such requirement — repeat downloads within the link's own expiry are allowed); a portal-side identity check
+before download (DSAR-06's own OTP flow already gates the request itself; the access code is this feature's
+own, separate secret, not a second identity proof).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

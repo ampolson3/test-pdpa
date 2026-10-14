@@ -2072,6 +2072,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/requests/{id}/packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Secure delivery packages sent for this request, newest first (DSAR-14) */
+        get: operations["dsarListPackages"];
+        put?: never;
+        /**
+         * Package an already-attached file for secure delivery (DSAR-14) — a loginless link, expiring per the setting, optionally gated by a one-time access code
+         * @description The access code is returned here in the clear exactly once — share it with the data subject through a different channel than the link itself. It is never stored or returned again.
+         */
+        post: operations["dsarCreatePackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dsar/requests/{id}/verifications": {
         parameters: {
             query?: never;
@@ -2635,6 +2656,50 @@ export interface paths {
          *     intake already sends. Replaying an Idempotency-Key returns the first result.
          */
         post: operations["breachSubmitPublicReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/dsar-packages/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A secure delivery package's own metadata, no login (DSAR-14) — whether an access code is required, and when the link expires
+         * @description Tenant is resolved from `key` through platform.public_keys before the tenant transaction starts
+         *     (ADR-19, same mechanism as every other /public/v1 surface). An expired or already-purged package
+         *     reads exactly like an unknown key — 404 either way, nothing is leaked.
+         */
+        get: operations["dsarGetPublicPackage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/dsar-packages/{key}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Download the package's file (DSAR-14's own acceptance criterion — the link expires per its setting and every download is logged)
+         * @description Checks the access code when the package is password-protected, then returns a short-lived signed
+         *     download URL and records the download (count, last downloaded at, an audit log entry). A wrong code
+         *     is a harmless retry.
+         */
+        post: operations["dsarDownloadPublicPackage"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6599,6 +6664,53 @@ export interface components {
             authority_type: components["schemas"]["DsarAuthorityType"];
             /** @description The agent's own clean, still-unattached PLT-09 upload (POST /admin/v1/platform/files) of the power of attorney / guardianship document */
             authority_file_id: components["schemas"]["Uuid"];
+        };
+        /** @enum {string} */
+        DsarPackageFormat: "pdf" | "csv" | "json" | "xml" | "zip";
+        DsarPackage: {
+            id: components["schemas"]["Uuid"];
+            request_id: components["schemas"]["Uuid"];
+            file_id: components["schemas"]["Uuid"];
+            format: components["schemas"]["DsarPackageFormat"];
+            password_protected: boolean;
+            /** Format: date-time */
+            expires_at: string;
+            download_count: number;
+            last_downloaded_at?: string | null;
+            /** @description Set once the link's expiry swept its underlying file's bytes away (DSAR-14's own "ลบไฟล์อัตโนมัติเมื่อหมดอายุ") */
+            purged_at?: string | null;
+            row_version: number;
+            /** Format: date-time */
+            created_at: string;
+        };
+        DsarCreatePackageInput: {
+            /** @description Either the caller's own clean, still-unattached PLT-09 upload (attached to this request here), or a file already attached to it (DSAR-13's own generated letter, or anything DSAR-17's collaboration panel attached) — never an arbitrary file id */
+            file_id: components["schemas"]["Uuid"];
+            format: components["schemas"]["DsarPackageFormat"];
+            /** @default true */
+            password_protected: boolean;
+            /**
+             * Format: date-time
+             * @description Defaults to 7 days from now when omitted
+             */
+            expires_at?: string;
+        };
+        DsarCreatePackageResult: {
+            package: components["schemas"]["DsarPackage"];
+            /** @description The /public/v1/dsar-packages/{key} path segment — the link to share with the data subject */
+            public_key: string;
+            /** @description Shown here exactly once — share it with the data subject through a different channel than the link itself; absent when password_protected is false */
+            access_code?: string;
+        };
+        DsarPublicPackage: {
+            format: components["schemas"]["DsarPackageFormat"];
+            password_protected: boolean;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        DsarPublicDownloadResult: {
+            /** @description A short-lived, pre-signed URL for the package's own file — the acceptance criterion's own download, now logged */
+            download_url: string;
         };
         /** @enum {string} */
         DsarSubtaskAction: "search" | "export" | "delete" | "rectify" | "restrict" | "stop_marketing" | "review";
@@ -13120,6 +13232,70 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    dsarListPackages: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarPackage"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dsarCreatePackage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarCreatePackageInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarCreatePackageResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
     dsarListVerifications: {
         parameters: {
             query?: never;
@@ -14338,6 +14514,67 @@ export interface operations {
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    dsarGetPublicPackage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarPublicPackage"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dsarDownloadPublicPackage: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    access_code?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarPublicDownloadResult"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     consentSubmitConsents: {

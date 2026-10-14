@@ -18,6 +18,8 @@ import {
   useDsarSubtaskMutations,
   useDsarAgents,
   useDsarAgentMutations,
+  useDsarPackages,
+  useDsarPackageMutations,
   useLegalEntities,
   useMentionSearch,
   useGroupSearch,
@@ -30,6 +32,7 @@ import {
   type DsarVerificationMethod,
   type DsarSubtaskAction,
   type DsarAuthorityType,
+  type DsarPackageFormat,
 } from "@pdpa/api-client";
 import { Link } from "@/i18n/routing";
 import { RecordCollaboration } from "@/components/record-collaboration";
@@ -360,7 +363,77 @@ function AgentPanel({ client, request, canUpdate }: { client: ReturnType<typeof 
   );
 }
 
-export function RequestsContent({ currentUserId }: { currentUserId: string }) {
+const PACKAGE_FORMATS: DsarPackageFormat[] = ["pdf", "csv", "json", "xml", "zip"];
+
+function PackagePanel({ client, request, canCreate, portalUrl, locale }: {
+  client: ReturnType<typeof createApiClient>; request: DsarRequest; canCreate: boolean; portalUrl: string; locale: string;
+}) {
+  const t = useTranslations("dsarRequests");
+  const list = useDsarPackages(client, request.id);
+  const m = useDsarPackageMutations(client);
+  const [format, setFormat] = useState<DsarPackageFormat>("pdf");
+  const [passwordProtected, setPasswordProtected] = useState(true);
+  const [fileId, setFileId] = useState<string | null>(null);
+  const [issued, setIssued] = useState<{ publicKey: string; accessCode?: string } | null>(null);
+
+  const rows = list.data ?? [];
+
+  return (
+    <div className="space-y-3" data-testid="package-panel">
+      <p className="text-xs text-slate-600">{t("package.hint")}</p>
+      {rows.length > 0 && (
+        <table className="w-full text-xs">
+          <thead className="text-left text-slate-500">
+            <tr><th className="py-1">{t("package.format")}</th><th className="py-1">{t("package.expiresAt")}</th><th className="py-1">{t("package.downloads")}</th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.map((p) => (
+              <tr key={p.id} data-testid={`package-row-${p.id}`}>
+                <td className="py-1">{p.format.toUpperCase()}</td>
+                <td className="py-1">{new Date(p.expires_at).toLocaleString()}{p.purged_at && ` (${t("package.purged")})`}</td>
+                <td className="py-1">{p.download_count}{p.last_downloaded_at && ` · ${new Date(p.last_downloaded_at).toLocaleString()}`}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {canCreate && (
+        <fieldset className="space-y-2 rounded-md border border-slate-200 p-3">
+          <legend className="px-1 text-slate-600">{t("package.createTitle")}</legend>
+          <label className="block text-xs">
+            {t("package.format")}
+            <select className={INPUT} value={format} onChange={(e) => setFormat(e.target.value as DsarPackageFormat)} data-testid="package-format">
+              {PACKAGE_FORMATS.map((f) => <option key={f} value={f}>{f.toUpperCase()}</option>)}
+            </select>
+          </label>
+          <label className="flex items-center gap-2 text-xs">
+            <input type="checkbox" checked={passwordProtected} onChange={(e) => setPasswordProtected(e.target.checked)} data-testid="package-password-protected" />
+            {t("package.passwordProtected")}
+          </label>
+          <FileUploader accept=".pdf,.csv,.json,.xml,.zip" onUploaded={(f) => setFileId(f.id)} />
+          <Button
+            onClick={() => fileId && m.create.mutate(
+              { requestId: request.id, input: { file_id: fileId, format, password_protected: passwordProtected } },
+              { onSuccess: (r) => { setFileId(null); setIssued({ publicKey: r.public_key, accessCode: r.access_code }); } })}
+            disabled={!fileId || m.create.isPending} data-testid="create-package">
+            {t("package.create")}
+          </Button>
+          {m.create.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(m.create.error) })}</p>}
+          {issued && (
+            <div className="space-y-1 rounded-md bg-amber-50 p-2 text-xs" role="status" data-testid="package-issued">
+              <p className="font-medium">{t("package.issuedTitle")}</p>
+              <p className="break-all font-mono">{`${portalUrl.replace(/\/$/, "")}/${locale}/dsar-packages/${issued.publicKey}`}</p>
+              {issued.accessCode && <p>{t("package.accessCode", { code: issued.accessCode })}</p>}
+              <p className="text-slate-600">{t("package.accessCodeHint")}</p>
+            </div>
+          )}
+        </fieldset>
+      )}
+    </div>
+  );
+}
+
+export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: string; portalUrl: string }) {
   const t = useTranslations("dsarRequests");
   const locale = useLocale() as Locale;
   const canRead = usePermission("dsar.request.read");
@@ -369,6 +442,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
   const canUpdate = usePermission("dsar.request.update");
   const canSubtaskCreate = usePermission("dsar.subtask.create");
   const canSubtaskDelete = usePermission("dsar.subtask.delete");
+  const canPackageCreate = usePermission("dsar.package.create");
   const client = useMemo(() => createApiClient("/api/bff"), []);
 
   const [statusFilter, setStatusFilter] = useState<DsarRequestStatus | "">("");
@@ -377,6 +451,7 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
   const [verifyId, setVerifyId] = useState<string | null>(null);
   const [subtaskId, setSubtaskId] = useState<string | null>(null);
   const [agentId, setAgentId] = useState<string | null>(null);
+  const [packageId, setPackageId] = useState<string | null>(null);
   const list = useDsarRequests(client, { status: statusFilter || undefined, search: search || undefined });
   const types = useDsarRequestTypes(client);
   const entities = useLegalEntities(client);
@@ -562,6 +637,10 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                         {agentId === r.id ? t("form.hide") : t("agent.title")}
                       </button>
                     )}
+                    <button type="button" className="text-sky-700 underline" data-testid={`package-toggle-${r.id}`}
+                      onClick={() => setPackageId(packageId === r.id ? null : r.id)}>
+                      {packageId === r.id ? t("form.hide") : t("package.title")}
+                    </button>
                   </td>
                 </tr>
                 {verifyId === r.id && (
@@ -582,6 +661,13 @@ export function RequestsContent({ currentUserId }: { currentUserId: string }) {
                   <tr>
                     <td colSpan={7} className="bg-slate-50 px-3 py-3">
                       <SubtasksPanel client={client} request={r} canCreate={canSubtaskCreate} canDelete={canSubtaskDelete} />
+                    </td>
+                  </tr>
+                )}
+                {packageId === r.id && (
+                  <tr>
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
+                      <PackagePanel client={client} request={r} canCreate={canPackageCreate} portalUrl={portalUrl} locale={locale} />
                     </td>
                   </tr>
                 )}

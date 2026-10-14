@@ -36,7 +36,8 @@ type env struct {
 
 var dsarPermissions = []string{"dsar.request.read", "dsar.request.create", "dsar.request.execute", "dsar.request.update",
 	"dsar.request.approve", "org.structure.read", "org.structure.update", "ropa.activity.read", "ropa.activity.create", "ropa.activity.update",
-	"dsar.subtask.read", "dsar.subtask.create", "dsar.subtask.update", "dsar.subtask.execute", "dsar.subtask.delete"}
+	"dsar.subtask.read", "dsar.subtask.create", "dsar.subtask.update", "dsar.subtask.execute", "dsar.subtask.delete",
+	"dsar.package.read", "dsar.package.create"}
 
 func setup(t *testing.T, suffix string) env {
 	t.Helper()
@@ -517,4 +518,3 @@ func TestRequests_TenantIsolation(t *testing.T) {
 		return nil
 	})
 }
-
