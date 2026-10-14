@@ -2034,6 +2034,61 @@ the agent, verify, then the same transition succeeds. Not verified live against 
 environment limitation DSAR-01 already disclosed; every test compiles and vets clean and skips the same way the
 rest of this module's own test suite already does here.
 
+### BRE-01 แบบฟอร์มแจ้งเหตุ (`docs/modules/BRE.md#bre-01`) — done
+PUBLIC's own loginless channel, the half BRE-02's admin `/incidents` page (EMP, `breach.incident.create`,
+`reported_via: employee_form`) didn't already cover. `breach.report_forms` (migration 00066) is a thin,
+publishable wrapper around a legal entity — the exact role `dsar.intake_forms` (DSAR-01) and
+`consent.collection_points` (CON-09) already play for their own public surfaces — issuing a
+`platform.public_keys` key (`publickeys.EntityBreachForm`, `pathKeyRE` widened for
+`/public/v1/breach-report-forms/{key}`) once published; `internal/breach/service/intake.go` follows DSAR-01's
+own `CreateIntakeForm`/`PublishIntakeForm`/`RetireIntakeForm` shape precisely (coalesce the key on re-publish,
+`ErrInvalidTransition` publishing an already-active or retiring an already-retired form). Migration 00066 also
+seeds a fresh `breach.form.*` permission (create/read/update/delete/publish — DPO full, SEC/PRIVACY
+create/read/update, AUDIT read) since breach had no equivalent placeholder code seeded the way `dsar.form` was
+in the baseline migration.
+
+`breach.incidents.reported_via`'s CHECK constraint already named `'public_form'` and the table already carried
+`reporter_contact_enc` (00013_breach.sql) — both unused until now. Rather than duplicate `Create`'s own
+numbering/timeline/event/audit/timer/alert sequence, `Service.Create` (admin, permission-gated) was refactored
+into a thin wrapper over a new unexported `create(ctx, in Input, reporterContactEnc []byte)` core; the new
+`CreatePublicReport` (`internal/breach/service/intake.go`) builds its own `Input` from the public submission —
+`AwareAt` is always `s.now()` (for an externally reported incident, the moment the organization is told *is*
+the moment it becomes aware, ม.37(4)'s own "ทราบเหตุ") — and calls the same `create()`, so a publicly reported
+incident gets the identical treatment an admin-recorded one does: sequential `BR-YYYY-NNNN` numbering, a
+`reported:public_form` timeline entry, a `breach.reported` outbox event, an audit row, the four 72-hour
+checkpoint timers scheduled, and — the acceptance criterion itself — `s.alert` notifying the incident's owner
+and every DPO in-app and by e-mail at once, exactly like BRE-02's own `Create` already does. An optional
+reporter contact is PLT-13 encrypted (`Keyring.Encrypt`, class `"breach"`) as a plain follow-up detail, not a
+blind-indexed lookup key (unlike DSAR's own `requester_contact_enc`, which DSAR-17 searches) — nobody searches
+by it.
+
+API: `GET`/`POST /admin/v1/breach/report-forms`, `GET /admin/v1/breach/report-forms/{id}`,
+`POST .../publish` / `.../retire` (ETag/If-Match, `breach.form.*`); public
+`GET /public/v1/breach-report-forms/{key}` (the breach-type picker), `POST .../incidents` (`Idempotency-Key`
+required, 201 `{incident_no, status}`) — `internal/breach/publichttp`, mirroring `internal/dsar/publichttp`
+exactly (own `oapi-codegen.yaml`, a `reportForm(ctx)` helper reading the key the same way `intakeForm(ctx)`
+does). UI: `/settings/breach-report-forms` (admin: create a draft against a legal entity, publish/retire, the
+public link shown once issued — the same `portalUrl` convention DSAR-01's own `/settings/dsar-forms` page
+uses) and a new portal page, `apps/portal/src/app/[locale]/breach/[key]` (server actions, per-attempt
+`Idempotency-Key`, no OTP step — unlike DSAR-01, nothing here needs to verify the reporter's identity before
+the team can act on a tip). CAPTCHA is deliberately not built: no provider is chosen anywhere in this
+codebase yet (`docs/decisions.md` has no entry for one, and CON-09/PNG-06's own public forms already shipped
+without it for the same reason) — `platform.public_keys`' own Origin allow-list is the only abuse control in
+place; add CAPTCHA once a provider decision exists.
+
+Tests: unit (`internal/breach/service/intake_test.go` — the acceptance criterion directly: a public
+submission creates the incident and alerts the owner-less team of every DPO at once, the reporter's contact is
+encrypted not stored in the clear; a draft or retired form's key refuses a submission; publishing twice keeps
+the same key; two-tenant isolation of the report form itself), HTTP contract
+(`internal/breach/publichttp/handler_test.go` — 404 for an unknown key, 200/201 through the real validator +
+publickeys + Idempotency + Tx chain, an Idempotency-Key replay returning the original result, schema-level
+400 for an empty `breach_types` array). Not verified live against a real Postgres/Redis — same environment
+limitation DSAR-01/DSAR-04 already disclosed; every test compiles and vets clean and skips the same way the
+rest of this module's own test suite already does here. `go build ./...`, `go vet ./...`,
+`internal/pkg/isolationaudit`'s own CI gate, `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` / `pnpm --filter @pdpa/portal build`
+(incl. the new `/settings/breach-report-forms` and `/[locale]/breach/[key]` routes) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

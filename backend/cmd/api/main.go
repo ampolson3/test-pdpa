@@ -24,6 +24,7 @@ import (
 	agreementhttp "pdpa-platform/internal/agreement/http"
 	agreementservice "pdpa-platform/internal/agreement/service"
 	breachhttp "pdpa-platform/internal/breach/http"
+	breachpublichttp "pdpa-platform/internal/breach/publichttp"
 	breach "pdpa-platform/internal/breach/service"
 	consenthttp "pdpa-platform/internal/consent/http"
 	consentpublichttp "pdpa-platform/internal/consent/publichttp"
@@ -359,6 +360,11 @@ func run() error {
 		strictDsarPublic := dsarpublichttp.NewStrictHandlerWithOptions(dsarpublichttp.NewStrict(dsarSvc), nil,
 			dsarpublichttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		dsarpublichttp.HandlerWithOptions(strictDsarPublic, dsarpublichttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+		// BRE-01: the public incident-report form — publickeys.Middleware's own path regex already
+		// distinguishes /breach-report-forms/ from every other entity type on this group.
+		strictBreachPublic := breachpublichttp.NewStrictHandlerWithOptions(breachpublichttp.NewStrict(breachSvc), nil,
+			breachpublichttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		breachpublichttp.HandlerWithOptions(strictBreachPublic, breachpublichttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 	})
 
 	// The inbox stream (SSE) is the one route outside Idempotency + Tx: the Tx middleware buffers the

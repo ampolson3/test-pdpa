@@ -27,3 +27,8 @@ output-options:
     - breachListPDPCNotifications
     - breachRecordPDPCNotification
     - breachConfirmPDPCNotification
+    - breachListReportForms
+    - breachCreateReportForm
+    - breachGetReportForm
+    - breachPublishReportForm
+    - breachRetireReportForm

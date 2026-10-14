@@ -326,6 +326,8 @@ export {
   useNoticeMutations,
   useIncidentPDPCNotifications,
   usePDPCNotificationMutations,
+  useBreachReportForms,
+  useBreachReportFormMutations,
   type BreachIncident,
   type BreachIncidentInput,
   type BreachIncidentUpdate,
@@ -337,6 +339,9 @@ export {
   type BreachRecipient,
   type BreachPDPCNotification,
   type BreachFilter,
+  type BreachReportForm,
+  type BreachReportFormInput,
+  type BreachReportFormStatus,
 } from "./breach";
 export {
   useDocumentTypes,

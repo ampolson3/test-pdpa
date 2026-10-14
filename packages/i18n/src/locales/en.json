@@ -2139,6 +2139,30 @@
         "unavailable": "We couldn't submit your request right now. Please try again shortly.",
         "generic": "Something went wrong. Please try again."
       }
+    },
+    "breach": {
+      "intro": "Use this form to report a suspected or confirmed personal data breach. The incident response team is notified immediately.",
+      "breachType": "What happened",
+      "breachTypes": {
+        "confidentiality": "Confidentiality — data was disclosed or accessed without authorization",
+        "integrity": "Integrity — data was altered or corrupted without authorization",
+        "availability": "Availability — data or systems became unavailable (e.g. ransomware, outage)"
+      },
+      "titleField": "Short title",
+      "description": "Description",
+      "occurredAt": "When did it happen? (if known)",
+      "reporterContact": "Your contact details (optional, for follow-up)",
+      "submit": "Submit report",
+      "submitting": "Submitting…",
+      "thanks": "Thank you — your report has been received",
+      "incidentNo": "Reference number: {incidentNo}",
+      "notified": "The incident response team has been notified.",
+      "errors": {
+        "missing_fields": "Please fill in the required fields.",
+        "breach_invalid": "Some information is missing or invalid.",
+        "unavailable": "We couldn't submit your report right now. Please try again shortly.",
+        "generic": "Something went wrong. Please try again."
+      }
     }
   },
   "breach": {
@@ -2967,5 +2991,45 @@
     "empty": "No intake forms yet.",
     "forbidden": "You don't have permission to view this page.",
     "signInRequired": "Please sign in."
+  },
+  "breachReportForms": {
+    "title": "Public incident-report forms",
+    "intro": "Open a public web form (link or QR code) so anyone outside the company can report a breach directly, without staff recording it on their behalf (BRE-01).",
+    "createTitle": "New report form",
+    "name": "Name",
+    "legalEntity": "Legal entity",
+    "legalEntityPlaceholder": "Select a legal entity",
+    "create": "Create draft",
+    "status": "Status",
+    "statuses": {
+      "draft": "Draft",
+      "active": "Active",
+      "retired": "Retired"
+    },
+    "publicLink": "Public link",
+    "publish": "Publish",
+    "retire": "Retire",
+    "empty": "No report forms yet.",
+    "forbidden": "You don't have permission to view this page.",
+    "signInRequired": "Please sign in."
+  },
+  "breachPublicReport": {
+    "title": "Report a data breach",
+    "intro": "Use this form to report a suspected or confirmed personal data breach. The incident response team is notified immediately.",
+    "breachType": "What happened",
+    "breachTypes": {
+      "confidentiality": "Confidentiality — data was disclosed or accessed without authorization",
+      "integrity": "Integrity — data was altered or corrupted without authorization",
+      "availability": "Availability — data or systems became unavailable (e.g. ransomware, outage)"
+    },
+    "titleField": "Short title",
+    "description": "Description",
+    "occurredAt": "When did it happen? (if known)",
+    "reporterContact": "Your contact details (optional, for follow-up)",
+    "submit": "Submit report",
+    "submitting": "Submitting…",
+    "success": "Thank you — your report has been recorded as {incidentNo}. The incident response team has been notified.",
+    "error": "We couldn't submit your report. Please try again.",
+    "notFound": "This report form is not available."
   }
 }

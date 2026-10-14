@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiClient, components } from "./client";
 
 export type BreachIncident = components["schemas"]["BreachIncident"];
@@ -266,4 +266,62 @@ export function usePDPCNotificationMutations(client: ApiClient, incidentId: stri
       onSuccess: refresh,
     }),
   };
+}
+
+// BRE-01: public incident-report forms (loginless, link / QR).
+export type BreachReportForm = components["schemas"]["BreachReportForm"];
+export type BreachReportFormInput = components["schemas"]["BreachReportFormInput"];
+export type BreachReportFormStatus = components["schemas"]["BreachReportFormStatus"];
+
+const reportFormsKey = ["breach", "report-forms"] as const;
+
+/** GET /admin/v1/breach/report-forms (BRE-01). */
+export function useBreachReportForms(client: ApiClient, status?: BreachReportFormStatus) {
+  return useInfiniteQuery({
+    queryKey: [...reportFormsKey, status ?? null],
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const { data, error } = await client.GET("/admin/v1/breach/report-forms", {
+        params: { query: { status, cursor: pageParam, limit: 50 } },
+      });
+      if (error) throw error;
+      return data;
+    },
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
+  });
+}
+
+/** Create / publish / retire a public incident-report form (BRE-01). */
+export function useBreachReportFormMutations(client: ApiClient) {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: reportFormsKey });
+  const create = useMutation({
+    mutationFn: async (input: BreachReportFormInput) => {
+      const { data, error } = await client.POST("/admin/v1/breach/report-forms", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  const publish = useMutation({
+    mutationFn: async (form: BreachReportForm) => {
+      const { data, error } = await client.POST("/admin/v1/breach/report-forms/{id}/publish", {
+        params: { path: { id: form.id }, header: ifMatch(form.row_version) },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  const retire = useMutation({
+    mutationFn: async (form: BreachReportForm) => {
+      const { data, error } = await client.POST("/admin/v1/breach/report-forms/{id}/retire", {
+        params: { path: { id: form.id }, header: ifMatch(form.row_version) },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  return { create, publish, retire };
 }

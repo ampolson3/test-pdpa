@@ -5515,6 +5515,199 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/breach/report-forms:
+    get:
+      operationId: breachListReportForms
+      tags: [breach]
+      summary: Public incident-report forms (BRE-01)
+      x-permission: breach.form.read
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [draft, active, retired]
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BreachReportForm'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: breachCreateReportForm
+      tags: [breach]
+      summary: Open a new draft incident-report form for a legal entity (BRE-01)
+      x-permission: breach.form.create
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BreachReportFormInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachReportForm'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/breach/report-forms/{id}:
+    get:
+      operationId: breachGetReportForm
+      tags: [breach]
+      summary: One incident-report form (BRE-01)
+      x-permission: breach.form.read
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachReportForm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/breach/report-forms/{id}/publish:
+    post:
+      operationId: breachPublishReportForm
+      tags: [breach]
+      summary: Make a draft (or re-publish a retired) report form live (BRE-01) — issues a platform.public_keys key
+      x-permission: breach.form.publish
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachReportForm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/breach/report-forms/{id}/retire:
+    post:
+      operationId: breachRetireReportForm
+      tags: [breach]
+      summary: Retire a report form for good (BRE-01) — its key stops resolving, past incidents are untouched
+      x-permission: breach.form.delete
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachReportForm'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/dsar/request-types:
     get:
       operationId: dsarListRequestTypes
@@ -7559,6 +7752,81 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /public/v1/breach-report-forms/{key}:
+    get:
+      operationId: breachGetPublicReportForm
+      tags: [breach]
+      summary: An active report form's picker (BRE-01, no login)
+      description: |
+        Tenant is resolved from `key` through platform.public_keys before the tenant transaction starts
+        (ADR-19, same mechanism as /public/v1/collection-points/{key} and /public/v1/dsar-forms/{key}).
+      x-permission: public
+      x-module: breach
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: Public key of the report form (random, at least 128 bits, base64url)
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: The form's breach-type picker
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachPublicReportForm'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /public/v1/breach-report-forms/{key}/incidents:
+    post:
+      operationId: breachSubmitPublicReport
+      tags: [breach]
+      summary: Report an incident directly (BRE-01's own acceptance criterion — the assigned team is notified at once)
+      description: |
+        Creates an incident (reported_via "public_form") on the form's own legal entity and alerts the
+        incident's owner and every DPO immediately (breach.reported) — the same alert BRE-02's own admin-app
+        intake already sends. Replaying an Idempotency-Key returns the first result.
+      x-permission: public
+      x-module: breach
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BreachPublicReportInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachPublicReportResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /api/v1/consents:
     post:
       operationId: consentSubmitConsents
@@ -17935,6 +18203,60 @@ components:
           type: string
         collected_at:
           $ref: '#/components/schemas/Timestamp'
+    BreachReportFormStatus:
+      type: string
+      enum: [draft, active, retired]
+    BreachReportForm:
+      type: object
+      required: [id, legal_entity_id, name, status, row_version, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string}
+        status: {$ref: '#/components/schemas/BreachReportFormStatus'}
+        public_key:
+          description: The published form's /public/v1/breach-report-forms/{key} path segment, once active at least once; absent before that
+          type: [string, 'null']
+        row_version: {type: integer}
+        updated_at: {type: string, format: date-time}
+    BreachReportFormInput:
+      type: object
+      required: [legal_entity_id, name]
+      properties:
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string, minLength: 1, maxLength: 300}
+    BreachPublicReportForm:
+      type: object
+      required: [id, breach_types]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        breach_types:
+          type: array
+          items: {type: string, enum: [confidentiality, integrity, availability]}
+    BreachPublicReportInput:
+      type: object
+      required: [title, description, breach_types]
+      additionalProperties: false
+      properties:
+        title: {type: string, minLength: 1, maxLength: 300}
+        description: {type: string, minLength: 1}
+        breach_types:
+          type: array
+          minItems: 1
+          items: {type: string, enum: [confidentiality, integrity, availability]}
+        occurred_at: {$ref: '#/components/schemas/Timestamp'}
+        reporter_contact:
+          description: Optional — how staff can reach the reporter for follow-up (PLT-13 encrypted, not required)
+          type: string
+          maxLength: 500
+    BreachPublicReportResult:
+      type: object
+      required: [incident_no, status]
+      properties:
+        incident_no:
+          description: Keep this to reference the report — the acceptance criterion's own confirmation (the assigned team is already notified by the time this returns)
+          type: string
+        status: {type: string}
     BreachNoticeVars:
       type: object
       required:

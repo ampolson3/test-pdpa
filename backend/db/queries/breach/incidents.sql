@@ -7,12 +7,12 @@ SELECT pg_advisory_xact_lock(hashtext('breach.incident_no:' || current_setting('
 SELECT count(*)::int FROM breach.incidents WHERE incident_no LIKE @prefix::text || '%';
 
 -- name: InsertIncident :one
-INSERT INTO breach.incidents (id, tenant_id, incident_no, legal_entity_id, reported_via, reporter_user_id, title, description,
-    breach_types, incident_type, occurred_at, aware_at, contained_at, affected_subjects, affected_categories, pdpc_due_at,
-    is_drill, owner_user_id, created_by, updated_by)
-VALUES (@id, current_setting('app.tenant_id')::uuid, @incident_no, @legal_entity_id, @reported_via, @reporter_user_id, @title,
-    @description, @breach_types, @incident_type, @occurred_at, @aware_at, @contained_at, @affected_subjects, @affected_categories,
-    @pdpc_due_at, @is_drill, @owner_user_id, @reporter_user_id, @reporter_user_id)
+INSERT INTO breach.incidents (id, tenant_id, incident_no, legal_entity_id, reported_via, reporter_user_id, reporter_contact_enc,
+    title, description, breach_types, incident_type, occurred_at, aware_at, contained_at, affected_subjects, affected_categories,
+    pdpc_due_at, is_drill, owner_user_id, created_by, updated_by)
+VALUES (@id, current_setting('app.tenant_id')::uuid, @incident_no, @legal_entity_id, @reported_via, @reporter_user_id,
+    @reporter_contact_enc, @title, @description, @breach_types, @incident_type, @occurred_at, @aware_at, @contained_at,
+    @affected_subjects, @affected_categories, @pdpc_due_at, @is_drill, @owner_user_id, @reporter_user_id, @reporter_user_id)
 RETURNING id;
 
 -- name: GetIncident :one

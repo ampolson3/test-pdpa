@@ -143,6 +143,28 @@
 
 **Acceptance criteria:** แจ้งเหตุแล้วทีมที่กำหนดได้รับแจ้งเตือนทันที
 
+**Implementation (done, see CLAUDE.md's own BRE-01 note for the full design record):** EMP's own login-gated
+intake form already existed from BRE-02's admin `/incidents` page (`reported_via: employee_form`,
+`breach.incident.create`). This pass added PUBLIC's own loginless channel: `breach.report_forms` (a
+publishable wrapper around a legal entity, the same role `dsar.intake_forms`/`consent.collection_points`
+play), issuing a `platform.public_keys` key once published. `internal/breach/service/incidents.go`'s `Create`
+was refactored into a shared `create()` core so a public submission (`CreatePublicReport`,
+`internal/breach/service/intake.go`) goes through the exact same numbering, timeline, `breach.reported`
+event, audit and — the acceptance criterion itself — `s.alert` (owner + every DPO, in-app + e-mail) that
+BRE-02's own admin-recorded incidents already use. `GET`/`POST /admin/v1/breach/report-forms`, `/{id}`,
+`/{id}/publish`, `/{id}/retire` (new permission `breach.form.*`); public
+`GET /public/v1/breach-report-forms/{key}`, `POST .../incidents` (`Idempotency-Key` required). UI:
+`/settings/breach-report-forms` (admin: create/publish/retire + the public link) and
+`apps/portal/.../[locale]/breach/[key]` (the public report form, TH/EN via next-intl). CAPTCHA is
+deliberately not built — no provider is chosen anywhere in this codebase yet (the same gap CON-09/PNG-06's
+own public forms already disclosed), and `platform.public_keys`' own Origin check already limits which sites
+can embed the form. Tests: unit (a public submission creates the incident and alerts the team — the
+acceptance criterion directly; draft/retired forms refuse a submission; publish is idempotent on the key;
+two-tenant isolation), HTTP contract (404/200/201 + Idempotency-Key replay through the real validator +
+publickeys + Idempotency + Tx chain). Not verified live against a real Postgres/Redis — this environment has
+neither reachable; every test compiles and skips cleanly the same way the rest of this module's own suite
+already does here.
+
 <a id="bre-02"></a>
 ### BRE-02 ทะเบียนเหตุละเมิด
 

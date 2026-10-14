@@ -449,6 +449,21 @@ type BreachPlaybook struct {
 	RowVersion   int32              `db:"row_version" json:"row_version"`
 }
 
+// BRE-01: เว็บฟอร์มสาธารณะสำหรับบุคคลภายนอกแจ้งเหตุละเมิด — เมื่อ publish แล้วจะมี public_key (platform.public_keys)
+type BreachReportForm struct {
+	ID            uuid.UUID          `db:"id" json:"id"`
+	TenantID      uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	LegalEntityID uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	Name          string             `db:"name" json:"name"`
+	Status        string             `db:"status" json:"status"`
+	PublicKey     *string            `db:"public_key" json:"public_key"`
+	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy     pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt     pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy     pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion    int32              `db:"row_version" json:"row_version"`
+}
+
 // งานควบคุม / แก้ไข / กู้คืน
 type BreachResponseTask struct {
 	ID              uuid.UUID          `db:"id" json:"id"`

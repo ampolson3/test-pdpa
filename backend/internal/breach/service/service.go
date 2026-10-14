@@ -46,6 +46,12 @@ const (
 	PermNoticeCreate = "breach.notification.create"
 	PermNoticeUpdate = "breach.notification.update"
 	PermNoticeSend   = "breach.notification.approve"
+	// BRE-01: managing the public report form itself (not the reports it collects, which is PermCreate).
+	PermFormCreate  = "breach.form.create"
+	PermFormRead    = "breach.form.read"
+	PermFormUpdate  = "breach.form.update"
+	PermFormDelete  = "breach.form.delete"
+	PermFormPublish = "breach.form.publish"
 )
 
 var (

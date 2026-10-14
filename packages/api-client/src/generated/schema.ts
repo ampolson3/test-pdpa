@@ -1810,6 +1810,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/breach/report-forms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public incident-report forms (BRE-01) */
+        get: operations["breachListReportForms"];
+        put?: never;
+        /** Open a new draft incident-report form for a legal entity (BRE-01) */
+        post: operations["breachCreateReportForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/report-forms/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One incident-report form (BRE-01) */
+        get: operations["breachGetReportForm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/report-forms/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Make a draft (or re-publish a retired) report form live (BRE-01) — issues a platform.public_keys key */
+        post: operations["breachPublishReportForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/report-forms/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retire a report form for good (BRE-01) — its key stops resolving, past incidents are untouched */
+        post: operations["breachRetireReportForm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dsar/request-types": {
         parameters: {
             query?: never;
@@ -2523,6 +2592,49 @@ export interface paths {
          * @description A wrong code is a harmless retry (IAM-05's own 5-attempt cap, D-01); the public key of the original submission's form names the tenant.
          */
         post: operations["dsarConfirmPublicVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/breach-report-forms/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An active report form's picker (BRE-01, no login)
+         * @description Tenant is resolved from `key` through platform.public_keys before the tenant transaction starts
+         *     (ADR-19, same mechanism as /public/v1/collection-points/{key} and /public/v1/dsar-forms/{key}).
+         */
+        get: operations["breachGetPublicReportForm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/breach-report-forms/{key}/incidents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report an incident directly (BRE-01's own acceptance criterion — the assigned team is notified at once)
+         * @description Creates an incident (reported_via "public_form") on the form's own legal entity and alerts the
+         *     incident's owner and every DPO immediately (breach.reported) — the same alert BRE-02's own admin-app
+         *     intake already sends. Replaying an Idempotency-Key returns the first result.
+         */
+        post: operations["breachSubmitPublicReport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7323,6 +7435,40 @@ export interface components {
             collected_by?: components["schemas"]["Uuid"];
             collected_by_name?: string;
             collected_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        BreachReportFormStatus: "draft" | "active" | "retired";
+        BreachReportForm: {
+            id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            name: string;
+            status: components["schemas"]["BreachReportFormStatus"];
+            /** @description The published form's /public/v1/breach-report-forms/{key} path segment, once active at least once; absent before that */
+            public_key?: string | null;
+            row_version: number;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        BreachReportFormInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            name: string;
+        };
+        BreachPublicReportForm: {
+            id: components["schemas"]["Uuid"];
+            breach_types: ("confidentiality" | "integrity" | "availability")[];
+        };
+        BreachPublicReportInput: {
+            title: string;
+            description: string;
+            breach_types: ("confidentiality" | "integrity" | "availability")[];
+            occurred_at?: components["schemas"]["Timestamp"];
+            /** @description Optional — how staff can reach the reporter for follow-up (PLT-13 encrypted, not required) */
+            reporter_contact?: string;
+        };
+        BreachPublicReportResult: {
+            /** @description Keep this to reference the report — the acceptance criterion's own confirmation (the assigned team is already notified by the time this returns) */
+            incident_no: string;
+            status: string;
         };
         BreachNoticeVars: {
             organization: string;
@@ -12358,6 +12504,167 @@ export interface operations {
             428: components["responses"]["PreconditionRequired"];
         };
     };
+    breachListReportForms: {
+        parameters: {
+            query?: {
+                status?: "draft" | "active" | "retired";
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachReportForm"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    breachCreateReportForm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreachReportFormInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachReportForm"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachGetReportForm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachReportForm"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachPublishReportForm: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachReportForm"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachRetireReportForm: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachReportForm"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
     dsarListRequestTypes: {
         parameters: {
             query?: never;
@@ -13967,6 +14274,70 @@ export interface operations {
             409: components["responses"]["Conflict"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachGetPublicReportForm: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                /** @description Public key of the report form (random, at least 128 bits, base64url) */
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The form's breach-type picker */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachPublicReportForm"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachSubmitPublicReport: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreachPublicReportInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachPublicReportResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     consentSubmitConsents: {

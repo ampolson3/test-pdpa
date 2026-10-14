@@ -186,6 +186,15 @@ func (s *Service) Create(ctx context.Context, in Input) (Incident, error) {
 	if !has(ctx, PermCreate) {
 		return Incident{}, ErrForbidden
 	}
+	return s.create(ctx, in, nil)
+}
+
+// create is the shared core of Create (the admin app, permission-gated — BRE-02's own employee_form path)
+// and CreatePublicReport (BRE-01's loginless public_form path, which has no AuthZ grants to check): numbering,
+// insert, the required follow-ups (timeline, breach.reported event, audit, the 72-hour timers, and alerting the
+// owner + DPOs at once — the acceptance criterion itself). reporterContactEnc is the reporter's own PLT-13
+// encrypted contact, nil unless CreatePublicReport supplied one.
+func (s *Service) create(ctx context.Context, in Input, reporterContactEnc []byte) (Incident, error) {
 	me := currentUser(ctx)
 	if err := s.check(ctx, &in, true); err != nil {
 		return Incident{}, err
@@ -209,8 +218,8 @@ func (s *Service) Create(ctx context.Context, in Input) (Incident, error) {
 	}
 	aware := in.AwareAt.UTC()
 	if _, err := q.InsertIncident(ctx, breachstore.InsertIncidentParams{ID: id, IncidentNo: fmt.Sprintf("%s%04d", prefix, n+1), LegalEntityID: in.LegalEntityID,
-		ReportedVia: in.ReportedVia, ReporterUserID: pgUUID(me), Title: in.Title, Description: in.Description, BreachTypes: in.BreachTypes,
-		IncidentType: optText(in.IncidentType), OccurredAt: tsPtr(in.OccurredAt), AwareAt: ts(aware), ContainedAt: tsPtr(in.ContainedAt),
+		ReportedVia: in.ReportedVia, ReporterUserID: pgUUID(me), ReporterContactEnc: reporterContactEnc, Title: in.Title, Description: in.Description,
+		BreachTypes: in.BreachTypes, IncidentType: optText(in.IncidentType), OccurredAt: tsPtr(in.OccurredAt), AwareAt: ts(aware), ContainedAt: tsPtr(in.ContainedAt),
 		AffectedSubjects: in.AffectedSubjects, AffectedCategories: nonNil(in.AffectedCategoryIDs), PdpcDueAt: ts(PDPCDue(aware)), IsDrill: in.IsDrill,
 		OwnerUserID: pgUUID(in.OwnerID)}); err != nil {
 		return Incident{}, err

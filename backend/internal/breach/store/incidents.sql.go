@@ -158,12 +158,12 @@ func (q *Queries) InsertEvidence(ctx context.Context, arg InsertEvidenceParams) 
 }
 
 const insertIncident = `-- name: InsertIncident :one
-INSERT INTO breach.incidents (id, tenant_id, incident_no, legal_entity_id, reported_via, reporter_user_id, title, description,
-    breach_types, incident_type, occurred_at, aware_at, contained_at, affected_subjects, affected_categories, pdpc_due_at,
-    is_drill, owner_user_id, created_by, updated_by)
-VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6,
-    $7, $8, $9, $10, $11, $12, $13, $14,
-    $15, $16, $17, $5, $5)
+INSERT INTO breach.incidents (id, tenant_id, incident_no, legal_entity_id, reported_via, reporter_user_id, reporter_contact_enc,
+    title, description, breach_types, incident_type, occurred_at, aware_at, contained_at, affected_subjects, affected_categories,
+    pdpc_due_at, is_drill, owner_user_id, created_by, updated_by)
+VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5,
+    $6, $7, $8, $9, $10, $11, $12, $13,
+    $14, $15, $16, $17, $18, $5, $5)
 RETURNING id
 `
 
@@ -173,6 +173,7 @@ type InsertIncidentParams struct {
 	LegalEntityID      uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
 	ReportedVia        string             `db:"reported_via" json:"reported_via"`
 	ReporterUserID     pgtype.UUID        `db:"reporter_user_id" json:"reporter_user_id"`
+	ReporterContactEnc []byte             `db:"reporter_contact_enc" json:"reporter_contact_enc"`
 	Title              string             `db:"title" json:"title"`
 	Description        string             `db:"description" json:"description"`
 	BreachTypes        []string           `db:"breach_types" json:"breach_types"`
@@ -194,6 +195,7 @@ func (q *Queries) InsertIncident(ctx context.Context, arg InsertIncidentParams) 
 		arg.LegalEntityID,
 		arg.ReportedVia,
 		arg.ReporterUserID,
+		arg.ReporterContactEnc,
 		arg.Title,
 		arg.Description,
 		arg.BreachTypes,

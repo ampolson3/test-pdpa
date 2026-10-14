@@ -284,6 +284,27 @@ func (e BreachRecipientStatus) Valid() bool {
 	}
 }
 
+// Defines values for BreachReportFormStatus.
+const (
+	BreachReportFormStatusActive  BreachReportFormStatus = "active"
+	BreachReportFormStatusDraft   BreachReportFormStatus = "draft"
+	BreachReportFormStatusRetired BreachReportFormStatus = "retired"
+)
+
+// Valid indicates whether the value is a known member of the BreachReportFormStatus enum.
+func (e BreachReportFormStatus) Valid() bool {
+	switch e {
+	case BreachReportFormStatusActive:
+		return true
+	case BreachReportFormStatusDraft:
+		return true
+	case BreachReportFormStatusRetired:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BreachTimelineItemType.
 const (
 	BreachTimelineItemTypeAction        BreachTimelineItemType = "action"
@@ -926,6 +947,117 @@ func (e BreachConfirmPDPCNotificationParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for BreachListReportFormsParamsStatus.
+const (
+	BreachListReportFormsParamsStatusActive  BreachListReportFormsParamsStatus = "active"
+	BreachListReportFormsParamsStatusDraft   BreachListReportFormsParamsStatus = "draft"
+	BreachListReportFormsParamsStatusRetired BreachListReportFormsParamsStatus = "retired"
+)
+
+// Valid indicates whether the value is a known member of the BreachListReportFormsParamsStatus enum.
+func (e BreachListReportFormsParamsStatus) Valid() bool {
+	switch e {
+	case BreachListReportFormsParamsStatusActive:
+		return true
+	case BreachListReportFormsParamsStatusDraft:
+		return true
+	case BreachListReportFormsParamsStatusRetired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachListReportFormsParamsAcceptLanguage.
+const (
+	BreachListReportFormsParamsAcceptLanguageEn BreachListReportFormsParamsAcceptLanguage = "en"
+	BreachListReportFormsParamsAcceptLanguageTh BreachListReportFormsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachListReportFormsParamsAcceptLanguage enum.
+func (e BreachListReportFormsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachListReportFormsParamsAcceptLanguageEn:
+		return true
+	case BreachListReportFormsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachCreateReportFormParamsAcceptLanguage.
+const (
+	BreachCreateReportFormParamsAcceptLanguageEn BreachCreateReportFormParamsAcceptLanguage = "en"
+	BreachCreateReportFormParamsAcceptLanguageTh BreachCreateReportFormParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachCreateReportFormParamsAcceptLanguage enum.
+func (e BreachCreateReportFormParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachCreateReportFormParamsAcceptLanguageEn:
+		return true
+	case BreachCreateReportFormParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachGetReportFormParamsAcceptLanguage.
+const (
+	BreachGetReportFormParamsAcceptLanguageEn BreachGetReportFormParamsAcceptLanguage = "en"
+	BreachGetReportFormParamsAcceptLanguageTh BreachGetReportFormParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachGetReportFormParamsAcceptLanguage enum.
+func (e BreachGetReportFormParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachGetReportFormParamsAcceptLanguageEn:
+		return true
+	case BreachGetReportFormParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachPublishReportFormParamsAcceptLanguage.
+const (
+	BreachPublishReportFormParamsAcceptLanguageEn BreachPublishReportFormParamsAcceptLanguage = "en"
+	BreachPublishReportFormParamsAcceptLanguageTh BreachPublishReportFormParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachPublishReportFormParamsAcceptLanguage enum.
+func (e BreachPublishReportFormParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachPublishReportFormParamsAcceptLanguageEn:
+		return true
+	case BreachPublishReportFormParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachRetireReportFormParamsAcceptLanguage.
+const (
+	BreachRetireReportFormParamsAcceptLanguageEn BreachRetireReportFormParamsAcceptLanguage = "en"
+	BreachRetireReportFormParamsAcceptLanguageTh BreachRetireReportFormParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachRetireReportFormParamsAcceptLanguage enum.
+func (e BreachRetireReportFormParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachRetireReportFormParamsAcceptLanguageEn:
+		return true
+	case BreachRetireReportFormParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // BreachAssessment defines model for BreachAssessment.
 type BreachAssessment struct {
 	// AssessedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
@@ -1225,6 +1357,32 @@ type BreachRecipient struct {
 
 // BreachRecipientStatus defines model for BreachRecipient.Status.
 type BreachRecipientStatus string
+
+// BreachReportForm defines model for BreachReportForm.
+type BreachReportForm struct {
+	// Id UUIDv7 generated by the API
+	Id Uuid `json:"id"`
+
+	// LegalEntityId UUIDv7 generated by the API
+	LegalEntityId Uuid   `json:"legal_entity_id"`
+	Name          string `json:"name"`
+
+	// PublicKey The published form's /public/v1/breach-report-forms/{key} path segment, once active at least once; absent before that
+	PublicKey  *string                `json:"public_key,omitempty"`
+	RowVersion int                    `json:"row_version"`
+	Status     BreachReportFormStatus `json:"status"`
+	UpdatedAt  time.Time              `json:"updated_at"`
+}
+
+// BreachReportFormInput defines model for BreachReportFormInput.
+type BreachReportFormInput struct {
+	// LegalEntityId UUIDv7 generated by the API
+	LegalEntityId Uuid   `json:"legal_entity_id"`
+	Name          string `json:"name"`
+}
+
+// BreachReportFormStatus defines model for BreachReportFormStatus.
+type BreachReportFormStatus string
 
 // BreachTimelineItem defines model for BreachTimelineItem.
 type BreachTimelineItem struct {
@@ -1648,6 +1806,64 @@ type BreachConfirmPDPCNotificationParams struct {
 // BreachConfirmPDPCNotificationParamsAcceptLanguage defines parameters for BreachConfirmPDPCNotification.
 type BreachConfirmPDPCNotificationParamsAcceptLanguage string
 
+// BreachListReportFormsParams defines parameters for BreachListReportForms.
+type BreachListReportFormsParams struct {
+	Status *BreachListReportFormsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+	Cursor *string                            `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int                               `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachListReportFormsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// BreachListReportFormsParamsStatus defines parameters for BreachListReportForms.
+type BreachListReportFormsParamsStatus string
+
+// BreachListReportFormsParamsAcceptLanguage defines parameters for BreachListReportForms.
+type BreachListReportFormsParamsAcceptLanguage string
+
+// BreachCreateReportFormParams defines parameters for BreachCreateReportForm.
+type BreachCreateReportFormParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachCreateReportFormParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// BreachCreateReportFormParamsAcceptLanguage defines parameters for BreachCreateReportForm.
+type BreachCreateReportFormParamsAcceptLanguage string
+
+// BreachGetReportFormParams defines parameters for BreachGetReportForm.
+type BreachGetReportFormParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachGetReportFormParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// BreachGetReportFormParamsAcceptLanguage defines parameters for BreachGetReportForm.
+type BreachGetReportFormParamsAcceptLanguage string
+
+// BreachPublishReportFormParams defines parameters for BreachPublishReportForm.
+type BreachPublishReportFormParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachPublishReportFormParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// BreachPublishReportFormParamsAcceptLanguage defines parameters for BreachPublishReportForm.
+type BreachPublishReportFormParamsAcceptLanguage string
+
+// BreachRetireReportFormParams defines parameters for BreachRetireReportForm.
+type BreachRetireReportFormParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachRetireReportFormParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// BreachRetireReportFormParamsAcceptLanguage defines parameters for BreachRetireReportForm.
+type BreachRetireReportFormParamsAcceptLanguage string
+
 // BreachCreateIncidentJSONRequestBody defines body for BreachCreateIncident for application/json ContentType.
 type BreachCreateIncidentJSONRequestBody = BreachIncidentInput
 
@@ -1680,6 +1896,9 @@ type BreachUpdateNoticeJSONRequestBody BreachUpdateNoticeJSONBody
 
 // BreachLoadRecipientsJSONRequestBody defines body for BreachLoadRecipients for application/json ContentType.
 type BreachLoadRecipientsJSONRequestBody BreachLoadRecipientsJSONBody
+
+// BreachCreateReportFormJSONRequestBody defines body for BreachCreateReportForm for application/json ContentType.
+type BreachCreateReportFormJSONRequestBody = BreachReportFormInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -1749,6 +1968,21 @@ type ServerInterface interface {
 	// BreachConfirmPDPCNotification Confirm a filing round was recorded correctly (If-Match); whoever recorded it can’t confirm it
 	// (POST /admin/v1/breach/pdpc-notifications/{id}/confirm)
 	BreachConfirmPDPCNotification(w http.ResponseWriter, r *http.Request, id Uuid, params BreachConfirmPDPCNotificationParams)
+	// BreachListReportForms Public incident-report forms (BRE-01)
+	// (GET /admin/v1/breach/report-forms)
+	BreachListReportForms(w http.ResponseWriter, r *http.Request, params BreachListReportFormsParams)
+	// BreachCreateReportForm Open a new draft incident-report form for a legal entity (BRE-01)
+	// (POST /admin/v1/breach/report-forms)
+	BreachCreateReportForm(w http.ResponseWriter, r *http.Request, params BreachCreateReportFormParams)
+	// BreachGetReportForm One incident-report form (BRE-01)
+	// (GET /admin/v1/breach/report-forms/{id})
+	BreachGetReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachGetReportFormParams)
+	// BreachPublishReportForm Make a draft (or re-publish a retired) report form live (BRE-01) — issues a platform.public_keys key
+	// (POST /admin/v1/breach/report-forms/{id}/publish)
+	BreachPublishReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachPublishReportFormParams)
+	// BreachRetireReportForm Retire a report form for good (BRE-01) — its key stops resolving, past incidents are untouched
+	// (POST /admin/v1/breach/report-forms/{id}/retire)
+	BreachRetireReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachRetireReportFormParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -1884,6 +2118,36 @@ func (_ Unimplemented) BreachSendNotice(w http.ResponseWriter, r *http.Request, 
 // BreachConfirmPDPCNotification Confirm a filing round was recorded correctly (If-Match); whoever recorded it can’t confirm it
 // (POST /admin/v1/breach/pdpc-notifications/{id}/confirm)
 func (_ Unimplemented) BreachConfirmPDPCNotification(w http.ResponseWriter, r *http.Request, id Uuid, params BreachConfirmPDPCNotificationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachListReportForms Public incident-report forms (BRE-01)
+// (GET /admin/v1/breach/report-forms)
+func (_ Unimplemented) BreachListReportForms(w http.ResponseWriter, r *http.Request, params BreachListReportFormsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachCreateReportForm Open a new draft incident-report form for a legal entity (BRE-01)
+// (POST /admin/v1/breach/report-forms)
+func (_ Unimplemented) BreachCreateReportForm(w http.ResponseWriter, r *http.Request, params BreachCreateReportFormParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachGetReportForm One incident-report form (BRE-01)
+// (GET /admin/v1/breach/report-forms/{id})
+func (_ Unimplemented) BreachGetReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachGetReportFormParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachPublishReportForm Make a draft (or re-publish a retired) report form live (BRE-01) — issues a platform.public_keys key
+// (POST /admin/v1/breach/report-forms/{id}/publish)
+func (_ Unimplemented) BreachPublishReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachPublishReportFormParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachRetireReportForm Retire a report form for good (BRE-01) — its key stops resolving, past incidents are untouched
+// (POST /admin/v1/breach/report-forms/{id}/retire)
+func (_ Unimplemented) BreachRetireReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachRetireReportFormParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3295,6 +3559,323 @@ func (siw *ServerInterfaceWrapper) BreachConfirmPDPCNotification(w http.Response
 	handler.ServeHTTP(w, r)
 }
 
+// BreachListReportForms operation middleware
+func (siw *ServerInterfaceWrapper) BreachListReportForms(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachListReportFormsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachListReportFormsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachListReportForms(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachCreateReportForm operation middleware
+func (siw *ServerInterfaceWrapper) BreachCreateReportForm(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachCreateReportFormParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachCreateReportFormParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachCreateReportForm(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachGetReportForm operation middleware
+func (siw *ServerInterfaceWrapper) BreachGetReportForm(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachGetReportFormParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachGetReportFormParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachGetReportForm(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachPublishReportForm operation middleware
+func (siw *ServerInterfaceWrapper) BreachPublishReportForm(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachPublishReportFormParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachPublishReportFormParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachPublishReportForm(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachRetireReportForm operation middleware
+func (siw *ServerInterfaceWrapper) BreachRetireReportForm(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachRetireReportFormParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachRetireReportFormParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachRetireReportForm(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -3473,6 +4054,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/breach/pdpc-notifications/{id}/confirm", wrapper.BreachConfirmPDPCNotification)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/breach/report-forms", wrapper.BreachListReportForms)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/breach/report-forms", wrapper.BreachCreateReportForm)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/breach/report-forms/{id}", wrapper.BreachGetReportForm)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/breach/report-forms/{id}/publish", wrapper.BreachPublishReportForm)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/breach/report-forms/{id}/retire", wrapper.BreachRetireReportForm)
 	})
 
 	return r
@@ -5962,6 +6558,499 @@ func (response BreachConfirmPDPCNotification428ApplicationProblemPlusJSONRespons
 	return err
 }
 
+type BreachListReportFormsRequestObject struct {
+	Params BreachListReportFormsParams
+}
+
+type BreachListReportFormsResponseObject interface {
+	VisitBreachListReportFormsResponse(w http.ResponseWriter) error
+}
+
+type BreachListReportForms200JSONResponse struct {
+	Data       []BreachReportForm `json:"data"`
+	NextCursor *string            `json:"next_cursor,omitempty"`
+}
+
+func (response BreachListReportForms200JSONResponse) VisitBreachListReportFormsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachListReportForms401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachListReportForms401ApplicationProblemPlusJSONResponse) VisitBreachListReportFormsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachListReportForms403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachListReportForms403ApplicationProblemPlusJSONResponse) VisitBreachListReportFormsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCreateReportFormRequestObject struct {
+	Params BreachCreateReportFormParams
+	Body   *BreachCreateReportFormJSONRequestBody
+}
+
+type BreachCreateReportFormResponseObject interface {
+	VisitBreachCreateReportFormResponse(w http.ResponseWriter) error
+}
+
+type BreachCreateReportForm201ResponseHeaders struct {
+	ETag *string
+}
+
+type BreachCreateReportForm201JSONResponse struct {
+	Body    BreachReportForm
+	Headers BreachCreateReportForm201ResponseHeaders
+}
+
+func (response BreachCreateReportForm201JSONResponse) VisitBreachCreateReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCreateReportForm400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCreateReportForm400ApplicationProblemPlusJSONResponse) VisitBreachCreateReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCreateReportForm401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCreateReportForm401ApplicationProblemPlusJSONResponse) VisitBreachCreateReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCreateReportForm403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCreateReportForm403ApplicationProblemPlusJSONResponse) VisitBreachCreateReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCreateReportForm422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCreateReportForm422ApplicationProblemPlusJSONResponse) VisitBreachCreateReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachGetReportFormRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachGetReportFormParams
+}
+
+type BreachGetReportFormResponseObject interface {
+	VisitBreachGetReportFormResponse(w http.ResponseWriter) error
+}
+
+type BreachGetReportForm200ResponseHeaders struct {
+	ETag *string
+}
+
+type BreachGetReportForm200JSONResponse struct {
+	Body    BreachReportForm
+	Headers BreachGetReportForm200ResponseHeaders
+}
+
+func (response BreachGetReportForm200JSONResponse) VisitBreachGetReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachGetReportForm401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachGetReportForm401ApplicationProblemPlusJSONResponse) VisitBreachGetReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachGetReportForm403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachGetReportForm403ApplicationProblemPlusJSONResponse) VisitBreachGetReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachGetReportForm404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachGetReportForm404ApplicationProblemPlusJSONResponse) VisitBreachGetReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachPublishReportFormRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachPublishReportFormParams
+}
+
+type BreachPublishReportFormResponseObject interface {
+	VisitBreachPublishReportFormResponse(w http.ResponseWriter) error
+}
+
+type BreachPublishReportForm200ResponseHeaders struct {
+	ETag *string
+}
+
+type BreachPublishReportForm200JSONResponse struct {
+	Body    BreachReportForm
+	Headers BreachPublishReportForm200ResponseHeaders
+}
+
+func (response BreachPublishReportForm200JSONResponse) VisitBreachPublishReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachPublishReportForm401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachPublishReportForm401ApplicationProblemPlusJSONResponse) VisitBreachPublishReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachPublishReportForm403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachPublishReportForm403ApplicationProblemPlusJSONResponse) VisitBreachPublishReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachPublishReportForm404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachPublishReportForm404ApplicationProblemPlusJSONResponse) VisitBreachPublishReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachPublishReportForm409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response BreachPublishReportForm409ApplicationProblemPlusJSONResponse) VisitBreachPublishReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachPublishReportForm412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachPublishReportForm412ApplicationProblemPlusJSONResponse) VisitBreachPublishReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachPublishReportForm428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response BreachPublishReportForm428ApplicationProblemPlusJSONResponse) VisitBreachPublishReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachRetireReportFormRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachRetireReportFormParams
+}
+
+type BreachRetireReportFormResponseObject interface {
+	VisitBreachRetireReportFormResponse(w http.ResponseWriter) error
+}
+
+type BreachRetireReportForm200ResponseHeaders struct {
+	ETag *string
+}
+
+type BreachRetireReportForm200JSONResponse struct {
+	Body    BreachReportForm
+	Headers BreachRetireReportForm200ResponseHeaders
+}
+
+func (response BreachRetireReportForm200JSONResponse) VisitBreachRetireReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachRetireReportForm401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachRetireReportForm401ApplicationProblemPlusJSONResponse) VisitBreachRetireReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachRetireReportForm403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachRetireReportForm403ApplicationProblemPlusJSONResponse) VisitBreachRetireReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachRetireReportForm404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachRetireReportForm404ApplicationProblemPlusJSONResponse) VisitBreachRetireReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachRetireReportForm409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response BreachRetireReportForm409ApplicationProblemPlusJSONResponse) VisitBreachRetireReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachRetireReportForm412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachRetireReportForm412ApplicationProblemPlusJSONResponse) VisitBreachRetireReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachRetireReportForm428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response BreachRetireReportForm428ApplicationProblemPlusJSONResponse) VisitBreachRetireReportFormResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// BreachListIncidents Search the breach register (BRE-13), newest awareness first
@@ -6030,6 +7119,21 @@ type StrictServerInterface interface {
 	// BreachConfirmPDPCNotification Confirm a filing round was recorded correctly (If-Match); whoever recorded it can’t confirm it
 	// (POST /admin/v1/breach/pdpc-notifications/{id}/confirm)
 	BreachConfirmPDPCNotification(ctx context.Context, request BreachConfirmPDPCNotificationRequestObject) (BreachConfirmPDPCNotificationResponseObject, error)
+	// BreachListReportForms Public incident-report forms (BRE-01)
+	// (GET /admin/v1/breach/report-forms)
+	BreachListReportForms(ctx context.Context, request BreachListReportFormsRequestObject) (BreachListReportFormsResponseObject, error)
+	// BreachCreateReportForm Open a new draft incident-report form for a legal entity (BRE-01)
+	// (POST /admin/v1/breach/report-forms)
+	BreachCreateReportForm(ctx context.Context, request BreachCreateReportFormRequestObject) (BreachCreateReportFormResponseObject, error)
+	// BreachGetReportForm One incident-report form (BRE-01)
+	// (GET /admin/v1/breach/report-forms/{id})
+	BreachGetReportForm(ctx context.Context, request BreachGetReportFormRequestObject) (BreachGetReportFormResponseObject, error)
+	// BreachPublishReportForm Make a draft (or re-publish a retired) report form live (BRE-01) — issues a platform.public_keys key
+	// (POST /admin/v1/breach/report-forms/{id}/publish)
+	BreachPublishReportForm(ctx context.Context, request BreachPublishReportFormRequestObject) (BreachPublishReportFormResponseObject, error)
+	// BreachRetireReportForm Retire a report form for good (BRE-01) — its key stops resolving, past incidents are untouched
+	// (POST /admin/v1/breach/report-forms/{id}/retire)
+	BreachRetireReportForm(ctx context.Context, request BreachRetireReportFormRequestObject) (BreachRetireReportFormResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -6733,6 +7837,146 @@ func (sh *strictHandler) BreachConfirmPDPCNotification(w http.ResponseWriter, r 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(BreachConfirmPDPCNotificationResponseObject); ok {
 		if err := validResponse.VisitBreachConfirmPDPCNotificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachListReportForms operation middleware
+func (sh *strictHandler) BreachListReportForms(w http.ResponseWriter, r *http.Request, params BreachListReportFormsParams) {
+	var request BreachListReportFormsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachListReportForms(ctx, request.(BreachListReportFormsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachListReportForms")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachListReportFormsResponseObject); ok {
+		if err := validResponse.VisitBreachListReportFormsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachCreateReportForm operation middleware
+func (sh *strictHandler) BreachCreateReportForm(w http.ResponseWriter, r *http.Request, params BreachCreateReportFormParams) {
+	var request BreachCreateReportFormRequestObject
+
+	request.Params = params
+
+	var body BreachCreateReportFormJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachCreateReportForm(ctx, request.(BreachCreateReportFormRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachCreateReportForm")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachCreateReportFormResponseObject); ok {
+		if err := validResponse.VisitBreachCreateReportFormResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachGetReportForm operation middleware
+func (sh *strictHandler) BreachGetReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachGetReportFormParams) {
+	var request BreachGetReportFormRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachGetReportForm(ctx, request.(BreachGetReportFormRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachGetReportForm")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachGetReportFormResponseObject); ok {
+		if err := validResponse.VisitBreachGetReportFormResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachPublishReportForm operation middleware
+func (sh *strictHandler) BreachPublishReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachPublishReportFormParams) {
+	var request BreachPublishReportFormRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachPublishReportForm(ctx, request.(BreachPublishReportFormRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachPublishReportForm")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachPublishReportFormResponseObject); ok {
+		if err := validResponse.VisitBreachPublishReportFormResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachRetireReportForm operation middleware
+func (sh *strictHandler) BreachRetireReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachRetireReportFormParams) {
+	var request BreachRetireReportFormRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachRetireReportForm(ctx, request.(BreachRetireReportFormRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachRetireReportForm")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachRetireReportFormResponseObject); ok {
+		if err := validResponse.VisitBreachRetireReportFormResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
