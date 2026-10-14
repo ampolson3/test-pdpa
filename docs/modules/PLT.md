@@ -628,6 +628,45 @@ produced once, by its own publish).
 
 **Acceptance criteria:** หน้า portal หลักผ่านการตรวจ accessibility ระดับ AA และโหลดเสร็จภายใน 2 วินาทีบน 4G
 
+**Implementation (PLT-17) — done for the acceptance criterion; framework pieces beyond it deferred:**
+`apps/portal/src/app/[locale]/layout.tsx` + `page.tsx`: the bare placeholder home page became a real,
+static (`export const dynamic = "force-static"`) page — a skip link (focus actually moves to the
+content via `tabIndex={-1}`, not just scrolls, per WCAG 2.4.1), a `<header>` banner landmark with the
+locale switcher, each page's own `<main>` (unchanged — the layout never renders a second one), and a
+`<footer>` contentinfo landmark. Content (`packages/i18n` `portal.home.*`, th/en) explains the portal is
+a shared entry point organizations' own notices/consent forms link back to, and lists PDPA data-subject
+rights in plain language — no per-tenant data, so no database call and nothing to block first paint.
+`apps/portal/src/proxy.ts` (Next 16's renamed middleware file) adds a strict, per-request nonce CSP
+(`docs/architecture/security.md`'s "CSP แบบเข้ม") plus `X-Frame-Options: DENY`, `X-Content-Type-Options:
+nosniff`, `Referrer-Policy: strict-origin-when-cross-origin` to every portal response: the nonce is set
+on the *request* headers before `next-intl`'s own middleware runs, which next-intl itself copies into
+its downstream `NextResponse.next({request: {headers}})` call (confirmed by reading next-intl's own
+`middleware.js`) — so the App Router's own hydration `<script>` tags pick up the matching nonce
+automatically, verified live against a real `next build` + `next start` (every script tag in the
+response carries `nonce="..."`, matching the response's own `Content-Security-Policy` header).
+
+Measured, not assumed: `npx lighthouse` against the real production build (Playwright's bundled
+Chromium, `--headless=new`), both locales — accessibility **1.00** (76 audits checked, 0 failed) and
+performance **0.99–1.00**, with **LCP 1.8–1.9 s** under Lighthouse's default mobile/slow-4G simulated
+throttling — directly the acceptance criterion's own "≤ 2 s on 4G" threshold. The HTML itself is ~36 KB
+gzipped; all scripts load `async`, so the framework/React JS bundle (~250 KB gzipped, standard Next 16 +
+Turbopack baseline, cacheable across visits) never blocks the already-server-rendered, visible content.
+`pnpm --filter @pdpa/i18n test` (ICU parse of every th/en message, including the new ones) and
+`pnpm --filter @pdpa/portal typecheck`/`build`, plus `pnpm --filter @pdpa/admin build` (the shared
+`packages/i18n` JSON structural change — `portal.home` from a plain string to an object — touches
+nothing in `apps/admin`, confirmed by grep before relying on it) all verified clean.
+
+Deliberately not built in this pass, each because no consumer of it exists yet in this codebase (the
+same "no consumer yet" deferral this project uses throughout) rather than because they're hard: CAPTCHA
+(no provider decision in `docs/decisions.md`, and no public form in this codebase currently asks for
+one beyond what CON-09/PNG-06 already shipped without it); a data-subject session via OTP/magic link
+(IAM-05's own OTP service has had no portal consumer since it shipped — this page doesn't need a session
+either, since it carries no per-tenant or per-subject data); per-tenant theme/custom domain (the
+subdomain/custom-domain tenant resolver PLT-02 already deferred for the identical reason — this page is
+deliberately tenant-agnostic, so it doesn't need one); ISR/caching beyond plain static generation (there
+is no per-tenant content yet to cache per-tenant). Add each once the feature that actually needs it
+exists, rather than building the mechanism speculatively ahead of a real consumer.
+
 <a id="plt-18"></a>
 ### PLT-18 Dashboard & report framework
 

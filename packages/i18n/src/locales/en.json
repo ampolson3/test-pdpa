@@ -2058,7 +2058,23 @@
     }
   },
   "portal": {
-    "home": "PDPA Platform — data subject portal",
+    "skipToContent": "Skip to main content",
+    "footer": "This page is shared by organizations using the PDPA Compliance Platform to meet their Thai PDPA obligations. It isn't an official government service.",
+    "home": {
+      "title": "Data subject portal",
+      "intro": "This page is the shared entry point an organization's own privacy notices and consent forms link back to. There's nothing to browse here on its own — follow the specific link an organization gave you.",
+      "linksTitle": "Why am I here?",
+      "linksBody": "You most likely followed a link from an organization's privacy notice, a consent form, or a message about your personal data. Each of those links is specific to that organization and that purpose — this page doesn't replace them.",
+      "rightsTitle": "Your rights under Thai PDPA",
+      "rights": {
+        "access": "Request access to the personal data an organization holds about you",
+        "rectify": "Ask for inaccurate or incomplete data to be corrected",
+        "erase": "Request deletion of your data where the law allows it",
+        "object": "Object to certain processing, including for marketing",
+        "withdraw": "Withdraw consent you previously gave, where consent was the basis for processing"
+      },
+      "rightsContact": "To exercise a right, contact the organization that holds your data directly — through the contact details in its own privacy notice."
+    },
     "consent": {
       "intro": "Please read and choose for each purpose separately. You don't have to agree to any purpose not marked as required.",
       "contact": "Your contact details",

@@ -1870,6 +1870,56 @@ cross-tenant access decisions.md D-24 names (no `/public/v1` or break-glass cons
 PLT-02's own identical deferral); quota enforcement (the `quota` jsonb round-trips but nothing reads it to
 cap usage yet — no feature has asked for that).
 
+### PLT-17 Public portal framework (`docs/modules/PLT.md#plt-17`) — done for the acceptance criterion; framework pieces beyond it deferred
+`apps/portal`'s home page was a bare placeholder (`<p>{t("home")}</p>`, one plain string) with no shared
+header/footer/skip link anywhere in its layout — this pass made it a real page and proved the literal
+acceptance criterion against it rather than against the framework bullets the module doc's description
+also lists. `apps/portal/src/app/[locale]/layout.tsx` gained a skip link (`tabIndex={-1}` on its target so
+activating it moves focus, not just scroll position — WCAG 2.4.1), a `<header>` banner landmark with a
+new portal-local `LocaleSwitcher` (same pattern as `apps/admin`'s own), and a `<footer>` contentinfo
+landmark — each page under it still renders its own `<main>` (the consent form, the notice page, the new
+home page), so the layout itself never does, avoiding a duplicate-landmark defect. `page.tsx` is now
+`force-static` (no per-tenant data — PLT-02's own deferred subdomain/custom-domain resolver has no
+consumer here either, since this page is deliberately tenant-agnostic) with real content:
+`packages/i18n`'s new `portal.home.*` (th/en) explains the portal is the shared entry point
+organizations' own notices/consent-form links point back to, and lists PDPA data-subject rights in plain
+language.
+
+`apps/portal/src/proxy.ts` (Next 16's renamed middleware file) adds a strict, per-request nonce CSP
+(`docs/architecture/security.md`'s own "CSP แบบเข้ม" item) plus `X-Frame-Options`/`X-Content-Type-Options`/
+`Referrer-Policy` to every response. The nonce is set on the *request* headers before `next-intl`'s own
+middleware runs — confirmed by reading next-intl's `middleware.js`, which builds its downstream
+`NextResponse.next({request: {headers}})` from `new Headers(request.headers)`, so whatever is set there
+survives — meaning the App Router's own hydration `<script>` tags automatically pick up the matching
+nonce with no manual wiring per script. Verified against a real `next build` + `next start`, not just
+read from docs: every script tag in the rendered response carries `nonce="..."` matching the response's
+own `Content-Security-Policy` header (first attempt actually hit a stale `.next` build still running on
+the port from a prior `next start` — `EADDRINUSE` on the real rebuild masked by `pkill` not matching the
+`next-server` process name — caught by noticing the CSP header was simply absent, killed the right PID,
+confirmed again).
+
+The acceptance criterion itself was measured, not assumed: `npx lighthouse` (Playwright's own bundled
+Chromium in this environment, `--headless=new --no-sandbox`) against the real production build, both
+locales — accessibility **1.00** (76 audits checked, 0 failed) and performance **0.99–1.00**, with
+**LCP 1.8–1.9 s** under Lighthouse's default mobile/slow-4G simulated throttling, directly against the
+criterion's own "≤ 2 วินาทีบน 4G" threshold. The page's HTML is ~36 KB gzipped; every script tag loads
+`async`, so the ~250 KB gzipped React/Next framework bundle (the standard Next 16 + Turbopack baseline,
+cached across repeat visits) never blocks the already-server-rendered, visible content from painting.
+`pnpm --filter @pdpa/i18n test` (ICU-parses every th/en message, including the new ones),
+`pnpm --filter @pdpa/portal typecheck`/`build`, and `pnpm --filter @pdpa/admin build` (the shared
+`packages/i18n` structural change — `portal.home` from a plain string to an object — touches nothing in
+`apps/admin`, confirmed by grep rather than assumed) all verified clean.
+
+Deliberately not built, each because this codebase has no consumer for it yet (the same "no consumer
+yet" deferral used throughout, not because any of them are hard): CAPTCHA (no provider decision exists in
+`docs/decisions.md`, and no public form anywhere in this codebase currently asks for one — CON-09/PNG-06
+both already shipped without it); a data-subject session via OTP/magic link (IAM-05's own OTP service has
+had no portal consumer since it shipped, and this particular page carries no per-tenant or per-subject
+data to gate behind one); per-tenant theme/custom domain (PLT-02's own subdomain/custom-domain resolver
+deferral, for the identical reason — nothing on this page needs tenant context); ISR/caching beyond plain
+static generation (there's no per-tenant content yet to cache per-tenant). Add each once a real feature
+needs it, the same way IAM-05's OTP service itself is waiting for one.
+
 ## Non-negotiable rules
 1. **Tenant isolation.** One transaction per request (the Tx middleware) and one per worker job, both opened only by `db.WithTenantTx`, which sets `app.tenant_id` / `app.user_id` transaction-locally. Services and stores use the transaction from the context and never `BEGIN` themselves. The app connects as `pdpa_app` (no BYPASSRLS); only `internal/platform/provider` (`/provider/v1`) may use the `pdpa_platform` pool. FK constraints bypass RLS, so verify that a referenced row is visible under RLS before writing its id. Every new repository gets a two-tenant isolation test.
 2. **Authorization.** Every operation declares `x-permission` with a code from `docs/security/permissions.yaml` — format `<area>.<resource>.<action>`, where area is the RBAC area (`admin`, `assessment`, `dpx`, …), not the Go package — or `public`, `authenticated`, `scim`, `webhook`. A new code needs a permissions.yaml entry plus a migration. Deny by default; data scope enforced in service/repository; a contract test asserts 403 for a role without the permission.
