@@ -4913,6 +4913,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/cookie/domains/{id}/scans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Automated cookie-scan rounds for a domain, newest first (CON-04) */
+        get: operations["cookieListScans"];
+        put?: never;
+        /**
+         * Start a new scan round against a domain's own live site (CON-04)
+         * @description Always scans fresh and pre-consent — the crawl runs with no visitor decision recorded, matching
+         *     the acceptance criterion's own "สแกนก่อนขอความยินยอม". Running (status=queued/running) is enqueued
+         *     to cookie.scan; cmd/worker's own ScanWorker (the only process with a real cookiescan.Crawler) does
+         *     the actual crawl.
+         */
+        post: operations["cookieStartScan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/cookie/scans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One scan round's own status/counters (CON-04) */
+        get: operations["cookieGetScan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/cookie/scans/{id}/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every cookie this scan round observed, one row per page it was seen on (CON-04) */
+        get: operations["cookieListScanFindings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/cookie/scan-findings/{id}/classify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct or confirm an unknown scanned cookie's category (CON-04) */
+        post: operations["cookieClassifyScanFinding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/v1/cookie-banners/{key}": {
         parameters: {
             query?: never;
@@ -7122,6 +7197,36 @@ export interface components {
              * @enum {string}
              */
             action: "block" | "allow";
+        };
+        /** @description One round of CON-04's own automated scanner against a domain's live site. */
+        CookieScan: {
+            id: components["schemas"]["Uuid"];
+            domain_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            trigger: "manual" | "schedule" | "publish";
+            /** @enum {string} */
+            status: "queued" | "running" | "done" | "failed";
+            started_at?: string | null;
+            finished_at?: string | null;
+            pages_scanned?: number | null;
+            cookies_found?: number | null;
+            new_cookies?: number | null;
+            row_version: number;
+        };
+        /** @description One cookie observed on one page during a scan round. */
+        CookieScanFinding: {
+            id: components["schemas"]["Uuid"];
+            scan_id: components["schemas"]["Uuid"];
+            cookie_name: string;
+            cookie_domain: string;
+            page_url: string;
+            /** @description Always true today — the scanner only ever crawls fresh, with no consent decision recorded (the acceptance criterion's own "สแกนก่อนขอความยินยอม") */
+            set_before_consent: boolean;
+            /** @description cookie.cookie_kb's own best-guess category code, when this cookie name matched a known tracker */
+            suggested_category?: string | null;
+            /** @description The cookie.cookies row this finding resolved to (always set — RunScan creates one for any genuinely new name) */
+            matched_cookie_id?: components["schemas"]["Uuid"] | null;
+            row_version: number;
         };
         CookieSubmitConsentInput: {
             domain_id: components["schemas"]["Uuid"];
@@ -20511,6 +20616,177 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    cookieListScans: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CookieScan"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cookieStartScan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /**
+                     * @default manual
+                     * @enum {string}
+                     */
+                    trigger?: "manual" | "schedule" | "publish";
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CookieScan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    cookieGetScan: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CookieScan"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cookieListScanFindings: {
+        parameters: {
+            query?: {
+                offset?: number;
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CookieScanFinding"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cookieClassifyScanFinding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    category_id: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CookieScanFinding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     cookieGetPublicBanner: {

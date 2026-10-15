@@ -16,6 +16,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	cookiehttp "pdpa-platform/internal/cookie/http"
+	cookiescan "pdpa-platform/internal/cookie/scan"
 	cookieservice "pdpa-platform/internal/cookie/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
@@ -31,6 +32,14 @@ func envOr(k, d string) string {
 		return v
 	}
 	return d
+}
+
+// fakeCrawler lets the contract test drive CON-04's own RunScan deterministically — the HTTP layer never
+// crawls itself (that's cmd/worker's own ScanWorker), it only enqueues.
+type fakeCrawler struct{ result cookiescan.Result }
+
+func (f fakeCrawler) Crawl(_ context.Context, _ cookiescan.Config) (cookiescan.Result, error) {
+	return f.result, nil
 }
 
 // Contract test for the cookie-banner admin endpoints (CON-01) behind the real OpenAPI validator and AuthZ.
@@ -49,6 +58,7 @@ func TestCookieEndpoints_Contract(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
+				`DELETE FROM cookie.scan_findings`, `DELETE FROM cookie.scans`, `DELETE FROM cookie.cookies`,
 				`DELETE FROM cookie.consent_records`, `DELETE FROM cookie.banner_configs`, `DELETE FROM cookie.domains`,
 				`DELETE FROM cookie.categories`, `DELETE FROM platform.public_keys`, `DELETE FROM org.legal_entities`,
 			} {
@@ -59,7 +69,10 @@ func TestCookieEndpoints_Contract(t *testing.T) {
 		})
 	})
 	orgSvc := &orgservice.Service{Audit: audit.New()}
-	svc := &cookieservice.Service{Audit: audit.New(), Org: orgSvc}
+	svc := &cookieservice.Service{Audit: audit.New(), Org: orgSvc, Scanner: fakeCrawler{result: cookiescan.Result{
+		PagesScanned: 2,
+		Findings:     []cookiescan.Finding{{PageURL: "https://contract.example/", CookieName: "_ga", CookieDomain: "contract.example"}},
+	}}}
 
 	var legalEntity orgservice.LegalEntity
 	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
@@ -83,8 +96,9 @@ func TestCookieEndpoints_Contract(t *testing.T) {
 	}
 	reader := uuid.New()
 	grants := map[string][]string{
-		tenant.UserID.String(): {"cookie.banner.read", "cookie.banner.create", "cookie.banner.update", "cookie.banner.publish", "cookie.banner.delete"},
-		reader.String():        {"cookie.banner.read"},
+		tenant.UserID.String(): {"cookie.banner.read", "cookie.banner.create", "cookie.banner.update", "cookie.banner.publish", "cookie.banner.delete",
+			"cookie.scan.create", "cookie.scan.read", "cookie.scan.update"},
+		reader.String(): {"cookie.banner.read", "cookie.scan.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
@@ -254,5 +268,60 @@ func TestCookieEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("DELETE", "/admin/v1/cookie/script-rules/"+rule.Id.String(), &admin, nil, nil); code != 204 {
 		t.Errorf("delete script rule: %d, want 204", code)
+	}
+
+	// CON-04: the automated scanner. cmd/api never crawls itself (no River client here either), so the
+	// test drives RunScan directly after the HTTP-started scan — the same split cmd/worker's own
+	// ScanWorker makes between enqueueing (HTTP/service) and running (the worker).
+	if code, _ := do("GET", "/admin/v1/cookie/domains/"+domain.Id.String()+"/scans", nil, nil, nil); code != 401 {
+		t.Errorf("list scans, no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", "/admin/v1/cookie/domains/"+domain.Id.String()+"/scans", &reader, nil, nil); code != 403 {
+		t.Errorf("start scan with read only: %d, want 403", code)
+	}
+	code, body = do("POST", "/admin/v1/cookie/domains/"+domain.Id.String()+"/scans", &admin, map[string]any{"trigger": "manual"}, nil)
+	if code != 201 || !strings.Contains(body, `"status":"queued"`) {
+		t.Fatalf("start scan: %d %s", code, body)
+	}
+	var sc cookiehttp.CookieScan
+	_ = json.Unmarshal([]byte(body), &sc)
+
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		return svc.RunScan(ctx, sc.Id)
+	}); err != nil {
+		t.Fatalf("RunScan: %v", err)
+	}
+
+	if code, body := do("GET", "/admin/v1/cookie/scans/"+sc.Id.String(), &admin, nil, nil); code != 200 || !strings.Contains(body, `"status":"done"`) {
+		t.Errorf("get scan: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/cookie/scans/"+uuid.New().String(), &admin, nil, nil); code != 404 {
+		t.Errorf("get unknown scan: %d, want 404", code)
+	}
+	code, body = do("GET", "/admin/v1/cookie/scans/"+sc.Id.String()+"/findings", &admin, nil, nil)
+	if code != 200 || !strings.Contains(body, `"cookie_name":"_ga"`) {
+		t.Fatalf("list scan findings: %d %s", code, body)
+	}
+	var findings struct {
+		Data []cookiehttp.CookieScanFinding `json:"data"`
+	}
+	_ = json.Unmarshal([]byte(body), &findings)
+	if len(findings.Data) != 1 {
+		t.Fatalf("findings = %+v, want exactly 1", findings.Data)
+	}
+
+	if code, _ := do("POST", "/admin/v1/cookie/scan-findings/"+findings.Data[0].Id.String()+"/classify", &reader, map[string]any{"category_id": customCategory.Id}, nil); code != 403 {
+		t.Errorf("classify with read only: %d, want 403", code)
+	}
+	code, body = do("POST", "/admin/v1/cookie/scan-findings/"+findings.Data[0].Id.String()+"/classify", &admin, map[string]any{"category_id": customCategory.Id}, nil)
+	if code != 200 || !strings.Contains(body, `"cookie_name":"_ga"`) {
+		t.Errorf("classify finding: %d %s", code, body)
+	}
+	if code, _ := do("POST", "/admin/v1/cookie/scan-findings/"+findings.Data[0].Id.String()+"/classify", &admin, map[string]any{"category_id": uuid.New()}, nil); code != 422 {
+		t.Errorf("classify with unknown category: %d, want 422", code)
+	}
+
+	if code, body := do("GET", "/admin/v1/cookie/domains/"+domain.Id.String()+"/scans", &admin, nil, nil); code != 200 || !strings.Contains(body, `"status":"done"`) {
+		t.Errorf("list scans: %d %s", code, body)
 	}
 }

@@ -23,6 +23,10 @@ var GlobalKinds = map[string]bool{
 	// audit/jobs.RetentionArgs: calls platform.drop_expired_audit_partitions(), which switches to each tenant's
 	// RLS setting itself to record the chain anchors before dropping whole expired months.
 	"audit.retention": true,
+	// cookie/service.ScheduleSweepArgs (CON-04): reads only platform.tenants and enqueues one
+	// cookie.scan_schedule_check per tenant. cookie.scan_schedule_check and cookie.scan themselves are
+	// tenant-scoped jobs and must NOT be added here — they need the normal per-tenant transaction.
+	"cookie.scan_schedule_sweep": true,
 }
 
 // WorkerOptions configures NewWorkerClient. Zero values take the documented defaults.

@@ -262,7 +262,7 @@ func run() error {
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
-	cookieSvc := &cookieservice.Service{Audit: auditSvc, Org: orgSvc}                                                        // CON-01: cookie consent banner
+	cookieSvc := &cookieservice.Service{Audit: auditSvc, Org: orgSvc, Notify: notifySvc, River: riverClient}                 // CON-01: cookie consent banner
 	riskSvc := riskservice.New()                                                                                             // ROPA-09's ม.37(1) controls catalog
 	riskSvc.Audit = auditSvc                                                                                                 // RRA-02: risk matrix CRUD audit
 	ropaTemplatesSvc := templatesservice.New()                                                                               // RTG-01: the platform's standard activity library (read-only)

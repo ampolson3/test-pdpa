@@ -7,8 +7,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
@@ -162,6 +165,51 @@ func (e CookieDomainStatus) Valid() bool {
 	case Pending:
 		return true
 	case Verified:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieScanStatus.
+const (
+	Done    CookieScanStatus = "done"
+	Failed  CookieScanStatus = "failed"
+	Queued  CookieScanStatus = "queued"
+	Running CookieScanStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the CookieScanStatus enum.
+func (e CookieScanStatus) Valid() bool {
+	switch e {
+	case Done:
+		return true
+	case Failed:
+		return true
+	case Queued:
+		return true
+	case Running:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieScanTrigger.
+const (
+	CookieScanTriggerManual   CookieScanTrigger = "manual"
+	CookieScanTriggerPublish  CookieScanTrigger = "publish"
+	CookieScanTriggerSchedule CookieScanTrigger = "schedule"
+)
+
+// Valid indicates whether the value is a known member of the CookieScanTrigger enum.
+func (e CookieScanTrigger) Valid() bool {
+	switch e {
+	case CookieScanTriggerManual:
+		return true
+	case CookieScanTriggerPublish:
+		return true
+	case CookieScanTriggerSchedule:
 		return true
 	default:
 		return false
@@ -498,6 +546,63 @@ func (e CookieCreateCookieParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for CookieListScansParamsAcceptLanguage.
+const (
+	CookieListScansParamsAcceptLanguageEn CookieListScansParamsAcceptLanguage = "en"
+	CookieListScansParamsAcceptLanguageTh CookieListScansParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the CookieListScansParamsAcceptLanguage enum.
+func (e CookieListScansParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case CookieListScansParamsAcceptLanguageEn:
+		return true
+	case CookieListScansParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieStartScanParamsAcceptLanguage.
+const (
+	CookieStartScanParamsAcceptLanguageEn CookieStartScanParamsAcceptLanguage = "en"
+	CookieStartScanParamsAcceptLanguageTh CookieStartScanParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the CookieStartScanParamsAcceptLanguage enum.
+func (e CookieStartScanParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case CookieStartScanParamsAcceptLanguageEn:
+		return true
+	case CookieStartScanParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieStartScanJSONBodyTrigger.
+const (
+	CookieStartScanJSONBodyTriggerManual   CookieStartScanJSONBodyTrigger = "manual"
+	CookieStartScanJSONBodyTriggerPublish  CookieStartScanJSONBodyTrigger = "publish"
+	CookieStartScanJSONBodyTriggerSchedule CookieStartScanJSONBodyTrigger = "schedule"
+)
+
+// Valid indicates whether the value is a known member of the CookieStartScanJSONBodyTrigger enum.
+func (e CookieStartScanJSONBodyTrigger) Valid() bool {
+	switch e {
+	case CookieStartScanJSONBodyTriggerManual:
+		return true
+	case CookieStartScanJSONBodyTriggerPublish:
+		return true
+	case CookieStartScanJSONBodyTriggerSchedule:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CookieListScriptRulesParamsAcceptLanguage.
 const (
 	CookieListScriptRulesParamsAcceptLanguageEn CookieListScriptRulesParamsAcceptLanguage = "en"
@@ -546,6 +651,60 @@ func (e CookieVerifyDomainParamsAcceptLanguage) Valid() bool {
 	case CookieVerifyDomainParamsAcceptLanguageEn:
 		return true
 	case CookieVerifyDomainParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieClassifyScanFindingParamsAcceptLanguage.
+const (
+	CookieClassifyScanFindingParamsAcceptLanguageEn CookieClassifyScanFindingParamsAcceptLanguage = "en"
+	CookieClassifyScanFindingParamsAcceptLanguageTh CookieClassifyScanFindingParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the CookieClassifyScanFindingParamsAcceptLanguage enum.
+func (e CookieClassifyScanFindingParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case CookieClassifyScanFindingParamsAcceptLanguageEn:
+		return true
+	case CookieClassifyScanFindingParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieGetScanParamsAcceptLanguage.
+const (
+	CookieGetScanParamsAcceptLanguageEn CookieGetScanParamsAcceptLanguage = "en"
+	CookieGetScanParamsAcceptLanguageTh CookieGetScanParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the CookieGetScanParamsAcceptLanguage enum.
+func (e CookieGetScanParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case CookieGetScanParamsAcceptLanguageEn:
+		return true
+	case CookieGetScanParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieListScanFindingsParamsAcceptLanguage.
+const (
+	CookieListScanFindingsParamsAcceptLanguageEn CookieListScanFindingsParamsAcceptLanguage = "en"
+	CookieListScanFindingsParamsAcceptLanguageTh CookieListScanFindingsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the CookieListScanFindingsParamsAcceptLanguage enum.
+func (e CookieListScanFindingsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case CookieListScanFindingsParamsAcceptLanguageEn:
+		return true
+	case CookieListScanFindingsParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -722,6 +881,53 @@ type CookieRegisterDomainInput struct {
 
 	// LegalEntityId UUIDv7 generated by the API
 	LegalEntityId Uuid `json:"legal_entity_id"`
+}
+
+// CookieScan One round of CON-04's own automated scanner against a domain's live site.
+type CookieScan struct {
+	CookiesFound *int `json:"cookies_found,omitempty"`
+
+	// DomainId UUIDv7 generated by the API
+	DomainId   Uuid       `json:"domain_id"`
+	FinishedAt *time.Time `json:"finished_at,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id           Uuid              `json:"id"`
+	NewCookies   *int              `json:"new_cookies,omitempty"`
+	PagesScanned *int              `json:"pages_scanned,omitempty"`
+	RowVersion   int               `json:"row_version"`
+	StartedAt    *time.Time        `json:"started_at,omitempty"`
+	Status       CookieScanStatus  `json:"status"`
+	Trigger      CookieScanTrigger `json:"trigger"`
+}
+
+// CookieScanStatus defines model for CookieScan.Status.
+type CookieScanStatus string
+
+// CookieScanTrigger defines model for CookieScan.Trigger.
+type CookieScanTrigger string
+
+// CookieScanFinding One cookie observed on one page during a scan round.
+type CookieScanFinding struct {
+	CookieDomain string `json:"cookie_domain"`
+	CookieName   string `json:"cookie_name"`
+
+	// Id UUIDv7 generated by the API
+	Id Uuid `json:"id"`
+
+	// MatchedCookieId The cookie.cookies row this finding resolved to (always set — RunScan creates one for any genuinely new name)
+	MatchedCookieId *Uuid  `json:"matched_cookie_id,omitempty"`
+	PageUrl         string `json:"page_url"`
+	RowVersion      int    `json:"row_version"`
+
+	// ScanId UUIDv7 generated by the API
+	ScanId Uuid `json:"scan_id"`
+
+	// SetBeforeConsent Always true today — the scanner only ever crawls fresh, with no consent decision recorded (the acceptance criterion's own "สแกนก่อนขอความยินยอม")
+	SetBeforeConsent bool `json:"set_before_consent"`
+
+	// SuggestedCategory cookie.cookie_kb's own best-guess category code, when this cookie name matched a known tracker
+	SuggestedCategory *string `json:"suggested_category,omitempty"`
 }
 
 // CookieScriptRule defines model for CookieScriptRule.
@@ -936,6 +1142,35 @@ type CookieCreateCookieParams struct {
 // CookieCreateCookieParamsAcceptLanguage defines parameters for CookieCreateCookie.
 type CookieCreateCookieParamsAcceptLanguage string
 
+// CookieListScansParams defines parameters for CookieListScans.
+type CookieListScansParams struct {
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int    `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *CookieListScansParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// CookieListScansParamsAcceptLanguage defines parameters for CookieListScans.
+type CookieListScansParamsAcceptLanguage string
+
+// CookieStartScanJSONBody defines parameters for CookieStartScan.
+type CookieStartScanJSONBody struct {
+	Trigger *CookieStartScanJSONBodyTrigger `json:"trigger,omitempty"`
+}
+
+// CookieStartScanParams defines parameters for CookieStartScan.
+type CookieStartScanParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *CookieStartScanParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// CookieStartScanParamsAcceptLanguage defines parameters for CookieStartScan.
+type CookieStartScanParamsAcceptLanguage string
+
+// CookieStartScanJSONBodyTrigger defines parameters for CookieStartScan.
+type CookieStartScanJSONBodyTrigger string
+
 // CookieListScriptRulesParams defines parameters for CookieListScriptRules.
 type CookieListScriptRulesParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -966,6 +1201,42 @@ type CookieVerifyDomainParams struct {
 // CookieVerifyDomainParamsAcceptLanguage defines parameters for CookieVerifyDomain.
 type CookieVerifyDomainParamsAcceptLanguage string
 
+// CookieClassifyScanFindingJSONBody defines parameters for CookieClassifyScanFinding.
+type CookieClassifyScanFindingJSONBody struct {
+	// CategoryId UUIDv7 generated by the API
+	CategoryId Uuid `json:"category_id"`
+}
+
+// CookieClassifyScanFindingParams defines parameters for CookieClassifyScanFinding.
+type CookieClassifyScanFindingParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *CookieClassifyScanFindingParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// CookieClassifyScanFindingParamsAcceptLanguage defines parameters for CookieClassifyScanFinding.
+type CookieClassifyScanFindingParamsAcceptLanguage string
+
+// CookieGetScanParams defines parameters for CookieGetScan.
+type CookieGetScanParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *CookieGetScanParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// CookieGetScanParamsAcceptLanguage defines parameters for CookieGetScan.
+type CookieGetScanParamsAcceptLanguage string
+
+// CookieListScanFindingsParams defines parameters for CookieListScanFindings.
+type CookieListScanFindingsParams struct {
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *CookieListScanFindingsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// CookieListScanFindingsParamsAcceptLanguage defines parameters for CookieListScanFindings.
+type CookieListScanFindingsParamsAcceptLanguage string
+
 // CookieDeleteScriptRuleParams defines parameters for CookieDeleteScriptRule.
 type CookieDeleteScriptRuleParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -990,8 +1261,14 @@ type CookieCreateBannerConfigJSONRequestBody = CookieBannerConfigInput
 // CookieCreateCookieJSONRequestBody defines body for CookieCreateCookie for application/json ContentType.
 type CookieCreateCookieJSONRequestBody = CookieCreateCookieInput
 
+// CookieStartScanJSONRequestBody defines body for CookieStartScan for application/json ContentType.
+type CookieStartScanJSONRequestBody CookieStartScanJSONBody
+
 // CookieCreateScriptRuleJSONRequestBody defines body for CookieCreateScriptRule for application/json ContentType.
 type CookieCreateScriptRuleJSONRequestBody = CookieCreateScriptRuleInput
+
+// CookieClassifyScanFindingJSONRequestBody defines body for CookieClassifyScanFinding for application/json ContentType.
+type CookieClassifyScanFindingJSONRequestBody CookieClassifyScanFindingJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -1037,6 +1314,12 @@ type ServerInterface interface {
 	// CookieCreateCookie Catalogue a cookie under a domain and category (CON-02)
 	// (POST /admin/v1/cookie/domains/{id}/cookies)
 	CookieCreateCookie(w http.ResponseWriter, r *http.Request, id Uuid, params CookieCreateCookieParams)
+	// CookieListScans Automated cookie-scan rounds for a domain, newest first (CON-04)
+	// (GET /admin/v1/cookie/domains/{id}/scans)
+	CookieListScans(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListScansParams)
+	// CookieStartScan Start a new scan round against a domain's own live site (CON-04)
+	// (POST /admin/v1/cookie/domains/{id}/scans)
+	CookieStartScan(w http.ResponseWriter, r *http.Request, id Uuid, params CookieStartScanParams)
 	// CookieListScriptRules Script rules declaring which category a script belongs to (CON-02)
 	// (GET /admin/v1/cookie/domains/{id}/script-rules)
 	CookieListScriptRules(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListScriptRulesParams)
@@ -1046,6 +1329,15 @@ type ServerInterface interface {
 	// CookieVerifyDomain Confirm ownership of a domain and mark it active (CON-01)
 	// (POST /admin/v1/cookie/domains/{id}/verify)
 	CookieVerifyDomain(w http.ResponseWriter, r *http.Request, id Uuid, params CookieVerifyDomainParams)
+	// CookieClassifyScanFinding Correct or confirm an unknown scanned cookie's category (CON-04)
+	// (POST /admin/v1/cookie/scan-findings/{id}/classify)
+	CookieClassifyScanFinding(w http.ResponseWriter, r *http.Request, id Uuid, params CookieClassifyScanFindingParams)
+	// CookieGetScan One scan round's own status/counters (CON-04)
+	// (GET /admin/v1/cookie/scans/{id})
+	CookieGetScan(w http.ResponseWriter, r *http.Request, id Uuid, params CookieGetScanParams)
+	// CookieListScanFindings Every cookie this scan round observed, one row per page it was seen on (CON-04)
+	// (GET /admin/v1/cookie/scans/{id}/findings)
+	CookieListScanFindings(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListScanFindingsParams)
 	// CookieDeleteScriptRule Remove a script rule (CON-02)
 	// (DELETE /admin/v1/cookie/script-rules/{id})
 	CookieDeleteScriptRule(w http.ResponseWriter, r *http.Request, id Uuid, params CookieDeleteScriptRuleParams)
@@ -1139,6 +1431,18 @@ func (_ Unimplemented) CookieCreateCookie(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// CookieListScans Automated cookie-scan rounds for a domain, newest first (CON-04)
+// (GET /admin/v1/cookie/domains/{id}/scans)
+func (_ Unimplemented) CookieListScans(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListScansParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CookieStartScan Start a new scan round against a domain's own live site (CON-04)
+// (POST /admin/v1/cookie/domains/{id}/scans)
+func (_ Unimplemented) CookieStartScan(w http.ResponseWriter, r *http.Request, id Uuid, params CookieStartScanParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // CookieListScriptRules Script rules declaring which category a script belongs to (CON-02)
 // (GET /admin/v1/cookie/domains/{id}/script-rules)
 func (_ Unimplemented) CookieListScriptRules(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListScriptRulesParams) {
@@ -1154,6 +1458,24 @@ func (_ Unimplemented) CookieCreateScriptRule(w http.ResponseWriter, r *http.Req
 // CookieVerifyDomain Confirm ownership of a domain and mark it active (CON-01)
 // (POST /admin/v1/cookie/domains/{id}/verify)
 func (_ Unimplemented) CookieVerifyDomain(w http.ResponseWriter, r *http.Request, id Uuid, params CookieVerifyDomainParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CookieClassifyScanFinding Correct or confirm an unknown scanned cookie's category (CON-04)
+// (POST /admin/v1/cookie/scan-findings/{id}/classify)
+func (_ Unimplemented) CookieClassifyScanFinding(w http.ResponseWriter, r *http.Request, id Uuid, params CookieClassifyScanFindingParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CookieGetScan One scan round's own status/counters (CON-04)
+// (GET /admin/v1/cookie/scans/{id})
+func (_ Unimplemented) CookieGetScan(w http.ResponseWriter, r *http.Request, id Uuid, params CookieGetScanParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CookieListScanFindings Every cookie this scan round observed, one row per page it was seen on (CON-04)
+// (GET /admin/v1/cookie/scans/{id}/findings)
+func (_ Unimplemented) CookieListScanFindings(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListScanFindingsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1882,6 +2204,132 @@ func (siw *ServerInterfaceWrapper) CookieCreateCookie(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// CookieListScans operation middleware
+func (siw *ServerInterfaceWrapper) CookieListScans(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CookieListScansParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage CookieListScansParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CookieListScans(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CookieStartScan operation middleware
+func (siw *ServerInterfaceWrapper) CookieStartScan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CookieStartScanParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage CookieStartScanParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CookieStartScan(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CookieListScriptRules operation middleware
 func (siw *ServerInterfaceWrapper) CookieListScriptRules(w http.ResponseWriter, r *http.Request) {
 
@@ -2046,6 +2494,182 @@ func (siw *ServerInterfaceWrapper) CookieVerifyDomain(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CookieVerifyDomain(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CookieClassifyScanFinding operation middleware
+func (siw *ServerInterfaceWrapper) CookieClassifyScanFinding(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CookieClassifyScanFindingParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage CookieClassifyScanFindingParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CookieClassifyScanFinding(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CookieGetScan operation middleware
+func (siw *ServerInterfaceWrapper) CookieGetScan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CookieGetScanParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage CookieGetScanParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CookieGetScan(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CookieListScanFindings operation middleware
+func (siw *ServerInterfaceWrapper) CookieListScanFindings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CookieListScanFindingsParams
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "offset"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage CookieListScanFindingsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CookieListScanFindings(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2271,6 +2895,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/admin/v1/cookie/script-rules/{id}", wrapper.CookieDeleteScriptRule)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/cookie/domains/{id}/scans", wrapper.CookieListScans)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/cookie/domains/{id}/scans", wrapper.CookieStartScan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/cookie/scans/{id}", wrapper.CookieGetScan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/cookie/scans/{id}/findings", wrapper.CookieListScanFindings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/cookie/scan-findings/{id}/classify", wrapper.CookieClassifyScanFinding)
 	})
 
 	return r
@@ -3457,6 +4096,184 @@ func (response CookieCreateCookie422ApplicationProblemPlusJSONResponse) VisitCoo
 	return err
 }
 
+type CookieListScansRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params CookieListScansParams
+}
+
+type CookieListScansResponseObject interface {
+	VisitCookieListScansResponse(w http.ResponseWriter) error
+}
+
+type CookieListScans200JSONResponse struct {
+	Data       []CookieScan `json:"data"`
+	NextCursor *string      `json:"next_cursor,omitempty"`
+}
+
+func (response CookieListScans200JSONResponse) VisitCookieListScansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListScans401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CookieListScans401ApplicationProblemPlusJSONResponse) VisitCookieListScansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListScans403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CookieListScans403ApplicationProblemPlusJSONResponse) VisitCookieListScansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListScans404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CookieListScans404ApplicationProblemPlusJSONResponse) VisitCookieListScansResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieStartScanRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params CookieStartScanParams
+	Body   *CookieStartScanJSONRequestBody
+}
+
+type CookieStartScanResponseObject interface {
+	VisitCookieStartScanResponse(w http.ResponseWriter) error
+}
+
+type CookieStartScan201JSONResponse CookieScan
+
+func (response CookieStartScan201JSONResponse) VisitCookieStartScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieStartScan400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response CookieStartScan400ApplicationProblemPlusJSONResponse) VisitCookieStartScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieStartScan401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CookieStartScan401ApplicationProblemPlusJSONResponse) VisitCookieStartScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieStartScan403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CookieStartScan403ApplicationProblemPlusJSONResponse) VisitCookieStartScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieStartScan404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CookieStartScan404ApplicationProblemPlusJSONResponse) VisitCookieStartScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieStartScan422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response CookieStartScan422ApplicationProblemPlusJSONResponse) VisitCookieStartScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CookieListScriptRulesRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params CookieListScriptRulesParams
@@ -3737,6 +4554,254 @@ func (response CookieVerifyDomain428ApplicationProblemPlusJSONResponse) VisitCoo
 	return err
 }
 
+type CookieClassifyScanFindingRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params CookieClassifyScanFindingParams
+	Body   *CookieClassifyScanFindingJSONRequestBody
+}
+
+type CookieClassifyScanFindingResponseObject interface {
+	VisitCookieClassifyScanFindingResponse(w http.ResponseWriter) error
+}
+
+type CookieClassifyScanFinding200JSONResponse CookieScanFinding
+
+func (response CookieClassifyScanFinding200JSONResponse) VisitCookieClassifyScanFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieClassifyScanFinding400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response CookieClassifyScanFinding400ApplicationProblemPlusJSONResponse) VisitCookieClassifyScanFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieClassifyScanFinding401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CookieClassifyScanFinding401ApplicationProblemPlusJSONResponse) VisitCookieClassifyScanFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieClassifyScanFinding403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CookieClassifyScanFinding403ApplicationProblemPlusJSONResponse) VisitCookieClassifyScanFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieClassifyScanFinding404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CookieClassifyScanFinding404ApplicationProblemPlusJSONResponse) VisitCookieClassifyScanFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieClassifyScanFinding422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response CookieClassifyScanFinding422ApplicationProblemPlusJSONResponse) VisitCookieClassifyScanFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieGetScanRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params CookieGetScanParams
+}
+
+type CookieGetScanResponseObject interface {
+	VisitCookieGetScanResponse(w http.ResponseWriter) error
+}
+
+type CookieGetScan200JSONResponse CookieScan
+
+func (response CookieGetScan200JSONResponse) VisitCookieGetScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieGetScan401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CookieGetScan401ApplicationProblemPlusJSONResponse) VisitCookieGetScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieGetScan403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CookieGetScan403ApplicationProblemPlusJSONResponse) VisitCookieGetScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieGetScan404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CookieGetScan404ApplicationProblemPlusJSONResponse) VisitCookieGetScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListScanFindingsRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params CookieListScanFindingsParams
+}
+
+type CookieListScanFindingsResponseObject interface {
+	VisitCookieListScanFindingsResponse(w http.ResponseWriter) error
+}
+
+type CookieListScanFindings200JSONResponse struct {
+	Data []CookieScanFinding `json:"data"`
+}
+
+func (response CookieListScanFindings200JSONResponse) VisitCookieListScanFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListScanFindings401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CookieListScanFindings401ApplicationProblemPlusJSONResponse) VisitCookieListScanFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListScanFindings403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CookieListScanFindings403ApplicationProblemPlusJSONResponse) VisitCookieListScanFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListScanFindings404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CookieListScanFindings404ApplicationProblemPlusJSONResponse) VisitCookieListScanFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CookieDeleteScriptRuleRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params CookieDeleteScriptRuleParams
@@ -3846,6 +4911,12 @@ type StrictServerInterface interface {
 	// CookieCreateCookie Catalogue a cookie under a domain and category (CON-02)
 	// (POST /admin/v1/cookie/domains/{id}/cookies)
 	CookieCreateCookie(ctx context.Context, request CookieCreateCookieRequestObject) (CookieCreateCookieResponseObject, error)
+	// CookieListScans Automated cookie-scan rounds for a domain, newest first (CON-04)
+	// (GET /admin/v1/cookie/domains/{id}/scans)
+	CookieListScans(ctx context.Context, request CookieListScansRequestObject) (CookieListScansResponseObject, error)
+	// CookieStartScan Start a new scan round against a domain's own live site (CON-04)
+	// (POST /admin/v1/cookie/domains/{id}/scans)
+	CookieStartScan(ctx context.Context, request CookieStartScanRequestObject) (CookieStartScanResponseObject, error)
 	// CookieListScriptRules Script rules declaring which category a script belongs to (CON-02)
 	// (GET /admin/v1/cookie/domains/{id}/script-rules)
 	CookieListScriptRules(ctx context.Context, request CookieListScriptRulesRequestObject) (CookieListScriptRulesResponseObject, error)
@@ -3855,6 +4926,15 @@ type StrictServerInterface interface {
 	// CookieVerifyDomain Confirm ownership of a domain and mark it active (CON-01)
 	// (POST /admin/v1/cookie/domains/{id}/verify)
 	CookieVerifyDomain(ctx context.Context, request CookieVerifyDomainRequestObject) (CookieVerifyDomainResponseObject, error)
+	// CookieClassifyScanFinding Correct or confirm an unknown scanned cookie's category (CON-04)
+	// (POST /admin/v1/cookie/scan-findings/{id}/classify)
+	CookieClassifyScanFinding(ctx context.Context, request CookieClassifyScanFindingRequestObject) (CookieClassifyScanFindingResponseObject, error)
+	// CookieGetScan One scan round's own status/counters (CON-04)
+	// (GET /admin/v1/cookie/scans/{id})
+	CookieGetScan(ctx context.Context, request CookieGetScanRequestObject) (CookieGetScanResponseObject, error)
+	// CookieListScanFindings Every cookie this scan round observed, one row per page it was seen on (CON-04)
+	// (GET /admin/v1/cookie/scans/{id}/findings)
+	CookieListScanFindings(ctx context.Context, request CookieListScanFindingsRequestObject) (CookieListScanFindingsResponseObject, error)
 	// CookieDeleteScriptRule Remove a script rule (CON-02)
 	// (DELETE /admin/v1/cookie/script-rules/{id})
 	CookieDeleteScriptRule(ctx context.Context, request CookieDeleteScriptRuleRequestObject) (CookieDeleteScriptRuleResponseObject, error)
@@ -4308,6 +5388,70 @@ func (sh *strictHandler) CookieCreateCookie(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// CookieListScans operation middleware
+func (sh *strictHandler) CookieListScans(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListScansParams) {
+	var request CookieListScansRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CookieListScans(ctx, request.(CookieListScansRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CookieListScans")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CookieListScansResponseObject); ok {
+		if err := validResponse.VisitCookieListScansResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CookieStartScan operation middleware
+func (sh *strictHandler) CookieStartScan(w http.ResponseWriter, r *http.Request, id Uuid, params CookieStartScanParams) {
+	var request CookieStartScanRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body CookieStartScanJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CookieStartScan(ctx, request.(CookieStartScanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CookieStartScan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CookieStartScanResponseObject); ok {
+		if err := validResponse.VisitCookieStartScanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CookieListScriptRules operation middleware
 func (sh *strictHandler) CookieListScriptRules(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListScriptRulesParams) {
 	var request CookieListScriptRulesRequestObject
@@ -4389,6 +5533,94 @@ func (sh *strictHandler) CookieVerifyDomain(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CookieVerifyDomainResponseObject); ok {
 		if err := validResponse.VisitCookieVerifyDomainResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CookieClassifyScanFinding operation middleware
+func (sh *strictHandler) CookieClassifyScanFinding(w http.ResponseWriter, r *http.Request, id Uuid, params CookieClassifyScanFindingParams) {
+	var request CookieClassifyScanFindingRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body CookieClassifyScanFindingJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CookieClassifyScanFinding(ctx, request.(CookieClassifyScanFindingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CookieClassifyScanFinding")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CookieClassifyScanFindingResponseObject); ok {
+		if err := validResponse.VisitCookieClassifyScanFindingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CookieGetScan operation middleware
+func (sh *strictHandler) CookieGetScan(w http.ResponseWriter, r *http.Request, id Uuid, params CookieGetScanParams) {
+	var request CookieGetScanRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CookieGetScan(ctx, request.(CookieGetScanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CookieGetScan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CookieGetScanResponseObject); ok {
+		if err := validResponse.VisitCookieGetScanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CookieListScanFindings operation middleware
+func (sh *strictHandler) CookieListScanFindings(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListScanFindingsParams) {
+	var request CookieListScanFindingsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CookieListScanFindings(ctx, request.(CookieListScanFindingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CookieListScanFindings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CookieListScanFindingsResponseObject); ok {
+		if err := validResponse.VisitCookieListScanFindingsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

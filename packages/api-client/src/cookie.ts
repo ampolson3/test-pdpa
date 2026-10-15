@@ -10,6 +10,8 @@ export type CookieCookie = components["schemas"]["CookieCookie"];
 export type CookieCreateCookieInput = components["schemas"]["CookieCreateCookieInput"];
 export type CookieScriptRule = components["schemas"]["CookieScriptRule"];
 export type CookieCreateScriptRuleInput = components["schemas"]["CookieCreateScriptRuleInput"];
+export type CookieScan = components["schemas"]["CookieScan"];
+export type CookieScanFinding = components["schemas"]["CookieScanFinding"];
 
 const domainsKey = ["cookie", "domains"] as const;
 const categoriesKey = ["cookie", "categories"] as const;
@@ -226,4 +228,67 @@ export function useCookieScriptRuleMutations(client: ApiClient, domainId: string
       onSuccess: refresh,
     }),
   };
+}
+
+/** GET /admin/v1/cookie/domains/{id}/scans — scan rounds, newest first (CON-04). */
+export function useCookieScans(client: ApiClient, domainId: string | undefined) {
+  return useQuery({
+    queryKey: ["cookie", "scans", domainId],
+    enabled: !!domainId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/cookie/domains/{id}/scans", { params: { path: { id: domainId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+    // A running scan has no natural push notification yet — poll while one is in flight.
+    refetchInterval: (query) => {
+      const list = query.state.data as CookieScan[] | undefined;
+      return list?.some((s) => s.status === "queued" || s.status === "running") ? 3000 : false;
+    },
+  });
+}
+
+/** Start a new scan round against a domain's own live site (CON-04). */
+export function useStartCookieScan(client: ApiClient, domainId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await client.POST("/admin/v1/cookie/domains/{id}/scans", {
+        params: { path: { id: domainId! } },
+        body: {},
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cookie", "scans", domainId] }),
+  });
+}
+
+/** GET /admin/v1/cookie/scans/{id}/findings — every cookie this scan round observed (CON-04). */
+export function useCookieScanFindings(client: ApiClient, scanId: string | undefined) {
+  return useQuery({
+    queryKey: ["cookie", "scan-findings", scanId],
+    enabled: !!scanId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/cookie/scans/{id}/findings", { params: { path: { id: scanId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** Correct or confirm an unknown scanned cookie's category (CON-04). */
+export function useClassifyCookieScanFinding(client: ApiClient, scanId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { findingId: string; categoryId: string }) => {
+      const { data, error } = await client.POST("/admin/v1/cookie/scan-findings/{id}/classify", {
+        params: { path: { id: v.findingId } },
+        body: { category_id: v.categoryId },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["cookie", "scan-findings", scanId] }),
+  });
 }

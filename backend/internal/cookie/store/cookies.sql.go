@@ -24,6 +24,59 @@ func (q *Queries) DeleteCookie(ctx context.Context, id uuid.UUID) (int64, error)
 	return result.RowsAffected(), nil
 }
 
+const getCookieByDomainAndName = `-- name: GetCookieByDomainAndName :one
+
+SELECT id, domain_id, name, provider_domain, category_id, storage_type, duration, descriptions, is_active, source, kb_id, first_seen_scan_id, row_version, updated_at
+FROM cookie.cookies WHERE domain_id = $1 AND name = $2 LIMIT 1
+`
+
+type GetCookieByDomainAndNameParams struct {
+	DomainID uuid.UUID `db:"domain_id" json:"domain_id"`
+	Name     string    `db:"name" json:"name"`
+}
+
+type GetCookieByDomainAndNameRow struct {
+	ID              uuid.UUID          `db:"id" json:"id"`
+	DomainID        uuid.UUID          `db:"domain_id" json:"domain_id"`
+	Name            string             `db:"name" json:"name"`
+	ProviderDomain  string             `db:"provider_domain" json:"provider_domain"`
+	CategoryID      pgtype.UUID        `db:"category_id" json:"category_id"`
+	StorageType     string             `db:"storage_type" json:"storage_type"`
+	Duration        *string            `db:"duration" json:"duration"`
+	Descriptions    []byte             `db:"descriptions" json:"descriptions"`
+	IsActive        bool               `db:"is_active" json:"is_active"`
+	Source          string             `db:"source" json:"source"`
+	KbID            pgtype.UUID        `db:"kb_id" json:"kb_id"`
+	FirstSeenScanID pgtype.UUID        `db:"first_seen_scan_id" json:"first_seen_scan_id"`
+	RowVersion      int32              `db:"row_version" json:"row_version"`
+	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// CON-04: the scanner's own write path — source = 'scan', first_seen_scan_id records which round first
+// found it. GetCookieByDomainAndName is the idempotency check (no unique constraint on the table itself;
+// this feature's one caller, running inside a single scan's own job, is the only writer that could race).
+func (q *Queries) GetCookieByDomainAndName(ctx context.Context, arg GetCookieByDomainAndNameParams) (GetCookieByDomainAndNameRow, error) {
+	row := q.db.QueryRow(ctx, getCookieByDomainAndName, arg.DomainID, arg.Name)
+	var i GetCookieByDomainAndNameRow
+	err := row.Scan(
+		&i.ID,
+		&i.DomainID,
+		&i.Name,
+		&i.ProviderDomain,
+		&i.CategoryID,
+		&i.StorageType,
+		&i.Duration,
+		&i.Descriptions,
+		&i.IsActive,
+		&i.Source,
+		&i.KbID,
+		&i.FirstSeenScanID,
+		&i.RowVersion,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const insertCookie = `-- name: InsertCookie :one
 
 INSERT INTO cookie.cookies (id, tenant_id, domain_id, name, provider_domain, category_id, storage_type, duration, descriptions, source, created_by, updated_by)
@@ -88,6 +141,74 @@ func (q *Queries) InsertCookie(ctx context.Context, arg InsertCookieParams) (Ins
 	return i, err
 }
 
+const insertCookieFromScan = `-- name: InsertCookieFromScan :one
+INSERT INTO cookie.cookies (id, tenant_id, domain_id, name, provider_domain, category_id, storage_type, source, kb_id, first_seen_scan_id, created_by, updated_by)
+VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, 'http_cookie', 'scan', $6, $7,
+        NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
+RETURNING id, domain_id, name, provider_domain, category_id, storage_type, duration, descriptions, is_active, source, kb_id, first_seen_scan_id, row_version, updated_at
+`
+
+type InsertCookieFromScanParams struct {
+	ID              uuid.UUID   `db:"id" json:"id"`
+	DomainID        uuid.UUID   `db:"domain_id" json:"domain_id"`
+	Name            string      `db:"name" json:"name"`
+	ProviderDomain  string      `db:"provider_domain" json:"provider_domain"`
+	CategoryID      pgtype.UUID `db:"category_id" json:"category_id"`
+	KbID            pgtype.UUID `db:"kb_id" json:"kb_id"`
+	FirstSeenScanID pgtype.UUID `db:"first_seen_scan_id" json:"first_seen_scan_id"`
+}
+
+type InsertCookieFromScanRow struct {
+	ID              uuid.UUID          `db:"id" json:"id"`
+	DomainID        uuid.UUID          `db:"domain_id" json:"domain_id"`
+	Name            string             `db:"name" json:"name"`
+	ProviderDomain  string             `db:"provider_domain" json:"provider_domain"`
+	CategoryID      pgtype.UUID        `db:"category_id" json:"category_id"`
+	StorageType     string             `db:"storage_type" json:"storage_type"`
+	Duration        *string            `db:"duration" json:"duration"`
+	Descriptions    []byte             `db:"descriptions" json:"descriptions"`
+	IsActive        bool               `db:"is_active" json:"is_active"`
+	Source          string             `db:"source" json:"source"`
+	KbID            pgtype.UUID        `db:"kb_id" json:"kb_id"`
+	FirstSeenScanID pgtype.UUID        `db:"first_seen_scan_id" json:"first_seen_scan_id"`
+	RowVersion      int32              `db:"row_version" json:"row_version"`
+	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// storage_type is always 'http_cookie' here: the scanner observes cookies only through the browser's own
+// cookie jar (CDP Storage.getCookies), which doesn't distinguish a header-set cookie from a JS-set one —
+// both land in the same jar. Distinguishing localStorage/sessionStorage findings would need a different
+// column this table doesn't have yet (CON.md's own implementation note); add it once a screen needs it.
+func (q *Queries) InsertCookieFromScan(ctx context.Context, arg InsertCookieFromScanParams) (InsertCookieFromScanRow, error) {
+	row := q.db.QueryRow(ctx, insertCookieFromScan,
+		arg.ID,
+		arg.DomainID,
+		arg.Name,
+		arg.ProviderDomain,
+		arg.CategoryID,
+		arg.KbID,
+		arg.FirstSeenScanID,
+	)
+	var i InsertCookieFromScanRow
+	err := row.Scan(
+		&i.ID,
+		&i.DomainID,
+		&i.Name,
+		&i.ProviderDomain,
+		&i.CategoryID,
+		&i.StorageType,
+		&i.Duration,
+		&i.Descriptions,
+		&i.IsActive,
+		&i.Source,
+		&i.KbID,
+		&i.FirstSeenScanID,
+		&i.RowVersion,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listCookiesByDomain = `-- name: ListCookiesByDomain :many
 SELECT id, domain_id, name, provider_domain, category_id, storage_type, duration, descriptions, is_active, row_version, updated_at
 FROM cookie.cookies
@@ -139,4 +260,22 @@ func (q *Queries) ListCookiesByDomain(ctx context.Context, domainID uuid.UUID) (
 		return nil, err
 	}
 	return items, nil
+}
+
+const setCookieCategory = `-- name: SetCookieCategory :execrows
+UPDATE cookie.cookies SET category_id = $2, row_version = row_version + 1, updated_at = now()
+WHERE id = $1
+`
+
+type SetCookieCategoryParams struct {
+	ID         uuid.UUID   `db:"id" json:"id"`
+	CategoryID pgtype.UUID `db:"category_id" json:"category_id"`
+}
+
+func (q *Queries) SetCookieCategory(ctx context.Context, arg SetCookieCategoryParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setCookieCategory, arg.ID, arg.CategoryID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

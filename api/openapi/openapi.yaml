@@ -14363,6 +14363,227 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/cookie/domains/{id}/scans:
+    get:
+      operationId: cookieListScans
+      tags: [cookie]
+      summary: Automated cookie-scan rounds for a domain, newest first (CON-04)
+      x-permission: cookie.scan.read
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CookieScan'
+                  next_cursor:
+                    type: [string, 'null']
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: cookieStartScan
+      tags: [cookie]
+      summary: Start a new scan round against a domain's own live site (CON-04)
+      description: |
+        Always scans fresh and pre-consent — the crawl runs with no visitor decision recorded, matching
+        the acceptance criterion's own "สแกนก่อนขอความยินยอม". Running (status=queued/running) is enqueued
+        to cookie.scan; cmd/worker's own ScanWorker (the only process with a real cookiescan.Crawler) does
+        the actual crawl.
+      x-permission: cookie.scan.create
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                trigger:
+                  type: string
+                  enum: [manual, schedule, publish]
+                  default: manual
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieScan'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/cookie/scans/{id}:
+    get:
+      operationId: cookieGetScan
+      tags: [cookie]
+      summary: One scan round's own status/counters (CON-04)
+      x-permission: cookie.scan.read
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieScan'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/cookie/scans/{id}/findings:
+    get:
+      operationId: cookieListScanFindings
+      tags: [cookie]
+      summary: Every cookie this scan round observed, one row per page it was seen on (CON-04)
+      x-permission: cookie.scan.read
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CookieScanFinding'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/cookie/scan-findings/{id}/classify:
+    post:
+      operationId: cookieClassifyScanFinding
+      tags: [cookie]
+      summary: Correct or confirm an unknown scanned cookie's category (CON-04)
+      x-permission: cookie.scan.update
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category_id]
+              additionalProperties: false
+              properties:
+                category_id: {$ref: '#/components/schemas/Uuid'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieScanFinding'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /public/v1/cookie-banners/{key}:
     get:
       operationId: cookieGetPublicBanner
@@ -17515,6 +17736,50 @@ components:
           type: string
           enum: [block, allow]
           default: block
+    CookieScan:
+      description: One round of CON-04's own automated scanner against a domain's live site.
+      type: object
+      required: [id, domain_id, trigger, status, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        domain_id: {$ref: '#/components/schemas/Uuid'}
+        trigger:
+          type: string
+          enum: [manual, schedule, publish]
+        status:
+          type: string
+          enum: [queued, running, done, failed]
+        started_at:
+          oneOf: [{type: string, format: date-time}, {type: 'null'}]
+        finished_at:
+          oneOf: [{type: string, format: date-time}, {type: 'null'}]
+        pages_scanned:
+          oneOf: [{type: integer}, {type: 'null'}]
+        cookies_found:
+          oneOf: [{type: integer}, {type: 'null'}]
+        new_cookies:
+          oneOf: [{type: integer}, {type: 'null'}]
+        row_version: {type: integer}
+    CookieScanFinding:
+      description: One cookie observed on one page during a scan round.
+      type: object
+      required: [id, scan_id, cookie_name, cookie_domain, page_url, set_before_consent, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        scan_id: {$ref: '#/components/schemas/Uuid'}
+        cookie_name: {type: string}
+        cookie_domain: {type: string}
+        page_url: {type: string}
+        set_before_consent:
+          description: Always true today — the scanner only ever crawls fresh, with no consent decision recorded (the acceptance criterion's own "สแกนก่อนขอความยินยอม")
+          type: boolean
+        suggested_category:
+          description: cookie.cookie_kb's own best-guess category code, when this cookie name matched a known tracker
+          oneOf: [{type: string}, {type: 'null'}]
+        matched_cookie_id:
+          description: The cookie.cookies row this finding resolved to (always set — RunScan creates one for any genuinely new name)
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        row_version: {type: integer}
     CookieSubmitConsentInput:
       type: object
       required: [domain_id, visitor_id, banner_config_id, action]

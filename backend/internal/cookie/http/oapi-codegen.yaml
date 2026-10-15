@@ -23,3 +23,8 @@ output-options:
     - cookieListScriptRules
     - cookieCreateScriptRule
     - cookieDeleteScriptRule
+    - cookieListScans
+    - cookieStartScan
+    - cookieGetScan
+    - cookieListScanFindings
+    - cookieClassifyScanFinding

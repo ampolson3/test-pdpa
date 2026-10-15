@@ -17,6 +17,10 @@ import {
   useCookieCookieMutations,
   useCookieScriptRules,
   useCookieScriptRuleMutations,
+  useCookieScans,
+  useStartCookieScan,
+  useCookieScanFindings,
+  useClassifyCookieScanFinding,
   type CookieDomain,
   type CookieBannerConfig,
   type CookieBannerTexts,
@@ -43,6 +47,9 @@ export function CookieBannersContent({ apiBase }: { apiBase: string }) {
   const canUpdate = usePermission("cookie.banner.update");
   const canPublish = usePermission("cookie.banner.publish");
   const canDelete = usePermission("cookie.banner.delete");
+  const canScanRead = usePermission("cookie.scan.read");
+  const canScanCreate = usePermission("cookie.scan.create");
+  const canScanUpdate = usePermission("cookie.scan.update");
   const client = useMemo(() => createApiClient("/api/bff"), []);
 
   const legalEntities = useLegalEntities(client);
@@ -197,6 +204,9 @@ export function CookieBannersContent({ apiBase }: { apiBase: string }) {
           canUpdate={canUpdate}
           canPublish={canPublish}
           canDelete={canDelete}
+          canScanRead={canScanRead}
+          canScanCreate={canScanCreate}
+          canScanUpdate={canScanUpdate}
           onClose={() => setSelectedDomainId("")}
         />
       )}
@@ -204,7 +214,7 @@ export function CookieBannersContent({ apiBase }: { apiBase: string }) {
   );
 }
 
-function BannerSection({ client, domain, categories, apiBase, canCreate, canUpdate, canPublish, canDelete, onClose }: {
+function BannerSection({ client, domain, categories, apiBase, canCreate, canUpdate, canPublish, canDelete, canScanRead, canScanCreate, canScanUpdate, onClose }: {
   client: ReturnType<typeof createApiClient>;
   domain: CookieDomain;
   categories: CookieCategory[];
@@ -213,6 +223,9 @@ function BannerSection({ client, domain, categories, apiBase, canCreate, canUpda
   canUpdate: boolean;
   canPublish: boolean;
   canDelete: boolean;
+  canScanRead: boolean;
+  canScanCreate: boolean;
+  canScanUpdate: boolean;
   onClose: () => void;
 }) {
   const t = useTranslations("cookieBanners");
@@ -301,6 +314,9 @@ function BannerSection({ client, domain, categories, apiBase, canCreate, canUpda
 
       <CookiesSection client={client} domain={domain} categories={categories} canCreate={canCreate} canDelete={canDelete} />
       <ScriptRulesSection client={client} domain={domain} categories={categories} canCreate={canCreate} canDelete={canDelete} />
+      {canScanRead && (
+        <ScanSection client={client} domain={domain} categories={categories} canScanCreate={canScanCreate} canScanUpdate={canScanUpdate} />
+      )}
     </section>
   );
 }
@@ -452,6 +468,121 @@ function ScriptRulesSection({ client, domain, categories, canCreate, canDelete }
         ))}
       </ul>
       {rows.length === 0 && <p className="text-sm text-slate-500">{t("noScriptRules")}</p>}
+    </div>
+  );
+}
+
+function ScanSection({ client, domain, categories, canScanCreate, canScanUpdate }: {
+  client: ReturnType<typeof createApiClient>;
+  domain: CookieDomain;
+  categories: CookieCategory[];
+  canScanCreate: boolean;
+  canScanUpdate: boolean;
+}) {
+  const t = useTranslations("cookieBanners");
+  const scans = useCookieScans(client, domain.id);
+  const startScan = useStartCookieScan(client, domain.id);
+  const [openScanId, setOpenScanId] = useState("");
+
+  const rows = scans.data ?? [];
+  const running = rows.some((s) => s.status === "queued" || s.status === "running");
+
+  return (
+    <div className="space-y-2 border-t border-slate-100 pt-3">
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium">{t("scansTitle")}</h3>
+        {canScanCreate && (
+          <button type="button" onClick={() => startScan.mutate()} disabled={startScan.isPending || running} className={BTN} data-testid="start-scan">
+            {t("startScan")}
+          </button>
+        )}
+      </div>
+      <table className="w-full text-sm">
+        <thead className="text-left text-slate-500">
+          <tr>
+            <th className="py-1">{t("scanStartedAt")}</th>
+            <th>{t("status")}</th>
+            <th>{t("scanPages")}</th>
+            <th>{t("scanNewCookies")}</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((s) => (
+            <tr key={s.id} className="border-t border-slate-100" data-testid={`scan-row-${s.id}`}>
+              <td className="py-1.5">{s.started_at ? new Date(s.started_at).toLocaleString() : "—"}</td>
+              <td>{t(`scanStatuses.${s.status}`)}</td>
+              <td>{s.pages_scanned ?? "—"}</td>
+              <td>{s.new_cookies ?? "—"}</td>
+              <td className="text-right">
+                {s.status === "done" && (
+                  <button type="button" onClick={() => setOpenScanId(openScanId === s.id ? "" : s.id)} className={BTN_SECONDARY} data-testid={`view-findings-${s.id}`}>
+                    {openScanId === s.id ? t("hideFindings") : t("viewFindings")}
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {rows.length === 0 && <p className="text-sm text-slate-500">{t("noScans")}</p>}
+      {openScanId && (
+        <ScanFindingsPanel client={client} scanId={openScanId} categories={categories} canScanUpdate={canScanUpdate} />
+      )}
+    </div>
+  );
+}
+
+function ScanFindingsPanel({ client, scanId, categories, canScanUpdate }: {
+  client: ReturnType<typeof createApiClient>;
+  scanId: string;
+  categories: CookieCategory[];
+  canScanUpdate: boolean;
+}) {
+  const t = useTranslations("cookieBanners");
+  const findings = useCookieScanFindings(client, scanId);
+  const classify = useClassifyCookieScanFinding(client, scanId);
+  const rows = findings.data ?? [];
+
+  return (
+    <div className="space-y-2 rounded-md border border-slate-100 bg-slate-50 p-2">
+      <table className="w-full text-sm">
+        <thead className="text-left text-slate-500">
+          <tr>
+            <th className="py-1">{t("findingCookieName")}</th>
+            <th>{t("findingCookieDomain")}</th>
+            <th>{t("findingSuggestedCategory")}</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((f) => (
+            <tr key={f.id} className="border-t border-slate-200" data-testid={`finding-row-${f.id}`}>
+              <td className="py-1.5"><code>{f.cookie_name}</code></td>
+              <td>{f.cookie_domain}</td>
+              <td>{f.suggested_category ?? "—"}</td>
+              <td className="text-right">
+                {canScanUpdate && (
+                  <select
+                    className="rounded-md border border-slate-300 bg-white px-1.5 py-0.5 text-xs"
+                    defaultValue=""
+                    onChange={(e) => {
+                      if (e.target.value) classify.mutate({ findingId: f.id, categoryId: e.target.value });
+                    }}
+                    data-testid={`classify-${f.id}`}
+                  >
+                    <option value="">{t("classify")}</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name_th}</option>
+                    ))}
+                  </select>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {rows.length === 0 && <p className="text-sm text-slate-500">{t("noFindings")}</p>}
     </div>
   );
 }

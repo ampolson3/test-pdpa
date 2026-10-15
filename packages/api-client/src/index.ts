@@ -509,6 +509,10 @@ export {
   useCookieCookieMutations,
   useCookieScriptRules,
   useCookieScriptRuleMutations,
+  useCookieScans,
+  useStartCookieScan,
+  useCookieScanFindings,
+  useClassifyCookieScanFinding,
   type CookieDomain,
   type CookieCategory,
   type CookieBannerConfig,
@@ -518,4 +522,6 @@ export {
   type CookieCreateCookieInput,
   type CookieScriptRule,
   type CookieCreateScriptRuleInput,
+  type CookieScan,
+  type CookieScanFinding,
 } from "./cookie";

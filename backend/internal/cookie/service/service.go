@@ -18,11 +18,15 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 
+	"pdpa-platform/internal/cookie/scan"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/notify"
 )
 
 var (
@@ -39,8 +43,16 @@ type Org interface {
 }
 
 type Service struct {
-	Audit *audit.Service
-	Org   Org
+	Audit  *audit.Service
+	Org    Org
+	Notify *notify.Service
+	// River enqueues cookie.scan / cookie.scan_schedule_* jobs; nil (e.g. in cmd/worker's own job
+	// handlers, which already run inside the job they were given) skips enqueuing — the same "worker
+	// builds only what its own jobs need" pattern dsarservice.Service's own ReminderWorker fields use.
+	River *river.Client[pgx.Tx]
+	// Scanner is CON-04's own crawler, a rule-9 "small local interface" so tests can fake a crawl
+	// without a real browser; cmd/worker wires scan.ChromedpCrawler{}, the only real implementation.
+	Scanner scan.Crawler
 	// Now is the clock (injectable for tests); nil means time.Now.
 	Now func() time.Time
 }

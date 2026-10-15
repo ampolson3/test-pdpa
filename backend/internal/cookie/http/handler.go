@@ -5,9 +5,13 @@ package cookiehttp
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/google/uuid"
 
 	cookie "pdpa-platform/internal/cookie/service"
 	"pdpa-platform/internal/pkg/httpx"
@@ -328,6 +332,136 @@ func (h *Strict) CookieDeleteScriptRule(ctx context.Context, req CookieDeleteScr
 		return nil, ToProblem(err)
 	}
 	return CookieDeleteScriptRule204Response{}, nil
+}
+
+// ---- scans (CON-04: automated cookie scanner) ----
+
+func scanWire(sc cookie.Scan) CookieScan {
+	w := CookieScan{Id: sc.ID, DomainId: sc.DomainID, Trigger: CookieScanTrigger(sc.Trigger), Status: CookieScanStatus(sc.Status), RowVersion: int(sc.RowVersion)}
+	if sc.StartedAt != nil {
+		w.StartedAt = sc.StartedAt
+	}
+	if sc.FinishedAt != nil {
+		w.FinishedAt = sc.FinishedAt
+	}
+	if sc.PagesScanned != nil {
+		v := int(*sc.PagesScanned)
+		w.PagesScanned = &v
+	}
+	if sc.CookiesFound != nil {
+		v := int(*sc.CookiesFound)
+		w.CookiesFound = &v
+	}
+	if sc.NewCookies != nil {
+		v := int(*sc.NewCookies)
+		w.NewCookies = &v
+	}
+	return w
+}
+
+func scanFindingWire(f cookie.ScanFinding) CookieScanFinding {
+	return CookieScanFinding{Id: f.ID, ScanId: f.ScanID, CookieName: f.CookieName, CookieDomain: f.CookieDomain, PageUrl: f.PageURL,
+		SetBeforeConsent: f.SetBeforeConsent, SuggestedCategory: f.SuggestedCategory, MatchedCookieId: f.MatchedCookieID, RowVersion: int(f.RowVersion)}
+}
+
+func (h *Strict) CookieListScans(ctx context.Context, req CookieListScansRequestObject) (CookieListScansResponseObject, error) {
+	var after *cookie.ScanCursor
+	if req.Params.Cursor != nil {
+		c, err := decodeScanCursor(*req.Params.Cursor)
+		if err != nil {
+			return nil, httpx.RequestInvalid("cursor")
+		}
+		after = &c
+	}
+	var limit int32
+	if req.Params.Limit != nil {
+		limit = int32(*req.Params.Limit)
+	}
+	list, next, err := h.svc.ListScans(ctx, req.Id, after, limit)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	out := CookieListScans200JSONResponse{Data: make([]CookieScan, 0, len(list))}
+	for _, sc := range list {
+		out.Data = append(out.Data, scanWire(sc))
+	}
+	if next != nil {
+		c := encodeScanCursor(*next)
+		out.NextCursor = &c
+	}
+	return out, nil
+}
+
+func (h *Strict) CookieStartScan(ctx context.Context, req CookieStartScanRequestObject) (CookieStartScanResponseObject, error) {
+	trigger := "manual"
+	if req.Body != nil && req.Body.Trigger != nil {
+		trigger = string(*req.Body.Trigger)
+	}
+	sc, err := h.svc.StartScan(ctx, req.Id, trigger)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	return CookieStartScan201JSONResponse(scanWire(sc)), nil
+}
+
+func (h *Strict) CookieGetScan(ctx context.Context, req CookieGetScanRequestObject) (CookieGetScanResponseObject, error) {
+	sc, err := h.svc.GetScan(ctx, req.Id)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	return CookieGetScan200JSONResponse(scanWire(sc)), nil
+}
+
+func (h *Strict) CookieListScanFindings(ctx context.Context, req CookieListScanFindingsRequestObject) (CookieListScanFindingsResponseObject, error) {
+	var offset, limit int32
+	if req.Params.Offset != nil {
+		offset = int32(*req.Params.Offset)
+	}
+	limit = 50
+	if req.Params.Limit != nil {
+		limit = int32(*req.Params.Limit)
+	}
+	list, err := h.svc.ListScanFindings(ctx, req.Id, offset, limit)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	out := CookieListScanFindings200JSONResponse{Data: make([]CookieScanFinding, 0, len(list))}
+	for _, f := range list {
+		out.Data = append(out.Data, scanFindingWire(f))
+	}
+	return out, nil
+}
+
+func (h *Strict) CookieClassifyScanFinding(ctx context.Context, req CookieClassifyScanFindingRequestObject) (CookieClassifyScanFindingResponseObject, error) {
+	if req.Body == nil {
+		return nil, httpx.RequestInvalid("category_id")
+	}
+	f, err := h.svc.ClassifyFinding(ctx, req.Id, req.Body.CategoryId)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	return CookieClassifyScanFinding200JSONResponse(scanFindingWire(f)), nil
+}
+
+func encodeScanCursor(c cookie.ScanCursor) string {
+	return base64.RawURLEncoding.EncodeToString([]byte(c.CreatedAt.Format(time.RFC3339Nano) + "|" + c.ID.String()))
+}
+
+func decodeScanCursor(s string) (cookie.ScanCursor, error) {
+	b, err := base64.RawURLEncoding.DecodeString(s)
+	if err != nil {
+		return cookie.ScanCursor{}, err
+	}
+	ts, id, ok := strings.Cut(string(b), "|")
+	if !ok {
+		return cookie.ScanCursor{}, errors.New("cursor")
+	}
+	t, err := time.Parse(time.RFC3339Nano, ts)
+	if err != nil {
+		return cookie.ScanCursor{}, err
+	}
+	u, err := uuid.Parse(id)
+	return cookie.ScanCursor{CreatedAt: t, ID: u}, err
 }
 
 // ---- wire helpers ----

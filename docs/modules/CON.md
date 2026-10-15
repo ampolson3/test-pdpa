@@ -408,6 +408,35 @@ backend or admin-UI changes — `go build/vet/test`, `pnpm --filter @pdpa/api-cl
 
 **หมายเหตุ:** ดึงเข้า P1: แบนเนอร์ที่ไม่มี scanner แข่งในตลาดยาก
 
+**Implementation (CON-04) — done:** `internal/cookie/scan` เป็น crawler จริง (chromedp + headless Chromium
+ที่ติดตั้งไว้ในสภาพแวดล้อมนี้) — BFS ภายในโดเมนเดียวกัน (same-origin) หลาย tab พร้อมกัน (`Concurrency`,
+ดีฟอลต์ 4), เก็บคุกกี้ทุกตัวต่อหน้าผ่าน CDP `Storage.getCookies` (เห็นคุกกี้ของบุคคลที่สามด้วย ไม่ใช่แค่
+`document.cookie`), มีการ "warm up" tab ด้วย `about:blank` ก่อน timeout ครั้งแรก (บั๊กจริงที่พบ: chromedp ผูก
+อายุของ tab กับ context ของคำสั่งแรก) วัดจริงได้ ~378ms/หน้าที่ concurrency 6 → นอกเวลาเหลือเฟือสำหรับ 200
+หน้าใน 30 นาที (เกณฑ์ตอบรับ). `cookie.scans`/`cookie.scan_findings` (migration ที่มีอยู่แล้วในฐานข้อมูล
+baseline) + migration ใหม่ 00068 สำหรับ `cookie.cookie_kb` (23 รายการ tracker ที่รู้จักทั่วไป เช่น GA/Meta/
+TikTok — ข้อมูลสาธารณะทางอุตสาหกรรม ไม่ใช่ข้อความทางกฎหมาย จึงไม่ต้องมีสถานะ DRAFT ตามกติกาข้อ 8).
+`internal/cookie/service/scan.go`: `StartScan`/`RunScan`/`ClassifyFinding` — คุกกี้ที่พบใหม่จะถูกสร้างแถว
+`cookie.cookies` อัตโนมัติ (`source='scan'`) พร้อมหมวดแนะนำจาก `cookie_kb` (ถ้าตรงกับหมวดที่ tenant มีอยู่
+จริง) แล้วแจ้งเตือน DPO/IT ทันที (เทมเพลต `cookie.scan_new_cookies`, migration 00069) — ครอบคลุม
+"คุกกี้ใหม่ถูกแจ้งเตือน" ตามเกณฑ์ตอบรับโดยตรง. สแกนตามรอบ (`scan_schedule` ของ `cookie.domains`: daily/
+weekly/monthly) ผ่าน River สองขั้นตอน — `cookie.scan_schedule_sweep` (global job อ่านแค่ `platform.tenants`)
+enqueue `cookie.scan_schedule_check` ต่อ tenant ซึ่งอ่านโดเมนของตัวเองใน RLS tx เดียวกัน เหมือนแพทเทิร์นของ
+PLT-11's outbox sweep. API: `GET/POST .../scans`, `GET .../scans/{id}`, `GET .../scans/{id}/findings`,
+`POST .../scan-findings/{id}/classify` (ทั้งหมดใช้ permission `cookie.scan.*` ที่ seed ไว้แล้วตั้งแต่
+migration baseline — ไม่มี permission code ใหม่). Frontend: ส่วน "สแกนคุกกี้อัตโนมัติ" บนหน้า
+`/settings/cookie-banners` ต่อโดเมน (ปุ่มเริ่มสแกน, ตารางประวัติพร้อม polling ขณะกำลังสแกน, แผงดูผลสแกน +
+จัดหมวดคุกกี้ที่ไม่รู้จัก). ทดสอบ: unit (`matchesKBPattern`, `scanDue`/`scheduleInterval` — pure functions),
+service (DB-backed: คุกกี้ใหม่ถูกจัดหมวด+นับถูก, จัดหมวดแก้ไขได้, crawl ล้มเหลวไม่ทำให้ state เสีย, permission
+gate แต่ละตัวแยกกัน, two-tenant isolation), **real-browser crawler test** (ไม่ใช่ mock — รันจริงกับ Chromium
+ที่ติดตั้งไว้ ต่อเว็บ fixture 3 หน้าที่ตั้งคุกกี้คนละตัว พิสูจน์ว่าเจอทุกหน้า+ทุกคุกกี้ และไม่ไหลตามลิงก์
+off-site, กับทดสอบ `MaxPages` อีกเคส), HTTP contract (401/403/404/422/200/201 ผ่าน validator จริง). ยังไม่ทำ
+(ไม่ใช่ขอบเขตของเกณฑ์ตอบรับนี้): sitemap.xml เป็นจุดเริ่มสแกนเพิ่มเติม (เดินตามลิงก์บนหน้าเว็บเพียงพอสำหรับ
+เกณฑ์ตอบรับแล้ว), การตรวจ localStorage/sessionStorage (schema ของ `cookie.scan_findings` ไม่มีคอลัมน์แยก
+ประเภท storage เหมือน `cookie.cookies.storage_type` — เพิ่มเมื่อมีจอที่ต้องใช้จริง), เทียบกับรอบก่อน
+("เทียบกับรอบก่อน" ใน FE note — ตารางประวัติที่มีอยู่แล้วให้เห็น new_cookies ต่อรอบ แต่ยังไม่มี diff เจาะจงราย
+คุกกี้; เป็น CON-05's "ตารางในหน้า Cookie Policy ตรงกับผลสแกนล่าสุด" ที่แยกเป็นฟีเจอร์ของตัวเอง).
+
 <a id="con-06"></a>
 ### CON-06 ปรับแต่งดีไซน์และหลายภาษา
 

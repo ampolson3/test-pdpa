@@ -2348,6 +2348,63 @@ criterion), accepting all still activates the gated script immediately, rejectin
 scopes vitest to `src/**/*.test.ts` so it never tries to run Playwright's own spec files. Bundle grew from
 2.98 KB to **3.51 KB gzip** — still well inside the 30 KB budget. No backend or admin-UI changes.
 
+### CON-04 สแกนและจัดหมวดคุกกี้อัตโนมัติ (`docs/modules/CON.md#con-04`) — done
+`internal/cookie/scan` is a real crawler, not a mock: a same-origin BFS walk using this environment's own
+pre-installed headless Chromium (`chromedp`, several tabs in parallel — `Concurrency`, default 4), reading
+every cookie per page through CDP's `Storage.getCookies` (the full browser cookie jar, so third-party/
+httpOnly cookies are caught too, not just `document.cookie`). Real chromedp gotcha found and fixed: a tab's
+lifetime is tied to the context of the *first* call made against it, so wrapping that first call in a
+per-page `context.WithTimeout` killed the browser the instant that timeout's own `cancel()` fired after page
+one — fixed by warming up each new tab with an untimed `chromedp.Navigate("about:blank")` before any
+per-page timeout is applied. A `sync.Cond` + in-flight counter in the BFS frontier avoids the standard
+producer-consumer bug (an empty queue doesn't mean "done" while another tab might still discover more
+links). Measured throughput: ~378ms/page at concurrency 6 — comfortably inside the 30-minute/200-page
+acceptance budget.
+
+Migration 00068 seeds `cookie.cookie_kb` (23 well-known tracker patterns — GA/Ads, Meta, TikTok, LinkedIn,
+Hotjar, Clarity, HubSpot, Intercom, Stripe, Cloudflare, PHPSESSID/JSESSIONID), a deliberately global table
+(no `tenant_id`, same pattern as `org.countries`) — public industry knowledge about well-known trackers, not
+legal/notice wording, so rule 8's DRAFT marker doesn't apply (no `docs/decisions.md` entry needed either).
+`internal/cookie/service/scan.go`: `StartScan` (permission-gated, `cookie.scan.create`) enqueues `cookie.scan`
+(cmd/api never crawls — only cmd/worker's `ScanWorker` holds a real `cookiescan.Crawler`); `RunScan` is the
+worker's own job body, wrapped in `pdb.Savepoint` so a crawl failure on a retried attempt rolls back only its
+own partial writes, letting the final-attempt branch still write `MarkScanFailed` into the same still-open
+job transaction. Each observed cookie name is resolved once per scan against the tenant's own already-
+catalogued `cookie.cookies` (by domain+name) and `cookie.cookie_kb`'s patterns (`matchesKBPattern`: plain
+substring or `/regex/`-wrapped, the same convention `packages/cookie-sdk`'s own `matchesPattern` already
+uses) — a genuinely new cookie gets auto-created (`source='scan'`) with its category pre-filled only when the
+KB's suggested code matches a category the tenant actually has. `alertNewCookies` notifies every DPO/IT user
+in-app + email (migration 00069's `cookie.scan_new_cookies` template, operational text, no DRAFT marker) —
+the acceptance criterion's own "คุกกี้ใหม่ถูกแจ้งเตือน" directly. `ClassifyFinding` corrects/confirms a
+finding's already-created cookie row's category (`cookie.scan.update`).
+
+Scheduled re-scanning (`cookie.domains.scan_schedule`: daily/weekly/monthly) follows PLT-11's own two-step
+"sweep lists tenants, per-tenant job reads its own rows" pattern exactly: `cookie.scan_schedule_sweep`
+(added to `jobs.GlobalKinds` — reads only `platform.tenants`, no tenant transaction) enqueues one
+`cookie.scan_schedule_check` per trial/active tenant, which opens its own tenant tx and starts a scan for
+every domain whose own interval has elapsed (`scanDue`, a pure, clock-testable function) — `scan_schedule_
+check` and `scan` themselves are correctly *not* in `GlobalKinds`, since both are genuinely tenant-scoped.
+
+API: `GET`/`POST /admin/v1/cookie/domains/{id}/scans` (cursor pagination, the same N+1-row trick every other
+cursor list in this codebase uses — `ScanCursor`), `GET /admin/v1/cookie/scans/{id}`, `GET .../scans/{id}/
+findings` (offset/limit), `POST /admin/v1/cookie/scan-findings/{id}/classify` — all on the already-seeded
+`cookie.scan.*` permission (baseline migration 00019, no new code). UI: a "สแกนคุกกี้อัตโนมัติ" section on
+`/settings/cookie-banners` per domain — a start-scan button, a history table (polls every 3s while a scan is
+queued/running, no long-poll infrastructure needed for this), and a findings panel with inline category
+classification. Tests: unit (`matchesKBPattern`, `scheduleInterval`/`scanDue` — pure functions), service
+(DB-backed: new cookies catalogued and counted correctly, a second identical crawl finds nothing new,
+classification writes through to the matched cookie, a crawl failure leaves the scan `running` rather than
+corrupting state, each of the three `cookie.scan.*` permissions enforced independently, two-tenant isolation),
+**a real-browser crawler test** (not mocked — drives the actual pre-installed Chromium against a 3-page
+`httptest` fixture, proving every page and every cookie is found and the off-site link is never followed,
+plus a `MaxPages` cap test), HTTP contract (401/403/404/422/200/201 through the real validator, exercising
+`RunScan` directly since cmd/api's own test harness has no River worker running). Not done, deliberately: a
+`sitemap.xml` entry point (link-following already satisfies the acceptance criterion), a `storage_type`
+breakdown in `cookie.scan_findings` (the schema has no such column, unlike `cookie.cookies` — add one only if
+a screen needs to distinguish localStorage/sessionStorage findings), and a dedicated cookie-by-cookie diff
+against the previous round (the history table already shows `new_cookies` per round; a literal diff view is
+CON-05's own "ตารางในหน้า Cookie Policy ตรงกับผลสแกนล่าสุด" acceptance criterion, a sibling feature).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

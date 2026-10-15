@@ -18,6 +18,8 @@ import (
 
 	agreementservice "pdpa-platform/internal/agreement/service"
 	breach "pdpa-platform/internal/breach/service"
+	cookiescan "pdpa-platform/internal/cookie/scan"
+	cookieservice "pdpa-platform/internal/cookie/service"
 	dsarservice "pdpa-platform/internal/dsar/service"
 	govjobs "pdpa-platform/internal/gov/jobs"
 	govservice "pdpa-platform/internal/gov/service"
@@ -101,6 +103,12 @@ func run() error {
 
 	notifySvc := &notify.Service{Keyring: &crypto.Keyring{KEK: kek}, River: inserter, Quiet: notify.DefaultQuietHours()}
 	orgSvc := &orgservice.Service{Audit: auditservice.New()}
+	// CON-04: the scanner worker. Scanner is the one real cookiescan.Crawler implementation — cmd/api
+	// never sets it, since the API process only ever enqueues a scan, it doesn't crawl.
+	cookieSvc := &cookieservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter, Scanner: cookiescan.ChromedpCrawler{}}
+	river.AddWorker(workers, &cookieservice.ScanWorker{Service: cookieSvc})
+	river.AddWorker(workers, &cookieservice.ScheduleSweeper{Pool: pool, River: inserter})
+	river.AddWorker(workers, &cookieservice.ScheduleChecker{Service: cookieSvc})
 	ropaSvc := &ropaservice.Service{Audit: auditservice.New(), Org: orgSvc}
 	wiring.Events(subscribers, ropaSvc) // ROPA-10: logs DSAR rejections against their processing activities
 	river.AddWorker(workers, &workflow.Ticker{Service: wiring.Workflow(notifySvc, inserter, auditservice.New())})
@@ -132,7 +140,7 @@ func run() error {
 		Logger:  slog.Default(),
 		Workers: workers,
 		PeriodicJobs: []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob(),
-			auditjobs.RetentionPeriodicJob(retentionMonths), govjobs.SweepPeriodicJob()},
+			auditjobs.RetentionPeriodicJob(retentionMonths), govjobs.SweepPeriodicJob(), cookieservice.SweepPeriodicJob()},
 		SoftStopTimeout: softStop,
 	})
 	if err != nil {
