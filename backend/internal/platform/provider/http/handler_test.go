@@ -47,7 +47,7 @@ func TestProviderEndpoints_Contract(t *testing.T) {
 	platform := dbtest.PlatformPool(t)
 	tenant := dbtest.SeedTenant(t, ctx, app, platform, "providerhttp")
 
-	svc := &provider.Service{Platform: platform, App: app}
+	svc := &provider.Service{Platform: platform, App: app, Redis: rdb, HealthWindowMinutes: 5, ErrorRateThreshold: 0.05, LatencyMsThreshold: 1000}
 
 	spec, err := openapi3.NewLoader().LoadFromFile("../../../../../api/openapi/openapi.yaml")
 	if err != nil {
@@ -65,7 +65,7 @@ func TestProviderEndpoints_Contract(t *testing.T) {
 
 	super, viewer := tenant.UserID, uuid.New()
 	grants := map[string][]string{
-		super.String():  {"admin.tenant.read", "admin.tenant.create", "admin.tenant.update", "admin.user.create"},
+		super.String():  {"admin.tenant.read", "admin.tenant.create", "admin.tenant.update", "admin.user.create", "platform.health.read"},
 		viewer.String(): {"admin.tenant.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
@@ -214,6 +214,18 @@ func TestProviderEndpoints_Contract(t *testing.T) {
 	}
 	if status, _ := do("PUT", setRopa, &super, map[string]any{"enabled": true}, map[string]string{"If-Match": `"0"`}); status != 412 {
 		t.Errorf("stale first-time claim: %d, want 412", status)
+	}
+
+	// PLT-19: health dashboard.
+	if status, _ := do("GET", "/provider/v1/platform/health", nil, nil, nil); status != 401 {
+		t.Errorf("health no principal: %d, want 401", status)
+	}
+	if status, _ := do("GET", "/provider/v1/platform/health", &viewer, nil, nil); status != 403 {
+		t.Errorf("health without platform.health.read: %d, want 403", status)
+	}
+	status, body = do("GET", "/provider/v1/platform/health", &super, nil, nil)
+	if status != 200 || !strings.Contains(body, `"service":"api"`) || !strings.Contains(body, `"status":"healthy"`) {
+		t.Fatalf("health: %d %s", status, body)
 	}
 
 	// First admin.

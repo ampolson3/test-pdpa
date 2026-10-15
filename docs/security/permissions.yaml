@@ -93,6 +93,15 @@ roles:
   default_scope: ระบบที่ผูกไว้
   mfa_required: false
 permissions:
+- code: platform.health
+  category: Administration
+  name: สุขภาพระบบ (PLT-19)
+  epics:
+  - PLT
+  note: เฉพาะผู้ให้บริการแพลตฟอร์ม — error rate / latency ของ cmd/api ในไม่กี่นาทีล่าสุด
+  grants:
+    SUPER:
+    - read
 - code: admin.tenant
   category: Administration
   name: Tenant แพ็กเกจ และโมดูลที่เปิดใช้

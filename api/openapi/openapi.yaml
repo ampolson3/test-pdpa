@@ -14334,6 +14334,28 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /provider/v1/platform/health:
+    get:
+      operationId: providerGetHealth
+      tags: [provider]
+      summary: PLT-19 — recent cmd/api error rate and latency, alerting once either exceeds its threshold
+      x-permission: platform.health.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProviderHealth'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/cookie/domains:
     get:
       operationId: cookieListDomains
@@ -16421,6 +16443,22 @@ components:
       required: [user_id]
       properties:
         user_id: {$ref: '#/components/schemas/Uuid'}
+    ProviderHealth:
+      type: object
+      required: [service, window_minutes, request_count, error_count, error_rate, avg_latency_ms, slow_count, slow_ratio, status, checked_at]
+      properties:
+        service: {type: string}
+        window_minutes: {type: integer}
+        request_count: {type: integer, format: int64}
+        error_count: {type: integer, format: int64}
+        error_rate: {type: number}
+        avg_latency_ms: {type: number}
+        slow_count: {type: integer, format: int64}
+        slow_ratio: {type: number}
+        status:
+          type: string
+          enum: [healthy, degraded]
+        checked_at: {type: string, format: date-time}
     AssetType:
       type: string
       enum: [application, database, file_share, saas, paper, device, other]

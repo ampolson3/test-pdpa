@@ -93,6 +93,18 @@
       "roles": "Roles (comma-separated role codes, e.g. ORGADMIN)",
       "submit": "Create admin",
       "note": "DB-only — no Keycloak account is created in this environment."
+    },
+    "health": {
+      "title": "System health",
+      "status": {
+        "healthy": "Healthy",
+        "degraded": "Degraded"
+      },
+      "requestCount": "Requests",
+      "errorRate": "Error rate",
+      "avgLatency": "Avg. latency",
+      "window": "Window",
+      "windowMinutes": "last {minutes} min"
     }
   },
   "files": {

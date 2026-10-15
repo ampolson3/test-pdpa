@@ -13,3 +13,4 @@ output-options:
     - providerListTenantModules
     - providerSetTenantModule
     - providerCreateFirstAdmin
+    - providerGetHealth

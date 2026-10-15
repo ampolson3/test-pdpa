@@ -4933,6 +4933,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/provider/v1/platform/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** PLT-19 — recent cmd/api error rate and latency, alerting once either exceeds its threshold */
+        get: operations["providerGetHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/cookie/domains": {
         parameters: {
             query?: never;
@@ -5916,6 +5933,23 @@ export interface components {
         };
         ProviderCreateAdminResult: {
             user_id: components["schemas"]["Uuid"];
+        };
+        ProviderHealth: {
+            service: string;
+            window_minutes: number;
+            /** Format: int64 */
+            request_count: number;
+            /** Format: int64 */
+            error_count: number;
+            error_rate: number;
+            avg_latency_ms: number;
+            /** Format: int64 */
+            slow_count: number;
+            slow_ratio: number;
+            /** @enum {string} */
+            status: "healthy" | "degraded";
+            /** Format: date-time */
+            checked_at: string;
         };
         /** @enum {string} */
         AssetType: "application" | "database" | "file_share" | "saas" | "paper" | "device" | "other";
@@ -20828,6 +20862,31 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    providerGetHealth: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderHealth"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     cookieListDomains: {

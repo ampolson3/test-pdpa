@@ -14,6 +14,7 @@ import {
   useTenantModules,
   useSetTenantModule,
   useCreateFirstAdmin,
+  useSystemHealth,
   type ProviderTenant,
 } from "@pdpa/api-client";
 
@@ -37,8 +38,59 @@ export function ProviderContent() {
         <h1 className="text-xl font-semibold">{t("title")}</h1>
         <p className="text-sm text-slate-600">{t("description")}</p>
       </header>
+      <SystemHealthPanel />
       <ProviderConsole />
     </main>
+  );
+}
+
+const healthStatusStyle: Record<string, string> = {
+  healthy: "bg-green-100 text-green-800",
+  degraded: "bg-red-100 text-red-800",
+};
+
+// PLT-19: the provider console's own system-health dashboard — recent cmd/api error rate and
+// average latency, flagged "degraded" once either crosses its configured threshold.
+function SystemHealthPanel() {
+  const t = useTranslations("provider");
+  const allowed = usePermission("platform.health.read");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const health = useSystemHealth(client);
+
+  if (!allowed) return null;
+
+  return (
+    <section className="rounded border p-4" aria-label={t("health.title")}>
+      <div className="flex items-center justify-between">
+        <h2 className="font-medium">{t("health.title")}</h2>
+        {health.data && (
+          <span className={`rounded px-2 py-0.5 text-xs font-medium ${healthStatusStyle[health.data.status] ?? ""}`}>
+            {t(`health.status.${health.data.status}`)}
+          </span>
+        )}
+      </div>
+      {health.isLoading && <p className="mt-2 text-sm text-slate-600">{t("loading")}</p>}
+      {health.data && (
+        <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <div>
+            <dt className="text-slate-500">{t("health.requestCount")}</dt>
+            <dd className="font-medium">{health.data.request_count}</dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">{t("health.errorRate")}</dt>
+            <dd className="font-medium">{(health.data.error_rate * 100).toFixed(1)}%</dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">{t("health.avgLatency")}</dt>
+            <dd className="font-medium">{Math.round(health.data.avg_latency_ms)} ms</dd>
+          </div>
+          <div>
+            <dt className="text-slate-500">{t("health.window")}</dt>
+            <dd className="font-medium">{t("health.windowMinutes", { minutes: health.data.window_minutes })}</dd>
+          </div>
+        </dl>
+      )}
+    </section>
   );
 }
 

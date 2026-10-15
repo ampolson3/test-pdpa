@@ -58,6 +58,24 @@ func (e FormConditionOp) Valid() bool {
 	}
 }
 
+// Defines values for ProviderHealthStatus.
+const (
+	Degraded ProviderHealthStatus = "degraded"
+	Healthy  ProviderHealthStatus = "healthy"
+)
+
+// Valid indicates whether the value is a known member of the ProviderHealthStatus enum.
+func (e ProviderHealthStatus) Valid() bool {
+	switch e {
+	case Degraded:
+		return true
+	case Healthy:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProviderTenantDeployment.
 const (
 	OnPrem        ProviderTenantDeployment = "on_prem"
@@ -115,6 +133,24 @@ func (e AcceptLanguage) Valid() bool {
 	case AcceptLanguageEn:
 		return true
 	case AcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProviderGetHealthParamsAcceptLanguage.
+const (
+	ProviderGetHealthParamsAcceptLanguageEn ProviderGetHealthParamsAcceptLanguage = "en"
+	ProviderGetHealthParamsAcceptLanguageTh ProviderGetHealthParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ProviderGetHealthParamsAcceptLanguage enum.
+func (e ProviderGetHealthParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ProviderGetHealthParamsAcceptLanguageEn:
+		return true
+	case ProviderGetHealthParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -316,6 +352,23 @@ type ProviderCreateTenantInput struct {
 	PlanCode string `json:"plan_code"`
 }
 
+// ProviderHealth defines model for ProviderHealth.
+type ProviderHealth struct {
+	AvgLatencyMs  float32              `json:"avg_latency_ms"`
+	CheckedAt     time.Time            `json:"checked_at"`
+	ErrorCount    int64                `json:"error_count"`
+	ErrorRate     float32              `json:"error_rate"`
+	RequestCount  int64                `json:"request_count"`
+	Service       string               `json:"service"`
+	SlowCount     int64                `json:"slow_count"`
+	SlowRatio     float32              `json:"slow_ratio"`
+	Status        ProviderHealthStatus `json:"status"`
+	WindowMinutes int                  `json:"window_minutes"`
+}
+
+// ProviderHealthStatus defines model for ProviderHealth.Status.
+type ProviderHealthStatus string
+
 // ProviderSetTenantModuleInput defines model for ProviderSetTenantModuleInput.
 type ProviderSetTenantModuleInput struct {
 	Enabled          bool                    `json:"enabled"`
@@ -399,6 +452,15 @@ type Unauthorized = Problem
 
 // UnprocessableEntity RFC 9457 problem details with a stable machine-readable `code`
 type UnprocessableEntity = Problem
+
+// ProviderGetHealthParams defines parameters for ProviderGetHealth.
+type ProviderGetHealthParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ProviderGetHealthParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// ProviderGetHealthParamsAcceptLanguage defines parameters for ProviderGetHealth.
+type ProviderGetHealthParamsAcceptLanguage string
 
 // ProviderListTenantsParams defines parameters for ProviderListTenants.
 type ProviderListTenantsParams struct {
@@ -492,6 +554,9 @@ type ProviderSetTenantModuleJSONRequestBody = ProviderSetTenantModuleInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// ProviderGetHealth PLT-19 — recent cmd/api error rate and latency, alerting once either exceeds its threshold
+	// (GET /provider/v1/platform/health)
+	ProviderGetHealth(w http.ResponseWriter, r *http.Request, params ProviderGetHealthParams)
 	// ProviderListTenants Every tenant on the platform (IAM-03)
 	// (GET /provider/v1/tenants)
 	ProviderListTenants(w http.ResponseWriter, r *http.Request, params ProviderListTenantsParams)
@@ -521,6 +586,12 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// ProviderGetHealth PLT-19 — recent cmd/api error rate and latency, alerting once either exceeds its threshold
+// (GET /provider/v1/platform/health)
+func (_ Unimplemented) ProviderGetHealth(w http.ResponseWriter, r *http.Request, params ProviderGetHealthParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // ProviderListTenants Every tenant on the platform (IAM-03)
 // (GET /provider/v1/tenants)
@@ -578,6 +649,47 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// ProviderGetHealth operation middleware
+func (siw *ServerInterfaceWrapper) ProviderGetHealth(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ProviderGetHealthParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ProviderGetHealthParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ProviderGetHealth(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // ProviderListTenants operation middleware
 func (siw *ServerInterfaceWrapper) ProviderListTenants(w http.ResponseWriter, r *http.Request) {
@@ -1176,6 +1288,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/provider/v1/tenants/{id}/admins", wrapper.ProviderCreateFirstAdmin)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/provider/v1/platform/health", wrapper.ProviderGetHealth)
+	})
 
 	return r
 }
@@ -1195,6 +1310,60 @@ type PreconditionRequiredApplicationProblemPlusJSONResponse Problem
 type UnauthorizedApplicationProblemPlusJSONResponse Problem
 
 type UnprocessableEntityApplicationProblemPlusJSONResponse Problem
+
+type ProviderGetHealthRequestObject struct {
+	Params ProviderGetHealthParams
+}
+
+type ProviderGetHealthResponseObject interface {
+	VisitProviderGetHealthResponse(w http.ResponseWriter) error
+}
+
+type ProviderGetHealth200JSONResponse ProviderHealth
+
+func (response ProviderGetHealth200JSONResponse) VisitProviderGetHealthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ProviderGetHealth401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ProviderGetHealth401ApplicationProblemPlusJSONResponse) VisitProviderGetHealthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ProviderGetHealth403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ProviderGetHealth403ApplicationProblemPlusJSONResponse) VisitProviderGetHealthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type ProviderListTenantsRequestObject struct {
 	Params ProviderListTenantsParams
@@ -2030,6 +2199,9 @@ func (response ProviderSuspendTenant428ApplicationProblemPlusJSONResponse) Visit
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// ProviderGetHealth PLT-19 — recent cmd/api error rate and latency, alerting once either exceeds its threshold
+	// (GET /provider/v1/platform/health)
+	ProviderGetHealth(ctx context.Context, request ProviderGetHealthRequestObject) (ProviderGetHealthResponseObject, error)
 	// ProviderListTenants Every tenant on the platform (IAM-03)
 	// (GET /provider/v1/tenants)
 	ProviderListTenants(ctx context.Context, request ProviderListTenantsRequestObject) (ProviderListTenantsResponseObject, error)
@@ -2093,6 +2265,32 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// ProviderGetHealth operation middleware
+func (sh *strictHandler) ProviderGetHealth(w http.ResponseWriter, r *http.Request, params ProviderGetHealthParams) {
+	var request ProviderGetHealthRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ProviderGetHealth(ctx, request.(ProviderGetHealthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ProviderGetHealth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ProviderGetHealthResponseObject); ok {
+		if err := validResponse.VisitProviderGetHealthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // ProviderListTenants operation middleware

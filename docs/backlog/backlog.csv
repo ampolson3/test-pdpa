@@ -17,7 +17,7 @@ PLT-15,PLT,"Public API, webhook และ developer portal",Public API & webhook
 PLT-16,PLT,Document composer (template + clause + merge field),Document composer,Must,P1,PLT,,DPO,L,L,Y,10,10,2.4,4.0,7.0,"PLT-06, PLT-08",,docs/modules/PLT.md#plt-16,เอกสารภาษาไทยส่งออก PDF / Word ได้ตัวอักษรถูกต้อง และเปรียบเทียบสองเวอร์ชันได้,done
 PLT-17,PLT,Public portal framework,Public portal framework,Must,P1,PLT,,ORGADMIN,M,L,Y,5,10,1.8,4.0,5.2,"PLT-02, IAM-05",,docs/modules/PLT.md#plt-17,หน้า portal หลักผ่านการตรวจ accessibility ระดับ AA และโหลดเสร็จภายใน 2 วินาทีบน 4G,done
 PLT-18,PLT,Dashboard & report framework,Reporting framework,Must,P1,PLT,,EMP,L,L,Y,10,10,2.4,4.0,7.0,"PLT-10, IAM-02",,docs/modules/PLT.md#plt-18,"export 100,000 แถวแบบ async และแจ้งเมื่อไฟล์พร้อม; ตัวเลขตรงกับข้อมูลที่ผู้ใช้มีสิทธิ์เห็น",todo
-PLT-19,PLT,Observability,Observability,Should,P1,PLT,,,S,S,N,3,3,0.7,0,2.1,PLT-01,,docs/modules/PLT.md#plt-19,มี dashboard สุขภาพระบบ และแจ้งเตือนเมื่อ error rate หรือ latency เกินเกณฑ์,todo
+PLT-19,PLT,Observability,Observability,Should,P1,PLT,,,S,S,N,3,3,0.7,0,2.1,PLT-01,,docs/modules/PLT.md#plt-19,มี dashboard สุขภาพระบบ และแจ้งเตือนเมื่อ error rate หรือ latency เกินเกณฑ์,done
 PLT-20,PLT,Connector framework,Connector framework,Should,P3,PLT,,IT,L,M,Y,10,5,1.8,2.0,5.2,PLT-11,,docs/modules/PLT.md#plt-20,เพิ่ม connector ใหม่ได้โดยไม่แก้โมดูลหลัก และทดสอบการเชื่อมต่อจากหน้าจอได้,todo
 PLT-21,PLT,ค้นหาข้ามระบบ,Global search,Should,P3,PLT,,EMP,M,S,N,5,3,1.0,0,2.8,IAM-02,,docs/modules/PLT.md#plt-21,ผลค้นหาไม่แสดงข้อมูลที่ผู้ใช้ไม่มีสิทธิ์,todo
 PLT-22,PLT,AI gateway,AI gateway,Nice,P4,PLT,,ORGADMIN LLM,M,S,N,5,3,1.0,0,2.8,PLT-13,,docs/modules/PLT.md#plt-22,เมื่อเปิดโหมดปกปิด ไม่มีข้อมูลระบุตัวตนถูกส่งออกนอกระบบ; ผลจาก AI ต้องมีคนยืนยันก่อนบันทึก,todo

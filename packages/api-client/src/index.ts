@@ -399,11 +399,13 @@ export {
   useTenantModules,
   useSetTenantModule,
   useCreateFirstAdmin,
+  useSystemHealth,
   type ProviderTenant,
   type ProviderTenantModule,
   type ProviderCreateTenantInput,
   type ProviderSetTenantModuleInput,
   type ProviderCreateAdminInput,
+  type ProviderHealth,
 } from "./provider";
 export {
   useScreeningRules,

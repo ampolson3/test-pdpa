@@ -86,6 +86,18 @@
       "disabled": "ปิดใช้",
       "toggle": "โมดูลที่ปิดใช้ เมนูและ API ของโมดูลนั้นจะใช้ไม่ได้สำหรับ tenant นี้"
     },
+    "health": {
+      "title": "สุขภาพระบบ",
+      "status": {
+        "healthy": "ปกติ",
+        "degraded": "ผิดปกติ"
+      },
+      "requestCount": "จำนวนคำขอ",
+      "errorRate": "อัตรา error",
+      "avgLatency": "latency เฉลี่ย",
+      "window": "ช่วงเวลา",
+      "windowMinutes": "{minutes} นาทีล่าสุด"
+    },
     "firstAdmin": {
       "title": "สร้างผู้ดูแลคนแรก",
       "email": "อีเมล",

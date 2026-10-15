@@ -22,8 +22,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 
 	pdb "pdpa-platform/internal/pkg/db"
+	"pdpa-platform/internal/pkg/metrics"
 	auditservice "pdpa-platform/internal/platform/audit/service"
 )
 
@@ -57,6 +59,64 @@ type Service struct {
 	Platform *pgxpool.Pool // pdpa_platform (BYPASSRLS) — platform.tenants / platform.tenant_modules
 	App      *pgxpool.Pool // pdpa_app — used only via db.WithTenantTx, to create a new tenant's first admin
 	Audit    *auditservice.Service
+
+	// PLT-19: system-health dashboard. Redis is the same client cmd/api's own accessLog middleware
+	// already records request metrics into (internal/pkg/metrics) — no new infra, no Prometheus/
+	// Grafana/Loki, none of which is reachable to build or verify against in this environment.
+	Redis               *redis.Client
+	HealthWindowMinutes int     // how many of the latest per-minute buckets to sum; 0 defaults to 5
+	ErrorRateThreshold  float64 // e.g. 0.05 = alert once ≥5% of requests in the window are 5xx
+	LatencyMsThreshold  float64 // e.g. 1000 = alert once the window's average latency is ≥1s
+}
+
+// Health is a point-in-time read of the dashboard — never persisted, always recomputed live.
+type Health struct {
+	Service       string
+	WindowMinutes int
+	RequestCount  int64
+	ErrorCount    int64
+	ErrorRate     float64
+	AvgLatencyMs  float64
+	SlowCount     int64
+	SlowRatio     float64
+	Status        string // "healthy" | "degraded" — no requests, or every threshold under limit
+	CheckedAt     time.Time
+}
+
+func (s *Service) healthWindowMinutes() int {
+	if s.HealthWindowMinutes > 0 {
+		return s.HealthWindowMinutes
+	}
+	return 5
+}
+
+// Health reports whether cmd/api's own recent error rate and average latency are within the
+// configured thresholds — the acceptance criterion's own "แจ้งเตือนเมื่อ error rate หรือ latency
+// เกินเกณฑ์" read live by the provider console (and by Monitor, PLT-19's own periodic alert check)
+// rather than persisted, so it can never go stale.
+func (s *Service) Health(ctx context.Context) (Health, error) {
+	minutes := s.healthWindowMinutes()
+	w, err := metrics.Snapshot(ctx, s.Redis, "api", minutes)
+	if err != nil {
+		return Health{}, fmt.Errorf("provider: health snapshot: %w", err)
+	}
+	h := Health{
+		Service:       "api",
+		WindowMinutes: minutes,
+		RequestCount:  w.Count,
+		ErrorCount:    w.Errors,
+		ErrorRate:     w.ErrorRate,
+		AvgLatencyMs:  w.AvgLatencyMs,
+		SlowCount:     w.Slow,
+		SlowRatio:     w.SlowRatio,
+		Status:        "healthy",
+		CheckedAt:     time.Now().UTC(),
+	}
+	if (s.ErrorRateThreshold > 0 && w.ErrorRate >= s.ErrorRateThreshold) ||
+		(s.LatencyMsThreshold > 0 && w.AvgLatencyMs >= s.LatencyMsThreshold) {
+		h.Status = "degraded"
+	}
+	return h, nil
 }
 
 type Tenant struct {

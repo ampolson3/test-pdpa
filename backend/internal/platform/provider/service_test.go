@@ -4,16 +4,33 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 
 	"pdpa-platform/internal/pkg/dbtest"
+	"pdpa-platform/internal/pkg/metrics"
 	provider "pdpa-platform/internal/platform/provider"
 )
 
 func newService(t *testing.T) *provider.Service {
 	return &provider.Service{Platform: dbtest.PlatformPool(t), App: dbtest.Pool(t)}
+}
+
+func testRedis(t *testing.T) *redis.Client {
+	addr := os.Getenv("TEST_REDIS_ADDR")
+	if addr == "" {
+		addr = "localhost:6379"
+	}
+	rdb := redis.NewClient(&redis.Options{Addr: addr})
+	if err := rdb.Ping(context.Background()).Err(); err != nil {
+		t.Skipf("no Redis: %v", err)
+	}
+	t.Cleanup(func() { _ = rdb.Close() })
+	return rdb
 }
 
 func TestCreateTenant_CreatesAndRejectsDuplicateCode(t *testing.T) {
@@ -229,5 +246,44 @@ func TestTenants_AreIndependentAcrossTenants(t *testing.T) {
 	}
 	if b.Status != "active" {
 		t.Fatalf("tenant B's own status was affected by tenant A's suspend: %+v", b)
+	}
+}
+
+// PLT-19: the health dashboard — a window with no recorded requests is "healthy" (nothing to be
+// unhealthy about yet, per metrics.Window's own ErrorRate/AvgLatencyMs zero-value convention), and
+// crossing either configured threshold (error rate or average latency) flips the status to
+// "degraded" — the acceptance criterion itself.
+func TestHealth_HealthyWithNoTraffic_DegradedOverThreshold(t *testing.T) {
+	rdb := testRedis(t)
+	ctx := context.Background()
+
+	// No recorded requests at all — Health always reads the fixed "api" service name, so clear
+	// whatever bucket already exists for the current minute (e.g. from this same test process's own
+	// accessLog, if cmd/api happened to run against this Redis) before asserting "healthy".
+	now := time.Now().UTC()
+	key := "metrics:api:" + now.Format("200601021504")
+	if err := rdb.Del(ctx, key).Err(); err != nil {
+		t.Fatalf("clear bucket: %v", err)
+	}
+
+	svc := &provider.Service{Redis: rdb, HealthWindowMinutes: 1, ErrorRateThreshold: 0.05, LatencyMsThreshold: 1000}
+	h, err := svc.Health(ctx)
+	if err != nil {
+		t.Fatalf("Health: %v", err)
+	}
+	if h.Status != "healthy" || h.RequestCount != 0 {
+		t.Fatalf("no-traffic window: got %+v, want healthy with zero requests", h)
+	}
+
+	// One request, a 500 with a 2s latency — over both thresholds at once.
+	metrics.Record(ctx, rdb, "api", 500, 2*time.Second, time.Second)
+	t.Cleanup(func() { _ = rdb.Del(context.Background(), key).Err() })
+
+	h, err = svc.Health(ctx)
+	if err != nil {
+		t.Fatalf("Health: %v", err)
+	}
+	if h.Status != "degraded" || h.RequestCount != 1 || h.ErrorCount != 1 {
+		t.Fatalf("over-threshold window: got %+v, want degraded with 1 request/1 error", h)
 	}
 }

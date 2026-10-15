@@ -6,6 +6,7 @@ export type ProviderTenantModule = components["schemas"]["ProviderTenantModule"]
 export type ProviderCreateTenantInput = components["schemas"]["ProviderCreateTenantInput"];
 export type ProviderSetTenantModuleInput = components["schemas"]["ProviderSetTenantModuleInput"];
 export type ProviderCreateAdminInput = components["schemas"]["ProviderCreateAdminInput"];
+export type ProviderHealth = components["schemas"]["ProviderHealth"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const tenantsKey = ["provider", "tenants"] as const;
@@ -113,6 +114,20 @@ export function useCreateFirstAdmin(client: ApiClient, tenantId: string) {
         params: { path: { id: tenantId } },
         body: input,
       });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** GET /provider/v1/platform/health (PLT-19) — cmd/api's own recent error rate and latency, polled
+ * every 15s so the console reflects an alert soon after it crosses its threshold. */
+export function useSystemHealth(client: ApiClient) {
+  return useQuery({
+    queryKey: ["provider", "health"] as const,
+    refetchInterval: 15_000,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/provider/v1/platform/health", {});
       if (error) throw error;
       return data;
     },

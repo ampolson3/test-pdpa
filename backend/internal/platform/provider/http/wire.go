@@ -22,6 +22,21 @@ func toTenantWire(t provider.Tenant) ProviderTenant {
 	return w
 }
 
+func toHealthWire(h provider.Health) ProviderHealth {
+	return ProviderHealth{
+		Service:       h.Service,
+		WindowMinutes: h.WindowMinutes,
+		RequestCount:  h.RequestCount,
+		ErrorCount:    h.ErrorCount,
+		ErrorRate:     float32(h.ErrorRate),
+		AvgLatencyMs:  float32(h.AvgLatencyMs),
+		SlowCount:     h.SlowCount,
+		SlowRatio:     float32(h.SlowRatio),
+		Status:        ProviderHealthStatus(h.Status),
+		CheckedAt:     h.CheckedAt.UTC(),
+	}
+}
+
 func toModuleWire(m provider.TenantModule) ProviderTenantModule {
 	w := ProviderTenantModule{TenantId: m.TenantID, ModuleCode: m.ModuleCode, Enabled: m.Enabled, RowVersion: int(m.RowVersion)}
 	if m.LicenseExpiresAt != nil {

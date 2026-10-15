@@ -158,7 +158,12 @@ func run() error {
 
 	authzCache := authz.NewCachedLoader(rdb, iamservice.NewLoader(pool))
 	auditSvc := auditservice.New()
-	providerSvc := &provider.Service{Platform: platformPool, App: pool, Audit: auditSvc} // IAM-03: provider console
+	providerSvc := &provider.Service{ // IAM-03: provider console
+		Platform: platformPool, App: pool, Audit: auditSvc,
+		// PLT-19: health dashboard thresholds — tunables, not a decisions.md question (they only
+		// shape when the console shows "degraded", never a contract or legal behaviour).
+		Redis: rdb, HealthWindowMinutes: 5, ErrorRateThreshold: 0.05, LatencyMsThreshold: 1000,
+	}
 	jwks := authn.NewJWKS(cfg.OIDCJWKSURL)
 	verifier := authn.NewVerifier(jwks, cfg.OIDCIssuer)
 	limiter := ratelimit.New(rdb, 100, time.Minute)
@@ -172,7 +177,7 @@ func run() error {
 	r.Use(middleware.RequestID)
 	r.Use(otelx.Middleware("pdpa-api"))
 	r.Use(middleware.Recoverer)
-	r.Use(accessLog)
+	r.Use(accessLog(rdb))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.CORSAllowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE"},

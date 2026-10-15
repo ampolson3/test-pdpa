@@ -711,6 +711,30 @@ exists, rather than building the mechanism speculatively ahead of a real consume
 
 **หมายเหตุ:** ดึงเข้า P1 เพื่อพร้อม go-live
 
+**Implementation (PLT-19) — done, scoped to the acceptance criterion:** no Docker/Prometheus/
+Grafana/Loki is reachable to build or verify a real OTel stack against in this environment, so this
+builds the literal acceptance criterion — a health dashboard and a threshold alert — on
+infrastructure already proven out this session: `internal/pkg/metrics` records per-minute request
+counters (count/errors/duration_ms/slow) into Redis from `cmd/api`'s own `accessLog` middleware (2h
+TTL per bucket, best-effort — a lost metrics write never fails the real request). `internal/
+platform/provider.Service` (IAM-03's own SUPER-only `/provider/v1` console — this is inherently a
+cross-tenant, ops-level concern with no tenant to scope it to, the same reasoning that put IAM-03's
+own cross-tenant writes there) gained `Health(ctx)`, summing the last `HealthWindowMinutes` buckets
+(default 5) and flagging `degraded` once `ErrorRateThreshold` (default 5%) or `LatencyMsThreshold`
+(default 1000ms) is crossed — both tunables, not a `docs/decisions.md` question, since they only
+shape when the console shows a warning, never a contract or legal behaviour. New permission
+`platform.health.read` (migration 00071, SUPER only, same pattern as 00021's `admin.job.read`). API:
+`GET /provider/v1/platform/health` (`x-module: platform`, so `modulegate` never gates it — shared
+plumbing, not a licensable module). UI: a "System health" panel on `/settings/provider`, polling
+every 15s, before the tenant list. Tests: unit (`bucketKey`/`atoi64` pure functions in
+`internal/pkg/metrics`; `Health`'s own threshold math against a real Redis — healthy with no
+traffic, degraded once a recorded request crosses either threshold), HTTP contract
+(401/403/200 through the real validator + AuthZ). Not done: a literal Grafana dashboard or alert
+rule (no Grafana/Alertmanager reachable here to wire one against) — the console panel and the
+`degraded` status are this environment's own substitute, the same "practical mechanism instead of
+unreachable infra" move CON-04's chromedp crawler and PLT-13's `LocalKEK` already made; Next.js web
+vitals / server instrumentation (the module doc's own frontend note) — no consumer page needs it yet.
+
 <a id="plt-20"></a>
 ### PLT-20 Connector framework
 

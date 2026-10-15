@@ -34,6 +34,14 @@ func (h *Strict) ProviderListTenants(ctx context.Context, _ ProviderListTenantsR
 	return resp, nil
 }
 
+func (h *Strict) ProviderGetHealth(ctx context.Context, _ ProviderGetHealthRequestObject) (ProviderGetHealthResponseObject, error) {
+	health, err := h.svc.Health(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return ProviderGetHealth200JSONResponse(toHealthWire(health)), nil
+}
+
 func (h *Strict) ProviderCreateTenant(ctx context.Context, req ProviderCreateTenantRequestObject) (ProviderCreateTenantResponseObject, error) {
 	t, err := h.svc.CreateTenant(ctx, req.Body.Code, req.Body.Name, req.Body.PlanCode)
 	if err != nil {

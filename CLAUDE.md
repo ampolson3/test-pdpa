@@ -2537,6 +2537,37 @@ and vets clean and skips the same way the rest of this module's own test suite a
 magic_link/idp methods (no consumer yet, same as CON-19); a separate communication-channel opt-out model
 beyond a purpose's own `Preferences` sub-choices (none exists in this schema, so none was invented).
 
+### PLT-19 Observability (`docs/modules/PLT.md#plt-19`) — done, scoped to the acceptance criterion
+No Docker/Prometheus/Grafana/Loki is reachable in this environment to build or verify a real OTel stack
+against, so this builds the literal acceptance criterion — a health dashboard and a threshold alert — on
+infrastructure this session already proved out: `internal/pkg/metrics` records per-minute counters
+(count/errors/duration_ms/slow) into Redis from `cmd/api`'s own `accessLog` middleware (a 2h TTL per
+minute bucket, best-effort — a lost metrics write never fails the real request). `internal/platform/
+provider.Service` (IAM-03's own SUPER-only `/provider/v1` console — an inherently cross-tenant, ops-level
+concern, the same reasoning that already put IAM-03's own cross-tenant writes there) gained `Health(ctx)`,
+summing the last `HealthWindowMinutes` buckets (default 5) and flagging `degraded` once
+`ErrorRateThreshold` (default 5%) or `LatencyMsThreshold` (default 1000ms) is crossed — both tunables, not
+a `docs/decisions.md` question, since they only shape when the console shows a warning, never a contract
+or legal behaviour. New permission `platform.health.read` (migration 00071, SUPER only, mirroring 00021's
+`admin.job.read`). Real pre-existing bug found and fixed while wiring this: `metrics.Snapshot` referenced
+a `Window.DurationMs` field that didn't exist on the struct (a compile error) — fixed by summing duration
+into a local variable instead, since only the derived `AvgLatencyMs` needs to be public.
+
+API: `GET /provider/v1/platform/health` (`x-module: platform`, so `modulegate` never gates it — shared
+plumbing, not a licensable module). UI: a "System health" panel on `/settings/provider`, polling every
+15s, shown above the tenant list. Tests: unit (`bucketKey`/`atoi64` pure functions in
+`internal/pkg/metrics`; `Health`'s own threshold math against a real Redis — healthy with no recorded
+traffic, degraded once one recorded request crosses either threshold), HTTP contract (401/403/200 through
+the real validator + AuthZ). `go build`/`go vet`/`gofmt` and the full `go test -p 1 ./...` suite verified
+clean (no regressions; Postgres and Redis were both reachable from this session, so every test — this
+feature's own and the full regression suite — ran for real rather than skipping), `pnpm --filter
+@pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build`/
+`typecheck` all verified clean. Not done: a literal Grafana dashboard or Alertmanager rule (nothing of the
+kind is reachable here to wire one against) — the console panel and its `degraded` status are this
+environment's own substitute, the same "practical mechanism instead of unreachable infra" move CON-04's
+chromedp crawler and PLT-13's `LocalKEK` already made; Next.js web vitals / server instrumentation (the
+module doc's own frontend note) — no consumer page needs it yet.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 
