@@ -1960,6 +1960,14 @@
       "required": "Required for the service",
       "origins": "Websites allowed to use the key",
       "originsHint": "One origin per line. Leave empty to allow any site.",
+      "verificationMethod": "Identity verification",
+      "verificationMethodHint": "CON-19 — required before a public submission to this form is recorded",
+      "verificationMethods": {
+        "none": "Not required",
+        "otp": "OTP (SMS/e-mail)",
+        "magic_link": "Magic link (not available yet)",
+        "idp": "External IdP (not available yet)"
+      },
       "publishTitle": "Publishing",
       "checklistIntro": "Confirm the form meets s.19 before publishing",
       "publish": "Publish",
@@ -2119,6 +2127,26 @@
         "consent_subject_conflict": "This e-mail and phone number belong to different people",
         "not_found": "This form doesn't exist",
         "no_change": "Nothing changed. To withdraw a consent you gave, contact the organization through the channels in its privacy notice."
+      },
+      "otp": {
+        "intro": "This form requires identity verification before your consent can be recorded. Enter your e-mail or phone number to receive a one-time code.",
+        "contactHint": "Give the e-mail or phone number you want to use — we'll send a verification code to it.",
+        "sendCode": "Send code",
+        "verifyTitle": "Verify your identity",
+        "codeSentVia": {
+          "email": "We sent a verification code to your e-mail.",
+          "sms": "We sent a verification code by SMS."
+        },
+        "code": "Verification code",
+        "errors": {
+          "identifier_missing": "Please enter an e-mail or phone number",
+          "unavailable": "The service is temporarily unavailable, please try again",
+          "consent_invalid_request": "This form doesn't require identity verification",
+          "not_found": "This form doesn't exist",
+          "required": "Please enter the verification code",
+          "invalid": "The code you entered is incorrect, expired, or already used",
+          "identifier_mismatch": "The code doesn't match the e-mail or phone number you gave"
+        }
       }
     },
     "notice": {

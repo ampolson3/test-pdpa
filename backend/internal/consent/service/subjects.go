@@ -325,11 +325,12 @@ type PublicOption struct{ Value, Label string }
 
 // PublicCollectionPoint is GET /public/v1/collection-points/{key} (BP-01 t1–t2).
 type PublicCollectionPoint struct {
-	Code     string
-	Name     string
-	Channel  string
-	Language string
-	Purposes []PublicPurpose
+	Code               string
+	Name               string
+	Channel            string
+	VerificationMethod string // none | otp | magic_link | idp (CON-19)
+	Language           string
+	Purposes           []PublicPurpose
 }
 
 // PublicView returns an active collection point for a consent form (tenant from its public key).
@@ -359,7 +360,7 @@ func (s *Service) PublicView(ctx context.Context, id uuid.UUID, lang string) (Pu
 	if err != nil {
 		return PublicCollectionPoint{}, err
 	}
-	out := PublicCollectionPoint{Code: cp.Code, Name: cp.Name, Channel: cp.Channel, Language: lang, Purposes: []PublicPurpose{}}
+	out := PublicCollectionPoint{Code: cp.Code, Name: cp.Name, Channel: cp.Channel, VerificationMethod: cp.VerificationMethod, Language: lang, Purposes: []PublicPurpose{}}
 	for _, p := range cp.Purposes {
 		if p.Status != "active" || p.CurrentVersionNo == nil {
 			continue

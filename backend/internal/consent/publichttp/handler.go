@@ -55,7 +55,7 @@ func (h *Strict) ConsentGetPublicCollectionPoint(ctx context.Context, req Consen
 		return nil, consenthttp.ToProblem(err)
 	}
 	out := PublicCollectionPoint{Code: v.Code, Name: v.Name, Channel: PublicCollectionPointChannel(v.Channel),
-		DoubleOptIn: false, VerificationMethod: "none", Purposes: []PublicPurpose{}}
+		DoubleOptIn: false, VerificationMethod: PublicCollectionPointVerificationMethod(v.VerificationMethod), Purposes: []PublicPurpose{}}
 	ageGate := false
 	for _, p := range v.Purposes {
 		pp := PublicPurpose{Code: p.Code, VersionNo: int(p.VersionNo), Name: p.Name, Text: p.Text,
@@ -136,6 +136,10 @@ func (h *Strict) ConsentSubmitPublicConsent(ctx context.Context, req ConsentSubm
 	if b.Subject.Guardian != nil {
 		sub.Guardian = &consent.Guardian{Identifiers: consenthttp.Identifiers(b.Subject.Guardian.Identifiers), Relationship: string(b.Subject.Guardian.Relationship)}
 	}
+	if b.Verification != nil {
+		sub.VerificationID = &b.Verification.VerificationId
+		sub.VerificationCode = b.Verification.Code
+	}
 	if ip, ok := clientip.From(ctx); ok {
 		sub.IP = &ip
 	}
@@ -152,6 +156,19 @@ func (h *Strict) ConsentSubmitPublicConsent(ctx context.Context, req ConsentSubm
 		return nil, err
 	}
 	return ConsentSubmitPublicConsent201JSONResponse(w), nil
+}
+
+func (h *Strict) ConsentStartVerification(ctx context.Context, req ConsentStartVerificationRequestObject) (ConsentStartVerificationResponseObject, error) {
+	k, err := collectionPoint(ctx)
+	if err != nil {
+		return nil, err
+	}
+	id := consenthttp.Identifiers([]SubjectIdentifier{req.Body.Identifier})[0]
+	ref, err := h.svc.StartConsentVerification(ctx, k.EntityID, id)
+	if err != nil {
+		return nil, consenthttp.ToProblem(err)
+	}
+	return ConsentStartVerification201JSONResponse{VerificationId: ref.ID, Channel: ConsentStartVerification201JSONResponseBodyChannel(ref.Channel)}, nil
 }
 
 func (h *Strict) ConsentVerifyGuardianApproval(ctx context.Context, req ConsentVerifyGuardianApprovalRequestObject) (ConsentVerifyGuardianApprovalResponseObject, error) {

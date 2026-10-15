@@ -1551,6 +1551,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/v1/consents/start-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send an OTP to the identifier the form collected (CON-19) — required before submitting to a collection point whose verification_method is "otp"
+         * @description The collection point's public key (X-Public-Key) names the tenant. Only e-mail and phone identifiers have an OTP channel.
+         */
+        post: operations["consentStartVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/v1/consents/guardian-approvals/{id}/verify": {
         parameters: {
             query?: never;
@@ -7981,6 +8001,11 @@ export interface components {
             channel: "web" | "app" | "pos" | "call_center" | "kiosk" | "paper" | "line" | "api";
             legal_entity_id: components["schemas"]["Uuid"];
             allowed_origins?: string[];
+            /**
+             * @description CON-19 — identity check required before a public submission is recorded; defaults to "none"
+             * @enum {string}
+             */
+            verification_method?: "none" | "otp" | "magic_link" | "idp";
             purposes: {
                 purpose_id: components["schemas"]["Uuid"];
                 required: boolean;
@@ -7997,6 +8022,11 @@ export interface components {
             /** @description Issued on the first publish; used by links, QR codes and forms */
             public_key?: string;
             allowed_origins: string[];
+            /**
+             * @description CON-19 — identity check required before a public submission is recorded
+             * @enum {string}
+             */
+            verification_method?: "none" | "otp" | "magic_link" | "idp";
             checklist?: components["schemas"]["ConsentChecklist"];
             published_at?: components["schemas"]["Timestamp"];
             purposes: {
@@ -12411,6 +12441,11 @@ export interface operations {
                     decisions: components["schemas"]["ConsentDecisionInput"][];
                     /** @enum {string} */
                     language?: "th" | "en";
+                    /** @description Required when the collection point's verification_method is "otp" (CON-19) — the id from consentStartVerification plus the code the subject was sent, for one of the identifiers above. */
+                    verification?: {
+                        verification_id: components["schemas"]["Uuid"];
+                        code: string;
+                    };
                 };
             };
         };
@@ -12427,6 +12462,47 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    consentStartVerification: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                "X-Public-Key": string;
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    identifier: components["schemas"]["SubjectIdentifier"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        verification_id: components["schemas"]["Uuid"];
+                        /** @enum {string} */
+                        channel: "sms" | "email";
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
             429: components["responses"]["TooManyRequests"];

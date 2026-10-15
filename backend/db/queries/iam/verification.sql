@@ -8,7 +8,7 @@ VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, 'pending
 RETURNING id, subject_id, purpose, method, attempts, status, assurance_level, expires_at, verified_at, row_version;
 
 -- name: GetSubjectVerification :one
-SELECT id, subject_id, purpose, method, otp_hash, attempts, status, assurance_level, expires_at, verified_at, row_version
+SELECT id, subject_id, purpose, method, otp_hash, identifier_blind_index, attempts, status, assurance_level, expires_at, verified_at, row_version
 FROM iam.subject_verifications WHERE id = $1;
 
 -- name: UpdateSubjectVerificationStatus :one

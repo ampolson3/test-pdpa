@@ -52,6 +52,30 @@ func (e CollectionPointInputChannel) Valid() bool {
 	}
 }
 
+// Defines values for CollectionPointInputVerificationMethod.
+const (
+	CollectionPointInputVerificationMethodIdp       CollectionPointInputVerificationMethod = "idp"
+	CollectionPointInputVerificationMethodMagicLink CollectionPointInputVerificationMethod = "magic_link"
+	CollectionPointInputVerificationMethodNone      CollectionPointInputVerificationMethod = "none"
+	CollectionPointInputVerificationMethodOtp       CollectionPointInputVerificationMethod = "otp"
+)
+
+// Valid indicates whether the value is a known member of the CollectionPointInputVerificationMethod enum.
+func (e CollectionPointInputVerificationMethod) Valid() bool {
+	switch e {
+	case CollectionPointInputVerificationMethodIdp:
+		return true
+	case CollectionPointInputVerificationMethodMagicLink:
+		return true
+	case CollectionPointInputVerificationMethodNone:
+		return true
+	case CollectionPointInputVerificationMethodOtp:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ConsentCollectionPointStatus.
 const (
 	ConsentCollectionPointStatusActive  ConsentCollectionPointStatus = "active"
@@ -67,6 +91,30 @@ func (e ConsentCollectionPointStatus) Valid() bool {
 	case ConsentCollectionPointStatusDraft:
 		return true
 	case ConsentCollectionPointStatusRetired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentCollectionPointVerificationMethod.
+const (
+	ConsentCollectionPointVerificationMethodIdp       ConsentCollectionPointVerificationMethod = "idp"
+	ConsentCollectionPointVerificationMethodMagicLink ConsentCollectionPointVerificationMethod = "magic_link"
+	ConsentCollectionPointVerificationMethodNone      ConsentCollectionPointVerificationMethod = "none"
+	ConsentCollectionPointVerificationMethodOtp       ConsentCollectionPointVerificationMethod = "otp"
+)
+
+// Valid indicates whether the value is a known member of the ConsentCollectionPointVerificationMethod enum.
+func (e ConsentCollectionPointVerificationMethod) Valid() bool {
+	switch e {
+	case ConsentCollectionPointVerificationMethodIdp:
+		return true
+	case ConsentCollectionPointVerificationMethodMagicLink:
+		return true
+	case ConsentCollectionPointVerificationMethodNone:
+		return true
+	case ConsentCollectionPointVerificationMethodOtp:
 		return true
 	default:
 		return false
@@ -550,6 +598,30 @@ func (e ConsentCreateCollectionPointJSONBodyChannel) Valid() bool {
 	}
 }
 
+// Defines values for ConsentCreateCollectionPointJSONBodyVerificationMethod.
+const (
+	ConsentCreateCollectionPointJSONBodyVerificationMethodIdp       ConsentCreateCollectionPointJSONBodyVerificationMethod = "idp"
+	ConsentCreateCollectionPointJSONBodyVerificationMethodMagicLink ConsentCreateCollectionPointJSONBodyVerificationMethod = "magic_link"
+	ConsentCreateCollectionPointJSONBodyVerificationMethodNone      ConsentCreateCollectionPointJSONBodyVerificationMethod = "none"
+	ConsentCreateCollectionPointJSONBodyVerificationMethodOtp       ConsentCreateCollectionPointJSONBodyVerificationMethod = "otp"
+)
+
+// Valid indicates whether the value is a known member of the ConsentCreateCollectionPointJSONBodyVerificationMethod enum.
+func (e ConsentCreateCollectionPointJSONBodyVerificationMethod) Valid() bool {
+	switch e {
+	case ConsentCreateCollectionPointJSONBodyVerificationMethodIdp:
+		return true
+	case ConsentCreateCollectionPointJSONBodyVerificationMethodMagicLink:
+		return true
+	case ConsentCreateCollectionPointJSONBodyVerificationMethodNone:
+		return true
+	case ConsentCreateCollectionPointJSONBodyVerificationMethodOtp:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ConsentGetCollectionPointParamsAcceptLanguage.
 const (
 	ConsentGetCollectionPointParamsAcceptLanguageEn ConsentGetCollectionPointParamsAcceptLanguage = "en"
@@ -833,10 +905,16 @@ type CollectionPointInput struct {
 		PurposeId Uuid `json:"purpose_id"`
 		Required  bool `json:"required"`
 	} `json:"purposes"`
+
+	// VerificationMethod CON-19 — identity check required before a public submission is recorded; defaults to "none"
+	VerificationMethod *CollectionPointInputVerificationMethod `json:"verification_method,omitempty"`
 }
 
 // CollectionPointInputChannel defines model for CollectionPointInput.Channel.
 type CollectionPointInputChannel string
+
+// CollectionPointInputVerificationMethod CON-19 — identity check required before a public submission is recorded; defaults to "none"
+type CollectionPointInputVerificationMethod string
 
 // ConsentChecklist s.19 attestation made when publishing
 type ConsentChecklist struct {
@@ -883,10 +961,16 @@ type ConsentCollectionPoint struct {
 
 	// UpdatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
 	UpdatedAt Timestamp `json:"updated_at"`
+
+	// VerificationMethod CON-19 — identity check required before a public submission is recorded
+	VerificationMethod *ConsentCollectionPointVerificationMethod `json:"verification_method,omitempty"`
 }
 
 // ConsentCollectionPointStatus defines model for ConsentCollectionPoint.Status.
 type ConsentCollectionPointStatus string
+
+// ConsentCollectionPointVerificationMethod CON-19 — identity check required before a public submission is recorded
+type ConsentCollectionPointVerificationMethod string
 
 // ConsentDecisionInput defines model for ConsentDecisionInput.
 type ConsentDecisionInput struct {
@@ -1257,6 +1341,9 @@ type ConsentCreateCollectionPointJSONBody struct {
 		PurposeId Uuid `json:"purpose_id"`
 		Required  bool `json:"required"`
 	} `json:"purposes"`
+
+	// VerificationMethod CON-19 — identity check required before a public submission is recorded; defaults to "none"
+	VerificationMethod *ConsentCreateCollectionPointJSONBodyVerificationMethod `json:"verification_method,omitempty"`
 }
 
 // ConsentCreateCollectionPointParams defines parameters for ConsentCreateCollectionPoint.
@@ -1270,6 +1357,9 @@ type ConsentCreateCollectionPointParamsAcceptLanguage string
 
 // ConsentCreateCollectionPointJSONBodyChannel defines parameters for ConsentCreateCollectionPoint.
 type ConsentCreateCollectionPointJSONBodyChannel string
+
+// ConsentCreateCollectionPointJSONBodyVerificationMethod defines parameters for ConsentCreateCollectionPoint.
+type ConsentCreateCollectionPointJSONBodyVerificationMethod string
 
 // ConsentGetCollectionPointParams defines parameters for ConsentGetCollectionPoint.
 type ConsentGetCollectionPointParams struct {

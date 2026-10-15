@@ -365,6 +365,51 @@ func TestConsentEndpoints_Contract(t *testing.T) {
 	if len(confirmed) != 1 || confirmed[0] != "MKT-MINOR" {
 		t.Errorf("confirmed_purposes = %v, want [MKT-MINOR]", confirmed)
 	}
+
+	// ---- CON-19: identity verification required before recording ----
+	otpPurpose := f.LivePurpose(t, "MKT-OTP", consenttest.Content("MKT-OTP", "ยินยอมรับข่าวสาร"))
+	otpDraft := do("POST", "/admin/v1/consent/collection-points", &alice, map[string]any{"code": "OTP-SIGNUP", "name": "สมัครยืนยันตัวตน", "channel": "web",
+		"legal_entity_id": f.EntityA, "verification_method": "otp", "purposes": []any{map[string]any{"purpose_id": otpPurpose.ID, "required": false}}}, nil)
+	if otpDraft.code != 201 || otpDraft.body["verification_method"] != "otp" {
+		t.Fatalf("create otp collection point: %d %v", otpDraft.code, otpDraft.body)
+	}
+	otpPub := do("POST", "/admin/v1/consent/collection-points/"+otpDraft.body["id"].(string)+"/publish", &alice,
+		map[string]any{"separate_text": true, "not_bundled": true, "plain_language": true, "withdrawal_info": true}, map[string]string{"If-Match": otpDraft.hdr.Get("ETag")})
+	if otpPub.code != 200 {
+		t.Fatalf("publish otp collection point: %d %v", otpPub.code, otpPub.body)
+	}
+	otpKey := otpPub.body["public_key"].(string)
+	otpSubmit := map[string]any{
+		"subject":   map[string]any{"identifiers": []map[string]string{{"type": "email", "value": "otpuser@example.com"}}},
+		"decisions": []map[string]any{{"purpose_code": "MKT-OTP", "purpose_version_no": 1, "decision": "CONSENTED"}},
+	}
+	otpKeyHdr := map[string]string{"X-Public-Key": otpKey, "Idempotency-Key": uuid.NewString()}
+
+	// Recording without verification is refused.
+	if res := do("POST", "/public/v1/consents", nil, otpSubmit, otpKeyHdr); res.code != 422 {
+		t.Errorf("otp submission with no verification: %d %v, want 422", res.code, res.body)
+	}
+
+	// Start verification, then record with the right code: accepted.
+	startRes := do("POST", "/public/v1/consents/start-verification", nil, map[string]any{"identifier": map[string]string{"type": "email", "value": "otpuser@example.com"}},
+		map[string]string{"X-Public-Key": otpKey, "Idempotency-Key": uuid.NewString()})
+	if startRes.code != 201 || startRes.body["channel"] != "email" {
+		t.Fatalf("start verification: %d %v", startRes.code, startRes.body)
+	}
+	otpCode := guardianNotifier.lastCode()
+	if otpCode == "" {
+		t.Fatal("expected an OTP to have been sent for the consent verification")
+	}
+	otpSubmit["verification"] = map[string]any{"verification_id": startRes.body["verification_id"], "code": otpCode}
+	if res := do("POST", "/public/v1/consents", nil, otpSubmit, map[string]string{"X-Public-Key": otpKey, "Idempotency-Key": uuid.NewString()}); res.code != 201 {
+		t.Errorf("otp submission with verification: %d %v", res.code, res.body)
+	}
+
+	// An unknown public key refuses to start a verification (404), not leaking whether a collection point exists.
+	if res := do("POST", "/public/v1/consents/start-verification", nil, map[string]any{"identifier": map[string]string{"type": "email", "value": "x@example.com"}},
+		map[string]string{"X-Public-Key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "Idempotency-Key": uuid.NewString()}); res.code != 404 {
+		t.Errorf("start verification, unknown key: %d, want 404", res.code)
+	}
 }
 
 // fakeIamNotifier captures the OTP a StartVerification call would have sent (PLT-04), so the contract test can

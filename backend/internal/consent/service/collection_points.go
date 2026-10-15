@@ -20,6 +20,11 @@ import (
 // Channels a collection point may use here (import and cookie points are made by their own features).
 var channels = []string{"web", "app", "pos", "call_center", "kiosk", "paper", "line", "api"}
 
+// VerificationMethods a collection point can require before Record() accepts a public submission (CON-19).
+// Only "none" and "otp" are enforced here — magic_link/idp are already in the column's own CHECK constraint
+// for later (IAM-05's own "รองรับภายหลัง"), accepted as valid input but not yet checked at Record time.
+var VerificationMethods = []string{"none", "otp", "magic_link", "idp"}
+
 // Checklist is the s.19 attestation made when publishing: the consent request is separate from other terms, isn't
 // a condition of a contract beyond what is needed, is in plain language, and says how to withdraw. The form itself
 // never pre-ticks a purpose (the renderer and the recorder both enforce it).
@@ -48,29 +53,31 @@ type CPPurpose struct {
 
 // CollectionPoint is a place consent is collected (web form, app, branch counter, call centre, API).
 type CollectionPoint struct {
-	ID             uuid.UUID
-	Code           string
-	Name           string
-	Channel        string
-	LegalEntityID  uuid.UUID
-	Status         string // draft | active | retired
-	PublicKey      string // issued on the first publish
-	AllowedOrigins []string
-	Checklist      *Checklist
-	PublishedAt    *time.Time
-	Purposes       []CPPurpose
-	RowVersion     int32
-	UpdatedAt      time.Time
+	ID                 uuid.UUID
+	Code               string
+	Name               string
+	Channel            string
+	LegalEntityID      uuid.UUID
+	Status             string // draft | active | retired
+	VerificationMethod string // none | otp | magic_link | idp (CON-19)
+	PublicKey          string // issued on the first publish
+	AllowedOrigins     []string
+	Checklist          *Checklist
+	PublishedAt        *time.Time
+	Purposes           []CPPurpose
+	RowVersion         int32
+	UpdatedAt          time.Time
 }
 
 // CollectionPointInput is what the editor saves.
 type CollectionPointInput struct {
-	Code           string
-	Name           string
-	Channel        string
-	LegalEntityID  uuid.UUID
-	AllowedOrigins []string
-	Purposes       []CPPurposeInput
+	Code               string
+	Name               string
+	Channel            string
+	LegalEntityID      uuid.UUID
+	AllowedOrigins     []string
+	VerificationMethod string // none | otp | magic_link | idp (CON-19); "" normalizes to "none"
+	Purposes           []CPPurposeInput
 }
 
 // CPPurposeInput places a purpose on the form; Required purposes must be consented to to go on (never a sensitive one).
@@ -86,6 +93,12 @@ func (s *Service) checkCPInput(ctx context.Context, in *CollectionPointInput) er
 	}
 	if !slices.Contains(channels, in.Channel) {
 		return invalid("channel")
+	}
+	if in.VerificationMethod == "" {
+		in.VerificationMethod = "none"
+	}
+	if !slices.Contains(VerificationMethods, in.VerificationMethod) {
+		return invalid("verification_method")
 	}
 	if _, err := s.Org.GetLegalEntity(ctx, in.LegalEntityID); err != nil {
 		return invalid("legal entity")
@@ -132,7 +145,7 @@ func (s *Service) CreateCollectionPoint(ctx context.Context, in CollectionPointI
 	}
 	err = pdb.Savepoint(ctx, func(ctx context.Context) error {
 		return consentstore.New(pdb.MustTxFromContext(ctx)).InsertCollectionPoint(ctx, consentstore.InsertCollectionPointParams{ID: id, Code: in.Code, Name: in.Name,
-			Channel: in.Channel, LegalEntityID: in.LegalEntityID, AllowedOrigins: in.AllowedOrigins})
+			Channel: in.Channel, LegalEntityID: in.LegalEntityID, AllowedOrigins: in.AllowedOrigins, VerificationMethod: in.VerificationMethod})
 	})
 	if isUnique(err) {
 		return CollectionPoint{}, invalid("code exists")
@@ -170,7 +183,7 @@ func (s *Service) UpdateCollectionPoint(ctx context.Context, id uuid.UUID, versi
 		return CollectionPoint{}, err
 	}
 	if n, err := q.UpdateCollectionPoint(ctx, consentstore.UpdateCollectionPointParams{ID: id, RowVersion: version, Name: in.Name, Channel: in.Channel,
-		LegalEntityID: in.LegalEntityID, AllowedOrigins: in.AllowedOrigins}); err != nil || n == 0 {
+		LegalEntityID: in.LegalEntityID, AllowedOrigins: in.AllowedOrigins, VerificationMethod: in.VerificationMethod}); err != nil || n == 0 {
 		if err == nil {
 			err = ErrVersionMismatch
 		}
@@ -374,7 +387,8 @@ func cpPurposes(ctx context.Context, q *consentstore.Queries, id uuid.UUID) ([]C
 
 func toCP(r consentstore.GetCollectionPointRow) CollectionPoint {
 	cp := CollectionPoint{ID: r.ID, Code: r.Code, Name: r.Name, Channel: r.Channel, LegalEntityID: r.LegalEntityID, Status: r.Status,
-		PublicKey: deref(r.PublicKey), AllowedOrigins: r.AllowedOrigins, RowVersion: r.RowVersion, UpdatedAt: r.UpdatedAt.Time}
+		VerificationMethod: r.VerificationMethod,
+		PublicKey:          deref(r.PublicKey), AllowedOrigins: r.AllowedOrigins, RowVersion: r.RowVersion, UpdatedAt: r.UpdatedAt.Time}
 	if len(r.PublishChecklist) > 0 {
 		cp.Checklist = &Checklist{}
 		_ = json.Unmarshal(r.PublishChecklist, cp.Checklist)

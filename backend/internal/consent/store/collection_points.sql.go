@@ -84,20 +84,22 @@ func (q *Queries) GetCollectionPointByCode(ctx context.Context, code string) (uu
 }
 
 const insertCollectionPoint = `-- name: InsertCollectionPoint :exec
-INSERT INTO consent.collection_points (id, tenant_id, code, name, channel, legal_entity_id, allowed_origins, created_by, updated_by)
-VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6,
+INSERT INTO consent.collection_points (id, tenant_id, code, name, channel, legal_entity_id, allowed_origins, verification_method, created_by, updated_by)
+VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7,
         NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
 `
 
 type InsertCollectionPointParams struct {
-	ID             uuid.UUID `db:"id" json:"id"`
-	Code           string    `db:"code" json:"code"`
-	Name           string    `db:"name" json:"name"`
-	Channel        string    `db:"channel" json:"channel"`
-	LegalEntityID  uuid.UUID `db:"legal_entity_id" json:"legal_entity_id"`
-	AllowedOrigins []string  `db:"allowed_origins" json:"allowed_origins"`
+	ID                 uuid.UUID `db:"id" json:"id"`
+	Code               string    `db:"code" json:"code"`
+	Name               string    `db:"name" json:"name"`
+	Channel            string    `db:"channel" json:"channel"`
+	LegalEntityID      uuid.UUID `db:"legal_entity_id" json:"legal_entity_id"`
+	AllowedOrigins     []string  `db:"allowed_origins" json:"allowed_origins"`
+	VerificationMethod string    `db:"verification_method" json:"verification_method"`
 }
 
+// CON-19: verification_method (none/otp/magic_link/idp) was already in the baseline schema, unused until now.
 func (q *Queries) InsertCollectionPoint(ctx context.Context, arg InsertCollectionPointParams) error {
 	_, err := q.db.Exec(ctx, insertCollectionPoint,
 		arg.ID,
@@ -106,6 +108,7 @@ func (q *Queries) InsertCollectionPoint(ctx context.Context, arg InsertCollectio
 		arg.Channel,
 		arg.LegalEntityID,
 		arg.AllowedOrigins,
+		arg.VerificationMethod,
 	)
 	return err
 }
@@ -352,18 +355,19 @@ func (q *Queries) RetireCollectionPoint(ctx context.Context, id uuid.UUID) error
 
 const updateCollectionPoint = `-- name: UpdateCollectionPoint :execrows
 UPDATE consent.collection_points
-SET name = $3, channel = $4, legal_entity_id = $5, allowed_origins = $6, row_version = row_version + 1,
+SET name = $3, channel = $4, legal_entity_id = $5, allowed_origins = $6, verification_method = $7, row_version = row_version + 1,
     updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
 WHERE id = $1 AND row_version = $2
 `
 
 type UpdateCollectionPointParams struct {
-	ID             uuid.UUID `db:"id" json:"id"`
-	RowVersion     int32     `db:"row_version" json:"row_version"`
-	Name           string    `db:"name" json:"name"`
-	Channel        string    `db:"channel" json:"channel"`
-	LegalEntityID  uuid.UUID `db:"legal_entity_id" json:"legal_entity_id"`
-	AllowedOrigins []string  `db:"allowed_origins" json:"allowed_origins"`
+	ID                 uuid.UUID `db:"id" json:"id"`
+	RowVersion         int32     `db:"row_version" json:"row_version"`
+	Name               string    `db:"name" json:"name"`
+	Channel            string    `db:"channel" json:"channel"`
+	LegalEntityID      uuid.UUID `db:"legal_entity_id" json:"legal_entity_id"`
+	AllowedOrigins     []string  `db:"allowed_origins" json:"allowed_origins"`
+	VerificationMethod string    `db:"verification_method" json:"verification_method"`
 }
 
 func (q *Queries) UpdateCollectionPoint(ctx context.Context, arg UpdateCollectionPointParams) (int64, error) {
@@ -374,6 +378,7 @@ func (q *Queries) UpdateCollectionPoint(ctx context.Context, arg UpdateCollectio
 		arg.Channel,
 		arg.LegalEntityID,
 		arg.AllowedOrigins,
+		arg.VerificationMethod,
 	)
 	if err != nil {
 		return 0, err

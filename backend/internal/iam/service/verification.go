@@ -37,7 +37,7 @@ var (
 // OTPExpiry and MaxOTPAttempts are decisions.md D-01's fixed security values — not configuration, since
 // changing them is a policy decision, not a tunable default (CLAUDE.md's own distinction).
 const (
-	OTPExpiry     = 5 * time.Minute
+	OTPExpiry      = 5 * time.Minute
 	MaxOTPAttempts = 5
 )
 
@@ -176,6 +176,29 @@ func (s *Service) VerifyOTP(ctx context.Context, id uuid.UUID, code string) (Sub
 		return out, s.andThen(ctx, "iam.subject_verification.attempt", before, out, ErrCodeMismatch)
 	}
 	return out, s.auditVerification(ctx, "iam.subject_verification.attempt", out, &before)
+}
+
+// VerifiedIdentifier reports whether a verification is already decided "verified" for the given purpose and
+// was started against exactly this identifier — so a caller can't present someone else's completed OTP to
+// cover their own submission (CON-19). An unknown id, a different purpose/status, or a mismatched identifier
+// all read as false, never an error, since none of those is this caller's fault to fix by retrying.
+func (s *Service) VerifiedIdentifier(ctx context.Context, id uuid.UUID, purpose string, kind crypto.IdentifierKind, value string) (bool, error) {
+	q := iamstore.New(pdb.MustTxFromContext(ctx))
+	row, err := q.GetSubjectVerification(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	if row.Status != "verified" || row.Purpose != purpose {
+		return false, nil
+	}
+	idx, err := s.Keyring.BlindIndex(ctx, kind, value)
+	if err != nil {
+		return false, err
+	}
+	return subtle.ConstantTimeCompare(row.IdentifierBlindIndex, idx) == 1, nil
 }
 
 func (s *Service) decide(ctx context.Context, id uuid.UUID, rowVersion int32, status string) (SubjectVerification, error) {

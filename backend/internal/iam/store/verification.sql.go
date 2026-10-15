@@ -13,22 +13,23 @@ import (
 )
 
 const getSubjectVerification = `-- name: GetSubjectVerification :one
-SELECT id, subject_id, purpose, method, otp_hash, attempts, status, assurance_level, expires_at, verified_at, row_version
+SELECT id, subject_id, purpose, method, otp_hash, identifier_blind_index, attempts, status, assurance_level, expires_at, verified_at, row_version
 FROM iam.subject_verifications WHERE id = $1
 `
 
 type GetSubjectVerificationRow struct {
-	ID             uuid.UUID          `db:"id" json:"id"`
-	SubjectID      pgtype.UUID        `db:"subject_id" json:"subject_id"`
-	Purpose        string             `db:"purpose" json:"purpose"`
-	Method         string             `db:"method" json:"method"`
-	OtpHash        *string            `db:"otp_hash" json:"otp_hash"`
-	Attempts       int32              `db:"attempts" json:"attempts"`
-	Status         string             `db:"status" json:"status"`
-	AssuranceLevel int16              `db:"assurance_level" json:"assurance_level"`
-	ExpiresAt      pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
-	VerifiedAt     pgtype.Timestamptz `db:"verified_at" json:"verified_at"`
-	RowVersion     int32              `db:"row_version" json:"row_version"`
+	ID                   uuid.UUID          `db:"id" json:"id"`
+	SubjectID            pgtype.UUID        `db:"subject_id" json:"subject_id"`
+	Purpose              string             `db:"purpose" json:"purpose"`
+	Method               string             `db:"method" json:"method"`
+	OtpHash              *string            `db:"otp_hash" json:"otp_hash"`
+	IdentifierBlindIndex []byte             `db:"identifier_blind_index" json:"identifier_blind_index"`
+	Attempts             int32              `db:"attempts" json:"attempts"`
+	Status               string             `db:"status" json:"status"`
+	AssuranceLevel       int16              `db:"assurance_level" json:"assurance_level"`
+	ExpiresAt            pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	VerifiedAt           pgtype.Timestamptz `db:"verified_at" json:"verified_at"`
+	RowVersion           int32              `db:"row_version" json:"row_version"`
 }
 
 func (q *Queries) GetSubjectVerification(ctx context.Context, id uuid.UUID) (GetSubjectVerificationRow, error) {
@@ -40,6 +41,7 @@ func (q *Queries) GetSubjectVerification(ctx context.Context, id uuid.UUID) (Get
 		&i.Purpose,
 		&i.Method,
 		&i.OtpHash,
+		&i.IdentifierBlindIndex,
 		&i.Attempts,
 		&i.Status,
 		&i.AssuranceLevel,

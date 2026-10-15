@@ -20,6 +20,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	consentstore "pdpa-platform/internal/consent/store"
+	iamservice "pdpa-platform/internal/iam/service"
 	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/pkg/i18n"
 	"pdpa-platform/internal/platform/crypto"
@@ -71,6 +72,18 @@ type Submission struct {
 	// DSAR-06's identity-verification job, not built here.
 	IsMinor  bool
 	Guardian *Guardian
+	// Verification proves identity before Record accepts a public submission from a collection point whose
+	// VerificationMethod requires one (CON-19, ม.19 แนวปฏิบัติตลาด) — the id from StartConsentVerification
+	// plus the code the subject was just sent. Nil/empty when the collection point's method is "none".
+	VerificationID   *uuid.UUID
+	VerificationCode string
+}
+
+// ConsentVerificationRef is the OTP attempt StartConsentVerification just started; the caller carries the id
+// forward and asks the subject for the code before calling Record.
+type ConsentVerificationRef struct {
+	ID      uuid.UUID
+	Channel string // sms | email
 }
 
 // Guardian is who must confirm a minor's guardian-gated consent (ม.20).
@@ -121,6 +134,85 @@ func (e *DecisionError) Error() string {
 }
 func (e *DecisionError) Unwrap() error { return ErrInvalidRequest }
 
+// otpMethodFor maps an identifier kind to the IAM-05 OTP delivery method, or false if that kind has no OTP
+// channel (CON-19 only supports e-mail/phone identifiers for verification, the same two IAM-05 itself built).
+func otpMethodFor(kind crypto.IdentifierKind) (string, bool) {
+	switch kind {
+	case crypto.KindEmail:
+		return "otp_email", true
+	case crypto.KindPhone:
+		return "otp_sms", true
+	default:
+		return "", false
+	}
+}
+
+// StartConsentVerification sends an OTP to the identifier the public form collected (CON-19) — Record then
+// requires that code before it accepts a submission to a collection point whose VerificationMethod is "otp".
+func (s *Service) StartConsentVerification(ctx context.Context, collectionPointID uuid.UUID, id Identifier) (ConsentVerificationRef, error) {
+	cp, err := s.GetCollectionPoint(ctx, collectionPointID)
+	if err != nil {
+		return ConsentVerificationRef{}, err
+	}
+	if cp.Status != "active" || cp.VerificationMethod != "otp" {
+		return ConsentVerificationRef{}, ErrInvalidRequest
+	}
+	kind := crypto.IdentifierKind(id.Type)
+	method, ok := otpMethodFor(kind)
+	if !ok {
+		return ConsentVerificationRef{}, invalid("identifier")
+	}
+	v, err := crypto.Normalize(kind, id.Value)
+	if err != nil {
+		return ConsentVerificationRef{}, invalid("identifier")
+	}
+	if s.Verification == nil {
+		return ConsentVerificationRef{}, fmt.Errorf("consent: verification not wired")
+	}
+	out, err := s.Verification.StartVerification(ctx, iamservice.StartVerificationInput{Purpose: "consent", Method: method, IdentifierKind: kind, IdentifierValue: v})
+	if err != nil {
+		return ConsentVerificationRef{}, err
+	}
+	channel := "sms"
+	if method == "otp_email" {
+		channel = "email"
+	}
+	return ConsentVerificationRef{ID: out.ID, Channel: channel}, nil
+}
+
+// verifyIdentityIfRequired is Record's own CON-19 gate: a collection point whose VerificationMethod is "otp"
+// accepts a public submission only once the given code verifies and was started against one of the
+// submission's own identifiers — never someone else's already-completed OTP.
+func (s *Service) verifyIdentityIfRequired(ctx context.Context, cp CollectionPoint, sub Submission) error {
+	if !sub.Public || cp.VerificationMethod != "otp" {
+		return nil
+	}
+	if sub.VerificationID == nil || sub.VerificationCode == "" {
+		return &DecisionError{Fields: []FieldError{{"verification", "required"}}}
+	}
+	if s.Verification == nil {
+		return fmt.Errorf("consent: verification not wired")
+	}
+	if _, err := s.Verification.VerifyOTP(ctx, *sub.VerificationID, sub.VerificationCode); err != nil {
+		return &DecisionError{Fields: []FieldError{{"verification", "invalid"}}}
+	}
+	for _, id := range sub.Identifiers {
+		kind := crypto.IdentifierKind(id.Type)
+		v, err := crypto.Normalize(kind, id.Value)
+		if err != nil {
+			continue
+		}
+		ok, err := s.Verification.VerifiedIdentifier(ctx, *sub.VerificationID, "consent", kind, v)
+		if err != nil {
+			return err
+		}
+		if ok {
+			return nil
+		}
+	}
+	return &DecisionError{Fields: []FieldError{{"verification", "identifier_mismatch"}}}
+}
+
 // Record writes a submission: finds or creates the data subject by blind index, appends a receipt to the subject's
 // hash chain and one append-only transaction per decision, moves the status projection along ST-01, and publishes
 // consent.* events through the outbox — all in the caller's transaction (SEQ-04 steps 5–10).
@@ -137,6 +229,9 @@ func (s *Service) Record(ctx context.Context, sub Submission) (Receipt, error) {
 	}
 	decisions, err := s.checkDecisions(ctx, cp, sub)
 	if err != nil {
+		return Receipt{}, err
+	}
+	if err := s.verifyIdentityIfRequired(ctx, cp, sub); err != nil {
 		return Receipt{}, err
 	}
 	q := consentstore.New(pdb.MustTxFromContext(ctx))

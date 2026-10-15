@@ -21,7 +21,15 @@ export type PublicPurpose = {
   preferences?: { code: string; name: string; pref_type: string; options?: { value: string; label: string }[] }[];
 };
 
-export type PublicCollectionPoint = { code: string; name: string; channel: string; purposes: PublicPurpose[]; age_gate?: boolean };
+export type PublicCollectionPoint = {
+  code: string;
+  name: string;
+  channel: string;
+  purposes: PublicPurpose[];
+  age_gate?: boolean;
+  // CON-19: "none" | "otp" | "magic_link" | "idp" — only "otp" is wired up; others fall back to "none".
+  verification_method?: string;
+};
 
 export type Decision = { purpose_code: string; purpose_version_no: number; decision: "CONSENTED" | "NOT_CONSENTED"; preferences?: Record<string, string[]> };
 
@@ -51,7 +59,14 @@ export async function getCollectionPoint(key: string, locale: string): Promise<P
 export async function submitConsents(
   key: string,
   idempotencyKey: string,
-  body: { subject: { identifiers: { type: string; value: string }[] }; decisions: Decision[]; language: string },
+  body: {
+    subject: { identifiers: { type: string; value: string }[] };
+    decisions: Decision[];
+    language: string;
+    // CON-19: set only when the collection point's verification_method is "otp" — the id from
+    // startVerification() plus the code the subject was just sent.
+    verification?: { verification_id: string; code: string };
+  },
 ): Promise<{ ok: true; receipt_no: string } | { ok: false; problem: Problem }> {
   const res = await fetch(`${API_BASE}/public/v1/consents`, {
     method: "POST",
@@ -61,5 +76,24 @@ export async function submitConsents(
   });
   const json = await res.json().catch(() => ({}));
   if (res.ok) return { ok: true, receipt_no: json.receipt_no };
+  return { ok: false, problem: { status: res.status, code: json.code ?? "unknown", title: json.title ?? "", errors: json.errors } };
+}
+
+// CON-19: sends an OTP to the identifier the form just collected. Required before submitConsents() will be
+// accepted when the collection point's verification_method is "otp".
+export async function startVerification(
+  key: string,
+  idempotencyKey: string,
+  identifier: { type: string; value: string },
+  language: string,
+): Promise<{ ok: true; verification_id: string; channel: string } | { ok: false; problem: Problem }> {
+  const res = await fetch(`${API_BASE}/public/v1/consents/start-verification`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Public-Key": key, "Idempotency-Key": idempotencyKey, "Accept-Language": language, ...(await forwarded()) },
+    body: JSON.stringify({ identifier }),
+    cache: "no-store",
+  });
+  const json = await res.json().catch(() => ({}));
+  if (res.ok) return { ok: true, verification_id: json.verification_id, channel: json.channel };
   return { ok: false, problem: { status: res.status, code: json.code ?? "unknown", title: json.title ?? "", errors: json.errors } };
 }

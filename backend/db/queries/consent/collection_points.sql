@@ -19,13 +19,14 @@ SELECT id, code, name, channel, legal_entity_id, form_id, verification_method, d
 FROM consent.collection_points WHERE id = $1 FOR UPDATE;
 
 -- name: InsertCollectionPoint :exec
-INSERT INTO consent.collection_points (id, tenant_id, code, name, channel, legal_entity_id, allowed_origins, created_by, updated_by)
-VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6,
+-- CON-19: verification_method (none/otp/magic_link/idp) was already in the baseline schema, unused until now.
+INSERT INTO consent.collection_points (id, tenant_id, code, name, channel, legal_entity_id, allowed_origins, verification_method, created_by, updated_by)
+VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7,
         NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid);
 
 -- name: UpdateCollectionPoint :execrows
 UPDATE consent.collection_points
-SET name = $3, channel = $4, legal_entity_id = $5, allowed_origins = $6, row_version = row_version + 1,
+SET name = $3, channel = $4, legal_entity_id = $5, allowed_origins = $6, verification_method = $7, row_version = row_version + 1,
     updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
 WHERE id = $1 AND row_version = $2;
 

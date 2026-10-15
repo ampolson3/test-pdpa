@@ -7,4 +7,5 @@ output-options:
   include-operation-ids:
     - consentGetPublicCollectionPoint
     - consentSubmitPublicConsent
+    - consentStartVerification
     - consentVerifyGuardianApproval

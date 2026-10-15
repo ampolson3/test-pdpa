@@ -120,11 +120,11 @@ func (h *Strict) ConsentListCollectionPoints(ctx context.Context, _ ConsentListC
 	return resp, nil
 }
 
-func cpInput(code, name, channel string, entity uuid.UUID, origins *[]string, purposes []struct {
+func cpInput(code, name, channel string, entity uuid.UUID, origins *[]string, verificationMethod string, purposes []struct {
 	PurposeId Uuid `json:"purpose_id"`
 	Required  bool `json:"required"`
 }) consent.CollectionPointInput {
-	in := consent.CollectionPointInput{Code: code, Name: name, Channel: channel, LegalEntityID: entity}
+	in := consent.CollectionPointInput{Code: code, Name: name, Channel: channel, LegalEntityID: entity, VerificationMethod: verificationMethod}
 	if origins != nil {
 		in.AllowedOrigins = *origins
 	}
@@ -136,7 +136,11 @@ func cpInput(code, name, channel string, entity uuid.UUID, origins *[]string, pu
 
 func (h *Strict) ConsentCreateCollectionPoint(ctx context.Context, req ConsentCreateCollectionPointRequestObject) (ConsentCreateCollectionPointResponseObject, error) {
 	b := req.Body
-	cp, err := h.svc.CreateCollectionPoint(ctx, cpInput(b.Code, b.Name, string(b.Channel), b.LegalEntityId, b.AllowedOrigins, b.Purposes))
+	vm := ""
+	if b.VerificationMethod != nil {
+		vm = string(*b.VerificationMethod)
+	}
+	cp, err := h.svc.CreateCollectionPoint(ctx, cpInput(b.Code, b.Name, string(b.Channel), b.LegalEntityId, b.AllowedOrigins, vm, b.Purposes))
 	if err != nil {
 		return nil, ToProblem(err)
 	}
@@ -159,7 +163,11 @@ func (h *Strict) ConsentUpdateCollectionPoint(ctx context.Context, req ConsentUp
 		return nil, httpx.VersionMismatch()
 	}
 	b := req.Body
-	cp, err := h.svc.UpdateCollectionPoint(ctx, req.Id, ver, cpInput("", b.Name, string(b.Channel), b.LegalEntityId, b.AllowedOrigins, b.Purposes))
+	vm := ""
+	if b.VerificationMethod != nil {
+		vm = string(*b.VerificationMethod)
+	}
+	cp, err := h.svc.UpdateCollectionPoint(ctx, req.Id, ver, cpInput("", b.Name, string(b.Channel), b.LegalEntityId, b.AllowedOrigins, vm, b.Purposes))
 	if err != nil {
 		return nil, ToProblem(err)
 	}
@@ -438,7 +446,7 @@ func cpMap(cp consent.CollectionPoint) map[string]any {
 			"required": p.Required, "current_version": p.CurrentVersionNo})
 	}
 	m := map[string]any{"id": cp.ID, "code": cp.Code, "name": cp.Name, "channel": cp.Channel, "legal_entity_id": cp.LegalEntityID, "status": cp.Status,
-		"allowed_origins": cp.AllowedOrigins, "purposes": ps, "row_version": cp.RowVersion, "updated_at": cp.UpdatedAt.UTC()}
+		"allowed_origins": cp.AllowedOrigins, "verification_method": cp.VerificationMethod, "purposes": ps, "row_version": cp.RowVersion, "updated_at": cp.UpdatedAt.UTC()}
 	if cp.PublicKey != "" {
 		m["public_key"] = cp.PublicKey
 	}

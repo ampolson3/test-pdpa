@@ -2464,6 +2464,42 @@ from the general update gate). Not verified live against a real Postgres/Redis �
 limitation this codebase's other recent passes already disclosed; every test compiles and vets clean and
 skips the same way the rest of this module's own test suite already does here.
 
+### CON-19 ยืนยันตัวตนก่อนบันทึก (`docs/modules/CON.md#con-19`) — done, OTP only
+`consent.collection_points.verification_method` (`none`/`otp`/`magic_link`/`idp`) was already in the baseline
+migration, unused until now — no new migration. `internal/consent/service/collection_points.go` validates it
+on create/update; `StartConsentVerification` (`internal/consent/service/record.go`) refuses unless the
+collection point is `active` with `verification_method = "otp"`, resolves the identifier's kind to IAM-05's
+own `otp_email`/`otp_sms` method, and calls `iamservice.StartVerification(Purpose: "consent", ...)` — the same
+OTP primitive CON-11's guardian flow already uses, now given a second, direct-subject consumer. Unlike CON-11's
+separate confirm-then-submit flow, CON-19 verifies inline inside `Record()` itself: `Submission` gained
+`VerificationID`/`VerificationCode`, and `verifyIdentityIfRequired` calls `VerifyOTP` then a new
+`iamservice.VerifiedIdentifier` (constant-time blind-index comparison) to prove the completed OTP was started
+against *this* submission's own identifier, not a stranger's — closing a real gap a naive
+`status == "verified"` check would have left open. A missing/invalid code or an identifier mismatch is a
+`DecisionError` (422 `consent.invalid_decisions`, field `verification`), the exact shape every other
+field-level consent validation error already uses.
+
+API: `POST /public/v1/consents/start-verification` (`Idempotency-Key` required, rule 10) returns
+`{verification_id, channel}`; `ConsentSubmitPublicConsent`'s body gained an optional
+`verification: {verification_id, code}`; `verification_method` added to both the admin
+`CollectionPointInput`/`ConsentCollectionPoint` wire schemas and the public `GET /public/v1/collection-points/
+{key}` response (previously hard-coded to `"none"`). UI: `/consent/collection-points` gained a
+verification-method selector (OTP enabled, magic_link/idp shown disabled — not built yet); the portal's
+`/[locale]/c/[key]` form gained a two-phase flow when `verification_method === "otp"` — a send-code step
+(`startVerification`, `apps/portal/src/lib/consent.ts`) followed by the existing purpose checklist with a
+code field and the `verification_id`/`code` carried as hidden inputs into the final submit
+(`apps/portal/src/app/[locale]/c/[key]/actions.ts`/`consent-form.tsx`). Tests: unit
+(`internal/consent/service/verification_test.go` — the acceptance criterion directly: an OTP-gated collection
+point refuses a submission without a prior, correct verification and accepts one once verified; starting
+verification against a non-OTP or non-active collection point is refused; two-tenant isolation), HTTP contract
+(`internal/consent/http/handler_test.go` — create/publish an OTP collection point, 422 without verification,
+201 with a real OTP round-trip through the fake IAM notifier, 404 for an unknown public key on
+start-verification). Not verified live against a real Postgres/Redis — the same environment limitation this
+codebase's other recent passes already disclosed; every test compiles and vets clean and skips the same way
+the rest of this module's own test suite already does here. Not done: magic_link/idp methods (no consumer or
+design for either yet — the column already anticipates them); a portal-side resend/rate-limit UI beyond what
+IAM-05's own 5-attempt OTP cap already provides.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

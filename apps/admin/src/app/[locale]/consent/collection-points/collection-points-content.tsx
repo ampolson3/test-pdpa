@@ -18,6 +18,7 @@ import { StatusBadge, input, problemText, useText } from "../shared";
 
 const CHANNELS = ["web", "app", "kiosk", "call_center", "pos", "line", "paper", "api"] as const;
 const CHECKS: (keyof ConsentChecklist)[] = ["separate_text", "not_bundled", "plain_language", "withdrawal_info"];
+const VERIFICATION_METHODS = ["none", "otp", "magic_link", "idp"] as const;
 
 export function CollectionPointsContent({ portalUrl }: { portalUrl: string }) {
   const t = useTranslations("consent");
@@ -87,6 +88,7 @@ function CPForm({ cp, onSaved }: { cp?: ConsentCollectionPoint; onSaved: (cp: Co
     channel: (cp?.channel ?? "web") as CollectionPointInput["channel"],
     legal_entity_id: cp?.legal_entity_id ?? "",
     allowed_origins: cp?.allowed_origins ?? [],
+    verification_method: (cp?.verification_method ?? "none") as CollectionPointInput["verification_method"],
     purposes: cp?.purposes.map((p) => ({ purpose_id: p.purpose_id, required: p.required })) ?? [],
   });
   const entityId = v.legal_entity_id || entities.data?.[0]?.id || "";
@@ -126,6 +128,14 @@ function CPForm({ cp, onSaved }: { cp?: ConsentCollectionPoint; onSaved: (cp: Co
             <select className={input} value={entityId} onChange={(e) => setV({ ...v, legal_entity_id: e.target.value })}>
               {entities.data?.map((e) => <option key={e.id} value={e.id}>{e.name_th}</option>)}
             </select>
+          </label>
+          <label className="space-y-0.5">
+            <span className="font-medium">{t("cp.verificationMethod")}</span>
+            <select className={input} value={v.verification_method ?? "none"}
+              onChange={(e) => setV({ ...v, verification_method: e.target.value as CollectionPointInput["verification_method"] })} data-testid="cp-verification-method">
+              {VERIFICATION_METHODS.map((m) => <option key={m} value={m} disabled={m !== "none" && m !== "otp"}>{t(`cp.verificationMethods.${m}`)}</option>)}
+            </select>
+            <span className="text-xs text-slate-500">{t("cp.verificationMethodHint")}</span>
           </label>
         </div>
         <fieldset className="space-y-1">
