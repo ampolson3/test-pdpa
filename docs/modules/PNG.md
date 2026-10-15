@@ -517,6 +517,19 @@ the right flags), HTTP contract (428/412/200 on `/publish-intent`).
 
 **หมายเหตุ:** ดึงเข้า P1 (ใช้ PLT-08 จึงใช้แรงน้อย)
 
+**Implementation (PNG-14) — done, no new code:** Already fully built by PLT-08 + PNG-01 together, the
+same "done, no new code" pattern ROPA-07 already used. `internal/wiring.Docs` registers the `"notice"`
+document type with `Approver: "DPO"` (one approval step, PNG-01's own description), and PLT-08's
+`Service.Publish` hard-refuses with `ErrInvalidTransition` unless the version's own status is already
+`approved` — the acceptance criterion itself ("ประกาศเผยแพร่ได้หลังอนุมัติเท่านั้น") is this one generic
+invariant, already proven by PLT-08's own `versioning_test.go` (`TestMakerChecker` etc.) and exercised live
+by PNG-02/PNG-05's integration tests driving the real submit → DPO approve → publish chain. "ปุ่มส่งตรวจ"
+(submit button) is `RecordVersions`' own submit action, already mounted on `/documents/{id}` (which every
+notice routes to, PNG-01); "กล่องความเห็น" (comment box) is the generic `/approvals` inbox's reason
+textarea, shown for every approve/return/reject decision — not notice-specific UI, the same screen DPIA-10's
+own approval decisions already use. Marked done as documentation only (backlog + this note) — no migration,
+code or test changes needed.
+
 <a id="png-09"></a>
 ### PNG-09 บันทึกการรับทราบ
 

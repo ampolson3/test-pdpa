@@ -2405,6 +2405,20 @@ a screen needs to distinguish localStorage/sessionStorage findings), and a dedic
 against the previous round (the history table already shows `new_cookies` per round; a literal diff view is
 CON-05's own "ตารางในหน้า Cookie Policy ตรงกับผลสแกนล่าสุด" acceptance criterion, a sibling feature).
 
+### PNG-14 อนุมัติก่อนเผยแพร่ (`docs/modules/PNG.md#png-14`) — done, no new code
+Already fully built by PLT-08 + PNG-01 together — the same "done, no new code" pattern ROPA-07 already
+used. `internal/wiring.Docs` registers the `"notice"` document type with `Approver: "DPO"` (one approval
+step, already part of PNG-01's own description), and PLT-08's `versioning.Service.Publish` hard-refuses
+with `ErrInvalidTransition` unless the version's own status is already `approved` — the acceptance
+criterion ("ประกาศเผยแพร่ได้หลังอนุมัติเท่านั้น") is exactly this one generic invariant, already proven by
+PLT-08's own `versioning_test.go` (`TestMakerChecker`) and exercised live by PNG-02/PNG-05's own integration
+tests, which already drive the real submit → DPO approve → publish chain for a notice. "ปุ่มส่งตรวจ"
+(submit button) is the generic `RecordVersions` component's own submit action, already mounted on
+`/documents/{id}` (every notice routes there, per PNG-01); "กล่องความเห็น" (comment box) is the generic
+`/approvals` inbox's reason textarea, shown on every approve/return/reject decision — not notice-specific
+UI, the same screen DPIA-10's own approval decisions already use. Marked done as documentation only
+(backlog + module doc) — no migration, code or test changes needed.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 
