@@ -20,6 +20,7 @@ import {
   useDsarAgentMutations,
   useDsarPackages,
   useDsarPackageMutations,
+  useDsarPortabilityExport,
   useLegalEntities,
   useMentionSearch,
   useGroupSearch,
@@ -371,10 +372,12 @@ function PackagePanel({ client, request, canCreate, portalUrl, locale }: {
   const t = useTranslations("dsarRequests");
   const list = useDsarPackages(client, request.id);
   const m = useDsarPackageMutations(client);
+  const exportMutation = useDsarPortabilityExport(client);
   const [format, setFormat] = useState<DsarPackageFormat>("pdf");
   const [passwordProtected, setPasswordProtected] = useState(true);
   const [fileId, setFileId] = useState<string | null>(null);
   const [issued, setIssued] = useState<{ publicKey: string; accessCode?: string } | null>(null);
+  const [exportFormat, setExportFormat] = useState<"json" | "csv" | "xml">("json");
 
   const rows = list.data ?? [];
 
@@ -427,6 +430,26 @@ function PackagePanel({ client, request, canCreate, portalUrl, locale }: {
               <p className="text-slate-600">{t("package.accessCodeHint")}</p>
             </div>
           )}
+        </fieldset>
+      )}
+      {canCreate && (
+        <fieldset className="space-y-2 rounded-md border border-slate-200 p-3">
+          <legend className="px-1 text-slate-600">{t("package.exportTitle")}</legend>
+          <p className="text-xs text-slate-600">{t("package.exportHint")}</p>
+          <label className="block text-xs">
+            {t("package.format")}
+            <select className={INPUT} value={exportFormat} onChange={(e) => setExportFormat(e.target.value as "json" | "csv" | "xml")} data-testid="export-format">
+              {(["json", "csv", "xml"] as const).map((f) => <option key={f} value={f}>{f.toUpperCase()}</option>)}
+            </select>
+          </label>
+          <Button
+            onClick={() => exportMutation.mutate(
+              { requestId: request.id, input: { format: exportFormat, password_protected: passwordProtected } },
+              { onSuccess: (r) => setIssued({ publicKey: r.public_key, accessCode: r.access_code }) })}
+            disabled={exportMutation.isPending} data-testid="generate-export">
+            {t("package.generateExport")}
+          </Button>
+          {exportMutation.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(exportMutation.error) })}</p>}
         </fieldset>
       )}
     </div>

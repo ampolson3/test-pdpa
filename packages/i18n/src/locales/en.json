@@ -2743,7 +2743,10 @@
       "create": "Create package",
       "issuedTitle": "Package created — share these with the data subject",
       "accessCode": "Access code: {code}",
-      "accessCodeHint": "Share the link and the access code through different channels. Neither is shown again."
+      "accessCodeHint": "Share the link and the access code through different channels. Neither is shown again.",
+      "exportTitle": "Portability export",
+      "exportHint": "Generates a JSON, CSV or XML file of the data this system holds about this request's own subject, delivered the same way as any other package.",
+      "generateExport": "Generate export"
     }
   },
   "dpoDeadlines": {

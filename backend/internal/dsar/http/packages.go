@@ -38,6 +38,26 @@ func (h *Strict) DsarCreatePackage(ctx context.Context, req DsarCreatePackageReq
 	return DsarCreatePackage201JSONResponse(out), nil
 }
 
+func (h *Strict) DsarGeneratePortabilityExport(ctx context.Context, req DsarGeneratePortabilityExportRequestObject) (DsarGeneratePortabilityExportResponseObject, error) {
+	b := *req.Body
+	in := dsarservice.GeneratePortabilityExportInput{Format: string(b.Format)}
+	if b.PasswordProtected != nil {
+		in.PasswordProtected = *b.PasswordProtected
+	}
+	if b.ExpiresAt != nil {
+		in.ExpiresAt = b.ExpiresAt
+	}
+	p, code, err := h.svc.GeneratePortabilityExport(ctx, req.Id, in)
+	if err != nil {
+		return nil, problem(err)
+	}
+	out := DsarCreatePackageResult{Package: toPackageWire(p), PublicKey: p.PublicKey}
+	if code != "" && p.PasswordProtected {
+		out.AccessCode = &code
+	}
+	return DsarGeneratePortabilityExport201JSONResponse(out), nil
+}
+
 func toPackageWire(p dsarservice.Package) DsarPackage {
 	w := DsarPackage{Id: p.ID, RequestId: p.RequestID, FileId: p.FileID, Format: DsarPackageFormat(p.Format),
 		PasswordProtected: p.PasswordProtected, ExpiresAt: p.ExpiresAt, DownloadCount: int(p.DownloadCount),

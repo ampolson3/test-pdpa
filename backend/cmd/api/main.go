@@ -318,7 +318,7 @@ func run() error {
 	fileSvc.EntityPermissions[breach.PDPCEntityType] = "breach.notification.read"            // BRE-09 filing evidence
 	dsarSvc := &dsarservice.Service{Audit: auditSvc, Org: orgSvc, Docs: docsSvc, Ropa: ropaSvc, Keyring: keyring,
 		Events: &events.Publisher{River: riverClient}, Notify: notifySvc, River: riverClient,
-		Files: fileSvc, Verification: iamSvc} // DSAR-06: redacted ID-card upload + OTP identity verification
+		Files: fileSvc, Verification: iamSvc, Consent: consentSvc} // DSAR-06 identity + DSAR-15 portability export
 	// DSAR-17: comments, attachments and an activity feed (PLT-07) on the request itself, so its history is
 	// visible without a bespoke timeline endpoint.
 	collabSvc.Register("dsar_request", collab.Policy{

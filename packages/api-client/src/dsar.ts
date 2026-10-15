@@ -374,3 +374,20 @@ export function useDsarPackageMutations(client: ApiClient) {
   });
   return { create };
 }
+
+// DSAR-15: a machine-readable export of this request's own subject data, delivered through the exact same
+// DSAR-14 package mechanism above — no separate list/read, just another way to create one.
+export type DsarGeneratePortabilityExportInput = components["schemas"]["DsarGeneratePortabilityExportInput"];
+
+/** POST /admin/v1/dsar/requests/{id}/export — the response carries the access code exactly once. */
+export function useDsarPortabilityExport(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ requestId, input }: { requestId: string; input: DsarGeneratePortabilityExportInput }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/export", { params: { path: { id: requestId } }, body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, { requestId }) => qc.invalidateQueries({ queryKey: ["dsar", "packages", requestId] }),
+  });
+}

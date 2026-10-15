@@ -6328,6 +6328,50 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/requests/{id}/export:
+    post:
+      operationId: dsarGeneratePortabilityExport
+      tags: [dsar]
+      summary: Generate a machine-readable export of this request's own subject data (DSAR-15, ม.31) and package it for secure delivery (DSAR-14)
+      description: |
+        Builds a JSON/CSV/XML file from exactly what the system holds about this request's own subject —
+        the requester's own name/contact plus any consent decisions on record for the same identifier — then
+        delivers it through the same expiring, access-code-protected link DSAR-14's own packages use. The
+        access code is returned here in the clear exactly once.
+      x-permission: dsar.package.create
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarGeneratePortabilityExportInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarCreatePackageResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/dsar/requests/{id}/verifications:
     get:
       operationId: dsarListVerifications
@@ -16630,6 +16674,19 @@ components:
         access_code:
           description: Shown here exactly once — share it with the data subject through a different channel than the link itself; absent when password_protected is false
           type: string
+    DsarGeneratePortabilityExportInput:
+      type: object
+      required: [format]
+      additionalProperties: false
+      properties:
+        format:
+          type: string
+          enum: [json, csv, xml]
+        password_protected: {type: boolean, default: true}
+        expires_at:
+          description: Defaults to 7 days from now when omitted
+          type: string
+          format: date-time
     DsarPublicPackage:
       type: object
       required: [format, password_protected, expires_at]

@@ -133,9 +133,17 @@ func (s *Service) CreatePackage(ctx context.Context, requestID uuid.UUID, in Cre
 	default:
 		return Package{}, "", fmt.Errorf("%w: file_id", ErrInvalid)
 	}
+	return s.createPackage(ctx, requestID, in.FileID, in.Format, in.PasswordProtected, in.ExpiresAt)
+}
+
+// createPackage is the shared core of CreatePackage (a caller's own file, checked clean above) and
+// DSAR-15's GeneratePortabilityExport (a file this package itself just generated, trusted by construction —
+// never checked for a clean AV status, the same distinction PLT-09's own trusted system operations already
+// draw against the ordinary upload path).
+func (s *Service) createPackage(ctx context.Context, requestID, fileID uuid.UUID, format string, passwordProtected bool, expiresAt *time.Time) (Package, string, error) {
 	expires := s.now().Add(DefaultPackageTTL)
-	if in.ExpiresAt != nil {
-		expires = in.ExpiresAt.UTC()
+	if expiresAt != nil {
+		expires = expiresAt.UTC()
 	}
 	if !expires.After(s.now()) {
 		return Package{}, "", fmt.Errorf("%w: expires_at", ErrInvalid)
@@ -150,8 +158,8 @@ func (s *Service) CreatePackage(ctx context.Context, requestID uuid.UUID, in Cre
 		return Package{}, "", err
 	}
 	q := dsarstore.New(pdb.MustTxFromContext(ctx))
-	row, err := q.InsertPackage(ctx, dsarstore.InsertPackageParams{ID: id, RequestID: requestID, FileID: in.FileID, Format: in.Format,
-		TokenHash: hashAccessCode(code), PasswordProtected: in.PasswordProtected, ExpiresAt: pgTimestamptz(&expires)})
+	row, err := q.InsertPackage(ctx, dsarstore.InsertPackageParams{ID: id, RequestID: requestID, FileID: fileID, Format: format,
+		TokenHash: hashAccessCode(code), PasswordProtected: passwordProtected, ExpiresAt: pgTimestamptz(&expires)})
 	if err != nil {
 		return Package{}, "", err
 	}
@@ -165,7 +173,7 @@ func (s *Service) CreatePackage(ctx context.Context, requestID uuid.UUID, in Cre
 	pkg := toPackage(dsarstore.GetPackageRow(row))
 	pkg.PublicKey = key
 	if err := s.audit(ctx, "dsar.package.create", requestID, nil, map[string]any{
-		"package_id": id, "file_id": in.FileID, "format": in.Format, "password_protected": in.PasswordProtected, "expires_at": expires}); err != nil {
+		"package_id": id, "file_id": fileID, "format": format, "password_protected": passwordProtected, "expires_at": expires}); err != nil {
 		return Package{}, "", err
 	}
 	return pkg, code, nil

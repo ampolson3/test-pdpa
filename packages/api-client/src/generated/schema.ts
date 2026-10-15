@@ -2093,6 +2093,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/requests/{id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate a machine-readable export of this request's own subject data (DSAR-15, ม.31) and package it for secure delivery (DSAR-14)
+         * @description Builds a JSON/CSV/XML file from exactly what the system holds about this request's own subject —
+         *     the requester's own name/contact plus any consent decisions on record for the same identifier — then
+         *     delivers it through the same expiring, access-code-protected link DSAR-14's own packages use. The
+         *     access code is returned here in the clear exactly once.
+         */
+        post: operations["dsarGeneratePortabilityExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dsar/requests/{id}/verifications": {
         parameters: {
             query?: never;
@@ -6701,6 +6724,17 @@ export interface components {
             public_key: string;
             /** @description Shown here exactly once — share it with the data subject through a different channel than the link itself; absent when password_protected is false */
             access_code?: string;
+        };
+        DsarGeneratePortabilityExportInput: {
+            /** @enum {string} */
+            format: "json" | "csv" | "xml";
+            /** @default true */
+            password_protected: boolean;
+            /**
+             * Format: date-time
+             * @description Defaults to 7 days from now when omitted
+             */
+            expires_at?: string;
         };
         DsarPublicPackage: {
             format: components["schemas"]["DsarPackageFormat"];
@@ -13277,6 +13311,40 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["DsarCreatePackageInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarCreatePackageResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarGeneratePortabilityExport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarGeneratePortabilityExportInput"];
             };
         };
         responses: {

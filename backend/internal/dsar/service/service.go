@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/riverqueue/river"
 
+	consentservice "pdpa-platform/internal/consent/service"
 	iamservice "pdpa-platform/internal/iam/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
@@ -60,6 +61,16 @@ type Ropa interface {
 	GetAsset(ctx context.Context, id uuid.UUID) (ropaservice.Asset, error)
 }
 
+// Consent is what DSAR-15's portability export reads from the consent module (rule 9): the one real source
+// of actual per-individual personal data this codebase holds today (RoPA only catalogs categories of data
+// processed, never an individual's own records, so it has nothing a portability export could include).
+// Matched by identifier through the same blind-index exact lookup DSAR-17's own search already uses — never
+// decrypted to search, rule 3.
+type Consent interface {
+	Subjects(ctx context.Context, identifierType, value string) ([]consentservice.SubjectSummary, error)
+	GetProfile(ctx context.Context, id uuid.UUID) (consentservice.Profile, error)
+}
+
 type Service struct {
 	Audit   *audit.Service
 	Org     Org
@@ -67,6 +78,8 @@ type Service struct {
 	Ropa    Ropa
 	Keyring *crypto.Keyring
 	Events  *events.Publisher
+	// Consent drives DSAR-15's portability export; nil where no export path is wired (e.g. cmd/worker).
+	Consent Consent
 	// Files and Verification drive DSAR-06's identity checks (PLT-09 redaction, IAM-05 OTP); nil in tests
 	// that don't need them.
 	Files        Files

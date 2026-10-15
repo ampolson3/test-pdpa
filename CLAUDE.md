@@ -2145,6 +2145,51 @@ no such requirement — repeat downloads within the link's own expiry are allowe
 before download (DSAR-06's own OTP flow already gates the request itself; the access code is this feature's
 own, separate secret, not a second identity proof).
 
+### DSAR-15 ส่งออกข้อมูลแบบอ่านได้ด้วยเครื่อง (`docs/modules/DSAR.md#dsar-15`) — done
+`internal/dsar/service/export.go`'s `GeneratePortabilityExport` builds the acceptance criterion directly: a
+JSON/CSV/XML file of exactly what this system holds about the request's own subject, then hands it straight
+to DSAR-14's own `createPackage` core (factored out of `CreatePackage` for this call to share: the file-
+visibility/attach logic that's specific to a caller's own upload stays in `CreatePackage`, while the
+insert/issue-key/schedule-purge/audit core is now shared) — the export is delivered through the exact same
+expiring, access-code-protected link every other DSAR-14 package uses, with every download already logged
+by that same mechanism. The content is deliberately narrow: the request's own decrypted name/contact (PLT-13,
+the same `decryptRequesterName`/`decryptRequesterContact` DSAR-13/DSAR-06 already use) plus any consent
+decisions on record for that same identifier, read through a new `Consent` interface (rule 9:
+`consentservice.Subjects`/`GetProfile`, matched by the exact blind-index lookup DSAR-17's own search already
+uses — never decrypted to search, rule 3). RoPA is deliberately not read for this: it only ever catalogs
+*categories* of data processed, never an individual's own records (ROPA-01's own data inventory describes
+what kinds of data a system holds, not any one subject's actual values), so it has nothing a portability
+export could include — consent is the one other module in this codebase holding real per-subject data today.
+Direct transfer to another controller via API/SFTP (the module doc's own "ส่งตรงไปยังผู้ควบคุมรายอื่นเมื่อ
+ทำได้") is deliberately not built: no such controller endpoint exists anywhere in this codebase to transfer
+to, the same "no consumer yet" deferral this codebase uses throughout (e.g. ROPA-01's own deferred
+`discovered_by_finding_id`) — the file handed to the data subject already satisfies ม.31 regardless.
+
+A real gap found and fixed while wiring this: `CreatePackage`'s own clean-AV-status check is correct for a
+caller's own upload (malware risk) but would have wrongly rejected this call's freshly generated file, which
+starts `av_status = pending` until its own scan job runs — exactly like PLT-16's rendered documents and
+PLT-14's import error report, neither of which goes through that gate either. Fixed by generating the file
+through `files.Service.SaveGenerated` (already attached, trusted by construction) and calling the shared
+`createPackage` core directly, skipping `CreatePackage`'s own public AV check entirely for this path — the
+same trusted-system-operation distinction PLT-09 already draws between its ordinary upload path and
+`Status`/`Open`/`SignedURL`/`SaveGenerated`/`AttachSystem`.
+
+API: `POST /admin/v1/dsar/requests/{id}/export` (`dsar.package.create`, same `DsarCreatePackageResult`
+response shape `dsarCreatePackage` already returns — the public key and, when password-protected, the
+access code shown exactly once). UI: `/requests`' existing package panel gained a sibling "ส่งออกข้อมูลแบบ
+พกพาได้" fieldset — a format picker (JSON/CSV/XML) and a generate button, reusing the same issued-link/
+access-code display. Tests: unit (`internal/dsar/service/export_test.go` — the acceptance criterion
+directly: every format decodes with its own standard-library parser (`encoding/json`, `encoding/csv`,
+`encoding/xml`) and every value in it is exactly what `CreateRequest` stored, plus a matching consent
+subject's real purpose/status/version; no matching consent subject is an empty list, not an error; a bad
+format and a caller without `dsar.package.create` are both refused; two-tenant isolation via the request
+id). Not verified live against a real Postgres/Redis — same environment limitation DSAR-01/DSAR-04/BRE-01/
+DSAR-14 already disclosed; every test compiles and vets clean and skips the same way the rest of this
+module's own test suite already does here. `go build ./...`, `go vet ./...`, `go test -p 1 ./...` (no
+regressions), `internal/pkg/isolationaudit`'s own CI gate, `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` all verified clean. Not done,
+deliberately: the direct controller-to-controller transfer path (no consumer yet, as above).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

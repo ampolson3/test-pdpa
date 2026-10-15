@@ -613,6 +613,30 @@ package's — the access code is this feature's own, separate secret).
 
 **Acceptance criteria:** ไฟล์ portability เปิดอ่านด้วยเครื่องได้และตรงกับข้อมูลในระบบ
 
+**Implementation (done):** `internal/dsar/service/export.go`'s `GeneratePortabilityExport` builds a
+JSON/CSV/XML file from exactly what the system holds about the request's own subject — the request's own
+decrypted name/contact plus any consent decisions on record for the same identifier (`consentservice.
+Subjects`/`GetProfile`, matched through the exact blind-index lookup DSAR-17's own search already uses,
+never decrypted to search, rule 3) — and hands it straight to DSAR-14's own `createPackage` core, so the
+export is delivered through the exact same expiring, access-code-protected link, with every download
+already logged. RoPA was deliberately not read for this: it only ever catalogs *categories* of data
+processed, never an individual's own records, so it has nothing a portability export could include;
+consent is the one other module in this codebase with real per-subject data on file. Direct transfer to
+another controller via API/SFTP (the module doc's own "เมื่อทำได้") is deliberately not built — no such
+controller endpoint exists anywhere in this codebase to transfer to; the file handed to the data subject is
+what ม.31 requires regardless. The generated file skips `CreatePackage`'s own clean-AV-status gate (it's
+this package's own trusted output, never a user upload) via the same `files.Service.SaveGenerated` path
+PLT-16's rendered documents and PLT-14's import error report already use. API: `POST /admin/v1/dsar/requests/
+{id}/export` (`dsar.package.create`, same response shape as `dsarCreatePackage` — a `DsarCreatePackageResult`
+with the public key and, when password-protected, the access code shown exactly once). UI: a "ส่งออกข้อมูล
+แบบพกพาได้" panel next to `/requests`' own package-creation form, a format picker and a generate button.
+Tests: unit (`internal/dsar/service/export_test.go` — the acceptance criterion directly: every format
+decodes with its standard library parser and every value matches what `CreateRequest` actually stored, plus
+a matching consent subject's real decision; no matching consent subject is an empty list, not an error; bad
+format and the permission gate refused; two-tenant isolation). Not verified live against a real Postgres/
+Redis — same environment limitation DSAR-01/DSAR-04/BRE-01/DSAR-14 already disclosed; every test compiles
+and vets clean and skips the same way the rest of this module's own test suite already does here.
+
 <a id="dsar-17"></a>
 ### DSAR-17 ประวัติและสืบค้นคำขอ
 

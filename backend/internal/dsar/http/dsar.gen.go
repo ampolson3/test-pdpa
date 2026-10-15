@@ -74,6 +74,27 @@ func (e DsarContactKind) Valid() bool {
 	}
 }
 
+// Defines values for DsarGeneratePortabilityExportInputFormat.
+const (
+	DsarGeneratePortabilityExportInputFormatCsv  DsarGeneratePortabilityExportInputFormat = "csv"
+	DsarGeneratePortabilityExportInputFormatJson DsarGeneratePortabilityExportInputFormat = "json"
+	DsarGeneratePortabilityExportInputFormatXml  DsarGeneratePortabilityExportInputFormat = "xml"
+)
+
+// Valid indicates whether the value is a known member of the DsarGeneratePortabilityExportInputFormat enum.
+func (e DsarGeneratePortabilityExportInputFormat) Valid() bool {
+	switch e {
+	case DsarGeneratePortabilityExportInputFormatCsv:
+		return true
+	case DsarGeneratePortabilityExportInputFormatJson:
+		return true
+	case DsarGeneratePortabilityExportInputFormatXml:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DsarIntakeFormStatus.
 const (
 	DsarIntakeFormStatusActive  DsarIntakeFormStatus = "active"
@@ -121,25 +142,25 @@ func (e DsarOutcome) Valid() bool {
 
 // Defines values for DsarPackageFormat.
 const (
-	Csv  DsarPackageFormat = "csv"
-	Json DsarPackageFormat = "json"
-	Pdf  DsarPackageFormat = "pdf"
-	Xml  DsarPackageFormat = "xml"
-	Zip  DsarPackageFormat = "zip"
+	DsarPackageFormatCsv  DsarPackageFormat = "csv"
+	DsarPackageFormatJson DsarPackageFormat = "json"
+	DsarPackageFormatPdf  DsarPackageFormat = "pdf"
+	DsarPackageFormatXml  DsarPackageFormat = "xml"
+	DsarPackageFormatZip  DsarPackageFormat = "zip"
 )
 
 // Valid indicates whether the value is a known member of the DsarPackageFormat enum.
 func (e DsarPackageFormat) Valid() bool {
 	switch e {
-	case Csv:
+	case DsarPackageFormatCsv:
 		return true
-	case Json:
+	case DsarPackageFormatJson:
 		return true
-	case Pdf:
+	case DsarPackageFormatPdf:
 		return true
-	case Xml:
+	case DsarPackageFormatXml:
 		return true
-	case Zip:
+	case DsarPackageFormatZip:
 		return true
 	default:
 		return false
@@ -707,6 +728,24 @@ func (e DsarAssignRequestParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for DsarGeneratePortabilityExportParamsAcceptLanguage.
+const (
+	DsarGeneratePortabilityExportParamsAcceptLanguageEn DsarGeneratePortabilityExportParamsAcceptLanguage = "en"
+	DsarGeneratePortabilityExportParamsAcceptLanguageTh DsarGeneratePortabilityExportParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DsarGeneratePortabilityExportParamsAcceptLanguage enum.
+func (e DsarGeneratePortabilityExportParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DsarGeneratePortabilityExportParamsAcceptLanguageEn:
+		return true
+	case DsarGeneratePortabilityExportParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DsarListPackagesParamsAcceptLanguage.
 const (
 	DsarListPackagesParamsAcceptLanguageEn DsarListPackagesParamsAcceptLanguage = "en"
@@ -963,7 +1002,7 @@ type DsarCreatePackageInput struct {
 	// ExpiresAt Defaults to 7 days from now when omitted
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
-	// FileId Must already be attached to this request (DSAR-13's own generated letter, or any file DSAR-17's collaboration panel attached) — never an arbitrary file id
+	// FileId Either the caller's own clean, still-unattached PLT-09 upload (attached to this request here), or a file already attached to it (DSAR-13's own generated letter, or anything DSAR-17's collaboration panel attached) — never an arbitrary file id
 	FileId            Uuid              `json:"file_id"`
 	Format            DsarPackageFormat `json:"format"`
 	PasswordProtected *bool             `json:"password_protected,omitempty"`
@@ -995,6 +1034,17 @@ type DsarCreateSubtaskInput struct {
 type DsarDecideVerificationInput struct {
 	Pass bool `json:"pass"`
 }
+
+// DsarGeneratePortabilityExportInput defines model for DsarGeneratePortabilityExportInput.
+type DsarGeneratePortabilityExportInput struct {
+	// ExpiresAt Defaults to 7 days from now when omitted
+	ExpiresAt         *time.Time                               `json:"expires_at,omitempty"`
+	Format            DsarGeneratePortabilityExportInputFormat `json:"format"`
+	PasswordProtected *bool                                    `json:"password_protected,omitempty"`
+}
+
+// DsarGeneratePortabilityExportInputFormat defines model for DsarGeneratePortabilityExportInput.Format.
+type DsarGeneratePortabilityExportInputFormat string
 
 // DsarIdentityRedaction A pixel rectangle (image's own coordinate space) to black out before the ID copy is ever stored — the raw upload named by raw_file_id is never itself attached or kept (CLAUDE.md rule 3).
 type DsarIdentityRedaction struct {
@@ -1438,6 +1488,15 @@ type DsarAssignRequestParams struct {
 // DsarAssignRequestParamsAcceptLanguage defines parameters for DsarAssignRequest.
 type DsarAssignRequestParamsAcceptLanguage string
 
+// DsarGeneratePortabilityExportParams defines parameters for DsarGeneratePortabilityExport.
+type DsarGeneratePortabilityExportParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DsarGeneratePortabilityExportParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DsarGeneratePortabilityExportParamsAcceptLanguage defines parameters for DsarGeneratePortabilityExport.
+type DsarGeneratePortabilityExportParamsAcceptLanguage string
+
 // DsarListPackagesParams defines parameters for DsarListPackages.
 type DsarListPackagesParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -1564,6 +1623,9 @@ type DsarRecordAgentJSONRequestBody = DsarRecordAgentInput
 // DsarAssignRequestJSONRequestBody defines body for DsarAssignRequest for application/json ContentType.
 type DsarAssignRequestJSONRequestBody = DsarAssignInput
 
+// DsarGeneratePortabilityExportJSONRequestBody defines body for DsarGeneratePortabilityExport for application/json ContentType.
+type DsarGeneratePortabilityExportJSONRequestBody = DsarGeneratePortabilityExportInput
+
 // DsarCreatePackageJSONRequestBody defines body for DsarCreatePackage for application/json ContentType.
 type DsarCreatePackageJSONRequestBody = DsarCreatePackageInput
 
@@ -1629,6 +1691,9 @@ type ServerInterface interface {
 	// DsarAssignRequest Set (or clear) the request's responsible person (If-Match) — DSAR-07, notified alongside role DPO when the SLA reminder fires.
 	// (POST /admin/v1/dsar/requests/{id}/assign)
 	DsarAssignRequest(w http.ResponseWriter, r *http.Request, id Uuid, params DsarAssignRequestParams)
+	// DsarGeneratePortabilityExport Generate a machine-readable export of this request's own subject data (DSAR-15, ม.31) and package it for secure delivery (DSAR-14)
+	// (POST /admin/v1/dsar/requests/{id}/export)
+	DsarGeneratePortabilityExport(w http.ResponseWriter, r *http.Request, id Uuid, params DsarGeneratePortabilityExportParams)
 	// DsarListPackages Secure delivery packages sent for this request, newest first (DSAR-14)
 	// (GET /admin/v1/dsar/requests/{id}/packages)
 	DsarListPackages(w http.ResponseWriter, r *http.Request, id Uuid, params DsarListPackagesParams)
@@ -1746,6 +1811,12 @@ func (_ Unimplemented) DsarVerifyAgent(w http.ResponseWriter, r *http.Request, i
 // DsarAssignRequest Set (or clear) the request's responsible person (If-Match) — DSAR-07, notified alongside role DPO when the SLA reminder fires.
 // (POST /admin/v1/dsar/requests/{id}/assign)
 func (_ Unimplemented) DsarAssignRequest(w http.ResponseWriter, r *http.Request, id Uuid, params DsarAssignRequestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DsarGeneratePortabilityExport Generate a machine-readable export of this request's own subject data (DSAR-15, ม.31) and package it for secure delivery (DSAR-14)
+// (POST /admin/v1/dsar/requests/{id}/export)
+func (_ Unimplemented) DsarGeneratePortabilityExport(w http.ResponseWriter, r *http.Request, id Uuid, params DsarGeneratePortabilityExportParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2604,6 +2675,56 @@ func (siw *ServerInterfaceWrapper) DsarAssignRequest(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// DsarGeneratePortabilityExport operation middleware
+func (siw *ServerInterfaceWrapper) DsarGeneratePortabilityExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DsarGeneratePortabilityExportParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DsarGeneratePortabilityExportParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DsarGeneratePortabilityExport(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // DsarListPackages operation middleware
 func (siw *ServerInterfaceWrapper) DsarListPackages(w http.ResponseWriter, r *http.Request) {
 
@@ -3446,6 +3567,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/dsar/requests/{id}/packages", wrapper.DsarCreatePackage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dsar/requests/{id}/export", wrapper.DsarGeneratePortabilityExport)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/dsar/requests/{id}/verifications", wrapper.DsarListVerifications)
@@ -4669,6 +4793,110 @@ func (response DsarAssignRequest428ApplicationProblemPlusJSONResponse) VisitDsar
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarGeneratePortabilityExportRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DsarGeneratePortabilityExportParams
+	Body   *DsarGeneratePortabilityExportJSONRequestBody
+}
+
+type DsarGeneratePortabilityExportResponseObject interface {
+	VisitDsarGeneratePortabilityExportResponse(w http.ResponseWriter) error
+}
+
+type DsarGeneratePortabilityExport201JSONResponse DsarCreatePackageResult
+
+func (response DsarGeneratePortabilityExport201JSONResponse) VisitDsarGeneratePortabilityExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarGeneratePortabilityExport400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DsarGeneratePortabilityExport400ApplicationProblemPlusJSONResponse) VisitDsarGeneratePortabilityExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarGeneratePortabilityExport401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DsarGeneratePortabilityExport401ApplicationProblemPlusJSONResponse) VisitDsarGeneratePortabilityExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarGeneratePortabilityExport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DsarGeneratePortabilityExport403ApplicationProblemPlusJSONResponse) VisitDsarGeneratePortabilityExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarGeneratePortabilityExport404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DsarGeneratePortabilityExport404ApplicationProblemPlusJSONResponse) VisitDsarGeneratePortabilityExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarGeneratePortabilityExport422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DsarGeneratePortabilityExport422ApplicationProblemPlusJSONResponse) VisitDsarGeneratePortabilityExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -5992,6 +6220,9 @@ type StrictServerInterface interface {
 	// DsarAssignRequest Set (or clear) the request's responsible person (If-Match) — DSAR-07, notified alongside role DPO when the SLA reminder fires.
 	// (POST /admin/v1/dsar/requests/{id}/assign)
 	DsarAssignRequest(ctx context.Context, request DsarAssignRequestRequestObject) (DsarAssignRequestResponseObject, error)
+	// DsarGeneratePortabilityExport Generate a machine-readable export of this request's own subject data (DSAR-15, ม.31) and package it for secure delivery (DSAR-14)
+	// (POST /admin/v1/dsar/requests/{id}/export)
+	DsarGeneratePortabilityExport(ctx context.Context, request DsarGeneratePortabilityExportRequestObject) (DsarGeneratePortabilityExportResponseObject, error)
 	// DsarListPackages Secure delivery packages sent for this request, newest first (DSAR-14)
 	// (GET /admin/v1/dsar/requests/{id}/packages)
 	DsarListPackages(ctx context.Context, request DsarListPackagesRequestObject) (DsarListPackagesResponseObject, error)
@@ -6437,6 +6668,40 @@ func (sh *strictHandler) DsarAssignRequest(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DsarAssignRequestResponseObject); ok {
 		if err := validResponse.VisitDsarAssignRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DsarGeneratePortabilityExport operation middleware
+func (sh *strictHandler) DsarGeneratePortabilityExport(w http.ResponseWriter, r *http.Request, id Uuid, params DsarGeneratePortabilityExportParams) {
+	var request DsarGeneratePortabilityExportRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body DsarGeneratePortabilityExportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DsarGeneratePortabilityExport(ctx, request.(DsarGeneratePortabilityExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DsarGeneratePortabilityExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DsarGeneratePortabilityExportResponseObject); ok {
+		if err := validResponse.VisitDsarGeneratePortabilityExportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
