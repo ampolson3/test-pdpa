@@ -79,7 +79,23 @@ func TestCookiePublicEndpoints_Contract(t *testing.T) {
 			return err
 		}
 		domainID = d.ID
-		if _, err := svc.CreateCategory(ctx, cookieservice.CreateCategoryInput{Code: "necessary", NameTh: "จำเป็น", IsRequired: true}); err != nil {
+		// RegisterDomain already seeded the 4 default categories (CON-02) — necessary/functional/analytics/
+		// marketing — so there's no need to create "necessary" again; reuse "analytics" for the script rule
+		// this test adds below.
+		cats, err := svc.ListCategories(ctx)
+		if err != nil {
+			return err
+		}
+		var analyticsID uuid.UUID
+		for _, c := range cats {
+			if c.Code == "analytics" {
+				analyticsID = c.ID
+			}
+		}
+		if analyticsID == uuid.Nil {
+			t.Fatal("expected a seeded \"analytics\" category")
+		}
+		if _, err := svc.CreateScriptRule(ctx, d.ID, cookieservice.CreateScriptRuleInput{Pattern: "googletagmanager.com", CategoryID: analyticsID}); err != nil {
 			return err
 		}
 		bc, err := svc.CreateBannerConfig(ctx, d.ID, cookieservice.CreateBannerConfigInput{Layout: "bar", Texts: cookieservice.BannerTexts{
@@ -162,6 +178,10 @@ func TestCookiePublicEndpoints_Contract(t *testing.T) {
 	code, body := do("GET", "/public/v1/cookie-banners/"+publicKey, "", nil)
 	if code != 200 || !strings.Contains(body, `"accept_all_th"`) || !strings.Contains(body, `"necessary"`) {
 		t.Fatalf("get banner: %d %s", code, body)
+	}
+	// CON-02: the SDK reads script_rules off this same response to gate matching scripts by category.
+	if !strings.Contains(body, `"script_rules"`) || !strings.Contains(body, `"googletagmanager.com"`) || !strings.Contains(body, `"category_code":"analytics"`) {
+		t.Errorf("get banner missing script_rules: %s", body)
 	}
 
 	// 428: Idempotency-Key is required on every /public/v1 POST (rule 10).

@@ -28,6 +28,14 @@ export interface Category {
   display_order: number;
 }
 
+/** CON-02: which scripts belong to which category — the SDK enables/disables matching scripts the moment a
+ * visitor's preference changes. */
+export interface ScriptRule {
+  pattern: string;
+  category_code: string;
+  action: 'block' | 'allow';
+}
+
 export interface PublicBanner {
   /** The published banner_config's own id — pass back as banner_config_id when submitting consent */
   id: string;
@@ -36,6 +44,7 @@ export interface PublicBanner {
   layout: 'bar' | 'modal' | 'corner';
   texts: BannerTexts;
   categories: Category[];
+  script_rules?: ScriptRule[];
 }
 
 export type ConsentAction = 'accept_all' | 'reject_all' | 'custom';

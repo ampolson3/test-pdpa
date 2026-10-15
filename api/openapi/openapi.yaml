@@ -14167,6 +14167,202 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/cookie/domains/{id}/cookies:
+    get:
+      operationId: cookieListCookies
+      tags: [cookie]
+      summary: Cookies catalogued under a domain (CON-02)
+      x-permission: cookie.banner.read
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CookieCookie'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: cookieCreateCookie
+      tags: [cookie]
+      summary: Catalogue a cookie under a domain and category (CON-02)
+      x-permission: cookie.banner.create
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CookieCreateCookieInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieCookie'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/cookie/cookies/{id}:
+    delete:
+      operationId: cookieDeleteCookie
+      tags: [cookie]
+      summary: Remove a cookie entry (CON-02)
+      x-permission: cookie.banner.delete
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/cookie/domains/{id}/script-rules:
+    get:
+      operationId: cookieListScriptRules
+      tags: [cookie]
+      summary: Script rules declaring which category a script belongs to (CON-02)
+      x-permission: cookie.banner.read
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CookieScriptRule'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: cookieCreateScriptRule
+      tags: [cookie]
+      summary: Declare a script's own category — the acceptance criterion's own enforcement mechanism (CON-02)
+      x-permission: cookie.banner.create
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CookieCreateScriptRuleInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieScriptRule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/cookie/script-rules/{id}:
+    delete:
+      operationId: cookieDeleteScriptRule
+      tags: [cookie]
+      summary: Remove a script rule (CON-02)
+      x-permission: cookie.banner.delete
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /public/v1/cookie-banners/{key}:
     get:
       operationId: cookieGetPublicBanner
@@ -17250,6 +17446,75 @@ components:
         categories:
           type: array
           items: {$ref: '#/components/schemas/CookieCategory'}
+        script_rules:
+          description: Which scripts belong to which category (CON-02) — the SDK enables/disables matching scripts the moment a visitor's preference changes
+          type: array
+          items: {$ref: '#/components/schemas/CookiePublicScriptRule'}
+    CookiePublicScriptRule:
+      type: object
+      required: [pattern, category_code, action]
+      properties:
+        pattern: {type: string}
+        category_code: {type: string}
+        action:
+          type: string
+          enum: [block, allow]
+    CookieCookie:
+      type: object
+      required: [id, domain_id, name, provider_domain, storage_type, is_active, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        domain_id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string}
+        provider_domain: {type: string}
+        category_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        storage_type:
+          type: string
+          enum: [http_cookie, js_cookie, local_storage, session_storage, pixel]
+        duration: {type: string}
+        description_th: {type: string}
+        description_en: {type: string}
+        is_active: {type: boolean}
+        row_version: {type: integer}
+    CookieCreateCookieInput:
+      type: object
+      required: [name, provider_domain, storage_type]
+      additionalProperties: false
+      properties:
+        name: {type: string}
+        provider_domain: {type: string}
+        category_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        storage_type:
+          type: string
+          enum: [http_cookie, js_cookie, local_storage, session_storage, pixel]
+        duration: {type: string}
+        description_th: {type: string}
+        description_en: {type: string}
+    CookieScriptRule:
+      type: object
+      required: [id, domain_id, pattern, category_id, action, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        domain_id: {$ref: '#/components/schemas/Uuid'}
+        pattern: {type: string}
+        category_id: {$ref: '#/components/schemas/Uuid'}
+        action:
+          type: string
+          enum: [block, allow]
+        row_version: {type: integer}
+    CookieCreateScriptRuleInput:
+      type: object
+      required: [pattern, category_id]
+      additionalProperties: false
+      properties:
+        pattern: {type: string}
+        category_id: {$ref: '#/components/schemas/Uuid'}
+        action:
+          type: string
+          enum: [block, allow]
+          default: block
     CookieSubmitConsentInput:
       type: object
       required: [domain_id, visitor_id, banner_config_id, action]

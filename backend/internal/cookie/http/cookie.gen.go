@@ -78,6 +78,78 @@ func (e CookieBannerConfigInputLayout) Valid() bool {
 	}
 }
 
+// Defines values for CookieCookieStorageType.
+const (
+	CookieCookieStorageTypeHttpCookie     CookieCookieStorageType = "http_cookie"
+	CookieCookieStorageTypeJsCookie       CookieCookieStorageType = "js_cookie"
+	CookieCookieStorageTypeLocalStorage   CookieCookieStorageType = "local_storage"
+	CookieCookieStorageTypePixel          CookieCookieStorageType = "pixel"
+	CookieCookieStorageTypeSessionStorage CookieCookieStorageType = "session_storage"
+)
+
+// Valid indicates whether the value is a known member of the CookieCookieStorageType enum.
+func (e CookieCookieStorageType) Valid() bool {
+	switch e {
+	case CookieCookieStorageTypeHttpCookie:
+		return true
+	case CookieCookieStorageTypeJsCookie:
+		return true
+	case CookieCookieStorageTypeLocalStorage:
+		return true
+	case CookieCookieStorageTypePixel:
+		return true
+	case CookieCookieStorageTypeSessionStorage:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieCreateCookieInputStorageType.
+const (
+	CookieCreateCookieInputStorageTypeHttpCookie     CookieCreateCookieInputStorageType = "http_cookie"
+	CookieCreateCookieInputStorageTypeJsCookie       CookieCreateCookieInputStorageType = "js_cookie"
+	CookieCreateCookieInputStorageTypeLocalStorage   CookieCreateCookieInputStorageType = "local_storage"
+	CookieCreateCookieInputStorageTypePixel          CookieCreateCookieInputStorageType = "pixel"
+	CookieCreateCookieInputStorageTypeSessionStorage CookieCreateCookieInputStorageType = "session_storage"
+)
+
+// Valid indicates whether the value is a known member of the CookieCreateCookieInputStorageType enum.
+func (e CookieCreateCookieInputStorageType) Valid() bool {
+	switch e {
+	case CookieCreateCookieInputStorageTypeHttpCookie:
+		return true
+	case CookieCreateCookieInputStorageTypeJsCookie:
+		return true
+	case CookieCreateCookieInputStorageTypeLocalStorage:
+		return true
+	case CookieCreateCookieInputStorageTypePixel:
+		return true
+	case CookieCreateCookieInputStorageTypeSessionStorage:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieCreateScriptRuleInputAction.
+const (
+	CookieCreateScriptRuleInputActionAllow CookieCreateScriptRuleInputAction = "allow"
+	CookieCreateScriptRuleInputActionBlock CookieCreateScriptRuleInputAction = "block"
+)
+
+// Valid indicates whether the value is a known member of the CookieCreateScriptRuleInputAction enum.
+func (e CookieCreateScriptRuleInputAction) Valid() bool {
+	switch e {
+	case CookieCreateScriptRuleInputActionAllow:
+		return true
+	case CookieCreateScriptRuleInputActionBlock:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CookieDomainStatus.
 const (
 	Pending  CookieDomainStatus = "pending"
@@ -90,6 +162,24 @@ func (e CookieDomainStatus) Valid() bool {
 	case Pending:
 		return true
 	case Verified:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieScriptRuleAction.
+const (
+	CookieScriptRuleActionAllow CookieScriptRuleAction = "allow"
+	CookieScriptRuleActionBlock CookieScriptRuleAction = "block"
+)
+
+// Valid indicates whether the value is a known member of the CookieScriptRuleAction enum.
+func (e CookieScriptRuleAction) Valid() bool {
+	switch e {
+	case CookieScriptRuleActionAllow:
+		return true
+	case CookieScriptRuleActionBlock:
 		return true
 	default:
 		return false
@@ -264,6 +354,24 @@ func (e CookieDeleteCategoryParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for CookieDeleteCookieParamsAcceptLanguage.
+const (
+	CookieDeleteCookieParamsAcceptLanguageEn CookieDeleteCookieParamsAcceptLanguage = "en"
+	CookieDeleteCookieParamsAcceptLanguageTh CookieDeleteCookieParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the CookieDeleteCookieParamsAcceptLanguage enum.
+func (e CookieDeleteCookieParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case CookieDeleteCookieParamsAcceptLanguageEn:
+		return true
+	case CookieDeleteCookieParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CookieListDomainsParamsAcceptLanguage.
 const (
 	CookieListDomainsParamsAcceptLanguageEn CookieListDomainsParamsAcceptLanguage = "en"
@@ -354,6 +462,78 @@ func (e CookieCreateBannerConfigParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for CookieListCookiesParamsAcceptLanguage.
+const (
+	CookieListCookiesParamsAcceptLanguageEn CookieListCookiesParamsAcceptLanguage = "en"
+	CookieListCookiesParamsAcceptLanguageTh CookieListCookiesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the CookieListCookiesParamsAcceptLanguage enum.
+func (e CookieListCookiesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case CookieListCookiesParamsAcceptLanguageEn:
+		return true
+	case CookieListCookiesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieCreateCookieParamsAcceptLanguage.
+const (
+	CookieCreateCookieParamsAcceptLanguageEn CookieCreateCookieParamsAcceptLanguage = "en"
+	CookieCreateCookieParamsAcceptLanguageTh CookieCreateCookieParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the CookieCreateCookieParamsAcceptLanguage enum.
+func (e CookieCreateCookieParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case CookieCreateCookieParamsAcceptLanguageEn:
+		return true
+	case CookieCreateCookieParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieListScriptRulesParamsAcceptLanguage.
+const (
+	CookieListScriptRulesParamsAcceptLanguageEn CookieListScriptRulesParamsAcceptLanguage = "en"
+	CookieListScriptRulesParamsAcceptLanguageTh CookieListScriptRulesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the CookieListScriptRulesParamsAcceptLanguage enum.
+func (e CookieListScriptRulesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case CookieListScriptRulesParamsAcceptLanguageEn:
+		return true
+	case CookieListScriptRulesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieCreateScriptRuleParamsAcceptLanguage.
+const (
+	CookieCreateScriptRuleParamsAcceptLanguageEn CookieCreateScriptRuleParamsAcceptLanguage = "en"
+	CookieCreateScriptRuleParamsAcceptLanguageTh CookieCreateScriptRuleParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the CookieCreateScriptRuleParamsAcceptLanguage enum.
+func (e CookieCreateScriptRuleParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case CookieCreateScriptRuleParamsAcceptLanguageEn:
+		return true
+	case CookieCreateScriptRuleParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CookieVerifyDomainParamsAcceptLanguage.
 const (
 	CookieVerifyDomainParamsAcceptLanguageEn CookieVerifyDomainParamsAcceptLanguage = "en"
@@ -366,6 +546,24 @@ func (e CookieVerifyDomainParamsAcceptLanguage) Valid() bool {
 	case CookieVerifyDomainParamsAcceptLanguageEn:
 		return true
 	case CookieVerifyDomainParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CookieDeleteScriptRuleParamsAcceptLanguage.
+const (
+	CookieDeleteScriptRuleParamsAcceptLanguageEn CookieDeleteScriptRuleParamsAcceptLanguage = "en"
+	CookieDeleteScriptRuleParamsAcceptLanguageTh CookieDeleteScriptRuleParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the CookieDeleteScriptRuleParamsAcceptLanguage enum.
+func (e CookieDeleteScriptRuleParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case CookieDeleteScriptRuleParamsAcceptLanguageEn:
+		return true
+	case CookieDeleteScriptRuleParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -440,6 +638,28 @@ type CookieCategory struct {
 	RowVersion int     `json:"row_version"`
 }
 
+// CookieCookie defines model for CookieCookie.
+type CookieCookie struct {
+	CategoryId    *Uuid   `json:"category_id,omitempty"`
+	DescriptionEn *string `json:"description_en,omitempty"`
+	DescriptionTh *string `json:"description_th,omitempty"`
+
+	// DomainId UUIDv7 generated by the API
+	DomainId Uuid    `json:"domain_id"`
+	Duration *string `json:"duration,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id             Uuid                    `json:"id"`
+	IsActive       bool                    `json:"is_active"`
+	Name           string                  `json:"name"`
+	ProviderDomain string                  `json:"provider_domain"`
+	RowVersion     int                     `json:"row_version"`
+	StorageType    CookieCookieStorageType `json:"storage_type"`
+}
+
+// CookieCookieStorageType defines model for CookieCookie.StorageType.
+type CookieCookieStorageType string
+
 // CookieCreateCategoryInput defines model for CookieCreateCategoryInput.
 type CookieCreateCategoryInput struct {
 	Code          string  `json:"code"`
@@ -450,6 +670,32 @@ type CookieCreateCategoryInput struct {
 	NameEn        *string `json:"name_en,omitempty"`
 	NameTh        string  `json:"name_th"`
 }
+
+// CookieCreateCookieInput defines model for CookieCreateCookieInput.
+type CookieCreateCookieInput struct {
+	CategoryId     *Uuid                              `json:"category_id,omitempty"`
+	DescriptionEn  *string                            `json:"description_en,omitempty"`
+	DescriptionTh  *string                            `json:"description_th,omitempty"`
+	Duration       *string                            `json:"duration,omitempty"`
+	Name           string                             `json:"name"`
+	ProviderDomain string                             `json:"provider_domain"`
+	StorageType    CookieCreateCookieInputStorageType `json:"storage_type"`
+}
+
+// CookieCreateCookieInputStorageType defines model for CookieCreateCookieInput.StorageType.
+type CookieCreateCookieInputStorageType string
+
+// CookieCreateScriptRuleInput defines model for CookieCreateScriptRuleInput.
+type CookieCreateScriptRuleInput struct {
+	Action *CookieCreateScriptRuleInputAction `json:"action,omitempty"`
+
+	// CategoryId UUIDv7 generated by the API
+	CategoryId Uuid   `json:"category_id"`
+	Pattern    string `json:"pattern"`
+}
+
+// CookieCreateScriptRuleInputAction defines model for CookieCreateScriptRuleInput.Action.
+type CookieCreateScriptRuleInputAction string
 
 // CookieDomain defines model for CookieDomain.
 type CookieDomain struct {
@@ -477,6 +723,25 @@ type CookieRegisterDomainInput struct {
 	// LegalEntityId UUIDv7 generated by the API
 	LegalEntityId Uuid `json:"legal_entity_id"`
 }
+
+// CookieScriptRule defines model for CookieScriptRule.
+type CookieScriptRule struct {
+	Action CookieScriptRuleAction `json:"action"`
+
+	// CategoryId UUIDv7 generated by the API
+	CategoryId Uuid `json:"category_id"`
+
+	// DomainId UUIDv7 generated by the API
+	DomainId Uuid `json:"domain_id"`
+
+	// Id UUIDv7 generated by the API
+	Id         Uuid   `json:"id"`
+	Pattern    string `json:"pattern"`
+	RowVersion int    `json:"row_version"`
+}
+
+// CookieScriptRuleAction defines model for CookieScriptRule.Action.
+type CookieScriptRuleAction string
 
 // FieldError defines model for FieldError.
 type FieldError struct {
@@ -599,6 +864,15 @@ type CookieDeleteCategoryParams struct {
 // CookieDeleteCategoryParamsAcceptLanguage defines parameters for CookieDeleteCategory.
 type CookieDeleteCategoryParamsAcceptLanguage string
 
+// CookieDeleteCookieParams defines parameters for CookieDeleteCookie.
+type CookieDeleteCookieParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *CookieDeleteCookieParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// CookieDeleteCookieParamsAcceptLanguage defines parameters for CookieDeleteCookie.
+type CookieDeleteCookieParamsAcceptLanguage string
+
 // CookieListDomainsParams defines parameters for CookieListDomains.
 type CookieListDomainsParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -644,6 +918,42 @@ type CookieCreateBannerConfigParams struct {
 // CookieCreateBannerConfigParamsAcceptLanguage defines parameters for CookieCreateBannerConfig.
 type CookieCreateBannerConfigParamsAcceptLanguage string
 
+// CookieListCookiesParams defines parameters for CookieListCookies.
+type CookieListCookiesParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *CookieListCookiesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// CookieListCookiesParamsAcceptLanguage defines parameters for CookieListCookies.
+type CookieListCookiesParamsAcceptLanguage string
+
+// CookieCreateCookieParams defines parameters for CookieCreateCookie.
+type CookieCreateCookieParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *CookieCreateCookieParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// CookieCreateCookieParamsAcceptLanguage defines parameters for CookieCreateCookie.
+type CookieCreateCookieParamsAcceptLanguage string
+
+// CookieListScriptRulesParams defines parameters for CookieListScriptRules.
+type CookieListScriptRulesParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *CookieListScriptRulesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// CookieListScriptRulesParamsAcceptLanguage defines parameters for CookieListScriptRules.
+type CookieListScriptRulesParamsAcceptLanguage string
+
+// CookieCreateScriptRuleParams defines parameters for CookieCreateScriptRule.
+type CookieCreateScriptRuleParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *CookieCreateScriptRuleParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// CookieCreateScriptRuleParamsAcceptLanguage defines parameters for CookieCreateScriptRule.
+type CookieCreateScriptRuleParamsAcceptLanguage string
+
 // CookieVerifyDomainParams defines parameters for CookieVerifyDomain.
 type CookieVerifyDomainParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -656,6 +966,15 @@ type CookieVerifyDomainParams struct {
 // CookieVerifyDomainParamsAcceptLanguage defines parameters for CookieVerifyDomain.
 type CookieVerifyDomainParamsAcceptLanguage string
 
+// CookieDeleteScriptRuleParams defines parameters for CookieDeleteScriptRule.
+type CookieDeleteScriptRuleParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *CookieDeleteScriptRuleParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// CookieDeleteScriptRuleParamsAcceptLanguage defines parameters for CookieDeleteScriptRule.
+type CookieDeleteScriptRuleParamsAcceptLanguage string
+
 // CookieUpdateBannerConfigDraftJSONRequestBody defines body for CookieUpdateBannerConfigDraft for application/json ContentType.
 type CookieUpdateBannerConfigDraftJSONRequestBody = CookieBannerConfigInput
 
@@ -667,6 +986,12 @@ type CookieRegisterDomainJSONRequestBody = CookieRegisterDomainInput
 
 // CookieCreateBannerConfigJSONRequestBody defines body for CookieCreateBannerConfig for application/json ContentType.
 type CookieCreateBannerConfigJSONRequestBody = CookieBannerConfigInput
+
+// CookieCreateCookieJSONRequestBody defines body for CookieCreateCookie for application/json ContentType.
+type CookieCreateCookieJSONRequestBody = CookieCreateCookieInput
+
+// CookieCreateScriptRuleJSONRequestBody defines body for CookieCreateScriptRule for application/json ContentType.
+type CookieCreateScriptRuleJSONRequestBody = CookieCreateScriptRuleInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -688,6 +1013,9 @@ type ServerInterface interface {
 	// CookieDeleteCategory Remove a cookie category
 	// (DELETE /admin/v1/cookie/categories/{id})
 	CookieDeleteCategory(w http.ResponseWriter, r *http.Request, id Uuid, params CookieDeleteCategoryParams)
+	// CookieDeleteCookie Remove a cookie entry (CON-02)
+	// (DELETE /admin/v1/cookie/cookies/{id})
+	CookieDeleteCookie(w http.ResponseWriter, r *http.Request, id Uuid, params CookieDeleteCookieParams)
 	// CookieListDomains Websites registered for the cookie consent banner (CON-01)
 	// (GET /admin/v1/cookie/domains)
 	CookieListDomains(w http.ResponseWriter, r *http.Request, params CookieListDomainsParams)
@@ -703,9 +1031,24 @@ type ServerInterface interface {
 	// CookieCreateBannerConfig Open a new draft banner version for this domain (CON-01)
 	// (POST /admin/v1/cookie/domains/{id}/banner-configs)
 	CookieCreateBannerConfig(w http.ResponseWriter, r *http.Request, id Uuid, params CookieCreateBannerConfigParams)
+	// CookieListCookies Cookies catalogued under a domain (CON-02)
+	// (GET /admin/v1/cookie/domains/{id}/cookies)
+	CookieListCookies(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListCookiesParams)
+	// CookieCreateCookie Catalogue a cookie under a domain and category (CON-02)
+	// (POST /admin/v1/cookie/domains/{id}/cookies)
+	CookieCreateCookie(w http.ResponseWriter, r *http.Request, id Uuid, params CookieCreateCookieParams)
+	// CookieListScriptRules Script rules declaring which category a script belongs to (CON-02)
+	// (GET /admin/v1/cookie/domains/{id}/script-rules)
+	CookieListScriptRules(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListScriptRulesParams)
+	// CookieCreateScriptRule Declare a script's own category — the acceptance criterion's own enforcement mechanism (CON-02)
+	// (POST /admin/v1/cookie/domains/{id}/script-rules)
+	CookieCreateScriptRule(w http.ResponseWriter, r *http.Request, id Uuid, params CookieCreateScriptRuleParams)
 	// CookieVerifyDomain Confirm ownership of a domain and mark it active (CON-01)
 	// (POST /admin/v1/cookie/domains/{id}/verify)
 	CookieVerifyDomain(w http.ResponseWriter, r *http.Request, id Uuid, params CookieVerifyDomainParams)
+	// CookieDeleteScriptRule Remove a script rule (CON-02)
+	// (DELETE /admin/v1/cookie/script-rules/{id})
+	CookieDeleteScriptRule(w http.ResponseWriter, r *http.Request, id Uuid, params CookieDeleteScriptRuleParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -748,6 +1091,12 @@ func (_ Unimplemented) CookieDeleteCategory(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// CookieDeleteCookie Remove a cookie entry (CON-02)
+// (DELETE /admin/v1/cookie/cookies/{id})
+func (_ Unimplemented) CookieDeleteCookie(w http.ResponseWriter, r *http.Request, id Uuid, params CookieDeleteCookieParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // CookieListDomains Websites registered for the cookie consent banner (CON-01)
 // (GET /admin/v1/cookie/domains)
 func (_ Unimplemented) CookieListDomains(w http.ResponseWriter, r *http.Request, params CookieListDomainsParams) {
@@ -778,9 +1127,39 @@ func (_ Unimplemented) CookieCreateBannerConfig(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// CookieListCookies Cookies catalogued under a domain (CON-02)
+// (GET /admin/v1/cookie/domains/{id}/cookies)
+func (_ Unimplemented) CookieListCookies(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListCookiesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CookieCreateCookie Catalogue a cookie under a domain and category (CON-02)
+// (POST /admin/v1/cookie/domains/{id}/cookies)
+func (_ Unimplemented) CookieCreateCookie(w http.ResponseWriter, r *http.Request, id Uuid, params CookieCreateCookieParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CookieListScriptRules Script rules declaring which category a script belongs to (CON-02)
+// (GET /admin/v1/cookie/domains/{id}/script-rules)
+func (_ Unimplemented) CookieListScriptRules(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListScriptRulesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CookieCreateScriptRule Declare a script's own category — the acceptance criterion's own enforcement mechanism (CON-02)
+// (POST /admin/v1/cookie/domains/{id}/script-rules)
+func (_ Unimplemented) CookieCreateScriptRule(w http.ResponseWriter, r *http.Request, id Uuid, params CookieCreateScriptRuleParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // CookieVerifyDomain Confirm ownership of a domain and mark it active (CON-01)
 // (POST /admin/v1/cookie/domains/{id}/verify)
 func (_ Unimplemented) CookieVerifyDomain(w http.ResponseWriter, r *http.Request, id Uuid, params CookieVerifyDomainParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CookieDeleteScriptRule Remove a script rule (CON-02)
+// (DELETE /admin/v1/cookie/script-rules/{id})
+func (_ Unimplemented) CookieDeleteScriptRule(w http.ResponseWriter, r *http.Request, id Uuid, params CookieDeleteScriptRuleParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1121,6 +1500,56 @@ func (siw *ServerInterfaceWrapper) CookieDeleteCategory(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// CookieDeleteCookie operation middleware
+func (siw *ServerInterfaceWrapper) CookieDeleteCookie(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CookieDeleteCookieParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage CookieDeleteCookieParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CookieDeleteCookie(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CookieListDomains operation middleware
 func (siw *ServerInterfaceWrapper) CookieListDomains(w http.ResponseWriter, r *http.Request) {
 
@@ -1353,6 +1782,206 @@ func (siw *ServerInterfaceWrapper) CookieCreateBannerConfig(w http.ResponseWrite
 	handler.ServeHTTP(w, r)
 }
 
+// CookieListCookies operation middleware
+func (siw *ServerInterfaceWrapper) CookieListCookies(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CookieListCookiesParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage CookieListCookiesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CookieListCookies(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CookieCreateCookie operation middleware
+func (siw *ServerInterfaceWrapper) CookieCreateCookie(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CookieCreateCookieParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage CookieCreateCookieParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CookieCreateCookie(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CookieListScriptRules operation middleware
+func (siw *ServerInterfaceWrapper) CookieListScriptRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CookieListScriptRulesParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage CookieListScriptRulesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CookieListScriptRules(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CookieCreateScriptRule operation middleware
+func (siw *ServerInterfaceWrapper) CookieCreateScriptRule(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CookieCreateScriptRuleParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage CookieCreateScriptRuleParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CookieCreateScriptRule(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CookieVerifyDomain operation middleware
 func (siw *ServerInterfaceWrapper) CookieVerifyDomain(w http.ResponseWriter, r *http.Request) {
 
@@ -1417,6 +2046,56 @@ func (siw *ServerInterfaceWrapper) CookieVerifyDomain(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CookieVerifyDomain(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CookieDeleteScriptRule operation middleware
+func (siw *ServerInterfaceWrapper) CookieDeleteScriptRule(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CookieDeleteScriptRuleParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage CookieDeleteScriptRuleParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CookieDeleteScriptRule(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1574,6 +2253,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/cookie/banner-configs/{id}/publish", wrapper.CookiePublishBannerConfig)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/cookie/domains/{id}/cookies", wrapper.CookieListCookies)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/cookie/domains/{id}/cookies", wrapper.CookieCreateCookie)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/admin/v1/cookie/cookies/{id}", wrapper.CookieDeleteCookie)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/cookie/domains/{id}/script-rules", wrapper.CookieListScriptRules)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/cookie/domains/{id}/script-rules", wrapper.CookieCreateScriptRule)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/admin/v1/cookie/script-rules/{id}", wrapper.CookieDeleteScriptRule)
 	})
 
 	return r
@@ -2127,6 +2824,71 @@ func (response CookieDeleteCategory404ApplicationProblemPlusJSONResponse) VisitC
 	return err
 }
 
+type CookieDeleteCookieRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params CookieDeleteCookieParams
+}
+
+type CookieDeleteCookieResponseObject interface {
+	VisitCookieDeleteCookieResponse(w http.ResponseWriter) error
+}
+
+type CookieDeleteCookie204Response struct {
+}
+
+func (response CookieDeleteCookie204Response) VisitCookieDeleteCookieResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type CookieDeleteCookie401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CookieDeleteCookie401ApplicationProblemPlusJSONResponse) VisitCookieDeleteCookieResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieDeleteCookie403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CookieDeleteCookie403ApplicationProblemPlusJSONResponse) VisitCookieDeleteCookieResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieDeleteCookie404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CookieDeleteCookie404ApplicationProblemPlusJSONResponse) VisitCookieDeleteCookieResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CookieListDomainsRequestObject struct {
 	Params CookieListDomainsParams
 }
@@ -2518,6 +3280,360 @@ func (response CookieCreateBannerConfig422ApplicationProblemPlusJSONResponse) Vi
 	return err
 }
 
+type CookieListCookiesRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params CookieListCookiesParams
+}
+
+type CookieListCookiesResponseObject interface {
+	VisitCookieListCookiesResponse(w http.ResponseWriter) error
+}
+
+type CookieListCookies200JSONResponse struct {
+	Data []CookieCookie `json:"data"`
+}
+
+func (response CookieListCookies200JSONResponse) VisitCookieListCookiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListCookies401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CookieListCookies401ApplicationProblemPlusJSONResponse) VisitCookieListCookiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListCookies403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CookieListCookies403ApplicationProblemPlusJSONResponse) VisitCookieListCookiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListCookies404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CookieListCookies404ApplicationProblemPlusJSONResponse) VisitCookieListCookiesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieCreateCookieRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params CookieCreateCookieParams
+	Body   *CookieCreateCookieJSONRequestBody
+}
+
+type CookieCreateCookieResponseObject interface {
+	VisitCookieCreateCookieResponse(w http.ResponseWriter) error
+}
+
+type CookieCreateCookie201JSONResponse CookieCookie
+
+func (response CookieCreateCookie201JSONResponse) VisitCookieCreateCookieResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieCreateCookie400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response CookieCreateCookie400ApplicationProblemPlusJSONResponse) VisitCookieCreateCookieResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieCreateCookie401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CookieCreateCookie401ApplicationProblemPlusJSONResponse) VisitCookieCreateCookieResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieCreateCookie403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CookieCreateCookie403ApplicationProblemPlusJSONResponse) VisitCookieCreateCookieResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieCreateCookie404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CookieCreateCookie404ApplicationProblemPlusJSONResponse) VisitCookieCreateCookieResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieCreateCookie422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response CookieCreateCookie422ApplicationProblemPlusJSONResponse) VisitCookieCreateCookieResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListScriptRulesRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params CookieListScriptRulesParams
+}
+
+type CookieListScriptRulesResponseObject interface {
+	VisitCookieListScriptRulesResponse(w http.ResponseWriter) error
+}
+
+type CookieListScriptRules200JSONResponse struct {
+	Data []CookieScriptRule `json:"data"`
+}
+
+func (response CookieListScriptRules200JSONResponse) VisitCookieListScriptRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListScriptRules401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CookieListScriptRules401ApplicationProblemPlusJSONResponse) VisitCookieListScriptRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListScriptRules403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CookieListScriptRules403ApplicationProblemPlusJSONResponse) VisitCookieListScriptRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieListScriptRules404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CookieListScriptRules404ApplicationProblemPlusJSONResponse) VisitCookieListScriptRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieCreateScriptRuleRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params CookieCreateScriptRuleParams
+	Body   *CookieCreateScriptRuleJSONRequestBody
+}
+
+type CookieCreateScriptRuleResponseObject interface {
+	VisitCookieCreateScriptRuleResponse(w http.ResponseWriter) error
+}
+
+type CookieCreateScriptRule201JSONResponse CookieScriptRule
+
+func (response CookieCreateScriptRule201JSONResponse) VisitCookieCreateScriptRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieCreateScriptRule400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response CookieCreateScriptRule400ApplicationProblemPlusJSONResponse) VisitCookieCreateScriptRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieCreateScriptRule401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CookieCreateScriptRule401ApplicationProblemPlusJSONResponse) VisitCookieCreateScriptRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieCreateScriptRule403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CookieCreateScriptRule403ApplicationProblemPlusJSONResponse) VisitCookieCreateScriptRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieCreateScriptRule404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CookieCreateScriptRule404ApplicationProblemPlusJSONResponse) VisitCookieCreateScriptRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieCreateScriptRule422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response CookieCreateScriptRule422ApplicationProblemPlusJSONResponse) VisitCookieCreateScriptRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CookieVerifyDomainRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params CookieVerifyDomainParams
@@ -2621,6 +3737,71 @@ func (response CookieVerifyDomain428ApplicationProblemPlusJSONResponse) VisitCoo
 	return err
 }
 
+type CookieDeleteScriptRuleRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params CookieDeleteScriptRuleParams
+}
+
+type CookieDeleteScriptRuleResponseObject interface {
+	VisitCookieDeleteScriptRuleResponse(w http.ResponseWriter) error
+}
+
+type CookieDeleteScriptRule204Response struct {
+}
+
+func (response CookieDeleteScriptRule204Response) VisitCookieDeleteScriptRuleResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type CookieDeleteScriptRule401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response CookieDeleteScriptRule401ApplicationProblemPlusJSONResponse) VisitCookieDeleteScriptRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieDeleteScriptRule403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response CookieDeleteScriptRule403ApplicationProblemPlusJSONResponse) VisitCookieDeleteScriptRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CookieDeleteScriptRule404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response CookieDeleteScriptRule404ApplicationProblemPlusJSONResponse) VisitCookieDeleteScriptRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// CookieGetBannerConfig One banner version
@@ -2641,6 +3822,9 @@ type StrictServerInterface interface {
 	// CookieDeleteCategory Remove a cookie category
 	// (DELETE /admin/v1/cookie/categories/{id})
 	CookieDeleteCategory(ctx context.Context, request CookieDeleteCategoryRequestObject) (CookieDeleteCategoryResponseObject, error)
+	// CookieDeleteCookie Remove a cookie entry (CON-02)
+	// (DELETE /admin/v1/cookie/cookies/{id})
+	CookieDeleteCookie(ctx context.Context, request CookieDeleteCookieRequestObject) (CookieDeleteCookieResponseObject, error)
 	// CookieListDomains Websites registered for the cookie consent banner (CON-01)
 	// (GET /admin/v1/cookie/domains)
 	CookieListDomains(ctx context.Context, request CookieListDomainsRequestObject) (CookieListDomainsResponseObject, error)
@@ -2656,9 +3840,24 @@ type StrictServerInterface interface {
 	// CookieCreateBannerConfig Open a new draft banner version for this domain (CON-01)
 	// (POST /admin/v1/cookie/domains/{id}/banner-configs)
 	CookieCreateBannerConfig(ctx context.Context, request CookieCreateBannerConfigRequestObject) (CookieCreateBannerConfigResponseObject, error)
+	// CookieListCookies Cookies catalogued under a domain (CON-02)
+	// (GET /admin/v1/cookie/domains/{id}/cookies)
+	CookieListCookies(ctx context.Context, request CookieListCookiesRequestObject) (CookieListCookiesResponseObject, error)
+	// CookieCreateCookie Catalogue a cookie under a domain and category (CON-02)
+	// (POST /admin/v1/cookie/domains/{id}/cookies)
+	CookieCreateCookie(ctx context.Context, request CookieCreateCookieRequestObject) (CookieCreateCookieResponseObject, error)
+	// CookieListScriptRules Script rules declaring which category a script belongs to (CON-02)
+	// (GET /admin/v1/cookie/domains/{id}/script-rules)
+	CookieListScriptRules(ctx context.Context, request CookieListScriptRulesRequestObject) (CookieListScriptRulesResponseObject, error)
+	// CookieCreateScriptRule Declare a script's own category — the acceptance criterion's own enforcement mechanism (CON-02)
+	// (POST /admin/v1/cookie/domains/{id}/script-rules)
+	CookieCreateScriptRule(ctx context.Context, request CookieCreateScriptRuleRequestObject) (CookieCreateScriptRuleResponseObject, error)
 	// CookieVerifyDomain Confirm ownership of a domain and mark it active (CON-01)
 	// (POST /admin/v1/cookie/domains/{id}/verify)
 	CookieVerifyDomain(ctx context.Context, request CookieVerifyDomainRequestObject) (CookieVerifyDomainResponseObject, error)
+	// CookieDeleteScriptRule Remove a script rule (CON-02)
+	// (DELETE /admin/v1/cookie/script-rules/{id})
+	CookieDeleteScriptRule(ctx context.Context, request CookieDeleteScriptRuleRequestObject) (CookieDeleteScriptRuleResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -2874,6 +4073,33 @@ func (sh *strictHandler) CookieDeleteCategory(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// CookieDeleteCookie operation middleware
+func (sh *strictHandler) CookieDeleteCookie(w http.ResponseWriter, r *http.Request, id Uuid, params CookieDeleteCookieParams) {
+	var request CookieDeleteCookieRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CookieDeleteCookie(ctx, request.(CookieDeleteCookieRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CookieDeleteCookie")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CookieDeleteCookieResponseObject); ok {
+		if err := validResponse.VisitCookieDeleteCookieResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CookieListDomains operation middleware
 func (sh *strictHandler) CookieListDomains(w http.ResponseWriter, r *http.Request, params CookieListDomainsParams) {
 	var request CookieListDomainsRequestObject
@@ -3021,6 +4247,128 @@ func (sh *strictHandler) CookieCreateBannerConfig(w http.ResponseWriter, r *http
 	}
 }
 
+// CookieListCookies operation middleware
+func (sh *strictHandler) CookieListCookies(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListCookiesParams) {
+	var request CookieListCookiesRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CookieListCookies(ctx, request.(CookieListCookiesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CookieListCookies")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CookieListCookiesResponseObject); ok {
+		if err := validResponse.VisitCookieListCookiesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CookieCreateCookie operation middleware
+func (sh *strictHandler) CookieCreateCookie(w http.ResponseWriter, r *http.Request, id Uuid, params CookieCreateCookieParams) {
+	var request CookieCreateCookieRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body CookieCreateCookieJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CookieCreateCookie(ctx, request.(CookieCreateCookieRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CookieCreateCookie")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CookieCreateCookieResponseObject); ok {
+		if err := validResponse.VisitCookieCreateCookieResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CookieListScriptRules operation middleware
+func (sh *strictHandler) CookieListScriptRules(w http.ResponseWriter, r *http.Request, id Uuid, params CookieListScriptRulesParams) {
+	var request CookieListScriptRulesRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CookieListScriptRules(ctx, request.(CookieListScriptRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CookieListScriptRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CookieListScriptRulesResponseObject); ok {
+		if err := validResponse.VisitCookieListScriptRulesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CookieCreateScriptRule operation middleware
+func (sh *strictHandler) CookieCreateScriptRule(w http.ResponseWriter, r *http.Request, id Uuid, params CookieCreateScriptRuleParams) {
+	var request CookieCreateScriptRuleRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body CookieCreateScriptRuleJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CookieCreateScriptRule(ctx, request.(CookieCreateScriptRuleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CookieCreateScriptRule")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CookieCreateScriptRuleResponseObject); ok {
+		if err := validResponse.VisitCookieCreateScriptRuleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CookieVerifyDomain operation middleware
 func (sh *strictHandler) CookieVerifyDomain(w http.ResponseWriter, r *http.Request, id Uuid, params CookieVerifyDomainParams) {
 	var request CookieVerifyDomainRequestObject
@@ -3041,6 +4389,33 @@ func (sh *strictHandler) CookieVerifyDomain(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CookieVerifyDomainResponseObject); ok {
 		if err := validResponse.VisitCookieVerifyDomainResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CookieDeleteScriptRule operation middleware
+func (sh *strictHandler) CookieDeleteScriptRule(w http.ResponseWriter, r *http.Request, id Uuid, params CookieDeleteScriptRuleParams) {
+	var request CookieDeleteScriptRuleRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CookieDeleteScriptRule(ctx, request.(CookieDeleteScriptRuleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CookieDeleteScriptRule")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CookieDeleteScriptRuleResponseObject); ok {
+		if err := validResponse.VisitCookieDeleteScriptRuleResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

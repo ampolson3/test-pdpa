@@ -2,6 +2,7 @@
 // @pdpa/api-client) and embedded on tenant websites via a plain <script> tag, so its own bundle size is
 // the acceptance criterion's own budget (≤ 30 KB gzip), not a Next.js app's. docs/modules/CON.md.
 import { renderBanner } from './banner';
+import { applyPreferences, choicesForAction } from './scripts';
 import { idempotencyKey, readConsent, visitorID, writeConsent } from './storage';
 import type { ConsentAction, PublicBanner } from './types';
 
@@ -67,22 +68,22 @@ export async function init(opts: InitOptions): Promise<void> {
   }
 
   const existing = readConsent(opts.domainKey);
-  if (existing && existing.version_no === banner.version_no) return; // already decided this exact version
+  if (existing && existing.version_no === banner.version_no) {
+    // A returning visitor's own prior choice still takes effect on every page load (CON-02) — not just
+    // the moment they decide it.
+    applyPreferences(existing.choices, banner.script_rules);
+    return;
+  }
+
+  const decide = (action: ConsentAction, choices: Record<string, boolean>) => {
+    applyPreferences(choices, banner.script_rules); // immediate effect — the acceptance criterion itself
+    void submitConsent(apiBase, opts.domainKey, banner, action, choices).then(() => el.remove());
+  };
 
   const el = renderBanner(banner, {
-    onAcceptAll: () => {
-      const choices: Record<string, boolean> = {};
-      for (const c of banner.categories) choices[c.code] = true;
-      void submitConsent(apiBase, opts.domainKey, banner, 'accept_all', choices).then(() => el.remove());
-    },
-    onRejectAll: () => {
-      const choices: Record<string, boolean> = {};
-      for (const c of banner.categories) choices[c.code] = c.is_required;
-      void submitConsent(apiBase, opts.domainKey, banner, 'reject_all', choices).then(() => el.remove());
-    },
-    onSaveCustom: (choices) => {
-      void submitConsent(apiBase, opts.domainKey, banner, 'custom', choices).then(() => el.remove());
-    },
+    onAcceptAll: () => decide('accept_all', choicesForAction('accept_all', banner.categories)),
+    onRejectAll: () => decide('reject_all', choicesForAction('reject_all', banner.categories)),
+    onSaveCustom: (custom) => decide('custom', choicesForAction('custom', banner.categories, custom)),
   });
   document.body.appendChild(el);
 }

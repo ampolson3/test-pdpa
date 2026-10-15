@@ -244,6 +244,61 @@ testing — every one of their own baseline tables stays unused until that pass.
 
 **Acceptance criteria:** เปิด/ปิดรายหมวดแล้วมีผลทันทีกับสคริปต์ในหมวดนั้น
 
+**Implementation note (done):** Builds on CON-01's own `cookie` module and schema — no migration needed,
+every table this feature touches (`cookie.cookies`, `cookie.script_rules`) was already in the baseline.
+`domains.go`'s `RegisterDomain` now seeds the module doc's own "ค่าเริ่มต้น 4 หมวด" (Strictly Necessary /
+Functional / Analytics / Marketing, only "necessary" required) on a tenant's *first* domain
+(`seedDefaultCategoriesIfNone`) — a tunable convenience, not legal content (rule 8 doesn't apply: these are
+internal category labels, never shown as notice/consent wording to a data subject), so no `docs/decisions.md`
+entry was needed; a later domain never re-seeds, so a DPO who already edited the set keeps their own.
+`cookies.go` is "รายการคุกกี้ต่อหมวด" — plain CRUD on `cookie.cookies` (manual entry only, `source='manual'`;
+`scan`/`kb` stay CON-04's own unused columns), FK-checking `category_id` via a new `GetCategory` service
+method (added to `categories.go`, since CON-01 never needed a single-row read). `script_rules.go`'s
+`cookie.script_rules` is the acceptance criterion's own enforcement mechanism: a DPO declares which URL
+pattern belongs to which category (`action` block/allow, default block); `PublicScriptRules` exposes them to
+the SDK keyed by the category's own *code* (a new sqlc query joining `cookie.categories`, not by id — the
+SDK already only knows categories by code), added to `GET /public/v1/cookie-banners/{key}`'s own response
+right alongside the categories it already returned.
+
+The SDK itself (`packages/cookie-sdk/src/scripts.ts`) is where "มีผลทันที" (immediate effect) actually
+happens — the same two mechanisms every commercial consent-management platform uses, since there is no way
+to literally un-execute code that has already run (a universal limitation, not specific to this SDK):
+declarative gating (a site marks a script `<script type="text/plain" data-pdpa-category="analytics"
+data-pdpa-src="...">`; the browser never executes `type="text/plain"` by spec, and this SDK activates it the
+moment that category turns on — turning it back off after that only prevents re-activation, since the script
+already ran) and pattern-based removal (a still-present, not-yet-loaded `<script src>` matching a `block`
+rule's pattern is removed the instant its category is disallowed). A `pdpa:consent` `CustomEvent` is
+dispatched on every change too, so a site's own already-running trackers (which this SDK can't reach
+directly) can react on their own. Applied both right after a fresh decision (the literal acceptance
+criterion) and on every page load for a returning visitor's already-recorded choice (so the effect isn't
+only ever "immediate," it's also *persistent*). `choicesForAction`/`categoryAllowed`/`matchesPattern`/
+`scriptsToBlock` are pure, DOM-free functions — `applyPreferences` is the one function that actually touches
+the DOM — so the gating logic itself is unit-tested directly (`scripts.test.ts`, the package's first test
+file; `vitest` added as a new devDependency) rather than only exercised through a browser nobody has
+available in this environment. The bundle grew from CON-01's own 2.48 KB to **2.98 KB gzip** — still
+comfortably inside the 30 KB budget `pnpm --filter @pdpa/cookie-sdk check-size` enforces.
+
+API: `GET`/`POST /admin/v1/cookie/domains/{id}/cookies`, `DELETE /admin/v1/cookie/cookies/{id}`,
+`GET`/`POST /admin/v1/cookie/domains/{id}/script-rules`, `DELETE /admin/v1/cookie/script-rules/{id}` — all on
+the already-seeded `cookie.banner.*` codes (child-table pattern reusing the parent resource's own
+permissions, the same move ROPA-03's own child tables use); `script_rules` added to `CookiePublicBanner`.
+UI: `/settings/cookie-banners` gained a "Cookies" and a "Script rules" section per domain (name/provider/
+category/storage-type form + list; pattern/category/action form + list), both inside the existing
+per-domain banner-management panel. Tests: unit (`internal/cookie/service/con02_test.go` — the 4-defaults
+seed fires once per tenant and never re-seeds, cookie/script-rule validation incl. unknown domain/category
+and bad storage_type/action, `PublicScriptRules` keyed by category code and reflecting a delete, two-tenant
+isolation of both new tables) and `packages/cookie-sdk/src/scripts.test.ts` (choicesForAction's three modes,
+category-allowed lookup, substring and `/regex/` pattern matching incl. a malformed pattern never throwing,
+which scripts a given choice set blocks), HTTP contract for both the admin and public packages (403 without
+`cookie.banner.create`, 201/204/404, the public banner response now carrying `script_rules`). Existing CON-01
+tests that created a category named "analytics" or asserted an empty category list right after
+`RegisterDomain` were updated for the new 4-seeded-defaults baseline. Not verified live against a real
+Postgres/Redis — same environment limitation CON-01 already disclosed; every Go test compiles and vets clean
+and skips the same way the rest of this codebase's own test suite already does here. `go build ./...`,
+`go vet ./...`, `go test -p 1 ./...` (no regressions), `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/cookie-sdk test` (vitest + build + size check) and
+`pnpm --filter @pdpa/admin build`/`typecheck` all verified clean.
+
 <a id="con-03"></a>
 ### CON-03 บล็อกสคริปต์ก่อนได้รับความยินยอม
 

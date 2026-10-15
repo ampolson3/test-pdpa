@@ -13,9 +13,14 @@ import {
   useCookieCategoryMutations,
   useCookieBannerConfigs,
   useCookieBannerConfigMutations,
+  useCookieCookies,
+  useCookieCookieMutations,
+  useCookieScriptRules,
+  useCookieScriptRuleMutations,
   type CookieDomain,
   type CookieBannerConfig,
   type CookieBannerTexts,
+  type CookieCategory,
 } from "@pdpa/api-client";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
@@ -186,10 +191,12 @@ export function CookieBannersContent({ apiBase }: { apiBase: string }) {
         <BannerSection
           client={client}
           domain={selectedDomain}
+          categories={cats}
           apiBase={apiBase}
           canCreate={canCreate}
           canUpdate={canUpdate}
           canPublish={canPublish}
+          canDelete={canDelete}
           onClose={() => setSelectedDomainId("")}
         />
       )}
@@ -197,13 +204,15 @@ export function CookieBannersContent({ apiBase }: { apiBase: string }) {
   );
 }
 
-function BannerSection({ client, domain, apiBase, canCreate, canUpdate, canPublish, onClose }: {
+function BannerSection({ client, domain, categories, apiBase, canCreate, canUpdate, canPublish, canDelete, onClose }: {
   client: ReturnType<typeof createApiClient>;
   domain: CookieDomain;
+  categories: CookieCategory[];
   apiBase: string;
   canCreate: boolean;
   canUpdate: boolean;
   canPublish: boolean;
+  canDelete: boolean;
   onClose: () => void;
 }) {
   const t = useTranslations("cookieBanners");
@@ -289,7 +298,161 @@ function BannerSection({ client, domain, apiBase, canCreate, canUpdate, canPubli
       {showForm && (
         <BannerForm layout={layout} setLayout={setLayout} texts={texts} setTexts={setTexts} onSave={save} saving={m.create.isPending || m.update.isPending} />
       )}
+
+      <CookiesSection client={client} domain={domain} categories={categories} canCreate={canCreate} canDelete={canDelete} />
+      <ScriptRulesSection client={client} domain={domain} categories={categories} canCreate={canCreate} canDelete={canDelete} />
     </section>
+  );
+}
+
+function categoryLabel(categories: CookieCategory[], id: string | null | undefined): string {
+  return categories.find((c) => c.id === id)?.name_th ?? "";
+}
+
+function CookiesSection({ client, domain, categories, canCreate, canDelete }: {
+  client: ReturnType<typeof createApiClient>;
+  domain: CookieDomain;
+  categories: CookieCategory[];
+  canCreate: boolean;
+  canDelete: boolean;
+}) {
+  const t = useTranslations("cookieBanners");
+  const list = useCookieCookies(client, domain.id);
+  const m = useCookieCookieMutations(client, domain.id);
+  const [name, setName] = useState("");
+  const [providerDomain, setProviderDomain] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [storageType, setStorageType] = useState<"http_cookie" | "js_cookie" | "local_storage" | "session_storage" | "pixel">("http_cookie");
+
+  const rows = list.data ?? [];
+
+  const create = () => {
+    if (!name.trim() || !providerDomain.trim()) return;
+    m.create.mutate({ name: name.trim(), provider_domain: providerDomain.trim(), category_id: categoryId || undefined, storage_type: storageType }, {
+      onSuccess: () => { setName(""); setProviderDomain(""); setCategoryId(""); },
+    });
+  };
+
+  return (
+    <div className="space-y-2 border-t border-slate-100 pt-3">
+      <h3 className="font-medium">{t("cookiesTitle")}</h3>
+      {canCreate && (
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="text-sm">
+            {t("cookieName")}
+            <input value={name} onChange={(e) => setName(e.target.value)} className={INPUT} placeholder="_ga" data-testid="cookie-name" />
+          </label>
+          <label className="text-sm">
+            {t("cookieProviderDomain")}
+            <input value={providerDomain} onChange={(e) => setProviderDomain(e.target.value)} className={INPUT} placeholder="google.com" data-testid="cookie-provider" />
+          </label>
+          <label className="text-sm">
+            {t("cookieCategory")}
+            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={INPUT} data-testid="cookie-category">
+              <option value="">{t("cookieNoCategory")}</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name_th}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            {t("cookieStorageType")}
+            <select value={storageType} onChange={(e) => setStorageType(e.target.value as typeof storageType)} className={INPUT}>
+              <option value="http_cookie">http_cookie</option>
+              <option value="js_cookie">js_cookie</option>
+              <option value="local_storage">local_storage</option>
+              <option value="session_storage">session_storage</option>
+              <option value="pixel">pixel</option>
+            </select>
+          </label>
+          <button type="button" onClick={create} disabled={m.create.isPending} className={BTN} data-testid="create-cookie">{t("addCookie")}</button>
+        </div>
+      )}
+      <ul className="divide-y divide-slate-100 text-sm">
+        {rows.map((r) => (
+          <li key={r.id} className="flex items-center justify-between py-1.5" data-testid={`cookie-row-${r.id}`}>
+            <span>
+              {r.name} <span className="text-slate-400">({r.provider_domain}, {r.storage_type})</span>
+              {r.category_id && <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs">{categoryLabel(categories, r.category_id)}</span>}
+            </span>
+            {canDelete && (
+              <button type="button" onClick={() => m.remove.mutate(r.id)} className="text-xs text-rose-700">{t("removeCategory")}</button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {rows.length === 0 && <p className="text-sm text-slate-500">{t("noCookies")}</p>}
+    </div>
+  );
+}
+
+function ScriptRulesSection({ client, domain, categories, canCreate, canDelete }: {
+  client: ReturnType<typeof createApiClient>;
+  domain: CookieDomain;
+  categories: CookieCategory[];
+  canCreate: boolean;
+  canDelete: boolean;
+}) {
+  const t = useTranslations("cookieBanners");
+  const list = useCookieScriptRules(client, domain.id);
+  const m = useCookieScriptRuleMutations(client, domain.id);
+  const [pattern, setPattern] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [action, setAction] = useState<"block" | "allow">("block");
+
+  const rows = list.data ?? [];
+
+  const create = () => {
+    if (!pattern.trim() || !categoryId) return;
+    m.create.mutate({ pattern: pattern.trim(), category_id: categoryId, action }, {
+      onSuccess: () => setPattern(""),
+    });
+  };
+
+  return (
+    <div className="space-y-2 border-t border-slate-100 pt-3">
+      <h3 className="font-medium">{t("scriptRulesTitle")}</h3>
+      <p className="text-xs text-slate-500">{t("scriptRulesHint")}</p>
+      {canCreate && (
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="text-sm">
+            {t("scriptRulePattern")}
+            <input value={pattern} onChange={(e) => setPattern(e.target.value)} className={INPUT} placeholder="googletagmanager.com" data-testid="script-rule-pattern" />
+          </label>
+          <label className="text-sm">
+            {t("cookieCategory")}
+            <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={INPUT} data-testid="script-rule-category">
+              <option value="">{t("legalEntityPlaceholder")}</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name_th}</option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            {t("scriptRuleAction")}
+            <select value={action} onChange={(e) => setAction(e.target.value as typeof action)} className={INPUT}>
+              <option value="block">block</option>
+              <option value="allow">allow</option>
+            </select>
+          </label>
+          <button type="button" onClick={create} disabled={m.create.isPending} className={BTN} data-testid="create-script-rule">{t("addScriptRule")}</button>
+        </div>
+      )}
+      <ul className="divide-y divide-slate-100 text-sm">
+        {rows.map((r) => (
+          <li key={r.id} className="flex items-center justify-between py-1.5" data-testid={`script-rule-row-${r.id}`}>
+            <span>
+              <code>{r.pattern}</code> <span className="text-slate-400">({r.action})</span>
+              <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs">{categoryLabel(categories, r.category_id)}</span>
+            </span>
+            {canDelete && (
+              <button type="button" onClick={() => m.remove.mutate(r.id)} className="text-xs text-rose-700">{t("removeCategory")}</button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {rows.length === 0 && <p className="text-sm text-slate-500">{t("noScriptRules")}</p>}
+    </div>
   );
 }
 

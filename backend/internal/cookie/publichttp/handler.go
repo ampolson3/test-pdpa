@@ -69,12 +69,21 @@ func (h *Strict) CookieGetPublicBanner(ctx context.Context, _ CookieGetPublicBan
 	if err != nil {
 		return nil, err
 	}
+	rules, err := h.svc.PublicScriptRules(ctx, k.EntityID)
+	if err != nil {
+		return nil, err
+	}
 	out := CookiePublicBanner{Id: b.ID, DomainId: b.DomainID, VersionNo: int(b.VersionNo), Layout: CookiePublicBannerLayout(b.Layout), Texts: textsWire(b.Texts),
 		Categories: make([]CookieCategory, 0, len(cats))}
 	for _, c := range cats {
 		out.Categories = append(out.Categories, CookieCategory{Id: c.ID, Code: c.Code, NameTh: c.NameTh, NameEn: strPtr(c.NameEn),
 			DescriptionTh: strPtr(c.DescTh), DescriptionEn: strPtr(c.DescEn), IsRequired: c.IsRequired, DisplayOrder: int(c.DisplayOrder), RowVersion: int(c.RowVersion)})
 	}
+	scriptRules := make([]CookiePublicScriptRule, 0, len(rules))
+	for _, r := range rules {
+		scriptRules = append(scriptRules, CookiePublicScriptRule{Pattern: r.Pattern, CategoryCode: r.CategoryCode, Action: CookiePublicScriptRuleAction(r.Action)})
+	}
+	out.ScriptRules = &scriptRules
 	return CookieGetPublicBanner200JSONResponse(out), nil
 }
 

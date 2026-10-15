@@ -17,3 +17,9 @@ output-options:
     - cookieGetBannerConfig
     - cookieUpdateBannerConfigDraft
     - cookiePublishBannerConfig
+    - cookieListCookies
+    - cookieCreateCookie
+    - cookieDeleteCookie
+    - cookieListScriptRules
+    - cookieCreateScriptRule
+    - cookieDeleteScriptRule

@@ -36,6 +36,24 @@ func (e CookiePublicBannerLayout) Valid() bool {
 	}
 }
 
+// Defines values for CookiePublicScriptRuleAction.
+const (
+	Allow CookiePublicScriptRuleAction = "allow"
+	Block CookiePublicScriptRuleAction = "block"
+)
+
+// Valid indicates whether the value is a known member of the CookiePublicScriptRuleAction enum.
+func (e CookiePublicScriptRuleAction) Valid() bool {
+	switch e {
+	case Allow:
+		return true
+	case Block:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CookieSubmitConsentInputAction.
 const (
 	AcceptAll CookieSubmitConsentInputAction = "accept_all"
@@ -195,6 +213,9 @@ type CookiePublicBanner struct {
 	Id     Uuid                     `json:"id"`
 	Layout CookiePublicBannerLayout `json:"layout"`
 
+	// ScriptRules Which scripts belong to which category (CON-02) — the SDK enables/disables matching scripts the moment a visitor's preference changes
+	ScriptRules *[]CookiePublicScriptRule `json:"script_rules,omitempty"`
+
 	// Texts The banner's own bilingual copy — accept-all, reject-all and settings are deliberately equal-weight
 	// fields; none of them is more "default" than another (the acceptance criterion's own "ปฏิเสธทั้งหมดได้ใน
 	// คลิกเดียว...น้ำหนักเท่ากัน").
@@ -204,6 +225,16 @@ type CookiePublicBanner struct {
 
 // CookiePublicBannerLayout defines model for CookiePublicBanner.Layout.
 type CookiePublicBannerLayout string
+
+// CookiePublicScriptRule defines model for CookiePublicScriptRule.
+type CookiePublicScriptRule struct {
+	Action       CookiePublicScriptRuleAction `json:"action"`
+	CategoryCode string                       `json:"category_code"`
+	Pattern      string                       `json:"pattern"`
+}
+
+// CookiePublicScriptRuleAction defines model for CookiePublicScriptRule.Action.
+type CookiePublicScriptRuleAction string
 
 // CookieSubmitConsentInput defines model for CookieSubmitConsentInput.
 type CookieSubmitConsentInput struct {

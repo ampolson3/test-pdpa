@@ -2274,6 +2274,45 @@ CON-02's immediate per-category script effect, CON-03's blocking of scripts befo
 automated cookie scanner, CON-06's branding/multi-language customization beyond th/en, CON-07's mobile/LIFF
 SDK, CON-08's A/B testing — every one of their own baseline tables stays unused until that pass.
 
+### CON-02 ตั้งค่าคุกกี้รายหมวด (`docs/modules/CON.md#con-02`) — done
+Builds on CON-01's own `cookie` module and schema — no migration needed, every table this feature touches
+(`cookie.cookies`, `cookie.script_rules`) was already in the baseline. `domains.go`'s `RegisterDomain` now
+seeds the module doc's own 4 default categories (Strictly Necessary/Functional/Analytics/Marketing, only
+"necessary" required) on a tenant's *first* domain (`seedDefaultCategoriesIfNone`) — a tunable convenience,
+not legal content (rule 8 doesn't apply: internal category labels, never shown as notice/consent wording),
+so no `docs/decisions.md` entry was needed; a later domain never re-seeds, so a DPO who already edited the
+set keeps their own. `cookies.go` is plain CRUD on `cookie.cookies` (manual entry only, `source='manual'`;
+`scan`/`kb` stay CON-04's own unused columns), FK-checking `category_id` via a new `GetCategory` service
+method. `script_rules.go`'s `cookie.script_rules` is the acceptance criterion's own enforcement mechanism: a
+DPO declares which URL pattern belongs to which category (`action` block/allow, default block);
+`PublicScriptRules` exposes them to the SDK keyed by the category's own *code* (a new sqlc query joining
+`cookie.categories`), added to `GET /public/v1/cookie-banners/{key}`'s own response.
+
+The SDK itself (`packages/cookie-sdk/src/scripts.ts`) is where "มีผลทันที" actually happens — the same two
+mechanisms every commercial CMP uses, since there is no way to literally un-execute code that already ran:
+declarative gating (`<script type="text/plain" data-pdpa-category="analytics" data-pdpa-src="...">`,
+activated once that category turns on) and pattern-based removal (a still-present, not-yet-loaded
+`<script src>` matching a `block` rule's pattern is removed the instant its category is disallowed). A
+`pdpa:consent` `CustomEvent` is dispatched on every change too, for a site's own already-running trackers.
+Applied both right after a fresh decision and on every page load for a returning visitor's already-recorded
+choice. `choicesForAction`/`categoryAllowed`/`matchesPattern`/`scriptsToBlock` are pure, DOM-free functions,
+unit-tested directly (`scripts.test.ts`, `vitest` added as a new devDependency). Bundle grew from 2.48 KB to
+**2.98 KB gzip** — still comfortably inside the 30 KB budget.
+
+API: `GET`/`POST /admin/v1/cookie/domains/{id}/cookies`, `DELETE /admin/v1/cookie/cookies/{id}`,
+`GET`/`POST /admin/v1/cookie/domains/{id}/script-rules`, `DELETE /admin/v1/cookie/script-rules/{id}` — all on
+the already-seeded `cookie.banner.*` codes (child-table pattern reusing the parent resource's own
+permissions, ROPA-03's move); `script_rules` added to `CookiePublicBanner`. UI: `/settings/cookie-banners`
+gained a "Cookies" and a "Script rules" section per domain. Tests: unit (`con02_test.go` — the 4-defaults
+seed fires once per tenant and never re-seeds, cookie/script-rule validation, `PublicScriptRules` keyed by
+category code and reflecting a delete, two-tenant isolation) and `scripts.test.ts`, HTTP contract for both
+the admin and public packages. Existing CON-01 tests that created a category named "analytics" or asserted
+an empty category list right after `RegisterDomain` were updated for the new 4-seeded-defaults baseline. Not
+verified live against a real Postgres/Redis — same environment limitation CON-01 already disclosed. `go
+build ./...`, `go vet ./...`, `go test -p 1 ./...` (no regressions), `pnpm --filter @pdpa/api-client
+typecheck`, `pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/cookie-sdk test` and
+`pnpm --filter @pdpa/admin build`/`typecheck` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

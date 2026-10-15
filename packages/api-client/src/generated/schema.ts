@@ -4843,6 +4843,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/cookie/domains/{id}/cookies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cookies catalogued under a domain (CON-02) */
+        get: operations["cookieListCookies"];
+        put?: never;
+        /** Catalogue a cookie under a domain and category (CON-02) */
+        post: operations["cookieCreateCookie"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/cookie/cookies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a cookie entry (CON-02) */
+        delete: operations["cookieDeleteCookie"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/cookie/domains/{id}/script-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Script rules declaring which category a script belongs to (CON-02) */
+        get: operations["cookieListScriptRules"];
+        put?: never;
+        /** Declare a script's own category — the acceptance criterion's own enforcement mechanism (CON-02) */
+        post: operations["cookieCreateScriptRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/cookie/script-rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a script rule (CON-02) */
+        delete: operations["cookieDeleteScriptRule"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/v1/cookie-banners/{key}": {
         parameters: {
             query?: never;
@@ -7002,6 +7072,56 @@ export interface components {
             layout: "bar" | "modal" | "corner";
             texts: components["schemas"]["CookieBannerTexts"];
             categories: components["schemas"]["CookieCategory"][];
+            /** @description Which scripts belong to which category (CON-02) — the SDK enables/disables matching scripts the moment a visitor's preference changes */
+            script_rules?: components["schemas"]["CookiePublicScriptRule"][];
+        };
+        CookiePublicScriptRule: {
+            pattern: string;
+            category_code: string;
+            /** @enum {string} */
+            action: "block" | "allow";
+        };
+        CookieCookie: {
+            id: components["schemas"]["Uuid"];
+            domain_id: components["schemas"]["Uuid"];
+            name: string;
+            provider_domain: string;
+            category_id?: components["schemas"]["Uuid"] | null;
+            /** @enum {string} */
+            storage_type: "http_cookie" | "js_cookie" | "local_storage" | "session_storage" | "pixel";
+            duration?: string;
+            description_th?: string;
+            description_en?: string;
+            is_active: boolean;
+            row_version: number;
+        };
+        CookieCreateCookieInput: {
+            name: string;
+            provider_domain: string;
+            category_id?: components["schemas"]["Uuid"] | null;
+            /** @enum {string} */
+            storage_type: "http_cookie" | "js_cookie" | "local_storage" | "session_storage" | "pixel";
+            duration?: string;
+            description_th?: string;
+            description_en?: string;
+        };
+        CookieScriptRule: {
+            id: components["schemas"]["Uuid"];
+            domain_id: components["schemas"]["Uuid"];
+            pattern: string;
+            category_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            action: "block" | "allow";
+            row_version: number;
+        };
+        CookieCreateScriptRuleInput: {
+            pattern: string;
+            category_id: components["schemas"]["Uuid"];
+            /**
+             * @default block
+             * @enum {string}
+             */
+            action: "block" | "allow";
         };
         CookieSubmitConsentInput: {
             domain_id: components["schemas"]["Uuid"];
@@ -20211,6 +20331,186 @@ export interface operations {
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    cookieListCookies: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CookieCookie"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cookieCreateCookie: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CookieCreateCookieInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CookieCookie"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    cookieDeleteCookie: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cookieListScriptRules: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["CookieScriptRule"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cookieCreateScriptRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CookieCreateScriptRuleInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CookieScriptRule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    cookieDeleteScriptRule: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     cookieGetPublicBanner: {

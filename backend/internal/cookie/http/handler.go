@@ -235,6 +235,101 @@ func (h *Strict) CookiePublishBannerConfig(ctx context.Context, req CookiePublis
 	return CookiePublishBannerConfig200JSONResponse(bannerConfigWire(bc)), nil
 }
 
+// ---- cookies (CON-02: "รายการคุกกี้ต่อหมวด") ----
+
+func cookieEntryWire(e cookie.CookieEntry) CookieCookie {
+	w := CookieCookie{Id: e.ID, DomainId: e.DomainID, Name: e.Name, ProviderDomain: e.ProviderDomain,
+		StorageType: CookieCookieStorageType(e.StorageType), DescriptionTh: strPtr(e.DescriptionTh), DescriptionEn: strPtr(e.DescriptionEn),
+		Duration: strPtr(e.Duration), IsActive: e.IsActive, RowVersion: int(e.RowVersion)}
+	if e.CategoryID != nil {
+		w.CategoryId = e.CategoryID
+	}
+	return w
+}
+
+func (h *Strict) CookieListCookies(ctx context.Context, req CookieListCookiesRequestObject) (CookieListCookiesResponseObject, error) {
+	list, err := h.svc.ListCookies(ctx, req.Id)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	out := CookieListCookies200JSONResponse{Data: make([]CookieCookie, 0, len(list))}
+	for _, e := range list {
+		out.Data = append(out.Data, cookieEntryWire(e))
+	}
+	return out, nil
+}
+
+func (h *Strict) CookieCreateCookie(ctx context.Context, req CookieCreateCookieRequestObject) (CookieCreateCookieResponseObject, error) {
+	if req.Body == nil {
+		return nil, httpx.RequestInvalid("name")
+	}
+	b := *req.Body
+	in := cookie.CreateCookieInput{Name: b.Name, ProviderDomain: b.ProviderDomain, StorageType: string(b.StorageType), CategoryID: b.CategoryId}
+	if b.Duration != nil {
+		in.Duration = *b.Duration
+	}
+	if b.DescriptionTh != nil {
+		in.DescriptionTh = *b.DescriptionTh
+	}
+	if b.DescriptionEn != nil {
+		in.DescriptionEn = *b.DescriptionEn
+	}
+	e, err := h.svc.CreateCookie(ctx, req.Id, in)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	return CookieCreateCookie201JSONResponse(cookieEntryWire(e)), nil
+}
+
+func (h *Strict) CookieDeleteCookie(ctx context.Context, req CookieDeleteCookieRequestObject) (CookieDeleteCookieResponseObject, error) {
+	if err := h.svc.DeleteCookie(ctx, req.Id); err != nil {
+		return nil, ToProblem(err)
+	}
+	return CookieDeleteCookie204Response{}, nil
+}
+
+// ---- script rules (CON-02's own enforcement mechanism) ----
+
+func scriptRuleWire(r cookie.ScriptRule) CookieScriptRule {
+	return CookieScriptRule{Id: r.ID, DomainId: r.DomainID, Pattern: r.Pattern, CategoryId: r.CategoryID,
+		Action: CookieScriptRuleAction(r.Action), RowVersion: int(r.RowVersion)}
+}
+
+func (h *Strict) CookieListScriptRules(ctx context.Context, req CookieListScriptRulesRequestObject) (CookieListScriptRulesResponseObject, error) {
+	list, err := h.svc.ListScriptRules(ctx, req.Id)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	out := CookieListScriptRules200JSONResponse{Data: make([]CookieScriptRule, 0, len(list))}
+	for _, r := range list {
+		out.Data = append(out.Data, scriptRuleWire(r))
+	}
+	return out, nil
+}
+
+func (h *Strict) CookieCreateScriptRule(ctx context.Context, req CookieCreateScriptRuleRequestObject) (CookieCreateScriptRuleResponseObject, error) {
+	if req.Body == nil {
+		return nil, httpx.RequestInvalid("pattern")
+	}
+	b := *req.Body
+	in := cookie.CreateScriptRuleInput{Pattern: b.Pattern, CategoryID: b.CategoryId}
+	if b.Action != nil {
+		in.Action = string(*b.Action)
+	}
+	r, err := h.svc.CreateScriptRule(ctx, req.Id, in)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	return CookieCreateScriptRule201JSONResponse(scriptRuleWire(r)), nil
+}
+
+func (h *Strict) CookieDeleteScriptRule(ctx context.Context, req CookieDeleteScriptRuleRequestObject) (CookieDeleteScriptRuleResponseObject, error) {
+	if err := h.svc.DeleteScriptRule(ctx, req.Id); err != nil {
+		return nil, ToProblem(err)
+	}
+	return CookieDeleteScriptRule204Response{}, nil
+}
+
 // ---- wire helpers ----
 
 func parseETag(h string) (int32, error) {

@@ -84,7 +84,39 @@ func (s *Service) RegisterDomain(ctx context.Context, domain string, legalEntity
 	if err := s.audit(ctx, "cookie.domain.register", DomainEntityType, id, nil, map[string]any{"domain": domain}); err != nil {
 		return Domain{}, err
 	}
+	// CON-02's own backend note calls for 4 default categories (Strictly Necessary / Functional /
+	// Analytics / Marketing) to exist out of the box — a tunable convenience, not legal content (rule 8
+	// doesn't apply: these are internal category labels, not notice/consent wording shown to a data
+	// subject), so no decisions.md entry is needed. Seeded once per tenant, on its first domain, rather
+	// than via a migration: cookie.categories has no tenant_id-NULL global-row pattern like ORG-07's
+	// master data (tenant_id is NOT NULL here), so a migration can't seed rows visible to every tenant.
+	if err := s.seedDefaultCategoriesIfNone(ctx); err != nil {
+		return Domain{}, err
+	}
 	return d, nil
+}
+
+var defaultCategories = []CreateCategoryInput{
+	{Code: "necessary", NameTh: "จำเป็นอย่างยิ่ง", NameEn: "Strictly Necessary", IsRequired: true, DisplayOrder: 0},
+	{Code: "functional", NameTh: "การทำงาน", NameEn: "Functional", DisplayOrder: 1},
+	{Code: "analytics", NameTh: "วิเคราะห์", NameEn: "Analytics", DisplayOrder: 2},
+	{Code: "marketing", NameTh: "การตลาด", NameEn: "Marketing", DisplayOrder: 3},
+}
+
+func (s *Service) seedDefaultCategoriesIfNone(ctx context.Context) error {
+	existing, err := cookiestore.New(pdb.MustTxFromContext(ctx)).ListCategories(ctx)
+	if err != nil {
+		return err
+	}
+	if len(existing) > 0 {
+		return nil
+	}
+	for _, in := range defaultCategories {
+		if _, err := s.CreateCategory(ctx, in); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // withPublicKey fills in the install snippet's own key, when one has been issued (a domain whose banner

@@ -194,10 +194,14 @@ func TestCookieEndpoints_Contract(t *testing.T) {
 		t.Errorf("verify: %d %s", code, body)
 	}
 
-	code, body = do("POST", "/admin/v1/cookie/categories", &admin, map[string]any{"code": "analytics", "name_th": "วิเคราะห์"}, nil)
-	if code != 201 || !strings.Contains(body, `"code":"analytics"`) {
+	// "analytics" etc. already exist by now — RegisterDomain just seeded the 4 defaults (CON-02) — so this
+	// uses a distinct code.
+	code, body = do("POST", "/admin/v1/cookie/categories", &admin, map[string]any{"code": "custom_cat", "name_th": "กำหนดเอง"}, nil)
+	if code != 201 || !strings.Contains(body, `"code":"custom_cat"`) {
 		t.Fatalf("create category: %d %s", code, body)
 	}
+	var customCategory cookiehttp.CookieCategory
+	_ = json.Unmarshal([]byte(body), &customCategory)
 
 	newBanner := map[string]any{"layout": "bar", "texts": map[string]any{
 		"title_th": "เราใช้คุกกี้", "accept_all_th": "ยอมรับทั้งหมด", "reject_all_th": "ปฏิเสธทั้งหมด", "settings_th": "ตั้งค่า",
@@ -215,5 +219,40 @@ func TestCookieEndpoints_Contract(t *testing.T) {
 	code, body = do("POST", "/admin/v1/cookie/banner-configs/"+bc.Id.String()+"/publish", &admin, nil, map[string]string{"If-Match": `"1"`})
 	if code != 200 || !strings.Contains(body, `"status":"published"`) {
 		t.Errorf("publish: %d %s", code, body)
+	}
+
+	// CON-02: cookies catalogue + script rules.
+	if code, body := do("GET", "/admin/v1/cookie/domains/"+domain.Id.String()+"/cookies", &reader, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list cookies (none yet): %d %s", code, body)
+	}
+	newCookie := map[string]any{"name": "_ga", "provider_domain": "google.com", "category_id": customCategory.Id, "storage_type": "http_cookie"}
+	code, body = do("POST", "/admin/v1/cookie/domains/"+domain.Id.String()+"/cookies", &admin, newCookie, nil)
+	if code != 201 || !strings.Contains(body, `"name":"_ga"`) {
+		t.Fatalf("create cookie: %d %s", code, body)
+	}
+	var ck cookiehttp.CookieCookie
+	_ = json.Unmarshal([]byte(body), &ck)
+	if code, _ := do("DELETE", "/admin/v1/cookie/cookies/"+ck.Id.String(), &admin, nil, nil); code != 204 {
+		t.Errorf("delete cookie: %d, want 204", code)
+	}
+	if code, _ := do("DELETE", "/admin/v1/cookie/cookies/"+uuid.New().String(), &admin, nil, nil); code != 404 {
+		t.Errorf("delete unknown cookie: %d, want 404", code)
+	}
+
+	newRule := map[string]any{"pattern": "googletagmanager.com", "category_id": customCategory.Id}
+	if code, _ := do("POST", "/admin/v1/cookie/domains/"+domain.Id.String()+"/script-rules", &reader, newRule, nil); code != 403 {
+		t.Errorf("create script rule with read only: %d, want 403", code)
+	}
+	code, body = do("POST", "/admin/v1/cookie/domains/"+domain.Id.String()+"/script-rules", &admin, newRule, nil)
+	if code != 201 || !strings.Contains(body, `"action":"block"`) {
+		t.Fatalf("create script rule: %d %s", code, body)
+	}
+	var rule cookiehttp.CookieScriptRule
+	_ = json.Unmarshal([]byte(body), &rule)
+	if code, body := do("GET", "/admin/v1/cookie/domains/"+domain.Id.String()+"/script-rules", &reader, nil, nil); code != 200 || !strings.Contains(body, `"googletagmanager.com"`) {
+		t.Errorf("list script rules: %d %s", code, body)
+	}
+	if code, _ := do("DELETE", "/admin/v1/cookie/script-rules/"+rule.Id.String(), &admin, nil, nil); code != 204 {
+		t.Errorf("delete script rule: %d, want 204", code)
 	}
 }

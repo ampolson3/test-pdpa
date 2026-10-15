@@ -6,6 +6,10 @@ export type CookieCategory = components["schemas"]["CookieCategory"];
 export type CookieBannerConfig = components["schemas"]["CookieBannerConfig"];
 export type CookieBannerTexts = components["schemas"]["CookieBannerTexts"];
 export type CookieBannerConfigInput = components["schemas"]["CookieBannerConfigInput"];
+export type CookieCookie = components["schemas"]["CookieCookie"];
+export type CookieCreateCookieInput = components["schemas"]["CookieCreateCookieInput"];
+export type CookieScriptRule = components["schemas"]["CookieScriptRule"];
+export type CookieCreateScriptRuleInput = components["schemas"]["CookieCreateScriptRuleInput"];
 
 const domainsKey = ["cookie", "domains"] as const;
 const categoriesKey = ["cookie", "categories"] as const;
@@ -142,6 +146,82 @@ export function useCookieBannerConfigMutations(client: ApiClient, domainId: stri
         });
         if (error) throw error;
         return data;
+      },
+      onSuccess: refresh,
+    }),
+  };
+}
+
+/** GET /admin/v1/cookie/domains/{id}/cookies — the catalogue of cookies under a domain (CON-02). */
+export function useCookieCookies(client: ApiClient, domainId: string | undefined) {
+  return useQuery({
+    queryKey: ["cookie", "cookies", domainId],
+    enabled: !!domainId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/cookie/domains/{id}/cookies", { params: { path: { id: domainId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+export function useCookieCookieMutations(client: ApiClient, domainId: string | undefined) {
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: ["cookie", "cookies", domainId] });
+  return {
+    create: useMutation({
+      mutationFn: async (input: CookieCreateCookieInput) => {
+        const { data, error } = await client.POST("/admin/v1/cookie/domains/{id}/cookies", {
+          params: { path: { id: domainId! } },
+          body: input,
+        });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    remove: useMutation({
+      mutationFn: async (id: string) => {
+        const { error } = await client.DELETE("/admin/v1/cookie/cookies/{id}", { params: { path: { id } } });
+        if (error) throw error;
+      },
+      onSuccess: refresh,
+    }),
+  };
+}
+
+/** GET /admin/v1/cookie/domains/{id}/script-rules — which scripts belong to which category (CON-02). */
+export function useCookieScriptRules(client: ApiClient, domainId: string | undefined) {
+  return useQuery({
+    queryKey: ["cookie", "script-rules", domainId],
+    enabled: !!domainId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/cookie/domains/{id}/script-rules", { params: { path: { id: domainId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+export function useCookieScriptRuleMutations(client: ApiClient, domainId: string | undefined) {
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: ["cookie", "script-rules", domainId] });
+  return {
+    create: useMutation({
+      mutationFn: async (input: CookieCreateScriptRuleInput) => {
+        const { data, error } = await client.POST("/admin/v1/cookie/domains/{id}/script-rules", {
+          params: { path: { id: domainId! } },
+          body: input,
+        });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    remove: useMutation({
+      mutationFn: async (id: string) => {
+        const { error } = await client.DELETE("/admin/v1/cookie/script-rules/{id}", { params: { path: { id } } });
+        if (error) throw error;
       },
       onSuccess: refresh,
     }),

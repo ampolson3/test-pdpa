@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	cookiestore "pdpa-platform/internal/cookie/store"
 	"pdpa-platform/internal/pkg/authz"
@@ -100,6 +102,19 @@ func (s *Service) CreateCategory(ctx context.Context, in CreateCategoryInput) (C
 		return Category{}, err
 	}
 	return cat, nil
+}
+
+// GetCategory returns one category of the tenant's own (no permission check — the same "existence, not
+// judgement" read every FK-visibility helper in this codebase uses, e.g. ROPA-03's own category checks).
+func (s *Service) GetCategory(ctx context.Context, id uuid.UUID) (Category, error) {
+	row, err := cookiestore.New(pdb.MustTxFromContext(ctx)).GetCategory(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Category{}, ErrNotFound
+	}
+	if err != nil {
+		return Category{}, err
+	}
+	return toCategory(row.ID, row.Code, row.Names, row.Descriptions, row.IsRequired, row.DisplayOrder, row.RowVersion)
 }
 
 // ListCategories returns every category the tenant has defined, in display order.

@@ -263,7 +263,9 @@ func TestCookieModule_TenantIsolation(t *testing.T) {
 			return err
 		}
 		domainID = d.ID
-		c, err := a.svc.CreateCategory(ctx, cookie.CreateCategoryInput{Code: "analytics", NameTh: "วิเคราะห์"})
+		// "analytics" is already seeded as one of the 4 defaults the moment the domain above was
+		// registered (seedDefaultCategoriesIfNone) — a different code avoids colliding with it.
+		c, err := a.svc.CreateCategory(ctx, cookie.CreateCategoryInput{Code: "custom_cat", NameTh: "กำหนดเอง"})
 		if err != nil {
 			return err
 		}
