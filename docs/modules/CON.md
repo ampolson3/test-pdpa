@@ -320,6 +320,71 @@ and skips the same way the rest of this codebase's own test suite already does h
 
 **Acceptance criteria:** ก่อนยินยอมไม่มีคุกกี้ Analytics / Marketing ถูกตั้ง (Playwright test บนเว็บตัวอย่าง)
 
+**Implementation note (done):** Backend scope is already fully covered by CON-02's own `cookie.script_rules`
+(blocking rules per script/domain) — no new migration, endpoint, or permission. This feature's real scope is
+entirely `packages/cookie-sdk`.
+
+A MutationObserver-based "remove after insertion" mechanism was tried first and rejected by this package's
+own Playwright E2E test: a mutation callback fires as a microtask *after* the synchronous DOM insertion that
+already starts the browser's fetch (and, per spec, scripts inserted via `appendChild`/`insertBefore` are not
+guaranteed to stop executing once removed) — a real, observed failure, not a theoretical one. `scripts.ts`'s
+`guardDynamicScripts()` instead patches `Node.prototype.appendChild`/`insertBefore` directly: a `<script src>`
+is rewritten *before* the original call ever runs — stripped of `src`, given `type="text/plain"` and a
+`data-pdpa-src` — so the browser never fetches it at all. This is exactly "rewrite type=text/plain", just
+applied *before* insertion instead of after, which is what makes it deterministic rather than racy. A script
+intercepted before the tenant's real `script_rules` are even known (the realistic case: GTM's own container
+injecting a sub-tag can run before this SDK's async banner fetch resolves) is held pending with no category
+yet; `guard.resolve(choices, rules)` — called once the banner loads, and again on every later decision —
+classifies each one: matches a block rule and still disallowed → stays inert with `data-pdpa-category` set,
+so `applyPreferences`' own CON-02 mechanism 1 activates it the moment that category is allowed; matches no
+rule at all → released immediately, since nothing the tenant flagged as tracking should stay blocked forever
+on a guess. `activatePlaceholder` was extracted out of `applyPreferences` so both call sites share one
+activation code path.
+
+A second real bug, found by the same E2E test: `autoInit()` previously deferred the *entire* `init()` call to
+`DOMContentLoaded` whenever `document.readyState === 'loading'` — which is always true for a `<script>` tag
+placed in `<body>`, the embed snippet's own recommended placement. That meant `guardDynamicScripts()` and
+`gtagDefault()` (both synchronous, needing nothing but `document.currentScript`) ran only *after* every other
+script on the page had already executed — the opposite of "prior." Fixed by calling `init()` unconditionally
+and immediately, deferring only the one step that actually needs `document.body` (the banner's own DOM
+insertion) to `DOMContentLoaded` if `document.body` doesn't exist yet.
+
+Google Consent Mode v2 ("รองรับ Google Consent Mode v2"): `consentMode.ts`'s `gtagDefault()`/`gtagUpdate()`
+push the fixed-vocabulary gtag consent signals (`ad_storage`/`ad_user_data`/`ad_personalization` ← marketing,
+`analytics_storage` ← analytics, `functionality_storage`/`personalization_storage` ← functional,
+`security_storage` always granted) onto `window.dataLayer` directly — this works whether or not gtag.js/GTM
+has actually loaded yet, since GTM reads its own queued dataLayer array once it initializes; no real GTM
+container exists in this environment to test against, so this is proven by unit test (the exact signals
+pushed) rather than a live container. `gtagDefault()` is called synchronously at the very top of `init()`
+(before the banner fetch), `gtagUpdate()` on every later preference change — the same timing CON-03's own
+"prior blocking" needs. A literal downloadable GTM community template (the module doc's own "GTM template"
+bullet) is deliberately not built — no real GTM container exists here to design or test one against, the
+same "no consumer yet" deferral this codebase uses throughout; the `pdpa:consent` CustomEvent (CON-02) and
+the dataLayer consent pushes are what such a template, or a custom GTM trigger, would read.
+
+The acceptance criterion itself is proven by a real Playwright test (`packages/cookie-sdk/e2e/`, `pnpm
+test:e2e`), not just asserted — this environment has a pre-installed Chromium (unlike most of this
+codebase's own "no browser available here" E2E disclaimers), so this is a genuine first for this session.
+`e2e/fixtures/index.html` is the literal "เว็บตัวอย่าง": a declaratively-gated analytics tag, and an inline
+script simulating a tag manager injecting a marketing sub-tag after its own container loads (the realistic
+case `guardDynamicScripts` targets) — a plain `<script src>` already present *earlier* in the HTML than the
+SDK's own tag is the one case nothing can retroactively stop (CON-02's own documented "can't un-execute code
+that already ran"), so the fixture places the SDK first, the documented real-world recommendation. `e2e/
+server.mjs` is a minimal static file server (no real backend — the test mocks `/public/v1` at the network
+layer via Playwright's own route interception). Three tests: no analytics/marketing cookie before any
+decision (the acceptance criterion directly), accepting all activates the gated script immediately (CON-02's
+own criterion, still true here), rejecting all keeps both blocked. `playwright.config.ts` points
+`launchOptions.executablePath` at this environment's own pre-installed Chromium (`/opt/pw-browsers/chromium`)
+since the pinned `@playwright/test` version would otherwise try to download a second, incompatible revision.
+`vitest.config.ts` was added to scope vitest's own glob to `src/**/*.test.ts` — needed once `e2e/*.spec.ts`
+existed, since vitest would otherwise try to run Playwright's own test files and fail immediately.
+
+Bundle grew from CON-02's own 2.98 KB to **3.51 KB gzip** — still comfortably inside the 30 KB budget. Tests:
+`pnpm --filter @pdpa/cookie-sdk test` (vitest incl. new `consentMode.test.ts`, build, size check) and `pnpm
+--filter @pdpa/cookie-sdk test:e2e` (the 3 Playwright tests above, all passing against a real Chromium). No
+backend or admin-UI changes — `go build/vet/test`, `pnpm --filter @pdpa/api-client typecheck` and `pnpm
+--filter @pdpa/i18n test` re-verified clean regardless.
+
 <a id="con-04"></a>
 ### CON-04 สแกนและจัดหมวดคุกกี้อัตโนมัติ
 

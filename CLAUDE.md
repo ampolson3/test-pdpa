@@ -2313,6 +2313,41 @@ build ./...`, `go vet ./...`, `go test -p 1 ./...` (no regressions), `pnpm --fil
 typecheck`, `pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/cookie-sdk test` and
 `pnpm --filter @pdpa/admin build`/`typecheck` all verified clean.
 
+### CON-03 บล็อกสคริปต์ก่อนได้รับความยินยอม (`docs/modules/CON.md#con-03`) — done
+Backend scope was already fully covered by CON-02's own `cookie.script_rules` — no new migration, endpoint,
+or permission. This feature's real scope is entirely `packages/cookie-sdk`. A MutationObserver-based
+"remove after insertion" mechanism was tried first and rejected by this package's own Playwright E2E test: a
+mutation callback fires as a microtask *after* the synchronous insertion that already starts the browser's
+fetch (and removal doesn't reliably stop execution once started, per spec). `scripts.ts`'s
+`guardDynamicScripts()` instead patches `Node.prototype.appendChild`/`insertBefore` directly, rewriting a
+`<script src>` to an inert `type="text/plain"` placeholder *before* the original call ever runs — the
+browser never fetches it at all. A script intercepted before the tenant's real `script_rules` are known yet
+(the realistic GTM-sub-tag-injection race) is held pending; `guard.resolve(choices, rules)` — called once
+the banner loads and on every later decision — classifies each one: matched + disallowed stays inert with
+`data-pdpa-category` set (CON-02's own mechanism 1 activates it later); unmatched is released immediately.
+
+A second real bug the same E2E test found: `autoInit()` used to defer the *entire* `init()` call to
+`DOMContentLoaded` whenever `document.readyState === 'loading'` — always true for the embed snippet's own
+recommended `<body>` placement — so the guard/`gtagDefault()` ran only after every other page script had
+already executed, the opposite of "prior." Fixed by calling `init()` immediately and deferring only the
+banner's own DOM insertion (the one step that needs `document.body`) if necessary.
+
+Google Consent Mode v2: `consentMode.ts`'s `gtagDefault()`/`gtagUpdate()` push the fixed gtag consent signals
+onto `window.dataLayer` directly (works whether or not gtag.js/GTM has loaded yet); proven by unit test since
+no real GTM container exists here. A literal GTM community template is deliberately not built (no container
+to design one against) — the existing `pdpa:consent` CustomEvent + the dataLayer pushes are what one would
+read. The acceptance criterion itself is proven by a real Playwright test (`packages/cookie-sdk/e2e/`, `pnpm
+test:e2e`) against a real pre-installed Chromium — a genuine first for this session, not another "no browser
+here" disclaimer: `e2e/fixtures/index.html` is the literal "เว็บตัวอย่าง" (SDK script first, a declaratively
+gated analytics tag, and an inline script simulating a tag manager injecting a marketing sub-tag after its
+own container loads), `e2e/server.mjs` a minimal static file server, `/public/v1` mocked via Playwright's
+own route interception. Three tests: no analytics/marketing cookie before any decision (the literal
+criterion), accepting all still activates the gated script immediately, rejecting all keeps both blocked.
+`playwright.config.ts` points at this environment's own `/opt/pw-browsers/chromium` (the pinned
+`@playwright/test` version would otherwise try to download an incompatible revision); `vitest.config.ts`
+scopes vitest to `src/**/*.test.ts` so it never tries to run Playwright's own spec files. Bundle grew from
+2.98 KB to **3.51 KB gzip** — still well inside the 30 KB budget. No backend or admin-UI changes.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

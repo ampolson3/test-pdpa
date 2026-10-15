@@ -9,9 +9,11 @@
     "typecheck": "tsc --noEmit",
     "build": "esbuild src/index.ts --bundle --minify --format=iife --target=es2019 --outfile=dist/pdpa-cookie-sdk.js",
     "check-size": "node scripts/check-size.mjs",
-    "test": "vitest run && pnpm build && pnpm check-size"
+    "test": "vitest run && pnpm build && pnpm check-size",
+    "test:e2e": "pnpm build && playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "1.51.1",
     "esbuild": "^0.28.2",
     "typescript": "^5.9.0",
     "vitest": "^5.0.4"
