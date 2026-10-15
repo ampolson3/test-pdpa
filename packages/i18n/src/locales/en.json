@@ -3003,6 +3003,61 @@
       "downloadReport": "Download companion report"
     }
   },
+  "cookieBanners": {
+    "title": "Cookie consent banner",
+    "intro": "Register the websites that embed the cookie consent banner SDK, define the cookie categories visitors can choose from, and manage each domain's banner content (CON-01).",
+    "domainsTitle": "Domains",
+    "domain": "Domain",
+    "legalEntity": "Legal entity",
+    "legalEntityPlaceholder": "Select a legal entity",
+    "registerDomain": "Register domain",
+    "status": "Status",
+    "statuses": {
+      "pending": "Pending verification",
+      "verified": "Verified"
+    },
+    "embedKey": "Embed key",
+    "noKeyYet": "Not issued yet — publish a banner first",
+    "verify": "Verify",
+    "manageBanner": "Manage banner",
+    "noDomains": "No domains registered yet.",
+    "categoriesTitle": "Cookie categories",
+    "categoryCode": "Code",
+    "categoryNameTh": "Name",
+    "categoryRequired": "Required (e.g. necessary)",
+    "addCategory": "Add category",
+    "removeCategory": "Remove",
+    "noCategories": "No categories yet.",
+    "bannerFor": "Banner for {domain}",
+    "close": "Close",
+    "installSnippet": "Install snippet",
+    "version": "Version",
+    "bannerStatuses": {
+      "draft": "Draft",
+      "published": "Published",
+      "archived": "Archived"
+    },
+    "edit": "Edit",
+    "publish": "Publish",
+    "noBannerVersions": "No banner versions yet.",
+    "newDraft": "New draft version",
+    "layout": "Layout",
+    "layouts": {
+      "bar": "Bottom bar",
+      "modal": "Modal",
+      "corner": "Corner"
+    },
+    "fields": {
+      "titleTh": "Title",
+      "descriptionTh": "Description",
+      "acceptAllTh": "Accept-all button label",
+      "rejectAllTh": "Reject-all button label",
+      "settingsTh": "Settings button label"
+    },
+    "save": "Save",
+    "forbidden": "You don't have permission to view this page.",
+    "signInRequired": "Please sign in."
+  },
   "dsarForms": {
     "title": "Public DSAR intake forms",
     "intro": "Open a public web form so data subjects can submit a request directly, without staff recording it on their behalf (DSAR-01).",

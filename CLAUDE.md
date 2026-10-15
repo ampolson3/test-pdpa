@@ -2190,6 +2190,90 @@ regressions), `internal/pkg/isolationaudit`'s own CI gate, `pnpm --filter @pdpa/
 `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` all verified clean. Not done,
 deliberately: the direct controller-to-controller transfer path (no consumer yet, as above).
 
+### CON-01 แบนเนอร์คุกกี้บนเว็บไซต์ (`docs/modules/CON.md#con-01`) — done
+`internal/cookie` is the first module on the `cookie` schema (`cookie.banner.*`, already seeded in the
+baseline permission migration — no new permission code or migration). Deliberately scoped to the three
+literal acceptance criteria only ("ไม่มีช่องติ๊กล่วงหน้า", "ปฏิเสธทั้งหมดได้ในคลิกเดียว...น้ำหนักเท่ากัน",
+"ขนาด SDK ไม่เกิน 30 KB gzip") — `cookie.apps` (CON-07's mobile/LIFF SDK), `cookie.scans`/`scan_findings`/
+`cookie_kb` (CON-04's automated scanner), `cookie.script_rules` (CON-03's prior-script blocking) and
+`cookie.ab_variants` (CON-08's A/B testing) are all already in the baseline schema, unused — sibling
+features layered on the same tables later, the same "build only the minimal slice this feature needs"
+pattern this codebase uses throughout.
+
+`domains.go`/`categories.go` are plain CRUD: `RegisterDomain` FK-checks `legal_entity_id` via
+`orgservice.GetLegalEntity` (rule 1); domain ownership verification is this pass's own manual confirmation,
+not an automated DNS TXT/meta-tag check — no outbound DNS resolution exists in this environment to verify
+against, so `cookie.domains.verification_token` is issued and shown but staff mark it verified by hand, the
+same deferral pattern CON-01's own module doc note anticipates for a future automated check without a data
+model change. `banners.go`'s `cookie.banner_configs` has its own simple `draft → published → archived` status
+column and `version_no` — deliberately not wired through PLT-08 (the generic versioning/approval engine),
+mirroring the simpler pattern `notice.notices`/`dsar.intake_forms` already use for their own public-facing
+content. `PublishBannerConfig` archives every sibling published version of the same domain in one
+transaction (so the SDK's own fetch always sees at most one published version) and issues the domain's own
+`platform.public_keys` entry only on first publish — the same coalesce-on-first-publish pattern
+DSAR-01/PNG-06/BRE-01 already use. `cookie.domains` (unlike `breach.report_forms`/`dsar.intake_forms`) has no
+`public_key` column of its own to read it back from, so a new shared helper, `publickeys.Get(ctx, entityType,
+entityID)`, was added to `internal/platform/publickeys` — backed by a new `GetPublicKeyByEntity` sqlc query —
+reusable by any future module whose own entity table lacks that column. `EntityCookieDomain` ("cookie_domain")
+was already in `platform.public_keys.entity_type`'s own CHECK constraint from the very first baseline
+migration, so no widening migration was needed (unlike several prior features). `consent.go`'s `RecordConsent`
+is the acceptance criterion's own evidence write — append-only (no update/delete query exists for
+`cookie.consent_records`), one call per decision, hashing the visitor's IP (SHA-256 hex) rather than storing
+it raw (rule 3 — the schema's own `ip_hash` column names this at the data-model level too).
+
+A real gap found while building the SDK client: the public banner response (`CookiePublicBanner`) initially
+named the current banner only by `domain_id`+`version_no`, with no way for the SDK to supply the
+`banner_config_id` its own consent submission needs. Fixed by threading the banner config's own `id` through
+`cookie.PublicBanner` (the service's public-read struct, previously missing an `ID` field entirely) and onto
+the wire schema — the same kind of gap-closing fix this codebase's own prior passes have each found and fixed
+while wiring their own public-read path.
+
+API: `GET`/`POST /admin/v1/cookie/domains`, `GET /admin/v1/cookie/domains/{id}`,
+`POST .../domains/{id}/verify` (ETag/If-Match), `GET`/`POST /admin/v1/cookie/categories`,
+`DELETE .../categories/{id}`, `GET`/`POST /admin/v1/cookie/domains/{id}/banner-configs`,
+`GET`/`PUT /admin/v1/cookie/banner-configs/{id}` (ETag/If-Match), `POST .../banner-configs/{id}/publish`
+(ETag/If-Match); public `GET /public/v1/cookie-banners/{key}` (the published banner + every category, no
+login — `publickeys.Middleware`'s own path regex widened for `cookie-banners`) and
+`POST .../cookie-banners/{key}/consents` (`Idempotency-Key` required, rule 10). UI:
+`/settings/cookie-banners` — domain registration + verify, category CRUD (code/name/required toggle), and a
+per-domain banner section (version list, a draft editor for layout + bilingual texts, publish) with the
+install snippet (`<script src=... data-domain-key=... data-api-base=...>`) shown once a domain's banner has
+published at least once.
+
+The SDK itself, `packages/cookie-sdk`, is deliberately vanilla TypeScript with zero dependency on
+`@pdpa/api-client` or React: a standalone bundle embedded via CDN `<script>` tag on a tenant's own website has
+a completely different size budget than a Next.js app bundle, so pulling in the generated, schema-wide API
+client (and its own fetch wrapper) would have blown the 30 KB budget for no benefit — the SDK hand-rolls its
+own small `fetch` calls against exactly the two public endpoints it needs. `banner.ts` renders three
+genuinely equal-weight buttons (same CSS class, same visual prominence) for accept-all/reject-all/settings;
+no category checkbox starts checked unless the category's own `is_required` is true (the literal
+"ไม่มีช่องติ๊กล่วงหน้า"), and reject-all is one click away exactly like accept-all (the literal
+"ปฏิเสธทั้งหมดได้ในคลิกเดียว"). `storage.ts` keeps a first-party visitor-id cookie (365 days) and the
+decision itself (180 days, keyed per domain so two tenants' banners on one browser never collide) to avoid
+re-showing the banner for an already-decided version. Built with esbuild (`pnpm --filter @pdpa/cookie-sdk
+build`, IIFE, minified, ES2019 target) and measured by a dedicated `scripts/check-size.mjs` that fails the
+build past 30 KB gzip — the literal acceptance criterion, not eyeballed: the real bundle measures **2.48 KB
+gzip**, comfortably inside budget with headroom for CON-02/03's own later scripts to share the same bundle.
+
+Tests: unit (`internal/cookie/service/cookie_test.go` — no category pre-ticked unless `is_required`, domain
+FK-visibility + uniqueness validation, the publish lifecycle acceptance criterion directly (archiving
+siblings, issuing the public key only once), `RecordConsent`'s own evidence row carries the right action with
+a hashed — never raw — IP and refuses an unknown visitor/banner reference, two-tenant isolation of domains,
+categories and banner configs), HTTP contract for both the admin (`internal/cookie/http/handler_test.go`) and
+public (`internal/cookie/publichttp/handler_test.go`) packages through the real validator + AuthZ/public-key/
+Idempotency/Tx chain (401/403/404/412/428/422/201, an Idempotency-Key replay returning the original result
+unchanged), plus `internal/pkg/isolationaudit`'s own CI gate (a new `"cookie": {"cookie/service"}` entry in
+its static module map, the same map every new module needs one line in). Not verified live against a real
+Postgres/Redis — the same environment limitation DSAR-01/BRE-01/DSAR-14/DSAR-15 already disclosed; every test
+compiles and vets clean and skips the same way the rest of this codebase's own test suite already does here.
+`go build ./...`, `go vet ./...`, `go test -p 1 ./...` (no regressions), `pnpm --filter @pdpa/api-client
+typecheck`, `pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/cookie-sdk test` (build + size check) and
+`pnpm --filter @pdpa/admin build`/`typecheck` (incl. the new `/settings/cookie-banners` route) all verified
+clean. Not done, deliberately (each a sibling feature's own literal acceptance criterion, not this one's):
+CON-02's immediate per-category script effect, CON-03's blocking of scripts before consent, CON-04's
+automated cookie scanner, CON-06's branding/multi-language customization beyond th/en, CON-07's mobile/LIFF
+SDK, CON-08's A/B testing — every one of their own baseline tables stays unused until that pass.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

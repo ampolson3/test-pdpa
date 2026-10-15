@@ -5,6 +5,14 @@
 SELECT key, tenant_id, entity_type, entity_id, allowed_origins
 FROM platform.public_keys WHERE key = $1 AND status = 'active';
 
+-- name: GetPublicKeyByEntity :one
+-- For an entity type that has no public_key column of its own (e.g. cookie.domains, CON-01) — the admin UI's
+-- own read of an already-issued key, not the /public/v1 resolve path above. tenant_id filtered here too for
+-- defense in depth, though the public_read RLS policy on this table already allows the plain SELECT.
+SELECT key FROM platform.public_keys
+WHERE entity_type = $1 AND entity_id = $2 AND status = 'active'
+  AND tenant_id = current_setting('app.tenant_id')::uuid;
+
 -- name: InsertPublicKey :exec
 INSERT INTO platform.public_keys (key, tenant_id, entity_type, entity_id, allowed_origins)
 VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4);

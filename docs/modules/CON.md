@@ -182,6 +182,47 @@
 
 **Acceptance criteria:** ไม่มีช่องติ๊กล่วงหน้า; ปฏิเสธทั้งหมดได้ในคลิกเดียว; ขนาด SDK ไม่เกิน 30 KB gzip
 
+**Implementation note (done):** `internal/cookie` — the first module on the `cookie` schema (`cookie.banner.*`,
+already seeded in the baseline permission migration). Deliberately scoped to the three literal acceptance
+criteria only: `cookie.apps`/`scan*`/`cookie_kb`/`script_rules`/`ab_variants` (CON-02/03/04/07/08's own
+tables) stay untouched, unused until their own feature passes. `domains.go`/`categories.go` are plain CRUD
+(`RegisterDomain` FK-checks `legal_entity_id` via `orgservice.GetLegalEntity`, rule 1; domain verification is
+this pass's own manual confirmation — no outbound DNS resolution is available in this environment for a real
+TXT/meta-tag check, so the already-issued `verification_token` is shown but staff mark it verified by hand).
+`banners.go` is `cookie.banner_configs`' own simple `draft → published → archived` versioning (not PLT-08):
+publishing archives every sibling published version in the same call and issues the domain's own
+`platform.public_keys` entry (`publickeys.EntityCookieDomain`, already in the baseline schema's CHECK
+constraint) only on first publish — a new shared `publickeys.Get` helper was added for this, since
+`cookie.domains` (unlike `breach.report_forms`/`dsar.intake_forms`) has no `public_key` column of its own to
+read it back from. `CookieBannerConfig.id` is returned to the SDK as `banner_config_id` on the public banner
+read, closing the one gap found while building the SDK client: the wire schema otherwise named a config only
+by `domain_id`+`version_no`. `consent.go`'s `RecordConsent` is the acceptance criterion's own evidence write —
+append-only, one call per decision — hashing the IP (SHA-256, rule 3: `cookie.consent_records.ip_hash` never
+stores the raw address).
+
+API: `/admin/v1/cookie/{domains,categories}` + `.../domains/{id}/verify` + `.../domains/{id}/banner-configs` +
+`.../banner-configs/{id}` + `.../banner-configs/{id}/publish`; public `GET /public/v1/cookie-banners/{key}`
+(banner + categories, no login) and `POST .../consents` (`Idempotency-Key` required, rule 10). UI:
+`/settings/cookie-banners` (domain registration + verify, category CRUD, a per-domain banner draft
+editor/publish, the install snippet shown once a domain's banner has published at least once). The SDK itself
+is `packages/cookie-sdk` — vanilla TypeScript, no React/`@pdpa/api-client` dependency (a standalone CDN bundle
+has a different size budget than a Next.js app) — fetches the published banner, renders three genuinely
+equal-weight buttons (accept-all / reject-all / settings, the same CSS class, no category pre-ticked unless
+`is_required`), and posts the decision with a first-party visitor cookie. Built with esbuild
+(`pnpm --filter @pdpa/cookie-sdk build`), verified at **2.48 KB gzip** (`pnpm check-size`, failing the build
+past 30 KB) — comfortably inside the acceptance criterion's own budget, with headroom for CON-02/03's own
+later scripts. Tests: unit (no category pre-ticked unless required; domain FK-visibility and uniqueness
+checks; publish lifecycle archives siblings and issues the public key only once; `RecordConsent`'s evidence
+row carries the right action with a hashed, never-raw IP; two-tenant isolation of domains/categories/banner
+configs), HTTP contract for both the admin and public packages (401/403/404/412/428/422/201 through the real
+validator + AuthZ/public-key/Idempotency/Tx chain, an Idempotency-Key replay returning the original result).
+Not verified live against a real Postgres/Redis — the same environment limitation DSAR-01/BRE-01/DSAR-14
+already disclosed; every test compiles and vets clean and skips the same way the rest of this codebase's own
+test suite already does here. Not done, deliberately (sibling features, not this one's literal criterion):
+CON-02's own immediate script-blocking effect, CON-03's prior-to-consent script interception, CON-04's
+automated scanner, CON-06's branding/multi-language beyond th/en, CON-07's mobile/LIFF SDK, CON-08's A/B
+testing — every one of their own baseline tables stays unused until that pass.
+
 <a id="con-02"></a>
 ### CON-02 ตั้งค่าคุกกี้รายหมวด
 

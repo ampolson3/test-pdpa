@@ -497,3 +497,17 @@ export {
   type DsarCreatePackageResult,
   type DsarGeneratePortabilityExportInput,
 } from "./dsar";
+export {
+  useCookieDomains,
+  useRegisterCookieDomain,
+  useVerifyCookieDomain,
+  useCookieCategories,
+  useCookieCategoryMutations,
+  useCookieBannerConfigs,
+  useCookieBannerConfigMutations,
+  type CookieDomain,
+  type CookieCategory,
+  type CookieBannerConfig,
+  type CookieBannerTexts,
+  type CookieBannerConfigInput,
+} from "./cookie";

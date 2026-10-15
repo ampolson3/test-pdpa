@@ -6,9 +6,13 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "esbuild src/index.ts --bundle --minify --format=iife --target=es2019 --outfile=dist/pdpa-cookie-sdk.js",
+    "check-size": "node scripts/check-size.mjs",
+    "test": "pnpm build && pnpm check-size"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "typescript": "^5.9.0"
   }
 }

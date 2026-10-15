@@ -33,6 +33,10 @@ const (
 	// EntityDsarPackage (DSAR-14): a secure delivery package — the key names the package, a second,
 	// separately-held access code (dsar.packages.token_hash) gates the actual download when required.
 	EntityDsarPackage = "dsar_package"
+	// EntityCookieDomain (CON-01): the key names a cookie.domains row — its value must match
+	// platform.public_keys.entity_type's own CHECK constraint (00002_platform.sql), which already named
+	// this type "cookie_domain" from the baseline schema, not a value CON-01 invented.
+	EntityCookieDomain = "cookie_domain"
 )
 
 // Key is a resolved public key.
@@ -56,6 +60,16 @@ func Issue(ctx context.Context, entityType string, entityID uuid.UUID, allowedOr
 	}
 	err := pkstore.New(pdb.MustTxFromContext(ctx)).InsertPublicKey(ctx, pkstore.InsertPublicKeyParams{Key: key, EntityType: entityType, EntityID: entityID, AllowedOrigins: allowedOrigins})
 	return key, err
+}
+
+// Get returns the already-issued active key for an entity, for a module whose own table has no public_key
+// column to read it back from directly (CON-01's cookie.domains).
+func Get(ctx context.Context, entityType string, entityID uuid.UUID) (string, bool, error) {
+	key, err := pkstore.New(pdb.MustTxFromContext(ctx)).GetPublicKeyByEntity(ctx, pkstore.GetPublicKeyByEntityParams{EntityType: entityType, EntityID: entityID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", false, nil
+	}
+	return key, err == nil, err
 }
 
 // Revoke stops a key of the transaction's tenant from resolving.
@@ -104,7 +118,7 @@ func WithKey(ctx context.Context, k Key) context.Context { return context.WithVa
 // pathKeyRE matches every /public/v1 route shape that carries the key as its first path segment — one
 // alternative per module that has a public page (collection points, notices from PNG-06, dsar-forms from
 // DSAR-01, breach-report-forms from BRE-01, dsar-packages from DSAR-14).
-var pathKeyRE = regexp.MustCompile(`^/public/v1/(?:collection-points|notices|dsar-forms|breach-report-forms|dsar-packages)/([^/]+)`)
+var pathKeyRE = regexp.MustCompile(`^/public/v1/(?:collection-points|notices|dsar-forms|breach-report-forms|dsar-packages|cookie-banners)/([^/]+)`)
 
 // Middleware resolves the public key of a /public/v1 request — from the path (e.g.
 // /public/v1/collection-points/{key} or /public/v1/notices/{key}) or the X-Public-Key header — refuses

@@ -29,6 +29,9 @@ import (
 	consenthttp "pdpa-platform/internal/consent/http"
 	consentpublichttp "pdpa-platform/internal/consent/publichttp"
 	consentservice "pdpa-platform/internal/consent/service"
+	cookiehttp "pdpa-platform/internal/cookie/http"
+	cookiepublichttp "pdpa-platform/internal/cookie/publichttp"
+	cookieservice "pdpa-platform/internal/cookie/service"
 	dataflowhttp "pdpa-platform/internal/dataflow/http"
 	dataflowservice "pdpa-platform/internal/dataflow/service"
 	dpiahttp "pdpa-platform/internal/dpia/http"
@@ -259,6 +262,7 @@ func run() error {
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
+	cookieSvc := &cookieservice.Service{Audit: auditSvc, Org: orgSvc}                                                        // CON-01: cookie consent banner
 	riskSvc := riskservice.New()                                                                                             // ROPA-09's ม.37(1) controls catalog
 	riskSvc.Audit = auditSvc                                                                                                 // RRA-02: risk matrix CRUD audit
 	ropaTemplatesSvc := templatesservice.New()                                                                               // RTG-01: the platform's standard activity library (read-only)
@@ -365,6 +369,12 @@ func run() error {
 		strictBreachPublic := breachpublichttp.NewStrictHandlerWithOptions(breachpublichttp.NewStrict(breachSvc), nil,
 			breachpublichttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		breachpublichttp.HandlerWithOptions(strictBreachPublic, breachpublichttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+		// CON-01: the SDK's own banner fetch + consent submission — publickeys.Middleware's own path regex
+		// already distinguishes /cookie-banners/ from every other entity type on this group.
+		strictCookiePublic := cookiepublichttp.NewStrictHandlerWithOptions(cookiepublichttp.NewStrict(cookieSvc),
+			[]cookiepublichttp.StrictMiddlewareFunc{cookiepublichttp.RequestInfo},
+			cookiepublichttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		cookiepublichttp.HandlerWithOptions(strictCookiePublic, cookiepublichttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 	})
 
 	// The inbox stream (SSE) is the one route outside Idempotency + Tx: the Tx middleware buffers the
@@ -487,6 +497,11 @@ func run() error {
 			[]dsarhttp.StrictMiddlewareFunc{authz.StrictMiddleware[dsarhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[dsarhttp.StrictHandlerFunc](requiredModule)},
 			dsarhttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		dsarhttp.HandlerWithOptions(strictDsar, dsarhttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictCookie := cookiehttp.NewStrictHandlerWithOptions(cookiehttp.NewStrict(cookieSvc),
+			[]cookiehttp.StrictMiddlewareFunc{authz.StrictMiddleware[cookiehttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[cookiehttp.StrictHandlerFunc](requiredModule)},
+			cookiehttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		cookiehttp.HandlerWithOptions(strictCookie, cookiehttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictNotify := notifyhttp.NewStrictHandlerWithOptions(notifyhttp.NewStrict(notifySvc),
 			[]notifyhttp.StrictMiddlewareFunc{authz.StrictMiddleware[notifyhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[notifyhttp.StrictHandlerFunc](requiredModule)},

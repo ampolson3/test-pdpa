@@ -30,6 +30,7 @@ var moduleToDirs = map[string][]string{
 	"agreement": {"agreement/service"},
 	"breach":    {"breach/service"},
 	"consent":   {"consent/service"},
+	"cookie":    {"cookie/service"},
 	"dataflow":  {"dataflow/service"},
 	"dpia":      {"dpia/service"},
 	"dpo":       {"dpo/service"},

@@ -13778,6 +13778,464 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/cookie/domains:
+    get:
+      operationId: cookieListDomains
+      tags: [cookie]
+      summary: Websites registered for the cookie consent banner (CON-01)
+      x-permission: cookie.banner.read
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CookieDomain'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: cookieRegisterDomain
+      tags: [cookie]
+      summary: Register a website for the cookie consent banner (CON-01)
+      description: Issues a verification_token; CookieVerifyDomain marks it active once the admin confirms ownership (manual in this pass — no DNS/meta-tag automation yet).
+      x-permission: cookie.banner.create
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CookieRegisterDomainInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieDomain'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/cookie/domains/{id}:
+    get:
+      operationId: cookieGetDomain
+      tags: [cookie]
+      summary: One registered domain
+      x-permission: cookie.banner.read
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieDomain'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/cookie/domains/{id}/verify:
+    post:
+      operationId: cookieVerifyDomain
+      tags: [cookie]
+      summary: Confirm ownership of a domain and mark it active (CON-01)
+      x-permission: cookie.banner.update
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieDomain'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/cookie/categories:
+    get:
+      operationId: cookieListCategories
+      tags: [cookie]
+      summary: The tenant's own cookie categories (necessary, analytics, marketing, ...)
+      x-permission: cookie.banner.read
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CookieCategory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: cookieCreateCategory
+      tags: [cookie]
+      summary: Add a cookie category — a toggle in the banner's own settings panel (CON-01)
+      x-permission: cookie.banner.create
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CookieCreateCategoryInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieCategory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/cookie/categories/{id}:
+    delete:
+      operationId: cookieDeleteCategory
+      tags: [cookie]
+      summary: Remove a cookie category
+      x-permission: cookie.banner.delete
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/cookie/domains/{id}/banner-configs:
+    get:
+      operationId: cookieListBannerConfigs
+      tags: [cookie]
+      summary: Every version of a domain's banner, newest first
+      x-permission: cookie.banner.read
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CookieBannerConfig'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: cookieCreateBannerConfig
+      tags: [cookie]
+      summary: Open a new draft banner version for this domain (CON-01)
+      x-permission: cookie.banner.create
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CookieBannerConfigInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieBannerConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/cookie/banner-configs/{id}:
+    get:
+      operationId: cookieGetBannerConfig
+      tags: [cookie]
+      summary: One banner version
+      x-permission: cookie.banner.read
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieBannerConfig'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: cookieUpdateBannerConfigDraft
+      tags: [cookie]
+      summary: Edit a still-draft banner version
+      x-permission: cookie.banner.update
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CookieBannerConfigInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieBannerConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/cookie/banner-configs/{id}/publish:
+    post:
+      operationId: cookiePublishBannerConfig
+      tags: [cookie]
+      summary: Publish a draft banner version — the acceptance criterion's own starting point for the SDK (CON-01)
+      description: Archives any other published version of the same domain in the same transaction, and issues the domain's own public key on first publish.
+      x-permission: cookie.banner.publish
+      x-module: cookie
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookieBannerConfig'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /public/v1/cookie-banners/{key}:
+    get:
+      operationId: cookieGetPublicBanner
+      tags: [cookie]
+      summary: The published banner + categories for this domain, no login (CON-01)
+      description: |
+        Tenant is resolved from `key` through platform.public_keys before the tenant transaction starts
+        (ADR-19, same mechanism as every other /public/v1 surface). A domain with no published banner yet
+        reads as 404, same as an unknown key.
+      x-permission: public
+      x-module: cookie
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookiePublicBanner'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /public/v1/cookie-banners/{key}/consents:
+    post:
+      operationId: cookieSubmitConsent
+      tags: [cookie]
+      summary: Record a visitor's banner decision — the acceptance criterion itself (CON-01)
+      description: One call records accept_all, reject_all or a custom per-category choice — reject-all is exactly one click, the same weight as accept-all.
+      x-permission: public
+      x-module: cookie
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CookieSubmitConsentInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [recorded]
+                properties:
+                  recorded: {type: boolean}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
 components:
   securitySchemes:
     adminJwt:
@@ -16687,6 +17145,130 @@ components:
           description: Defaults to 7 days from now when omitted
           type: string
           format: date-time
+    CookieDomain:
+      type: object
+      required: [id, domain, legal_entity_id, status, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        domain: {type: string}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        status:
+          type: string
+          enum: [pending, verified]
+        public_key:
+          description: The embed snippet's own data-domain-key — set only once the domain's banner has been published at least once
+          type: string
+        row_version: {type: integer}
+    CookieRegisterDomainInput:
+      type: object
+      required: [domain, legal_entity_id]
+      additionalProperties: false
+      properties:
+        domain: {type: string}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+    CookieCategory:
+      type: object
+      required: [id, code, name_th, is_required, display_order, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        code: {type: string}
+        name_th: {type: string}
+        name_en: {type: string}
+        description_th: {type: string}
+        description_en: {type: string}
+        is_required: {type: boolean}
+        display_order: {type: integer}
+        row_version: {type: integer}
+    CookieCreateCategoryInput:
+      type: object
+      required: [code, name_th]
+      additionalProperties: false
+      properties:
+        code: {type: string}
+        name_th: {type: string}
+        name_en: {type: string}
+        description_th: {type: string}
+        description_en: {type: string}
+        is_required: {type: boolean, default: false}
+        display_order: {type: integer, default: 0}
+    CookieBannerTexts:
+      description: |
+        The banner's own bilingual copy — accept-all, reject-all and settings are deliberately equal-weight
+        fields; none of them is more "default" than another (the acceptance criterion's own "ปฏิเสธทั้งหมดได้ใน
+        คลิกเดียว...น้ำหนักเท่ากัน").
+      type: object
+      required: [title_th, accept_all_th, reject_all_th, settings_th]
+      additionalProperties: false
+      properties:
+        title_th: {type: string}
+        title_en: {type: string}
+        description_th: {type: string}
+        description_en: {type: string}
+        accept_all_th: {type: string}
+        accept_all_en: {type: string}
+        reject_all_th: {type: string}
+        reject_all_en: {type: string}
+        settings_th: {type: string}
+        settings_en: {type: string}
+    CookieBannerConfigInput:
+      type: object
+      required: [layout, texts]
+      additionalProperties: false
+      properties:
+        layout:
+          type: string
+          enum: [bar, modal, corner]
+        texts: {$ref: '#/components/schemas/CookieBannerTexts'}
+    CookieBannerConfig:
+      type: object
+      required: [id, domain_id, version_no, status, layout, texts, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        domain_id: {$ref: '#/components/schemas/Uuid'}
+        version_no: {type: integer}
+        status:
+          type: string
+          enum: [draft, published, archived]
+        layout:
+          type: string
+          enum: [bar, modal, corner]
+        texts: {$ref: '#/components/schemas/CookieBannerTexts'}
+        row_version: {type: integer}
+    CookiePublicBanner:
+      type: object
+      required: [id, domain_id, version_no, layout, texts, categories]
+      properties:
+        id:
+          description: The published banner_config's own id — pass back as banner_config_id when submitting consent
+          $ref: '#/components/schemas/Uuid'
+        domain_id: {$ref: '#/components/schemas/Uuid'}
+        version_no: {type: integer}
+        layout:
+          type: string
+          enum: [bar, modal, corner]
+        texts: {$ref: '#/components/schemas/CookieBannerTexts'}
+        categories:
+          type: array
+          items: {$ref: '#/components/schemas/CookieCategory'}
+    CookieSubmitConsentInput:
+      type: object
+      required: [domain_id, visitor_id, banner_config_id, action]
+      additionalProperties: false
+      properties:
+        domain_id: {$ref: '#/components/schemas/Uuid'}
+        visitor_id:
+          description: The SDK's own first-party cookie value
+          type: string
+        banner_config_id:
+          description: The published version the visitor was actually shown
+          $ref: '#/components/schemas/Uuid'
+        action:
+          type: string
+          enum: [accept_all, reject_all, custom]
+        choices:
+          description: Category code -> on/off; meaningful only for action=custom
+          type: object
+          additionalProperties: {type: boolean}
     DsarPublicPackage:
       type: object
       required: [format, password_protected, expires_at]

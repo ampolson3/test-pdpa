@@ -3003,6 +3003,61 @@
       "downloadReport": "ดาวน์โหลดรายงานประกอบ"
     }
   },
+  "cookieBanners": {
+    "title": "แบนเนอร์ความยินยอมคุกกี้",
+    "intro": "ลงทะเบียนเว็บไซต์ที่ฝัง SDK แบนเนอร์คุกกี้ กำหนดประเภทคุกกี้ที่ผู้เยี่ยมชมเลือกได้ และจัดการเนื้อหาแบนเนอร์ของแต่ละโดเมน (CON-01)",
+    "domainsTitle": "โดเมน",
+    "domain": "โดเมน",
+    "legalEntity": "นิติบุคคล",
+    "legalEntityPlaceholder": "เลือกนิติบุคคล",
+    "registerDomain": "ลงทะเบียนโดเมน",
+    "status": "สถานะ",
+    "statuses": {
+      "pending": "รอยืนยัน",
+      "verified": "ยืนยันแล้ว"
+    },
+    "embedKey": "คีย์สำหรับฝัง",
+    "noKeyYet": "ยังไม่ออกคีย์ — เผยแพร่แบนเนอร์ก่อน",
+    "verify": "ยืนยัน",
+    "manageBanner": "จัดการแบนเนอร์",
+    "noDomains": "ยังไม่มีโดเมนที่ลงทะเบียน",
+    "categoriesTitle": "ประเภทคุกกี้",
+    "categoryCode": "รหัส",
+    "categoryNameTh": "ชื่อ",
+    "categoryRequired": "จำเป็น (เช่น necessary)",
+    "addCategory": "เพิ่มประเภท",
+    "removeCategory": "ลบ",
+    "noCategories": "ยังไม่มีประเภทคุกกี้",
+    "bannerFor": "แบนเนอร์ของ {domain}",
+    "close": "ปิด",
+    "installSnippet": "โค้ดสำหรับติดตั้ง",
+    "version": "เวอร์ชัน",
+    "bannerStatuses": {
+      "draft": "ร่าง",
+      "published": "เผยแพร่แล้ว",
+      "archived": "เก็บถาวร"
+    },
+    "edit": "แก้ไข",
+    "publish": "เผยแพร่",
+    "noBannerVersions": "ยังไม่มีเวอร์ชันแบนเนอร์",
+    "newDraft": "สร้างร่างเวอร์ชันใหม่",
+    "layout": "รูปแบบ",
+    "layouts": {
+      "bar": "แถบด้านล่าง",
+      "modal": "หน้าต่างป๊อปอัป",
+      "corner": "มุมจอ"
+    },
+    "fields": {
+      "titleTh": "หัวข้อ",
+      "descriptionTh": "คำอธิบาย",
+      "acceptAllTh": "ข้อความปุ่มยอมรับทั้งหมด",
+      "rejectAllTh": "ข้อความปุ่มปฏิเสธทั้งหมด",
+      "settingsTh": "ข้อความปุ่มตั้งค่า"
+    },
+    "save": "บันทึก",
+    "forbidden": "ท่านไม่มีสิทธิเข้าถึงหน้านี้",
+    "signInRequired": "กรุณาเข้าสู่ระบบ"
+  },
   "dsarForms": {
     "title": "แบบฟอร์มขอใช้สิทธิสาธารณะ",
     "intro": "เปิดแบบฟอร์มสาธารณะให้เจ้าของข้อมูลยื่นคำขอใช้สิทธิได้เองโดยตรง โดยไม่ต้องให้พนักงานลงข้อมูลแทน (DSAR-01)",
