@@ -483,6 +483,9 @@ already does here.
 
 **Acceptance criteria:** มาตรการป้องกันซ้ำถูกติดตามจนเสร็จ
 
+**Implementation:** `internal/breach/service/rootcause.go` on the already-specified `breach.root_causes`
+table (no new migration) — see `CLAUDE.md`'s `### BRE-15` entry for the full note.
+
 <a id="bre-16"></a>
 ### BRE-16 ซ้อมรับมือเหตุละเมิด
 

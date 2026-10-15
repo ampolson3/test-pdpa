@@ -23,10 +23,13 @@ import {
   useNoticeRecipients,
   usePDPCNotificationMutations,
   usePublishedDocumentVersions,
+  useRootCauses,
+  useRootCauseMutations,
   type BreachIncident,
   type BreachNotice,
   type BreachNoticeVars,
   type BreachPDPCNotification,
+  type BreachRootCause,
   type BreachTimelineItem,
 } from "@pdpa/api-client";
 import { FileUploader } from "@/components/file-uploader";
@@ -35,7 +38,7 @@ import type { ErrorCode, FieldError } from "@pdpa/form-renderer";
 import { Link } from "@/i18n/routing";
 import { Clock, RiskBadge, StatusBadge, field, input, problemText, useWhen } from "../shared";
 
-type Tab = "assessment" | "timeline" | "evidence" | "notices" | "pdpc";
+type Tab = "assessment" | "timeline" | "evidence" | "notices" | "pdpc" | "rootcause";
 
 /** Answer errors of a 422 breach.invalid problem (fields "answers.<question>"), as the renderer takes them. */
 function answerErrors(e: unknown): FieldError[] | undefined {
@@ -80,7 +83,7 @@ export function IncidentContent({ id, meId }: { id: string; meId: string }) {
       </header>
       <Actions incident={inc} meId={meId} />
       <nav className="flex flex-wrap gap-2" role="tablist">
-        {(["timeline", "assessment", "evidence", "notices", "pdpc"] as Tab[]).map((k) => (
+        {(["timeline", "assessment", "evidence", "notices", "pdpc", "rootcause"] as Tab[]).map((k) => (
           <button key={k} role="tab" aria-selected={tab === k} className={`rounded-md px-3 py-1.5 ${tab === k ? "bg-slate-900 text-white" : "bg-white ring-1 ring-slate-200"}`} onClick={() => setTab(k)} data-testid={`tab-${k}`}>
             {t(`tabs.${k}`)}
           </button>
@@ -91,6 +94,7 @@ export function IncidentContent({ id, meId }: { id: string; meId: string }) {
       {tab === "evidence" && <Evidence incident={inc} />}
       {tab === "notices" && <Notices incident={inc} />}
       {tab === "pdpc" && <PDPCPanel incident={inc} />}
+      {tab === "rootcause" && <RootCausePanel incident={inc} />}
     </main>
   );
 }
@@ -546,6 +550,102 @@ function PDPCPanel({ incident }: { incident: BreachIncident }) {
         ))}
       </ul>
       {m.confirm.isError && <p className="text-red-700" role="alert">{t("error")}: {problemText(m.confirm.error)}</p>}
+    </section>
+  );
+}
+
+/** BRE-15: root cause & lessons learned — corrective actions tracked one at a time until done. */
+function RootCausePanel({ incident }: { incident: BreachIncident }) {
+  const t = useTranslations("breach.rootCause");
+  const tb = useTranslations("breach");
+  const canUpdate = usePermission("breach.incident.update");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const list = useRootCauses(client, incident.id);
+  const m = useRootCauseMutations(client, incident.id);
+  const [category, setCategory] = useState("human_error");
+  const [description, setDescription] = useState("");
+  const [actions, setActions] = useState<string[]>([""]);
+
+  if (!canUpdate && (list.data ?? []).length === 0) return <p className="text-slate-600">{tb("forbidden")}</p>;
+
+  const categories = ["human_error", "process_gap", "technical_control", "third_party", "malicious"] as const;
+
+  return (
+    <section className="space-y-3">
+      <p className="text-slate-600">{t("intro")}</p>
+      {canUpdate && (
+        <form
+          className="space-y-2 rounded-md border border-slate-200 bg-white p-4"
+          data-testid="root-cause-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            m.add.mutate(
+              {
+                cause_category: category as (typeof categories)[number],
+                description,
+                corrective_actions: actions.filter((a) => a.trim()).map((a) => ({ description: a })),
+              },
+              { onSuccess: () => { setDescription(""); setActions([""]); } },
+            );
+          }}
+        >
+          <h2 className="font-semibold">{t("new")}</h2>
+          <label className="block space-y-1">
+            <span>{t("category")}</span>
+            <select className={input} value={category} onChange={(e) => setCategory(e.target.value)}>
+              {categories.map((c) => <option key={c} value={c}>{t(`category_${c}`)}</option>)}
+            </select>
+          </label>
+          <label className="block space-y-1">
+            <span>{t("description")}</span>
+            <textarea className={input} rows={2} required value={description} onChange={(e) => setDescription(e.target.value)} />
+          </label>
+          <div className="space-y-1">
+            <span>{t("correctiveActions")}</span>
+            {actions.map((a, i) => (
+              <input
+                key={i}
+                className={input}
+                placeholder={t("correctiveActionPlaceholder")}
+                value={a}
+                onChange={(e) => setActions(actions.map((x, j) => (j === i ? e.target.value : x)))}
+              />
+            ))}
+            <Button type="button" variant="secondary" onClick={() => setActions([...actions, ""])}>{t("addAction")}</Button>
+          </div>
+          {m.add.isError && <p className="text-red-700" role="alert">{t("error")}: {problemText(m.add.error)}</p>}
+          <Button type="submit" disabled={m.add.isPending} data-testid="root-cause-save">{t("save")}</Button>
+        </form>
+      )}
+      <ul className="space-y-2">
+        {list.data?.map((rc) => (
+          <li key={rc.id} className="space-y-1 rounded-md border border-slate-200 bg-white p-3" data-testid="root-cause-row">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs">{t(`category_${rc.cause_category}`)}</span>
+              <span className={`rounded-full px-2 py-0.5 text-xs ${rc.all_actions_done ? "bg-emerald-50 text-emerald-800" : "bg-amber-100 text-amber-900"}`} data-testid="root-cause-status">
+                {rc.all_actions_done ? t("allDone") : t("inProgress")}
+              </span>
+            </div>
+            <p className="text-slate-700">{rc.description}</p>
+            <ul className="space-y-1 text-xs">
+              {rc.corrective_actions.map((a) => (
+                <li key={a.id} className="flex items-center gap-2" data-testid="corrective-action">
+                  <span className={a.status === "done" ? "text-emerald-700" : "text-slate-700"}>{a.status === "done" ? "✓" : "○"} {a.description}</span>
+                  {a.status !== "done" && canUpdate && (
+                    <Button variant="secondary" onClick={() => m.completeAction.mutate({ rootCause: rc, actionId: a.id })} disabled={m.completeAction.isPending} data-testid="complete-action">
+                      {t("markDone")}
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {canUpdate && (
+              <Button variant="secondary" onClick={() => m.remove.mutate(rc)} disabled={m.remove.isPending} data-testid="root-cause-delete">{t("delete")}</Button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {(list.data ?? []).length === 0 && <p className="text-slate-500">{t("empty")}</p>}
     </section>
   );
 }

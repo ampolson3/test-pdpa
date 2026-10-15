@@ -1944,6 +1944,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/breach/incidents/{id}/root-causes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Root causes recorded against an incident, oldest first (BRE-15) */
+        get: operations["breachListRootCauses"];
+        put?: never;
+        /** Record a root cause and its corrective actions against an incident (BRE-15) */
+        post: operations["breachAddRootCause"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/root-causes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit a root cause, its cause category, risk link and corrective-action list (If-Match) */
+        put: operations["breachUpdateRootCause"];
+        post?: never;
+        /** Remove a root-cause record */
+        delete: operations["breachDeleteRootCause"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/breach/root-causes/{id}/corrective-actions/{actionId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark one corrective action done (If-Match) — the acceptance criterion, tracked one action at a time */
+        post: operations["breachCompleteCorrectiveAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/breach/report-forms": {
         parameters: {
             query?: never;
@@ -8742,6 +8795,44 @@ export interface components {
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
         };
+        BreachCorrectiveAction: {
+            id: string;
+            description: string;
+            assignee_user_id?: components["schemas"]["Uuid"];
+            due_at?: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            status: "open" | "done";
+            completed_at?: components["schemas"]["Timestamp"];
+        };
+        BreachCorrectiveActionInput: {
+            /** @description Omit for a new corrective action; include to keep editing an existing one */
+            id?: string;
+            description: string;
+            assignee_user_id?: components["schemas"]["Uuid"];
+            due_at?: components["schemas"]["Timestamp"];
+            /** @enum {string} */
+            status?: "open" | "done";
+        };
+        BreachRootCauseInput: {
+            /** @enum {string} */
+            cause_category: "human_error" | "process_gap" | "technical_control" | "third_party" | "malicious";
+            description: string;
+            corrective_actions?: components["schemas"]["BreachCorrectiveActionInput"][];
+            risk_id?: components["schemas"]["Uuid"];
+        };
+        BreachRootCause: {
+            id: components["schemas"]["Uuid"];
+            incident_id: components["schemas"]["Uuid"];
+            cause_category: string;
+            description: string;
+            corrective_actions: components["schemas"]["BreachCorrectiveAction"][];
+            risk_id?: components["schemas"]["Uuid"];
+            /** @description The acceptance criterion itself — true once every corrective action reads done */
+            all_actions_done: boolean;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
         ConsentSubmission: {
             collection_point_code: string;
             subject: {
@@ -13782,6 +13873,175 @@ export interface operations {
                     "application/json": components["schemas"]["BreachPDPCNotification"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachListRootCauses: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachRootCause"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachAddRootCause: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreachRootCauseInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachRootCause"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    breachUpdateRootCause: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreachRootCauseInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachRootCause"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    breachDeleteRootCause: {
+        parameters: {
+            query: {
+                incident_id: components["schemas"]["Uuid"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachCompleteCorrectiveAction: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                actionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachRootCause"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

@@ -26,6 +26,7 @@ import (
 	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/forms"
 	"pdpa-platform/internal/platform/notify"
+	riskservice "pdpa-platform/internal/risk/service"
 )
 
 // Entity types (audit, files, notifications, forms).
@@ -90,6 +91,12 @@ type Org interface {
 	ListMaster(ctx context.Context, kind string) ([]orgservice.MasterItem, error)
 }
 
+// Risk is what BRE-15's root-cause recording reads from the risk module (rule 9): FK visibility (rule 1)
+// for an optional link from a root cause to an existing risk register entry.
+type Risk interface {
+	GetRisk(ctx context.Context, id uuid.UUID) (riskservice.Risk, error)
+}
+
 // Files is what the breach module needs from file storage (PLT-09).
 type Files interface {
 	Get(ctx context.Context, id uuid.UUID) (files.File, error)
@@ -114,6 +121,7 @@ type Service struct {
 	Keyring *crypto.Keyring
 	Audit   *audit.Service
 	Org     Org
+	Risk    Risk
 	River   *river.Client[pgx.Tx]
 	Now     func() time.Time
 }

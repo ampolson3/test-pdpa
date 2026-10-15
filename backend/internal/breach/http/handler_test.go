@@ -274,4 +274,63 @@ func TestBreachEndpoints_Contract(t *testing.T) {
 	if res := do("GET", path+"/pdpc-notifications", &dpo, nil, nil); res.code != 200 || len(res.body["data"].([]any)) != 1 {
 		t.Errorf("list: %d %v", res.code, res.body)
 	}
+
+	// Root cause & corrective actions (BRE-15).
+	rcPath := path + "/root-causes"
+	if res := do("GET", rcPath, nil, nil, nil); res.code != 401 {
+		t.Errorf("root-causes no principal: %d", res.code)
+	}
+	if res := do("POST", rcPath, &exec, map[string]any{"cause_category": "process_gap", "description": "x"}, nil); res.code != 403 {
+		t.Errorf("exec adding root cause: %d, want 403", res.code)
+	}
+	if res := do("POST", rcPath, &sec, map[string]any{"cause_category": "not_a_category", "description": "x"}, nil); res.code != 400 {
+		t.Errorf("bad cause_category: %d, want 400", res.code)
+	}
+	addRC := do("POST", rcPath, &sec, map[string]any{
+		"cause_category": "process_gap", "description": "ไม่มีการตรวจสอบสิทธิ์ก่อนส่งออกข้อมูล",
+		"corrective_actions": []map[string]any{{"description": "เพิ่มการอนุมัติสองชั้น"}, {"description": "อบรมพนักงาน"}},
+	}, nil)
+	if addRC.code != 201 || addRC.hdr.Get("ETag") == "" || len(addRC.body["corrective_actions"].([]any)) != 2 || addRC.body["all_actions_done"] != false {
+		t.Fatalf("add root cause: %d %v", addRC.code, addRC.body)
+	}
+	rcID := addRC.body["id"].(string)
+	actions := addRC.body["corrective_actions"].([]any)
+	action1 := actions[0].(map[string]any)["id"].(string)
+	action2 := actions[1].(map[string]any)["id"].(string)
+	if res := do("GET", rcPath, &sec, nil, nil); res.code != 200 || len(res.body["data"].([]any)) != 1 {
+		t.Errorf("list root causes: %d %v", res.code, res.body)
+	}
+	oneRCPath := "/admin/v1/breach/root-causes/" + rcID
+	if res := do("POST", oneRCPath+"/corrective-actions/"+action1+"/complete", &sec, nil, nil); res.code != 428 {
+		t.Errorf("complete action no If-Match: %d, want 428", res.code)
+	}
+	comp := do("POST", oneRCPath+"/corrective-actions/"+action1+"/complete", &sec, nil, map[string]string{"If-Match": addRC.hdr.Get("ETag")})
+	if comp.code != 200 || comp.body["all_actions_done"] != false {
+		t.Fatalf("complete first action: %d %v", comp.code, comp.body)
+	}
+	comp2 := do("POST", oneRCPath+"/corrective-actions/"+action2+"/complete", &sec, nil, map[string]string{"If-Match": comp.hdr.Get("ETag")})
+	if comp2.code != 200 || comp2.body["all_actions_done"] != true {
+		t.Fatalf("complete second action: %d %v", comp2.code, comp2.body)
+	}
+	// Re-completing an already-done action is a harmless no-op, not an error.
+	comp3 := do("POST", oneRCPath+"/corrective-actions/"+action2+"/complete", &sec, nil, map[string]string{"If-Match": comp2.hdr.Get("ETag")})
+	if comp3.code != 200 || comp3.body["all_actions_done"] != true {
+		t.Fatalf("re-complete second action: %d %v", comp3.code, comp3.body)
+	}
+	if res := do("PUT", oneRCPath, &sec, map[string]any{"cause_category": "third_party", "description": "ผู้ให้บริการภายนอก"}, map[string]string{"If-Match": `"99"`}); res.code != 412 {
+		t.Errorf("update stale If-Match: %d, want 412", res.code)
+	}
+	upd := do("PUT", oneRCPath, &sec, map[string]any{"cause_category": "third_party", "description": "ผู้ให้บริการภายนอก"}, map[string]string{"If-Match": comp3.hdr.Get("ETag")})
+	if upd.code != 200 || upd.body["cause_category"] != "third_party" {
+		t.Fatalf("update root cause: %d %v", upd.code, upd.body)
+	}
+	if res := do("DELETE", oneRCPath+"?incident_id="+id, &exec, nil, nil); res.code != 403 {
+		t.Errorf("exec deleting root cause: %d, want 403", res.code)
+	}
+	if res := do("DELETE", oneRCPath+"?incident_id="+id, &sec, nil, nil); res.code != 204 {
+		t.Errorf("delete root cause: %d, want 204", res.code)
+	}
+	if res := do("GET", rcPath, &sec, nil, nil); res.code != 200 || len(res.body["data"].([]any)) != 0 {
+		t.Errorf("list after delete: %d %v", res.code, res.body)
+	}
 }

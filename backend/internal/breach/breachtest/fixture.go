@@ -7,8 +7,8 @@ import (
 	"bytes"
 	"context"
 	"net"
-	"slices"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
@@ -32,6 +32,7 @@ import (
 	"pdpa-platform/internal/platform/jobs"
 	"pdpa-platform/internal/platform/notify"
 	"pdpa-platform/internal/platform/versioning"
+	riskservice "pdpa-platform/internal/risk/service"
 	"pdpa-platform/internal/wiring"
 )
 
@@ -135,7 +136,7 @@ func Setup(t *testing.T) *Fixture {
 	f.Docs = wiring.Docs(f.Versioning, f.Files, client, audit.New(), render.PDFRenderer(nil))
 	f.Docs.RegisterVersioning()
 	f.Svc = &breach.Service{Events: &events.Publisher{River: client}, Notify: f.Notify, Forms: f.Forms, Files: f.Files, Docs: f.Docs, Keyring: keyring,
-		Audit: audit.New(), Org: &orgservice.Service{}, River: client, Now: func() time.Time { return f.Clock }}
+		Audit: audit.New(), Org: &orgservice.Service{}, Risk: riskservice.New(), River: client, Now: func() time.Time { return f.Clock }}
 	t.Cleanup(func() { f.cleanup(t) })
 	return f
 }

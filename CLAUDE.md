@@ -2713,6 +2713,55 @@ way the rest of this module's own suite already does. `go build ./...`, `go vet 
 `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` all verified clean. No UI screen — the
 acceptance criterion is the notification itself, same reasoning PNG-15 uses.
 
+### BRE-15 วิเคราะห์สาเหตุและบทเรียน (`docs/modules/BRE.md#bre-15`) — done
+`breach.root_causes` was already fully specified in the baseline migration (00013_breach.sql,
+`cause_category` CHECK, `description`, `corrective_actions` jsonb, `risk_id` → `risk.controls`) — no new
+migration. `internal/breach/service/rootcause.go`'s `CorrectiveAction` models each item of the jsonb array
+as `{id, description, assignee_user_id, due_at, status (open|done), completed_at}`; `RootCause.
+AllActionsDone()` is the acceptance criterion's own computed flag — false for an empty list, true only once
+every action reads `done` — read live on every response, never a separate persisted column. `AddRootCause`
+(`breach.incident.update`, shared with every other incident-mutating action — no new permission code)
+FK-checks the incident via `s.Get` and, when `risk_id` is set, the control via a new `Risk` interface
+(`GetRisk`, backed directly by `riskservice.New()` in `internal/wiring/breach.go` — rule 9: the already-seeded
+global `risk.controls` catalog ROPA-09 built, read-only, no cycle since `risk/service` imports nothing from
+`breach`). `CompleteCorrectiveAction` is the acceptance criterion's own write path — idempotent by design: a
+redelivered "complete" call on an already-done action is a harmless no-op, not an error, since nothing in
+this feature's own design guarantees at-most-once delivery from the UI. sqlc generates a distinct Row struct
+per query rather than reusing `models.BreachRootCause`'s own differently-ordered field layout, so
+`toRootCause`/`rootCauseRow` convert through a small local struct matching every query's shared column order
+— a workaround worth reaching for again whenever a sqlc Row type needs converting to a shared Go type.
+
+"สร้าง task / risk" (the module doc's own backend note) is deliberately not auto-wired for a *new* risk
+register entry: RRA (the risk-matrix module that would own creating one) isn't built yet, the same "no
+consumer yet" deferral this codebase uses throughout — `risk_id` already lets this feature *link* an
+existing control/risk the moment one exists, which is as far as the literal acceptance criterion
+("มาตรการป้องกันซ้ำถูกติดตามจนเสร็จ" — a corrective action is tracked until done) actually requires; a
+corrective action is deliberately a plain jsonb item, not a `dpo.tasks` row DPO-09/PNG-07's own pattern would
+create, since nothing here needs that row's own assignment/notification machinery — this feature's own
+acceptance criterion is satisfied by the item's own `status` field.
+
+API: `GET`/`POST /admin/v1/breach/incidents/{id}/root-causes`, `PUT`/`DELETE
+/admin/v1/breach/root-causes/{id}` (delete takes `incident_id` as a required query parameter, ETag/If-Match
+on update), `POST /admin/v1/breach/root-causes/{id}/corrective-actions/{actionId}/complete` (ETag/If-Match)
+— all on the already-seeded `breach.incident.{read,update}` (no new permission code or migration). A real
+gotcha hit again here (already known from prior passes, still easy to trip on): `internal/breach/http/
+oapi-codegen.yaml`'s own `include-operation-ids` allowlist silently drops any operationId not explicitly
+listed — `make gen` first produced zero generated code for all 5 new operations until they were added to
+that list. UI: `/incidents/{id}` gained a "วิเคราะห์สาเหตุ" tab (`RootCausePanel`) — a form (cause-category
+select, description, a dynamic list of corrective-action text inputs) plus a list of recorded root causes
+each showing its category, an all-done/in-progress badge, its corrective actions with a per-action "mark
+done" button, and a remove button. Tests: unit (`internal/breach/service/rootcause_test.go` — the
+acceptance criterion directly: two corrective actions, completing one at a time until
+`AllActionsDone()` flips true, re-completing an already-done action is a harmless no-op; validation — bad
+`cause_category`, empty description, unknown `risk_id`, no-permission caller; list/update/delete incl. a
+stale row-version refused; two-tenant isolation), HTTP contract
+(`internal/breach/http/handler_test.go` — 401/403/400/412/428/201/200/204 through the real validator +
+AuthZ, run against a real reachable Postgres/Redis in this pass, not skipped). `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file — a few pre-existing gofmt violations elsewhere in
+the tree are untouched by this change), `go test -p 1 ./...` (no regressions, full suite, real DB),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

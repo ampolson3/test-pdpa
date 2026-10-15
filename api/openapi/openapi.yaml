@@ -5828,6 +5828,206 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/breach/incidents/{id}/root-causes:
+    get:
+      operationId: breachListRootCauses
+      tags: [breach]
+      summary: Root causes recorded against an incident, oldest first (BRE-15)
+      x-permission: breach.incident.read
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BreachRootCause'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: breachAddRootCause
+      tags: [breach]
+      summary: Record a root cause and its corrective actions against an incident (BRE-15)
+      x-permission: breach.incident.update
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BreachRootCauseInput'
+      responses:
+        '201':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachRootCause'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/breach/root-causes/{id}:
+    put:
+      operationId: breachUpdateRootCause
+      tags: [breach]
+      summary: Edit a root cause, its cause category, risk link and corrective-action list (If-Match)
+      x-permission: breach.incident.update
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BreachRootCauseInput'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachRootCause'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+    delete:
+      operationId: breachDeleteRootCause
+      tags: [breach]
+      summary: Remove a root-cause record
+      x-permission: breach.incident.update
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: incident_id
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/breach/root-causes/{id}/corrective-actions/{actionId}/complete:
+    post:
+      operationId: breachCompleteCorrectiveAction
+      tags: [breach]
+      summary: Mark one corrective action done (If-Match) — the acceptance criterion, tracked one action at a time
+      x-permission: breach.incident.update
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: actionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachRootCause'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/breach/report-forms:
     get:
       operationId: breachListReportForms
@@ -21111,6 +21311,84 @@ components:
         row_version:
           type: integer
         created_at:
+          $ref: '#/components/schemas/Timestamp'
+    BreachCorrectiveAction:
+      type: object
+      required: [id, description, status]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        description:
+          type: string
+        assignee_user_id:
+          $ref: '#/components/schemas/Uuid'
+        due_at:
+          $ref: '#/components/schemas/Timestamp'
+        status:
+          type: string
+          enum: [open, done]
+        completed_at:
+          $ref: '#/components/schemas/Timestamp'
+    BreachCorrectiveActionInput:
+      type: object
+      required: [description]
+      additionalProperties: false
+      properties:
+        id:
+          description: Omit for a new corrective action; include to keep editing an existing one
+          type: string
+        description:
+          type: string
+        assignee_user_id:
+          $ref: '#/components/schemas/Uuid'
+        due_at:
+          $ref: '#/components/schemas/Timestamp'
+        status:
+          type: string
+          enum: [open, done]
+    BreachRootCauseInput:
+      type: object
+      required: [cause_category, description]
+      additionalProperties: false
+      properties:
+        cause_category:
+          type: string
+          enum: [human_error, process_gap, technical_control, third_party, malicious]
+        description:
+          type: string
+        corrective_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/BreachCorrectiveActionInput'
+        risk_id:
+          $ref: '#/components/schemas/Uuid'
+    BreachRootCause:
+      type: object
+      required: [id, incident_id, cause_category, description, corrective_actions, all_actions_done, row_version, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        incident_id:
+          $ref: '#/components/schemas/Uuid'
+        cause_category:
+          type: string
+        description:
+          type: string
+        corrective_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/BreachCorrectiveAction'
+        risk_id:
+          $ref: '#/components/schemas/Uuid'
+        all_actions_done:
+          description: The acceptance criterion itself — true once every corrective action reads done
+          type: boolean
+        row_version:
+          type: integer
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
           $ref: '#/components/schemas/Timestamp'
     ConsentSubmission:
       type: object

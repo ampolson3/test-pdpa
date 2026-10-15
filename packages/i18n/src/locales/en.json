@@ -2374,7 +2374,8 @@
       "assessment": "Risk assessment",
       "evidence": "Evidence",
       "notices": "Data subject notices",
-      "pdpc": "PDPC"
+      "pdpc": "PDPC",
+      "rootcause": "Root cause"
     },
     "actions": {
       "takeUp": "Take it up (I'm the owner)",
@@ -2502,6 +2503,28 @@
       "confirm": "Confirm the record",
       "downloadEvidence": "Download evidence",
       "error": "The action failed"
+    },
+    "rootCause": {
+      "tab": "Root cause",
+      "intro": "Record the root cause and corrective actions — each one is tracked until it's done.",
+      "empty": "No root causes recorded yet",
+      "new": "Record a root cause",
+      "category": "Cause category",
+      "category_human_error": "Human error",
+      "category_process_gap": "Process gap",
+      "category_technical_control": "Technical control",
+      "category_third_party": "Third party",
+      "category_malicious": "Malicious",
+      "description": "Description",
+      "correctiveActions": "Corrective actions",
+      "correctiveActionPlaceholder": "e.g. add a second approval before export",
+      "addAction": "Add another action",
+      "markDone": "Mark done",
+      "allDone": "All actions done",
+      "inProgress": "In progress",
+      "error": "The action failed",
+      "save": "Save",
+      "delete": "Remove"
     }
   },
   "docs": {

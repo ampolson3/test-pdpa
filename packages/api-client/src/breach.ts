@@ -325,3 +325,67 @@ export function useBreachReportFormMutations(client: ApiClient) {
   });
   return { create, publish, retire };
 }
+
+// BRE-15: root cause & lessons learned.
+export type BreachRootCause = components["schemas"]["BreachRootCause"];
+export type BreachRootCauseInput = components["schemas"]["BreachRootCauseInput"];
+export type BreachCorrectiveAction = components["schemas"]["BreachCorrectiveAction"];
+export type BreachCorrectiveActionInput = components["schemas"]["BreachCorrectiveActionInput"];
+
+const rootCausesKey = (incidentId: string) => [...incidentKey(incidentId), "root-causes"];
+
+/** GET /admin/v1/breach/incidents/{id}/root-causes (BRE-15). */
+export function useRootCauses(client: ApiClient, incidentId: string) {
+  return useQuery({
+    queryKey: rootCausesKey(incidentId),
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/breach/incidents/{id}/root-causes", { params: { path: { id: incidentId } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** Add / edit / delete a root cause, and mark one corrective action done (BRE-15's own acceptance criterion). */
+export function useRootCauseMutations(client: ApiClient, incidentId: string) {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: rootCausesKey(incidentId) });
+  const add = useMutation({
+    mutationFn: async (input: BreachRootCauseInput) => {
+      const { data, error } = await client.POST("/admin/v1/breach/incidents/{id}/root-causes", { params: { path: { id: incidentId } }, body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  const update = useMutation({
+    mutationFn: async (v: { rootCause: BreachRootCause; input: BreachRootCauseInput }) => {
+      const { data, error } = await client.PUT("/admin/v1/breach/root-causes/{id}", {
+        params: { path: { id: v.rootCause.id }, header: ifMatch(v.rootCause.row_version) }, body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  const remove = useMutation({
+    mutationFn: async (rootCause: BreachRootCause) => {
+      const { error } = await client.DELETE("/admin/v1/breach/root-causes/{id}", {
+        params: { path: { id: rootCause.id }, query: { incident_id: incidentId } },
+      });
+      if (error) throw error;
+    },
+    onSuccess: invalidate,
+  });
+  const completeAction = useMutation({
+    mutationFn: async (v: { rootCause: BreachRootCause; actionId: string }) => {
+      const { data, error } = await client.POST("/admin/v1/breach/root-causes/{id}/corrective-actions/{actionId}/complete", {
+        params: { path: { id: v.rootCause.id, actionId: v.actionId }, header: ifMatch(v.rootCause.row_version) },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  return { add, update, remove, completeAction };
+}

@@ -32,3 +32,8 @@ output-options:
     - breachGetReportForm
     - breachPublishReportForm
     - breachRetireReportForm
+    - breachListRootCauses
+    - breachAddRootCause
+    - breachUpdateRootCause
+    - breachDeleteRootCause
+    - breachCompleteCorrectiveAction

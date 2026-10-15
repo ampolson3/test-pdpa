@@ -335,6 +335,8 @@ export {
   usePDPCNotificationMutations,
   useBreachReportForms,
   useBreachReportFormMutations,
+  useRootCauses,
+  useRootCauseMutations,
   type BreachIncident,
   type BreachIncidentInput,
   type BreachIncidentUpdate,
@@ -349,6 +351,10 @@ export {
   type BreachReportForm,
   type BreachReportFormInput,
   type BreachReportFormStatus,
+  type BreachRootCause,
+  type BreachRootCauseInput,
+  type BreachCorrectiveAction,
+  type BreachCorrectiveActionInput,
 } from "./breach";
 export {
   useDocumentTypes,

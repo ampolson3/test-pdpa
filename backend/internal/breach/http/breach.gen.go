@@ -62,6 +62,42 @@ func (e BreachClockState) Valid() bool {
 	}
 }
 
+// Defines values for BreachCorrectiveActionStatus.
+const (
+	BreachCorrectiveActionStatusDone BreachCorrectiveActionStatus = "done"
+	BreachCorrectiveActionStatusOpen BreachCorrectiveActionStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the BreachCorrectiveActionStatus enum.
+func (e BreachCorrectiveActionStatus) Valid() bool {
+	switch e {
+	case BreachCorrectiveActionStatusDone:
+		return true
+	case BreachCorrectiveActionStatusOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachCorrectiveActionInputStatus.
+const (
+	BreachCorrectiveActionInputStatusDone BreachCorrectiveActionInputStatus = "done"
+	BreachCorrectiveActionInputStatusOpen BreachCorrectiveActionInputStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the BreachCorrectiveActionInputStatus enum.
+func (e BreachCorrectiveActionInputStatus) Valid() bool {
+	switch e {
+	case BreachCorrectiveActionInputStatusDone:
+		return true
+	case BreachCorrectiveActionInputStatusOpen:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BreachIncidentDecision.
 const (
 	BreachIncidentDecisionNoNotification        BreachIncidentDecision = "no_notification"
@@ -299,6 +335,33 @@ func (e BreachReportFormStatus) Valid() bool {
 	case BreachReportFormStatusDraft:
 		return true
 	case BreachReportFormStatusRetired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachRootCauseInputCauseCategory.
+const (
+	HumanError       BreachRootCauseInputCauseCategory = "human_error"
+	Malicious        BreachRootCauseInputCauseCategory = "malicious"
+	ProcessGap       BreachRootCauseInputCauseCategory = "process_gap"
+	TechnicalControl BreachRootCauseInputCauseCategory = "technical_control"
+	ThirdParty       BreachRootCauseInputCauseCategory = "third_party"
+)
+
+// Valid indicates whether the value is a known member of the BreachRootCauseInputCauseCategory enum.
+func (e BreachRootCauseInputCauseCategory) Valid() bool {
+	switch e {
+	case HumanError:
+		return true
+	case Malicious:
+		return true
+	case ProcessGap:
+		return true
+	case TechnicalControl:
+		return true
+	case ThirdParty:
 		return true
 	default:
 		return false
@@ -737,6 +800,42 @@ func (e BreachRecordPDPCNotificationJSONBodyNotificationType) Valid() bool {
 	}
 }
 
+// Defines values for BreachListRootCausesParamsAcceptLanguage.
+const (
+	BreachListRootCausesParamsAcceptLanguageEn BreachListRootCausesParamsAcceptLanguage = "en"
+	BreachListRootCausesParamsAcceptLanguageTh BreachListRootCausesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachListRootCausesParamsAcceptLanguage enum.
+func (e BreachListRootCausesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachListRootCausesParamsAcceptLanguageEn:
+		return true
+	case BreachListRootCausesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachAddRootCauseParamsAcceptLanguage.
+const (
+	BreachAddRootCauseParamsAcceptLanguageEn BreachAddRootCauseParamsAcceptLanguage = "en"
+	BreachAddRootCauseParamsAcceptLanguageTh BreachAddRootCauseParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachAddRootCauseParamsAcceptLanguage enum.
+func (e BreachAddRootCauseParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachAddRootCauseParamsAcceptLanguageEn:
+		return true
+	case BreachAddRootCauseParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BreachGetTimelineParamsAcceptLanguage.
 const (
 	BreachGetTimelineParamsAcceptLanguageEn BreachGetTimelineParamsAcceptLanguage = "en"
@@ -1058,6 +1157,60 @@ func (e BreachRetireReportFormParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for BreachDeleteRootCauseParamsAcceptLanguage.
+const (
+	BreachDeleteRootCauseParamsAcceptLanguageEn BreachDeleteRootCauseParamsAcceptLanguage = "en"
+	BreachDeleteRootCauseParamsAcceptLanguageTh BreachDeleteRootCauseParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachDeleteRootCauseParamsAcceptLanguage enum.
+func (e BreachDeleteRootCauseParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachDeleteRootCauseParamsAcceptLanguageEn:
+		return true
+	case BreachDeleteRootCauseParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachUpdateRootCauseParamsAcceptLanguage.
+const (
+	BreachUpdateRootCauseParamsAcceptLanguageEn BreachUpdateRootCauseParamsAcceptLanguage = "en"
+	BreachUpdateRootCauseParamsAcceptLanguageTh BreachUpdateRootCauseParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachUpdateRootCauseParamsAcceptLanguage enum.
+func (e BreachUpdateRootCauseParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachUpdateRootCauseParamsAcceptLanguageEn:
+		return true
+	case BreachUpdateRootCauseParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachCompleteCorrectiveActionParamsAcceptLanguage.
+const (
+	BreachCompleteCorrectiveActionParamsAcceptLanguageEn BreachCompleteCorrectiveActionParamsAcceptLanguage = "en"
+	BreachCompleteCorrectiveActionParamsAcceptLanguageTh BreachCompleteCorrectiveActionParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachCompleteCorrectiveActionParamsAcceptLanguage enum.
+func (e BreachCompleteCorrectiveActionParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachCompleteCorrectiveActionParamsAcceptLanguageEn:
+		return true
+	case BreachCompleteCorrectiveActionParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // BreachAssessment defines model for BreachAssessment.
 type BreachAssessment struct {
 	// AssessedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
@@ -1099,6 +1252,41 @@ type BreachClock struct {
 
 // BreachClockState defines model for BreachClock.State.
 type BreachClockState string
+
+// BreachCorrectiveAction defines model for BreachCorrectiveAction.
+type BreachCorrectiveAction struct {
+	// AssigneeUserId UUIDv7 generated by the API
+	AssigneeUserId *Uuid `json:"assignee_user_id,omitempty"`
+
+	// CompletedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	CompletedAt *Timestamp `json:"completed_at,omitempty"`
+	Description string     `json:"description"`
+
+	// DueAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	DueAt  *Timestamp                   `json:"due_at,omitempty"`
+	Id     string                       `json:"id"`
+	Status BreachCorrectiveActionStatus `json:"status"`
+}
+
+// BreachCorrectiveActionStatus defines model for BreachCorrectiveAction.Status.
+type BreachCorrectiveActionStatus string
+
+// BreachCorrectiveActionInput defines model for BreachCorrectiveActionInput.
+type BreachCorrectiveActionInput struct {
+	// AssigneeUserId UUIDv7 generated by the API
+	AssigneeUserId *Uuid  `json:"assignee_user_id,omitempty"`
+	Description    string `json:"description"`
+
+	// DueAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	DueAt *Timestamp `json:"due_at,omitempty"`
+
+	// Id Omit for a new corrective action; include to keep editing an existing one
+	Id     *string                            `json:"id,omitempty"`
+	Status *BreachCorrectiveActionInputStatus `json:"status,omitempty"`
+}
+
+// BreachCorrectiveActionInputStatus defines model for BreachCorrectiveActionInput.Status.
+type BreachCorrectiveActionInputStatus string
 
 // BreachEvidence defines model for BreachEvidence.
 type BreachEvidence struct {
@@ -1383,6 +1571,44 @@ type BreachReportFormInput struct {
 
 // BreachReportFormStatus defines model for BreachReportFormStatus.
 type BreachReportFormStatus string
+
+// BreachRootCause defines model for BreachRootCause.
+type BreachRootCause struct {
+	// AllActionsDone The acceptance criterion itself — true once every corrective action reads done
+	AllActionsDone    bool                     `json:"all_actions_done"`
+	CauseCategory     string                   `json:"cause_category"`
+	CorrectiveActions []BreachCorrectiveAction `json:"corrective_actions"`
+
+	// CreatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	CreatedAt   Timestamp `json:"created_at"`
+	Description string    `json:"description"`
+
+	// Id UUIDv7 generated by the API
+	Id Uuid `json:"id"`
+
+	// IncidentId UUIDv7 generated by the API
+	IncidentId Uuid `json:"incident_id"`
+
+	// RiskId UUIDv7 generated by the API
+	RiskId     *Uuid `json:"risk_id,omitempty"`
+	RowVersion int   `json:"row_version"`
+
+	// UpdatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	UpdatedAt Timestamp `json:"updated_at"`
+}
+
+// BreachRootCauseInput defines model for BreachRootCauseInput.
+type BreachRootCauseInput struct {
+	CauseCategory     BreachRootCauseInputCauseCategory `json:"cause_category"`
+	CorrectiveActions *[]BreachCorrectiveActionInput    `json:"corrective_actions,omitempty"`
+	Description       string                            `json:"description"`
+
+	// RiskId UUIDv7 generated by the API
+	RiskId *Uuid `json:"risk_id,omitempty"`
+}
+
+// BreachRootCauseInputCauseCategory defines model for BreachRootCauseInput.CauseCategory.
+type BreachRootCauseInputCauseCategory string
 
 // BreachTimelineItem defines model for BreachTimelineItem.
 type BreachTimelineItem struct {
@@ -1674,6 +1900,24 @@ type BreachRecordPDPCNotificationParamsAcceptLanguage string
 // BreachRecordPDPCNotificationJSONBodyNotificationType defines parameters for BreachRecordPDPCNotification.
 type BreachRecordPDPCNotificationJSONBodyNotificationType string
 
+// BreachListRootCausesParams defines parameters for BreachListRootCauses.
+type BreachListRootCausesParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachListRootCausesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// BreachListRootCausesParamsAcceptLanguage defines parameters for BreachListRootCauses.
+type BreachListRootCausesParamsAcceptLanguage string
+
+// BreachAddRootCauseParams defines parameters for BreachAddRootCause.
+type BreachAddRootCauseParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachAddRootCauseParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// BreachAddRootCauseParamsAcceptLanguage defines parameters for BreachAddRootCause.
+type BreachAddRootCauseParamsAcceptLanguage string
+
 // BreachGetTimelineParams defines parameters for BreachGetTimeline.
 type BreachGetTimelineParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -1864,6 +2108,41 @@ type BreachRetireReportFormParams struct {
 // BreachRetireReportFormParamsAcceptLanguage defines parameters for BreachRetireReportForm.
 type BreachRetireReportFormParamsAcceptLanguage string
 
+// BreachDeleteRootCauseParams defines parameters for BreachDeleteRootCause.
+type BreachDeleteRootCauseParams struct {
+	IncidentId Uuid `form:"incident_id" json:"incident_id"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachDeleteRootCauseParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// BreachDeleteRootCauseParamsAcceptLanguage defines parameters for BreachDeleteRootCause.
+type BreachDeleteRootCauseParamsAcceptLanguage string
+
+// BreachUpdateRootCauseParams defines parameters for BreachUpdateRootCause.
+type BreachUpdateRootCauseParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachUpdateRootCauseParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// BreachUpdateRootCauseParamsAcceptLanguage defines parameters for BreachUpdateRootCause.
+type BreachUpdateRootCauseParamsAcceptLanguage string
+
+// BreachCompleteCorrectiveActionParams defines parameters for BreachCompleteCorrectiveAction.
+type BreachCompleteCorrectiveActionParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachCompleteCorrectiveActionParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// BreachCompleteCorrectiveActionParamsAcceptLanguage defines parameters for BreachCompleteCorrectiveAction.
+type BreachCompleteCorrectiveActionParamsAcceptLanguage string
+
 // BreachCreateIncidentJSONRequestBody defines body for BreachCreateIncident for application/json ContentType.
 type BreachCreateIncidentJSONRequestBody = BreachIncidentInput
 
@@ -1885,6 +2164,9 @@ type BreachCreateNoticeJSONRequestBody BreachCreateNoticeJSONBody
 // BreachRecordPDPCNotificationJSONRequestBody defines body for BreachRecordPDPCNotification for application/json ContentType.
 type BreachRecordPDPCNotificationJSONRequestBody BreachRecordPDPCNotificationJSONBody
 
+// BreachAddRootCauseJSONRequestBody defines body for BreachAddRootCause for application/json ContentType.
+type BreachAddRootCauseJSONRequestBody = BreachRootCauseInput
+
 // BreachAddNoteJSONRequestBody defines body for BreachAddNote for application/json ContentType.
 type BreachAddNoteJSONRequestBody BreachAddNoteJSONBody
 
@@ -1899,6 +2181,9 @@ type BreachLoadRecipientsJSONRequestBody BreachLoadRecipientsJSONBody
 
 // BreachCreateReportFormJSONRequestBody defines body for BreachCreateReportForm for application/json ContentType.
 type BreachCreateReportFormJSONRequestBody = BreachReportFormInput
+
+// BreachUpdateRootCauseJSONRequestBody defines body for BreachUpdateRootCause for application/json ContentType.
+type BreachUpdateRootCauseJSONRequestBody = BreachRootCauseInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -1941,6 +2226,12 @@ type ServerInterface interface {
 	// BreachRecordPDPCNotification Record a round of filing the PDPC notice (BRE-08/09): the system prepares the document (PLT-16 pdpc_form), the person files it through the PDPC’s own channel, then records the result here
 	// (POST /admin/v1/breach/incidents/{id}/pdpc-notifications)
 	BreachRecordPDPCNotification(w http.ResponseWriter, r *http.Request, id Uuid, params BreachRecordPDPCNotificationParams)
+	// BreachListRootCauses Root causes recorded against an incident, oldest first (BRE-15)
+	// (GET /admin/v1/breach/incidents/{id}/root-causes)
+	BreachListRootCauses(w http.ResponseWriter, r *http.Request, id Uuid, params BreachListRootCausesParams)
+	// BreachAddRootCause Record a root cause and its corrective actions against an incident (BRE-15)
+	// (POST /admin/v1/breach/incidents/{id}/root-causes)
+	BreachAddRootCause(w http.ResponseWriter, r *http.Request, id Uuid, params BreachAddRootCauseParams)
 	// BreachGetTimeline The incident timeline: every status change, decision, alert and note with its time and who (BRE-12)
 	// (GET /admin/v1/breach/incidents/{id}/timeline)
 	BreachGetTimeline(w http.ResponseWriter, r *http.Request, id Uuid, params BreachGetTimelineParams)
@@ -1983,6 +2274,15 @@ type ServerInterface interface {
 	// BreachRetireReportForm Retire a report form for good (BRE-01) — its key stops resolving, past incidents are untouched
 	// (POST /admin/v1/breach/report-forms/{id}/retire)
 	BreachRetireReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachRetireReportFormParams)
+	// BreachDeleteRootCause Remove a root-cause record
+	// (DELETE /admin/v1/breach/root-causes/{id})
+	BreachDeleteRootCause(w http.ResponseWriter, r *http.Request, id Uuid, params BreachDeleteRootCauseParams)
+	// BreachUpdateRootCause Edit a root cause, its cause category, risk link and corrective-action list (If-Match)
+	// (PUT /admin/v1/breach/root-causes/{id})
+	BreachUpdateRootCause(w http.ResponseWriter, r *http.Request, id Uuid, params BreachUpdateRootCauseParams)
+	// BreachCompleteCorrectiveAction Mark one corrective action done (If-Match) — the acceptance criterion, tracked one action at a time
+	// (POST /admin/v1/breach/root-causes/{id}/corrective-actions/{actionId}/complete)
+	BreachCompleteCorrectiveAction(w http.ResponseWriter, r *http.Request, id Uuid, actionId string, params BreachCompleteCorrectiveActionParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -2067,6 +2367,18 @@ func (_ Unimplemented) BreachRecordPDPCNotification(w http.ResponseWriter, r *ht
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// BreachListRootCauses Root causes recorded against an incident, oldest first (BRE-15)
+// (GET /admin/v1/breach/incidents/{id}/root-causes)
+func (_ Unimplemented) BreachListRootCauses(w http.ResponseWriter, r *http.Request, id Uuid, params BreachListRootCausesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachAddRootCause Record a root cause and its corrective actions against an incident (BRE-15)
+// (POST /admin/v1/breach/incidents/{id}/root-causes)
+func (_ Unimplemented) BreachAddRootCause(w http.ResponseWriter, r *http.Request, id Uuid, params BreachAddRootCauseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // BreachGetTimeline The incident timeline: every status change, decision, alert and note with its time and who (BRE-12)
 // (GET /admin/v1/breach/incidents/{id}/timeline)
 func (_ Unimplemented) BreachGetTimeline(w http.ResponseWriter, r *http.Request, id Uuid, params BreachGetTimelineParams) {
@@ -2148,6 +2460,24 @@ func (_ Unimplemented) BreachPublishReportForm(w http.ResponseWriter, r *http.Re
 // BreachRetireReportForm Retire a report form for good (BRE-01) — its key stops resolving, past incidents are untouched
 // (POST /admin/v1/breach/report-forms/{id}/retire)
 func (_ Unimplemented) BreachRetireReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachRetireReportFormParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachDeleteRootCause Remove a root-cause record
+// (DELETE /admin/v1/breach/root-causes/{id})
+func (_ Unimplemented) BreachDeleteRootCause(w http.ResponseWriter, r *http.Request, id Uuid, params BreachDeleteRootCauseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachUpdateRootCause Edit a root cause, its cause category, risk link and corrective-action list (If-Match)
+// (PUT /admin/v1/breach/root-causes/{id})
+func (_ Unimplemented) BreachUpdateRootCause(w http.ResponseWriter, r *http.Request, id Uuid, params BreachUpdateRootCauseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachCompleteCorrectiveAction Mark one corrective action done (If-Match) — the acceptance criterion, tracked one action at a time
+// (POST /admin/v1/breach/root-causes/{id}/corrective-actions/{actionId}/complete)
+func (_ Unimplemented) BreachCompleteCorrectiveAction(w http.ResponseWriter, r *http.Request, id Uuid, actionId string, params BreachCompleteCorrectiveActionParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2946,6 +3276,106 @@ func (siw *ServerInterfaceWrapper) BreachRecordPDPCNotification(w http.ResponseW
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.BreachRecordPDPCNotification(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachListRootCauses operation middleware
+func (siw *ServerInterfaceWrapper) BreachListRootCauses(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachListRootCausesParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachListRootCausesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachListRootCauses(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachAddRootCause operation middleware
+func (siw *ServerInterfaceWrapper) BreachAddRootCause(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachAddRootCauseParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachAddRootCauseParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachAddRootCause(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3876,6 +4306,224 @@ func (siw *ServerInterfaceWrapper) BreachRetireReportForm(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// BreachDeleteRootCause operation middleware
+func (siw *ServerInterfaceWrapper) BreachDeleteRootCause(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachDeleteRootCauseParams
+
+	// ------------- Required query parameter "incident_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "incident_id", r.URL.Query(), &params.IncidentId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "incident_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachDeleteRootCauseParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachDeleteRootCause(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachUpdateRootCause operation middleware
+func (siw *ServerInterfaceWrapper) BreachUpdateRootCause(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachUpdateRootCauseParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachUpdateRootCauseParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachUpdateRootCause(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachCompleteCorrectiveAction operation middleware
+func (siw *ServerInterfaceWrapper) BreachCompleteCorrectiveAction(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "actionId" -------------
+	var actionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "actionId", chi.URLParam(r, "actionId"), &actionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "actionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachCompleteCorrectiveActionParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachCompleteCorrectiveActionParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachCompleteCorrectiveAction(w, r, id, actionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -4054,6 +4702,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/breach/pdpc-notifications/{id}/confirm", wrapper.BreachConfirmPDPCNotification)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/breach/incidents/{id}/root-causes", wrapper.BreachListRootCauses)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/breach/incidents/{id}/root-causes", wrapper.BreachAddRootCause)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/admin/v1/breach/root-causes/{id}", wrapper.BreachDeleteRootCause)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/v1/breach/root-causes/{id}", wrapper.BreachUpdateRootCause)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/breach/root-causes/{id}/corrective-actions/{actionId}/complete", wrapper.BreachCompleteCorrectiveAction)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/breach/report-forms", wrapper.BreachListReportForms)
@@ -5446,6 +6109,193 @@ type BreachRecordPDPCNotification422ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response BreachRecordPDPCNotification422ApplicationProblemPlusJSONResponse) VisitBreachRecordPDPCNotificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachListRootCausesRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachListRootCausesParams
+}
+
+type BreachListRootCausesResponseObject interface {
+	VisitBreachListRootCausesResponse(w http.ResponseWriter) error
+}
+
+type BreachListRootCauses200JSONResponse struct {
+	Data []BreachRootCause `json:"data"`
+}
+
+func (response BreachListRootCauses200JSONResponse) VisitBreachListRootCausesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachListRootCauses401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachListRootCauses401ApplicationProblemPlusJSONResponse) VisitBreachListRootCausesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachListRootCauses403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachListRootCauses403ApplicationProblemPlusJSONResponse) VisitBreachListRootCausesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachListRootCauses404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachListRootCauses404ApplicationProblemPlusJSONResponse) VisitBreachListRootCausesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAddRootCauseRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachAddRootCauseParams
+	Body   *BreachAddRootCauseJSONRequestBody
+}
+
+type BreachAddRootCauseResponseObject interface {
+	VisitBreachAddRootCauseResponse(w http.ResponseWriter) error
+}
+
+type BreachAddRootCause201ResponseHeaders struct {
+	ETag *string
+}
+
+type BreachAddRootCause201JSONResponse struct {
+	Body    BreachRootCause
+	Headers BreachAddRootCause201ResponseHeaders
+}
+
+func (response BreachAddRootCause201JSONResponse) VisitBreachAddRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAddRootCause400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAddRootCause400ApplicationProblemPlusJSONResponse) VisitBreachAddRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAddRootCause401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAddRootCause401ApplicationProblemPlusJSONResponse) VisitBreachAddRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAddRootCause403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAddRootCause403ApplicationProblemPlusJSONResponse) VisitBreachAddRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAddRootCause404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAddRootCause404ApplicationProblemPlusJSONResponse) VisitBreachAddRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAddRootCause422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAddRootCause422ApplicationProblemPlusJSONResponse) VisitBreachAddRootCauseResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -7051,6 +7901,379 @@ func (response BreachRetireReportForm428ApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type BreachDeleteRootCauseRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachDeleteRootCauseParams
+}
+
+type BreachDeleteRootCauseResponseObject interface {
+	VisitBreachDeleteRootCauseResponse(w http.ResponseWriter) error
+}
+
+type BreachDeleteRootCause204Response struct {
+}
+
+func (response BreachDeleteRootCause204Response) VisitBreachDeleteRootCauseResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type BreachDeleteRootCause401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachDeleteRootCause401ApplicationProblemPlusJSONResponse) VisitBreachDeleteRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachDeleteRootCause403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachDeleteRootCause403ApplicationProblemPlusJSONResponse) VisitBreachDeleteRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachDeleteRootCause404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachDeleteRootCause404ApplicationProblemPlusJSONResponse) VisitBreachDeleteRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdateRootCauseRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachUpdateRootCauseParams
+	Body   *BreachUpdateRootCauseJSONRequestBody
+}
+
+type BreachUpdateRootCauseResponseObject interface {
+	VisitBreachUpdateRootCauseResponse(w http.ResponseWriter) error
+}
+
+type BreachUpdateRootCause200ResponseHeaders struct {
+	ETag *string
+}
+
+type BreachUpdateRootCause200JSONResponse struct {
+	Body    BreachRootCause
+	Headers BreachUpdateRootCause200ResponseHeaders
+}
+
+func (response BreachUpdateRootCause200JSONResponse) VisitBreachUpdateRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdateRootCause400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdateRootCause400ApplicationProblemPlusJSONResponse) VisitBreachUpdateRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdateRootCause401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdateRootCause401ApplicationProblemPlusJSONResponse) VisitBreachUpdateRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdateRootCause403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdateRootCause403ApplicationProblemPlusJSONResponse) VisitBreachUpdateRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdateRootCause404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdateRootCause404ApplicationProblemPlusJSONResponse) VisitBreachUpdateRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdateRootCause409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdateRootCause409ApplicationProblemPlusJSONResponse) VisitBreachUpdateRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdateRootCause412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdateRootCause412ApplicationProblemPlusJSONResponse) VisitBreachUpdateRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdateRootCause422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdateRootCause422ApplicationProblemPlusJSONResponse) VisitBreachUpdateRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdateRootCause428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdateRootCause428ApplicationProblemPlusJSONResponse) VisitBreachUpdateRootCauseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCompleteCorrectiveActionRequestObject struct {
+	Id       Uuid   `json:"id"`
+	ActionId string `json:"actionId"`
+	Params   BreachCompleteCorrectiveActionParams
+}
+
+type BreachCompleteCorrectiveActionResponseObject interface {
+	VisitBreachCompleteCorrectiveActionResponse(w http.ResponseWriter) error
+}
+
+type BreachCompleteCorrectiveAction200ResponseHeaders struct {
+	ETag *string
+}
+
+type BreachCompleteCorrectiveAction200JSONResponse struct {
+	Body    BreachRootCause
+	Headers BreachCompleteCorrectiveAction200ResponseHeaders
+}
+
+func (response BreachCompleteCorrectiveAction200JSONResponse) VisitBreachCompleteCorrectiveActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCompleteCorrectiveAction400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCompleteCorrectiveAction400ApplicationProblemPlusJSONResponse) VisitBreachCompleteCorrectiveActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCompleteCorrectiveAction401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCompleteCorrectiveAction401ApplicationProblemPlusJSONResponse) VisitBreachCompleteCorrectiveActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCompleteCorrectiveAction403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCompleteCorrectiveAction403ApplicationProblemPlusJSONResponse) VisitBreachCompleteCorrectiveActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCompleteCorrectiveAction404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCompleteCorrectiveAction404ApplicationProblemPlusJSONResponse) VisitBreachCompleteCorrectiveActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCompleteCorrectiveAction409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCompleteCorrectiveAction409ApplicationProblemPlusJSONResponse) VisitBreachCompleteCorrectiveActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCompleteCorrectiveAction412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCompleteCorrectiveAction412ApplicationProblemPlusJSONResponse) VisitBreachCompleteCorrectiveActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCompleteCorrectiveAction428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCompleteCorrectiveAction428ApplicationProblemPlusJSONResponse) VisitBreachCompleteCorrectiveActionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// BreachListIncidents Search the breach register (BRE-13), newest awareness first
@@ -7092,6 +8315,12 @@ type StrictServerInterface interface {
 	// BreachRecordPDPCNotification Record a round of filing the PDPC notice (BRE-08/09): the system prepares the document (PLT-16 pdpc_form), the person files it through the PDPC’s own channel, then records the result here
 	// (POST /admin/v1/breach/incidents/{id}/pdpc-notifications)
 	BreachRecordPDPCNotification(ctx context.Context, request BreachRecordPDPCNotificationRequestObject) (BreachRecordPDPCNotificationResponseObject, error)
+	// BreachListRootCauses Root causes recorded against an incident, oldest first (BRE-15)
+	// (GET /admin/v1/breach/incidents/{id}/root-causes)
+	BreachListRootCauses(ctx context.Context, request BreachListRootCausesRequestObject) (BreachListRootCausesResponseObject, error)
+	// BreachAddRootCause Record a root cause and its corrective actions against an incident (BRE-15)
+	// (POST /admin/v1/breach/incidents/{id}/root-causes)
+	BreachAddRootCause(ctx context.Context, request BreachAddRootCauseRequestObject) (BreachAddRootCauseResponseObject, error)
 	// BreachGetTimeline The incident timeline: every status change, decision, alert and note with its time and who (BRE-12)
 	// (GET /admin/v1/breach/incidents/{id}/timeline)
 	BreachGetTimeline(ctx context.Context, request BreachGetTimelineRequestObject) (BreachGetTimelineResponseObject, error)
@@ -7134,6 +8363,15 @@ type StrictServerInterface interface {
 	// BreachRetireReportForm Retire a report form for good (BRE-01) — its key stops resolving, past incidents are untouched
 	// (POST /admin/v1/breach/report-forms/{id}/retire)
 	BreachRetireReportForm(ctx context.Context, request BreachRetireReportFormRequestObject) (BreachRetireReportFormResponseObject, error)
+	// BreachDeleteRootCause Remove a root-cause record
+	// (DELETE /admin/v1/breach/root-causes/{id})
+	BreachDeleteRootCause(ctx context.Context, request BreachDeleteRootCauseRequestObject) (BreachDeleteRootCauseResponseObject, error)
+	// BreachUpdateRootCause Edit a root cause, its cause category, risk link and corrective-action list (If-Match)
+	// (PUT /admin/v1/breach/root-causes/{id})
+	BreachUpdateRootCause(ctx context.Context, request BreachUpdateRootCauseRequestObject) (BreachUpdateRootCauseResponseObject, error)
+	// BreachCompleteCorrectiveAction Mark one corrective action done (If-Match) — the acceptance criterion, tracked one action at a time
+	// (POST /admin/v1/breach/root-causes/{id}/corrective-actions/{actionId}/complete)
+	BreachCompleteCorrectiveAction(ctx context.Context, request BreachCompleteCorrectiveActionRequestObject) (BreachCompleteCorrectiveActionResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -7573,6 +8811,67 @@ func (sh *strictHandler) BreachRecordPDPCNotification(w http.ResponseWriter, r *
 	}
 }
 
+// BreachListRootCauses operation middleware
+func (sh *strictHandler) BreachListRootCauses(w http.ResponseWriter, r *http.Request, id Uuid, params BreachListRootCausesParams) {
+	var request BreachListRootCausesRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachListRootCauses(ctx, request.(BreachListRootCausesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachListRootCauses")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachListRootCausesResponseObject); ok {
+		if err := validResponse.VisitBreachListRootCausesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachAddRootCause operation middleware
+func (sh *strictHandler) BreachAddRootCause(w http.ResponseWriter, r *http.Request, id Uuid, params BreachAddRootCauseParams) {
+	var request BreachAddRootCauseRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body BreachAddRootCauseJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachAddRootCause(ctx, request.(BreachAddRootCauseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachAddRootCause")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachAddRootCauseResponseObject); ok {
+		if err := validResponse.VisitBreachAddRootCauseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // BreachGetTimeline operation middleware
 func (sh *strictHandler) BreachGetTimeline(w http.ResponseWriter, r *http.Request, id Uuid, params BreachGetTimelineParams) {
 	var request BreachGetTimelineRequestObject
@@ -7977,6 +9276,95 @@ func (sh *strictHandler) BreachRetireReportForm(w http.ResponseWriter, r *http.R
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(BreachRetireReportFormResponseObject); ok {
 		if err := validResponse.VisitBreachRetireReportFormResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachDeleteRootCause operation middleware
+func (sh *strictHandler) BreachDeleteRootCause(w http.ResponseWriter, r *http.Request, id Uuid, params BreachDeleteRootCauseParams) {
+	var request BreachDeleteRootCauseRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachDeleteRootCause(ctx, request.(BreachDeleteRootCauseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachDeleteRootCause")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachDeleteRootCauseResponseObject); ok {
+		if err := validResponse.VisitBreachDeleteRootCauseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachUpdateRootCause operation middleware
+func (sh *strictHandler) BreachUpdateRootCause(w http.ResponseWriter, r *http.Request, id Uuid, params BreachUpdateRootCauseParams) {
+	var request BreachUpdateRootCauseRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body BreachUpdateRootCauseJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachUpdateRootCause(ctx, request.(BreachUpdateRootCauseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachUpdateRootCause")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachUpdateRootCauseResponseObject); ok {
+		if err := validResponse.VisitBreachUpdateRootCauseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachCompleteCorrectiveAction operation middleware
+func (sh *strictHandler) BreachCompleteCorrectiveAction(w http.ResponseWriter, r *http.Request, id Uuid, actionId string, params BreachCompleteCorrectiveActionParams) {
+	var request BreachCompleteCorrectiveActionRequestObject
+
+	request.Id = id
+	request.ActionId = actionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachCompleteCorrectiveAction(ctx, request.(BreachCompleteCorrectiveActionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachCompleteCorrectiveAction")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachCompleteCorrectiveActionResponseObject); ok {
+		if err := validResponse.VisitBreachCompleteCorrectiveActionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

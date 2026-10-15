@@ -11,6 +11,7 @@ import (
 	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/notify"
+	riskservice "pdpa-platform/internal/risk/service"
 )
 
 // Breach is the breach module (BRE) as both binaries run it: the API records incidents and schedules the 72-hour
@@ -18,5 +19,5 @@ import (
 // nil in contexts that never record a PDPC filing round (the worker's timer/notice jobs don't).
 func Breach(n *notify.Service, f *files.Service, r *river.Client[pgx.Tx], a *audit.Service, k *crypto.Keyring, d breach.Docs) *breach.Service {
 	return &breach.Service{Events: &events.Publisher{River: r}, Notify: n, Forms: Forms(n, a), Files: f, Docs: d, Keyring: k, Audit: a,
-		Org: &orgservice.Service{Audit: a}, River: r}
+		Org: &orgservice.Service{Audit: a}, Risk: riskservice.New(), River: r}
 }
