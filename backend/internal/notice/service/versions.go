@@ -222,6 +222,38 @@ func (s *Service) PublicVersionHTML(ctx context.Context, n Notice, versionNo *in
 	return s.Docs.PublicVersionHTML(ctx, n.DocumentID, v.DocumentVersionID, lang)
 }
 
+// PublicDownloadURL is PNG-08's own "embed and generate the file for LINE OA / apps" piece: a
+// short-lived signed link to the notice's own already-rendered Word/PDF file for one version
+// (versionNo nil: the current one) — never rendered on demand, see docs.Service.PublicVersionFile.
+func (s *Service) PublicDownloadURL(ctx context.Context, n Notice, versionNo *int32, lang, format string) (string, error) {
+	q := noticestore.New(pdb.MustTxFromContext(ctx))
+	var v noticestore.GetNoticeVersionRow
+	if versionNo == nil {
+		rows, err := q.ListNoticeVersions(ctx, n.ID)
+		if err != nil {
+			return "", err
+		}
+		if len(rows) == 0 {
+			return "", ErrNotFound
+		}
+		v = noticestore.GetNoticeVersionRow(rows[0])
+	} else {
+		r, err := q.GetNoticeVersion(ctx, noticestore.GetNoticeVersionParams{NoticeID: n.ID, VersionNo: *versionNo})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", ErrNotFound
+		}
+		if err != nil {
+			return "", err
+		}
+		v = noticestore.GetNoticeVersionRow(r)
+	}
+	fileID, err := s.Docs.PublicVersionFile(ctx, n.DocumentID, v.DocumentVersionID, lang, format)
+	if err != nil {
+		return "", err
+	}
+	return s.Files.SignedURL(ctx, fileID)
+}
+
 func toNoticeVersion(r noticestore.GetNoticeVersionRow) NoticeVersion {
 	var checklist []ChecklistItem
 	_ = json.Unmarshal(r.ChecklistResult, &checklist)

@@ -1648,6 +1648,15 @@
       "effectiveFrom": "Effective from",
       "publishedAt": "Published at"
     },
+    "embed": {
+      "title": "Embed on your website",
+      "hint": "Paste this into your site's HTML. It always shows the current published version — no update needed when you republish.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "downloadPdf": "Download PDF",
+      "downloadWord": "Download Word",
+      "filesPending": "Word/PDF files are still being generated"
+    },
     "publishIntent": {
       "title": "Before the next publish",
       "isMaterialChange": "This is a material change (alerts DPO)",

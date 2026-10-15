@@ -8057,6 +8057,51 @@ paths:
                 $ref: '#/components/schemas/PublicNotice'
         '404':
           $ref: '#/components/responses/NotFound'
+  /public/v1/notices/{key}/download:
+    get:
+      operationId: noticeGetPublicDownload
+      tags: [notice]
+      summary: PNG-08 — a signed link to the notice's own already-rendered Word/PDF (for LINE OA / apps)
+      description: |
+        A short-lived pre-signed URL for the file docs.render already produced when this version was
+        published — never rendered on demand. 404 if that render hasn't finished yet.
+      x-permission: public
+      x-module: notice
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [pdf, docx]
+        - name: lang
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [th, en]
+        - name: version
+          in: query
+          required: false
+          description: A specific version number; omitted means the current published version
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoticePublicDownloadResult'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /public/v1/dsar-forms/{key}:
     get:
       operationId: dsarGetPublicIntakeForm
@@ -18642,6 +18687,13 @@ components:
         version_no: {type: integer}
         effective_from: {type: string, format: date}
         published_at: {$ref: '#/components/schemas/Timestamp'}
+    NoticePublicDownloadResult:
+      type: object
+      required: [download_url]
+      properties:
+        download_url:
+          description: A short-lived, pre-signed URL for the notice's own already-rendered Word/PDF file
+          type: string
     NoticeChecklistItemCode:
       type: string
       enum: [purpose_basis, consequence, data_retention, recipients, contact, rights]

@@ -494,6 +494,49 @@ the right flags), HTTP contract (428/412/200 on `/publish-intent`).
 
 **หมายเหตุ:** ดึงเข้า P1 เพราะต้องมีช่องทางเผยแพร่
 
+**Implementation (PNG-08):** builds directly on PNG-06's already-permanent public notice page
+(`/public/v1/notices/{key}`, the portal's own `/[locale]/n/[key]` — always the *current* published
+version, so an iframe embed satisfies "อัปเดตเองเมื่อ publish" literally with no extra code) —
+backend scope is just the Word/PDF half. `docs.Service` gained `PublicVersionFile` (`documents.go`,
+PublicVersionHTML's own no-permission twin: reads a version's already-frozen `pdf_file_id`/
+`docx_file_id`/`pdf_en_file_id`/`docx_en_file_id` columns directly — never renders on demand, since
+docs.render's worker job already produced these files at publish time). `notice.Service` gained
+`PublicDownloadURL` (resolves the version like `PublicVersionHTML` does, then
+`Files.SignedURL(fileID)` for a short-lived pre-signed link) — the `Docs`/`Files` interfaces were
+both widened (`PublicVersionFile`, `SignedURL`), satisfied automatically by the concrete services
+already injected, no wiring change. New public endpoint `GET /public/v1/notices/{key}/download`
+(`format=pdf|docx`, `lang=th|en`, optional `version`) returns `{download_url}` — the same JSON-link
+shape DSAR-14's own public package download already established, rather than a bare 302 (no new
+oapi-codegen response-type plumbing needed). `noticepublichttp.problem()` widened to also map
+`docsservice.ErrNotFound`/`filesservice.ErrNotFound`/`ErrScanPending`/`ErrNotClean` to 404 — a render
+not finished yet (or rejected) reads as "nothing to download," not a 500; this also fixes a latent gap
+in the existing `PublicVersionHTML`-based endpoints, which passed the same sentinels through
+unmapped before this pass.
+
+The embed snippet itself needs the notice page frameable, which PLT-17's own strict portal CSP
+(`frame-ancestors 'none'`, `X-Frame-Options: DENY`) deliberately refuses by default. Rather than
+weaken that default for the whole portal — the consent form, DSAR intake and preference-centre pages
+all still need it, since each collects a real user action a clickjacking attack could abuse —
+`apps/portal/src/proxy.ts` opens `frame-ancestors *` (and skips `X-Frame-Options`) only for
+`/(th|en)/n/[key]`: read-only public legal text behind a random, unguessable key, with no form, no
+session and no action to hijack. UI: `/notices`' existing version-history panel gained an "Embed on
+your website" section — a copyable `<iframe>` snippet pointing at the public link, plus PDF/Word
+download links (via a new `useNoticeDownloadUrl` api-client hook, called through the BFF the same way
+every other admin hook is, since `/public/v1` needs no auth but the admin app already has one client)
+that show once `docs.render` has actually produced those files (empty/pending until then, rather than
+a broken link). Tests: unit (`PublicDownloadURL` 404s — `docsservice.ErrNotFound` — before any render
+has run, for both th/pdf and en/docx), HTTP contract (download 404s for both an unrendered notice and
+an unknown key, through the real validator + publickeys + Tx chain). Not verified live against a real
+Postgres/Redis — this environment's own services became unreachable partway through this session
+(reachable earlier, for PLT-19); every test compiles and vets clean and skips the same way the rest of
+this module's own suite already does. `go build ./...`, `go vet ./...`, `go test -p 1 ./...` (no
+regressions), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build`/`typecheck` + `pnpm --filter @pdpa/portal build` all verified clean.
+Not done: a literal LINE OA share button or app SDK (no LINE/app integration exists anywhere in this
+codebase to design one against — the download link itself is what either would call); the Word/PDF
+download links only appear once rendering finishes (no live polling for it — the admin page's own
+existing refetch-on-navigation already surfaces it).
+
 <a id="png-14"></a>
 ### PNG-14 อนุมัติก่อนเผยแพร่
 

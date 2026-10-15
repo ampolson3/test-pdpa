@@ -14,8 +14,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	noticeservice "pdpa-platform/internal/notice/service"
 	noticepublichttp "pdpa-platform/internal/notice/publichttp"
+	noticeservice "pdpa-platform/internal/notice/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
@@ -206,7 +206,9 @@ func TestNoticePublicEndpoints_Contract(t *testing.T) {
 		t.Fatal(err)
 	}
 	validateMw, _ := validate.Middleware(spec, nil)
-	requestError := func(w http.ResponseWriter, r *http.Request, err error) { httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error())) }
+	requestError := func(w http.ResponseWriter, r *http.Request, err error) {
+		httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+	}
 	responseError := func(w http.ResponseWriter, r *http.Request, err error) {
 		if p, ok := err.(httpx.Problem); ok {
 			httpx.WriteProblem(w, r, p)
@@ -269,5 +271,14 @@ func TestNoticePublicEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("/public/v1/notices/" + publicKey + "/versions/99"); code != 404 {
 		t.Errorf("unknown version: %d, want 404", code)
+	}
+
+	// PNG-08: the download link 404s until docs.render actually produces the file (no worker runs in
+	// this test) — never a 500, and never rendered synchronously by the request itself.
+	if code, _ := do("/public/v1/notices/" + publicKey + "/download?format=pdf&lang=th"); code != 404 {
+		t.Errorf("download before render: %d, want 404", code)
+	}
+	if code, _ := do("/public/v1/notices/" + uuid.NewString() + "/download?format=pdf&lang=th"); code != 404 {
+		t.Errorf("download unknown key: %d, want 404", code)
 	}
 }

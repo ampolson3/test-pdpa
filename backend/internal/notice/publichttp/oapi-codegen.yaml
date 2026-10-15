@@ -8,3 +8,4 @@ output-options:
     - noticeGetPublicNotice
     - noticeListPublicVersions
     - noticeGetPublicVersion
+    - noticeGetPublicDownload

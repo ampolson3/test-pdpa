@@ -186,3 +186,21 @@ export function useIndirectCollectionMutations(client: ApiClient) {
     }),
   };
 }
+
+/** GET /public/v1/notices/{key}/download (PNG-08) — through the BFF, which forwards /public/v1 paths
+ * untouched (no auth needed there, but the admin app calling via the same BFF client it already has
+ * avoids a second cross-origin client). key is the notice's own public key (parsed from public_url). */
+export function useNoticeDownloadUrl(client: ApiClient, key: string | undefined, lang: "th" | "en", format: "pdf" | "docx") {
+  return useQuery({
+    queryKey: ["notice", "public-download", key, lang, format] as const,
+    enabled: !!key,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/public/v1/notices/{key}/download", {
+        params: { path: { key: key! }, query: { lang, format } },
+      });
+      if (error) throw error;
+      return data.download_url;
+    },
+    retry: false,
+  });
+}

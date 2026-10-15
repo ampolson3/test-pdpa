@@ -72,6 +72,10 @@ type Docs interface {
 	// PublicVersionHTML renders one published version for the public page (PNG-06) — no permission check, see
 	// docs.Service's own doc comment for why that's safe here.
 	PublicVersionHTML(ctx context.Context, documentID, versionID uuid.UUID, lang string) ([]byte, error)
+	// PublicVersionFile is PNG-08's own Word/PDF twin of PublicVersionHTML — same no-permission
+	// reasoning, and never renders on demand (the file was already produced by docs.render at
+	// publish time).
+	PublicVersionFile(ctx context.Context, documentID, versionID uuid.UUID, lang, format string) (uuid.UUID, error)
 }
 
 // Files is what PNG-04 needs from file storage (PLT-09): the caller's own clean upload as evidence of an
@@ -80,6 +84,10 @@ type Files interface {
 	Get(ctx context.Context, id uuid.UUID) (files.File, error)
 	Open(ctx context.Context, id uuid.UUID) (io.ReadCloser, files.File, error)
 	AttachSystem(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error
+	// SignedURL is PNG-08's own public download: a short-lived pre-signed link to an already-
+	// rendered Word/PDF file, so the public handler can redirect rather than stream the bytes
+	// itself.
+	SignedURL(ctx context.Context, id uuid.UUID) (string, error)
 }
 
 // Dpo is what PNG-07 needs from the DPO module (rule 9): opening a dpo.tasks "request new consent" job when

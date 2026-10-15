@@ -2595,6 +2595,30 @@ module's own suite already does when neither is reachable. `go build ./...`, `go
 `go test -p 1 ./...` (no regressions), `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build`/`typecheck` all verified clean.
 
+### PNG-08 เผยแพร่และฝังในระบบ (`docs/modules/PNG.md#png-08`) — done
+Builds on PNG-06's already-permanent public notice page — an iframe embed of
+`/[locale]/n/[key]` satisfies "อัปเดตเองเมื่อ publish" for free, since that page always renders the
+current published version. Real new work is the Word/PDF half: `docs.Service.PublicVersionFile`
+(`PublicVersionHTML`'s own no-permission twin) reads a version's already-frozen file-id columns —
+never renders on demand — and `notice.Service.PublicDownloadURL` turns that into a short-lived
+signed link via `Files.SignedURL`. New endpoint `GET /public/v1/notices/{key}/download` returns
+`{download_url}` (DSAR-14's own JSON-link shape, not a bare 302). `noticepublichttp.problem()`
+widened to map docs/files not-found/pending/unclean sentinels to 404 — also closing a latent gap in
+the existing PublicVersionHTML-based endpoints, which passed those through unmapped before. The
+embed snippet needs the notice page frameable, which PLT-17's strict portal CSP
+(`frame-ancestors 'none'`) refuses by default; rather than weaken that for the whole portal (the
+consent/DSAR/preference-centre pages still need it), `apps/portal/src/proxy.ts` opens
+`frame-ancestors *` only for `/(th|en)/n/[key]` — read-only public text behind an unguessable key,
+nothing for clickjacking to abuse. UI: `/notices`' version-history panel gained an embed-code
+section (copyable iframe snippet + PDF/Word links once rendered). Tests: unit
+(`PublicDownloadURL` 404s before any render has run), HTTP contract (404 for both an unrendered
+notice and an unknown key). Not verified live against a real Postgres/Redis — this environment's own
+services went unreachable partway through this session (reachable earlier, for PLT-19); every test
+compiles and vets clean and skips the same way the rest of this suite already does. `go build ./...`,
+`go vet ./...`, `go test -p 1 ./...` (no regressions), `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/admin build`/`typecheck` and
+`pnpm --filter @pdpa/portal build` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

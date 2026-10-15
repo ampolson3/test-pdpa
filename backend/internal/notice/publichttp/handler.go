@@ -13,6 +13,8 @@ import (
 
 	noticeservice "pdpa-platform/internal/notice/service"
 	"pdpa-platform/internal/pkg/httpx"
+	docsservice "pdpa-platform/internal/platform/docs"
+	filesservice "pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/publickeys"
 )
 
@@ -35,8 +37,18 @@ func notice(ctx context.Context) (publickeys.Key, error) {
 	return k, nil
 }
 
+// problem maps every "not visible to this public caller" sentinel to 404, never leaking which
+// layer (notice/docs/files) actually drew the line. PNG-08's own download also surfaces a render
+// that hasn't finished yet (files.ErrScanPending — docs.render's own worker job is still running,
+// or never got a chance to) or was rejected (ErrNotClean) the same way: there is nothing a public
+// caller can do about either, and no file to serve either way.
 func problem(err error) error {
-	if errors.Is(err, noticeservice.ErrNotFound) {
+	switch {
+	case errors.Is(err, noticeservice.ErrNotFound),
+		errors.Is(err, docsservice.ErrNotFound),
+		errors.Is(err, filesservice.ErrNotFound),
+		errors.Is(err, filesservice.ErrScanPending),
+		errors.Is(err, filesservice.ErrNotClean):
 		return httpx.NotFound()
 	}
 	return err
@@ -92,6 +104,27 @@ func (h *Strict) NoticeGetPublicVersion(ctx context.Context, req NoticeGetPublic
 		return nil, problem(err)
 	}
 	return NoticeGetPublicVersion200JSONResponse(out), nil
+}
+
+func (h *Strict) NoticeGetPublicDownload(ctx context.Context, req NoticeGetPublicDownloadRequestObject) (NoticeGetPublicDownloadResponseObject, error) {
+	k, err := notice(ctx)
+	if err != nil {
+		return nil, err
+	}
+	n, err := h.svc.PublicNotice(ctx, k.EntityID)
+	if err != nil {
+		return nil, problem(err)
+	}
+	var versionNo *int32
+	if req.Params.Version != nil {
+		v := int32(*req.Params.Version)
+		versionNo = &v
+	}
+	url, err := h.svc.PublicDownloadURL(ctx, n, versionNo, string(req.Params.Lang), string(req.Params.Format))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return NoticeGetPublicDownload200JSONResponse{DownloadUrl: url}, nil
 }
 
 // toPublicNotice resolves one version (nil: the current one) and renders every language it carries.

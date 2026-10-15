@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -142,6 +143,42 @@ func (e NoticeGetPublicNoticeParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for NoticeGetPublicDownloadParamsFormat.
+const (
+	Docx NoticeGetPublicDownloadParamsFormat = "docx"
+	Pdf  NoticeGetPublicDownloadParamsFormat = "pdf"
+)
+
+// Valid indicates whether the value is a known member of the NoticeGetPublicDownloadParamsFormat enum.
+func (e NoticeGetPublicDownloadParamsFormat) Valid() bool {
+	switch e {
+	case Docx:
+		return true
+	case Pdf:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NoticeGetPublicDownloadParamsLang.
+const (
+	NoticeGetPublicDownloadParamsLangEn NoticeGetPublicDownloadParamsLang = "en"
+	NoticeGetPublicDownloadParamsLangTh NoticeGetPublicDownloadParamsLang = "th"
+)
+
+// Valid indicates whether the value is a known member of the NoticeGetPublicDownloadParamsLang enum.
+func (e NoticeGetPublicDownloadParamsLang) Valid() bool {
+	switch e {
+	case NoticeGetPublicDownloadParamsLangEn:
+		return true
+	case NoticeGetPublicDownloadParamsLangTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for NoticeListPublicVersionsParamsAcceptLanguage.
 const (
 	NoticeListPublicVersionsParamsAcceptLanguageEn NoticeListPublicVersionsParamsAcceptLanguage = "en"
@@ -196,6 +233,12 @@ type FormCondition struct {
 
 // FormConditionOp defines model for FormCondition.Op.
 type FormConditionOp string
+
+// NoticePublicDownloadResult defines model for NoticePublicDownloadResult.
+type NoticePublicDownloadResult struct {
+	// DownloadUrl A short-lived, pre-signed URL for the notice's own already-rendered Word/PDF file
+	DownloadUrl string `json:"download_url"`
+}
 
 // NoticeType defines model for NoticeType.
 type NoticeType string
@@ -253,6 +296,21 @@ type NoticeGetPublicNoticeParams struct {
 // NoticeGetPublicNoticeParamsAcceptLanguage defines parameters for NoticeGetPublicNotice.
 type NoticeGetPublicNoticeParamsAcceptLanguage string
 
+// NoticeGetPublicDownloadParams defines parameters for NoticeGetPublicDownload.
+type NoticeGetPublicDownloadParams struct {
+	Format NoticeGetPublicDownloadParamsFormat `form:"format" json:"format"`
+	Lang   NoticeGetPublicDownloadParamsLang   `form:"lang" json:"lang"`
+
+	// Version A specific version number; omitted means the current published version
+	Version *int `form:"version,omitempty" json:"version,omitempty"`
+}
+
+// NoticeGetPublicDownloadParamsFormat defines parameters for NoticeGetPublicDownload.
+type NoticeGetPublicDownloadParamsFormat string
+
+// NoticeGetPublicDownloadParamsLang defines parameters for NoticeGetPublicDownload.
+type NoticeGetPublicDownloadParamsLang string
+
 // NoticeListPublicVersionsParams defines parameters for NoticeListPublicVersions.
 type NoticeListPublicVersionsParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -276,6 +334,9 @@ type ServerInterface interface {
 	// NoticeGetPublicNotice A published notice's current version (PNG-06, no login)
 	// (GET /public/v1/notices/{key})
 	NoticeGetPublicNotice(w http.ResponseWriter, r *http.Request, key string, params NoticeGetPublicNoticeParams)
+	// NoticeGetPublicDownload PNG-08 — a signed link to the notice's own already-rendered Word/PDF (for LINE OA / apps)
+	// (GET /public/v1/notices/{key}/download)
+	NoticeGetPublicDownload(w http.ResponseWriter, r *http.Request, key string, params NoticeGetPublicDownloadParams)
 	// NoticeListPublicVersions A published notice's version history (PNG-06, no login)
 	// (GET /public/v1/notices/{key}/versions)
 	NoticeListPublicVersions(w http.ResponseWriter, r *http.Request, key string, params NoticeListPublicVersionsParams)
@@ -291,6 +352,12 @@ type Unimplemented struct{}
 // NoticeGetPublicNotice A published notice's current version (PNG-06, no login)
 // (GET /public/v1/notices/{key})
 func (_ Unimplemented) NoticeGetPublicNotice(w http.ResponseWriter, r *http.Request, key string, params NoticeGetPublicNoticeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// NoticeGetPublicDownload PNG-08 — a signed link to the notice's own already-rendered Word/PDF (for LINE OA / apps)
+// (GET /public/v1/notices/{key}/download)
+func (_ Unimplemented) NoticeGetPublicDownload(w http.ResponseWriter, r *http.Request, key string, params NoticeGetPublicDownloadParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -356,6 +423,74 @@ func (siw *ServerInterfaceWrapper) NoticeGetPublicNotice(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.NoticeGetPublicNotice(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// NoticeGetPublicDownload operation middleware
+func (siw *ServerInterfaceWrapper) NoticeGetPublicDownload(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", chi.URLParam(r, "key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params NoticeGetPublicDownloadParams
+
+	// ------------- Required query parameter "format" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "format", r.URL.Query(), &params.Format, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "format"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "format", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "lang" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "lang", r.URL.Query(), &params.Lang, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "lang"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "version" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "version", r.URL.Query(), &params.Version, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "version"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.NoticeGetPublicDownload(w, r, key, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -596,6 +731,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/public/v1/notices/{key}/versions/{versionNo}", wrapper.NoticeGetPublicVersion)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/public/v1/notices/{key}/download", wrapper.NoticeGetPublicDownload)
+	})
 
 	return r
 }
@@ -630,6 +768,45 @@ type NoticeGetPublicNotice404ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response NoticeGetPublicNotice404ApplicationProblemPlusJSONResponse) VisitNoticeGetPublicNoticeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetPublicDownloadRequestObject struct {
+	Key    string `json:"key"`
+	Params NoticeGetPublicDownloadParams
+}
+
+type NoticeGetPublicDownloadResponseObject interface {
+	VisitNoticeGetPublicDownloadResponse(w http.ResponseWriter) error
+}
+
+type NoticeGetPublicDownload200JSONResponse NoticePublicDownloadResult
+
+func (response NoticeGetPublicDownload200JSONResponse) VisitNoticeGetPublicDownloadResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetPublicDownload404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeGetPublicDownload404ApplicationProblemPlusJSONResponse) VisitNoticeGetPublicDownloadResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -727,6 +904,9 @@ type StrictServerInterface interface {
 	// NoticeGetPublicNotice A published notice's current version (PNG-06, no login)
 	// (GET /public/v1/notices/{key})
 	NoticeGetPublicNotice(ctx context.Context, request NoticeGetPublicNoticeRequestObject) (NoticeGetPublicNoticeResponseObject, error)
+	// NoticeGetPublicDownload PNG-08 — a signed link to the notice's own already-rendered Word/PDF (for LINE OA / apps)
+	// (GET /public/v1/notices/{key}/download)
+	NoticeGetPublicDownload(ctx context.Context, request NoticeGetPublicDownloadRequestObject) (NoticeGetPublicDownloadResponseObject, error)
 	// NoticeListPublicVersions A published notice's version history (PNG-06, no login)
 	// (GET /public/v1/notices/{key}/versions)
 	NoticeListPublicVersions(ctx context.Context, request NoticeListPublicVersionsRequestObject) (NoticeListPublicVersionsResponseObject, error)
@@ -794,6 +974,33 @@ func (sh *strictHandler) NoticeGetPublicNotice(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(NoticeGetPublicNoticeResponseObject); ok {
 		if err := validResponse.VisitNoticeGetPublicNoticeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// NoticeGetPublicDownload operation middleware
+func (sh *strictHandler) NoticeGetPublicDownload(w http.ResponseWriter, r *http.Request, key string, params NoticeGetPublicDownloadParams) {
+	var request NoticeGetPublicDownloadRequestObject
+
+	request.Key = key
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.NoticeGetPublicDownload(ctx, request.(NoticeGetPublicDownloadRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "NoticeGetPublicDownload")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(NoticeGetPublicDownloadResponseObject); ok {
+		if err := validResponse.VisitNoticeGetPublicDownloadResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -217,6 +217,7 @@ export {
   useNoticeChecklist,
   useNoticeTranslationStatus,
   useNoticeVersions,
+  useNoticeDownloadUrl,
   useCreateNoticeWizard,
   useSetNoticePublishIntent,
   useTemplateGroups,

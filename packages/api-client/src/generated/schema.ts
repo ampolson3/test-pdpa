@@ -2713,6 +2713,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/v1/notices/{key}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * PNG-08 — a signed link to the notice's own already-rendered Word/PDF (for LINE OA / apps)
+         * @description A short-lived pre-signed URL for the file docs.render already produced when this version was
+         *     published — never rendered on demand. 404 if that render hasn't finished yet.
+         */
+        get: operations["noticeGetPublicDownload"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/v1/dsar-forms/{key}": {
         parameters: {
             query?: never;
@@ -7699,6 +7720,10 @@ export interface components {
             /** Format: date */
             effective_from: string;
             published_at: components["schemas"]["Timestamp"];
+        };
+        NoticePublicDownloadResult: {
+            /** @description A short-lived, pre-signed URL for the notice's own already-rendered Word/PDF file */
+            download_url: string;
         };
         /** @enum {string} */
         NoticeChecklistItemCode: "purpose_basis" | "consequence" | "data_retention" | "recipients" | "contact" | "rights";
@@ -15502,6 +15527,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicNotice"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    noticeGetPublicDownload: {
+        parameters: {
+            query: {
+                format: "pdf" | "docx";
+                lang: "th" | "en";
+                /** @description A specific version number; omitted means the current published version */
+                version?: number;
+            };
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoticePublicDownloadResult"];
                 };
             };
             404: components["responses"]["NotFound"];

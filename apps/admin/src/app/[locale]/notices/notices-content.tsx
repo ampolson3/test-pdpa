@@ -11,6 +11,7 @@ import {
   useLegalEntities,
   useNotices,
   useNoticeChecklist,
+  useNoticeDownloadUrl,
   useNoticeTranslationStatus,
   useNoticeVersions,
   useSetNoticePublishIntent,
@@ -89,6 +90,44 @@ function PublishIntentForm({ client, notice }: { client: ApiClient; notice: Noti
   );
 }
 
+/** PNG-08: the embed-code generator — an iframe snippet (auto-updates on republish, since it always
+ * points at the portal's own live current-version page) plus Word/PDF links for LINE OA / apps. */
+function EmbedPanel({ client, notice, portalUrl, locale }: { client: ApiClient; notice: Notice; portalUrl: string; locale: string }) {
+  const t = useTranslations("notices");
+  const key = notice.public_url?.split("/").pop();
+  const pdf = useNoticeDownloadUrl(client, key, locale === "th" ? "th" : "en", "pdf");
+  const docx = useNoticeDownloadUrl(client, key, locale === "th" ? "th" : "en", "docx");
+  const [copied, setCopied] = useState(false);
+  const publicLink = `${portalUrl.replace(/\/$/, "")}/${locale}${notice.public_url}`;
+  const snippet = `<iframe src="${publicLink}" style="width:100%;min-height:600px;border:0;" title="${notice.title}"></iframe>`;
+
+  const copy = () => {
+    void navigator.clipboard.writeText(snippet);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+      <h4 className="font-medium">{t("embed.title")}</h4>
+      <p className="text-xs text-slate-500">{t("embed.hint")}</p>
+      <div className="flex items-start gap-2">
+        <textarea readOnly rows={2} className="flex-1 rounded border border-slate-300 bg-white p-2 font-mono text-xs" value={snippet} />
+        <Button variant="secondary" onClick={copy}>{copied ? t("embed.copied") : t("embed.copy")}</Button>
+      </div>
+      <div className="flex flex-wrap gap-3 text-xs">
+        {pdf.data && (
+          <a className="text-sky-700 underline" href={pdf.data} target="_blank" rel="noreferrer">{t("embed.downloadPdf")}</a>
+        )}
+        {docx.data && (
+          <a className="text-sky-700 underline" href={docx.data} target="_blank" rel="noreferrer">{t("embed.downloadWord")}</a>
+        )}
+        {!pdf.data && !docx.data && <span className="text-slate-500">{t("embed.filesPending")}</span>}
+      </div>
+    </div>
+  );
+}
+
 /** PNG-06: version history + the public page link once a notice has been published at least once. */
 function VersionsPanel({ client, notice, portalUrl, locale }: { client: ApiClient; notice: Notice; portalUrl: string; locale: string }) {
   const t = useTranslations("notices");
@@ -99,12 +138,15 @@ function VersionsPanel({ client, notice, portalUrl, locale }: { client: ApiClien
     <div className="space-y-2" data-testid="versions-panel">
       <PublishIntentForm client={client} notice={notice} />
       {publicLink ? (
-        <p>
-          {t("versions.publicLink")}{" "}
-          <a className="text-sky-700 underline" href={publicLink} target="_blank" rel="noreferrer">
-            {publicLink}
-          </a>
-        </p>
+        <>
+          <p>
+            {t("versions.publicLink")}{" "}
+            <a className="text-sky-700 underline" href={publicLink} target="_blank" rel="noreferrer">
+              {publicLink}
+            </a>
+          </p>
+          <EmbedPanel client={client} notice={notice} portalUrl={portalUrl} locale={locale} />
+        </>
       ) : (
         <p className="text-slate-500">{t("versions.notPublishedYet")}</p>
       )}

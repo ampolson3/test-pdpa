@@ -249,3 +249,38 @@ func TestPublicNotice_ServesCurrentAndHistory(t *testing.T) {
 		return nil
 	})
 }
+
+// PNG-08: the Word/PDF download is never rendered on demand — it only ever serves the file
+// docs.render (PLT-16's worker job) already produced at publish time. Right after a publish in this
+// unit test (no worker running), that render hasn't happened yet, so the acceptance criterion's own
+// "ไม่มีไฟล์ให้ดาวน์โหลด" case — rather than a 500 — is what PublicDownloadURL must return.
+func TestPublicDownloadURL_NotFoundBeforeRenderCompletes(t *testing.T) {
+	e := setup(t, "png08download")
+	var le orgservice.LegalEntity
+	var n noticeservice.Notice
+	e.in(t, func(ctx context.Context) error {
+		var err error
+		le, err = e.org.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ฝัง จำกัด", IsController: true}, 0)
+		if err != nil {
+			return err
+		}
+		n, err = e.svc.CreateWizard(ctx, noticeservice.WizardInput{LegalEntityID: le.ID, NoticeType: "privacy_notice", Title: "ประกาศฝัง", Slug: "png08-embed"})
+		return err
+	})
+
+	publishNotice(t, e, n, completeContent())
+
+	e.in(t, func(ctx context.Context) error {
+		pub, err := e.svc.PublicNotice(ctx, n.ID)
+		if err != nil {
+			t.Fatalf("PublicNotice: %v", err)
+		}
+		if _, err := e.svc.PublicDownloadURL(ctx, pub, nil, "th", "pdf"); !errors.Is(err, docsservice.ErrNotFound) {
+			t.Errorf("download before render: %v, want docsservice.ErrNotFound", err)
+		}
+		if _, err := e.svc.PublicDownloadURL(ctx, pub, nil, "en", "docx"); !errors.Is(err, docsservice.ErrNotFound) {
+			t.Errorf("download (en/docx) before render: %v, want docsservice.ErrNotFound", err)
+		}
+		return nil
+	})
+}

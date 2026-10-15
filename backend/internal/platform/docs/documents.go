@@ -607,6 +607,45 @@ func (s *Service) PublicVersionHTML(ctx context.Context, documentID, versionID u
 	return render.HTML(in), nil
 }
 
+// PublicVersionFile is PublicVersionHTML's Word/PDF twin (PNG-08): the file id `docs.render`
+// (PLT-16) already produced for this version/lang/format when it was published — never rendered
+// on demand, so a public caller never triggers Gotenberg/DOCX work. Same no-permission reasoning as
+// PublicVersionHTML: there is no caller identity to check one against on a public request, and the
+// module's own lookup of versionID through a record it owns already proved the caller may see this
+// one specific, already-published version.
+func (s *Service) PublicVersionFile(ctx context.Context, documentID, versionID uuid.UUID, lang, format string) (uuid.UUID, error) {
+	if lang != "th" && lang != "en" {
+		return uuid.Nil, invalid("language")
+	}
+	r, err := docsstore.New(pdb.MustTxFromContext(ctx)).GetDocumentVersion(ctx, versionID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return uuid.Nil, ErrNotFound
+	}
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if r.DocumentID != documentID {
+		return uuid.Nil, ErrNotFound
+	}
+	var id pgtype.UUID
+	switch {
+	case format == "pdf" && lang == "th":
+		id = r.PdfFileID
+	case format == "pdf" && lang == "en":
+		id = r.PdfEnFileID
+	case format == "docx" && lang == "th":
+		id = r.DocxFileID
+	case format == "docx" && lang == "en":
+		id = r.DocxEnFileID
+	default:
+		return uuid.Nil, invalid("format")
+	}
+	if !id.Valid {
+		return uuid.Nil, ErrNotFound
+	}
+	return id.Bytes, nil
+}
+
 // PublishedVersionOf returns one published version (for modules that link to it, e.g. BRE-09's PDPC notice).
 func (s *Service) PublishedVersionOf(ctx context.Context, versionID uuid.UUID) (PublishedVersion, uuid.UUID, error) {
 	r, err := docsstore.New(pdb.MustTxFromContext(ctx)).GetDocumentVersion(ctx, versionID)
