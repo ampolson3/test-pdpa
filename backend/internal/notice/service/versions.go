@@ -125,6 +125,12 @@ func (s *Service) OnDocumentPublished(ctx context.Context, documentID uuid.UUID,
 	}); err != nil {
 		return err
 	}
+	// PNG-15: every publish restarts the review clock from this effective date, review_cycle_months out.
+	if err := q.SetNoticeNextReview(ctx, noticestore.SetNoticeNextReviewParams{
+		ID: n.ID, NextReviewAt: pgtype.Date{Time: eff.AddDate(0, int(n.ReviewCycleMonths), 0), Valid: true},
+	}); err != nil {
+		return err
+	}
 	if err := s.audit(ctx, "notice.notice.publish", n.ID, nil,
 		map[string]any{"version_no": u.VersionNo, "document_version_id": u.DocumentVersionID, "effective_from": eff.Format(time.DateOnly),
 			"is_material_change": isMaterial, "changes_purpose": changesPurpose}); err != nil {

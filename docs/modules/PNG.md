@@ -678,6 +678,11 @@ code or test changes needed.
 
 **Acceptance criteria:** เจ้าของประกาศได้รับงานทบทวนตามรอบ
 
+**Implementation:** done — see CLAUDE.md's own `### PNG-15` entry. `review_cycle_months`/`next_review_at`
+(already in the baseline schema) are restarted on every publish; a daily sweep job notifies a notice's
+owner (falling back to role DPO) once the date arrives, then reschedules one more cycle out. The "RoPA
+changed" trigger is PNG-10's own job, not built here.
+
 <a id="png-16"></a>
 ### PNG-16 สร้างนโยบายความเป็นส่วนตัวและนโยบายคุกกี้
 

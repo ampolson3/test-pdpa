@@ -15,12 +15,15 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/riverqueue/river"
+
 	consentservice "pdpa-platform/internal/consent/service"
 	iamservice "pdpa-platform/internal/iam/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/notify"
 	riskservice "pdpa-platform/internal/risk/service"
 	ropastore "pdpa-platform/internal/ropa/store"
 	templatesservice "pdpa-platform/internal/ropa/templates"
@@ -77,6 +80,18 @@ type Service struct {
 	// Dpia runs DPX-06's own transfer impact assessments (rule 9) — nil in cmd/worker, where nothing
 	// records one.
 	Dpia Dpia
+	// Notify and River drive ROPA-15's periodic review reminder; nil in contexts that don't need them.
+	Notify *notify.Service
+	River  *river.Client[pgx.Tx]
+	// Now is the clock (injectable for deadline tests); nil means time.Now.
+	Now func() time.Time
+}
+
+func (s *Service) now() time.Time {
+	if s.Now != nil {
+		return s.Now()
+	}
+	return time.Now()
 }
 
 // Asset is a system, application, database or other place personal data lives — ROPA-02's registry

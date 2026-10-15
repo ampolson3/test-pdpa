@@ -3504,6 +3504,8 @@ type RopaProcessingActivity struct {
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy         pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
+	// เดือนระหว่างรอบทบทวน (ROPA-15)
+	ReviewCycleMonths int16 `db:"review_cycle_months" json:"review_cycle_months"`
 }
 
 // แบบสอบถามเก็บข้อมูลกิจกรรมจากหน่วยงาน

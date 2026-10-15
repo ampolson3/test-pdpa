@@ -102,3 +102,14 @@ SELECT id, notice_id, version_no, document_version_id, languages, effective_from
     changes_purpose, checklist_result, public_url, published_at, published_by
 FROM notice.notice_versions
 WHERE notice_id = $1 AND version_no = $2;
+
+-- PNG-15: periodic review reminder.
+
+-- name: SetNoticeNextReview :exec
+UPDATE notice.notices SET next_review_at = $2 WHERE id = $1;
+
+-- name: ListNoticesDueForReview :many
+SELECT id, title, owner_user_id, review_cycle_months, next_review_at
+FROM notice.notices
+WHERE status = 'published' AND next_review_at IS NOT NULL AND next_review_at <= $1
+ORDER BY next_review_at;

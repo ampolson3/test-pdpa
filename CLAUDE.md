@@ -2667,6 +2667,52 @@ suite already does here. `go build ./...`, `go vet ./...`, `go test -p 1 ./...` 
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/cookie-sdk
 test` (unit + build + size check) and `pnpm --filter @pdpa/admin build`/`typecheck` all verified clean.
 
+### PNG-15 แจ้งเตือนทบทวนตามรอบ (`docs/modules/PNG.md#png-15`) — done, periodic clock only
+`notice.notices.review_cycle_months`/`next_review_at` were already in the baseline schema, unused until
+now — no migration for the notice side. `OnDocumentPublished` (versions.go) now restarts the review clock
+on every publish: `next_review_at = effective_from + review_cycle_months` (`SetNoticeNextReview`, a new
+sqlc query). `internal/notice/service/review.go` follows CON-04's own "sweep lists tenants, per-tenant job
+reads its own rows" pattern exactly (`notice.review_sweep`, global, daily → `notice.review_check`, per
+tenant): every published notice whose `next_review_at` has arrived alerts its `owner_user_id`, falling back
+to role DPO when unset (the same "default recipients until real per-record routing exists" pattern BRE-07/
+PNG-04/DSAR-07 already use), then reschedules `next_review_at` one more cycle out so the same tick never
+re-notifies. Migration 00072 seeds the `notice.review_due` template (th/en × in_app/email, operational text,
+no DRAFT marker — rule 8 is about legal/notice wording, not this). Wired into `cmd/worker` only (no
+`cmd/api` consumer — this is a background reminder, not an endpoint). Tests: unit (the acceptance criterion
+directly — the owner is notified once next_review_at arrives and the clock reschedules into the future; a
+second immediate check is a harmless no-op; no-owner falls back to role DPO; two-tenant isolation via the
+existing per-package harness). Not verified live against a real Postgres/Redis — this environment's own
+services were unreachable for this pass; every test compiles and vets clean and skips the same way the rest
+of this module's own suite already does. `go build ./...`, `go vet ./...`, `go test -p 1 ./...` (no
+regressions), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` all verified clean. Not done, deliberately: the "หรือเมื่อ RoPA เปลี่ยน"
+half of the module doc's own description — that's PNG-10's own job (auto-populate/re-flag on RoPA change, a
+separate backlog row this feature doesn't depend on); no UI screen either, since the acceptance criterion
+("เจ้าของประกาศได้รับงานทบทวนตามรอบ") is fully satisfied by the notification itself, and
+`/settings/notifications` already shows every notification a user received.
+
+### ROPA-15 แจ้งเตือนทบทวน RoPA ตามรอบ (`docs/modules/ROPA.md#ropa-15`) — done
+`ropa.processing_activities.next_review_at` was already in the baseline schema; migration 00072 adds
+`review_cycle_months` (smallint, default 12 — the same default `notice.notices` already uses) since RoPA
+had no cycle column of its own. `ApproveActivity` (versioning.go, ROPA-13) now restarts the review clock on
+every approval: `next_review_at = today + review_cycle_months` (`GetActivityReviewCycle` +
+`SetActivityNextReview`, two new sqlc queries) — the same "every transition into the record's own steady
+state restarts the clock" rule PNG-15's publish hook uses. `internal/ropa/service/review.go` is PNG-15's
+exact sweep/check pattern, ported: `ropa.review_sweep` (global, daily) → `ropa.review_check` (per tenant) →
+`CheckDueReviews`, alerting `owner_user_id` or falling back to role DPO, then rescheduling one cycle out.
+`ropa.Service` gained its own `Notify`/`River`/`Now` fields (this module never needed a notification clock
+before this feature) — nil in `cmd/api` (no consumer there), wired in `cmd/worker` alongside the existing
+ROPA-10 event subscription. Migration 00072 also seeds the `ropa.review_due` template (th/en × in_app/
+email, operational text, no DRAFT marker). Tests: unit (the acceptance criterion directly — the owner is
+notified once next_review_at arrives and the clock reschedules into the future via the real
+`SubmitActivity`→`ApproveActivity` chain; a second immediate check is a harmless no-op; no-owner falls back
+to role DPO; two-tenant isolation). Not verified live against a real Postgres/Redis — same environment
+limitation PNG-15 (this same pass) already disclosed; every test compiles and vets clean and skips the same
+way the rest of this module's own suite already does. `go build ./...`, `go vet ./...`,
+`go test -p 1 ./...` (no regressions, full suite), `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` all verified clean. No UI screen — the
+acceptance criterion is the notification itself, same reasoning PNG-15 uses.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

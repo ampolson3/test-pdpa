@@ -798,6 +798,11 @@ test suite already does when neither is reachable. `go build ./...`, `go vet ./.
 
 **Acceptance criteria:** เจ้าของกิจกรรมได้รับงานทบทวนตามรอบ
 
+**Implementation:** done — see CLAUDE.md's own `### ROPA-15` entry. Migration 00072 adds
+`review_cycle_months` to `ropa.processing_activities` (next_review_at already existed); every approval
+(ROPA-13) restarts the clock. A daily sweep job notifies an activity's owner (falling back to role DPO)
+once the date arrives, then reschedules one more cycle out.
+
 <a id="ropa-17"></a>
 ### ROPA-17 แดชบอร์ด RoPA
 

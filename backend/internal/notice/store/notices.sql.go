@@ -548,6 +548,63 @@ func (q *Queries) ListNotices(ctx context.Context, arg ListNoticesParams) ([]Lis
 	return items, nil
 }
 
+const listNoticesDueForReview = `-- name: ListNoticesDueForReview :many
+SELECT id, title, owner_user_id, review_cycle_months, next_review_at
+FROM notice.notices
+WHERE status = 'published' AND next_review_at IS NOT NULL AND next_review_at <= $1
+ORDER BY next_review_at
+`
+
+type ListNoticesDueForReviewRow struct {
+	ID                uuid.UUID   `db:"id" json:"id"`
+	Title             string      `db:"title" json:"title"`
+	OwnerUserID       pgtype.UUID `db:"owner_user_id" json:"owner_user_id"`
+	ReviewCycleMonths int16       `db:"review_cycle_months" json:"review_cycle_months"`
+	NextReviewAt      pgtype.Date `db:"next_review_at" json:"next_review_at"`
+}
+
+func (q *Queries) ListNoticesDueForReview(ctx context.Context, nextReviewAt pgtype.Date) ([]ListNoticesDueForReviewRow, error) {
+	rows, err := q.db.Query(ctx, listNoticesDueForReview, nextReviewAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListNoticesDueForReviewRow
+	for rows.Next() {
+		var i ListNoticesDueForReviewRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.OwnerUserID,
+			&i.ReviewCycleMonths,
+			&i.NextReviewAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const setNoticeNextReview = `-- name: SetNoticeNextReview :exec
+
+UPDATE notice.notices SET next_review_at = $2 WHERE id = $1
+`
+
+type SetNoticeNextReviewParams struct {
+	ID           uuid.UUID   `db:"id" json:"id"`
+	NextReviewAt pgtype.Date `db:"next_review_at" json:"next_review_at"`
+}
+
+// PNG-15: periodic review reminder.
+func (q *Queries) SetNoticeNextReview(ctx context.Context, arg SetNoticeNextReviewParams) error {
+	_, err := q.db.Exec(ctx, setNoticeNextReview, arg.ID, arg.NextReviewAt)
+	return err
+}
+
 const setNoticePublishIntent = `-- name: SetNoticePublishIntent :one
 UPDATE notice.notices
 SET pending_is_material_change = $2, pending_changes_purpose = $3,

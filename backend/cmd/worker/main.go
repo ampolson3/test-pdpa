@@ -109,14 +109,18 @@ func run() error {
 	river.AddWorker(workers, &cookieservice.ScanWorker{Service: cookieSvc})
 	river.AddWorker(workers, &cookieservice.ScheduleSweeper{Pool: pool, River: inserter})
 	river.AddWorker(workers, &cookieservice.ScheduleChecker{Service: cookieSvc})
-	ropaSvc := &ropaservice.Service{Audit: auditservice.New(), Org: orgSvc}
-	wiring.Events(subscribers, ropaSvc) // ROPA-10: logs DSAR rejections against their processing activities
+	ropaSvc := &ropaservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter} // ROPA-15: periodic review reminder
+	wiring.Events(subscribers, ropaSvc)                                                                         // ROPA-10: logs DSAR rejections against their processing activities
+	river.AddWorker(workers, &ropaservice.ReviewSweeper{Pool: pool, River: inserter})
+	river.AddWorker(workers, &ropaservice.ReviewChecker{Service: ropaSvc})
 	river.AddWorker(workers, &workflow.Ticker{Service: wiring.Workflow(notifySvc, inserter, auditservice.New())})
 	breachSvc := wiring.Breach(notifySvc, fileStore(store, inserter), inserter, auditservice.New(), notifySvc.Keyring, nil) // BRE-09 recording is admin-only
 	river.AddWorker(workers, &breach.TimerWorker{Service: breachSvc})
 	river.AddWorker(workers, &breach.NoticeWorker{Service: breachSvc})
 	noticeSvc := &notice.Service{Notify: notifySvc, River: inserter} // PNG-04: 30-day indirect-collection reminders
 	river.AddWorker(workers, &notice.DueWorker{Service: noticeSvc})
+	river.AddWorker(workers, &notice.ReviewSweeper{Pool: pool, River: inserter}) // PNG-15: periodic review reminder
+	river.AddWorker(workers, &notice.ReviewChecker{Service: noticeSvc})
 	dsarSvc := &dsarservice.Service{Audit: auditservice.New(), Notify: notifySvc, River: inserter, Files: fileStore(store, inserter)} // DSAR-07: SLA reminder; DSAR-14: secure delivery purge
 	river.AddWorker(workers, &dsarservice.ReminderWorker{Service: dsarSvc})
 	river.AddWorker(workers, &dsarservice.PackagePurgeWorker{Service: dsarSvc})
@@ -140,7 +144,8 @@ func run() error {
 		Logger:  slog.Default(),
 		Workers: workers,
 		PeriodicJobs: []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob(),
-			auditjobs.RetentionPeriodicJob(retentionMonths), govjobs.SweepPeriodicJob(), cookieservice.SweepPeriodicJob()},
+			auditjobs.RetentionPeriodicJob(retentionMonths), govjobs.SweepPeriodicJob(), cookieservice.SweepPeriodicJob(),
+			notice.ReviewSweepPeriodicJob(), ropaservice.ReviewSweepPeriodicJob()},
 		SoftStopTimeout: softStop,
 	})
 	if err != nil {

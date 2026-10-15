@@ -89,7 +89,7 @@ PNG-09,PNG,บันทึกการรับทราบ,Acknowledgement log,
 PNG-10,PNG,ดึงเนื้อหาจาก RoPA,Auto-populate from RoPA,Should,P3,เนื้อหา,"ม.23, ม.39",LEGAL,M,S,N,5,3,1.0,0,2.8,"ROPA-03, PLT-11",BP-04,docs/modules/PNG.md#png-10,RoPA เปลี่ยนแล้วประกาศที่เกี่ยวข้องถูกทำเครื่องหมายให้ทบทวน,todo
 PNG-11,PNG,แม่แบบตามอุตสาหกรรม,Industry templates,Should,P3,เนื้อหา,แนวปฏิบัติตลาดไทย,LEGAL,XS,S,N,1,3,0.5,0,1.4,T40,BP-04,docs/modules/PNG.md#png-11,มี template ครบ 6 อุตสาหกรรมทั้ง TH/EN,todo
 PNG-12,PNG,ประกาศแบบหลายชั้นและป้าย CCTV,Layered notice & CCTV signage,Should,P3,เนื้อหา,แนวปฏิบัติตลาด,LEGAL,S,M,Y,3,5,1.0,2.0,2.8,PNG-08,BP-04,docs/modules/PNG.md#png-12,ป้าย CCTV พิมพ์ได้และ QR เปิดฉบับเต็มได้,todo
-PNG-15,PNG,แจ้งเตือนทบทวนตามรอบ,Periodic review reminder,Should,P3,กำกับ,ม.23,SCHED DPO,S,XS,N,3,1,0.5,0,1.4,PLT-10,BP-04,docs/modules/PNG.md#png-15,เจ้าของประกาศได้รับงานทบทวนตามรอบ,todo
+PNG-15,PNG,แจ้งเตือนทบทวนตามรอบ,Periodic review reminder,Should,P3,กำกับ,ม.23,SCHED DPO,S,XS,N,3,1,0.5,0,1.4,PLT-10,BP-04,docs/modules/PNG.md#png-15,เจ้าของประกาศได้รับงานทบทวนตามรอบ,done
 PNG-16,PNG,สร้างนโยบายความเป็นส่วนตัวและนโยบายคุกกี้,Privacy & cookie policy generator,Should,P3,เอกสารอื่น,ม.23,LEGAL,M,S,N,5,3,1.0,0,2.8,"PNG-01, CON-05",BP-04,docs/modules/PNG.md#png-16,นโยบายที่สร้างอ้างถึงประกาศและตารางคุกกี้เวอร์ชันล่าสุด,todo
 PNG-13,PNG,ลิงก์เอกสารอ้างอิงในประกาศ,Linked documents,Nice,P4,เนื้อหา,แนวปฏิบัติตลาด,LEGAL,XS,S,N,1,3,0.5,0,1.4,PNG-08,BP-04,docs/modules/PNG.md#png-13,ลิงก์แสดงตามรูปแบบที่ตั้ง,todo
 ROPA-01,ROPA,ทะเบียนข้อมูลส่วนบุคคล,Personal data inventory,Must,P1,ทะเบียน,ม.39,OWNER IT,M,M,Y,5,5,1.2,2.0,3.5,ORG-07,BP-05,docs/modules/ROPA.md#ropa-01,ข้อมูลอ่อนไหวถูกระบุและกรองได้ทุกหน่วยงาน,done
@@ -108,7 +108,7 @@ ROPA-18,ROPA,นำเข้า RoPA จาก Excel เดิม,Bulk import,Sh
 ROPA-11,ROPA,แบบสอบถามเก็บข้อมูลจากหน่วยงาน,Data mapping questionnaire,Should,P3,Workflow,ม.39,DPO OWNER,M,S,N,5,3,1.0,0,2.8,"PLT-06, ROPA-03",BP-05,docs/modules/ROPA.md#ropa-11,คำตอบที่อนุมัติแล้วเข้า RoPA อัตโนมัติ,todo
 ROPA-12,ROPA,ถาม-ตอบกับ DPO หรือที่ปรึกษา,Activity Q&A,Should,P3,Workflow,แนวปฏิบัติตลาด,OWNER DPO,XS,S,N,1,3,0.5,0,1.4,PLT-07,BP-05,docs/modules/ROPA.md#ropa-12,คำถามที่ยังไม่ตอบแสดงในรายการงานของผู้รับ,todo
 ROPA-14,ROPA,วงจรชีวิตของกิจกรรม,Activity lifecycle,Should,P3,Workflow,ม.39,OWNER,S,XS,N,3,1,0.5,0,1.4,ROPA-03,BP-05,docs/modules/ROPA.md#ropa-14,กิจกรรมที่สิ้นสุดไม่ปรากฏในรายงานปัจจุบันแต่ค้นย้อนหลังได้,todo
-ROPA-15,ROPA,แจ้งเตือนทบทวน RoPA ตามรอบ,Periodic review reminder,Should,P3,Workflow,ม.39,SCHED OWNER,S,XS,N,3,1,0.5,0,1.4,PLT-10,BP-05,docs/modules/ROPA.md#ropa-15,เจ้าของกิจกรรมได้รับงานทบทวนตามรอบ,todo
+ROPA-15,ROPA,แจ้งเตือนทบทวน RoPA ตามรอบ,Periodic review reminder,Should,P3,Workflow,ม.39,SCHED OWNER,S,XS,N,3,1,0.5,0,1.4,PLT-10,BP-05,docs/modules/ROPA.md#ropa-15,เจ้าของกิจกรรมได้รับงานทบทวนตามรอบ,done
 ROPA-17,ROPA,แดชบอร์ด RoPA,RoPA dashboard,Should,P3,รายงาน,แนวปฏิบัติตลาด,DPO EXEC,S,M,Y,3,5,1.0,2.0,2.8,PLT-18,BP-05,docs/modules/ROPA.md#ropa-17,ตัวเลขใน dashboard ตรงกับทะเบียน,todo
 ROPA-19,ROPA,เชื่อม RoPA กับโมดูลอื่น,Cross-module links,Should,P3,เชื่อมต่อ,ม.39,SCHED,M,S,N,5,3,1.0,0,2.8,PLT-11,BP-05,docs/modules/ROPA.md#ropa-19,แก้ RoPA แล้วเจ้าของเอกสารที่เกี่ยวข้องได้รับงานทบทวน,todo
 ROPA-20,ROPA,ตรวจสิทธิ์ยกเว้นกิจการขนาดเล็ก,SME exemption check,Nice,P4,ยกเว้น,ประกาศ สคส. ยกเว้นกิจการขนาดเล็ก พ.ศ. 2565 และ พ.ศ. 2567,DPO,S,S,N,3,3,0.7,0,2.1,PLT-06,BP-05,docs/modules/ROPA.md#ropa-20,ผลประเมินระบุว่าได้รับยกเว้นหรือไม่พร้อมเหตุผลอ้างประกาศ,todo

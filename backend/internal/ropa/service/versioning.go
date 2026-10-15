@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	pdb "pdpa-platform/internal/pkg/db"
 	ropastore "pdpa-platform/internal/ropa/store"
@@ -124,6 +125,16 @@ func (s *Service) ApproveActivity(ctx context.Context, id uuid.UUID, version int
 		return Activity{}, err
 	}
 	if _, err := q.InsertActivityVersion(ctx, ropastore.InsertActivityVersionParams{ID: vid, ActivityID: id, VersionNo: next + 1, Snapshot: raw}); err != nil {
+		return Activity{}, err
+	}
+	// ROPA-15: every approval restarts the review clock from today, review_cycle_months out.
+	cycle, err := q.GetActivityReviewCycle(ctx, id)
+	if err != nil {
+		return Activity{}, err
+	}
+	if err := q.SetActivityNextReview(ctx, ropastore.SetActivityNextReviewParams{
+		ID: id, NextReviewAt: pgtype.Date{Time: s.now().AddDate(0, int(cycle), 0), Valid: true},
+	}); err != nil {
 		return Activity{}, err
 	}
 	return out, s.audit(ctx, "ropa.activity.approve", id, map[string]any{"status": before.Status}, map[string]any{"status": out.Status, "version_no": next + 1})
