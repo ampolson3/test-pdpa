@@ -22,3 +22,6 @@ output-options:
     - consentVerifySubject
     - consentRecordOnBehalf
     - consentGetSettings
+    - consentGetPreferenceCenter
+    - consentPublishPreferenceCenter
+    - consentRetirePreferenceCenter

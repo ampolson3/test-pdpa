@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
@@ -57,6 +58,30 @@ func (e ConsentDecisionInputReasonCode) Valid() bool {
 	case ConsentDecisionInputReasonCodeServiceEnded:
 		return true
 	case ConsentDecisionInputReasonCodeTooManyMessages:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentPreferenceItemDecision.
+const (
+	ConsentPreferenceItemDecisionACTIVE    ConsentPreferenceItemDecision = "ACTIVE"
+	ConsentPreferenceItemDecisionEXPIRED   ConsentPreferenceItemDecision = "EXPIRED"
+	ConsentPreferenceItemDecisionNOTGIVEN  ConsentPreferenceItemDecision = "NOT_GIVEN"
+	ConsentPreferenceItemDecisionWITHDRAWN ConsentPreferenceItemDecision = "WITHDRAWN"
+)
+
+// Valid indicates whether the value is a known member of the ConsentPreferenceItemDecision enum.
+func (e ConsentPreferenceItemDecision) Valid() bool {
+	switch e {
+	case ConsentPreferenceItemDecisionACTIVE:
+		return true
+	case ConsentPreferenceItemDecisionEXPIRED:
+		return true
+	case ConsentPreferenceItemDecisionNOTGIVEN:
+		return true
+	case ConsentPreferenceItemDecisionWITHDRAWN:
 		return true
 	default:
 		return false
@@ -477,6 +502,96 @@ func (e ConsentStartVerification201JSONResponseBodyChannel) Valid() bool {
 	}
 }
 
+// Defines values for ConsentStartPreferenceVerificationParamsAcceptLanguage.
+const (
+	ConsentStartPreferenceVerificationParamsAcceptLanguageEn ConsentStartPreferenceVerificationParamsAcceptLanguage = "en"
+	ConsentStartPreferenceVerificationParamsAcceptLanguageTh ConsentStartPreferenceVerificationParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentStartPreferenceVerificationParamsAcceptLanguage enum.
+func (e ConsentStartPreferenceVerificationParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ConsentStartPreferenceVerificationParamsAcceptLanguageEn:
+		return true
+	case ConsentStartPreferenceVerificationParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentStartPreferenceVerification201JSONResponseBodyChannel.
+const (
+	ConsentStartPreferenceVerification201JSONResponseBodyChannelEmail ConsentStartPreferenceVerification201JSONResponseBodyChannel = "email"
+	ConsentStartPreferenceVerification201JSONResponseBodyChannelSms   ConsentStartPreferenceVerification201JSONResponseBodyChannel = "sms"
+)
+
+// Valid indicates whether the value is a known member of the ConsentStartPreferenceVerification201JSONResponseBodyChannel enum.
+func (e ConsentStartPreferenceVerification201JSONResponseBodyChannel) Valid() bool {
+	switch e {
+	case ConsentStartPreferenceVerification201JSONResponseBodyChannelEmail:
+		return true
+	case ConsentStartPreferenceVerification201JSONResponseBodyChannelSms:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentUpdatePreferenceCenterParamsAcceptLanguage.
+const (
+	ConsentUpdatePreferenceCenterParamsAcceptLanguageEn ConsentUpdatePreferenceCenterParamsAcceptLanguage = "en"
+	ConsentUpdatePreferenceCenterParamsAcceptLanguageTh ConsentUpdatePreferenceCenterParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentUpdatePreferenceCenterParamsAcceptLanguage enum.
+func (e ConsentUpdatePreferenceCenterParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ConsentUpdatePreferenceCenterParamsAcceptLanguageEn:
+		return true
+	case ConsentUpdatePreferenceCenterParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentUpdatePreferenceCenterJSONBodyLanguage.
+const (
+	ConsentUpdatePreferenceCenterJSONBodyLanguageEn ConsentUpdatePreferenceCenterJSONBodyLanguage = "en"
+	ConsentUpdatePreferenceCenterJSONBodyLanguageTh ConsentUpdatePreferenceCenterJSONBodyLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentUpdatePreferenceCenterJSONBodyLanguage enum.
+func (e ConsentUpdatePreferenceCenterJSONBodyLanguage) Valid() bool {
+	switch e {
+	case ConsentUpdatePreferenceCenterJSONBodyLanguageEn:
+		return true
+	case ConsentUpdatePreferenceCenterJSONBodyLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentViewPreferenceCenterParamsAcceptLanguage.
+const (
+	ConsentViewPreferenceCenterParamsAcceptLanguageEn ConsentViewPreferenceCenterParamsAcceptLanguage = "en"
+	ConsentViewPreferenceCenterParamsAcceptLanguageTh ConsentViewPreferenceCenterParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentViewPreferenceCenterParamsAcceptLanguage enum.
+func (e ConsentViewPreferenceCenterParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ConsentViewPreferenceCenterParamsAcceptLanguageEn:
+		return true
+	case ConsentViewPreferenceCenterParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // ConsentDecisionInput defines model for ConsentDecisionInput.
 type ConsentDecisionInput struct {
 	Decision         ConsentDecisionInputDecision    `json:"decision"`
@@ -491,6 +606,45 @@ type ConsentDecisionInputDecision string
 
 // ConsentDecisionInputReasonCode defines model for ConsentDecisionInput.ReasonCode.
 type ConsentDecisionInputReasonCode string
+
+// ConsentPreferenceCenter defines model for ConsentPreferenceCenter.
+type ConsentPreferenceCenter struct {
+	Identifiers []struct {
+		Masked   string `json:"masked"`
+		Primary  bool   `json:"primary"`
+		Type     string `json:"type"`
+		Verified bool   `json:"verified"`
+	} `json:"identifiers"`
+	Purposes []ConsentPreferenceItem `json:"purposes"`
+}
+
+// ConsentPreferenceItem defines model for ConsentPreferenceItem.
+type ConsentPreferenceItem struct {
+	Code        string                         `json:"code"`
+	Current     *map[string]interface{}        `json:"current,omitempty"`
+	Decision    *ConsentPreferenceItemDecision `json:"decision,omitempty"`
+	Description *string                        `json:"description,omitempty"`
+
+	// ExpiresAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	ExpiresAt    *Timestamp `json:"expires_at,omitempty"`
+	ExplicitText *string    `json:"explicit_text,omitempty"`
+	IsSensitive  bool       `json:"is_sensitive"`
+	Name         string     `json:"name"`
+	Preferences  *[]struct {
+		Code    string `json:"code"`
+		Name    string `json:"name"`
+		Options *[]struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		} `json:"options,omitempty"`
+		PrefType string `json:"pref_type"`
+	} `json:"preferences,omitempty"`
+	Text    *string `json:"text,omitempty"`
+	Version int     `json:"version"`
+}
+
+// ConsentPreferenceItemDecision defines model for ConsentPreferenceItem.Decision.
+type ConsentPreferenceItemDecision string
 
 // ConsentResult defines model for ConsentResult.
 type ConsentResult struct {
@@ -627,6 +781,9 @@ type SubjectIdentifier struct {
 // SubjectIdentifierType defines model for SubjectIdentifier.Type.
 type SubjectIdentifierType string
 
+// Timestamp RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+type Timestamp = time.Time
+
 // Uuid UUIDv7 generated by the API
 type Uuid = openapi_types.UUID
 
@@ -751,6 +908,73 @@ type ConsentStartVerificationParamsAcceptLanguage string
 // ConsentStartVerification201JSONResponseBodyChannel defines parameters for ConsentStartVerification.
 type ConsentStartVerification201JSONResponseBodyChannel string
 
+// ConsentStartPreferenceVerificationJSONBody defines parameters for ConsentStartPreferenceVerification.
+type ConsentStartPreferenceVerificationJSONBody struct {
+	Identifier SubjectIdentifier `json:"identifier"`
+}
+
+// ConsentStartPreferenceVerificationParams defines parameters for ConsentStartPreferenceVerification.
+type ConsentStartPreferenceVerificationParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ConsentStartPreferenceVerificationParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IdempotencyKey Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it).
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ConsentStartPreferenceVerificationParamsAcceptLanguage defines parameters for ConsentStartPreferenceVerification.
+type ConsentStartPreferenceVerificationParamsAcceptLanguage string
+
+// ConsentStartPreferenceVerification201JSONResponseBodyChannel defines parameters for ConsentStartPreferenceVerification.
+type ConsentStartPreferenceVerification201JSONResponseBodyChannel string
+
+// ConsentUpdatePreferenceCenterJSONBody defines parameters for ConsentUpdatePreferenceCenter.
+type ConsentUpdatePreferenceCenterJSONBody struct {
+	Code       *string                                        `json:"code,omitempty"`
+	Decisions  []ConsentDecisionInput                         `json:"decisions"`
+	Identifier SubjectIdentifier                              `json:"identifier"`
+	Language   *ConsentUpdatePreferenceCenterJSONBodyLanguage `json:"language,omitempty"`
+
+	// VerificationId UUIDv7 generated by the API
+	VerificationId Uuid `json:"verification_id"`
+}
+
+// ConsentUpdatePreferenceCenterParams defines parameters for ConsentUpdatePreferenceCenter.
+type ConsentUpdatePreferenceCenterParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ConsentUpdatePreferenceCenterParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IdempotencyKey Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it).
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ConsentUpdatePreferenceCenterParamsAcceptLanguage defines parameters for ConsentUpdatePreferenceCenter.
+type ConsentUpdatePreferenceCenterParamsAcceptLanguage string
+
+// ConsentUpdatePreferenceCenterJSONBodyLanguage defines parameters for ConsentUpdatePreferenceCenter.
+type ConsentUpdatePreferenceCenterJSONBodyLanguage string
+
+// ConsentViewPreferenceCenterJSONBody defines parameters for ConsentViewPreferenceCenter.
+type ConsentViewPreferenceCenterJSONBody struct {
+	Code       *string           `json:"code,omitempty"`
+	Identifier SubjectIdentifier `json:"identifier"`
+
+	// VerificationId UUIDv7 generated by the API
+	VerificationId Uuid `json:"verification_id"`
+}
+
+// ConsentViewPreferenceCenterParams defines parameters for ConsentViewPreferenceCenter.
+type ConsentViewPreferenceCenterParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ConsentViewPreferenceCenterParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IdempotencyKey Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it).
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ConsentViewPreferenceCenterParamsAcceptLanguage defines parameters for ConsentViewPreferenceCenter.
+type ConsentViewPreferenceCenterParamsAcceptLanguage string
+
 // ConsentSubmitPublicConsentJSONRequestBody defines body for ConsentSubmitPublicConsent for application/json ContentType.
 type ConsentSubmitPublicConsentJSONRequestBody ConsentSubmitPublicConsentJSONBody
 
@@ -759,6 +983,15 @@ type ConsentVerifyGuardianApprovalJSONRequestBody ConsentVerifyGuardianApprovalJ
 
 // ConsentStartVerificationJSONRequestBody defines body for ConsentStartVerification for application/json ContentType.
 type ConsentStartVerificationJSONRequestBody ConsentStartVerificationJSONBody
+
+// ConsentStartPreferenceVerificationJSONRequestBody defines body for ConsentStartPreferenceVerification for application/json ContentType.
+type ConsentStartPreferenceVerificationJSONRequestBody ConsentStartPreferenceVerificationJSONBody
+
+// ConsentUpdatePreferenceCenterJSONRequestBody defines body for ConsentUpdatePreferenceCenter for application/json ContentType.
+type ConsentUpdatePreferenceCenterJSONRequestBody ConsentUpdatePreferenceCenterJSONBody
+
+// ConsentViewPreferenceCenterJSONRequestBody defines body for ConsentViewPreferenceCenter for application/json ContentType.
+type ConsentViewPreferenceCenterJSONRequestBody ConsentViewPreferenceCenterJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -774,6 +1007,15 @@ type ServerInterface interface {
 	// ConsentStartVerification Send an OTP to the identifier the form collected (CON-19) — required before submitting to a collection point whose verification_method is "otp"
 	// (POST /public/v1/consents/start-verification)
 	ConsentStartVerification(w http.ResponseWriter, r *http.Request, params ConsentStartVerificationParams)
+	// ConsentStartPreferenceVerification Send an OTP to the identifier the preference-centre page collected (CON-18)
+	// (POST /public/v1/preference-centers/{key}/start-verification)
+	ConsentStartPreferenceVerification(w http.ResponseWriter, r *http.Request, key string, params ConsentStartPreferenceVerificationParams)
+	// ConsentUpdatePreferenceCenter Grant, refuse or withdraw any active purpose in one call (CON-18, the self-service half of CON-13's withdrawal)
+	// (POST /public/v1/preference-centers/{key}/update)
+	ConsentUpdatePreferenceCenter(w http.ResponseWriter, r *http.Request, key string, params ConsentUpdatePreferenceCenterParams)
+	// ConsentViewPreferenceCenter Every active purpose of the tenant, with the subject's own current decision overlaid (CON-18)
+	// (POST /public/v1/preference-centers/{key}/view)
+	ConsentViewPreferenceCenter(w http.ResponseWriter, r *http.Request, key string, params ConsentViewPreferenceCenterParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -801,6 +1043,24 @@ func (_ Unimplemented) ConsentVerifyGuardianApproval(w http.ResponseWriter, r *h
 // ConsentStartVerification Send an OTP to the identifier the form collected (CON-19) — required before submitting to a collection point whose verification_method is "otp"
 // (POST /public/v1/consents/start-verification)
 func (_ Unimplemented) ConsentStartVerification(w http.ResponseWriter, r *http.Request, params ConsentStartVerificationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConsentStartPreferenceVerification Send an OTP to the identifier the preference-centre page collected (CON-18)
+// (POST /public/v1/preference-centers/{key}/start-verification)
+func (_ Unimplemented) ConsentStartPreferenceVerification(w http.ResponseWriter, r *http.Request, key string, params ConsentStartPreferenceVerificationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConsentUpdatePreferenceCenter Grant, refuse or withdraw any active purpose in one call (CON-18, the self-service half of CON-13's withdrawal)
+// (POST /public/v1/preference-centers/{key}/update)
+func (_ Unimplemented) ConsentUpdatePreferenceCenter(w http.ResponseWriter, r *http.Request, key string, params ConsentUpdatePreferenceCenterParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConsentViewPreferenceCenter Every active purpose of the tenant, with the subject's own current decision overlaid (CON-18)
+// (POST /public/v1/preference-centers/{key}/view)
+func (_ Unimplemented) ConsentViewPreferenceCenter(w http.ResponseWriter, r *http.Request, key string, params ConsentViewPreferenceCenterParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1133,6 +1393,225 @@ func (siw *ServerInterfaceWrapper) ConsentStartVerification(w http.ResponseWrite
 	handler.ServeHTTP(w, r)
 }
 
+// ConsentStartPreferenceVerification operation middleware
+func (siw *ServerInterfaceWrapper) ConsentStartPreferenceVerification(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", chi.URLParam(r, "key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConsentStartPreferenceVerificationParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ConsentStartPreferenceVerificationParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConsentStartPreferenceVerification(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConsentUpdatePreferenceCenter operation middleware
+func (siw *ServerInterfaceWrapper) ConsentUpdatePreferenceCenter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", chi.URLParam(r, "key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConsentUpdatePreferenceCenterParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ConsentUpdatePreferenceCenterParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConsentUpdatePreferenceCenter(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConsentViewPreferenceCenter operation middleware
+func (siw *ServerInterfaceWrapper) ConsentViewPreferenceCenter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", chi.URLParam(r, "key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConsentViewPreferenceCenterParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ConsentViewPreferenceCenterParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConsentViewPreferenceCenter(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -1246,6 +1725,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		ErrorHandlerFunc:   options.ErrorHandlerFunc,
 	}
 
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/public/v1/preference-centers/{key}/start-verification", wrapper.ConsentStartPreferenceVerification)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/public/v1/preference-centers/{key}/view", wrapper.ConsentViewPreferenceCenter)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/public/v1/preference-centers/{key}/update", wrapper.ConsentUpdatePreferenceCenter)
+	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/public/v1/consents", wrapper.ConsentSubmitPublicConsent)
 	})
@@ -1708,6 +2196,348 @@ func (response ConsentStartVerification429ApplicationProblemPlusJSONResponse) Vi
 	return err
 }
 
+type ConsentStartPreferenceVerificationRequestObject struct {
+	Key    string `json:"key"`
+	Params ConsentStartPreferenceVerificationParams
+	Body   *ConsentStartPreferenceVerificationJSONRequestBody
+}
+
+type ConsentStartPreferenceVerificationResponseObject interface {
+	VisitConsentStartPreferenceVerificationResponse(w http.ResponseWriter) error
+}
+
+type ConsentStartPreferenceVerification201JSONResponse struct {
+	Channel ConsentStartPreferenceVerification201JSONResponseBodyChannel `json:"channel"`
+
+	// VerificationId UUIDv7 generated by the API
+	VerificationId Uuid `json:"verification_id"`
+}
+
+func (response ConsentStartPreferenceVerification201JSONResponse) VisitConsentStartPreferenceVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentStartPreferenceVerification400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentStartPreferenceVerification400ApplicationProblemPlusJSONResponse) VisitConsentStartPreferenceVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentStartPreferenceVerification404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentStartPreferenceVerification404ApplicationProblemPlusJSONResponse) VisitConsentStartPreferenceVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentStartPreferenceVerification422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentStartPreferenceVerification422ApplicationProblemPlusJSONResponse) VisitConsentStartPreferenceVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentStartPreferenceVerification428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentStartPreferenceVerification428ApplicationProblemPlusJSONResponse) VisitConsentStartPreferenceVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentStartPreferenceVerification429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentStartPreferenceVerification429ApplicationProblemPlusJSONResponse) VisitConsentStartPreferenceVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentUpdatePreferenceCenterRequestObject struct {
+	Key    string `json:"key"`
+	Params ConsentUpdatePreferenceCenterParams
+	Body   *ConsentUpdatePreferenceCenterJSONRequestBody
+}
+
+type ConsentUpdatePreferenceCenterResponseObject interface {
+	VisitConsentUpdatePreferenceCenterResponse(w http.ResponseWriter) error
+}
+
+type ConsentUpdatePreferenceCenter201JSONResponse ConsentResult
+
+func (response ConsentUpdatePreferenceCenter201JSONResponse) VisitConsentUpdatePreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentUpdatePreferenceCenter400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentUpdatePreferenceCenter400ApplicationProblemPlusJSONResponse) VisitConsentUpdatePreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentUpdatePreferenceCenter404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentUpdatePreferenceCenter404ApplicationProblemPlusJSONResponse) VisitConsentUpdatePreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentUpdatePreferenceCenter409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentUpdatePreferenceCenter409ApplicationProblemPlusJSONResponse) VisitConsentUpdatePreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentUpdatePreferenceCenter422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentUpdatePreferenceCenter422ApplicationProblemPlusJSONResponse) VisitConsentUpdatePreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentUpdatePreferenceCenter428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentUpdatePreferenceCenter428ApplicationProblemPlusJSONResponse) VisitConsentUpdatePreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentUpdatePreferenceCenter429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentUpdatePreferenceCenter429ApplicationProblemPlusJSONResponse) VisitConsentUpdatePreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentViewPreferenceCenterRequestObject struct {
+	Key    string `json:"key"`
+	Params ConsentViewPreferenceCenterParams
+	Body   *ConsentViewPreferenceCenterJSONRequestBody
+}
+
+type ConsentViewPreferenceCenterResponseObject interface {
+	VisitConsentViewPreferenceCenterResponse(w http.ResponseWriter) error
+}
+
+type ConsentViewPreferenceCenter200JSONResponse ConsentPreferenceCenter
+
+func (response ConsentViewPreferenceCenter200JSONResponse) VisitConsentViewPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentViewPreferenceCenter400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentViewPreferenceCenter400ApplicationProblemPlusJSONResponse) VisitConsentViewPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentViewPreferenceCenter404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentViewPreferenceCenter404ApplicationProblemPlusJSONResponse) VisitConsentViewPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentViewPreferenceCenter422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentViewPreferenceCenter422ApplicationProblemPlusJSONResponse) VisitConsentViewPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentViewPreferenceCenter428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentViewPreferenceCenter428ApplicationProblemPlusJSONResponse) VisitConsentViewPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentViewPreferenceCenter429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentViewPreferenceCenter429ApplicationProblemPlusJSONResponse) VisitConsentViewPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// ConsentGetPublicCollectionPoint Collection point configuration for a consent form (no login)
@@ -1722,6 +2552,15 @@ type StrictServerInterface interface {
 	// ConsentStartVerification Send an OTP to the identifier the form collected (CON-19) — required before submitting to a collection point whose verification_method is "otp"
 	// (POST /public/v1/consents/start-verification)
 	ConsentStartVerification(ctx context.Context, request ConsentStartVerificationRequestObject) (ConsentStartVerificationResponseObject, error)
+	// ConsentStartPreferenceVerification Send an OTP to the identifier the preference-centre page collected (CON-18)
+	// (POST /public/v1/preference-centers/{key}/start-verification)
+	ConsentStartPreferenceVerification(ctx context.Context, request ConsentStartPreferenceVerificationRequestObject) (ConsentStartPreferenceVerificationResponseObject, error)
+	// ConsentUpdatePreferenceCenter Grant, refuse or withdraw any active purpose in one call (CON-18, the self-service half of CON-13's withdrawal)
+	// (POST /public/v1/preference-centers/{key}/update)
+	ConsentUpdatePreferenceCenter(ctx context.Context, request ConsentUpdatePreferenceCenterRequestObject) (ConsentUpdatePreferenceCenterResponseObject, error)
+	// ConsentViewPreferenceCenter Every active purpose of the tenant, with the subject's own current decision overlaid (CON-18)
+	// (POST /public/v1/preference-centers/{key}/view)
+	ConsentViewPreferenceCenter(ctx context.Context, request ConsentViewPreferenceCenterRequestObject) (ConsentViewPreferenceCenterResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -1883,6 +2722,108 @@ func (sh *strictHandler) ConsentStartVerification(w http.ResponseWriter, r *http
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ConsentStartVerificationResponseObject); ok {
 		if err := validResponse.VisitConsentStartVerificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConsentStartPreferenceVerification operation middleware
+func (sh *strictHandler) ConsentStartPreferenceVerification(w http.ResponseWriter, r *http.Request, key string, params ConsentStartPreferenceVerificationParams) {
+	var request ConsentStartPreferenceVerificationRequestObject
+
+	request.Key = key
+	request.Params = params
+
+	var body ConsentStartPreferenceVerificationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConsentStartPreferenceVerification(ctx, request.(ConsentStartPreferenceVerificationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConsentStartPreferenceVerification")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConsentStartPreferenceVerificationResponseObject); ok {
+		if err := validResponse.VisitConsentStartPreferenceVerificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConsentUpdatePreferenceCenter operation middleware
+func (sh *strictHandler) ConsentUpdatePreferenceCenter(w http.ResponseWriter, r *http.Request, key string, params ConsentUpdatePreferenceCenterParams) {
+	var request ConsentUpdatePreferenceCenterRequestObject
+
+	request.Key = key
+	request.Params = params
+
+	var body ConsentUpdatePreferenceCenterJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConsentUpdatePreferenceCenter(ctx, request.(ConsentUpdatePreferenceCenterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConsentUpdatePreferenceCenter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConsentUpdatePreferenceCenterResponseObject); ok {
+		if err := validResponse.VisitConsentUpdatePreferenceCenterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConsentViewPreferenceCenter operation middleware
+func (sh *strictHandler) ConsentViewPreferenceCenter(w http.ResponseWriter, r *http.Request, key string, params ConsentViewPreferenceCenterParams) {
+	var request ConsentViewPreferenceCenterRequestObject
+
+	request.Key = key
+	request.Params = params
+
+	var body ConsentViewPreferenceCenterJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConsentViewPreferenceCenter(ctx, request.(ConsentViewPreferenceCenterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConsentViewPreferenceCenter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConsentViewPreferenceCenterResponseObject); ok {
+		if err := validResponse.VisitConsentViewPreferenceCenterResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

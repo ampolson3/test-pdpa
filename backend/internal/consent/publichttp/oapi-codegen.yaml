@@ -9,3 +9,6 @@ output-options:
     - consentSubmitPublicConsent
     - consentStartVerification
     - consentVerifyGuardianApproval
+    - consentStartPreferenceVerification
+    - consentViewPreferenceCenter
+    - consentUpdatePreferenceCenter

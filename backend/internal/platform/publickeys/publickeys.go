@@ -37,6 +37,11 @@ const (
 	// platform.public_keys.entity_type's own CHECK constraint (00002_platform.sql), which already named
 	// this type "cookie_domain" from the baseline schema, not a value CON-01 invented.
 	EntityCookieDomain = "cookie_domain"
+	// EntityPreferenceCenter (CON-18): the key names an org.legal_entities row directly — there is no
+	// dedicated preference-center table, since a key keyed straight to the legal entity is all this
+	// feature needs. Its value, "portal", was already in platform.public_keys.entity_type's own CHECK
+	// constraint from the baseline schema, unused until now — not a value CON-18 invented.
+	EntityPreferenceCenter = "portal"
 )
 
 // Key is a resolved public key.
@@ -117,8 +122,8 @@ func WithKey(ctx context.Context, k Key) context.Context { return context.WithVa
 
 // pathKeyRE matches every /public/v1 route shape that carries the key as its first path segment — one
 // alternative per module that has a public page (collection points, notices from PNG-06, dsar-forms from
-// DSAR-01, breach-report-forms from BRE-01, dsar-packages from DSAR-14).
-var pathKeyRE = regexp.MustCompile(`^/public/v1/(?:collection-points|notices|dsar-forms|breach-report-forms|dsar-packages|cookie-banners)/([^/]+)`)
+// DSAR-01, breach-report-forms from BRE-01, dsar-packages from DSAR-14, preference-centers from CON-18).
+var pathKeyRE = regexp.MustCompile(`^/public/v1/(?:collection-points|notices|dsar-forms|breach-report-forms|dsar-packages|cookie-banners|preference-centers)/([^/]+)`)
 
 // Middleware resolves the public key of a /public/v1 request — from the path (e.g.
 // /public/v1/collection-points/{key} or /public/v1/notices/{key}) or the X-Public-Key header — refuses

@@ -234,6 +234,16 @@ func (s *Service) Record(ctx context.Context, sub Submission) (Receipt, error) {
 	if err := s.verifyIdentityIfRequired(ctx, cp, sub); err != nil {
 		return Receipt{}, err
 	}
+	return s.writeDecisions(ctx, cp, sub, decisions)
+}
+
+// writeDecisions is Record's own core, pulled out so UpdatePreferences (CON-18) can reuse it: it appends one
+// receipt + one transaction per decision to the subject's hash chain, moves the status projection along ST-01,
+// publishes consent.* events and sends the receipt e-mail — all in the caller's transaction. Record calls it
+// after validating decisions against one collection point's own purpose list (BP-01); UpdatePreferences calls
+// it after validating against every active purpose in the tenant, passing a real collection point only to
+// label the receipt's own channel/audit trail, not to gate which purposes may be decided.
+func (s *Service) writeDecisions(ctx context.Context, cp CollectionPoint, sub Submission, decisions []checkedDecision) (Receipt, error) {
 	q := consentstore.New(pdb.MustTxFromContext(ctx))
 	subjectID, emails, err := s.resolveSubject(ctx, sub)
 	if err != nil {

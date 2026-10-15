@@ -41,6 +41,16 @@ func collectionPoint(ctx context.Context) (publickeys.Key, error) {
 	return k, nil
 }
 
+// preferenceCenterKey is the key of this request, which must stand for a published preference centre
+// (CON-18) — the key's EntityID is the legal entity it was issued for, not a dedicated table's own id.
+func preferenceCenterKey(ctx context.Context) (publickeys.Key, error) {
+	k, ok := publickeys.FromContext(ctx)
+	if !ok || k.EntityType != publickeys.EntityPreferenceCenter {
+		return publickeys.Key{}, httpx.NotFound()
+	}
+	return k, nil
+}
+
 func (h *Strict) ConsentGetPublicCollectionPoint(ctx context.Context, req ConsentGetPublicCollectionPointRequestObject) (ConsentGetPublicCollectionPointResponseObject, error) {
 	k, err := collectionPoint(ctx)
 	if err != nil {
@@ -181,4 +191,100 @@ func (h *Strict) ConsentVerifyGuardianApproval(ctx context.Context, req ConsentV
 		return nil, consenthttp.ToProblem(err)
 	}
 	return ConsentVerifyGuardianApproval200JSONResponse{Status: Approved, ConfirmedPurposes: confirmed}, nil
+}
+
+// ---- preference centre (CON-18) ----
+
+func (h *Strict) ConsentStartPreferenceVerification(ctx context.Context, req ConsentStartPreferenceVerificationRequestObject) (ConsentStartPreferenceVerificationResponseObject, error) {
+	if _, err := preferenceCenterKey(ctx); err != nil {
+		return nil, err
+	}
+	id := consenthttp.Identifiers([]SubjectIdentifier{req.Body.Identifier})[0]
+	ref, err := h.svc.StartPreferenceVerification(ctx, id)
+	if err != nil {
+		return nil, consenthttp.ToProblem(err)
+	}
+	return ConsentStartPreferenceVerification201JSONResponse{VerificationId: ref.ID, Channel: ConsentStartPreferenceVerification201JSONResponseBodyChannel(ref.Channel)}, nil
+}
+
+func (h *Strict) ConsentViewPreferenceCenter(ctx context.Context, req ConsentViewPreferenceCenterRequestObject) (ConsentViewPreferenceCenterResponseObject, error) {
+	if _, err := preferenceCenterKey(ctx); err != nil {
+		return nil, err
+	}
+	b := req.Body
+	id := consenthttp.Identifiers([]SubjectIdentifier{b.Identifier})[0]
+	code := ""
+	if b.Code != nil {
+		code = *b.Code
+	}
+	lang := "th"
+	if req.Params.AcceptLanguage != nil {
+		lang = string(*req.Params.AcceptLanguage)
+	}
+	pc, err := h.svc.GetPreferenceCenter(ctx, b.VerificationId, code, id, lang)
+	if err != nil {
+		return nil, consenthttp.ToProblem(err)
+	}
+	m := map[string]any{"identifiers": []map[string]any{}, "purposes": []map[string]any{}}
+	ids := make([]map[string]any, 0, len(pc.Identifiers))
+	for _, i := range pc.Identifiers {
+		ids = append(ids, map[string]any{"type": i.Type, "masked": i.Masked, "primary": i.Primary, "verified": i.Verified})
+	}
+	m["identifiers"] = ids
+	purposes := make([]map[string]any, 0, len(pc.Purposes))
+	for _, p := range pc.Purposes {
+		pm := map[string]any{"code": p.Code, "version": p.VersionNo, "name": p.Name, "is_sensitive": p.IsSensitive, "preferences": prefsWire(p.Preferences)}
+		if p.Description != "" {
+			pm["description"] = p.Description
+		}
+		if p.Text != "" {
+			pm["text"] = p.Text
+		}
+		if p.ExplicitText != "" {
+			pm["explicit_text"] = p.ExplicitText
+		}
+		if p.Decision != "" {
+			pm["decision"] = p.Decision
+		}
+		if len(p.Current) > 0 {
+			pm["current"] = json.RawMessage(p.Current)
+		}
+		if p.ExpiresAt != nil {
+			pm["expires_at"] = p.ExpiresAt.UTC()
+		}
+		purposes = append(purposes, pm)
+	}
+	m["purposes"] = purposes
+	var w ConsentPreferenceCenter
+	bs, _ := json.Marshal(m)
+	if err := json.Unmarshal(bs, &w); err != nil {
+		return nil, err
+	}
+	return ConsentViewPreferenceCenter200JSONResponse(w), nil
+}
+
+func (h *Strict) ConsentUpdatePreferenceCenter(ctx context.Context, req ConsentUpdatePreferenceCenterRequestObject) (ConsentUpdatePreferenceCenterResponseObject, error) {
+	if _, err := preferenceCenterKey(ctx); err != nil {
+		return nil, err
+	}
+	b := req.Body
+	id := consenthttp.Identifiers([]SubjectIdentifier{b.Identifier})[0]
+	code := ""
+	if b.Code != nil {
+		code = *b.Code
+	}
+	language := "th"
+	if b.Language != nil {
+		language = string(*b.Language)
+	}
+	r, err := h.svc.UpdatePreferences(ctx, b.VerificationId, code, id, consenthttp.Decisions(b.Decisions), language)
+	if err != nil {
+		return nil, consenthttp.ToProblem(err)
+	}
+	var w ConsentResult
+	bs, _ := json.Marshal(consenthttp.ResultMap(r))
+	if err := json.Unmarshal(bs, &w); err != nil {
+		return nil, err
+	}
+	return ConsentUpdatePreferenceCenter201JSONResponse(w), nil
 }

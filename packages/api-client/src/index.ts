@@ -303,6 +303,8 @@ export {
   useConsentSubject,
   useConsentSubjectMutations,
   useConsentSettings,
+  usePreferenceCenterLink,
+  usePreferenceCenterMutations,
   type ConsentPurpose,
   type PurposeContent,
   type ConsentText,

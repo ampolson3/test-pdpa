@@ -694,6 +694,60 @@ func (e ConsentRetireCollectionPointParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for ConsentGetPreferenceCenterParamsAcceptLanguage.
+const (
+	ConsentGetPreferenceCenterParamsAcceptLanguageEn ConsentGetPreferenceCenterParamsAcceptLanguage = "en"
+	ConsentGetPreferenceCenterParamsAcceptLanguageTh ConsentGetPreferenceCenterParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentGetPreferenceCenterParamsAcceptLanguage enum.
+func (e ConsentGetPreferenceCenterParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ConsentGetPreferenceCenterParamsAcceptLanguageEn:
+		return true
+	case ConsentGetPreferenceCenterParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentPublishPreferenceCenterParamsAcceptLanguage.
+const (
+	ConsentPublishPreferenceCenterParamsAcceptLanguageEn ConsentPublishPreferenceCenterParamsAcceptLanguage = "en"
+	ConsentPublishPreferenceCenterParamsAcceptLanguageTh ConsentPublishPreferenceCenterParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentPublishPreferenceCenterParamsAcceptLanguage enum.
+func (e ConsentPublishPreferenceCenterParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ConsentPublishPreferenceCenterParamsAcceptLanguageEn:
+		return true
+	case ConsentPublishPreferenceCenterParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentRetirePreferenceCenterParamsAcceptLanguage.
+const (
+	ConsentRetirePreferenceCenterParamsAcceptLanguageEn ConsentRetirePreferenceCenterParamsAcceptLanguage = "en"
+	ConsentRetirePreferenceCenterParamsAcceptLanguageTh ConsentRetirePreferenceCenterParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentRetirePreferenceCenterParamsAcceptLanguage enum.
+func (e ConsentRetirePreferenceCenterParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ConsentRetirePreferenceCenterParamsAcceptLanguageEn:
+		return true
+	case ConsentRetirePreferenceCenterParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ConsentListPurposesParamsAcceptLanguage.
 const (
 	ConsentListPurposesParamsAcceptLanguageEn ConsentListPurposesParamsAcceptLanguage = "en"
@@ -1000,6 +1054,12 @@ type ConsentPreference struct {
 
 // ConsentPreferenceType defines model for ConsentPreference.Type.
 type ConsentPreferenceType string
+
+// ConsentPreferenceCenterLink defines model for ConsentPreferenceCenterLink.
+type ConsentPreferenceCenterLink struct {
+	// PublicKey Null when no preference centre has been published for this legal entity yet (CON-18)
+	PublicKey *string `json:"public_key,omitempty"`
+}
 
 // ConsentPurpose defines model for ConsentPurpose.
 type ConsentPurpose struct {
@@ -1406,6 +1466,33 @@ type ConsentRetireCollectionPointParams struct {
 // ConsentRetireCollectionPointParamsAcceptLanguage defines parameters for ConsentRetireCollectionPoint.
 type ConsentRetireCollectionPointParamsAcceptLanguage string
 
+// ConsentGetPreferenceCenterParams defines parameters for ConsentGetPreferenceCenter.
+type ConsentGetPreferenceCenterParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ConsentGetPreferenceCenterParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// ConsentGetPreferenceCenterParamsAcceptLanguage defines parameters for ConsentGetPreferenceCenter.
+type ConsentGetPreferenceCenterParamsAcceptLanguage string
+
+// ConsentPublishPreferenceCenterParams defines parameters for ConsentPublishPreferenceCenter.
+type ConsentPublishPreferenceCenterParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ConsentPublishPreferenceCenterParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// ConsentPublishPreferenceCenterParamsAcceptLanguage defines parameters for ConsentPublishPreferenceCenter.
+type ConsentPublishPreferenceCenterParamsAcceptLanguage string
+
+// ConsentRetirePreferenceCenterParams defines parameters for ConsentRetirePreferenceCenter.
+type ConsentRetirePreferenceCenterParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ConsentRetirePreferenceCenterParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// ConsentRetirePreferenceCenterParamsAcceptLanguage defines parameters for ConsentRetirePreferenceCenter.
+type ConsentRetirePreferenceCenterParamsAcceptLanguage string
+
 // ConsentListPurposesParams defines parameters for ConsentListPurposes.
 type ConsentListPurposesParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -1562,6 +1649,15 @@ type ServerInterface interface {
 	// ConsentRetireCollectionPoint Retire a collection point; its public key stops working
 	// (POST /admin/v1/consent/collection-points/{id}/retire)
 	ConsentRetireCollectionPoint(w http.ResponseWriter, r *http.Request, id Uuid, params ConsentRetireCollectionPointParams)
+	// ConsentGetPreferenceCenter The legal entity's self-service preference-centre link, if one has been published (CON-18)
+	// (GET /admin/v1/consent/preference-centers/{legalEntityId})
+	ConsentGetPreferenceCenter(w http.ResponseWriter, r *http.Request, legalEntityId Uuid, params ConsentGetPreferenceCenterParams)
+	// ConsentPublishPreferenceCenter Issue (or re-read) the legal entity's preference-centre link (CON-18)
+	// (POST /admin/v1/consent/preference-centers/{legalEntityId}/publish)
+	ConsentPublishPreferenceCenter(w http.ResponseWriter, r *http.Request, legalEntityId Uuid, params ConsentPublishPreferenceCenterParams)
+	// ConsentRetirePreferenceCenter Revoke the legal entity's current preference-centre link (CON-18)
+	// (POST /admin/v1/consent/preference-centers/{legalEntityId}/retire)
+	ConsentRetirePreferenceCenter(w http.ResponseWriter, r *http.Request, legalEntityId Uuid, params ConsentRetirePreferenceCenterParams)
 	// ConsentListPurposes Purposes with their live version (CON-12)
 	// (GET /admin/v1/consent/purposes)
 	ConsentListPurposes(w http.ResponseWriter, r *http.Request, params ConsentListPurposesParams)
@@ -1634,6 +1730,24 @@ func (_ Unimplemented) ConsentPublishCollectionPoint(w http.ResponseWriter, r *h
 // ConsentRetireCollectionPoint Retire a collection point; its public key stops working
 // (POST /admin/v1/consent/collection-points/{id}/retire)
 func (_ Unimplemented) ConsentRetireCollectionPoint(w http.ResponseWriter, r *http.Request, id Uuid, params ConsentRetireCollectionPointParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConsentGetPreferenceCenter The legal entity's self-service preference-centre link, if one has been published (CON-18)
+// (GET /admin/v1/consent/preference-centers/{legalEntityId})
+func (_ Unimplemented) ConsentGetPreferenceCenter(w http.ResponseWriter, r *http.Request, legalEntityId Uuid, params ConsentGetPreferenceCenterParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConsentPublishPreferenceCenter Issue (or re-read) the legal entity's preference-centre link (CON-18)
+// (POST /admin/v1/consent/preference-centers/{legalEntityId}/publish)
+func (_ Unimplemented) ConsentPublishPreferenceCenter(w http.ResponseWriter, r *http.Request, legalEntityId Uuid, params ConsentPublishPreferenceCenterParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConsentRetirePreferenceCenter Revoke the legal entity's current preference-centre link (CON-18)
+// (POST /admin/v1/consent/preference-centers/{legalEntityId}/retire)
+func (_ Unimplemented) ConsentRetirePreferenceCenter(w http.ResponseWriter, r *http.Request, legalEntityId Uuid, params ConsentRetirePreferenceCenterParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2054,6 +2168,156 @@ func (siw *ServerInterfaceWrapper) ConsentRetireCollectionPoint(w http.ResponseW
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ConsentRetireCollectionPoint(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConsentGetPreferenceCenter operation middleware
+func (siw *ServerInterfaceWrapper) ConsentGetPreferenceCenter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "legalEntityId" -------------
+	var legalEntityId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "legalEntityId", chi.URLParam(r, "legalEntityId"), &legalEntityId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legalEntityId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConsentGetPreferenceCenterParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ConsentGetPreferenceCenterParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConsentGetPreferenceCenter(w, r, legalEntityId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConsentPublishPreferenceCenter operation middleware
+func (siw *ServerInterfaceWrapper) ConsentPublishPreferenceCenter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "legalEntityId" -------------
+	var legalEntityId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "legalEntityId", chi.URLParam(r, "legalEntityId"), &legalEntityId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legalEntityId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConsentPublishPreferenceCenterParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ConsentPublishPreferenceCenterParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConsentPublishPreferenceCenter(w, r, legalEntityId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConsentRetirePreferenceCenter operation middleware
+func (siw *ServerInterfaceWrapper) ConsentRetirePreferenceCenter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "legalEntityId" -------------
+	var legalEntityId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "legalEntityId", chi.URLParam(r, "legalEntityId"), &legalEntityId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legalEntityId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConsentRetirePreferenceCenterParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ConsentRetirePreferenceCenterParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConsentRetirePreferenceCenter(w, r, legalEntityId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2722,6 +2986,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/consent/settings", wrapper.ConsentGetSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/consent/preference-centers/{legalEntityId}", wrapper.ConsentGetPreferenceCenter)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/consent/preference-centers/{legalEntityId}/publish", wrapper.ConsentPublishPreferenceCenter)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/consent/preference-centers/{legalEntityId}/retire", wrapper.ConsentRetirePreferenceCenter)
 	})
 
 	return r
@@ -3426,6 +3699,213 @@ func (response ConsentRetireCollectionPoint428ApplicationProblemPlusJSONResponse
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentGetPreferenceCenterRequestObject struct {
+	LegalEntityId Uuid `json:"legalEntityId"`
+	Params        ConsentGetPreferenceCenterParams
+}
+
+type ConsentGetPreferenceCenterResponseObject interface {
+	VisitConsentGetPreferenceCenterResponse(w http.ResponseWriter) error
+}
+
+type ConsentGetPreferenceCenter200JSONResponse ConsentPreferenceCenterLink
+
+func (response ConsentGetPreferenceCenter200JSONResponse) VisitConsentGetPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentGetPreferenceCenter401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentGetPreferenceCenter401ApplicationProblemPlusJSONResponse) VisitConsentGetPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentGetPreferenceCenter403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentGetPreferenceCenter403ApplicationProblemPlusJSONResponse) VisitConsentGetPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentGetPreferenceCenter404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentGetPreferenceCenter404ApplicationProblemPlusJSONResponse) VisitConsentGetPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentPublishPreferenceCenterRequestObject struct {
+	LegalEntityId Uuid `json:"legalEntityId"`
+	Params        ConsentPublishPreferenceCenterParams
+}
+
+type ConsentPublishPreferenceCenterResponseObject interface {
+	VisitConsentPublishPreferenceCenterResponse(w http.ResponseWriter) error
+}
+
+type ConsentPublishPreferenceCenter200JSONResponse ConsentPreferenceCenterLink
+
+func (response ConsentPublishPreferenceCenter200JSONResponse) VisitConsentPublishPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentPublishPreferenceCenter401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentPublishPreferenceCenter401ApplicationProblemPlusJSONResponse) VisitConsentPublishPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentPublishPreferenceCenter403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentPublishPreferenceCenter403ApplicationProblemPlusJSONResponse) VisitConsentPublishPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentPublishPreferenceCenter422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentPublishPreferenceCenter422ApplicationProblemPlusJSONResponse) VisitConsentPublishPreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentRetirePreferenceCenterRequestObject struct {
+	LegalEntityId Uuid `json:"legalEntityId"`
+	Params        ConsentRetirePreferenceCenterParams
+}
+
+type ConsentRetirePreferenceCenterResponseObject interface {
+	VisitConsentRetirePreferenceCenterResponse(w http.ResponseWriter) error
+}
+
+type ConsentRetirePreferenceCenter204Response struct {
+}
+
+func (response ConsentRetirePreferenceCenter204Response) VisitConsentRetirePreferenceCenterResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type ConsentRetirePreferenceCenter401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentRetirePreferenceCenter401ApplicationProblemPlusJSONResponse) VisitConsentRetirePreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentRetirePreferenceCenter403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentRetirePreferenceCenter403ApplicationProblemPlusJSONResponse) VisitConsentRetirePreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentRetirePreferenceCenter404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentRetirePreferenceCenter404ApplicationProblemPlusJSONResponse) VisitConsentRetirePreferenceCenterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4315,6 +4795,15 @@ type StrictServerInterface interface {
 	// ConsentRetireCollectionPoint Retire a collection point; its public key stops working
 	// (POST /admin/v1/consent/collection-points/{id}/retire)
 	ConsentRetireCollectionPoint(ctx context.Context, request ConsentRetireCollectionPointRequestObject) (ConsentRetireCollectionPointResponseObject, error)
+	// ConsentGetPreferenceCenter The legal entity's self-service preference-centre link, if one has been published (CON-18)
+	// (GET /admin/v1/consent/preference-centers/{legalEntityId})
+	ConsentGetPreferenceCenter(ctx context.Context, request ConsentGetPreferenceCenterRequestObject) (ConsentGetPreferenceCenterResponseObject, error)
+	// ConsentPublishPreferenceCenter Issue (or re-read) the legal entity's preference-centre link (CON-18)
+	// (POST /admin/v1/consent/preference-centers/{legalEntityId}/publish)
+	ConsentPublishPreferenceCenter(ctx context.Context, request ConsentPublishPreferenceCenterRequestObject) (ConsentPublishPreferenceCenterResponseObject, error)
+	// ConsentRetirePreferenceCenter Revoke the legal entity's current preference-centre link (CON-18)
+	// (POST /admin/v1/consent/preference-centers/{legalEntityId}/retire)
+	ConsentRetirePreferenceCenter(ctx context.Context, request ConsentRetirePreferenceCenterRequestObject) (ConsentRetirePreferenceCenterResponseObject, error)
 	// ConsentListPurposes Purposes with their live version (CON-12)
 	// (GET /admin/v1/consent/purposes)
 	ConsentListPurposes(ctx context.Context, request ConsentListPurposesRequestObject) (ConsentListPurposesResponseObject, error)
@@ -4563,6 +5052,87 @@ func (sh *strictHandler) ConsentRetireCollectionPoint(w http.ResponseWriter, r *
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ConsentRetireCollectionPointResponseObject); ok {
 		if err := validResponse.VisitConsentRetireCollectionPointResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConsentGetPreferenceCenter operation middleware
+func (sh *strictHandler) ConsentGetPreferenceCenter(w http.ResponseWriter, r *http.Request, legalEntityId Uuid, params ConsentGetPreferenceCenterParams) {
+	var request ConsentGetPreferenceCenterRequestObject
+
+	request.LegalEntityId = legalEntityId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConsentGetPreferenceCenter(ctx, request.(ConsentGetPreferenceCenterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConsentGetPreferenceCenter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConsentGetPreferenceCenterResponseObject); ok {
+		if err := validResponse.VisitConsentGetPreferenceCenterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConsentPublishPreferenceCenter operation middleware
+func (sh *strictHandler) ConsentPublishPreferenceCenter(w http.ResponseWriter, r *http.Request, legalEntityId Uuid, params ConsentPublishPreferenceCenterParams) {
+	var request ConsentPublishPreferenceCenterRequestObject
+
+	request.LegalEntityId = legalEntityId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConsentPublishPreferenceCenter(ctx, request.(ConsentPublishPreferenceCenterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConsentPublishPreferenceCenter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConsentPublishPreferenceCenterResponseObject); ok {
+		if err := validResponse.VisitConsentPublishPreferenceCenterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConsentRetirePreferenceCenter operation middleware
+func (sh *strictHandler) ConsentRetirePreferenceCenter(w http.ResponseWriter, r *http.Request, legalEntityId Uuid, params ConsentRetirePreferenceCenterParams) {
+	var request ConsentRetirePreferenceCenterRequestObject
+
+	request.LegalEntityId = legalEntityId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConsentRetirePreferenceCenter(ctx, request.(ConsentRetirePreferenceCenterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConsentRetirePreferenceCenter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConsentRetirePreferenceCenterResponseObject); ok {
+		if err := validResponse.VisitConsentRetirePreferenceCenterResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

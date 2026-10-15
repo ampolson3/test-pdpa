@@ -328,6 +328,35 @@ func (h *Strict) ConsentGetSettings(ctx context.Context, _ ConsentGetSettingsReq
 	return ConsentGetSettings200JSONResponse{DataRegion: s.DataRegion, IdentifierEncryption: "aes-256-gcm", KeyManagement: ConsentSettingsKeyManagement(s.KeyManagement)}, nil
 }
 
+// ---- preference centre (CON-18) ----
+
+func (h *Strict) ConsentGetPreferenceCenter(ctx context.Context, req ConsentGetPreferenceCenterRequestObject) (ConsentGetPreferenceCenterResponseObject, error) {
+	key, ok, err := h.svc.GetPreferenceCenterLink(ctx, req.LegalEntityId)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	out := ConsentPreferenceCenterLink{}
+	if ok {
+		out.PublicKey = &key
+	}
+	return ConsentGetPreferenceCenter200JSONResponse(out), nil
+}
+
+func (h *Strict) ConsentPublishPreferenceCenter(ctx context.Context, req ConsentPublishPreferenceCenterRequestObject) (ConsentPublishPreferenceCenterResponseObject, error) {
+	key, err := h.svc.PublishPreferenceCenter(ctx, req.LegalEntityId)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	return ConsentPublishPreferenceCenter200JSONResponse{PublicKey: &key}, nil
+}
+
+func (h *Strict) ConsentRetirePreferenceCenter(ctx context.Context, req ConsentRetirePreferenceCenterRequestObject) (ConsentRetirePreferenceCenterResponseObject, error) {
+	if err := h.svc.RetirePreferenceCenter(ctx, req.LegalEntityId); err != nil {
+		return nil, ToProblem(err)
+	}
+	return ConsentRetirePreferenceCenter204Response{}, nil
+}
+
 // ---- wire (shared with ../publichttp) ----
 
 // Decisions converts generated decision inputs (any package's, same JSON) into service decisions.

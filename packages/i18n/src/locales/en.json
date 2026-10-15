@@ -2003,6 +2003,13 @@
       "line": "LINE",
       "api": "API"
     },
+    "pc": {
+      "title": "Preference centre",
+      "intro": "A self-service link where a data subject can view, grant and withdraw their own consent after verifying their identity by OTP (CON-18, ม.19).",
+      "hostedLink": "Preference centre link",
+      "publish": "Publish preference centre",
+      "retire": "Revoke link"
+    },
     "subjects": {
       "title": "Consent by data subject",
       "intro": "Search by an exact identifier (readable identifiers aren't stored), then see statuses, history and verify receipts.",
@@ -2222,6 +2229,46 @@
       "errors": {
         "dsar_invalid_input": "That access code is incorrect. Please try again.",
         "unavailable": "We couldn't prepare your download right now. Please try again shortly.",
+        "generic": "Something went wrong. Please try again."
+      }
+    },
+    "preferences": {
+      "title": "Privacy preference centre",
+      "intro": "View, grant or withdraw your consent for each purpose yourself. Verify your identity by OTP first — withdrawing is just as easy as giving consent.",
+      "contact": "Your contact details",
+      "email": "E-mail",
+      "phone": "Phone number",
+      "sendCode": "Send code",
+      "sending": "Sending…",
+      "verifyTitle": "Verify your identity",
+      "codeSentVia": {
+        "email": "We sent a verification code to your e-mail.",
+        "sms": "We sent a verification code by SMS."
+      },
+      "code": "Verification code",
+      "verify": "Verify",
+      "editIntro": "Choose a new decision for any purpose you want to change; leave the rest as they are.",
+      "currentStatus": "Current status",
+      "status": {
+        "ACTIVE": "Consented",
+        "NOT_GIVEN": "Not given",
+        "WITHDRAWN": "Withdrawn",
+        "EXPIRED": "Expired",
+        "NONE": "No decision yet"
+      },
+      "keep": "Leave as is",
+      "grant": "Consent",
+      "withdraw": "Withdraw",
+      "save": "Save changes",
+      "saved": "Your preferences have been saved",
+      "receipt": "Receipt number {receipt}",
+      "errors": {
+        "identifier_missing": "Please enter an e-mail or phone number",
+        "unavailable": "The service is temporarily unavailable, please try again",
+        "invalid": "The code you entered is incorrect, expired, or already used",
+        "identifier_mismatch": "The code doesn't match the e-mail or phone number you gave",
+        "not_found": "This link isn't available. It may have been revoked.",
+        "no_change": "Choose a new decision for at least one purpose before saving",
         "generic": "Something went wrong. Please try again."
       }
     }

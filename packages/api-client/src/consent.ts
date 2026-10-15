@@ -201,3 +201,38 @@ export function useConsentSettings(client: ApiClient) {
     },
   });
 }
+
+/** The self-service preference centre (CON-18): one published link per legal entity. */
+export function usePreferenceCenterLink(client: ApiClient, legalEntityId: string | undefined) {
+  return useQuery({
+    queryKey: ["consent", "preference-center", legalEntityId],
+    enabled: !!legalEntityId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/consent/preference-centers/{legalEntityId}", { params: { path: { legalEntityId: legalEntityId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function usePreferenceCenterMutations(client: ApiClient) {
+  const qc = useQueryClient();
+  const refresh = (legalEntityId: string) => qc.invalidateQueries({ queryKey: ["consent", "preference-center", legalEntityId] });
+  return {
+    publish: useMutation({
+      mutationFn: async (legalEntityId: string) => {
+        const { data, error } = await client.POST("/admin/v1/consent/preference-centers/{legalEntityId}/publish", { params: { path: { legalEntityId } } });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: (_d, legalEntityId) => refresh(legalEntityId),
+    }),
+    retire: useMutation({
+      mutationFn: async (legalEntityId: string) => {
+        const { error } = await client.POST("/admin/v1/consent/preference-centers/{legalEntityId}/retire", { params: { path: { legalEntityId } } });
+        if (error) throw error;
+      },
+      onSuccess: (_d, legalEntityId) => refresh(legalEntityId),
+    }),
+  };
+}

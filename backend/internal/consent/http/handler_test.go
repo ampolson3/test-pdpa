@@ -410,6 +410,97 @@ func TestConsentEndpoints_Contract(t *testing.T) {
 		map[string]string{"X-Public-Key": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "Idempotency-Key": uuid.NewString()}); res.code != 404 {
 		t.Errorf("start verification, unknown key: %d, want 404", res.code)
 	}
+
+	// ---- CON-18: self-service preference centre ----
+	pcPath := "/admin/v1/consent/preference-centers/" + f.EntityA.String()
+	if res := do("GET", pcPath, &alice, nil, nil); res.code != 200 || res.body["public_key"] != nil {
+		t.Fatalf("preference centre link before publish: %d %v, want public_key: null", res.code, res.body)
+	}
+	if res := do("GET", pcPath, nil, nil, nil); res.code != 401 {
+		t.Errorf("no principal: %d, want 401", res.code)
+	}
+	if res := do("POST", pcPath+"/publish", &dpoLess, nil, nil); res.code != 403 {
+		t.Errorf("reader publishes preference centre: %d, want 403", res.code)
+	}
+	pub1 := do("POST", pcPath+"/publish", &alice, nil, nil)
+	if pub1.code != 200 || pub1.body["public_key"] == nil {
+		t.Fatalf("publish preference centre: %d %v", pub1.code, pub1.body)
+	}
+	pcKey, _ := pub1.body["public_key"].(string)
+	pub2 := do("POST", pcPath+"/publish", &alice, nil, nil)
+	if pub2.code != 200 || pub2.body["public_key"] != pcKey {
+		t.Fatalf("re-publish should keep the same key: %v vs %v", pub2.body["public_key"], pcKey)
+	}
+
+	pcPurpose := f.LivePurpose(t, "MKT-PC", consenttest.Content("MKT-PC", "ยินยอมรับข่าวสาร"))
+	f.LiveCP(t, "PC-SIGNUP", consent.CPPurposeInput{PurposeID: pcPurpose.ID})
+
+	startPath := "/public/v1/preference-centers/" + pcKey + "/start-verification"
+	if res := do("POST", "/public/v1/preference-centers/unknown-key/start-verification",
+		nil, map[string]any{"identifier": map[string]string{"type": "email", "value": "pc@example.com"}}, map[string]string{"Idempotency-Key": uuid.NewString()}); res.code != 404 {
+		t.Errorf("start-verification with an unknown key: %d, want 404", res.code)
+	}
+	startRes2 := do("POST", startPath, nil, map[string]any{"identifier": map[string]string{"type": "email", "value": "pc@example.com"}}, map[string]string{"Idempotency-Key": uuid.NewString()})
+	if startRes2.code != 201 || startRes2.body["channel"] != "email" {
+		t.Fatalf("preference-centre start-verification: %d %v", startRes2.code, startRes2.body)
+	}
+	pcCode := guardianNotifier.lastCode()
+	if pcCode == "" {
+		t.Fatal("expected an OTP to have been sent for the preference centre")
+	}
+
+	viewBody := map[string]any{"verification_id": startRes2.body["verification_id"], "code": pcCode, "identifier": map[string]string{"type": "email", "value": "pc@example.com"}}
+	viewPath := "/public/v1/preference-centers/" + pcKey + "/view"
+	viewRes := do("POST", viewPath, nil, viewBody, map[string]string{"Idempotency-Key": uuid.NewString()})
+	if viewRes.code != 200 {
+		t.Fatalf("view preference centre: %d %v", viewRes.code, viewRes.body)
+	}
+	purposes, _ := viewRes.body["purposes"].([]any)
+	found := false
+	for _, p := range purposes {
+		m, _ := p.(map[string]any)
+		if m["code"] == "MKT-PC" {
+			found = true
+			if m["decision"] != nil {
+				t.Errorf("fresh purpose already has a decision: %v", m["decision"])
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected MKT-PC among the preference centre's purposes, got %v", purposes)
+	}
+
+	// The same OTP code already verified covers the update too — no need to resend it.
+	updatePath := "/public/v1/preference-centers/" + pcKey + "/update"
+	grantBody := map[string]any{"verification_id": startRes2.body["verification_id"], "identifier": map[string]string{"type": "email", "value": "pc@example.com"},
+		"decisions": []map[string]any{{"purpose_code": "MKT-PC", "purpose_version_no": 1, "decision": "CONSENTED"}}}
+	grantRes := do("POST", updatePath, nil, grantBody, map[string]string{"Idempotency-Key": uuid.NewString()})
+	if grantRes.code != 201 || grantRes.body["receipt_no"] == nil {
+		t.Fatalf("grant via preference centre: %d %v", grantRes.code, grantRes.body)
+	}
+
+	// Withdrawal, unlike a collection-point submission, is allowed from the preference centre.
+	withdrawBody := map[string]any{"verification_id": startRes2.body["verification_id"], "identifier": map[string]string{"type": "email", "value": "pc@example.com"},
+		"decisions": []map[string]any{{"purpose_code": "MKT-PC", "purpose_version_no": 1, "decision": "WITHDRAWN"}}}
+	withdrawRes := do("POST", updatePath, nil, withdrawBody, map[string]string{"Idempotency-Key": uuid.NewString()})
+	if withdrawRes.code != 201 {
+		t.Fatalf("withdraw via preference centre: %d %v", withdrawRes.code, withdrawRes.body)
+	}
+
+	// Retire (needs the delete permission, not already in alice's Maker set for this fixture).
+	grants[alice.String()] = append(append([]string{}, consenttest.Maker...), "consent.collectionpoint.delete")
+	if err := cache.Invalidate(ctx, f.A.ID.String(), alice.String()); err != nil {
+		t.Fatal(err)
+	}
+	if res := do("POST", pcPath+"/retire", &alice, nil, nil); res.code != 204 {
+		t.Fatalf("retire preference centre: %d %v", res.code, res.body)
+	}
+	if res := do("GET", pcPath, &alice, nil, nil); res.code != 200 || res.body["public_key"] != nil {
+		t.Fatalf("preference centre link after retire: %d %v, want public_key: null", res.code, res.body)
+	}
+	if res := do("POST", startPath, nil, map[string]any{"identifier": map[string]string{"type": "email", "value": "pc@example.com"}}, map[string]string{"Idempotency-Key": uuid.NewString()}); res.code != 404 {
+		t.Errorf("start-verification with a retired key: %d, want 404", res.code)
+	}
 }
 
 // fakeIamNotifier captures the OTP a StartVerification call would have sent (PLT-04), so the contract test can

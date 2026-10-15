@@ -1531,6 +1531,120 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/consent/preference-centers/{legalEntityId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The legal entity's self-service preference-centre link, if one has been published (CON-18) */
+        get: operations["consentGetPreferenceCenter"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/preference-centers/{legalEntityId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue (or re-read) the legal entity's preference-centre link (CON-18)
+         * @description Coalesces on first publish — a later call returns the same key, the same pattern every other public-facing consent surface uses.
+         */
+        post: operations["consentPublishPreferenceCenter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/consent/preference-centers/{legalEntityId}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke the legal entity's current preference-centre link (CON-18) */
+        post: operations["consentRetirePreferenceCenter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/preference-centers/{key}/start-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send an OTP to the identifier the preference-centre page collected (CON-18)
+         * @description The path key names a legal entity's published preference centre. Only e-mail and phone identifiers have an OTP channel.
+         */
+        post: operations["consentStartPreferenceVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/preference-centers/{key}/view": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Every active purpose of the tenant, with the subject's own current decision overlaid (CON-18)
+         * @description Requires a verified OTP against the given identifier (consentStartPreferenceVerification). Once verified in this session, later calls may omit code.
+         */
+        post: operations["consentViewPreferenceCenter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/preference-centers/{key}/update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grant, refuse or withdraw any active purpose in one call (CON-18, the self-service half of CON-13's withdrawal)
+         * @description Requires a verified OTP against the given identifier, same as consentViewPreferenceCenter. Unlike a collection-point submission, withdrawal is allowed and nothing is required to be decided.
+         */
+        post: operations["consentUpdatePreferenceCenter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/v1/consents": {
         parameters: {
             query?: never;
@@ -8120,6 +8234,41 @@ export interface components {
             /** @enum {string} */
             key_management: "openbao_transit" | "local_development";
         };
+        ConsentPreferenceCenterLink: {
+            /** @description Null when no preference centre has been published for this legal entity yet (CON-18) */
+            public_key?: string | null;
+        };
+        ConsentPreferenceItem: {
+            code: string;
+            version: number;
+            name: string;
+            description?: string;
+            text?: string;
+            explicit_text?: string;
+            is_sensitive: boolean;
+            /** @enum {string} */
+            decision?: "ACTIVE" | "NOT_GIVEN" | "WITHDRAWN" | "EXPIRED";
+            preferences?: {
+                code: string;
+                name: string;
+                pref_type: string;
+                options?: {
+                    value: string;
+                    label: string;
+                }[];
+            }[];
+            current?: Record<string, never> | null;
+            expires_at?: components["schemas"]["Timestamp"];
+        };
+        ConsentPreferenceCenter: {
+            identifiers: {
+                type: string;
+                masked: string;
+                primary: boolean;
+                verified: boolean;
+            }[];
+            purposes: components["schemas"]["ConsentPreferenceItem"][];
+        };
         BreachClock: {
             due_at: components["schemas"]["Timestamp"];
             /** @description Last moment for a late notice with its reason (15 days, decisions Q-07) */
@@ -12410,6 +12559,214 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    consentGetPreferenceCenter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                legalEntityId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentPreferenceCenterLink"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    consentPublishPreferenceCenter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                legalEntityId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentPreferenceCenterLink"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    consentRetirePreferenceCenter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                legalEntityId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    consentStartPreferenceVerification: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    identifier: components["schemas"]["SubjectIdentifier"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        verification_id: components["schemas"]["Uuid"];
+                        /** @enum {string} */
+                        channel: "sms" | "email";
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    consentViewPreferenceCenter: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    verification_id: components["schemas"]["Uuid"];
+                    code?: string;
+                    identifier: components["schemas"]["SubjectIdentifier"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentPreferenceCenter"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    consentUpdatePreferenceCenter: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    verification_id: components["schemas"]["Uuid"];
+                    code?: string;
+                    identifier: components["schemas"]["SubjectIdentifier"];
+                    decisions: components["schemas"]["ConsentDecisionInput"][];
+                    /** @enum {string} */
+                    language?: "th" | "en";
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     consentSubmitPublicConsent: {

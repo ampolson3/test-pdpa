@@ -2500,6 +2500,43 @@ the rest of this module's own test suite already does here. Not done: magic_link
 design for either yet — the column already anticipates them); a portal-side resend/rate-limit UI beyond what
 IAM-05's own 5-attempt OTP cap already provides.
 
+### CON-18 ศูนย์ตั้งค่าความเป็นส่วนตัว (`docs/modules/CON.md#con-18`) — done, OTP only
+No new table — `platform.public_keys.entity_type` already had `"portal"` seeded in the baseline migration,
+unused until now (`publickeys.EntityPreferenceCenter`); the key stands directly for an `org.legal_entities`
+row, the same granularity CON-09's own collection points use. `internal/consent/service/preferences.go`:
+`PublishPreferenceCenter`/`RetirePreferenceCenter`/`GetPreferenceCenterLink` (admin,
+`consent.collectionpoint.{read,publish,delete}` — no new permission code); `StartPreferenceVerification` reuses
+CON-19's own IAM-05 OTP primitive under a distinct purpose (`"preference_center"`, already reserved) so a
+plain consent-form OTP can never double as a preference-centre session; `GetPreferenceCenter` shows every
+active purpose in the tenant with the subject's current decision overlaid; `UpdatePreferences` lets the
+subject grant, refuse *or withdraw* any of them in one call — CON-19's own "a public submission can't
+withdraw" rule doesn't apply here since every call is OTP-verified first. `Record()` was refactored to extract
+its own core (`writeDecisions`) so `UpdatePreferences` reuses the exact same hash-chained receipt +
+transaction + status-projection + outbox logic, validating against a synthetic `CollectionPoint{Purposes:
+...}` built from every active purpose instead of one form's own list. Since
+`consent_receipts.collection_point_id` is a hard NOT NULL FK and the preference centre isn't modelled as a
+collection point, `channelForPreferenceUpdate` attributes the receipt to a real active collection point (one
+already showing the decided purpose when there is one, else any active point) — a disclosed limitation.
+`verifyPreferenceIdentity` lets one OTP code cover both a view and a later update in the same session (falling
+back to the side-effect-free `VerifiedIdentifier` check once `VerifyOTP` has already decided the row, instead
+of burning IAM-05's 5-attempt cap twice for one legitimate code).
+
+API: admin `GET`/`POST .../publish`/`POST .../retire` on `/admin/v1/consent/preference-centers/{legalEntityId}`;
+public `POST /public/v1/preference-centers/{key}/start-verification`, `.../view`, `.../update`
+(`Idempotency-Key` required on all three). UI: `/consent/collection-points` gained a "Preference centre"
+section (legal-entity picker, publish/retire, hosted link) — no new admin page, reusing the existing
+legal-entity-picker pattern. Portal: `/[locale]/preferences/[key]` — send code → verify → a list of every
+active purpose with keep/consent/withdraw choices, ending in a receipt number. Tests: unit
+(`internal/consent/service/preferences_test.go` — grant then withdraw both record and both return a receipt;
+every read/write refused without a correct OTP against the exact identifier; publish/retire/re-publish link
+lifecycle; two-tenant isolation of the verification id), HTTP contract (`internal/consent/http/handler_test.go`
+— the full publish → start-verification → view → update(grant) → update(withdraw) → retire chain through the
+real validator + AuthZ + public-key + Idempotency + Tx chain). Not verified live against a real Postgres/Redis
+— the same environment limitation this codebase's other recent passes already disclosed; every test compiles
+and vets clean and skips the same way the rest of this module's own test suite already does here. Not done:
+magic_link/idp methods (no consumer yet, same as CON-19); a separate communication-channel opt-out model
+beyond a purpose's own `Preferences` sub-choices (none exists in this schema, so none was invented).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

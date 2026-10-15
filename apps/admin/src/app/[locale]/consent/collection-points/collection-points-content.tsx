@@ -10,6 +10,8 @@ import {
   useCollectionPoints,
   useConsentPurposes,
   useLegalEntities,
+  usePreferenceCenterLink,
+  usePreferenceCenterMutations,
   type CollectionPointInput,
   type ConsentChecklist,
   type ConsentCollectionPoint,
@@ -70,7 +72,58 @@ export function CollectionPointsContent({ portalUrl }: { portalUrl: string }) {
           )}
         </section>
       </div>
+      <PreferenceCenterPanel portalUrl={portalUrl} />
     </main>
+  );
+}
+
+// CON-18: one self-service preference-centre link per legal entity, letting a data subject view and edit
+// every active purpose's consent themselves (and withdraw, unlike a public form) once OTP-verified.
+function PreferenceCenterPanel({ portalUrl }: { portalUrl: string }) {
+  const t = useTranslations("consent");
+  const locale = useLocale();
+  const canPublish = usePermission("consent.collectionpoint.publish");
+  const canRetire = usePermission("consent.collectionpoint.delete");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const entities = useLegalEntities(client);
+  const [entityId, setEntityId] = useState("");
+  const chosen = entityId || entities.data?.[0]?.id || "";
+  const link = usePreferenceCenterLink(client, chosen || undefined);
+  const m = usePreferenceCenterMutations(client);
+  const url = link.data?.public_key ? `${portalUrl.replace(/\/$/, "")}/${locale}/preferences/${link.data.public_key}` : "";
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="preference-center-panel">
+      <div>
+        <h2 className="font-semibold">{t("pc.title")}</h2>
+        <p className="text-slate-600">{t("pc.intro")}</p>
+      </div>
+      <label className="block max-w-sm space-y-0.5">
+        <span className="font-medium">{t("legalEntity")}</span>
+        <select className={input} value={chosen} onChange={(e) => setEntityId(e.target.value)}>
+          {entities.data?.map((e) => <option key={e.id} value={e.id}>{e.name_th}</option>)}
+        </select>
+      </label>
+      {link.data?.public_key ? (
+        <dl className="space-y-2">
+          <div>
+            <dt className="font-medium">{t("pc.hostedLink")}</dt>
+            <dd className="flex flex-wrap items-center gap-2">
+              <a className="break-all text-sky-700 underline" href={url} target="_blank" rel="noreferrer" data-testid="pc-link">{url}</a>
+              <Button variant="ghost" onClick={() => navigator.clipboard?.writeText(url)}>{t("copy")}</Button>
+            </dd>
+          </div>
+          {canRetire && (
+            <div className="border-t border-slate-100 pt-3">
+              <Button variant="secondary" onClick={() => m.retire.mutate(chosen)} disabled={m.retire.isPending} data-testid="pc-retire">{t("pc.retire")}</Button>
+            </div>
+          )}
+        </dl>
+      ) : (
+        canPublish && <Button onClick={() => m.publish.mutate(chosen)} disabled={!chosen || m.publish.isPending} data-testid="pc-publish">{t("pc.publish")}</Button>
+      )}
+      {(m.publish.isError || m.retire.isError) && <p className="text-red-700" role="alert">{problemText(m.publish.error ?? m.retire.error)}</p>}
+    </section>
   );
 }
 

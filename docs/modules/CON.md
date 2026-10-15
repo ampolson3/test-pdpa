@@ -689,6 +689,53 @@ off-site, กับทดสอบ `MaxPages` อีกเคส), HTTP contract
 
 **หมายเหตุ:** ดึงเข้า P1: ต้องมีช่องทางถอนที่ง่ายเท่ากับการให้ (ม.19)
 
+**Implementation (CON-18) — done, OTP only; magic link deferred (no consumer, same as CON-19):** no new table —
+`platform.public_keys` already had `entity_type` value `"portal"` seeded in the baseline migration, unused
+until now (`publickeys.EntityPreferenceCenter`); the key stands directly for an `org.legal_entities` row, the
+same granularity CON-09's own collection points use, so one legal entity gets one preference-centre link.
+`internal/consent/service/preferences.go`: `PublishPreferenceCenter`/`RetirePreferenceCenter`/
+`GetPreferenceCenterLink` (admin, `consent.collectionpoint.{read,publish,delete}` — a preference centre is
+just another publishable public consent surface, no new permission code); `StartPreferenceVerification` reuses
+CON-19's own IAM-05 OTP primitive under a distinct purpose (`"preference_center"`, already reserved in
+`iamservice.verificationPurposes`) so a plain consent-form OTP can never double as a preference-centre
+session; `GetPreferenceCenter` shows every active purpose in the tenant (not one form's own list) with the
+subject's current decision and preferences overlaid; `UpdatePreferences` lets the subject grant, refuse *or
+withdraw* any of them in one call — `Record()`'s own "a public submission can't withdraw" rule (CON-19) simply
+doesn't apply, since every preference-centre call is OTP-verified first. `Record()` was refactored to extract
+its own core (`writeDecisions`) so `UpdatePreferences` reuses the exact same hash-chained receipt + transaction
++ status-projection + outbox logic without duplicating it, validating decisions against a synthetic
+`CollectionPoint{Purposes: ...}` built from every active purpose instead of one real form's list.
+`consent.consent_receipts.collection_point_id` is a hard NOT NULL FK and the preference centre isn't modelled
+as a collection point, so `channelForPreferenceUpdate` attributes the receipt to a real active collection
+point — one already showing the decided purpose when there is one, else any active point of the tenant — a
+disclosed, deliberate limitation (CLAUDE.md's "minimal slice" pattern): the receipt's channel then names
+wherever that purpose happens to also be collected, not literally "the preference centre."
+`verifyPreferenceIdentity` lets one OTP code cover both a view and a later update in the same session: once
+`VerifyOTP` has decided a verification "verified", calling it again errors `ErrVerificationDecided` rather than
+re-checking the code (and would otherwise burn IAM-05's own 5-attempt cap twice for one legitimate code), so
+the gate falls back to the side-effect-free `VerifiedIdentifier` check once a code has already been consumed.
+
+API: `GET`/`POST .../publish`/`POST .../retire` on `/admin/v1/consent/preference-centers/{legalEntityId}`;
+public `POST /public/v1/preference-centers/{key}/start-verification`, `.../view`, `.../update` (`Idempotency-Key`
+required on all three, rule 10 read literally). UI: `/consent/collection-points` gained a "Preference centre"
+section (legal-entity picker, publish/retire, the hosted link) — no new page, since the existing collection-
+points screen already has the legal-entity picker pattern this needed. The portal gained
+`/[locale]/preferences/[key]` (`apps/portal/src/lib/preferences.ts` + `actions.ts` +
+`preference-center-form.tsx`): a three-phase flow — send code → verify → a list of every active purpose with
+radio choices (keep / consent / withdraw, withdraw only shown once a purpose is already `ACTIVE`) — ending in
+the same kind of receipt number the public consent form shows. Tests: unit
+(`internal/consent/service/preferences_test.go` — the acceptance criterion directly: grant then withdraw both
+record and both return a receipt; every read/write refused without a correct OTP against the exact identifier;
+publish/retire/re-publish link lifecycle; two-tenant isolation of the verification id), HTTP contract
+(`internal/consent/http/handler_test.go` — the full publish → start-verification → view → update(grant) →
+update(withdraw) → retire chain through the real validator + AuthZ + public-key + Idempotency + Tx chain, plus
+404s for an unknown or retired key). Not verified live against a real Postgres/Redis — the same environment
+limitation this codebase's other recent passes already disclosed; every test compiles and vets clean and skips
+the same way the rest of this module's own test suite already does here. Not done: magic_link/idp methods (no
+consumer or design for either yet, same as CON-19); "ช่องทางการสื่อสาร" (communication-channel preferences
+beyond a purpose's own `Preferences` sub-choices) — no separate channel-opt-out model exists in this schema
+distinct from a purpose's preferences, so none was invented for this pass.
+
 <a id="con-19"></a>
 ### CON-19 ยืนยันตัวตนก่อนบันทึก
 
