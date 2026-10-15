@@ -2619,6 +2619,54 @@ compiles and vets clean and skips the same way the rest of this suite already do
 `pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/admin build`/`typecheck` and
 `pnpm --filter @pdpa/portal build` all verified clean.
 
+### CON-06 ปรับแต่งดีไซน์และหลายภาษา (`docs/modules/CON.md#con-06`) — done
+`cookie.banner_configs.theme`/`texts` were already `jsonb` columns from CON-01's own baseline migration —
+the service just always wrote `theme = '{}'` and `texts` had no slot for a third language; this feature is
+entirely new Go/TS code against columns that already existed, no migration. `internal/cookie/service/
+banners.go` gained `BannerTheme` (primary/text/button-text color, logo URL, docking `position` top/bottom/
+center, a length-capped `custom_css`) and `BannerTexts.Translations map[string]BannerTranslation` — an
+open-ended language-code-keyed map alongside the existing fixed th/en fields, stored in the same `texts`
+jsonb rather than a new column. `validateTheme` screens `custom_css` (2000-char cap, a plain substring check
+for `<script`/`javascript:`/`@import`/`expression(`/`</style` — cosmetic styling injected into the tenant's
+own site, not arbitrary third-party content, so a cap-and-screen is proportionate rather than a full CSS
+parser) and `position` against a fixed enum; `validateTexts` requires every translation's four core fields
+once a language code is added. `CreateBannerConfig`/`UpdateBannerConfigDraft`/`PublishBannerConfig`/
+`PublicBannerConfig` all now round-trip `theme` end to end — draft, publish and the public SDK read share
+the exact same persisted value, closing the acceptance criterion's own "เห็นผลใน preview และบนเว็บหลัง
+publish" literally (a unit test proves the draft read-back and the post-publish public read both carry the
+same theme/translation).
+
+The browser-language check ("ตรวจภาษา browser") is `packages/cookie-sdk/src/banner.ts`'s new `resolveCopy`:
+walks `navigator.languages` in the visitor's own preference order, and the first one that isn't `th`/`en`
+(those already have their own dedicated fields and existing fallback logic) and has a matching tenant
+translation wins; otherwise the existing th/en `document.documentElement.lang` logic is unchanged. Matched
+by primary language subtag (`zh-TW` matches a `zh` translation) so a region-qualified browser locale isn't
+missed. `resolveCopy` takes its language list and document-lang as optional parameters (real calls from
+`renderBanner` omit them and it reads the actual browser state) purely so the acceptance criterion is
+unit-testable without a DOM/jsdom dependency this package doesn't otherwise need. Theme application:
+`applyTheme` sets three CSS custom properties (`--pdpa-cc-primary/-text/-btn-text`) and a `data-position`
+attribute consumed by the existing stylesheet (now written against `var(..., <default>)` instead of
+hard-coded colors, so an unthemed banner looks exactly as it did before this feature); `custom_css` is
+injected as its own `<style>` tag, replaced on every banner fetch so an edited/removed theme never leaves a
+stale rule behind. A `logo_url` renders as a small `<img>` above the title. Bundle grew from 3.51 KB to
+**4.06 KB gzip** — still far inside the 30 KB budget (CON-01's own acceptance criterion).
+
+API: `theme` added to `CookieBannerConfigInput`/`CookieBannerConfig`/`CookiePublicBanner`, `translations`
+added to `CookieBannerTexts` (all additive, no breaking change to existing consumers). UI:
+`/settings/cookie-banners`' banner editor gained a design section (color/logo/position/custom-CSS fields +
+a live preview box reflecting the colors/logo/position as they're typed — the literal "เห็นผลใน preview")
+and an extra-languages section (add/remove a language code, edit its four fields). Tests: unit
+(`con06_test.go` — theme/translations persist through create → draft read-back → publish → public read,
+same acceptance criterion the module doc names; position/custom-CSS/incomplete-translation validation),
+HTTP contract (theme + a zh translation round-tripping through the real validator), `packages/cookie-sdk/
+src/banner.test.ts` (`resolveCopy`'s own browser-language-match acceptance criterion, including the
+region-subtag case and the "en already has a dedicated field" non-override case). Not verified live against
+a real Postgres/Redis — the same environment limitation this session's other recent passes already
+disclosed; every Go test compiles and vets clean and skips the same way the rest of this module's own test
+suite already does here. `go build ./...`, `go vet ./...`, `go test -p 1 ./...` (no regressions),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/cookie-sdk
+test` (unit + build + size check) and `pnpm --filter @pdpa/admin build`/`typecheck` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

@@ -44,9 +44,26 @@ func cookieDomain(ctx context.Context) (publickeys.Key, error) {
 }
 
 func textsWire(t cookie.BannerTexts) CookieBannerTexts {
-	return CookieBannerTexts{TitleTh: t.TitleTh, TitleEn: strPtr(t.TitleEn), DescriptionTh: strPtr(t.DescriptionTh), DescriptionEn: strPtr(t.DescriptionEn),
+	out := CookieBannerTexts{TitleTh: t.TitleTh, TitleEn: strPtr(t.TitleEn), DescriptionTh: strPtr(t.DescriptionTh), DescriptionEn: strPtr(t.DescriptionEn),
 		AcceptAllTh: t.AcceptAllTh, AcceptAllEn: strPtr(t.AcceptAllEn), RejectAllTh: t.RejectAllTh, RejectAllEn: strPtr(t.RejectAllEn),
 		SettingsTh: t.SettingsTh, SettingsEn: strPtr(t.SettingsEn)}
+	if len(t.Translations) > 0 {
+		m := make(map[string]CookieBannerTranslation, len(t.Translations))
+		for lang, tr := range t.Translations {
+			m[lang] = CookieBannerTranslation{Title: tr.Title, Description: strPtr(tr.Description), AcceptAll: tr.AcceptAll, RejectAll: tr.RejectAll, Settings: tr.Settings}
+		}
+		out.Translations = &m
+	}
+	return out
+}
+
+func themeWire(t cookie.BannerTheme) *CookieBannerTheme {
+	out := &CookieBannerTheme{PrimaryColor: strPtr(t.PrimaryColor), TextColor: strPtr(t.TextColor), ButtonTextColor: strPtr(t.ButtonTextColor), LogoUrl: strPtr(t.LogoURL), CustomCss: strPtr(t.CustomCSS)}
+	if t.Position != "" {
+		v := CookieBannerThemePosition(t.Position)
+		out.Position = &v
+	}
+	return out
 }
 
 func strPtr(s string) *string {
@@ -73,7 +90,7 @@ func (h *Strict) CookieGetPublicBanner(ctx context.Context, _ CookieGetPublicBan
 	if err != nil {
 		return nil, err
 	}
-	out := CookiePublicBanner{Id: b.ID, DomainId: b.DomainID, VersionNo: int(b.VersionNo), Layout: CookiePublicBannerLayout(b.Layout), Texts: textsWire(b.Texts),
+	out := CookiePublicBanner{Id: b.ID, DomainId: b.DomainID, VersionNo: int(b.VersionNo), Layout: CookiePublicBannerLayout(b.Layout), Theme: themeWire(b.Theme), Texts: textsWire(b.Texts),
 		Categories: make([]CookieCategory, 0, len(cats))}
 	for _, c := range cats {
 		out.Categories = append(out.Categories, CookieCategory{Id: c.ID, Code: c.Code, NameTh: c.NameTh, NameEn: strPtr(c.NameEn),

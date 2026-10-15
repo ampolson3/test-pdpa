@@ -4,6 +4,14 @@
 // than this standalone, CDN-embedded bundle can afford against its own 30 KB gzip ceiling, CON-01's own
 // acceptance criterion).
 
+export interface BannerTranslation {
+  title: string;
+  description?: string;
+  accept_all: string;
+  reject_all: string;
+  settings: string;
+}
+
 export interface BannerTexts {
   title_th: string;
   title_en?: string;
@@ -15,6 +23,18 @@ export interface BannerTexts {
   reject_all_en?: string;
   settings_th: string;
   settings_en?: string;
+  /** CON-06: extra languages beyond th/en, keyed by ISO code — picked by the visitor's own browser language */
+  translations?: Record<string, BannerTranslation>;
+}
+
+/** CON-06: design customization — colors, logo, docking edge and a tenant's own limited custom CSS */
+export interface BannerTheme {
+  primary_color?: string;
+  text_color?: string;
+  button_text_color?: string;
+  logo_url?: string;
+  position?: 'top' | 'bottom' | 'center';
+  custom_css?: string;
 }
 
 export interface Category {
@@ -42,6 +62,7 @@ export interface PublicBanner {
   domain_id: string;
   version_no: number;
   layout: 'bar' | 'modal' | 'corner';
+  theme?: BannerTheme;
   texts: BannerTexts;
   categories: Category[];
   script_rules?: ScriptRule[];

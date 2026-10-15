@@ -25,17 +25,67 @@ var bannerLayouts = []string{"bar", "modal", "corner"}
 // these are tenant-authored content, not platform i18n keys). Title/description are the banner's lead
 // copy; the three button labels are deliberately equal-weight fields — none of them defaults to anything
 // more prominent than another (the acceptance criterion's own "ปฏิเสธทั้งหมดได้ในคลิกเดียว... น้ำหนักเท่ากัน").
+// Translations (CON-06) is a tenant-added, open-ended map of ISO language code -> this same copy in a
+// third (or further) language — the SDK picks one by the visitor's own browser language, falling back to
+// en then th; unlike PLT-16's documents (hard-coded to exactly th/en across rendering/validation), banner
+// copy is plain visitor-facing text with no merge fields or legal clause machinery to generalize, so a
+// third UI language costs nothing extra here.
 type BannerTexts struct {
-	TitleTh       string `json:"title_th"`
-	TitleEn       string `json:"title_en,omitempty"`
-	DescriptionTh string `json:"description_th"`
-	DescriptionEn string `json:"description_en,omitempty"`
-	AcceptAllTh   string `json:"accept_all_th"`
-	AcceptAllEn   string `json:"accept_all_en,omitempty"`
-	RejectAllTh   string `json:"reject_all_th"`
-	RejectAllEn   string `json:"reject_all_en,omitempty"`
-	SettingsTh    string `json:"settings_th"`
-	SettingsEn    string `json:"settings_en,omitempty"`
+	TitleTh       string                       `json:"title_th"`
+	TitleEn       string                       `json:"title_en,omitempty"`
+	DescriptionTh string                       `json:"description_th"`
+	DescriptionEn string                       `json:"description_en,omitempty"`
+	AcceptAllTh   string                       `json:"accept_all_th"`
+	AcceptAllEn   string                       `json:"accept_all_en,omitempty"`
+	RejectAllTh   string                       `json:"reject_all_th"`
+	RejectAllEn   string                       `json:"reject_all_en,omitempty"`
+	SettingsTh    string                       `json:"settings_th"`
+	SettingsEn    string                       `json:"settings_en,omitempty"`
+	Translations  map[string]BannerTranslation `json:"translations,omitempty"`
+}
+
+// BannerTranslation is one extra language's own copy of BannerTexts, flat (no th/en suffix — the map key
+// is already the language code).
+type BannerTranslation struct {
+	Title       string `json:"title"`
+	Description string `json:"description,omitempty"`
+	AcceptAll   string `json:"accept_all"`
+	RejectAll   string `json:"reject_all"`
+	Settings    string `json:"settings"`
+}
+
+// BannerTheme is the banner's own look (CON-06): colors, an optional logo, which edge of the viewport it
+// docks to, and a tenant's own limited custom CSS. CustomCSS is capped and screened for the obvious
+// script/navigation vectors (sanitizeCustomCSS) rather than parsed — this is cosmetic styling injected into
+// a <style> tag on the tenant's own site, not untrusted third-party content, but the cap and screen keep an
+// honest mistake (an accidentally pasted <script> block) from doing anything.
+type BannerTheme struct {
+	PrimaryColor    string `json:"primary_color,omitempty"`
+	TextColor       string `json:"text_color,omitempty"`
+	ButtonTextColor string `json:"button_text_color,omitempty"`
+	LogoURL         string `json:"logo_url,omitempty"`
+	Position        string `json:"position,omitempty"` // top | bottom | center
+	CustomCSS       string `json:"custom_css,omitempty"`
+}
+
+var bannerThemePositions = []string{"", "top", "bottom", "center"}
+
+const maxCustomCSSLen = 2000
+
+func validateTheme(t BannerTheme) error {
+	if !contains(bannerThemePositions, t.Position) {
+		return fmt.Errorf("%w: position", ErrInvalid)
+	}
+	if len(t.CustomCSS) > maxCustomCSSLen {
+		return fmt.Errorf("%w: custom_css exceeds %d characters", ErrInvalid, maxCustomCSSLen)
+	}
+	lower := strings.ToLower(t.CustomCSS)
+	for _, bad := range []string{"<script", "javascript:", "@import", "expression(", "</style"} {
+		if strings.Contains(lower, bad) {
+			return fmt.Errorf("%w: custom_css contains a disallowed token %q", ErrInvalid, bad)
+		}
+	}
+	return nil
 }
 
 // BannerConfig is one version of a domain's banner.
@@ -45,23 +95,31 @@ type BannerConfig struct {
 	VersionNo  int32
 	Status     string // draft | published | archived
 	Layout     string
+	Theme      BannerTheme
 	Texts      BannerTexts
 	RowVersion int32
 }
 
-func toBannerConfig(id, domainID uuid.UUID, versionNo int32, status, layout string, textsRaw []byte, rowVersion int32) (BannerConfig, error) {
+func toBannerConfig(id, domainID uuid.UUID, versionNo int32, status, layout string, themeRaw, textsRaw []byte, rowVersion int32) (BannerConfig, error) {
 	var t BannerTexts
 	if len(textsRaw) > 0 {
 		if err := json.Unmarshal(textsRaw, &t); err != nil {
 			return BannerConfig{}, err
 		}
 	}
-	return BannerConfig{ID: id, DomainID: domainID, VersionNo: versionNo, Status: status, Layout: layout, Texts: t, RowVersion: rowVersion}, nil
+	var th BannerTheme
+	if len(themeRaw) > 0 {
+		if err := json.Unmarshal(themeRaw, &th); err != nil {
+			return BannerConfig{}, err
+		}
+	}
+	return BannerConfig{ID: id, DomainID: domainID, VersionNo: versionNo, Status: status, Layout: layout, Theme: th, Texts: t, RowVersion: rowVersion}, nil
 }
 
 // CreateBannerConfigInput is a new draft version's own content.
 type CreateBannerConfigInput struct {
 	Layout string
+	Theme  BannerTheme
 	Texts  BannerTexts
 }
 
@@ -69,6 +127,15 @@ func validateTexts(t BannerTexts) error {
 	if strings.TrimSpace(t.TitleTh) == "" || strings.TrimSpace(t.AcceptAllTh) == "" ||
 		strings.TrimSpace(t.RejectAllTh) == "" || strings.TrimSpace(t.SettingsTh) == "" {
 		return fmt.Errorf("%w: title_th, accept_all_th, reject_all_th and settings_th are required", ErrInvalid)
+	}
+	for lang, tr := range t.Translations {
+		if strings.TrimSpace(lang) == "" {
+			return fmt.Errorf("%w: translations has an empty language code", ErrInvalid)
+		}
+		if strings.TrimSpace(tr.Title) == "" || strings.TrimSpace(tr.AcceptAll) == "" ||
+			strings.TrimSpace(tr.RejectAll) == "" || strings.TrimSpace(tr.Settings) == "" {
+			return fmt.Errorf("%w: translations[%s] is missing a required field", ErrInvalid, lang)
+		}
 	}
 	return nil
 }
@@ -89,7 +156,13 @@ func (s *Service) CreateBannerConfig(ctx context.Context, domainID uuid.UUID, in
 	if err := validateTexts(in.Texts); err != nil {
 		return BannerConfig{}, err
 	}
-	themeJSON := []byte(`{}`)
+	if err := validateTheme(in.Theme); err != nil {
+		return BannerConfig{}, err
+	}
+	themeJSON, err := json.Marshal(in.Theme)
+	if err != nil {
+		return BannerConfig{}, err
+	}
 	textsJSON, err := json.Marshal(in.Texts)
 	if err != nil {
 		return BannerConfig{}, err
@@ -109,7 +182,7 @@ func (s *Service) CreateBannerConfig(ctx context.Context, domainID uuid.UUID, in
 	if err != nil {
 		return BannerConfig{}, err
 	}
-	bc, err := toBannerConfig(row.ID, row.DomainID, row.VersionNo, row.Status, row.Layout, row.Texts, row.RowVersion)
+	bc, err := toBannerConfig(row.ID, row.DomainID, row.VersionNo, row.Status, row.Layout, row.Theme, row.Texts, row.RowVersion)
 	if err != nil {
 		return BannerConfig{}, err
 	}
@@ -128,7 +201,7 @@ func (s *Service) GetBannerConfig(ctx context.Context, id uuid.UUID) (BannerConf
 	if err != nil {
 		return BannerConfig{}, err
 	}
-	return toBannerConfig(row.ID, row.DomainID, row.VersionNo, row.Status, row.Layout, row.Texts, row.RowVersion)
+	return toBannerConfig(row.ID, row.DomainID, row.VersionNo, row.Status, row.Layout, row.Theme, row.Texts, row.RowVersion)
 }
 
 // ListBannerConfigs returns every version of a domain's banner, newest first.
@@ -146,7 +219,7 @@ func (s *Service) ListBannerConfigs(ctx context.Context, domainID uuid.UUID) ([]
 	}
 	out := make([]BannerConfig, 0, len(rows))
 	for _, r := range rows {
-		bc, err := toBannerConfig(r.ID, r.DomainID, r.VersionNo, r.Status, r.Layout, r.Texts, r.RowVersion)
+		bc, err := toBannerConfig(r.ID, r.DomainID, r.VersionNo, r.Status, r.Layout, r.Theme, r.Texts, r.RowVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -167,12 +240,19 @@ func (s *Service) UpdateBannerConfigDraft(ctx context.Context, id uuid.UUID, row
 	if err := validateTexts(in.Texts); err != nil {
 		return BannerConfig{}, err
 	}
+	if err := validateTheme(in.Theme); err != nil {
+		return BannerConfig{}, err
+	}
+	themeJSON, err := json.Marshal(in.Theme)
+	if err != nil {
+		return BannerConfig{}, err
+	}
 	textsJSON, err := json.Marshal(in.Texts)
 	if err != nil {
 		return BannerConfig{}, err
 	}
 	n, err := cookiestore.New(pdb.MustTxFromContext(ctx)).UpdateBannerConfigDraft(ctx, cookiestore.UpdateBannerConfigDraftParams{
-		ID: id, Layout: in.Layout, Theme: []byte(`{}`), Texts: textsJSON, RowVersion: rowVersion,
+		ID: id, Layout: in.Layout, Theme: themeJSON, Texts: textsJSON, RowVersion: rowVersion,
 	})
 	if err != nil {
 		return BannerConfig{}, err
@@ -239,6 +319,7 @@ type PublicBanner struct {
 	DomainID  uuid.UUID
 	VersionNo int32
 	Layout    string
+	Theme     BannerTheme
 	Texts     BannerTexts
 }
 
@@ -253,11 +334,11 @@ func (s *Service) PublicBannerConfig(ctx context.Context, domainID uuid.UUID) (P
 	if err != nil {
 		return PublicBanner{}, err
 	}
-	bc, err := toBannerConfig(row.ID, row.DomainID, row.VersionNo, row.Status, row.Layout, row.Texts, row.RowVersion)
+	bc, err := toBannerConfig(row.ID, row.DomainID, row.VersionNo, row.Status, row.Layout, row.Theme, row.Texts, row.RowVersion)
 	if err != nil {
 		return PublicBanner{}, err
 	}
-	return PublicBanner{ID: bc.ID, DomainID: domainID, VersionNo: bc.VersionNo, Layout: bc.Layout, Texts: bc.Texts}, nil
+	return PublicBanner{ID: bc.ID, DomainID: domainID, VersionNo: bc.VersionNo, Layout: bc.Layout, Theme: bc.Theme, Texts: bc.Texts}, nil
 }
 
 // PublicCategories is the public, permission-free twin of ListCategories for the SDK's own settings panel.

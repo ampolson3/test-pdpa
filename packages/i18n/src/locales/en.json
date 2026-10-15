@@ -3171,6 +3171,26 @@
       "rejectAllTh": "Reject-all button label",
       "settingsTh": "Settings button label"
     },
+    "theme": {
+      "heading": "Design (CON-06)",
+      "primaryColor": "Primary color",
+      "textColor": "Text color",
+      "buttonTextColor": "Button text color",
+      "logoUrl": "Logo URL",
+      "position": "Position",
+      "positionDefault": "Default",
+      "positionTop": "Top",
+      "positionBottom": "Bottom",
+      "positionCenter": "Center",
+      "customCss": "Custom CSS (limited)",
+      "previewPositionNote": "Docks to: {position}"
+    },
+    "translations": {
+      "heading": "Extra languages (CON-06)",
+      "langCode": "Language code (e.g. zh)",
+      "add": "Add language",
+      "remove": "Remove"
+    },
     "save": "Save",
     "cookiesTitle": "Cookies (CON-02)",
     "cookieName": "Cookie name",

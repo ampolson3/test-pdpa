@@ -217,12 +217,13 @@ func TestCookieEndpoints_Contract(t *testing.T) {
 	var customCategory cookiehttp.CookieCategory
 	_ = json.Unmarshal([]byte(body), &customCategory)
 
-	newBanner := map[string]any{"layout": "bar", "texts": map[string]any{
+	newBanner := map[string]any{"layout": "bar", "theme": map[string]any{"primary_color": "#112233", "position": "bottom"}, "texts": map[string]any{
 		"title_th": "เราใช้คุกกี้", "accept_all_th": "ยอมรับทั้งหมด", "reject_all_th": "ปฏิเสธทั้งหมด", "settings_th": "ตั้งค่า",
+		"translations": map[string]any{"zh": map[string]any{"title": "我们使用Cookie", "accept_all": "接受全部", "reject_all": "拒绝全部", "settings": "设置"}},
 	}}
 	code, body = do("POST", "/admin/v1/cookie/domains/"+domain.Id.String()+"/banner-configs", &admin, newBanner, nil)
-	if code != 201 || !strings.Contains(body, `"status":"draft"`) {
-		t.Fatalf("create banner config: %d %s", code, body)
+	if code != 201 || !strings.Contains(body, `"status":"draft"`) || !strings.Contains(body, `"primary_color":"#112233"`) || !strings.Contains(body, `我们使用Cookie`) {
+		t.Fatalf("create banner config (CON-06 theme/translations): %d %s", code, body)
 	}
 	var bc cookiehttp.CookieBannerConfig
 	_ = json.Unmarshal([]byte(body), &bc)

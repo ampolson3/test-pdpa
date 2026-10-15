@@ -526,6 +526,8 @@ export {
   type CookieCategory,
   type CookieBannerConfig,
   type CookieBannerTexts,
+  type CookieBannerTheme,
+  type CookieBannerTranslation,
   type CookieBannerConfigInput,
   type CookieCookie,
   type CookieCreateCookieInput,

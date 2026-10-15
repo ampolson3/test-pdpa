@@ -3171,6 +3171,26 @@
       "rejectAllTh": "ข้อความปุ่มปฏิเสธทั้งหมด",
       "settingsTh": "ข้อความปุ่มตั้งค่า"
     },
+    "theme": {
+      "heading": "ดีไซน์ (CON-06)",
+      "primaryColor": "สีหลัก",
+      "textColor": "สีตัวอักษร",
+      "buttonTextColor": "สีตัวอักษรปุ่ม",
+      "logoUrl": "URL โลโก้",
+      "position": "ตำแหน่ง",
+      "positionDefault": "ค่าเริ่มต้น",
+      "positionTop": "บน",
+      "positionBottom": "ล่าง",
+      "positionCenter": "กลาง",
+      "customCss": "CSS กำหนดเอง (จำกัด)",
+      "previewPositionNote": "แสดงที่: {position}"
+    },
+    "translations": {
+      "heading": "ภาษาเพิ่มเติม (CON-06)",
+      "langCode": "รหัสภาษา (เช่น zh)",
+      "add": "เพิ่มภาษา",
+      "remove": "ลบ"
+    },
     "save": "บันทึก",
     "cookiesTitle": "รายการคุกกี้ (CON-02)",
     "cookieName": "ชื่อคุกกี้",

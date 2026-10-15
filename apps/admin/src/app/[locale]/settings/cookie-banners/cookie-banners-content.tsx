@@ -24,6 +24,7 @@ import {
   type CookieDomain,
   type CookieBannerConfig,
   type CookieBannerTexts,
+  type CookieBannerTheme,
   type CookieCategory,
 } from "@pdpa/api-client";
 
@@ -38,6 +39,10 @@ function detail(e: unknown): string {
 const EMPTY_TEXTS: CookieBannerTexts = {
   title_th: "", title_en: "", description_th: "", description_en: "",
   accept_all_th: "", accept_all_en: "", reject_all_th: "", reject_all_en: "", settings_th: "", settings_en: "",
+};
+
+const EMPTY_THEME: CookieBannerTheme = {
+  primary_color: "", text_color: "", button_text_color: "", logo_url: "", position: undefined, custom_css: "",
 };
 
 export function CookieBannersContent({ apiBase }: { apiBase: string }) {
@@ -235,6 +240,7 @@ function BannerSection({ client, domain, categories, apiBase, canCreate, canUpda
   const [creating, setCreating] = useState(false);
   const [layout, setLayout] = useState<"bar" | "modal" | "corner">("bar");
   const [texts, setTexts] = useState<CookieBannerTexts>(EMPTY_TEXTS);
+  const [theme, setTheme] = useState<CookieBannerTheme>(EMPTY_THEME);
 
   const rows = configs.data ?? [];
   const draft = rows.find((c) => c.status === "draft");
@@ -245,6 +251,7 @@ function BannerSection({ client, domain, categories, apiBase, canCreate, canUpda
     setCreating(false);
     setLayout(c.layout);
     setTexts(c.texts);
+    setTheme(c.theme ?? EMPTY_THEME);
   };
 
   const startNew = () => {
@@ -252,10 +259,11 @@ function BannerSection({ client, domain, categories, apiBase, canCreate, canUpda
     setCreating(true);
     setLayout("bar");
     setTexts(EMPTY_TEXTS);
+    setTheme(EMPTY_THEME);
   };
 
   const save = () => {
-    const input = { layout, texts };
+    const input = { layout, theme, texts };
     if (editing) {
       m.update.mutate({ config: editing, input }, { onSuccess: (c) => setEditing(c) });
     } else {
@@ -309,7 +317,7 @@ function BannerSection({ client, domain, categories, apiBase, canCreate, canUpda
       )}
 
       {showForm && (
-        <BannerForm layout={layout} setLayout={setLayout} texts={texts} setTexts={setTexts} onSave={save} saving={m.create.isPending || m.update.isPending} />
+        <BannerForm layout={layout} setLayout={setLayout} texts={texts} setTexts={setTexts} theme={theme} setTheme={setTheme} onSave={save} saving={m.create.isPending || m.update.isPending} />
       )}
 
       <CookiesSection client={client} domain={domain} categories={categories} canCreate={canCreate} canDelete={canDelete} />
@@ -587,21 +595,45 @@ function ScanFindingsPanel({ client, scanId, categories, canScanUpdate }: {
   );
 }
 
-function BannerForm({ layout, setLayout, texts, setTexts, onSave, saving }: {
+function BannerForm({ layout, setLayout, texts, setTexts, theme, setTheme, onSave, saving }: {
   layout: "bar" | "modal" | "corner";
   setLayout: (v: "bar" | "modal" | "corner") => void;
   texts: CookieBannerTexts;
   setTexts: (t: CookieBannerTexts) => void;
+  theme: CookieBannerTheme;
+  setTheme: (th: CookieBannerTheme) => void;
   onSave: () => void;
   saving: boolean;
 }) {
   const t = useTranslations("cookieBanners");
+  const [newLang, setNewLang] = useState("");
   const field = (key: keyof CookieBannerTexts, label: string) => (
     <label className="block text-sm">
       {label}
-      <input value={texts[key] ?? ""} onChange={(e) => setTexts({ ...texts, [key]: e.target.value })} className={INPUT} data-testid={`banner-${key}`} />
+      <input value={(texts[key] as string) ?? ""} onChange={(e) => setTexts({ ...texts, [key]: e.target.value })} className={INPUT} data-testid={`banner-${key}`} />
     </label>
   );
+  const themeField = (key: keyof CookieBannerTheme, label: string) => (
+    <label className="block text-sm">
+      {label}
+      <input value={(theme[key] as string) ?? ""} onChange={(e) => setTheme({ ...theme, [key]: e.target.value })} className={INPUT} data-testid={`banner-theme-${key}`} />
+    </label>
+  );
+  const translations = texts.translations ?? {};
+  const addTranslation = () => {
+    const code = newLang.trim().toLowerCase();
+    if (!code || translations[code]) return;
+    setTexts({ ...texts, translations: { ...translations, [code]: { title: "", accept_all: "", reject_all: "", settings: "" } } });
+    setNewLang("");
+  };
+  const removeTranslation = (code: string) => {
+    const { [code]: _removed, ...rest } = translations;
+    setTexts({ ...texts, translations: rest });
+  };
+  const updateTranslation = (code: string, key: "title" | "accept_all" | "reject_all" | "settings", value: string) => {
+    setTexts({ ...texts, translations: { ...translations, [code]: { ...translations[code], [key]: value } } });
+  };
+
   return (
     <div className="space-y-2 border-t border-slate-100 pt-3">
       <label className="block text-sm">
@@ -617,6 +649,63 @@ function BannerForm({ layout, setLayout, texts, setTexts, onSave, saving }: {
       {field("accept_all_th", t("fields.acceptAllTh"))}
       {field("reject_all_th", t("fields.rejectAllTh"))}
       {field("settings_th", t("fields.settingsTh"))}
+
+      <h3 className="pt-2 text-sm font-medium">{t("theme.heading")}</h3>
+      <div className="grid grid-cols-2 gap-2">
+        {themeField("primary_color", t("theme.primaryColor"))}
+        {themeField("text_color", t("theme.textColor"))}
+        {themeField("button_text_color", t("theme.buttonTextColor"))}
+        {themeField("logo_url", t("theme.logoUrl"))}
+        <label className="block text-sm">
+          {t("theme.position")}
+          <select value={theme.position ?? ""} onChange={(e) => setTheme({ ...theme, position: (e.target.value || undefined) as CookieBannerTheme["position"] })} className={INPUT} data-testid="banner-theme-position">
+            <option value="">{t("theme.positionDefault")}</option>
+            <option value="top">{t("theme.positionTop")}</option>
+            <option value="bottom">{t("theme.positionBottom")}</option>
+            <option value="center">{t("theme.positionCenter")}</option>
+          </select>
+        </label>
+      </div>
+      <label className="block text-sm">
+        {t("theme.customCss")}
+        <textarea value={theme.custom_css ?? ""} onChange={(e) => setTheme({ ...theme, custom_css: e.target.value })} className={INPUT} rows={3} data-testid="banner-theme-custom-css" />
+      </label>
+
+      <div
+        className="rounded-md border border-slate-300 p-3 text-sm"
+        style={{ backgroundColor: theme.primary_color || "#1f2937", color: theme.text_color || "#ffffff" }}
+        data-testid="banner-preview"
+      >
+        <div className="flex items-center gap-2">
+          {theme.logo_url && <img src={theme.logo_url} alt="" className="h-5" />}
+          <strong>{texts.title_th || t("fields.titleTh")}</strong>
+        </div>
+        <p className="mt-1">{texts.description_th}</p>
+        <div className="mt-2 flex gap-2">
+          <span className="rounded px-2 py-1" style={{ color: theme.button_text_color || theme.primary_color || "#1f2937", backgroundColor: theme.text_color || "#ffffff" }}>{texts.accept_all_th || t("fields.acceptAllTh")}</span>
+          <span className="rounded px-2 py-1" style={{ color: theme.button_text_color || theme.primary_color || "#1f2937", backgroundColor: theme.text_color || "#ffffff" }}>{texts.reject_all_th || t("fields.rejectAllTh")}</span>
+        </div>
+        <p className="mt-1 text-xs opacity-75">{t("theme.previewPositionNote", { position: theme.position ?? t("theme.positionDefault") })}</p>
+      </div>
+
+      <h3 className="pt-2 text-sm font-medium">{t("translations.heading")}</h3>
+      {Object.entries(translations).map(([code, tr]) => (
+        <div key={code} className="space-y-1 rounded-md border border-slate-200 p-2" data-testid={`banner-translation-${code}`}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium uppercase">{code}</span>
+            <button type="button" onClick={() => removeTranslation(code)} className="text-xs text-red-600">{t("translations.remove")}</button>
+          </div>
+          <input value={tr.title} onChange={(e) => updateTranslation(code, "title", e.target.value)} placeholder={t("fields.titleTh")} className={INPUT} />
+          <input value={tr.accept_all} onChange={(e) => updateTranslation(code, "accept_all", e.target.value)} placeholder={t("fields.acceptAllTh")} className={INPUT} />
+          <input value={tr.reject_all} onChange={(e) => updateTranslation(code, "reject_all", e.target.value)} placeholder={t("fields.rejectAllTh")} className={INPUT} />
+          <input value={tr.settings} onChange={(e) => updateTranslation(code, "settings", e.target.value)} placeholder={t("fields.settingsTh")} className={INPUT} />
+        </div>
+      ))}
+      <div className="flex gap-2">
+        <input value={newLang} onChange={(e) => setNewLang(e.target.value)} placeholder={t("translations.langCode")} className={INPUT} data-testid="banner-new-lang" />
+        <button type="button" onClick={addTranslation} className={BTN_SECONDARY} data-testid="banner-add-translation">{t("translations.add")}</button>
+      </div>
+
       <button type="button" onClick={onSave} disabled={saving} className={BTN} data-testid="save-banner-draft">{t("save")}</button>
     </div>
   );

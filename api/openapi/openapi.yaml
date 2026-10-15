@@ -18288,6 +18288,31 @@ components:
         reject_all_en: {type: string}
         settings_th: {type: string}
         settings_en: {type: string}
+        translations:
+          description: Extra languages beyond th/en (CON-06) — the SDK picks one by the visitor's browser language
+          type: object
+          additionalProperties: {$ref: '#/components/schemas/CookieBannerTranslation'}
+    CookieBannerTranslation:
+      type: object
+      required: [title, accept_all, reject_all, settings]
+      additionalProperties: false
+      properties:
+        title: {type: string}
+        description: {type: string}
+        accept_all: {type: string}
+        reject_all: {type: string}
+        settings: {type: string}
+    CookieBannerTheme:
+      description: Design customization (CON-06) — colors, logo, docking edge and a tenant's own limited custom CSS
+      type: object
+      additionalProperties: false
+      properties:
+        primary_color: {type: string}
+        text_color: {type: string}
+        button_text_color: {type: string}
+        logo_url: {type: string}
+        position: {type: string, enum: [top, bottom, center]}
+        custom_css: {type: string, maxLength: 2000}
     CookieBannerConfigInput:
       type: object
       required: [layout, texts]
@@ -18296,6 +18321,7 @@ components:
         layout:
           type: string
           enum: [bar, modal, corner]
+        theme: {$ref: '#/components/schemas/CookieBannerTheme'}
         texts: {$ref: '#/components/schemas/CookieBannerTexts'}
     CookieBannerConfig:
       type: object
@@ -18310,6 +18336,7 @@ components:
         layout:
           type: string
           enum: [bar, modal, corner]
+        theme: {$ref: '#/components/schemas/CookieBannerTheme'}
         texts: {$ref: '#/components/schemas/CookieBannerTexts'}
         row_version: {type: integer}
     CookiePublicBanner:
@@ -18324,6 +18351,7 @@ components:
         layout:
           type: string
           enum: [bar, modal, corner]
+        theme: {$ref: '#/components/schemas/CookieBannerTheme'}
         texts: {$ref: '#/components/schemas/CookieBannerTexts'}
         categories:
           type: array

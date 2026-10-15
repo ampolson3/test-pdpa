@@ -15,6 +15,27 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for CookieBannerThemePosition.
+const (
+	Bottom CookieBannerThemePosition = "bottom"
+	Center CookieBannerThemePosition = "center"
+	Top    CookieBannerThemePosition = "top"
+)
+
+// Valid indicates whether the value is a known member of the CookieBannerThemePosition enum.
+func (e CookieBannerThemePosition) Valid() bool {
+	switch e {
+	case Bottom:
+		return true
+	case Center:
+		return true
+	case Top:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CookiePublicBannerLayout.
 const (
 	Bar    CookiePublicBannerLayout = "bar"
@@ -185,6 +206,31 @@ type CookieBannerTexts struct {
 	SettingsTh    string  `json:"settings_th"`
 	TitleEn       *string `json:"title_en,omitempty"`
 	TitleTh       string  `json:"title_th"`
+
+	// Translations Extra languages beyond th/en (CON-06) — the SDK picks one by the visitor's browser language
+	Translations *map[string]CookieBannerTranslation `json:"translations,omitempty"`
+}
+
+// CookieBannerTheme Design customization (CON-06) — colors, logo, docking edge and a tenant's own limited custom CSS
+type CookieBannerTheme struct {
+	ButtonTextColor *string                    `json:"button_text_color,omitempty"`
+	CustomCss       *string                    `json:"custom_css,omitempty"`
+	LogoUrl         *string                    `json:"logo_url,omitempty"`
+	Position        *CookieBannerThemePosition `json:"position,omitempty"`
+	PrimaryColor    *string                    `json:"primary_color,omitempty"`
+	TextColor       *string                    `json:"text_color,omitempty"`
+}
+
+// CookieBannerThemePosition defines model for CookieBannerTheme.Position.
+type CookieBannerThemePosition string
+
+// CookieBannerTranslation defines model for CookieBannerTranslation.
+type CookieBannerTranslation struct {
+	AcceptAll   string  `json:"accept_all"`
+	Description *string `json:"description,omitempty"`
+	RejectAll   string  `json:"reject_all"`
+	Settings    string  `json:"settings"`
+	Title       string  `json:"title"`
 }
 
 // CookieCategory defines model for CookieCategory.
@@ -219,8 +265,11 @@ type CookiePublicBanner struct {
 	// Texts The banner's own bilingual copy — accept-all, reject-all and settings are deliberately equal-weight
 	// fields; none of them is more "default" than another (the acceptance criterion's own "ปฏิเสธทั้งหมดได้ใน
 	// คลิกเดียว...น้ำหนักเท่ากัน").
-	Texts     CookieBannerTexts `json:"texts"`
-	VersionNo int               `json:"version_no"`
+	Texts CookieBannerTexts `json:"texts"`
+
+	// Theme Design customization (CON-06) — colors, logo, docking edge and a tenant's own limited custom CSS
+	Theme     *CookieBannerTheme `json:"theme,omitempty"`
+	VersionNo int                `json:"version_no"`
 }
 
 // CookiePublicBannerLayout defines model for CookiePublicBanner.Layout.

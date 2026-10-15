@@ -7429,10 +7429,32 @@ export interface components {
             reject_all_en?: string;
             settings_th: string;
             settings_en?: string;
+            /** @description Extra languages beyond th/en (CON-06) — the SDK picks one by the visitor's browser language */
+            translations?: {
+                [key: string]: components["schemas"]["CookieBannerTranslation"];
+            };
+        };
+        CookieBannerTranslation: {
+            title: string;
+            description?: string;
+            accept_all: string;
+            reject_all: string;
+            settings: string;
+        };
+        /** @description Design customization (CON-06) — colors, logo, docking edge and a tenant's own limited custom CSS */
+        CookieBannerTheme: {
+            primary_color?: string;
+            text_color?: string;
+            button_text_color?: string;
+            logo_url?: string;
+            /** @enum {string} */
+            position?: "top" | "bottom" | "center";
+            custom_css?: string;
         };
         CookieBannerConfigInput: {
             /** @enum {string} */
             layout: "bar" | "modal" | "corner";
+            theme?: components["schemas"]["CookieBannerTheme"];
             texts: components["schemas"]["CookieBannerTexts"];
         };
         CookieBannerConfig: {
@@ -7443,6 +7465,7 @@ export interface components {
             status: "draft" | "published" | "archived";
             /** @enum {string} */
             layout: "bar" | "modal" | "corner";
+            theme?: components["schemas"]["CookieBannerTheme"];
             texts: components["schemas"]["CookieBannerTexts"];
             row_version: number;
         };
@@ -7453,6 +7476,7 @@ export interface components {
             version_no: number;
             /** @enum {string} */
             layout: "bar" | "modal" | "corner";
+            theme?: components["schemas"]["CookieBannerTheme"];
             texts: components["schemas"]["CookieBannerTexts"];
             categories: components["schemas"]["CookieCategory"][];
             /** @description Which scripts belong to which category (CON-02) — the SDK enables/disables matching scripts the moment a visitor's preference changes */

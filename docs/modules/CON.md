@@ -460,6 +460,15 @@ off-site, กับทดสอบ `MaxPages` อีกเคส), HTTP contract
 
 **หมายเหตุ:** ดึงเข้า P1 เพราะเป็นส่วนหนึ่งของแบนเนอร์ที่ลูกค้าใช้จริง
 
+**Implementation:** done — see CLAUDE.md's own `### CON-06` entry for the full account. `cookie.
+banner_configs.theme`/`texts` (already `jsonb` from CON-01, previously always written as `{}`/th-en-only)
+now carry a real `BannerTheme` (colors, logo, docking position, length-capped custom CSS) and an
+open-ended `translations` map alongside the fixed th/en fields — no migration needed. The SDK's own
+`resolveCopy` picks a tenant-added language by the visitor's `navigator.languages`, falling back to the
+existing th/en logic; theme colors/position apply via CSS variables, custom CSS via its own `<style>` tag.
+Admin UI gained a design editor with a live preview plus an extra-languages section on `/settings/
+cookie-banners`. Bundle: 4.06 KB gzip (within the 30 KB budget CON-01 set).
+
 <a id="con-09"></a>
 ### CON-09 แบบฟอร์มขอความยินยอม (Collection Point)
 

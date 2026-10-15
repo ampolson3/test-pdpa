@@ -146,9 +146,17 @@ func (h *Strict) CookieDeleteCategory(ctx context.Context, req CookieDeleteCateg
 // ---- banner configs ----
 
 func bannerTextsWire(t cookie.BannerTexts) CookieBannerTexts {
-	return CookieBannerTexts{TitleTh: t.TitleTh, TitleEn: strPtr(t.TitleEn), DescriptionTh: strPtr(t.DescriptionTh), DescriptionEn: strPtr(t.DescriptionEn),
+	out := CookieBannerTexts{TitleTh: t.TitleTh, TitleEn: strPtr(t.TitleEn), DescriptionTh: strPtr(t.DescriptionTh), DescriptionEn: strPtr(t.DescriptionEn),
 		AcceptAllTh: t.AcceptAllTh, AcceptAllEn: strPtr(t.AcceptAllEn), RejectAllTh: t.RejectAllTh, RejectAllEn: strPtr(t.RejectAllEn),
 		SettingsTh: t.SettingsTh, SettingsEn: strPtr(t.SettingsEn)}
+	if len(t.Translations) > 0 {
+		m := make(map[string]CookieBannerTranslation, len(t.Translations))
+		for lang, tr := range t.Translations {
+			m[lang] = CookieBannerTranslation{Title: tr.Title, Description: strPtr(tr.Description), AcceptAll: tr.AcceptAll, RejectAll: tr.RejectAll, Settings: tr.Settings}
+		}
+		out.Translations = &m
+	}
+	return out
 }
 
 func bannerTextsFromWire(t CookieBannerTexts) cookie.BannerTexts {
@@ -171,12 +179,61 @@ func bannerTextsFromWire(t CookieBannerTexts) cookie.BannerTexts {
 	if t.SettingsEn != nil {
 		out.SettingsEn = *t.SettingsEn
 	}
+	if t.Translations != nil && len(*t.Translations) > 0 {
+		out.Translations = make(map[string]cookie.BannerTranslation, len(*t.Translations))
+		for lang, tr := range *t.Translations {
+			desc := ""
+			if tr.Description != nil {
+				desc = *tr.Description
+			}
+			out.Translations[lang] = cookie.BannerTranslation{Title: tr.Title, Description: desc, AcceptAll: tr.AcceptAll, RejectAll: tr.RejectAll, Settings: tr.Settings}
+		}
+	}
+	return out
+}
+
+func bannerThemeWire(t cookie.BannerTheme) *CookieBannerTheme {
+	return &CookieBannerTheme{PrimaryColor: strPtr(t.PrimaryColor), TextColor: strPtr(t.TextColor), ButtonTextColor: strPtr(t.ButtonTextColor),
+		LogoUrl: strPtr(t.LogoURL), Position: themePositionPtr(t.Position), CustomCss: strPtr(t.CustomCSS)}
+}
+
+func themePositionPtr(p string) *CookieBannerThemePosition {
+	if p == "" {
+		return nil
+	}
+	v := CookieBannerThemePosition(p)
+	return &v
+}
+
+func bannerThemeFromWire(t *CookieBannerTheme) cookie.BannerTheme {
+	if t == nil {
+		return cookie.BannerTheme{}
+	}
+	out := cookie.BannerTheme{}
+	if t.PrimaryColor != nil {
+		out.PrimaryColor = *t.PrimaryColor
+	}
+	if t.TextColor != nil {
+		out.TextColor = *t.TextColor
+	}
+	if t.ButtonTextColor != nil {
+		out.ButtonTextColor = *t.ButtonTextColor
+	}
+	if t.LogoUrl != nil {
+		out.LogoURL = *t.LogoUrl
+	}
+	if t.Position != nil {
+		out.Position = string(*t.Position)
+	}
+	if t.CustomCss != nil {
+		out.CustomCSS = *t.CustomCss
+	}
 	return out
 }
 
 func bannerConfigWire(b cookie.BannerConfig) CookieBannerConfig {
 	return CookieBannerConfig{Id: b.ID, DomainId: b.DomainID, VersionNo: int(b.VersionNo), Status: CookieBannerConfigStatus(b.Status),
-		Layout: CookieBannerConfigLayout(b.Layout), Texts: bannerTextsWire(b.Texts), RowVersion: int(b.RowVersion)}
+		Layout: CookieBannerConfigLayout(b.Layout), Theme: bannerThemeWire(b.Theme), Texts: bannerTextsWire(b.Texts), RowVersion: int(b.RowVersion)}
 }
 
 func (h *Strict) CookieListBannerConfigs(ctx context.Context, req CookieListBannerConfigsRequestObject) (CookieListBannerConfigsResponseObject, error) {
@@ -196,7 +253,7 @@ func (h *Strict) CookieCreateBannerConfig(ctx context.Context, req CookieCreateB
 		return nil, httpx.RequestInvalid("layout")
 	}
 	b := *req.Body
-	bc, err := h.svc.CreateBannerConfig(ctx, req.Id, cookie.CreateBannerConfigInput{Layout: string(b.Layout), Texts: bannerTextsFromWire(b.Texts)})
+	bc, err := h.svc.CreateBannerConfig(ctx, req.Id, cookie.CreateBannerConfigInput{Layout: string(b.Layout), Theme: bannerThemeFromWire(b.Theme), Texts: bannerTextsFromWire(b.Texts)})
 	if err != nil {
 		return nil, ToProblem(err)
 	}
@@ -220,7 +277,7 @@ func (h *Strict) CookieUpdateBannerConfigDraft(ctx context.Context, req CookieUp
 		return nil, httpx.VersionMismatch()
 	}
 	b := *req.Body
-	bc, err := h.svc.UpdateBannerConfigDraft(ctx, req.Id, v, cookie.CreateBannerConfigInput{Layout: string(b.Layout), Texts: bannerTextsFromWire(b.Texts)})
+	bc, err := h.svc.UpdateBannerConfigDraft(ctx, req.Id, v, cookie.CreateBannerConfigInput{Layout: string(b.Layout), Theme: bannerThemeFromWire(b.Theme), Texts: bannerTextsFromWire(b.Texts)})
 	if err != nil {
 		return nil, ToProblem(err)
 	}
