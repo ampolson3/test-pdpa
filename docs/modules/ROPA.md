@@ -583,6 +583,51 @@ two-tenant isolation), HTTP contract (401, 200 with an empty list).
 
 **หมายเหตุ:** ดึงเข้า P1 (ใช้ PLT-08)
 
+**Implementation (ROPA-13) — done:** `ropa.processing_activities.status` already declared ST-05's full
+graph (draft → pending_approval → active → under_review → ended) in its CHECK constraint, but only the
+`draft/under_review → pending_approval` edge (ROPA-03's `SubmitActivity`) was implemented — this pass
+completes the rest, built directly on ST-05's own transitions rather than adopting PLT-08's generic
+engine: PLT-08 assumes one versioned blob per record (a document's full content), while an activity is a
+6-child-table relational entity, so `internal/ropa/service/versioning.go`'s `ApproveActivity` (ST-05:
+pending_approval → active, "DPO อนุมัติ") freezes a new `ropa.activity_versions` row — a full jsonb
+snapshot of the activity's core fields plus every purpose/data/retention/recipient/transfer/control row,
+the exact pattern DPIA-01's own round model established — using the already-seeded `ropa.activity.approve`
+permission (DPO-only, baseline migration 00019) and the already-existing `approved_by`/`approved_at`
+columns, unused until now. `ReturnActivity` (pending_approval → draft, "ส่งกลับ", reason kept only in the
+audit row — the table has no reason column). `RequestActivityReview` (active → under_review) is the only
+way to open an approved activity for editing again; `SaveActivity` itself now refuses direct edits unless
+`status` is `draft` or `under_review` — the acceptance criterion itself ("กิจกรรมที่อนุมัติแล้วแก้ได้ผ่าน
+เวอร์ชันใหม่เท่านั้น"). `ConfirmActivityNoChange` (under_review → active, "ยืนยันไม่เปลี่ยน") closes a
+review round with nothing to re-approve — no new version taken. `active → ended` (ROPA-14, a separate
+backlog row — "วงจรชีวิตของกิจกรรม") is deliberately left out of scope.
+
+`ListActivityVersions`/`CompareActivityVersions` are the other half of the acceptance criterion
+("เปรียบเทียบเวอร์ชัน"): the diff is computed by JSON round-tripping each snapshot into
+`map[string]any` and comparing named sections with `reflect.DeepEqual` — the same indirection DPIA-14's
+own `CompareToPrevious` already established for diffing two JSON-decoded shapes, just per named
+snapshot section here instead of per form question. Migration 00070 adds `ropa.activity_versions`
+(`version_no`, `snapshot` jsonb, `approved_by`, `approved_at`, `created_at` only — append-only, no
+`row_version`/`updated_at`), REVOKE UPDATE/DELETE/TRUNCATE in `deploy/db/10-grants.sql`'s append-only
+list alongside `platform.audit_log`/`consent.consent_transactions`/etc. (rule 4).
+
+API: `POST /admin/v1/ropa/activities/{id}/approve` / `/return` (`ropa.activity.approve`, ETag/If-Match),
+`POST .../request-review` / `/confirm-no-change` (`ropa.activity.update`, ETag/If-Match),
+`GET .../versions` (newest first), `GET .../versions/compare?from=&to=` — all on the already-seeded
+permission codes, no new permission/migration for RBAC. UI: `/ropa/activities/{id}` gained a new
+"Approval and version history" section — approve/return buttons when `pending_approval` (gated on
+`ropa.activity.approve`), a reopen-for-review button when `active`, a confirm-no-change button when
+`under_review`, a version-history list, and a from/to picker rendering the section-level diff; the
+page's own `editable` flag was widened from `status === "draft"` to `draft || under_review`, matching
+the service-layer guard exactly. Tests: unit (the full lifecycle — submit → approve freezes version 1,
+reopen → edit → submit → approve freezes version 2, the two versions diff on exactly the changed field;
+confirm-no-change takes no version; return clears the pending state with no version and re-enables
+direct edits; every invalid transition and a stale ETag; two-tenant isolation of both
+`ListActivityVersions` and `CompareActivityVersions`), HTTP contract (401/403/409/200 through the real
+validator + AuthZ, the approve-permission gate separate from the general update gate). Not verified live
+against a real Postgres/Redis — the same environment limitation this codebase's other recent passes
+(DSAR-01, BRE-01, CON-04, …) already disclosed; every test compiles and vets clean and skips the same way
+the rest of this module's own test suite already does here.
+
 <a id="ropa-16"></a>
 ### ROPA-16 ออกรายงาน RoPA
 

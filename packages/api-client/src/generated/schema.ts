@@ -2944,6 +2944,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/activities/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ROPA-13 (ST-05) — approve a pending activity (pending_approval -> active); freezes a new version snapshot */
+        post: operations["ropaApproveActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ROPA-13 (ST-05) — send a pending activity back to draft (pending_approval -> draft) */
+        post: operations["ropaReturnActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/request-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ROPA-13 (ST-05) — reopen an active activity for editing (active -> under_review); the only way to change an approved activity */
+        post: operations["ropaRequestActivityReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/confirm-no-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ROPA-13 (ST-05) — close a review round with nothing to re-approve (under_review -> active); no new version is taken */
+        post: operations["ropaConfirmActivityNoChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ROPA-13 — an activity's approved version history, newest first */
+        get: operations["ropaListActivityVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/versions/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ROPA-13 — diff two of an activity's approved versions, section by section */
+        get: operations["ropaCompareActivityVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/activities/{id}/purposes": {
         parameters: {
             query?: never;
@@ -6659,6 +6761,23 @@ export interface components {
             missing_items?: ("data" | "purpose" | "controller" | "retention" | "rights_access" | "recipient_basis" | "sensitive_consent" | "transfer_basis")[];
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
+        };
+        /** @description ROPA-13 — one approved round of a processing activity, with a full snapshot of its core fields and every child table at the moment it was approved. */
+        ActivityVersion: {
+            id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            version_no: number;
+            /** @description The frozen activity (core fields + purposes/data/retention/recipients/transfers/controls) as of this approval. */
+            snapshot: Record<string, never>;
+            approved_by?: components["schemas"]["Uuid"];
+            approved_at?: components["schemas"]["Timestamp"];
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @description ROPA-13 — one snapshot section that differs between two compared versions. */
+        ActivityVersionDiff: {
+            section: string;
+            before?: unknown;
+            after?: unknown;
         };
         ActivityPurposeInput: {
             purpose_id?: components["schemas"]["Uuid"];
@@ -15788,6 +15907,211 @@ export interface operations {
                 };
             };
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaApproveActivity: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Now active */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingActivity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaReturnActivity: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    reason?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Now draft */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingActivity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaRequestActivityReview: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Now under_review */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingActivity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaConfirmActivityNoChange: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Now active */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingActivity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaListActivityVersions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ActivityVersion"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaCompareActivityVersions: {
+        parameters: {
+            query: {
+                from: components["schemas"]["Uuid"];
+                to: components["schemas"]["Uuid"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ActivityVersionDiff"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     ropaListActivityPurposes: {

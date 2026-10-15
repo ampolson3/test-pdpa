@@ -2419,6 +2419,51 @@ tests, which already drive the real submit → DPO approve → publish chain for
 UI, the same screen DPIA-10's own approval decisions already use. Marked done as documentation only
 (backlog + module doc) — no migration, code or test changes needed.
 
+### ROPA-13 เวอร์ชันและการอนุมัติ (`docs/modules/ROPA.md#ropa-13`) — done
+`ropa.processing_activities.status` already declared ST-05's full graph (draft → pending_approval →
+active → under_review → ended) in its CHECK constraint, but only `draft/under_review → pending_approval`
+(ROPA-03's `SubmitActivity`) was implemented — this pass completes the rest, built directly on ST-05's
+own transitions rather than adopting PLT-08's generic versioning/approval engine: PLT-08 assumes one
+versioned blob per record (a document's full content), while an activity is a 6-child-table relational
+entity, so a purpose-built snapshot table fits better than forcing a second engine onto a record that
+already has its own status column and partial transition logic. `internal/ropa/service/versioning.go`'s
+`ApproveActivity` (pending_approval → active, "DPO อนุมัติ") freezes a new `ropa.activity_versions` row —
+a full jsonb snapshot of the activity's core fields plus every purpose/data/retention/recipient/
+transfer/control row, the same round-taking pattern DPIA-01 already established — using the
+already-seeded `ropa.activity.approve` permission (DPO-only, baseline migration 00019) and the
+already-existing `approved_by`/`approved_at` columns, unused until now. `ReturnActivity`
+(pending_approval → draft, reason kept only in the audit row). `RequestActivityReview` (active →
+under_review) is the only way to reopen an approved activity for editing; `SaveActivity` itself now
+refuses direct edits unless `status` is `draft` or `under_review` — the acceptance criterion itself
+("กิจกรรมที่อนุมัติแล้วแก้ได้ผ่านเวอร์ชันใหม่เท่านั้น"). `ConfirmActivityNoChange` (under_review → active,
+"ยืนยันไม่เปลี่ยน") closes a review round with nothing to re-approve — no new version taken.
+`active → ended` is ROPA-14's own "วงจรชีวิตของกิจกรรม", a separate backlog row, deliberately left out.
+
+`ListActivityVersions`/`CompareActivityVersions` cover "เปรียบเทียบเวอร์ชัน": the diff is computed by JSON
+round-tripping each snapshot into `map[string]any` and comparing named sections with `reflect.DeepEqual`
+— the same indirection DPIA-14's own `CompareToPrevious` already established, just per named snapshot
+section here instead of per form question. Migration 00070 adds `ropa.activity_versions` (`version_no`,
+`snapshot` jsonb, `approved_by`, `approved_at`, `created_at` only — append-only, no
+`row_version`/`updated_at`), added to `deploy/db/10-grants.sql`'s REVOKE UPDATE/DELETE/TRUNCATE list
+alongside `platform.audit_log`/`consent.consent_transactions`/etc. (rule 4).
+
+API: `POST /admin/v1/ropa/activities/{id}/approve` / `/return` (`ropa.activity.approve`, ETag/If-Match),
+`POST .../request-review` / `/confirm-no-change` (`ropa.activity.update`, ETag/If-Match),
+`GET .../versions` (newest first), `GET .../versions/compare?from=&to=` — all on already-seeded
+permission codes, no new RBAC migration. UI: `/ropa/activities/{id}` gained an "Approval and version
+history" section — approve/return buttons while `pending_approval` (gated on `ropa.activity.approve`), a
+reopen-for-review button while `active`, a confirm-no-change button while `under_review`, a version
+list, and a from/to picker rendering the section-level diff; the page's own `editable` flag widened from
+`status === "draft"` to `draft || under_review`, matching the service-layer guard exactly. Tests: unit
+(the full lifecycle — submit → approve freezes version 1, reopen → edit → submit → approve freezes
+version 2, the two versions diff on exactly the changed field; confirm-no-change takes no version;
+return clears the pending state with no version and re-enables direct edits; every invalid transition
+and a stale ETag; two-tenant isolation of both `ListActivityVersions` and `CompareActivityVersions`),
+HTTP contract (401/403/409/200 through the real validator + AuthZ, the approve-permission gate separate
+from the general update gate). Not verified live against a real Postgres/Redis — the same environment
+limitation this codebase's other recent passes already disclosed; every test compiles and vets clean and
+skips the same way the rest of this module's own test suite already does here.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

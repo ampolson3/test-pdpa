@@ -33,6 +33,8 @@ export type ProcessingActivityWizardInput = components["schemas"]["ProcessingAct
 export type ProcessingActivityWizardLegalReason = components["schemas"]["ProcessingActivityWizardLegalReason"];
 export type ProcessingActivityWizardRetention = components["schemas"]["ProcessingActivityWizardRetention"];
 export type ProcessingActivityWizardRecipientKind = components["schemas"]["ProcessingActivityWizardRecipientKind"];
+export type ActivityVersion = components["schemas"]["ActivityVersion"];
+export type ActivityVersionDiff = components["schemas"]["ActivityVersionDiff"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const activitiesKey = ["ropa", "activities"] as const;
@@ -170,6 +172,34 @@ export function useActivityRejections(client: ApiClient, id: string | undefined)
   });
 }
 
+/** ROPA-13 — an activity's approved version history, newest first. */
+export function useActivityVersions(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...activityKey(id ?? ""), "versions"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/versions", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** ROPA-13 — diff two of an activity's approved versions, section by section. */
+export function useCompareActivityVersions(client: ApiClient, id: string | undefined, from: string | undefined, to: string | undefined) {
+  return useQuery({
+    queryKey: [...activityKey(id ?? ""), "versions", "compare", from, to],
+    enabled: !!id && !!from && !!to,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/versions/compare", {
+        params: { path: { id: id! }, query: { from: from!, to: to! } },
+      });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
 /** Every write for one activity and its ม.39 child rows, grouped like the breach module's incident mutations. */
 export function useActivityMutations(client: ApiClient, id?: string) {
   const qc = useQueryClient();
@@ -238,6 +268,51 @@ export function useActivityMutations(client: ApiClient, id?: string) {
     submit: useMutation({
       mutationFn: async (activity: ProcessingActivity) => {
         const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/submit", {
+          params: { path: { id: activity.id }, header: ifMatch(activity.row_version) },
+        });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    /** ROPA-13 (ST-05): DPO approves a pending activity (pending_approval -> active); freezes a new version. */
+    approve: useMutation({
+      mutationFn: async (activity: ProcessingActivity) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/approve", {
+          params: { path: { id: activity.id }, header: ifMatch(activity.row_version) },
+        });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    /** ROPA-13 (ST-05): send a pending activity back to draft (pending_approval -> draft). */
+    returnToDraft: useMutation({
+      mutationFn: async (v: { activity: ProcessingActivity; reason?: string }) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/return", {
+          params: { path: { id: v.activity.id }, header: ifMatch(v.activity.row_version) },
+          body: v.reason ? { reason: v.reason } : {},
+        });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    /** ROPA-13 (ST-05): reopen an active activity for editing (active -> under_review). */
+    requestReview: useMutation({
+      mutationFn: async (activity: ProcessingActivity) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/request-review", {
+          params: { path: { id: activity.id }, header: ifMatch(activity.row_version) },
+        });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    /** ROPA-13 (ST-05): close a review round with nothing to re-approve (under_review -> active). */
+    confirmNoChange: useMutation({
+      mutationFn: async (activity: ProcessingActivity) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/confirm-no-change", {
           params: { path: { id: activity.id }, header: ifMatch(activity.row_version) },
         });
         if (error) throw error;

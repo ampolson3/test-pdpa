@@ -234,6 +234,11 @@ func (s *Service) SaveActivity(ctx context.Context, a Activity, version int32) (
 		if cur.RowVersion != version {
 			return Activity{}, ErrVersionMismatch
 		}
+		// ROPA-13: an approved activity is edited only through a review round — RequestActivityReview
+		// (active -> under_review) reopens it; pending_approval/ended are never directly editable either.
+		if cur.Status != "draft" && cur.Status != "under_review" {
+			return Activity{}, ErrInvalidTransition
+		}
 		before = &cur
 	}
 	isNew := a.ID == uuid.Nil

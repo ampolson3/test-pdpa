@@ -735,6 +735,42 @@ func (e RopaApplySuggestedItemsParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for RopaApproveActivityParamsAcceptLanguage.
+const (
+	RopaApproveActivityParamsAcceptLanguageEn RopaApproveActivityParamsAcceptLanguage = "en"
+	RopaApproveActivityParamsAcceptLanguageTh RopaApproveActivityParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaApproveActivityParamsAcceptLanguage enum.
+func (e RopaApproveActivityParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaApproveActivityParamsAcceptLanguageEn:
+		return true
+	case RopaApproveActivityParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaConfirmActivityNoChangeParamsAcceptLanguage.
+const (
+	RopaConfirmActivityNoChangeParamsAcceptLanguageEn RopaConfirmActivityNoChangeParamsAcceptLanguage = "en"
+	RopaConfirmActivityNoChangeParamsAcceptLanguageTh RopaConfirmActivityNoChangeParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaConfirmActivityNoChangeParamsAcceptLanguage enum.
+func (e RopaConfirmActivityNoChangeParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaConfirmActivityNoChangeParamsAcceptLanguageEn:
+		return true
+	case RopaConfirmActivityNoChangeParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RopaListActivityControlsParamsAcceptLanguage.
 const (
 	RopaListActivityControlsParamsAcceptLanguageEn RopaListActivityControlsParamsAcceptLanguage = "en"
@@ -969,6 +1005,24 @@ func (e RopaListActivityRejectionsParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for RopaRequestActivityReviewParamsAcceptLanguage.
+const (
+	RopaRequestActivityReviewParamsAcceptLanguageEn RopaRequestActivityReviewParamsAcceptLanguage = "en"
+	RopaRequestActivityReviewParamsAcceptLanguageTh RopaRequestActivityReviewParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaRequestActivityReviewParamsAcceptLanguage enum.
+func (e RopaRequestActivityReviewParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaRequestActivityReviewParamsAcceptLanguageEn:
+		return true
+	case RopaRequestActivityReviewParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RopaListRetentionRulesParamsAcceptLanguage.
 const (
 	RopaListRetentionRulesParamsAcceptLanguageEn RopaListRetentionRulesParamsAcceptLanguage = "en"
@@ -1017,6 +1071,24 @@ func (e RopaDeleteRetentionRuleParamsAcceptLanguage) Valid() bool {
 	case RopaDeleteRetentionRuleParamsAcceptLanguageEn:
 		return true
 	case RopaDeleteRetentionRuleParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaReturnActivityParamsAcceptLanguage.
+const (
+	RopaReturnActivityParamsAcceptLanguageEn RopaReturnActivityParamsAcceptLanguage = "en"
+	RopaReturnActivityParamsAcceptLanguageTh RopaReturnActivityParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaReturnActivityParamsAcceptLanguage enum.
+func (e RopaReturnActivityParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaReturnActivityParamsAcceptLanguageEn:
+		return true
+	case RopaReturnActivityParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -1107,6 +1179,42 @@ func (e RopaRecordTransferTiaParamsAcceptLanguage) Valid() bool {
 	case RopaRecordTransferTiaParamsAcceptLanguageEn:
 		return true
 	case RopaRecordTransferTiaParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaListActivityVersionsParamsAcceptLanguage.
+const (
+	RopaListActivityVersionsParamsAcceptLanguageEn RopaListActivityVersionsParamsAcceptLanguage = "en"
+	RopaListActivityVersionsParamsAcceptLanguageTh RopaListActivityVersionsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaListActivityVersionsParamsAcceptLanguage enum.
+func (e RopaListActivityVersionsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaListActivityVersionsParamsAcceptLanguageEn:
+		return true
+	case RopaListActivityVersionsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaCompareActivityVersionsParamsAcceptLanguage.
+const (
+	RopaCompareActivityVersionsParamsAcceptLanguageEn RopaCompareActivityVersionsParamsAcceptLanguage = "en"
+	RopaCompareActivityVersionsParamsAcceptLanguageTh RopaCompareActivityVersionsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaCompareActivityVersionsParamsAcceptLanguage enum.
+func (e RopaCompareActivityVersionsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaCompareActivityVersionsParamsAcceptLanguageEn:
+		return true
+	case RopaCompareActivityVersionsParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -1545,6 +1653,35 @@ type ActivityTransferInput struct {
 	RecipientId   *Uuid                 `json:"recipient_id,omitempty"`
 	Safeguards    *string               `json:"safeguards,omitempty"`
 	TransferBasis ActivityTransferBasis `json:"transfer_basis"`
+}
+
+// ActivityVersion ROPA-13 — one approved round of a processing activity, with a full snapshot of its core fields and every child table at the moment it was approved.
+type ActivityVersion struct {
+	// ActivityId UUIDv7 generated by the API
+	ActivityId Uuid `json:"activity_id"`
+
+	// ApprovedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	ApprovedAt *Timestamp `json:"approved_at,omitempty"`
+
+	// ApprovedBy UUIDv7 generated by the API
+	ApprovedBy *Uuid `json:"approved_by,omitempty"`
+
+	// CreatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	CreatedAt Timestamp `json:"created_at"`
+
+	// Id UUIDv7 generated by the API
+	Id Uuid `json:"id"`
+
+	// Snapshot The frozen activity (core fields + purposes/data/retention/recipients/transfers/controls) as of this approval.
+	Snapshot  map[string]interface{} `json:"snapshot"`
+	VersionNo int                    `json:"version_no"`
+}
+
+// ActivityVersionDiff ROPA-13 — one snapshot section that differs between two compared versions.
+type ActivityVersionDiff struct {
+	After   interface{} `json:"after,omitempty"`
+	Before  interface{} `json:"before,omitempty"`
+	Section string      `json:"section"`
 }
 
 // ActivityVolumeBand defines model for ActivityVolumeBand.
@@ -2102,6 +2239,30 @@ type RopaApplySuggestedItemsParams struct {
 // RopaApplySuggestedItemsParamsAcceptLanguage defines parameters for RopaApplySuggestedItems.
 type RopaApplySuggestedItemsParamsAcceptLanguage string
 
+// RopaApproveActivityParams defines parameters for RopaApproveActivity.
+type RopaApproveActivityParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaApproveActivityParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// RopaApproveActivityParamsAcceptLanguage defines parameters for RopaApproveActivity.
+type RopaApproveActivityParamsAcceptLanguage string
+
+// RopaConfirmActivityNoChangeParams defines parameters for RopaConfirmActivityNoChange.
+type RopaConfirmActivityNoChangeParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaConfirmActivityNoChangeParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// RopaConfirmActivityNoChangeParamsAcceptLanguage defines parameters for RopaConfirmActivityNoChange.
+type RopaConfirmActivityNoChangeParamsAcceptLanguage string
+
 // RopaListActivityControlsParams defines parameters for RopaListActivityControls.
 type RopaListActivityControlsParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -2219,6 +2380,18 @@ type RopaListActivityRejectionsParams struct {
 // RopaListActivityRejectionsParamsAcceptLanguage defines parameters for RopaListActivityRejections.
 type RopaListActivityRejectionsParamsAcceptLanguage string
 
+// RopaRequestActivityReviewParams defines parameters for RopaRequestActivityReview.
+type RopaRequestActivityReviewParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaRequestActivityReviewParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// RopaRequestActivityReviewParamsAcceptLanguage defines parameters for RopaRequestActivityReview.
+type RopaRequestActivityReviewParamsAcceptLanguage string
+
 // RopaListRetentionRulesParams defines parameters for RopaListRetentionRules.
 type RopaListRetentionRulesParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -2245,6 +2418,23 @@ type RopaDeleteRetentionRuleParams struct {
 
 // RopaDeleteRetentionRuleParamsAcceptLanguage defines parameters for RopaDeleteRetentionRule.
 type RopaDeleteRetentionRuleParamsAcceptLanguage string
+
+// RopaReturnActivityJSONBody defines parameters for RopaReturnActivity.
+type RopaReturnActivityJSONBody struct {
+	Reason *string `json:"reason,omitempty"`
+}
+
+// RopaReturnActivityParams defines parameters for RopaReturnActivity.
+type RopaReturnActivityParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaReturnActivityParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// RopaReturnActivityParamsAcceptLanguage defines parameters for RopaReturnActivity.
+type RopaReturnActivityParamsAcceptLanguage string
 
 // RopaSubmitActivityParams defines parameters for RopaSubmitActivity.
 type RopaSubmitActivityParams struct {
@@ -2293,6 +2483,27 @@ type RopaRecordTransferTiaParams struct {
 
 // RopaRecordTransferTiaParamsAcceptLanguage defines parameters for RopaRecordTransferTia.
 type RopaRecordTransferTiaParamsAcceptLanguage string
+
+// RopaListActivityVersionsParams defines parameters for RopaListActivityVersions.
+type RopaListActivityVersionsParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaListActivityVersionsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RopaListActivityVersionsParamsAcceptLanguage defines parameters for RopaListActivityVersions.
+type RopaListActivityVersionsParamsAcceptLanguage string
+
+// RopaCompareActivityVersionsParams defines parameters for RopaCompareActivityVersions.
+type RopaCompareActivityVersionsParams struct {
+	From Uuid `form:"from" json:"from"`
+	To   Uuid `form:"to" json:"to"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaCompareActivityVersionsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RopaCompareActivityVersionsParamsAcceptLanguage defines parameters for RopaCompareActivityVersions.
+type RopaCompareActivityVersionsParamsAcceptLanguage string
 
 // RopaListAssetsParams defines parameters for RopaListAssets.
 type RopaListAssetsParams struct {
@@ -2473,6 +2684,9 @@ type RopaAddActivityRecipientJSONRequestBody = ActivityRecipientInput
 // RopaAddRetentionRuleJSONRequestBody defines body for RopaAddRetentionRule for application/json ContentType.
 type RopaAddRetentionRuleJSONRequestBody = RetentionRuleInput
 
+// RopaReturnActivityJSONRequestBody defines body for RopaReturnActivity for application/json ContentType.
+type RopaReturnActivityJSONRequestBody RopaReturnActivityJSONBody
+
 // RopaAddActivityTransferJSONRequestBody defines body for RopaAddActivityTransfer for application/json ContentType.
 type RopaAddActivityTransferJSONRequestBody = ActivityTransferInput
 
@@ -2520,6 +2734,12 @@ type ServerInterface interface {
 	// RopaApplySuggestedItems RTG-06 — write only the suggested purpose/data/retention items (by index, from ropaSuggestTemplateItems) the user confirmed onto this activity
 	// (POST /admin/v1/ropa/activities/{id}/apply-suggestions)
 	RopaApplySuggestedItems(w http.ResponseWriter, r *http.Request, id Uuid, params RopaApplySuggestedItemsParams)
+	// RopaApproveActivity ROPA-13 (ST-05) — approve a pending activity (pending_approval -> active); freezes a new version snapshot
+	// (POST /admin/v1/ropa/activities/{id}/approve)
+	RopaApproveActivity(w http.ResponseWriter, r *http.Request, id Uuid, params RopaApproveActivityParams)
+	// RopaConfirmActivityNoChange ROPA-13 (ST-05) — close a review round with nothing to re-approve (under_review -> active); no new version is taken
+	// (POST /admin/v1/ropa/activities/{id}/confirm-no-change)
+	RopaConfirmActivityNoChange(w http.ResponseWriter, r *http.Request, id Uuid, params RopaConfirmActivityNoChangeParams)
 	// RopaListActivityControls The security measures referenced by an activity (ROPA-09, ม.37(1))
 	// (GET /admin/v1/ropa/activities/{id}/controls)
 	RopaListActivityControls(w http.ResponseWriter, r *http.Request, id Uuid, params RopaListActivityControlsParams)
@@ -2559,6 +2779,9 @@ type ServerInterface interface {
 	// RopaListActivityRejections DSAR requests rejected against this activity, logged automatically from DSAR-11 (ROPA-10, ม.39(7))
 	// (GET /admin/v1/ropa/activities/{id}/rejections)
 	RopaListActivityRejections(w http.ResponseWriter, r *http.Request, id Uuid, params RopaListActivityRejectionsParams)
+	// RopaRequestActivityReview ROPA-13 (ST-05) — reopen an active activity for editing (active -> under_review); the only way to change an approved activity
+	// (POST /admin/v1/ropa/activities/{id}/request-review)
+	RopaRequestActivityReview(w http.ResponseWriter, r *http.Request, id Uuid, params RopaRequestActivityReviewParams)
 	// RopaListRetentionRules An activity's retention rules (ม.39 "ระยะเวลาเก็บรักษา")
 	// (GET /admin/v1/ropa/activities/{id}/retention-rules)
 	RopaListRetentionRules(w http.ResponseWriter, r *http.Request, id Uuid, params RopaListRetentionRulesParams)
@@ -2568,6 +2791,9 @@ type ServerInterface interface {
 	// RopaDeleteRetentionRule Remove a retention rule from an activity
 	// (DELETE /admin/v1/ropa/activities/{id}/retention-rules/{ruleId})
 	RopaDeleteRetentionRule(w http.ResponseWriter, r *http.Request, id Uuid, ruleId Uuid, params RopaDeleteRetentionRuleParams)
+	// RopaReturnActivity ROPA-13 (ST-05) — send a pending activity back to draft (pending_approval -> draft)
+	// (POST /admin/v1/ropa/activities/{id}/return)
+	RopaReturnActivity(w http.ResponseWriter, r *http.Request, id Uuid, params RopaReturnActivityParams)
 	// RopaSubmitActivity Submit a draft for approval (BP-05) — refused with the missing-item list while incomplete
 	// (POST /admin/v1/ropa/activities/{id}/submit)
 	RopaSubmitActivity(w http.ResponseWriter, r *http.Request, id Uuid, params RopaSubmitActivityParams)
@@ -2583,6 +2809,12 @@ type ServerInterface interface {
 	// RopaRecordTransferTia Run a transfer impact assessment (TIA) for one logged cross-border transfer (DPX-06, ม.28-29)
 	// (POST /admin/v1/ropa/activities/{id}/transfers/{transferId}/tia)
 	RopaRecordTransferTia(w http.ResponseWriter, r *http.Request, id Uuid, transferId Uuid, params RopaRecordTransferTiaParams)
+	// RopaListActivityVersions ROPA-13 — an activity's approved version history, newest first
+	// (GET /admin/v1/ropa/activities/{id}/versions)
+	RopaListActivityVersions(w http.ResponseWriter, r *http.Request, id Uuid, params RopaListActivityVersionsParams)
+	// RopaCompareActivityVersions ROPA-13 — diff two of an activity's approved versions, section by section
+	// (GET /admin/v1/ropa/activities/{id}/versions/compare)
+	RopaCompareActivityVersions(w http.ResponseWriter, r *http.Request, id Uuid, params RopaCompareActivityVersionsParams)
 	// RopaListAssets The tenant's asset register (ROPA-02) — systems, applications, databases, ...
 	// (GET /admin/v1/ropa/assets)
 	RopaListAssets(w http.ResponseWriter, r *http.Request, params RopaListAssetsParams)
@@ -2682,6 +2914,18 @@ func (_ Unimplemented) RopaApplySuggestedItems(w http.ResponseWriter, r *http.Re
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// RopaApproveActivity ROPA-13 (ST-05) — approve a pending activity (pending_approval -> active); freezes a new version snapshot
+// (POST /admin/v1/ropa/activities/{id}/approve)
+func (_ Unimplemented) RopaApproveActivity(w http.ResponseWriter, r *http.Request, id Uuid, params RopaApproveActivityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaConfirmActivityNoChange ROPA-13 (ST-05) — close a review round with nothing to re-approve (under_review -> active); no new version is taken
+// (POST /admin/v1/ropa/activities/{id}/confirm-no-change)
+func (_ Unimplemented) RopaConfirmActivityNoChange(w http.ResponseWriter, r *http.Request, id Uuid, params RopaConfirmActivityNoChangeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // RopaListActivityControls The security measures referenced by an activity (ROPA-09, ม.37(1))
 // (GET /admin/v1/ropa/activities/{id}/controls)
 func (_ Unimplemented) RopaListActivityControls(w http.ResponseWriter, r *http.Request, id Uuid, params RopaListActivityControlsParams) {
@@ -2760,6 +3004,12 @@ func (_ Unimplemented) RopaListActivityRejections(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// RopaRequestActivityReview ROPA-13 (ST-05) — reopen an active activity for editing (active -> under_review); the only way to change an approved activity
+// (POST /admin/v1/ropa/activities/{id}/request-review)
+func (_ Unimplemented) RopaRequestActivityReview(w http.ResponseWriter, r *http.Request, id Uuid, params RopaRequestActivityReviewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // RopaListRetentionRules An activity's retention rules (ม.39 "ระยะเวลาเก็บรักษา")
 // (GET /admin/v1/ropa/activities/{id}/retention-rules)
 func (_ Unimplemented) RopaListRetentionRules(w http.ResponseWriter, r *http.Request, id Uuid, params RopaListRetentionRulesParams) {
@@ -2775,6 +3025,12 @@ func (_ Unimplemented) RopaAddRetentionRule(w http.ResponseWriter, r *http.Reque
 // RopaDeleteRetentionRule Remove a retention rule from an activity
 // (DELETE /admin/v1/ropa/activities/{id}/retention-rules/{ruleId})
 func (_ Unimplemented) RopaDeleteRetentionRule(w http.ResponseWriter, r *http.Request, id Uuid, ruleId Uuid, params RopaDeleteRetentionRuleParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaReturnActivity ROPA-13 (ST-05) — send a pending activity back to draft (pending_approval -> draft)
+// (POST /admin/v1/ropa/activities/{id}/return)
+func (_ Unimplemented) RopaReturnActivity(w http.ResponseWriter, r *http.Request, id Uuid, params RopaReturnActivityParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2805,6 +3061,18 @@ func (_ Unimplemented) RopaDeleteActivityTransfer(w http.ResponseWriter, r *http
 // RopaRecordTransferTia Run a transfer impact assessment (TIA) for one logged cross-border transfer (DPX-06, ม.28-29)
 // (POST /admin/v1/ropa/activities/{id}/transfers/{transferId}/tia)
 func (_ Unimplemented) RopaRecordTransferTia(w http.ResponseWriter, r *http.Request, id Uuid, transferId Uuid, params RopaRecordTransferTiaParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaListActivityVersions ROPA-13 — an activity's approved version history, newest first
+// (GET /admin/v1/ropa/activities/{id}/versions)
+func (_ Unimplemented) RopaListActivityVersions(w http.ResponseWriter, r *http.Request, id Uuid, params RopaListActivityVersionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaCompareActivityVersions ROPA-13 — diff two of an activity's approved versions, section by section
+// (GET /admin/v1/ropa/activities/{id}/versions/compare)
+func (_ Unimplemented) RopaCompareActivityVersions(w http.ResponseWriter, r *http.Request, id Uuid, params RopaCompareActivityVersionsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3370,6 +3638,152 @@ func (siw *ServerInterfaceWrapper) RopaApplySuggestedItems(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RopaApplySuggestedItems(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaApproveActivity operation middleware
+func (siw *ServerInterfaceWrapper) RopaApproveActivity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaApproveActivityParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaApproveActivityParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaApproveActivity(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaConfirmActivityNoChange operation middleware
+func (siw *ServerInterfaceWrapper) RopaConfirmActivityNoChange(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaConfirmActivityNoChangeParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaConfirmActivityNoChangeParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaConfirmActivityNoChange(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4065,6 +4479,79 @@ func (siw *ServerInterfaceWrapper) RopaListActivityRejections(w http.ResponseWri
 	handler.ServeHTTP(w, r)
 }
 
+// RopaRequestActivityReview operation middleware
+func (siw *ServerInterfaceWrapper) RopaRequestActivityReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaRequestActivityReviewParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaRequestActivityReviewParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaRequestActivityReview(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RopaListRetentionRules operation middleware
 func (siw *ServerInterfaceWrapper) RopaListRetentionRules(w http.ResponseWriter, r *http.Request) {
 
@@ -4215,6 +4702,79 @@ func (siw *ServerInterfaceWrapper) RopaDeleteRetentionRule(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RopaDeleteRetentionRule(w, r, id, ruleId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaReturnActivity operation middleware
+func (siw *ServerInterfaceWrapper) RopaReturnActivity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaReturnActivityParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaReturnActivityParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaReturnActivity(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4506,6 +5066,132 @@ func (siw *ServerInterfaceWrapper) RopaRecordTransferTia(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RopaRecordTransferTia(w, r, id, transferId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaListActivityVersions operation middleware
+func (siw *ServerInterfaceWrapper) RopaListActivityVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaListActivityVersionsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaListActivityVersionsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaListActivityVersions(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaCompareActivityVersions operation middleware
+func (siw *ServerInterfaceWrapper) RopaCompareActivityVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaCompareActivityVersionsParams
+
+	// ------------- Required query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaCompareActivityVersionsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaCompareActivityVersions(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5491,6 +6177,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/admin/v1/ropa/activities/{id}/submit", wrapper.RopaSubmitActivity)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/activities/{id}/approve", wrapper.RopaApproveActivity)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/activities/{id}/return", wrapper.RopaReturnActivity)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/activities/{id}/request-review", wrapper.RopaRequestActivityReview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/activities/{id}/confirm-no-change", wrapper.RopaConfirmActivityNoChange)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/ropa/activities/{id}/versions", wrapper.RopaListActivityVersions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/ropa/activities/{id}/versions/compare", wrapper.RopaCompareActivityVersions)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/ropa/activities/{id}/purposes", wrapper.RopaListActivityPurposes)
 	})
 	r.Group(func(r chi.Router) {
@@ -6420,6 +7124,264 @@ func (response RopaApplySuggestedItems422ApplicationProblemPlusJSONResponse) Vis
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveActivityRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaApproveActivityParams
+}
+
+type RopaApproveActivityResponseObject interface {
+	VisitRopaApproveActivityResponse(w http.ResponseWriter) error
+}
+
+type RopaApproveActivity200ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaApproveActivity200JSONResponse struct {
+	Body    ProcessingActivity
+	Headers RopaApproveActivity200ResponseHeaders
+}
+
+func (response RopaApproveActivity200JSONResponse) VisitRopaApproveActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveActivity401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveActivity401ApplicationProblemPlusJSONResponse) VisitRopaApproveActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveActivity403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveActivity403ApplicationProblemPlusJSONResponse) VisitRopaApproveActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveActivity404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveActivity404ApplicationProblemPlusJSONResponse) VisitRopaApproveActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveActivity409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveActivity409ApplicationProblemPlusJSONResponse) VisitRopaApproveActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveActivity412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveActivity412ApplicationProblemPlusJSONResponse) VisitRopaApproveActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveActivity428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveActivity428ApplicationProblemPlusJSONResponse) VisitRopaApproveActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaConfirmActivityNoChangeRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaConfirmActivityNoChangeParams
+}
+
+type RopaConfirmActivityNoChangeResponseObject interface {
+	VisitRopaConfirmActivityNoChangeResponse(w http.ResponseWriter) error
+}
+
+type RopaConfirmActivityNoChange200ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaConfirmActivityNoChange200JSONResponse struct {
+	Body    ProcessingActivity
+	Headers RopaConfirmActivityNoChange200ResponseHeaders
+}
+
+func (response RopaConfirmActivityNoChange200JSONResponse) VisitRopaConfirmActivityNoChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaConfirmActivityNoChange401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaConfirmActivityNoChange401ApplicationProblemPlusJSONResponse) VisitRopaConfirmActivityNoChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaConfirmActivityNoChange403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaConfirmActivityNoChange403ApplicationProblemPlusJSONResponse) VisitRopaConfirmActivityNoChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaConfirmActivityNoChange404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaConfirmActivityNoChange404ApplicationProblemPlusJSONResponse) VisitRopaConfirmActivityNoChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaConfirmActivityNoChange409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response RopaConfirmActivityNoChange409ApplicationProblemPlusJSONResponse) VisitRopaConfirmActivityNoChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaConfirmActivityNoChange412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaConfirmActivityNoChange412ApplicationProblemPlusJSONResponse) VisitRopaConfirmActivityNoChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaConfirmActivityNoChange428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response RopaConfirmActivityNoChange428ApplicationProblemPlusJSONResponse) VisitRopaConfirmActivityNoChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -7469,6 +8431,135 @@ func (response RopaListActivityRejections404ApplicationProblemPlusJSONResponse) 
 	return err
 }
 
+type RopaRequestActivityReviewRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaRequestActivityReviewParams
+}
+
+type RopaRequestActivityReviewResponseObject interface {
+	VisitRopaRequestActivityReviewResponse(w http.ResponseWriter) error
+}
+
+type RopaRequestActivityReview200ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaRequestActivityReview200JSONResponse struct {
+	Body    ProcessingActivity
+	Headers RopaRequestActivityReview200ResponseHeaders
+}
+
+func (response RopaRequestActivityReview200JSONResponse) VisitRopaRequestActivityReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRequestActivityReview401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRequestActivityReview401ApplicationProblemPlusJSONResponse) VisitRopaRequestActivityReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRequestActivityReview403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRequestActivityReview403ApplicationProblemPlusJSONResponse) VisitRopaRequestActivityReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRequestActivityReview404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRequestActivityReview404ApplicationProblemPlusJSONResponse) VisitRopaRequestActivityReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRequestActivityReview409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRequestActivityReview409ApplicationProblemPlusJSONResponse) VisitRopaRequestActivityReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRequestActivityReview412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRequestActivityReview412ApplicationProblemPlusJSONResponse) VisitRopaRequestActivityReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRequestActivityReview428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRequestActivityReview428ApplicationProblemPlusJSONResponse) VisitRopaRequestActivityReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type RopaListRetentionRulesRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params RopaListRetentionRulesParams
@@ -7708,6 +8799,136 @@ func (response RopaDeleteRetentionRule404ApplicationProblemPlusJSONResponse) Vis
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaReturnActivityRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaReturnActivityParams
+	Body   *RopaReturnActivityJSONRequestBody
+}
+
+type RopaReturnActivityResponseObject interface {
+	VisitRopaReturnActivityResponse(w http.ResponseWriter) error
+}
+
+type RopaReturnActivity200ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaReturnActivity200JSONResponse struct {
+	Body    ProcessingActivity
+	Headers RopaReturnActivity200ResponseHeaders
+}
+
+func (response RopaReturnActivity200JSONResponse) VisitRopaReturnActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaReturnActivity401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaReturnActivity401ApplicationProblemPlusJSONResponse) VisitRopaReturnActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaReturnActivity403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaReturnActivity403ApplicationProblemPlusJSONResponse) VisitRopaReturnActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaReturnActivity404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaReturnActivity404ApplicationProblemPlusJSONResponse) VisitRopaReturnActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaReturnActivity409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response RopaReturnActivity409ApplicationProblemPlusJSONResponse) VisitRopaReturnActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaReturnActivity412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaReturnActivity412ApplicationProblemPlusJSONResponse) VisitRopaReturnActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaReturnActivity428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response RopaReturnActivity428ApplicationProblemPlusJSONResponse) VisitRopaReturnActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -8199,6 +9420,152 @@ func (response RopaRecordTransferTia422ApplicationProblemPlusJSONResponse) Visit
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaListActivityVersionsRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaListActivityVersionsParams
+}
+
+type RopaListActivityVersionsResponseObject interface {
+	VisitRopaListActivityVersionsResponse(w http.ResponseWriter) error
+}
+
+type RopaListActivityVersions200JSONResponse struct {
+	Data []ActivityVersion `json:"data"`
+}
+
+func (response RopaListActivityVersions200JSONResponse) VisitRopaListActivityVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaListActivityVersions401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaListActivityVersions401ApplicationProblemPlusJSONResponse) VisitRopaListActivityVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaListActivityVersions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaListActivityVersions403ApplicationProblemPlusJSONResponse) VisitRopaListActivityVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaListActivityVersions404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaListActivityVersions404ApplicationProblemPlusJSONResponse) VisitRopaListActivityVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCompareActivityVersionsRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaCompareActivityVersionsParams
+}
+
+type RopaCompareActivityVersionsResponseObject interface {
+	VisitRopaCompareActivityVersionsResponse(w http.ResponseWriter) error
+}
+
+type RopaCompareActivityVersions200JSONResponse struct {
+	Data []ActivityVersionDiff `json:"data"`
+}
+
+func (response RopaCompareActivityVersions200JSONResponse) VisitRopaCompareActivityVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCompareActivityVersions401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCompareActivityVersions401ApplicationProblemPlusJSONResponse) VisitRopaCompareActivityVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCompareActivityVersions403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCompareActivityVersions403ApplicationProblemPlusJSONResponse) VisitRopaCompareActivityVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCompareActivityVersions404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCompareActivityVersions404ApplicationProblemPlusJSONResponse) VisitRopaCompareActivityVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -9305,6 +10672,12 @@ type StrictServerInterface interface {
 	// RopaApplySuggestedItems RTG-06 — write only the suggested purpose/data/retention items (by index, from ropaSuggestTemplateItems) the user confirmed onto this activity
 	// (POST /admin/v1/ropa/activities/{id}/apply-suggestions)
 	RopaApplySuggestedItems(ctx context.Context, request RopaApplySuggestedItemsRequestObject) (RopaApplySuggestedItemsResponseObject, error)
+	// RopaApproveActivity ROPA-13 (ST-05) — approve a pending activity (pending_approval -> active); freezes a new version snapshot
+	// (POST /admin/v1/ropa/activities/{id}/approve)
+	RopaApproveActivity(ctx context.Context, request RopaApproveActivityRequestObject) (RopaApproveActivityResponseObject, error)
+	// RopaConfirmActivityNoChange ROPA-13 (ST-05) — close a review round with nothing to re-approve (under_review -> active); no new version is taken
+	// (POST /admin/v1/ropa/activities/{id}/confirm-no-change)
+	RopaConfirmActivityNoChange(ctx context.Context, request RopaConfirmActivityNoChangeRequestObject) (RopaConfirmActivityNoChangeResponseObject, error)
 	// RopaListActivityControls The security measures referenced by an activity (ROPA-09, ม.37(1))
 	// (GET /admin/v1/ropa/activities/{id}/controls)
 	RopaListActivityControls(ctx context.Context, request RopaListActivityControlsRequestObject) (RopaListActivityControlsResponseObject, error)
@@ -9344,6 +10717,9 @@ type StrictServerInterface interface {
 	// RopaListActivityRejections DSAR requests rejected against this activity, logged automatically from DSAR-11 (ROPA-10, ม.39(7))
 	// (GET /admin/v1/ropa/activities/{id}/rejections)
 	RopaListActivityRejections(ctx context.Context, request RopaListActivityRejectionsRequestObject) (RopaListActivityRejectionsResponseObject, error)
+	// RopaRequestActivityReview ROPA-13 (ST-05) — reopen an active activity for editing (active -> under_review); the only way to change an approved activity
+	// (POST /admin/v1/ropa/activities/{id}/request-review)
+	RopaRequestActivityReview(ctx context.Context, request RopaRequestActivityReviewRequestObject) (RopaRequestActivityReviewResponseObject, error)
 	// RopaListRetentionRules An activity's retention rules (ม.39 "ระยะเวลาเก็บรักษา")
 	// (GET /admin/v1/ropa/activities/{id}/retention-rules)
 	RopaListRetentionRules(ctx context.Context, request RopaListRetentionRulesRequestObject) (RopaListRetentionRulesResponseObject, error)
@@ -9353,6 +10729,9 @@ type StrictServerInterface interface {
 	// RopaDeleteRetentionRule Remove a retention rule from an activity
 	// (DELETE /admin/v1/ropa/activities/{id}/retention-rules/{ruleId})
 	RopaDeleteRetentionRule(ctx context.Context, request RopaDeleteRetentionRuleRequestObject) (RopaDeleteRetentionRuleResponseObject, error)
+	// RopaReturnActivity ROPA-13 (ST-05) — send a pending activity back to draft (pending_approval -> draft)
+	// (POST /admin/v1/ropa/activities/{id}/return)
+	RopaReturnActivity(ctx context.Context, request RopaReturnActivityRequestObject) (RopaReturnActivityResponseObject, error)
 	// RopaSubmitActivity Submit a draft for approval (BP-05) — refused with the missing-item list while incomplete
 	// (POST /admin/v1/ropa/activities/{id}/submit)
 	RopaSubmitActivity(ctx context.Context, request RopaSubmitActivityRequestObject) (RopaSubmitActivityResponseObject, error)
@@ -9368,6 +10747,12 @@ type StrictServerInterface interface {
 	// RopaRecordTransferTia Run a transfer impact assessment (TIA) for one logged cross-border transfer (DPX-06, ม.28-29)
 	// (POST /admin/v1/ropa/activities/{id}/transfers/{transferId}/tia)
 	RopaRecordTransferTia(ctx context.Context, request RopaRecordTransferTiaRequestObject) (RopaRecordTransferTiaResponseObject, error)
+	// RopaListActivityVersions ROPA-13 — an activity's approved version history, newest first
+	// (GET /admin/v1/ropa/activities/{id}/versions)
+	RopaListActivityVersions(ctx context.Context, request RopaListActivityVersionsRequestObject) (RopaListActivityVersionsResponseObject, error)
+	// RopaCompareActivityVersions ROPA-13 — diff two of an activity's approved versions, section by section
+	// (GET /admin/v1/ropa/activities/{id}/versions/compare)
+	RopaCompareActivityVersions(ctx context.Context, request RopaCompareActivityVersionsRequestObject) (RopaCompareActivityVersionsResponseObject, error)
 	// RopaListAssets The tenant's asset register (ROPA-02) — systems, applications, databases, ...
 	// (GET /admin/v1/ropa/assets)
 	RopaListAssets(ctx context.Context, request RopaListAssetsRequestObject) (RopaListAssetsResponseObject, error)
@@ -9720,6 +11105,60 @@ func (sh *strictHandler) RopaApplySuggestedItems(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RopaApplySuggestedItemsResponseObject); ok {
 		if err := validResponse.VisitRopaApplySuggestedItemsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaApproveActivity operation middleware
+func (sh *strictHandler) RopaApproveActivity(w http.ResponseWriter, r *http.Request, id Uuid, params RopaApproveActivityParams) {
+	var request RopaApproveActivityRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaApproveActivity(ctx, request.(RopaApproveActivityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaApproveActivity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaApproveActivityResponseObject); ok {
+		if err := validResponse.VisitRopaApproveActivityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaConfirmActivityNoChange operation middleware
+func (sh *strictHandler) RopaConfirmActivityNoChange(w http.ResponseWriter, r *http.Request, id Uuid, params RopaConfirmActivityNoChangeParams) {
+	var request RopaConfirmActivityNoChangeRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaConfirmActivityNoChange(ctx, request.(RopaConfirmActivityNoChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaConfirmActivityNoChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaConfirmActivityNoChangeResponseObject); ok {
+		if err := validResponse.VisitRopaConfirmActivityNoChangeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -10110,6 +11549,33 @@ func (sh *strictHandler) RopaListActivityRejections(w http.ResponseWriter, r *ht
 	}
 }
 
+// RopaRequestActivityReview operation middleware
+func (sh *strictHandler) RopaRequestActivityReview(w http.ResponseWriter, r *http.Request, id Uuid, params RopaRequestActivityReviewParams) {
+	var request RopaRequestActivityReviewRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaRequestActivityReview(ctx, request.(RopaRequestActivityReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaRequestActivityReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaRequestActivityReviewResponseObject); ok {
+		if err := validResponse.VisitRopaRequestActivityReviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // RopaListRetentionRules operation middleware
 func (sh *strictHandler) RopaListRetentionRules(w http.ResponseWriter, r *http.Request, id Uuid, params RopaListRetentionRulesParams) {
 	var request RopaListRetentionRulesRequestObject
@@ -10192,6 +11658,43 @@ func (sh *strictHandler) RopaDeleteRetentionRule(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RopaDeleteRetentionRuleResponseObject); ok {
 		if err := validResponse.VisitRopaDeleteRetentionRuleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaReturnActivity operation middleware
+func (sh *strictHandler) RopaReturnActivity(w http.ResponseWriter, r *http.Request, id Uuid, params RopaReturnActivityParams) {
+	var request RopaReturnActivityRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body RopaReturnActivityJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaReturnActivity(ctx, request.(RopaReturnActivityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaReturnActivity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaReturnActivityResponseObject); ok {
+		if err := validResponse.VisitRopaReturnActivityResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -10343,6 +11846,60 @@ func (sh *strictHandler) RopaRecordTransferTia(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RopaRecordTransferTiaResponseObject); ok {
 		if err := validResponse.VisitRopaRecordTransferTiaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaListActivityVersions operation middleware
+func (sh *strictHandler) RopaListActivityVersions(w http.ResponseWriter, r *http.Request, id Uuid, params RopaListActivityVersionsParams) {
+	var request RopaListActivityVersionsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaListActivityVersions(ctx, request.(RopaListActivityVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaListActivityVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaListActivityVersionsResponseObject); ok {
+		if err := validResponse.VisitRopaListActivityVersionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaCompareActivityVersions operation middleware
+func (sh *strictHandler) RopaCompareActivityVersions(w http.ResponseWriter, r *http.Request, id Uuid, params RopaCompareActivityVersionsParams) {
+	var request RopaCompareActivityVersionsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaCompareActivityVersions(ctx, request.(RopaCompareActivityVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaCompareActivityVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaCompareActivityVersionsResponseObject); ok {
+		if err := validResponse.VisitRopaCompareActivityVersionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -2,6 +2,7 @@ package ropahttp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -159,6 +160,102 @@ func (h *Strict) RopaSubmitActivity(ctx context.Context, req RopaSubmitActivityR
 		return nil, problem(err)
 	}
 	return RopaSubmitActivity200JSONResponse{Body: toActivityWire(a), Headers: RopaSubmitActivity200ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
+func (h *Strict) RopaApproveActivity(ctx context.Context, req RopaApproveActivityRequestObject) (RopaApproveActivityResponseObject, error) {
+	v, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	a, err := h.svc.ApproveActivity(ctx, req.Id, v)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RopaApproveActivity200JSONResponse{Body: toActivityWire(a), Headers: RopaApproveActivity200ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
+func (h *Strict) RopaReturnActivity(ctx context.Context, req RopaReturnActivityRequestObject) (RopaReturnActivityResponseObject, error) {
+	v, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	var reason string
+	if req.Body != nil && req.Body.Reason != nil {
+		reason = *req.Body.Reason
+	}
+	a, err := h.svc.ReturnActivity(ctx, req.Id, v, reason)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RopaReturnActivity200JSONResponse{Body: toActivityWire(a), Headers: RopaReturnActivity200ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
+func (h *Strict) RopaRequestActivityReview(ctx context.Context, req RopaRequestActivityReviewRequestObject) (RopaRequestActivityReviewResponseObject, error) {
+	v, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	a, err := h.svc.RequestActivityReview(ctx, req.Id, v)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RopaRequestActivityReview200JSONResponse{Body: toActivityWire(a), Headers: RopaRequestActivityReview200ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
+func (h *Strict) RopaConfirmActivityNoChange(ctx context.Context, req RopaConfirmActivityNoChangeRequestObject) (RopaConfirmActivityNoChangeResponseObject, error) {
+	v, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	a, err := h.svc.ConfirmActivityNoChange(ctx, req.Id, v)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RopaConfirmActivityNoChange200JSONResponse{Body: toActivityWire(a), Headers: RopaConfirmActivityNoChange200ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
+func (h *Strict) RopaListActivityVersions(ctx context.Context, req RopaListActivityVersionsRequestObject) (RopaListActivityVersionsResponseObject, error) {
+	list, err := h.svc.ListActivityVersions(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := RopaListActivityVersions200JSONResponse{Data: make([]ActivityVersion, 0, len(list))}
+	for _, v := range list {
+		resp.Data = append(resp.Data, toActivityVersionWire(v))
+	}
+	return resp, nil
+}
+
+func (h *Strict) RopaCompareActivityVersions(ctx context.Context, req RopaCompareActivityVersionsRequestObject) (RopaCompareActivityVersionsResponseObject, error) {
+	diffs, err := h.svc.CompareActivityVersions(ctx, req.Params.From, req.Params.To)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := RopaCompareActivityVersions200JSONResponse{Data: make([]ActivityVersionDiff, 0, len(diffs))}
+	for _, d := range diffs {
+		resp.Data = append(resp.Data, ActivityVersionDiff{Section: d.Section, Before: d.Before, After: d.After})
+	}
+	return resp, nil
+}
+
+func toActivityVersionWire(v ropaservice.ActivityVersion) ActivityVersion {
+	out := ActivityVersion{Id: v.ID, ActivityId: v.ActivityID, VersionNo: int(v.VersionNo), CreatedAt: v.CreatedAt}
+	raw, err := json.Marshal(v.Snapshot)
+	if err == nil {
+		var m map[string]interface{}
+		if json.Unmarshal(raw, &m) == nil {
+			out.Snapshot = m
+		}
+	}
+	if v.ApprovedBy != nil {
+		id := *v.ApprovedBy
+		out.ApprovedBy = &id
+	}
+	if !v.ApprovedAt.IsZero() {
+		t := v.ApprovedAt
+		out.ApprovedAt = &t
+	}
+	return out
 }
 
 func (h *Strict) RopaListActivityPurposes(ctx context.Context, req RopaListActivityPurposesRequestObject) (RopaListActivityPurposesResponseObject, error) {

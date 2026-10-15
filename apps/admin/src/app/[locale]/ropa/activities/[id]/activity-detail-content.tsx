@@ -34,6 +34,7 @@ import { RiskScoreSection } from "./risk-score-section";
 import { Rtg06SuggestionsSection } from "./rtg06-suggestions-section";
 import { GapAnalysisSection } from "./gap-analysis-section";
 import { TiaPanel } from "./tia-panel";
+import { ActivityVersioningSection } from "./activity-versioning-section";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
 const ROLES: ActivityRole[] = ["controller", "processor"];
@@ -88,7 +89,9 @@ export function ActivityDetailContent({ id, currentUserId }: { id: string; curre
   if (activity.isError || !activity.data) return <main className="mx-auto max-w-5xl p-8 text-red-700">{t("loadError")}</main>;
 
   const a = activity.data;
-  const editable = canUpdate && a.status === "draft";
+  // ROPA-13: an approved activity is reopened for editing via RequestActivityReview (active -> under_review),
+  // so under_review is editable the same as draft — the service-layer guard allows exactly these two.
+  const editable = canUpdate && (a.status === "draft" || a.status === "under_review");
 
   return (
     <main className="mx-auto max-w-5xl space-y-6 p-8 text-sm">
@@ -165,6 +168,8 @@ export function ActivityDetailContent({ id, currentUserId }: { id: string; curre
           </div>
         )}
       </section>
+
+      <ActivityVersioningSection client={client} activity={a} />
 
       <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4" data-testid="purposes-section">
         <h2 className="font-semibold">{t("sections.purposes")}</h2>

@@ -3412,6 +3412,17 @@ type RopaActivityTransfer struct {
 	RowVersion      int32              `db:"row_version" json:"row_version"`
 }
 
+type RopaActivityVersion struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	TenantID   uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	ActivityID uuid.UUID          `db:"activity_id" json:"activity_id"`
+	VersionNo  int32              `db:"version_no" json:"version_no"`
+	Snapshot   []byte             `db:"snapshot" json:"snapshot"`
+	ApprovedBy pgtype.UUID        `db:"approved_by" json:"approved_by"`
+	ApprovedAt pgtype.Timestamptz `db:"approved_at" json:"approved_at"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 // ทะเบียนระบบ / asset
 type RopaAsset struct {
 	ID                 uuid.UUID          `db:"id" json:"id"`

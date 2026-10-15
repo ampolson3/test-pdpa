@@ -8784,6 +8784,249 @@ paths:
                 $ref: '#/components/schemas/Problem'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/activities/{id}/approve:
+    post:
+      operationId: ropaApproveActivity
+      tags: [ropa]
+      summary: ROPA-13 (ST-05) — approve a pending activity (pending_approval -> active); freezes a new version snapshot
+      x-permission: ropa.activity.approve
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Now active
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingActivity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/activities/{id}/return:
+    post:
+      operationId: ropaReturnActivity
+      tags: [ropa]
+      summary: ROPA-13 (ST-05) — send a pending activity back to draft (pending_approval -> draft)
+      x-permission: ropa.activity.approve
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: {type: string}
+      responses:
+        '200':
+          description: Now draft
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingActivity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/activities/{id}/request-review:
+    post:
+      operationId: ropaRequestActivityReview
+      tags: [ropa]
+      summary: ROPA-13 (ST-05) — reopen an active activity for editing (active -> under_review); the only way to change an approved activity
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Now under_review
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingActivity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/activities/{id}/confirm-no-change:
+    post:
+      operationId: ropaConfirmActivityNoChange
+      tags: [ropa]
+      summary: ROPA-13 (ST-05) — close a review round with nothing to re-approve (under_review -> active); no new version is taken
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Now active
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingActivity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/activities/{id}/versions:
+    get:
+      operationId: ropaListActivityVersions
+      tags: [ropa]
+      summary: ROPA-13 — an activity's approved version history, newest first
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityVersion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/activities/{id}/versions/compare:
+    get:
+      operationId: ropaCompareActivityVersions
+      tags: [ropa]
+      summary: ROPA-13 — diff two of an activity's approved versions, section by section
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: from
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: to
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ActivityVersionDiff'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/ropa/activities/{id}/purposes:
     get:
       operationId: ropaListActivityPurposes
@@ -17034,6 +17277,28 @@ components:
             enum: [data, purpose, controller, retention, rights_access, recipient_basis, sensitive_consent, transfer_basis]
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
+    ActivityVersion:
+      type: object
+      description: ROPA-13 — one approved round of a processing activity, with a full snapshot of its core fields and every child table at the moment it was approved.
+      required: [id, activity_id, version_no, snapshot, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        version_no: {type: integer}
+        snapshot:
+          type: object
+          description: The frozen activity (core fields + purposes/data/retention/recipients/transfers/controls) as of this approval.
+        approved_by: {$ref: '#/components/schemas/Uuid'}
+        approved_at: {$ref: '#/components/schemas/Timestamp'}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    ActivityVersionDiff:
+      type: object
+      description: ROPA-13 — one snapshot section that differs between two compared versions.
+      required: [section]
+      properties:
+        section: {type: string}
+        before: {}
+        after: {}
     ActivityPurposeInput:
       type: object
       required: [purpose_text, lawful_basis_code]

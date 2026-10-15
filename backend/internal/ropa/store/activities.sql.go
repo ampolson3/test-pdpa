@@ -12,6 +12,120 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const approveActivity = `-- name: ApproveActivity :one
+UPDATE ropa.processing_activities
+SET status = 'active', approved_by = NULLIF(current_setting('app.user_id', true), '')::uuid, approved_at = now(),
+    updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
+WHERE id = $1 AND row_version = $2 AND status = 'pending_approval'
+RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
+    status, completeness, rights_and_access, row_version, created_at, updated_at
+`
+
+type ApproveActivityParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	RowVersion int32     `db:"row_version" json:"row_version"`
+}
+
+type ApproveActivityRow struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	LegalEntityID     uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	OrgUnitID         uuid.UUID          `db:"org_unit_id" json:"org_unit_id"`
+	Code              string             `db:"code" json:"code"`
+	Name              string             `db:"name" json:"name"`
+	Description       *string            `db:"description" json:"description"`
+	Role              string             `db:"role" json:"role"`
+	ControllerPartyID pgtype.UUID        `db:"controller_party_id" json:"controller_party_id"`
+	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	Status            string             `db:"status" json:"status"`
+	Completeness      int16              `db:"completeness" json:"completeness"`
+	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	RowVersion        int32              `db:"row_version" json:"row_version"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// ROPA-13 (ST-05): pending_approval -> active. approved_by/approved_at were already in the baseline
+// schema, unused until now.
+func (q *Queries) ApproveActivity(ctx context.Context, arg ApproveActivityParams) (ApproveActivityRow, error) {
+	row := q.db.QueryRow(ctx, approveActivity, arg.ID, arg.RowVersion)
+	var i ApproveActivityRow
+	err := row.Scan(
+		&i.ID,
+		&i.LegalEntityID,
+		&i.OrgUnitID,
+		&i.Code,
+		&i.Name,
+		&i.Description,
+		&i.Role,
+		&i.ControllerPartyID,
+		&i.OwnerUserID,
+		&i.Status,
+		&i.Completeness,
+		&i.RightsAndAccess,
+		&i.RowVersion,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const confirmActivityNoChange = `-- name: ConfirmActivityNoChange :one
+UPDATE ropa.processing_activities
+SET status = 'active', updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid,
+    row_version = row_version + 1
+WHERE id = $1 AND row_version = $2 AND status = 'under_review'
+RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
+    status, completeness, rights_and_access, row_version, created_at, updated_at
+`
+
+type ConfirmActivityNoChangeParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	RowVersion int32     `db:"row_version" json:"row_version"`
+}
+
+type ConfirmActivityNoChangeRow struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	LegalEntityID     uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	OrgUnitID         uuid.UUID          `db:"org_unit_id" json:"org_unit_id"`
+	Code              string             `db:"code" json:"code"`
+	Name              string             `db:"name" json:"name"`
+	Description       *string            `db:"description" json:"description"`
+	Role              string             `db:"role" json:"role"`
+	ControllerPartyID pgtype.UUID        `db:"controller_party_id" json:"controller_party_id"`
+	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	Status            string             `db:"status" json:"status"`
+	Completeness      int16              `db:"completeness" json:"completeness"`
+	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	RowVersion        int32              `db:"row_version" json:"row_version"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// ROPA-13 (ST-05): under_review -> active ("ยืนยันไม่เปลี่ยน") — a review round closed with nothing to
+// re-approve, so no new ropa.activity_versions row is taken for it.
+func (q *Queries) ConfirmActivityNoChange(ctx context.Context, arg ConfirmActivityNoChangeParams) (ConfirmActivityNoChangeRow, error) {
+	row := q.db.QueryRow(ctx, confirmActivityNoChange, arg.ID, arg.RowVersion)
+	var i ConfirmActivityNoChangeRow
+	err := row.Scan(
+		&i.ID,
+		&i.LegalEntityID,
+		&i.OrgUnitID,
+		&i.Code,
+		&i.Name,
+		&i.Description,
+		&i.Role,
+		&i.ControllerPartyID,
+		&i.OwnerUserID,
+		&i.Status,
+		&i.Completeness,
+		&i.RightsAndAccess,
+		&i.RowVersion,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const deleteActivityData = `-- name: DeleteActivityData :execrows
 DELETE FROM ropa.activity_data WHERE id = $1 AND activity_id = $2
 `
@@ -795,6 +909,120 @@ func (q *Queries) ListRetentionRules(ctx context.Context, activityID uuid.UUID) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const requestActivityReview = `-- name: RequestActivityReview :one
+UPDATE ropa.processing_activities
+SET status = 'under_review', updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid,
+    row_version = row_version + 1
+WHERE id = $1 AND row_version = $2 AND status = 'active'
+RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
+    status, completeness, rights_and_access, row_version, created_at, updated_at
+`
+
+type RequestActivityReviewParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	RowVersion int32     `db:"row_version" json:"row_version"`
+}
+
+type RequestActivityReviewRow struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	LegalEntityID     uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	OrgUnitID         uuid.UUID          `db:"org_unit_id" json:"org_unit_id"`
+	Code              string             `db:"code" json:"code"`
+	Name              string             `db:"name" json:"name"`
+	Description       *string            `db:"description" json:"description"`
+	Role              string             `db:"role" json:"role"`
+	ControllerPartyID pgtype.UUID        `db:"controller_party_id" json:"controller_party_id"`
+	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	Status            string             `db:"status" json:"status"`
+	Completeness      int16              `db:"completeness" json:"completeness"`
+	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	RowVersion        int32              `db:"row_version" json:"row_version"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// ROPA-13 (ST-05): active -> under_review ("ครบรอบ / เปลี่ยนแปลง") — the only way to open an active
+// activity for editing again; SaveActivity itself refuses direct edits outside draft/under_review.
+func (q *Queries) RequestActivityReview(ctx context.Context, arg RequestActivityReviewParams) (RequestActivityReviewRow, error) {
+	row := q.db.QueryRow(ctx, requestActivityReview, arg.ID, arg.RowVersion)
+	var i RequestActivityReviewRow
+	err := row.Scan(
+		&i.ID,
+		&i.LegalEntityID,
+		&i.OrgUnitID,
+		&i.Code,
+		&i.Name,
+		&i.Description,
+		&i.Role,
+		&i.ControllerPartyID,
+		&i.OwnerUserID,
+		&i.Status,
+		&i.Completeness,
+		&i.RightsAndAccess,
+		&i.RowVersion,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const returnActivity = `-- name: ReturnActivity :one
+UPDATE ropa.processing_activities
+SET status = 'draft', updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid,
+    row_version = row_version + 1
+WHERE id = $1 AND row_version = $2 AND status = 'pending_approval'
+RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
+    status, completeness, rights_and_access, row_version, created_at, updated_at
+`
+
+type ReturnActivityParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	RowVersion int32     `db:"row_version" json:"row_version"`
+}
+
+type ReturnActivityRow struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	LegalEntityID     uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	OrgUnitID         uuid.UUID          `db:"org_unit_id" json:"org_unit_id"`
+	Code              string             `db:"code" json:"code"`
+	Name              string             `db:"name" json:"name"`
+	Description       *string            `db:"description" json:"description"`
+	Role              string             `db:"role" json:"role"`
+	ControllerPartyID pgtype.UUID        `db:"controller_party_id" json:"controller_party_id"`
+	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	Status            string             `db:"status" json:"status"`
+	Completeness      int16              `db:"completeness" json:"completeness"`
+	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	RowVersion        int32              `db:"row_version" json:"row_version"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// ROPA-13 (ST-05): pending_approval -> draft ("ส่งกลับ"), reason kept only in the audit row (the table
+// itself has no reason column, same as every other field this migration didn't add one for).
+func (q *Queries) ReturnActivity(ctx context.Context, arg ReturnActivityParams) (ReturnActivityRow, error) {
+	row := q.db.QueryRow(ctx, returnActivity, arg.ID, arg.RowVersion)
+	var i ReturnActivityRow
+	err := row.Scan(
+		&i.ID,
+		&i.LegalEntityID,
+		&i.OrgUnitID,
+		&i.Code,
+		&i.Name,
+		&i.Description,
+		&i.Role,
+		&i.ControllerPartyID,
+		&i.OwnerUserID,
+		&i.Status,
+		&i.Completeness,
+		&i.RightsAndAccess,
+		&i.RowVersion,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const setActivityCompleteness = `-- name: SetActivityCompleteness :exec

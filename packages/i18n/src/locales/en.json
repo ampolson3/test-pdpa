@@ -1482,6 +1482,24 @@
       "submit": "Record TIA",
       "submitError": "Couldn't record the TIA: {detail}"
     },
+    "versioning": {
+      "title": "Approval and version history",
+      "pendingApprovalHint": "This activity is waiting for your approval before it becomes active.",
+      "approve": "Approve",
+      "return": "Return for changes",
+      "confirmReturn": "Confirm return",
+      "returnReason": "Reason (optional)",
+      "requestReview": "Reopen for review",
+      "confirmNoChange": "Confirm — nothing changed",
+      "actionError": "Couldn't complete the action: {detail}",
+      "history": "Version history",
+      "noVersions": "No approved versions yet.",
+      "versionNo": "Version {no}",
+      "compareFrom": "Compare from",
+      "compareTo": "Compare to",
+      "diffTitle": "What changed",
+      "noDiff": "No differences between these two versions."
+    },
     "form": {
       "details": "Details",
       "legalEntity": "Legal entity",

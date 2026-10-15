@@ -22,6 +22,12 @@ output-options:
     - ropaGetActivity
     - ropaUpdateActivity
     - ropaSubmitActivity
+    - ropaApproveActivity
+    - ropaReturnActivity
+    - ropaRequestActivityReview
+    - ropaConfirmActivityNoChange
+    - ropaListActivityVersions
+    - ropaCompareActivityVersions
     - ropaListActivityPurposes
     - ropaAddActivityPurpose
     - ropaDeleteActivityPurpose

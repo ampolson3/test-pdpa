@@ -164,6 +164,8 @@ export {
   useSecurityControls,
   useActivityControls,
   useActivityRejections,
+  useActivityVersions,
+  useCompareActivityVersions,
   useActivityMutations,
   type ProcessingActivity,
   type ProcessingActivityInput,
@@ -197,6 +199,8 @@ export {
   type ProcessingActivityWizardLegalReason,
   type ProcessingActivityWizardRetention,
   type ProcessingActivityWizardRecipientKind,
+  type ActivityVersion,
+  type ActivityVersionDiff,
 } from "./activities";
 export {
   useTemplateSets,

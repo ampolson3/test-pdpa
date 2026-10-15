@@ -53,6 +53,46 @@ WHERE id = $1 AND row_version = $2 AND status IN ('draft', 'under_review')
 RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
     status, completeness, rights_and_access, row_version, created_at, updated_at;
 
+-- name: ApproveActivity :one
+-- ROPA-13 (ST-05): pending_approval -> active. approved_by/approved_at were already in the baseline
+-- schema, unused until now.
+UPDATE ropa.processing_activities
+SET status = 'active', approved_by = NULLIF(current_setting('app.user_id', true), '')::uuid, approved_at = now(),
+    updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
+WHERE id = $1 AND row_version = $2 AND status = 'pending_approval'
+RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
+    status, completeness, rights_and_access, row_version, created_at, updated_at;
+
+-- name: ReturnActivity :one
+-- ROPA-13 (ST-05): pending_approval -> draft ("ส่งกลับ"), reason kept only in the audit row (the table
+-- itself has no reason column, same as every other field this migration didn't add one for).
+UPDATE ropa.processing_activities
+SET status = 'draft', updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid,
+    row_version = row_version + 1
+WHERE id = $1 AND row_version = $2 AND status = 'pending_approval'
+RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
+    status, completeness, rights_and_access, row_version, created_at, updated_at;
+
+-- name: RequestActivityReview :one
+-- ROPA-13 (ST-05): active -> under_review ("ครบรอบ / เปลี่ยนแปลง") — the only way to open an active
+-- activity for editing again; SaveActivity itself refuses direct edits outside draft/under_review.
+UPDATE ropa.processing_activities
+SET status = 'under_review', updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid,
+    row_version = row_version + 1
+WHERE id = $1 AND row_version = $2 AND status = 'active'
+RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
+    status, completeness, rights_and_access, row_version, created_at, updated_at;
+
+-- name: ConfirmActivityNoChange :one
+-- ROPA-13 (ST-05): under_review -> active ("ยืนยันไม่เปลี่ยน") — a review round closed with nothing to
+-- re-approve, so no new ropa.activity_versions row is taken for it.
+UPDATE ropa.processing_activities
+SET status = 'active', updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid,
+    row_version = row_version + 1
+WHERE id = $1 AND row_version = $2 AND status = 'under_review'
+RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
+    status, completeness, rights_and_access, row_version, created_at, updated_at;
+
 -- name: ListActivityPurposes :many
 SELECT id, activity_id, purpose_id, purpose_text, lawful_basis_code, consent_purpose_id, row_version, created_at
 FROM ropa.activity_purposes
