@@ -15,8 +15,11 @@ import {
   type ActivityStatus,
 } from "@pdpa/api-client";
 import { Link, useRouter } from "@/i18n/routing";
+import { ImportWizard } from "@/components/import-wizard";
 
 const BFF = "/api/bff";
+// ROPA-18: PLT-14's own import-type code for internal/ropa/service.ActivityImportType.
+const ACTIVITY_IMPORT = "ropa.activity";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
 const STATUSES: ActivityStatus[] = ["draft", "pending_approval", "active", "under_review", "ended"];
@@ -40,6 +43,7 @@ export function ActivitiesContent() {
   const [q, setQ] = useState("");
   const [legalEntityId, setLegalEntityId] = useState<string>();
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const list = useActivities(client, { status: statusFilter || undefined, org_unit_id: orgUnitFilter || undefined, q: q || undefined });
   const { save } = useActivityMutations(client);
@@ -87,9 +91,17 @@ export function ActivitiesContent() {
               {t("viewDataFlow")}
             </Link>
           )}
+          {canCreate && <Button variant="secondary" onClick={() => setImporting(!importing)}>{importing ? t("closeImport") : t("importExcel")}</Button>}
           {canCreate && <Button onClick={() => { save.reset(); setDraft({ ...blank }); }}>{t("newActivity")}</Button>}
         </div>
       </header>
+
+      {canCreate && importing && (
+        <div className="space-y-2 rounded-md border border-slate-200 bg-white p-4">
+          <p className="text-xs text-slate-500">{t("importHint")}</p>
+          <ImportWizard importType={ACTIVITY_IMPORT} onDone={() => void list.refetch()} />
+        </div>
+      )}
 
       <div className="flex flex-wrap items-end gap-3">
         <label><span className="block text-slate-600">{t("filterStatus")}</span>

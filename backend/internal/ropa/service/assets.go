@@ -48,6 +48,11 @@ type Org interface {
 	GetMaster(ctx context.Context, kind string, id uuid.UUID) (orgservice.MasterItem, error)
 	GetLegalEntity(ctx context.Context, id uuid.UUID) (orgservice.LegalEntity, error)
 	ListMaster(ctx context.Context, kind string) ([]orgservice.MasterItem, error)
+	// ListLegalEntities/ListOrgUnits are ROPA-18's own need: a bulk-imported row names its legal
+	// entity and department by free text, not id, so the import type fuzzy-matches against these
+	// (both already exported by orgservice for its own admin UI, rule 9 — no new org code).
+	ListLegalEntities(ctx context.Context) ([]orgservice.LegalEntity, error)
+	ListOrgUnits(ctx context.Context, legalEntityID *uuid.UUID, includeClosed bool) ([]orgservice.OrgUnit, error)
 }
 
 // Consent is what ropa reads from the consent module (rule 9): ROPA-03's evidence, when an activity

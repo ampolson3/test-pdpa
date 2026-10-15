@@ -2568,6 +2568,33 @@ environment's own substitute, the same "practical mechanism instead of unreachab
 chromedp crawler and PLT-13's `LocalKEK` already made; Next.js web vitals / server instrumentation (the
 module doc's own frontend note) — no consumer page needs it yet.
 
+### ROPA-18 นำเข้า RoPA จาก Excel เดิม (`docs/modules/ROPA.md#ropa-18`) — done, scoped to one purpose/data/retention row per activity
+Built directly on PLT-14's generic import framework (`internal/platform/importer`) — a new type,
+`ropaservice.ActivityImportType` ("ropa.activity"), registered in `internal/wiring.ImportTypes()`
+alongside ORG-20's own `org.holiday` — so the existing upload/map/validate/confirm/apply flow and
+`ImportWizard` UI come for free, no new migration/endpoint/permission. One row per activity, carrying
+the core fields plus exactly one purpose/data-subject-type pair/retention rule — an activity needing
+more than that is finished by hand on `/ropa/activities/{id}` afterward, the same "left for OWNER to
+add" reasoning RTG-01/ROPA-05 already used. Legal entity, department, lawful basis, data category and
+subject type are free text — `internal/ropa/service/fuzzy.go`'s `fuzzyBestMatch` (exact match, else
+Levenshtein distance within 30% of the longer string) resolves each against this tenant's own `org.*`
+master data (`ropaservice.Org` widened with `ListLegalEntities`/`ListOrgUnits`, both already exported
+by `orgservice`, rule 9) — the literal "จับคู่ master data แบบ fuzzy" acceptance criterion. A
+consent-requiring lawful basis (ROPA-06) is flagged `requires_consent_link` rather than silently
+accepted or failing `Apply` mid-batch, since this single-row import has no column for a real
+`consent.purposes` link. Error-report messages are stable codes, never raw cell values (rule 3). UI:
+`/ropa/activities` gained an "Import from Excel" toggle mounting the shared `ImportWizard`, refreshing
+the list on completion — the same pattern `/settings/calendar`'s own holiday import already uses.
+Tests: unit (`fuzzy_test.go` — exact/near/unrelated/empty cases, Levenshtein directly; `import_test.go`
+— a valid row creates the activity with all three child rows, a misspelled legal entity/department
+still resolves, every unknown reference/bad value reported with its own code, a consent-requiring
+basis flagged). Not verified live against a real Postgres/Redis — this environment's own Postgres/
+Redis became unreachable partway through this session (both were reachable earlier in this same
+session, for PLT-19); every test compiles and vets clean and skips the same way the rest of this
+module's own suite already does when neither is reachable. `go build ./...`, `go vet ./...`,
+`go test -p 1 ./...` (no regressions), `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build`/`typecheck` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

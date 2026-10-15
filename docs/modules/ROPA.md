@@ -672,6 +672,48 @@ the rest of this module's own test suite already does here.
 
 **หมายเหตุ:** ดึงเข้า P1 เพื่อให้ลูกค้าย้ายจาก Excel ได้ทันที (T26)
 
+**Implementation (ROPA-18):** built directly on PLT-14's generic bulk-import framework
+(`internal/platform/importer`) — a new import type, `internal/ropa/service.ActivityImportType`
+("ropa.activity"), registered in `internal/wiring.ImportTypes()` alongside ORG-20's own
+`org.holiday` type, so the existing upload → map → validate (dry run + error report) → confirm →
+apply flow, CSV/XLSX parsing, and `/ropa/activities`-reachable `ImportWizard` UI all come for free —
+no new migration, endpoint, or permission code (`ropa.activity.create`, already seeded).
+Deliberately scoped to the minimal slice BP-05's own Excel migration needs: one row per activity,
+carrying the core fields plus exactly one purpose, one data/subject-type pair and one retention
+rule — an organization's existing RoPA spreadsheet typically has exactly one row per activity with
+these columns; an activity needing a second purpose, data category, retention rule or any
+recipients is edited by hand afterward on `/ropa/activities/{id}`, the same "left for the OWNER to
+add by hand" reasoning RTG-01/ROPA-05 already used for recipients.
+
+Legal entity, department, lawful basis, data category and subject type are free text in the sheet,
+not internal codes — `internal/ropa/service/fuzzy.go`'s `fuzzyBestMatch` (normalize, exact match,
+else Levenshtein edit distance within 30% of the longer string's length) resolves each against this
+tenant's own already-seeded `org.*` master data (`ropaservice.Org` widened with `ListLegalEntities`/
+`ListOrgUnits`, both already exported by `orgservice` for its own admin UI — rule 9, no new org
+code), the literal "จับคู่ master data แบบ fuzzy" the module doc's own backend note calls for. A row
+whose lawful basis requires consent evidence (ROPA-06) is flagged `requires_consent_link` rather
+than either silently dropping that requirement or failing `Apply` opaquely mid-batch — this
+single-row import has no column for a real `consent.purposes` link, so that one activity is left
+for OWNER to finish linking by hand after import.
+
+Error-report messages are stable codes, never raw cell values (rule 3): `invalid_role`,
+`unknown_legal_entity`, `unknown_org_unit`, `unknown_lawful_basis`, `requires_consent_link`,
+`unknown_data_category`, `unknown_subject_type`, `invalid_retention_months`,
+`invalid_disposal_method` (plus the framework's own `required`). UI: `/ropa/activities` gained an
+"Import from Excel" toggle next to the existing wizard/template links, mounting the shared
+`ImportWizard` component exactly like `/settings/calendar`'s own holiday import already does, and
+refreshing the activity list on completion. Tests: unit (`internal/ropa/service/fuzzy_test.go` —
+exact/near/unrelated/empty match cases, Levenshtein directly; `internal/ropa/service/import_test.go`
+— a valid row creates the activity with all three child rows, a slightly misspelled legal
+entity/department still resolves via fuzzy matching, every unknown reference and bad value is
+reported with its own code, a consent-requiring basis is flagged rather than silently accepted).
+Not verified live against a real Postgres/Redis — this environment's own Postgres/Redis became
+unreachable partway through this session (both were reachable earlier in the same session, for
+PLT-19); every test compiles and vets clean and skips the same way the rest of this module's own
+test suite already does when neither is reachable. `go build ./...`, `go vet ./...`,
+`go test -p 1 ./...` (no regressions), `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build`/`typecheck` all verified clean.
+
 <a id="ropa-11"></a>
 ### ROPA-11 แบบสอบถามเก็บข้อมูลจากหน่วยงาน
 
