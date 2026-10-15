@@ -60,6 +60,9 @@ export {
   useRecordVendorAssessment,
   useDecideVendorAssessment,
   useVendorRemediationItems,
+  useVendorOffboarding,
+  useUpdateVendorOffboarding,
+  useTransitionVendor,
   type Vendor,
   type VendorInput,
   type VendorStatus,
@@ -72,6 +75,8 @@ export {
   type VendorDecideAssessmentInput,
   type VendorDecideAssessmentResult,
   type VendorRemediationItem,
+  type VendorOffboarding,
+  type VendorOffboardingInput,
 } from "./vendors";
 export {
   useRetentionSchedules,

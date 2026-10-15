@@ -676,6 +676,10 @@ once one of those features exists, the same "no consumer yet" deferral this code
 
 **Acceptance criteria:** ยุติคู่ค้าได้เมื่อมีใบยืนยันการทำลายและปิดสิทธิ์ครบ
 
+**Implementation:** `internal/vendormgmt/service/offboarding.go` on the already-specified
+`vendor.vendors`/`vendor.offboardings` tables (no new migration) — see `CLAUDE.md`'s `### VEN-14` entry for
+the full note.
+
 <a id="ven-15"></a>
 ### VEN-15 AI ช่วยประเมินคู่ค้า
 

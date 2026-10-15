@@ -14,6 +14,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
 
 	dpiaservice "pdpa-platform/internal/dpia/service"
@@ -25,6 +26,7 @@ import (
 	"pdpa-platform/internal/pkg/validate"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/events"
+	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/forms"
 	"pdpa-platform/internal/platform/jobs"
 	riskservice "pdpa-platform/internal/risk/service"
@@ -600,5 +602,226 @@ func TestVendorDecideAssessmentEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("POST", decidePath, &decider, map[string]any{"decision": "conditional"}); code != 422 {
 		t.Errorf("conditional with no remediation items (input validation runs before the already-decided check): %d, want 422", code)
+	}
+}
+
+type fakeOffboardingFiles struct {
+	raw      map[uuid.UUID]bool
+	attached map[uuid.UUID]files.File
+}
+
+func (f *fakeOffboardingFiles) Get(ctx context.Context, id uuid.UUID) (files.File, error) {
+	if a, ok := f.attached[id]; ok {
+		return a, nil
+	}
+	if !f.raw[id] {
+		return files.File{}, pgx.ErrNoRows
+	}
+	return files.File{ID: id}, nil
+}
+
+func (f *fakeOffboardingFiles) Attach(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error {
+	eid := entityID
+	f.attached[id] = files.File{ID: id, EntityType: entityType, EntityID: &eid}
+	return nil
+}
+
+// TestVendorOffboardingEndpoints_Contract is VEN-14's own HTTP contract test: starting offboarding needs
+// vendor.vendor.update, terminating needs the permanent-status-change vendor.vendor.delete, and terminating
+// is refused until a destruction certificate and access revocation are both on record (the acceptance
+// criterion), all through the real OpenAPI validator + AuthZ chain.
+func TestVendorOffboardingEndpoints_Contract(t *testing.T) {
+	ctx := context.Background()
+	rdb := redis.NewClient(&redis.Options{Addr: envOr("TEST_REDIS_ADDR", "localhost:6379")})
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		t.Skipf("no Redis: %v", err)
+	}
+	t.Cleanup(func() { rdb.Close() })
+	app := dbtest.Pool(t)
+	tenant := dbtest.SeedTenant(t, ctx, app, dbtest.PlatformPool(t), "vendoroffboardhttp")
+
+	owner := dbtest.OwnerPool(t)
+	t.Cleanup(func() {
+		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
+			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM vendor.offboardings`)
+			_, _ = tx.Exec(ctx, `DELETE FROM vendor.vendors`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.external_parties`)
+			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
+			return err
+		})
+	})
+	orgSvc := &orgservice.Service{Audit: audit.New()}
+	ff := &fakeOffboardingFiles{raw: map[uuid.UUID]bool{}, attached: map[uuid.UUID]files.File{}}
+	svc := &vendorservice.Service{Audit: audit.New(), Org: orgSvc, Files: ff}
+
+	var vendorID uuid.UUID
+	var rowVersion int32
+	certID := uuid.New()
+	ff.raw[certID] = true
+	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		party, err := orgSvc.SaveExternalParty(ctx, orgservice.ExternalParty{PartyType: "processor", NameTh: "ผู้ให้บริการทดสอบยุติ", CountryCode: "US"}, 0)
+		if err != nil {
+			return err
+		}
+		v, err := svc.SaveVendor(ctx, vendorservice.Vendor{PartyID: party.ID, ServiceDescription: "ทดสอบยุติ", IsProcessor: true}, 0)
+		if err != nil {
+			return err
+		}
+		vendorID = v.ID
+		return pdb.MustTxFromContext(ctx).QueryRow(ctx,
+			`UPDATE vendor.vendors SET status = 'approved', row_version = row_version + 1 WHERE id = $1 RETURNING row_version`,
+			v.ID).Scan(&rowVersion)
+	})
+
+	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	validateMw, _ := validate.Middleware(spec, nil)
+	perms := map[string]string{}
+	for _, item := range spec.Paths.Map() {
+		for _, op := range item.Operations() {
+			if code, ok := op.Extensions["x-permission"].(string); ok {
+				perms[strings.ToUpper(op.OperationID[:1])+op.OperationID[1:]] = code
+			}
+		}
+	}
+	limited := uuid.New() // update only, no delete — can start offboarding but never terminate
+	grants := map[string][]string{
+		tenant.UserID.String(): {"vendor.vendor.read", "vendor.vendor.create", "vendor.vendor.update", "vendor.vendor.delete"},
+		limited.String():       {"vendor.vendor.read", "vendor.vendor.update"},
+	}
+	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
+		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
+	})
+	t.Cleanup(func() {
+		for uid := range grants {
+			_ = cache.Invalidate(context.Background(), tenant.ID.String(), uid)
+		}
+	})
+
+	r := chi.NewRouter()
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if u := req.Header.Get("X-Test-User"); u != "" {
+				req = req.WithContext(httpx.WithPrincipal(req.Context(), httpx.Principal{TenantID: tenant.ID.String(), UserID: u, ActorType: "user"}))
+			}
+			next.ServeHTTP(w, req)
+		})
+	})
+	r.Use(validateMw)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			p, ok := httpx.PrincipalFromContext(req.Context())
+			if !ok {
+				next.ServeHTTP(w, req)
+				return
+			}
+			_ = pdb.WithTenantTx(req.Context(), app, p.TenantID, p.UserID, func(ctx context.Context) error {
+				next.ServeHTTP(w, req.WithContext(ctx))
+				return nil
+			})
+		})
+	})
+	strict := vendorhttp.NewStrictHandlerWithOptions(vendorhttp.NewStrict(svc),
+		[]vendorhttp.StrictMiddlewareFunc{authz.StrictMiddleware[vendorhttp.StrictHandlerFunc](cache, func(op string) (string, bool) { c, ok := perms[op]; return c, ok })},
+		vendorhttp.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				if p, ok := err.(httpx.Problem); ok {
+					httpx.WriteProblem(w, r, p)
+					return
+				}
+				httpx.WriteProblem(w, r, httpx.Internal())
+			},
+		})
+	vendorhttp.HandlerWithOptions(strict, vendorhttp.ChiServerOptions{BaseRouter: r})
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	do := func(method, path string, user *uuid.UUID, body any, headers map[string]string) (int, string, http.Header) {
+		var buf bytes.Buffer
+		if body != nil {
+			_ = json.NewEncoder(&buf).Encode(body)
+		}
+		req, _ := http.NewRequest(method, srv.URL+path, &buf)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if user != nil {
+			req.Header.Set("X-Test-User", user.String())
+		}
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		var out bytes.Buffer
+		_, _ = out.ReadFrom(res.Body)
+		return res.StatusCode, out.String(), res.Header
+	}
+	admin := tenant.UserID
+	vendorPath := "/admin/v1/vendors/" + vendorID.String()
+
+	if code, _, _ := do("GET", vendorPath+"/offboarding", &admin, nil, nil); code != 404 {
+		t.Errorf("no offboarding record yet: %d, want 404", code)
+	}
+
+	code, body, hdr := do("POST", vendorPath+"/transitions", &admin, map[string]any{"to": "terminated"}, map[string]string{"If-Match": etagOf(int(rowVersion))})
+	if code != 409 || !strings.Contains(body, "vendor.invalid_transition") {
+		t.Errorf("terminate from approved: %d %s, want 409 vendor.invalid_transition", code, body)
+	}
+
+	code, body, hdr = do("POST", vendorPath+"/transitions", &admin, map[string]any{"to": "offboarding"}, map[string]string{"If-Match": etagOf(int(rowVersion))})
+	if code != 200 || !strings.Contains(body, `"status":"offboarding"`) {
+		t.Fatalf("start offboarding: %d %s", code, body)
+	}
+	startedEtag := hdr.Get("ETag")
+
+	code, body, hdr = do("GET", vendorPath+"/offboarding", &admin, nil, nil)
+	if code != 200 || !strings.Contains(body, `"data_return_status":"pending"`) {
+		t.Fatalf("get offboarding: %d %s", code, body)
+	}
+	offEtag := hdr.Get("ETag")
+
+	if code, _, _ := do("PUT", vendorPath+"/offboarding", &admin, map[string]any{"data_return_status": "pending"}, nil); code != 428 {
+		t.Errorf("update offboarding no If-Match: %d, want 428", code)
+	}
+	code, body, hdr = do("PUT", vendorPath+"/offboarding", &admin,
+		map[string]any{"data_return_status": "pending", "access_revoked": true}, map[string]string{"If-Match": offEtag})
+	if code != 200 || !strings.Contains(body, `"access_revoked_at"`) {
+		t.Fatalf("record access revoked: %d %s", code, body)
+	}
+	offEtag = hdr.Get("ETag")
+
+	// Access revoked but no certificate yet — terminating is still refused.
+	if code, body, _ := do("POST", vendorPath+"/transitions", &admin, map[string]any{"to": "terminated"}, map[string]string{"If-Match": startedEtag}); code != 409 || !strings.Contains(body, "vendor.offboarding_incomplete") {
+		t.Errorf("terminate with no certificate: %d %s, want 409 vendor.offboarding_incomplete", code, body)
+	}
+
+	code, body, hdr = do("PUT", vendorPath+"/offboarding", &admin,
+		map[string]any{"data_return_status": "destroyed", "destruction_certificate_file_id": certID}, map[string]string{"If-Match": offEtag})
+	if code != 200 || !strings.Contains(body, `"data_return_status":"destroyed"`) {
+		t.Fatalf("record certificate: %d %s", code, body)
+	}
+
+	// A caller without vendor.vendor.delete can't terminate even once everything is in order.
+	if code, _, _ := do("POST", vendorPath+"/transitions", &limited, map[string]any{"to": "terminated"}, map[string]string{"If-Match": startedEtag}); code != 403 {
+		t.Errorf("terminate without .delete: %d, want 403", code)
+	}
+
+	code, body, _ = do("POST", vendorPath+"/transitions", &admin, map[string]any{"to": "terminated"}, map[string]string{"If-Match": startedEtag})
+	if code != 200 || !strings.Contains(body, `"status":"terminated"`) {
+		t.Fatalf("terminate: %d %s", code, body)
+	}
+
+	if code, body, _ := do("GET", vendorPath+"/offboarding", &admin, nil, nil); code != 200 || !strings.Contains(body, `"completed_at"`) {
+		t.Errorf("offboarding record after termination: %d %s", code, body)
 	}
 }

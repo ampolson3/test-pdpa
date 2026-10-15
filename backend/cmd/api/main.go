@@ -274,7 +274,8 @@ func run() error {
 	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc}                // ROPA-05: create an activity from one of these templates
 	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}                                                               // RRA-01: score an activity from its own RoPA data
 	dataflowSvc := &dataflowservice.Service{Ropa: ropaSvc, Org: orgSvc, PDF: render.FromEnv(), Image: render.ImageFromEnv()} // DFG-01/03: the data flow diagram, read live off RoPA; DFG-08: image/report export
-	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc}                                                        // VEN-01: vendor/processor registry
+	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc}                                        // VEN-01: vendor/processor registry; VEN-14: destruction certificate
+	fileSvc.EntityPermissions[vendorservice.OffboardingEntityType] = "vendor.vendor.read"                                    // VEN-14 destruction certificate
 	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc, Risk: riskSvc}                               // RRA-07: closing a "ropa_gap" task re-checks the rule
 	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read"                                         // DPO-01 appointment order / PDPC evidence
 	riskSvc.Dpo = dpoSvc                                                                                                     // DPIA-07/RRA-07: owner + due date on a control, or a gap finding, opens a dpo.tasks job

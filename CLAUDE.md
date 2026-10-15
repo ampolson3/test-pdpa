@@ -2762,6 +2762,55 @@ the tree are untouched by this change), `go test -p 1 ./...` (no regressions, fu
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
 `pnpm --filter @pdpa/admin build` all verified clean.
 
+### VEN-14 ยุติการใช้บริการ (`docs/modules/VEN.md#ven-14`) — done
+`vendor.vendors`/`vendor.offboardings` were both already fully specified in the baseline migrations (ST-06#1's
+own `approved|conditional -> offboarding -> terminated` edges, and the offboarding table's own
+`data_return_status`/`destruction_certificate_file_id`/`access_revoked_at`/`completed_at` columns) — no new
+migration or permission code. `internal/vendormgmt/service/offboarding.go`: `TransitionVendor` is the whole
+state machine as two cases — entering "offboarding" (`vendor.vendor.update`, already the endpoint's own
+permission) opens a fresh `vendor.offboardings` row (`data_return_status = "pending"`) in the same
+transaction as the status change; entering "terminated" is the acceptance criterion itself
+("ยุติคู่ค้าได้เมื่อมีใบยืนยันการทำลายและปิดสิทธิ์ครบ") and additionally requires `vendor.vendor.delete` —
+checked directly against `authz.FromContext(ctx)` inside the service, the same permanent-status-change
+permission ORG-06's external-party merge and DPIA-03's template retire already reuse rather than minting a
+new code for "this one transition is irreversible." The guard reads literally: access must be revoked
+(`access_revoked_at` set) and either a destruction certificate is on file or `data_return_status =
+"not_applicable"` (no data was ever shared with this vendor in the first place) — existence over judgement,
+the same reading DSAR-04's own agent-document guard already uses, so a vendor that never held PII can still
+be closed out without inventing a certificate for nothing to destroy.
+
+`UpdateOffboarding` records progress against the vendor's own most recent offboarding row (`GetOffboardingForVendor`,
+newest first — in practice there is at most one per vendor, since terminated is ST-06's own terminal state and
+the transition into "offboarding" only succeeds from approved/conditional): the destruction certificate is the
+caller's own clean, still-unattached PLT-09 upload, attached via a new `Files` interface (`Get`/`Attach`, rule
+9) against a new `OffboardingEntityType` ("vendor_offboarding", registered in `cmd/api/main.go` on
+`vendor.vendor.read`) — the same "caller's own clean upload" pattern DSAR-04's `RecordAgent` already
+established, reused rather than re-invented. `access_revoked_at` is stamped from the service's own injectable
+clock (`Service.Now`, new — nil means `time.Now` in production) the first time `AccessRevoked: true` is sent,
+and never cleared by a later save that leaves it unset. sqlc's own per-query Row-type split (every
+`offboardings.sql` query gets its own named struct despite sharing one column layout) was converted through a
+local `offboardingRow` mirror, the same workaround BRE-15 (this same session) already established.
+
+API: `GET`/`PUT /admin/v1/vendors/{id}/offboarding` (ETag/If-Match on the offboarding row's own version),
+`POST /admin/v1/vendors/{id}/transitions` (`{to: "offboarding"|"terminated"}`, ETag/If-Match on the vendor
+row; 409 `vendor.invalid_transition` for any edge ST-06#1 doesn't declare, a new 409
+`vendor.offboarding_incomplete` specifically for the acceptance-criterion guard, 403 `authz.denied` for
+`terminated` without `.delete`). UI: `/vendors/{id}` gained an offboarding section shown once the vendor is
+approved/conditional/offboarding/terminated — a "start offboarding" button, then (once started) a
+data-return-status selector, `FileUploader` for the certificate, an access-revoked checkbox, and a terminate
+button disabled until the guard is satisfied (a client-side mirror of the same rule, not a replacement for
+it). Tests: unit (`internal/vendormgmt/service/offboarding_test.go` — the full lifecycle from approved
+through a blocked terminate at each missing piece to a successful one; `not_applicable` needing no
+certificate; the `.delete`-permission gate; two-tenant isolation; the injected clock stamping
+`access_revoked_at` once and never clearing it on a later save), HTTP contract
+(`internal/vendormgmt/http/handler_test.go`'s new `TestVendorOffboardingEndpoints_Contract` — 404/409/428/200/403
+through the real validator + AuthZ chain, including the same blocked-then-unblocked terminate sequence).
+`go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test -p 1 ./...` (no
+regressions; every test here and in the rest of the suite compiles and vets clean and skips without a
+reachable Postgres/Redis, the same environment limitation this session's later features already disclosed),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

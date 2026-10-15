@@ -12851,6 +12851,136 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/vendors/{id}/offboarding:
+    get:
+      operationId: vendorGetOffboarding
+      tags: [vendor]
+      summary: The vendor's current offboarding record, if one is in progress or finished (VEN-14)
+      x-permission: vendor.vendor.read
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorOffboarding'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: vendorUpdateOffboarding
+      tags: [vendor]
+      summary: Record data-return progress — status, destruction certificate, access revocation (If-Match)
+      x-permission: vendor.vendor.update
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorOffboardingInput'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorOffboarding'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/vendors/{id}/transitions:
+    post:
+      operationId: vendorTransitionVendor
+      tags: [vendor]
+      summary: Move the vendor along ST-06 — start offboarding, or terminate once data return and access
+        revocation are complete (If-Match; VEN-14 is the terminated edge's own acceptance criterion)
+      x-permission: vendor.vendor.update
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to]
+              additionalProperties: false
+              properties:
+                to:
+                  type: string
+                  enum: [offboarding, terminated]
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vendor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/agreements:
     get:
       operationId: agreementListAgreements
@@ -16911,6 +17041,35 @@ components:
         remediation_items:
           type: array
           items: {$ref: '#/components/schemas/VendorRemediationItem'}
+    VendorOffboardingInput:
+      type: object
+      required: [data_return_status]
+      additionalProperties: false
+      properties:
+        data_return_status:
+          type: string
+          enum: [pending, returned, destroyed, not_applicable]
+        destruction_certificate_file_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        access_revoked:
+          type: boolean
+          description: Set true once every access credential/API key this vendor held has been revoked;
+            the acceptance criterion's other half alongside the destruction certificate.
+    VendorOffboarding:
+      type: object
+      required: [id, vendor_id, data_return_status, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        vendor_id: {$ref: '#/components/schemas/Uuid'}
+        data_return_status:
+          type: string
+          enum: [pending, returned, destroyed, not_applicable]
+        destruction_certificate_file_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        access_revoked_at: {$ref: '#/components/schemas/Timestamp'}
+        completed_at: {$ref: '#/components/schemas/Timestamp'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
     AgreementType:
       type: string
       description: 'agreement.agreements'' own CHECK constraint — ''dpa'' (DPA-02) and ''dsa'' (DSA-04) are wired to CreateWizard; joint_controller/inbound_dpa are real values for when those modules exist.'

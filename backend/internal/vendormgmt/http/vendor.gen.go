@@ -149,6 +149,54 @@ func (e VendorDecideAssessmentInputRemediationItemsSeverity) Valid() bool {
 	}
 }
 
+// Defines values for VendorOffboardingDataReturnStatus.
+const (
+	VendorOffboardingDataReturnStatusDestroyed     VendorOffboardingDataReturnStatus = "destroyed"
+	VendorOffboardingDataReturnStatusNotApplicable VendorOffboardingDataReturnStatus = "not_applicable"
+	VendorOffboardingDataReturnStatusPending       VendorOffboardingDataReturnStatus = "pending"
+	VendorOffboardingDataReturnStatusReturned      VendorOffboardingDataReturnStatus = "returned"
+)
+
+// Valid indicates whether the value is a known member of the VendorOffboardingDataReturnStatus enum.
+func (e VendorOffboardingDataReturnStatus) Valid() bool {
+	switch e {
+	case VendorOffboardingDataReturnStatusDestroyed:
+		return true
+	case VendorOffboardingDataReturnStatusNotApplicable:
+		return true
+	case VendorOffboardingDataReturnStatusPending:
+		return true
+	case VendorOffboardingDataReturnStatusReturned:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VendorOffboardingInputDataReturnStatus.
+const (
+	VendorOffboardingInputDataReturnStatusDestroyed     VendorOffboardingInputDataReturnStatus = "destroyed"
+	VendorOffboardingInputDataReturnStatusNotApplicable VendorOffboardingInputDataReturnStatus = "not_applicable"
+	VendorOffboardingInputDataReturnStatusPending       VendorOffboardingInputDataReturnStatus = "pending"
+	VendorOffboardingInputDataReturnStatusReturned      VendorOffboardingInputDataReturnStatus = "returned"
+)
+
+// Valid indicates whether the value is a known member of the VendorOffboardingInputDataReturnStatus enum.
+func (e VendorOffboardingInputDataReturnStatus) Valid() bool {
+	switch e {
+	case VendorOffboardingInputDataReturnStatusDestroyed:
+		return true
+	case VendorOffboardingInputDataReturnStatusNotApplicable:
+		return true
+	case VendorOffboardingInputDataReturnStatusPending:
+		return true
+	case VendorOffboardingInputDataReturnStatusReturned:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for VendorRemediationItemSeverity.
 const (
 	VendorRemediationItemSeverityHigh   VendorRemediationItemSeverity = "high"
@@ -431,6 +479,42 @@ func (e VendorRecordIntakeParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for VendorGetOffboardingParamsAcceptLanguage.
+const (
+	VendorGetOffboardingParamsAcceptLanguageEn VendorGetOffboardingParamsAcceptLanguage = "en"
+	VendorGetOffboardingParamsAcceptLanguageTh VendorGetOffboardingParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the VendorGetOffboardingParamsAcceptLanguage enum.
+func (e VendorGetOffboardingParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case VendorGetOffboardingParamsAcceptLanguageEn:
+		return true
+	case VendorGetOffboardingParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VendorUpdateOffboardingParamsAcceptLanguage.
+const (
+	VendorUpdateOffboardingParamsAcceptLanguageEn VendorUpdateOffboardingParamsAcceptLanguage = "en"
+	VendorUpdateOffboardingParamsAcceptLanguageTh VendorUpdateOffboardingParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the VendorUpdateOffboardingParamsAcceptLanguage enum.
+func (e VendorUpdateOffboardingParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case VendorUpdateOffboardingParamsAcceptLanguageEn:
+		return true
+	case VendorUpdateOffboardingParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for VendorListRemediationItemsParamsAcceptLanguage.
 const (
 	VendorListRemediationItemsParamsAcceptLanguageEn VendorListRemediationItemsParamsAcceptLanguage = "en"
@@ -443,6 +527,42 @@ func (e VendorListRemediationItemsParamsAcceptLanguage) Valid() bool {
 	case VendorListRemediationItemsParamsAcceptLanguageEn:
 		return true
 	case VendorListRemediationItemsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VendorTransitionVendorParamsAcceptLanguage.
+const (
+	VendorTransitionVendorParamsAcceptLanguageEn VendorTransitionVendorParamsAcceptLanguage = "en"
+	VendorTransitionVendorParamsAcceptLanguageTh VendorTransitionVendorParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the VendorTransitionVendorParamsAcceptLanguage enum.
+func (e VendorTransitionVendorParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case VendorTransitionVendorParamsAcceptLanguageEn:
+		return true
+	case VendorTransitionVendorParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VendorTransitionVendorJSONBodyTo.
+const (
+	VendorTransitionVendorJSONBodyToOffboarding VendorTransitionVendorJSONBodyTo = "offboarding"
+	VendorTransitionVendorJSONBodyToTerminated  VendorTransitionVendorJSONBodyTo = "terminated"
+)
+
+// Valid indicates whether the value is a known member of the VendorTransitionVendorJSONBodyTo enum.
+func (e VendorTransitionVendorJSONBodyTo) Valid() bool {
+	switch e {
+	case VendorTransitionVendorJSONBodyToOffboarding:
+		return true
+	case VendorTransitionVendorJSONBodyToTerminated:
 		return true
 	default:
 		return false
@@ -620,6 +740,41 @@ type VendorIntakeResult struct {
 	RequiredAssessmentCodes []string `json:"required_assessment_codes"`
 }
 
+// VendorOffboarding defines model for VendorOffboarding.
+type VendorOffboarding struct {
+	// AccessRevokedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	AccessRevokedAt *Timestamp `json:"access_revoked_at,omitempty"`
+
+	// CompletedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	CompletedAt *Timestamp `json:"completed_at,omitempty"`
+
+	// CreatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	CreatedAt                    Timestamp                         `json:"created_at"`
+	DataReturnStatus             VendorOffboardingDataReturnStatus `json:"data_return_status"`
+	DestructionCertificateFileId *Uuid                             `json:"destruction_certificate_file_id,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id         Uuid `json:"id"`
+	RowVersion int  `json:"row_version"`
+
+	// VendorId UUIDv7 generated by the API
+	VendorId Uuid `json:"vendor_id"`
+}
+
+// VendorOffboardingDataReturnStatus defines model for VendorOffboarding.DataReturnStatus.
+type VendorOffboardingDataReturnStatus string
+
+// VendorOffboardingInput defines model for VendorOffboardingInput.
+type VendorOffboardingInput struct {
+	// AccessRevoked Set true once every access credential/API key this vendor held has been revoked; the acceptance criterion's other half alongside the destruction certificate.
+	AccessRevoked                *bool                                  `json:"access_revoked,omitempty"`
+	DataReturnStatus             VendorOffboardingInputDataReturnStatus `json:"data_return_status"`
+	DestructionCertificateFileId *Uuid                                  `json:"destruction_certificate_file_id,omitempty"`
+}
+
+// VendorOffboardingInputDataReturnStatus defines model for VendorOffboardingInput.DataReturnStatus.
+type VendorOffboardingInputDataReturnStatus string
+
 // VendorRecordAssessmentInput defines model for VendorRecordAssessmentInput.
 type VendorRecordAssessmentInput struct {
 	// Answers Answers to that template's published form questions
@@ -780,6 +935,27 @@ type VendorRecordIntakeParams struct {
 // VendorRecordIntakeParamsAcceptLanguage defines parameters for VendorRecordIntake.
 type VendorRecordIntakeParamsAcceptLanguage string
 
+// VendorGetOffboardingParams defines parameters for VendorGetOffboarding.
+type VendorGetOffboardingParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *VendorGetOffboardingParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// VendorGetOffboardingParamsAcceptLanguage defines parameters for VendorGetOffboarding.
+type VendorGetOffboardingParamsAcceptLanguage string
+
+// VendorUpdateOffboardingParams defines parameters for VendorUpdateOffboarding.
+type VendorUpdateOffboardingParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *VendorUpdateOffboardingParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// VendorUpdateOffboardingParamsAcceptLanguage defines parameters for VendorUpdateOffboarding.
+type VendorUpdateOffboardingParamsAcceptLanguage string
+
 // VendorListRemediationItemsParams defines parameters for VendorListRemediationItems.
 type VendorListRemediationItemsParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -788,6 +964,26 @@ type VendorListRemediationItemsParams struct {
 
 // VendorListRemediationItemsParamsAcceptLanguage defines parameters for VendorListRemediationItems.
 type VendorListRemediationItemsParamsAcceptLanguage string
+
+// VendorTransitionVendorJSONBody defines parameters for VendorTransitionVendor.
+type VendorTransitionVendorJSONBody struct {
+	To VendorTransitionVendorJSONBodyTo `json:"to"`
+}
+
+// VendorTransitionVendorParams defines parameters for VendorTransitionVendor.
+type VendorTransitionVendorParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *VendorTransitionVendorParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// VendorTransitionVendorParamsAcceptLanguage defines parameters for VendorTransitionVendor.
+type VendorTransitionVendorParamsAcceptLanguage string
+
+// VendorTransitionVendorJSONBodyTo defines parameters for VendorTransitionVendor.
+type VendorTransitionVendorJSONBodyTo string
 
 // VendorCreateVendorJSONRequestBody defines body for VendorCreateVendor for application/json ContentType.
 type VendorCreateVendorJSONRequestBody = VendorInput
@@ -803,6 +999,12 @@ type VendorDecideAssessmentJSONRequestBody = VendorDecideAssessmentInput
 
 // VendorRecordIntakeJSONRequestBody defines body for VendorRecordIntake for application/json ContentType.
 type VendorRecordIntakeJSONRequestBody = VendorIntakeInput
+
+// VendorUpdateOffboardingJSONRequestBody defines body for VendorUpdateOffboarding for application/json ContentType.
+type VendorUpdateOffboardingJSONRequestBody = VendorOffboardingInput
+
+// VendorTransitionVendorJSONRequestBody defines body for VendorTransitionVendor for application/json ContentType.
+type VendorTransitionVendorJSONRequestBody VendorTransitionVendorJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -833,9 +1035,18 @@ type ServerInterface interface {
 	// VendorRecordIntake Answer the intake questionnaire once — the system computes the tier and the assessment templates it now requires (VEN-02)
 	// (POST /admin/v1/vendors/{id}/intakes)
 	VendorRecordIntake(w http.ResponseWriter, r *http.Request, id Uuid, params VendorRecordIntakeParams)
+	// VendorGetOffboarding The vendor's current offboarding record, if one is in progress or finished (VEN-14)
+	// (GET /admin/v1/vendors/{id}/offboarding)
+	VendorGetOffboarding(w http.ResponseWriter, r *http.Request, id Uuid, params VendorGetOffboardingParams)
+	// VendorUpdateOffboarding Record data-return progress — status, destruction certificate, access revocation (If-Match)
+	// (PUT /admin/v1/vendors/{id}/offboarding)
+	VendorUpdateOffboarding(w http.ResponseWriter, r *http.Request, id Uuid, params VendorUpdateOffboardingParams)
 	// VendorListRemediationItems A vendor's remediation plan — items opened by conditional approvals (VEN-08)
 	// (GET /admin/v1/vendors/{id}/remediation-items)
 	VendorListRemediationItems(w http.ResponseWriter, r *http.Request, id Uuid, params VendorListRemediationItemsParams)
+	// VendorTransitionVendor Move the vendor along ST-06 — start offboarding, or terminate once data return and access revocation are complete (If-Match; VEN-14 is the terminated edge's own acceptance criterion)
+	// (POST /admin/v1/vendors/{id}/transitions)
+	VendorTransitionVendor(w http.ResponseWriter, r *http.Request, id Uuid, params VendorTransitionVendorParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -896,9 +1107,27 @@ func (_ Unimplemented) VendorRecordIntake(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// VendorGetOffboarding The vendor's current offboarding record, if one is in progress or finished (VEN-14)
+// (GET /admin/v1/vendors/{id}/offboarding)
+func (_ Unimplemented) VendorGetOffboarding(w http.ResponseWriter, r *http.Request, id Uuid, params VendorGetOffboardingParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// VendorUpdateOffboarding Record data-return progress — status, destruction certificate, access revocation (If-Match)
+// (PUT /admin/v1/vendors/{id}/offboarding)
+func (_ Unimplemented) VendorUpdateOffboarding(w http.ResponseWriter, r *http.Request, id Uuid, params VendorUpdateOffboardingParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // VendorListRemediationItems A vendor's remediation plan — items opened by conditional approvals (VEN-08)
 // (GET /admin/v1/vendors/{id}/remediation-items)
 func (_ Unimplemented) VendorListRemediationItems(w http.ResponseWriter, r *http.Request, id Uuid, params VendorListRemediationItemsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// VendorTransitionVendor Move the vendor along ST-06 — start offboarding, or terminate once data return and access revocation are complete (If-Match; VEN-14 is the terminated edge's own acceptance criterion)
+// (POST /admin/v1/vendors/{id}/transitions)
+func (_ Unimplemented) VendorTransitionVendor(w http.ResponseWriter, r *http.Request, id Uuid, params VendorTransitionVendorParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1414,6 +1643,129 @@ func (siw *ServerInterfaceWrapper) VendorRecordIntake(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// VendorGetOffboarding operation middleware
+func (siw *ServerInterfaceWrapper) VendorGetOffboarding(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params VendorGetOffboardingParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage VendorGetOffboardingParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VendorGetOffboarding(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VendorUpdateOffboarding operation middleware
+func (siw *ServerInterfaceWrapper) VendorUpdateOffboarding(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params VendorUpdateOffboardingParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage VendorUpdateOffboardingParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VendorUpdateOffboarding(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // VendorListRemediationItems operation middleware
 func (siw *ServerInterfaceWrapper) VendorListRemediationItems(w http.ResponseWriter, r *http.Request) {
 
@@ -1455,6 +1807,79 @@ func (siw *ServerInterfaceWrapper) VendorListRemediationItems(w http.ResponseWri
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.VendorListRemediationItems(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VendorTransitionVendor operation middleware
+func (siw *ServerInterfaceWrapper) VendorTransitionVendor(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params VendorTransitionVendorParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage VendorTransitionVendorParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VendorTransitionVendor(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1606,6 +2031,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/vendors/{id}/remediation-items", wrapper.VendorListRemediationItems)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/vendors/{id}/offboarding", wrapper.VendorGetOffboarding)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/v1/vendors/{id}/offboarding", wrapper.VendorUpdateOffboarding)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/vendors/{id}/transitions", wrapper.VendorTransitionVendor)
 	})
 
 	return r
@@ -2483,6 +2917,233 @@ func (response VendorRecordIntake422ApplicationProblemPlusJSONResponse) VisitVen
 	return err
 }
 
+type VendorGetOffboardingRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params VendorGetOffboardingParams
+}
+
+type VendorGetOffboardingResponseObject interface {
+	VisitVendorGetOffboardingResponse(w http.ResponseWriter) error
+}
+
+type VendorGetOffboarding200ResponseHeaders struct {
+	ETag *string
+}
+
+type VendorGetOffboarding200JSONResponse struct {
+	Body    VendorOffboarding
+	Headers VendorGetOffboarding200ResponseHeaders
+}
+
+func (response VendorGetOffboarding200JSONResponse) VisitVendorGetOffboardingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorGetOffboarding401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response VendorGetOffboarding401ApplicationProblemPlusJSONResponse) VisitVendorGetOffboardingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorGetOffboarding403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response VendorGetOffboarding403ApplicationProblemPlusJSONResponse) VisitVendorGetOffboardingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorGetOffboarding404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response VendorGetOffboarding404ApplicationProblemPlusJSONResponse) VisitVendorGetOffboardingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorUpdateOffboardingRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params VendorUpdateOffboardingParams
+	Body   *VendorUpdateOffboardingJSONRequestBody
+}
+
+type VendorUpdateOffboardingResponseObject interface {
+	VisitVendorUpdateOffboardingResponse(w http.ResponseWriter) error
+}
+
+type VendorUpdateOffboarding200ResponseHeaders struct {
+	ETag *string
+}
+
+type VendorUpdateOffboarding200JSONResponse struct {
+	Body    VendorOffboarding
+	Headers VendorUpdateOffboarding200ResponseHeaders
+}
+
+func (response VendorUpdateOffboarding200JSONResponse) VisitVendorUpdateOffboardingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorUpdateOffboarding400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response VendorUpdateOffboarding400ApplicationProblemPlusJSONResponse) VisitVendorUpdateOffboardingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorUpdateOffboarding401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response VendorUpdateOffboarding401ApplicationProblemPlusJSONResponse) VisitVendorUpdateOffboardingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorUpdateOffboarding403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response VendorUpdateOffboarding403ApplicationProblemPlusJSONResponse) VisitVendorUpdateOffboardingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorUpdateOffboarding404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response VendorUpdateOffboarding404ApplicationProblemPlusJSONResponse) VisitVendorUpdateOffboardingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorUpdateOffboarding412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response VendorUpdateOffboarding412ApplicationProblemPlusJSONResponse) VisitVendorUpdateOffboardingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorUpdateOffboarding422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response VendorUpdateOffboarding422ApplicationProblemPlusJSONResponse) VisitVendorUpdateOffboardingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorUpdateOffboarding428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response VendorUpdateOffboarding428ApplicationProblemPlusJSONResponse) VisitVendorUpdateOffboardingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type VendorListRemediationItemsRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params VendorListRemediationItemsParams
@@ -2556,6 +3217,136 @@ func (response VendorListRemediationItems404ApplicationProblemPlusJSONResponse) 
 	return err
 }
 
+type VendorTransitionVendorRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params VendorTransitionVendorParams
+	Body   *VendorTransitionVendorJSONRequestBody
+}
+
+type VendorTransitionVendorResponseObject interface {
+	VisitVendorTransitionVendorResponse(w http.ResponseWriter) error
+}
+
+type VendorTransitionVendor200ResponseHeaders struct {
+	ETag *string
+}
+
+type VendorTransitionVendor200JSONResponse struct {
+	Body    Vendor
+	Headers VendorTransitionVendor200ResponseHeaders
+}
+
+func (response VendorTransitionVendor200JSONResponse) VisitVendorTransitionVendorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorTransitionVendor401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response VendorTransitionVendor401ApplicationProblemPlusJSONResponse) VisitVendorTransitionVendorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorTransitionVendor403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response VendorTransitionVendor403ApplicationProblemPlusJSONResponse) VisitVendorTransitionVendorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorTransitionVendor404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response VendorTransitionVendor404ApplicationProblemPlusJSONResponse) VisitVendorTransitionVendorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorTransitionVendor409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response VendorTransitionVendor409ApplicationProblemPlusJSONResponse) VisitVendorTransitionVendorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorTransitionVendor412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response VendorTransitionVendor412ApplicationProblemPlusJSONResponse) VisitVendorTransitionVendorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VendorTransitionVendor428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response VendorTransitionVendor428ApplicationProblemPlusJSONResponse) VisitVendorTransitionVendorResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// VendorListVendors The tenant's vendor / processor registry (VEN-01)
@@ -2585,9 +3376,18 @@ type StrictServerInterface interface {
 	// VendorRecordIntake Answer the intake questionnaire once — the system computes the tier and the assessment templates it now requires (VEN-02)
 	// (POST /admin/v1/vendors/{id}/intakes)
 	VendorRecordIntake(ctx context.Context, request VendorRecordIntakeRequestObject) (VendorRecordIntakeResponseObject, error)
+	// VendorGetOffboarding The vendor's current offboarding record, if one is in progress or finished (VEN-14)
+	// (GET /admin/v1/vendors/{id}/offboarding)
+	VendorGetOffboarding(ctx context.Context, request VendorGetOffboardingRequestObject) (VendorGetOffboardingResponseObject, error)
+	// VendorUpdateOffboarding Record data-return progress — status, destruction certificate, access revocation (If-Match)
+	// (PUT /admin/v1/vendors/{id}/offboarding)
+	VendorUpdateOffboarding(ctx context.Context, request VendorUpdateOffboardingRequestObject) (VendorUpdateOffboardingResponseObject, error)
 	// VendorListRemediationItems A vendor's remediation plan — items opened by conditional approvals (VEN-08)
 	// (GET /admin/v1/vendors/{id}/remediation-items)
 	VendorListRemediationItems(ctx context.Context, request VendorListRemediationItemsRequestObject) (VendorListRemediationItemsResponseObject, error)
+	// VendorTransitionVendor Move the vendor along ST-06 — start offboarding, or terminate once data return and access revocation are complete (If-Match; VEN-14 is the terminated edge's own acceptance criterion)
+	// (POST /admin/v1/vendors/{id}/transitions)
+	VendorTransitionVendor(ctx context.Context, request VendorTransitionVendorRequestObject) (VendorTransitionVendorResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -2906,6 +3706,67 @@ func (sh *strictHandler) VendorRecordIntake(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// VendorGetOffboarding operation middleware
+func (sh *strictHandler) VendorGetOffboarding(w http.ResponseWriter, r *http.Request, id Uuid, params VendorGetOffboardingParams) {
+	var request VendorGetOffboardingRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VendorGetOffboarding(ctx, request.(VendorGetOffboardingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VendorGetOffboarding")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VendorGetOffboardingResponseObject); ok {
+		if err := validResponse.VisitVendorGetOffboardingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VendorUpdateOffboarding operation middleware
+func (sh *strictHandler) VendorUpdateOffboarding(w http.ResponseWriter, r *http.Request, id Uuid, params VendorUpdateOffboardingParams) {
+	var request VendorUpdateOffboardingRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body VendorUpdateOffboardingJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VendorUpdateOffboarding(ctx, request.(VendorUpdateOffboardingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VendorUpdateOffboarding")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VendorUpdateOffboardingResponseObject); ok {
+		if err := validResponse.VisitVendorUpdateOffboardingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // VendorListRemediationItems operation middleware
 func (sh *strictHandler) VendorListRemediationItems(w http.ResponseWriter, r *http.Request, id Uuid, params VendorListRemediationItemsParams) {
 	var request VendorListRemediationItemsRequestObject
@@ -2926,6 +3787,40 @@ func (sh *strictHandler) VendorListRemediationItems(w http.ResponseWriter, r *ht
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(VendorListRemediationItemsResponseObject); ok {
 		if err := validResponse.VisitVendorListRemediationItemsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VendorTransitionVendor operation middleware
+func (sh *strictHandler) VendorTransitionVendor(w http.ResponseWriter, r *http.Request, id Uuid, params VendorTransitionVendorParams) {
+	var request VendorTransitionVendorRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body VendorTransitionVendorJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VendorTransitionVendor(ctx, request.(VendorTransitionVendorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VendorTransitionVendor")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VendorTransitionVendorResponseObject); ok {
+		if err := validResponse.VisitVendorTransitionVendorResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

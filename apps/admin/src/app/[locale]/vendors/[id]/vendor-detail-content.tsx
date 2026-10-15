@@ -18,11 +18,17 @@ import {
   useRecordVendorAssessment,
   useDecideVendorAssessment,
   useVendorRemediationItems,
+  useVendorOffboarding,
+  useUpdateVendorOffboarding,
+  useTransitionVendor,
   useDpiaTemplates,
   useForm,
   type VendorDecideAssessmentInput,
+  type VendorOffboardingInput,
+  type StoredFile,
 } from "@pdpa/api-client";
 import { useRendererMessages } from "@/components/form-messages";
+import { FileUploader } from "@/components/file-uploader";
 import { Link } from "@/i18n/routing";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
@@ -182,7 +188,105 @@ export function VendorDetailContent({ id }: { id: string }) {
 
       <IntakePanel client={client} vendorId={v.id} canUpdate={canUpdate} />
       <AssessmentPanel client={client} vendorId={v.id} />
+      {(v.status === "approved" || v.status === "conditional" || v.status === "offboarding" || v.status === "terminated") && (
+        <OffboardingPanel client={client} vendorId={v.id} status={v.status} rowVersion={v.row_version} />
+      )}
     </main>
+  );
+}
+
+/** VEN-14's own acceptance criterion: the vendor can only be terminated once access has been revoked and
+ *  either a destruction certificate is on file or no data was ever shared (data_return_status =
+ *  "not_applicable") — the same literal reading the backend's own TransitionVendor guard uses. Starting
+ *  offboarding only needs vendor.vendor.update; terminating needs vendor.vendor.delete, the same
+ *  permanent-status-change permission ORG-06's party merge and DPIA-03's template retire already require. */
+function OffboardingPanel({
+  client, vendorId, status, rowVersion,
+}: { client: ReturnType<typeof createApiClient>; vendorId: string; status: string; rowVersion: number }) {
+  const t = useTranslations("vendors");
+  const canUpdate = usePermission("vendor.vendor.update");
+  const canTerminate = usePermission("vendor.vendor.delete");
+  const offboarding = useVendorOffboarding(client, vendorId);
+  const updateOffboarding = useUpdateVendorOffboarding(client, vendorId);
+  const transition = useTransitionVendor(client, vendorId);
+  const [dataReturnStatus, setDataReturnStatus] = useState<VendorOffboardingInput["data_return_status"]>("pending");
+  const [accessRevoked, setAccessRevoked] = useState(false);
+  const [certificateFileId, setCertificateFileId] = useState<string | undefined>(undefined);
+
+  if (status === "approved" || status === "conditional") {
+    return canUpdate ? (
+      <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4">
+        <h2 className="font-semibold">{t("detail.offboarding.title")}</h2>
+        {transition.isError && <p className="text-red-700" role="alert">{t("detail.offboarding.error", { detail: detail(transition.error) })}</p>}
+        <Button onClick={() => transition.mutate({ rowVersion, to: "offboarding" })} disabled={transition.isPending}>
+          {t("detail.offboarding.start")}
+        </Button>
+      </section>
+    ) : null;
+  }
+
+  if (offboarding.isPending) return null;
+  const o = offboarding.data;
+  if (!o) return null;
+
+  const canComplete = o.access_revoked_at != null && (o.destruction_certificate_file_id != null || o.data_return_status === "not_applicable");
+
+  const save = () => {
+    updateOffboarding.mutate({
+      rowVersion: o.row_version,
+      input: { data_return_status: dataReturnStatus, destruction_certificate_file_id: certificateFileId, access_revoked: accessRevoked || undefined },
+    });
+  };
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.offboarding.title")}</h2>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div><span className="block text-slate-500">{t("detail.offboarding.dataReturnStatus")}</span>
+          <span>{t(`detail.offboarding.dataReturnStatuses.${o.data_return_status}`)}</span></div>
+        <div><span className="block text-slate-500">{t("detail.offboarding.accessRevokedAt")}</span>
+          <span>{o.access_revoked_at ?? "—"}</span></div>
+        <div><span className="block text-slate-500">{t("detail.offboarding.certificate")}</span>
+          <span>{o.destruction_certificate_file_id ? t("detail.offboarding.certificateOnFile") : "—"}</span></div>
+      </div>
+
+      {status === "offboarding" && canUpdate && (
+        <div className="space-y-2 border-t border-slate-100 pt-3">
+          <label className="block"><span className="block text-slate-600">{t("detail.offboarding.dataReturnStatus")}</span>
+            <select className={SELECT} value={dataReturnStatus} onChange={(e) => setDataReturnStatus(e.target.value as VendorOffboardingInput["data_return_status"])}>
+              {(["pending", "returned", "destroyed", "not_applicable"] as const).map((s) => (
+                <option key={s} value={s}>{t(`detail.offboarding.dataReturnStatuses.${s}`)}</option>
+              ))}
+            </select>
+          </label>
+          <div>
+            <span className="block text-slate-600">{t("detail.offboarding.certificate")}</span>
+            <FileUploader onUploaded={(f: StoredFile) => setCertificateFileId(f.id)} />
+          </div>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={accessRevoked} onChange={(e) => setAccessRevoked(e.target.checked)} />
+            <span className="text-slate-600">{t("detail.offboarding.accessRevoked")}</span>
+          </label>
+          {updateOffboarding.isError && <p className="text-red-700" role="alert">{t("detail.offboarding.error", { detail: detail(updateOffboarding.error) })}</p>}
+          <Button onClick={save} disabled={updateOffboarding.isPending}>{t("detail.offboarding.save")}</Button>
+        </div>
+      )}
+
+      {status === "offboarding" && canTerminate && (
+        <div className="border-t border-slate-100 pt-3">
+          {!canComplete && <p className="text-amber-800">{t("detail.offboarding.incomplete")}</p>}
+          {transition.isError && <p className="text-red-700" role="alert">{t("detail.offboarding.error", { detail: detail(transition.error) })}</p>}
+          <Button onClick={() => transition.mutate({ rowVersion, to: "terminated" })} disabled={!canComplete || transition.isPending}>
+            {t("detail.offboarding.terminate")}
+          </Button>
+        </div>
+      )}
+
+      {status === "terminated" && (
+        <p className="text-slate-500">{t("detail.offboarding.completedAt", { date: o.completed_at ? new Date(o.completed_at).toLocaleDateString() : "—" })}</p>
+      )}
+    </section>
   );
 }
 

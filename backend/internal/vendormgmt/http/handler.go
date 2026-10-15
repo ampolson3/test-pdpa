@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -288,6 +289,12 @@ func problem(err error) error {
 		return httpx.UnprocessableEntity("vendor.no_intake_form", err.Error())
 	case errors.Is(err, vendorservice.ErrInvalidTransition):
 		return httpx.InvalidTransition("vendor")
+	case errors.Is(err, vendorservice.ErrForbidden):
+		return httpx.AuthzDenied()
+	case errors.Is(err, vendorservice.ErrOffboardingIncomplete):
+		// Same reporting shape as httpx.InvalidTransition, but with a code naming the specific guard
+		// (VEN-14's own acceptance criterion) rather than the generic "invalid_transition".
+		return httpx.Problem{Title: "Invalid state transition", Status: http.StatusConflict, Code: "vendor.offboarding_incomplete", Detail: err.Error()}
 	}
 	return err
 }

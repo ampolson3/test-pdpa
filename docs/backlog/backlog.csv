@@ -231,7 +231,7 @@ VEN-09,VEN,แผนแก้ไขข้อบกพร่องของคู
 VEN-10,VEN,ประเมินซ้ำตามรอบ,Periodic re-assessment,Should,P3,ติดตาม,ม.37(1),SCHED,S,XS,N,3,1,0.5,0,1.4,VEN-02,BP-09,docs/modules/VEN.md#ven-10,คู่ค้าถูกส่งแบบประเมินซ้ำตามรอบโดยไม่ต้องสั่งเอง,todo
 VEN-12,VEN,เหตุละเมิดที่เกี่ยวกับคู่ค้า,Vendor incidents,Should,P3,ติดตาม,ม.40(2),VENDOR SEC,S,XS,N,3,1,0.5,0,1.4,BRE-03,BP-09,docs/modules/VEN.md#ven-12,ประวัติเหตุของคู่ค้าแสดงครบ,todo
 VEN-13,VEN,แดชบอร์ดความเสี่ยงคู่ค้า,Vendor risk dashboard,Should,P3,ติดตาม,แนวปฏิบัติตลาด,DPO EXEC,S,M,N,3,5,1.0,0,2.8,PLT-18,BP-09,docs/modules/VEN.md#ven-13,ตัวเลขตรงกับทะเบียนคู่ค้า,todo
-VEN-14,VEN,ยุติการใช้บริการ,Vendor offboarding,Should,P3,ยุติ,"ม.37(3), ม.40",PROC VENDOR,S,S,N,3,3,0.7,0,2.1,VEN-01,BP-09,docs/modules/VEN.md#ven-14,ยุติคู่ค้าได้เมื่อมีใบยืนยันการทำลายและปิดสิทธิ์ครบ,todo
+VEN-14,VEN,ยุติการใช้บริการ,Vendor offboarding,Should,P3,ยุติ,"ม.37(3), ม.40",PROC VENDOR,S,S,N,3,3,0.7,0,2.1,VEN-01,BP-09,docs/modules/VEN.md#ven-14,ยุติคู่ค้าได้เมื่อมีใบยืนยันการทำลายและปิดสิทธิ์ครบ,done
 VEN-15,VEN,AI ช่วยประเมินคู่ค้า,AI vendor assessment,Nice,P4,AI,แนวโน้มตลาด,SEC LLM,M,S,N,5,3,1.0,0,2.8,PLT-22,BP-09,docs/modules/VEN.md#ven-15,ข้อเสนอจาก AI ต้องมีคนยืนยันก่อนบันทึก,todo
 DPA-01,DPA,Template DPA มาตรฐาน,DPA templates,Must,P2,สร้าง,ม.40,LEGAL,S,S,N,3,3,0.7,0,2.1,"PLT-16, T34",BP-10,docs/modules/DPA.md#dpa-01,มี template ภาษาไทยและอังกฤษพร้อมใช้,done
 DPA-02,DPA,สร้างแบบกรอกเองและแบบอัตโนมัติ,Manual & automatic generation,Must,P2,สร้าง,ม.40,LEGAL PROC,L,M,Y,10,5,1.8,2.0,5.2,"DPA-01, VEN-01, ROPA-03",BP-10,docs/modules/DPA.md#dpa-02,สร้างร่าง DPA จากคู่ค้าและกิจกรรมได้ภายใน 10 นาที,done

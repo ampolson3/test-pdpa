@@ -11,6 +11,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -20,15 +21,18 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/events"
+	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/forms"
 	riskservice "pdpa-platform/internal/risk/service"
 )
 
 var (
-	ErrNotFound          = errors.New("vendor: not found")
-	ErrInvalid           = errors.New("vendor: invalid input")
-	ErrVersionMismatch   = errors.New("vendor: version mismatch")
-	ErrInvalidTransition = errors.New("vendor: invalid transition")
+	ErrNotFound              = errors.New("vendor: not found")
+	ErrInvalid               = errors.New("vendor: invalid input")
+	ErrVersionMismatch       = errors.New("vendor: version mismatch")
+	ErrInvalidTransition     = errors.New("vendor: invalid transition")
+	ErrForbidden             = errors.New("vendor: forbidden")
+	ErrOffboardingIncomplete = errors.New("vendor: offboarding is not complete (access not revoked, or no destruction certificate on file)")
 )
 
 // Org is what vendor reads from the organization module (rule 9): FK visibility (rule 1) for party_id.
@@ -36,10 +40,20 @@ type Org interface {
 	GetExternalParty(ctx context.Context, id uuid.UUID) (orgservice.ExternalParty, error)
 }
 
+// Files is what vendor reads/writes on the platform file store (rule 9) — VEN-14's own destruction
+// certificate, attached the same "caller's own clean upload" way DSAR-04's agent documents already are.
+type Files interface {
+	Get(ctx context.Context, id uuid.UUID) (files.File, error)
+	Attach(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error
+}
+
 type Service struct {
 	Audit *audit.Service
 	Org   Org
+	Files Files
 	Forms *forms.Service
+	// Now is clock-injectable for tests (VEN-14's access_revoked_at); nil means time.Now in production.
+	Now func() time.Time
 	// Dpia/Risk are direct concrete dependencies, not local interfaces: no module in either direction
 	// imports vendormgmt, so there is no cycle to route around. VEN-07 uses them to answer one of
 	// VEN-04's own assess.assessments templates (dpia owns that schema, rule 9) and classify the
@@ -49,6 +63,13 @@ type Service struct {
 	// Events is nil in cmd/worker (nothing there decides an assessment); VEN-08 publishes the already-
 	// catalogued "vendor.approved" event on a clean approval.
 	Events *events.Publisher
+}
+
+func (s *Service) now() time.Time {
+	if s.Now != nil {
+		return s.Now()
+	}
+	return time.Now()
 }
 
 func (s *Service) audit(ctx context.Context, action string, id uuid.UUID, before, after any) error {

@@ -1069,6 +1069,26 @@
             "accepted_risk": "Risk accepted"
           }
         }
+      },
+      "offboarding": {
+        "title": "Offboarding (VEN-14)",
+        "start": "Start offboarding",
+        "save": "Save",
+        "terminate": "Terminate vendor",
+        "error": "Couldn't save: {detail}",
+        "incomplete": "Terminating needs access revoked and either a destruction certificate on file or \"not applicable\".",
+        "dataReturnStatus": "Data return / destruction status",
+        "dataReturnStatuses": {
+          "pending": "Pending",
+          "returned": "Returned to the vendor",
+          "destroyed": "Destroyed",
+          "not_applicable": "Not applicable — no data was shared"
+        },
+        "accessRevoked": "Every access credential / API key this vendor held has been revoked",
+        "accessRevokedAt": "Access revoked at",
+        "certificate": "Destruction certificate",
+        "certificateOnFile": "On file",
+        "completedAt": "Terminated on {date}"
       }
     }
   },

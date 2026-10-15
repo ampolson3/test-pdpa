@@ -4365,6 +4365,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/vendors/{id}/offboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The vendor's current offboarding record, if one is in progress or finished (VEN-14) */
+        get: operations["vendorGetOffboarding"];
+        /** Record data-return progress — status, destruction certificate, access revocation (If-Match) */
+        put: operations["vendorUpdateOffboarding"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/vendors/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move the vendor along ST-06 — start offboarding, or terminate once data return and access revocation are complete (If-Match; VEN-14 is the terminated edge's own acceptance criterion) */
+        post: operations["vendorTransitionVendor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/agreements": {
         parameters: {
             query?: never;
@@ -6230,6 +6265,24 @@ export interface components {
         VendorDecideAssessmentResult: {
             assessment: components["schemas"]["VendorAssessment"];
             remediation_items: components["schemas"]["VendorRemediationItem"][];
+        };
+        VendorOffboardingInput: {
+            /** @enum {string} */
+            data_return_status: "pending" | "returned" | "destroyed" | "not_applicable";
+            destruction_certificate_file_id?: components["schemas"]["Uuid"] | null;
+            /** @description Set true once every access credential/API key this vendor held has been revoked; the acceptance criterion's other half alongside the destruction certificate. */
+            access_revoked?: boolean;
+        };
+        VendorOffboarding: {
+            id: components["schemas"]["Uuid"];
+            vendor_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            data_return_status: "pending" | "returned" | "destroyed" | "not_applicable";
+            destruction_certificate_file_id?: components["schemas"]["Uuid"] | null;
+            access_revoked_at?: components["schemas"]["Timestamp"];
+            completed_at?: components["schemas"]["Timestamp"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
         };
         /**
          * @description agreement.agreements' own CHECK constraint — 'dpa' (DPA-02) and 'dsa' (DSA-04) are wired to CreateWizard; joint_controller/inbound_dpa are real values for when those modules exist.
@@ -19691,6 +19744,115 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    vendorGetOffboarding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorOffboarding"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    vendorUpdateOffboarding: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorOffboardingInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorOffboarding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    vendorTransitionVendor: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    to: "offboarding" | "terminated";
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vendor"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     agreementListAgreements: {

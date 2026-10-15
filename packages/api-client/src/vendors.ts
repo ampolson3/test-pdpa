@@ -13,6 +13,8 @@ export type VendorRecordAssessmentInput = components["schemas"]["VendorRecordAss
 export type VendorDecideAssessmentInput = components["schemas"]["VendorDecideAssessmentInput"];
 export type VendorDecideAssessmentResult = components["schemas"]["VendorDecideAssessmentResult"];
 export type VendorRemediationItem = components["schemas"]["VendorRemediationItem"];
+export type VendorOffboarding = components["schemas"]["VendorOffboarding"];
+export type VendorOffboardingInput = components["schemas"]["VendorOffboardingInput"];
 
 const vendorsKey = ["vendor", "vendors"] as const;
 
@@ -157,6 +159,60 @@ export function useVendorRemediationItems(client: ApiClient, vendorId: string | 
       const { data, error } = await client.GET("/admin/v1/vendors/{id}/remediation-items", { params: { path: { id: vendorId! } } });
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+/** GET /admin/v1/vendors/{id}/offboarding (VEN-14) — the vendor's current offboarding record, if any. */
+export function useVendorOffboarding(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, vendorId ?? "", "offboarding"],
+    enabled: !!vendorId,
+    retry: false,
+    queryFn: async () => {
+      const { data, error, response } = await client.GET("/admin/v1/vendors/{id}/offboarding", { params: { path: { id: vendorId! } } });
+      if (error) {
+        if (response.status === 404) return null;
+        throw error;
+      }
+      return data;
+    },
+  });
+}
+
+/** PUT /admin/v1/vendors/{id}/offboarding — record data-return progress (If-Match on the offboarding row). */
+export function useUpdateVendorOffboarding(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { rowVersion: number; input: VendorOffboardingInput }) => {
+      const { data, error } = await client.PUT("/admin/v1/vendors/{id}/offboarding", {
+        params: { path: { id: vendorId }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "offboarding"] }),
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/transitions (VEN-14) — start offboarding, or terminate once data return and
+ *  access revocation are complete (If-Match on the vendor row). */
+export function useTransitionVendor(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { rowVersion: number; to: "offboarding" | "terminated" }) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/transitions", {
+        params: { path: { id: vendorId }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: { to: v.to },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId] });
+      qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "offboarding"] });
+      qc.invalidateQueries({ queryKey: vendorsKey });
     },
   });
 }
