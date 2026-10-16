@@ -342,6 +342,8 @@ export {
   useBreachReportFormMutations,
   useRootCauses,
   useRootCauseMutations,
+  useIncidentActivities,
+  useLinkIncidentActivity,
   type BreachIncident,
   type BreachIncidentInput,
   type BreachIncidentUpdate,
@@ -360,6 +362,7 @@ export {
   type BreachRootCauseInput,
   type BreachCorrectiveAction,
   type BreachCorrectiveActionInput,
+  type BreachIncidentActivity,
 } from "./breach";
 export {
   useDocumentTypes,

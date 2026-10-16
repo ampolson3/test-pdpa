@@ -1533,7 +1533,10 @@
       "compareFrom": "Compare from",
       "compareTo": "Compare to",
       "diffTitle": "What changed",
-      "noDiff": "No differences between these two versions."
+      "noDiff": "No differences between these two versions.",
+      "end": "End activity",
+      "confirmEnd": "Confirm end",
+      "endReason": "Reason for ending"
     },
     "form": {
       "details": "Details",
@@ -2395,7 +2398,8 @@
       "evidence": "Evidence",
       "notices": "Data subject notices",
       "pdpc": "PDPC",
-      "rootcause": "Root cause"
+      "rootcause": "Root cause",
+      "activities": "RoPA activities"
     },
     "actions": {
       "takeUp": "Take it up (I'm the owner)",
@@ -2545,6 +2549,12 @@
       "error": "The action failed",
       "save": "Save",
       "delete": "Remove"
+    },
+    "activities": {
+      "intro": "Link this incident to the RoPA processing activity it affected — marks that activity's latest approved DPIA round needs_review.",
+      "activityIdPlaceholder": "Activity ID (UUID)",
+      "link": "Link",
+      "empty": "No linked activities yet"
     }
   },
   "docs": {

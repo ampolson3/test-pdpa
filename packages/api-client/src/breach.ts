@@ -389,3 +389,36 @@ export function useRootCauseMutations(client: ApiClient, incidentId: string) {
   });
   return { add, update, remove, completeAction };
 }
+
+// DPIA-13: link an incident to the RoPA processing activity it affected — marks that activity's latest
+// approved DPIA round needs_review.
+export type BreachIncidentActivity = components["schemas"]["BreachIncidentActivity"];
+
+const incidentActivitiesKey = (incidentId: string) => [...incidentKey(incidentId), "activities"];
+
+/** GET /admin/v1/breach/incidents/{id}/activities (DPIA-13). */
+export function useIncidentActivities(client: ApiClient, incidentId: string) {
+  return useQuery({
+    queryKey: incidentActivitiesKey(incidentId),
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/breach/incidents/{id}/activities", { params: { path: { id: incidentId } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/breach/incidents/{id}/activities (DPIA-13). */
+export function useLinkIncidentActivity(client: ApiClient, incidentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (activityId: string) => {
+      const { data, error } = await client.POST("/admin/v1/breach/incidents/{id}/activities", {
+        params: { path: { id: incidentId } }, body: { activity_id: activityId },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: incidentActivitiesKey(incidentId) }),
+  });
+}

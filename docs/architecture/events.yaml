@@ -281,6 +281,13 @@ events:
   consumers:
   - SIEM / ITSM
   - ผู้บริหาร
+- name: breach.activity_linked
+  producer: breach
+  data:
+  - incident_ref
+  - activity_ref
+  consumers:
+  - DPIA-13 (marks the activity's latest approved DPIA round needs_review)
 - name: vendor.assessment_completed
   producer: vendor
   data:

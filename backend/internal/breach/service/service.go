@@ -27,6 +27,7 @@ import (
 	"pdpa-platform/internal/platform/forms"
 	"pdpa-platform/internal/platform/notify"
 	riskservice "pdpa-platform/internal/risk/service"
+	ropaservice "pdpa-platform/internal/ropa/service"
 )
 
 // Entity types (audit, files, notifications, forms).
@@ -97,6 +98,12 @@ type Risk interface {
 	GetRisk(ctx context.Context, id uuid.UUID) (riskservice.Risk, error)
 }
 
+// Ropa is what DPIA-13's own linking step reads from the RoPA module (rule 9): FK visibility (rule 1) for
+// linking an incident to the RoPA activity it affected.
+type Ropa interface {
+	GetActivity(ctx context.Context, id uuid.UUID) (ropaservice.Activity, error)
+}
+
 // Files is what the breach module needs from file storage (PLT-09).
 type Files interface {
 	Get(ctx context.Context, id uuid.UUID) (files.File, error)
@@ -122,6 +129,7 @@ type Service struct {
 	Audit   *audit.Service
 	Org     Org
 	Risk    Risk
+	Ropa    Ropa
 	River   *river.Client[pgx.Tx]
 	Now     func() time.Time
 }

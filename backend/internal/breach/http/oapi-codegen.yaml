@@ -37,3 +37,5 @@ output-options:
     - breachUpdateRootCause
     - breachDeleteRootCause
     - breachCompleteCorrectiveAction
+    - breachListIncidentActivities
+    - breachLinkIncidentActivity

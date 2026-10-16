@@ -646,6 +646,40 @@ a real Postgres + Redis, not just compiled.
 
 **Acceptance criteria:** เหตุละเมิดที่ผูกกิจกรรมทำให้ DPIA ที่เกี่ยวข้องถูกทำเครื่องหมายทบทวน
 
+**Implementation note (done, scoped to the breach-linked trigger only):** The literal acceptance criterion
+("เหตุละเมิดที่ผูกกิจกรรมทำให้ DPIA ที่เกี่ยวข้องถูกทำเครื่องหมายทบทวน") is a two-module event chain, following
+the exact producer/consumer pattern ROPA-10 (`dsar.rejected`) already established — a module publishes a
+PLT-11 outbox event inside its own request transaction, and the consuming module's own subscriber in
+`internal/wiring/events.go` calls into the consuming module's own exported service, never writing to the
+other module's schema directly (rule 9). `breach.incident_assets` (migration 00013, completely unused until
+now) is this feature's breach-side half: `internal/breach/service/activities.go`'s `LinkActivity`
+(`breach.incident.update`) FK-checks the activity via a new `Ropa` interface
+(`GetActivity`, wired as `ropaSvc` in both `cmd/api`/`cmd/worker`'s own `wiring.Breach(...)` calls — no import
+cycle, `internal/ropa` never imports `breach`), inserts via migration 00074's own unique index
+`(incident_id, activity_id) WHERE activity_id IS NOT NULL` + `ON CONFLICT DO NOTHING` (the same idempotency
+pattern ROPA-10's migration 00044 already uses — the event is delivered at-least-once), then publishes
+`breach.activity_linked` (`docs/architecture/events.yaml`, catalog regenerated). The dpia-side half,
+`internal/dpia/service/breachtrigger.go`'s `MarkActivityAssessmentForReview`, is almost entirely already
+built: ST-05#2's `approved -> needs_review` edge ("ครบรอบ / กิจกรรมเปลี่ยน") and its `Transition` method were
+already implemented by DPIA-10 — `needs_review` isn't in `approverOnly`, so this worker-context call (no
+`authz.Grants`) needs no `assessment.dpia.approve` grant. Idempotent by design, the same shape
+`risktrigger.go`'s own `TriggerFromRiskScore` already uses: no DPIA at all, or a round that was never actually
+`approved` (screening/not_required/in_progress/in_review/rejected/needs_review/closed), is a harmless no-op —
+only an `approved` round is moved. API: `GET`/`POST /admin/v1/breach/incidents/{id}/activities`
+(`breach.incident.read`/`.update`, no new permission code). UI: an "RoPA activities" tab on `/incidents/{id}`
+— a text input for the activity id (no RoPA activity picker exists cross-module here yet, the same "no
+consumer yet" deferral this codebase uses elsewhere) + a list of linked activity ids. The "RoPA เปลี่ยน" half
+of this feature's own description (re-triggering on an *edited* activity, not just a linked breach) is
+deliberately not built — a separate signal (ROPA-13's own save/approve path would need to publish its own
+event) with no acceptance-criterion coverage here; same for "เปิดรอบใหม่ (copy คำตอบเดิม)" — `needs_review`
+reopens the existing round for a fresh DPO opinion (DPIA-10's own `RecordOpinion`/`Transition` flow), it does
+not spawn a new round with copied answers, since the acceptance criterion only asks for the mark itself.
+Tests: `TestMarkActivityAssessmentForReview` (the acceptance criterion directly — an approved round is
+marked needs_review by a breach link; no-DPIA and in-progress rounds are harmless no-ops; a repeat call after
+the mark doesn't re-touch an already needs_review round), `TestMarkActivityAssessmentForReview_UnknownActivity`,
+and `TestLinkActivity`/`TestLinkActivity_TwoTenantIsolation` on the breach side (skip without S3+clamd
+reachable, the same environment limitation this codebase's other breach tests already disclose).
+
 <a id="dpia-16"></a>
 ### DPIA-16 ประเมินฐานประโยชน์โดยชอบด้วยกฎหมาย (LIA)
 

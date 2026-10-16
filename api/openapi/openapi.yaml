@@ -6028,6 +6028,84 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/breach/incidents/{id}/activities:
+    get:
+      operationId: breachListIncidentActivities
+      tags: [breach]
+      summary: RoPA processing activities linked to this incident, oldest first (DPIA-13)
+      x-permission: breach.incident.read
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BreachIncidentActivity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: breachLinkIncidentActivity
+      tags: [breach]
+      summary: Link this incident to a RoPA processing activity it affected (DPIA-13) — marks the activity's latest approved DPIA round needs_review
+      x-permission: breach.incident.update
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [activity_id]
+              additionalProperties: false
+              properties:
+                activity_id:
+                  $ref: '#/components/schemas/Uuid'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachIncidentActivity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/breach/report-forms:
     get:
       operationId: breachListReportForms
@@ -9503,6 +9581,59 @@ paths:
           $ref: '#/components/responses/Conflict'
         '412':
           $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/activities/{id}/end:
+    post:
+      operationId: ropaEndActivity
+      tags: [ropa]
+      summary: ROPA-14 (ST-05) — close an activity no longer in use (active -> ended), keeping its full
+        history; a reason is required. Ended activities are left out of GET /ropa/activities unless the
+        caller explicitly filters status=ended.
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              additionalProperties: false
+              properties:
+                reason: {type: string, minLength: 1}
+      responses:
+        '200':
+          description: Now ended
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingActivity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/ropa/activities/{id}/versions:
@@ -18024,6 +18155,8 @@ components:
         completeness:
           type: integer
           description: Percentage of the ม.39 mandatory items that are in place
+        ended_at: {$ref: '#/components/schemas/Timestamp'}
+        end_reason: {type: [string, 'null'], description: 'ROPA-14: why the activity was ended (active -> ended)'}
         missing_items:
           type: array
           description: Which ม.39 items are still missing — the acceptance criterion (only set by GET one activity)
@@ -21549,6 +21682,16 @@ components:
           $ref: '#/components/schemas/Timestamp'
         updated_at:
           $ref: '#/components/schemas/Timestamp'
+    BreachIncidentActivity:
+      type: object
+      required: [id, incident_id, activity_id]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        incident_id:
+          $ref: '#/components/schemas/Uuid'
+        activity_id:
+          $ref: '#/components/schemas/Uuid'
     ConsentSubmission:
       type: object
       required: [collection_point_code, subject, decisions]

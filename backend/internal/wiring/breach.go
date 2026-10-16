@@ -16,8 +16,10 @@ import (
 
 // Breach is the breach module (BRE) as both binaries run it: the API records incidents and schedules the 72-hour
 // timers; the worker fires them and sends data-subject notices. d is the document composer (PLT-16, BRE-09) —
-// nil in contexts that never record a PDPC filing round (the worker's timer/notice jobs don't).
-func Breach(n *notify.Service, f *files.Service, r *river.Client[pgx.Tx], a *audit.Service, k *crypto.Keyring, d breach.Docs) *breach.Service {
+// nil in contexts that never record a PDPC filing round (the worker's timer/notice jobs don't). rp is DPIA-13's
+// own FK-visibility dependency (rule 1/9) for LinkActivity — both binaries already build a ropaservice.Service
+// before this call, so neither ever needs nil here.
+func Breach(n *notify.Service, f *files.Service, r *river.Client[pgx.Tx], a *audit.Service, k *crypto.Keyring, d breach.Docs, rp breach.Ropa) *breach.Service {
 	return &breach.Service{Events: &events.Publisher{River: r}, Notify: n, Forms: Forms(n, a), Files: f, Docs: d, Keyring: k, Audit: a,
-		Org: &orgservice.Service{Audit: a}, Risk: riskservice.New(), River: r}
+		Org: &orgservice.Service{Audit: a}, Risk: riskservice.New(), Ropa: rp, River: r}
 }

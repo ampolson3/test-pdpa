@@ -310,7 +310,7 @@ func run() error {
 	for k, v := range docsSvc.FilePermissions() { // PLT-16 rendered PDF / Word files
 		fileSvc.EntityPermissions[k] = v
 	}
-	breachSvc := wiring.Breach(notifySvc, fileSvc, riverClient, auditSvc, keyring, docsSvc)
+	breachSvc := wiring.Breach(notifySvc, fileSvc, riverClient, auditSvc, keyring, docsSvc, ropaSvc)
 	agreementSvc := &agreementservice.Service{Docs: docsSvc, Org: orgSvc, Vendor: vendorSvc, Ropa: ropaSvc, Audit: auditSvc,
 		Notify: notifySvc, River: riverClient} // DPA-02: the agreement engine (shared with DSA); DPA-10: expiry reminder
 	dataflowSvc.Vendor, dataflowSvc.Agreement = vendorSvc, agreementSvc // DFG-04: a processor recipient with no DPA is flagged on the diagram

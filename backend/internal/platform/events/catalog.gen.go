@@ -10,6 +10,7 @@ var Catalog = map[string]Spec{
 	"agreement.expiring":          {Producer: "agreement", Data: []string{"agreement_id", "type", "end_date"}},
 	"agreement.signed":            {Producer: "agreement", Data: []string{"agreement_id", "type", "end_date"}},
 	"agreement.terminated":        {Producer: "agreement", Data: []string{"agreement_id", "type", "end_date"}},
+	"breach.activity_linked":      {Producer: "breach", Data: []string{"incident_ref", "activity_ref"}},
 	"breach.assessed":             {Producer: "breach", Data: []string{"incident_ref", "aware_at", "risk_level", "deadline_at"}},
 	"breach.closed":               {Producer: "breach", Data: []string{"incident_ref", "aware_at", "risk_level", "deadline_at"}},
 	"breach.pdpc_notified":        {Producer: "breach", Data: []string{"incident_ref", "aware_at", "risk_level", "deadline_at"}},

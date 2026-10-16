@@ -13,12 +13,14 @@ import {
   useForm,
   useForms,
   useIncident,
+  useIncidentActivities,
   useIncidentAssessments,
   useIncidentEvidence,
   useIncidentMutations,
   useIncidentNotices,
   useIncidentPDPCNotifications,
   useIncidentTimeline,
+  useLinkIncidentActivity,
   useNoticeMutations,
   useNoticeRecipients,
   usePDPCNotificationMutations,
@@ -38,7 +40,7 @@ import type { ErrorCode, FieldError } from "@pdpa/form-renderer";
 import { Link } from "@/i18n/routing";
 import { Clock, RiskBadge, StatusBadge, field, input, problemText, useWhen } from "../shared";
 
-type Tab = "assessment" | "timeline" | "evidence" | "notices" | "pdpc" | "rootcause";
+type Tab = "assessment" | "timeline" | "evidence" | "notices" | "pdpc" | "rootcause" | "activities";
 
 /** Answer errors of a 422 breach.invalid problem (fields "answers.<question>"), as the renderer takes them. */
 function answerErrors(e: unknown): FieldError[] | undefined {
@@ -83,7 +85,7 @@ export function IncidentContent({ id, meId }: { id: string; meId: string }) {
       </header>
       <Actions incident={inc} meId={meId} />
       <nav className="flex flex-wrap gap-2" role="tablist">
-        {(["timeline", "assessment", "evidence", "notices", "pdpc", "rootcause"] as Tab[]).map((k) => (
+        {(["timeline", "assessment", "evidence", "notices", "pdpc", "rootcause", "activities"] as Tab[]).map((k) => (
           <button key={k} role="tab" aria-selected={tab === k} className={`rounded-md px-3 py-1.5 ${tab === k ? "bg-slate-900 text-white" : "bg-white ring-1 ring-slate-200"}`} onClick={() => setTab(k)} data-testid={`tab-${k}`}>
             {t(`tabs.${k}`)}
           </button>
@@ -95,6 +97,7 @@ export function IncidentContent({ id, meId }: { id: string; meId: string }) {
       {tab === "notices" && <Notices incident={inc} />}
       {tab === "pdpc" && <PDPCPanel incident={inc} />}
       {tab === "rootcause" && <RootCausePanel incident={inc} />}
+      {tab === "activities" && <ActivitiesPanel incident={inc} />}
     </main>
   );
 }
@@ -643,6 +646,46 @@ function RootCausePanel({ incident }: { incident: BreachIncident }) {
               <Button variant="secondary" onClick={() => m.remove.mutate(rc)} disabled={m.remove.isPending} data-testid="root-cause-delete">{t("delete")}</Button>
             )}
           </li>
+        ))}
+      </ul>
+      {(list.data ?? []).length === 0 && <p className="text-slate-500">{t("empty")}</p>}
+    </section>
+  );
+}
+
+/** DPIA-13: link this incident to the RoPA processing activity it affected — marks that activity's latest
+ *  approved DPIA round needs_review. */
+function ActivitiesPanel({ incident }: { incident: BreachIncident }) {
+  const t = useTranslations("breach.activities");
+  const tb = useTranslations("breach");
+  const canUpdate = usePermission("breach.incident.update");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const list = useIncidentActivities(client, incident.id);
+  const link = useLinkIncidentActivity(client, incident.id);
+  const [activityId, setActivityId] = useState("");
+
+  if (!canUpdate && (list.data ?? []).length === 0) return <p className="text-slate-600">{tb("forbidden")}</p>;
+
+  return (
+    <section className="space-y-3">
+      <p className="text-slate-600">{t("intro")}</p>
+      {canUpdate && (
+        <form
+          className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white p-4"
+          data-testid="link-activity-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            link.mutate(activityId, { onSuccess: () => setActivityId("") });
+          }}
+        >
+          <input className={input} placeholder={t("activityIdPlaceholder")} required value={activityId} onChange={(e) => setActivityId(e.target.value)} />
+          <Button type="submit" disabled={link.isPending} data-testid="link-activity-submit">{t("link")}</Button>
+          {link.isError && <p className="text-red-700" role="alert">{problemText(link.error)}</p>}
+        </form>
+      )}
+      <ul className="divide-y divide-slate-100 rounded-md border border-slate-200 bg-white" data-testid="linked-activities">
+        {(list.data ?? []).map((a) => (
+          <li key={a.id} className="px-4 py-2 font-mono text-xs text-slate-700">{a.activity_id}</li>
         ))}
       </ul>
       {(list.data ?? []).length === 0 && <p className="text-slate-500">{t("empty")}</p>}

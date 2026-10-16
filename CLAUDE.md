@@ -2811,6 +2811,114 @@ reachable Postgres/Redis, the same environment limitation this session's later f
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build` all verified clean.
 
+### ROPA-14 วงจรชีวิตของกิจกรรม (`docs/modules/ROPA.md#ropa-14`) — done
+`internal/ropa/service/versioning.go`'s `EndActivity` is ST-05's own `active -> ended` edge ("ยุติ / ตั้ง
+retention"): a reason is required (kept as its own column, not audit-only like `ReturnActivity`'s, since
+ม.39's own record should show *why* a processing activity stopped without digging through the audit log),
+refuses any status but `active`, and keeps every child table row and every approved version untouched — only
+status/ended_at/end_reason change. `ListActivities`'s own status filter (`db/queries/ropa/activities.sql`)
+got one clause: with no explicit `status` filter an `ended` activity is excluded from the "current" list, but
+an explicit `status=ended` still finds it — the acceptance criterion itself, literally. `GetActivity` and
+every other query/mutation on this table gained `ended_at`/`end_reason` to their column lists so sqlc's own
+per-query Row types stay directly convertible to each other (`toActivity(ropastore.GetActivityRow(r))`).
+
+Real bug found and fixed while testing this (not new to this feature, but it directly corrupted ROPA-14's own
+ETag flow): `ApproveActivity` (ROPA-13, extended by ROPA-15) returned an `out.RowVersion` that was already
+stale the instant it returned. ROPA-15's own `SetActivityNextReview` call right after freezing the approved
+version is a *second* `UPDATE` on the same `ropa.processing_activities` row, and `platform.set_updated_at()`'s
+trigger (`BEGIN NEW.updated_at := now(); NEW.row_version := OLD.row_version + 1; ...`) bumps `row_version` on
+every `UPDATE` statement regardless of which columns changed — so the ETag `ApproveActivity` handed back was
+one behind the real committed version from the moment it returned, and the very next caller's `If-Match`
+(built from that stale ETag) would always 412. Fixed by re-reading the row after both updates and returning
+its real `row_version`/`updated_at`. The same fix also surfaced and corrected two pre-existing ROPA-15 test
+bugs in `internal/ropa/service/review_test.go` (a test calling `completeActivity` with `context.Background()`
+instead of inside `e.in`'s own transaction, panicking with "no transaction in context"; and `platform.
+notifications` queried by a column, `template_code`, that doesn't exist — the real column is `template_id`,
+joined against `platform.notification_templates.code`) — both only surfaced now that this session had a real
+Postgres reachable to run them against for the first time.
+
+API: `POST /admin/v1/ropa/activities/{id}/end` (`ropa.activity.update`, ETag/If-Match; `ended_at`/`end_reason`
+added to the `ProcessingActivity` wire schema; 409 for any status but active, 422 for an empty reason). UI:
+`/ropa/activities/{id}`'s versioning section gained an "End activity" toggle + reason field, shown only while
+`status = active`. Tests: `TestEndActivity` (end from active succeeds, excluded from the default list / found
+via `status=ended`, keeps completeness/history intact; empty reason, non-active status and a stale ETag all
+refused; double-ending refused as `ErrInvalidTransition`), `TestEndActivity_TwoTenantIsolation`, and
+`TestActivityApproval_Contract`'s own ETag sequence corrected for the real post-approve version (this is the
+HTTP contract test ApproveActivity's double-bump bug was actually caught against). `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean), real Postgres 16 (this session's own, reachable via a Homebrew-style local
+cluster on port 5433) + the full `internal/ropa/...` test suite run live (not skipped), `pnpm --filter
+@pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` all
+verified clean.
+
+### VEN-10 ประเมินซ้ำตามรอบ (`docs/modules/VEN.md#ven-10`) — done, no UI screen (the notification itself is the acceptance criterion)
+`internal/vendormgmt/service/reassessment.go` is PNG-15/ROPA-15/CON-04's exact two-step "sweep lists tenants,
+per-tenant job reads its own rows" River pattern (CLAUDE.md rule 1), ported for `vendor.vendors`' own
+`tier`/`next_assessment_at` columns — both already set by VEN-02's own `RecordIntake`, unread by anything
+until now. `vendor.reassessment_sweep` (global, daily, `jobs.GlobalKinds`, no tenant transaction) reads
+`platform.tenants` and enqueues one `vendor.reassessment_check` per trial/active tenant; `CheckDueReassessments`
+runs inside that tenant's own transaction and is the acceptance criterion itself ("คู่ค้าถูกส่งแบบประเมินซ้ำ
+ตามรอบโดยไม่ต้องสั่งเอง"): every `approved`/`conditional` vendor whose own `next_assessment_at` has arrived
+notifies its relationship owner — falling back to role PROC when none is set, the same "default recipients
+until real per-record routing exists" pattern BRE-07/PNG-04/PNG-15/ROPA-15 already use — via `vendor.
+reassessment_due` (migration 00073: th/en × in_app/email, operational text, no DRAFT marker, rule 8), then
+reschedules `next_assessment_at` one more `reassessmentInterval(tier)` out (the exact function VEN-02's own
+intake already uses for the first assessment, so a redue date lands on the same cadence a fresh intake
+would) — a stale tick afterward is a harmless no-op since the rescheduled date is always in the future.
+
+No new endpoint, permission, or UI screen — a pure background reminder, the same "no UI screen, the
+notification is the acceptance criterion" pattern PNG-15/ROPA-15 already established; `/settings/notifications`
+already shows every notification a user received. `cmd/worker/main.go` wires `vendorSvc` with `Notify`/`River`
+and registers `ReassessmentSweeper`/`ReassessmentChecker` + `ReassessmentSweepPeriodicJob()` (not wired into
+`cmd/api` — the API process never runs this sweep, same as every other module's own review/reminder sweeper).
+Tests: `TestCheckDueReassessments` (the acceptance criterion directly — a due vendor is notified and its
+clock rescheduled into the future; a second immediate check adds no new notification), `TestCheckDueReassessments_
+TwoTenantIsolation`. `go build ./...`, `go vet ./...`, `gofmt -l` (clean), real Postgres 16 + the full
+`internal/vendormgmt/service` suite's own new tests run live.
+
+### DPIA-13 ทบทวนเมื่อกิจกรรมเปลี่ยนหรือครบรอบ (`docs/modules/DPIA.md#dpia-13`) — done, scoped to the breach-linked trigger
+The literal acceptance criterion ("เหตุละเมิดที่ผูกกิจกรรมทำให้ DPIA ที่เกี่ยวข้องถูกทำเครื่องหมายทบทวน") is a
+two-module event chain, following the exact producer/consumer pattern ROPA-10 (`dsar.rejected` → `ropaSvc.
+RecordRejection`) already established: a module publishes a PLT-11 outbox event inside its own request
+transaction; `internal/wiring/events.go`'s `Events()` (now taking `dpiaSvc` alongside `ropaSvc`) subscribes it
+and calls into the consuming module's own exported service — breach never writes to the `assess` schema
+directly, dpia never writes to `breach.incident_assets` (rule 9). `breach.incident_assets` (migration 00013,
+completely unused until now) is this feature's breach-side half: `internal/breach/service/activities.go`'s
+`LinkActivity` (`breach.incident.update`) FK-checks the activity through a new `Ropa` interface
+(`GetActivity`, rule 1) — wired as the already-built `ropaSvc` in both `cmd/api`/`cmd/worker`'s own
+`wiring.Breach(...)` calls (no import cycle: `internal/ropa` never imports `breach`) — inserts via migration
+00074's own unique index `(incident_id, activity_id) WHERE activity_id IS NOT NULL` + `ON CONFLICT DO NOTHING`
+(ROPA-10's own migration 00044 idempotency pattern, since the event is delivered at-least-once), then
+publishes `breach.activity_linked` (`docs/architecture/events.yaml`, catalog regenerated via `go generate
+./internal/platform/events`).
+
+The dpia-side half, `internal/dpia/service/breachtrigger.go`'s `MarkActivityAssessmentForReview`, needed
+almost no new logic: ST-05#2's `approved -> needs_review` edge ("ครบรอบ / กิจกรรมเปลี่ยน") and its `Transition`
+method were already built by DPIA-10 in an earlier pass — `needs_review` isn't in `approverOnly`, so this
+worker-context call (no `authz.Grants` set) needs no `assessment.dpia.approve` grant to go through. Idempotent
+by design, the same shape `risktrigger.go`'s own `TriggerFromRiskScore` already uses for RRA-03: no DPIA at
+all for the activity, or a round that was never actually `approved` (screening/not_required/in_progress/
+in_review/rejected/needs_review/closed already), is a harmless no-op — only a currently-`approved` round is
+moved, and a repeat delivery after that move is also a no-op since the round is no longer `approved`.
+
+API: `GET`/`POST /admin/v1/breach/incidents/{id}/activities` (`breach.incident.read`/`.update`, no new
+permission code; new `BreachIncidentActivity` schema). UI: an "RoPA activities" tab on `/incidents/{id}` — a
+plain activity-id text input (no cross-module RoPA-activity picker exists here yet, the same "no consumer
+yet" deferral this codebase uses throughout) plus a list of linked activity ids. Deliberately not built: the
+"RoPA เปลี่ยน" half of this feature's own description (re-triggering when an activity is *edited*, not just
+linked to a breach) — that needs ROPA-13's own save/approve path to publish a new event with no acceptance-
+criterion coverage here; and "เปิดรอบใหม่ (copy คำตอบเดิม)" — `needs_review` reopens the *existing* round for a
+fresh DPO opinion (DPIA-10's own `RecordOpinion`/`Transition` flow), it does not spawn a new round with copied
+answers, since the literal acceptance criterion only asks for the mark itself.
+
+Tests: `TestMarkActivityAssessmentForReview` (the acceptance criterion directly — an approved round is marked
+needs_review by a breach link; no-DPIA and in-progress rounds are harmless no-ops; a repeat call afterward
+doesn't re-touch an already-needs_review round), `TestMarkActivityAssessmentForReview_UnknownActivity` (both
+run live against this session's real Postgres), and `TestLinkActivity`/`TestLinkActivity_TwoTenantIsolation`
+on the breach side (compiles and vets clean; skips without S3+clamd reachable, the same environment limitation
+this codebase's other `breachtest`-based tests already disclose — neither is available in this session).
+`go build ./...`, `go vet ./...`, `gofmt -l` (clean), `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

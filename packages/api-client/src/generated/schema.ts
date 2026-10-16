@@ -1997,6 +1997,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/breach/incidents/{id}/activities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RoPA processing activities linked to this incident, oldest first (DPIA-13) */
+        get: operations["breachListIncidentActivities"];
+        put?: never;
+        /** Link this incident to a RoPA processing activity it affected (DPIA-13) — marks the activity's latest approved DPIA round needs_review */
+        post: operations["breachLinkIncidentActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/breach/report-forms": {
         parameters: {
             query?: never;
@@ -3214,6 +3232,23 @@ export interface paths {
         put?: never;
         /** ROPA-13 (ST-05) — close a review round with nothing to re-approve (under_review -> active); no new version is taken */
         post: operations["ropaConfirmActivityNoChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/{id}/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ROPA-14 (ST-05) — close an activity no longer in use (active -> ended), keeping its full history; a reason is required. Ended activities are left out of GET /ropa/activities unless the caller explicitly filters status=ended. */
+        post: operations["ropaEndActivity"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7052,6 +7087,9 @@ export interface components {
             status: components["schemas"]["ActivityStatus"];
             /** @description Percentage of the ม.39 mandatory items that are in place */
             completeness: number;
+            ended_at?: components["schemas"]["Timestamp"];
+            /** @description ROPA-14: why the activity was ended (active -> ended) */
+            end_reason?: string | null;
             /** @description Which ม.39 items are still missing — the acceptance criterion (only set by GET one activity) */
             missing_items?: ("data" | "purpose" | "controller" | "retention" | "rights_access" | "recipient_basis" | "sensitive_consent" | "transfer_basis")[];
             row_version: number;
@@ -8885,6 +8923,11 @@ export interface components {
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
             updated_at: components["schemas"]["Timestamp"];
+        };
+        BreachIncidentActivity: {
+            id: components["schemas"]["Uuid"];
+            incident_id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
         };
         ConsentSubmission: {
             collection_point_code: string;
@@ -14103,6 +14146,72 @@ export interface operations {
             428: components["responses"]["PreconditionRequired"];
         };
     };
+    breachListIncidentActivities: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["BreachIncidentActivity"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    breachLinkIncidentActivity: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    activity_id: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreachIncidentActivity"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
     breachListReportForms: {
         parameters: {
             query?: {
@@ -16905,6 +17014,47 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaEndActivity: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Now ended */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingActivity"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
         };
     };

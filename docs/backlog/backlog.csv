@@ -107,7 +107,7 @@ ROPA-16,ROPA,ออกรายงาน RoPA,RoPA export,Must,P1,รายง�
 ROPA-18,ROPA,นำเข้า RoPA จาก Excel เดิม,Bulk import,Should,P1,นำเข้า,แนวปฏิบัติตลาด,DPO,M,S,N,5,3,1.0,0,2.8,PLT-14,BP-05,docs/modules/ROPA.md#ropa-18,นำเข้า RoPA 500 กิจกรรมจาก Excel ได้ และรายงานรายการที่ต้องแก้,done
 ROPA-11,ROPA,แบบสอบถามเก็บข้อมูลจากหน่วยงาน,Data mapping questionnaire,Should,P3,Workflow,ม.39,DPO OWNER,M,S,N,5,3,1.0,0,2.8,"PLT-06, ROPA-03",BP-05,docs/modules/ROPA.md#ropa-11,คำตอบที่อนุมัติแล้วเข้า RoPA อัตโนมัติ,todo
 ROPA-12,ROPA,ถาม-ตอบกับ DPO หรือที่ปรึกษา,Activity Q&A,Should,P3,Workflow,แนวปฏิบัติตลาด,OWNER DPO,XS,S,N,1,3,0.5,0,1.4,PLT-07,BP-05,docs/modules/ROPA.md#ropa-12,คำถามที่ยังไม่ตอบแสดงในรายการงานของผู้รับ,todo
-ROPA-14,ROPA,วงจรชีวิตของกิจกรรม,Activity lifecycle,Should,P3,Workflow,ม.39,OWNER,S,XS,N,3,1,0.5,0,1.4,ROPA-03,BP-05,docs/modules/ROPA.md#ropa-14,กิจกรรมที่สิ้นสุดไม่ปรากฏในรายงานปัจจุบันแต่ค้นย้อนหลังได้,todo
+ROPA-14,ROPA,วงจรชีวิตของกิจกรรม,Activity lifecycle,Should,P3,Workflow,ม.39,OWNER,S,XS,N,3,1,0.5,0,1.4,ROPA-03,BP-05,docs/modules/ROPA.md#ropa-14,กิจกรรมที่สิ้นสุดไม่ปรากฏในรายงานปัจจุบันแต่ค้นย้อนหลังได้,done
 ROPA-15,ROPA,แจ้งเตือนทบทวน RoPA ตามรอบ,Periodic review reminder,Should,P3,Workflow,ม.39,SCHED OWNER,S,XS,N,3,1,0.5,0,1.4,PLT-10,BP-05,docs/modules/ROPA.md#ropa-15,เจ้าของกิจกรรมได้รับงานทบทวนตามรอบ,done
 ROPA-17,ROPA,แดชบอร์ด RoPA,RoPA dashboard,Should,P3,รายงาน,แนวปฏิบัติตลาด,DPO EXEC,S,M,Y,3,5,1.0,2.0,2.8,PLT-18,BP-05,docs/modules/ROPA.md#ropa-17,ตัวเลขใน dashboard ตรงกับทะเบียน,todo
 ROPA-19,ROPA,เชื่อม RoPA กับโมดูลอื่น,Cross-module links,Should,P3,เชื่อมต่อ,ม.39,SCHED,M,S,N,5,3,1.0,0,2.8,PLT-11,BP-05,docs/modules/ROPA.md#ropa-19,แก้ RoPA แล้วเจ้าของเอกสารที่เกี่ยวข้องได้รับงานทบทวน,todo
@@ -200,7 +200,7 @@ DPIA-14,DPIA,ประวัติเวอร์ชันและ audit trail,
 DPIA-15,DPIA,ออกรายงาน DPIA,DPIA report export,Must,P2,รายงาน,แนวปฏิบัติตลาด,DPO AUDIT,S,XS,N,3,1,0.5,0,1.4,PLT-16,BP-08,docs/modules/DPIA.md#dpia-15,รายงานแสดงคะแนน มาตรการ และผู้อนุมัติครบ,done
 DPIA-08,DPIA,เชื่อมทะเบียนความเสี่ยงและงานแก้ไข,Link to risk register & tasks,Should,P3,ความเสี่ยง,ม.37(1),DPO,S,XS,N,3,1,0.5,0,1.4,RRA-09,BP-08,docs/modules/DPIA.md#dpia-08,ความเสี่ยงคงเหลือปรากฏในทะเบียนพร้อมลิงก์กลับ,todo
 DPIA-11,DPIA,บันทึกการปรึกษาผู้มีส่วนได้เสีย,Stakeholder consultation log,Should,P3,Workflow,TDPG 4.0-P,DPO,S,S,N,3,3,0.7,0,2.1,DPIA-03,BP-08,docs/modules/DPIA.md#dpia-11,รายงาน DPIA แสดงบันทึกการปรึกษา,todo
-DPIA-13,DPIA,ทบทวนเมื่อกิจกรรมเปลี่ยนหรือครบรอบ,Re-assessment triggers,Should,P3,ติดตาม,ม.37(1); TDPG 4.0-P,SCHED DPO,S,XS,N,3,1,0.5,0,1.4,PLT-11,BP-08,docs/modules/DPIA.md#dpia-13,เหตุละเมิดที่ผูกกิจกรรมทำให้ DPIA ที่เกี่ยวข้องถูกทำเครื่องหมายทบทวน,todo
+DPIA-13,DPIA,ทบทวนเมื่อกิจกรรมเปลี่ยนหรือครบรอบ,Re-assessment triggers,Should,P3,ติดตาม,ม.37(1); TDPG 4.0-P,SCHED DPO,S,XS,N,3,1,0.5,0,1.4,PLT-11,BP-08,docs/modules/DPIA.md#dpia-13,เหตุละเมิดที่ผูกกิจกรรมทำให้ DPIA ที่เกี่ยวข้องถูกทำเครื่องหมายทบทวน,done
 DPIA-16,DPIA,ประเมินฐานประโยชน์โดยชอบด้วยกฎหมาย (LIA),Legitimate interest assessment,Should,P3,ประเภทอื่น,ม.24(5),OWNER DPO,S,S,N,3,3,0.7,0,2.1,DPIA-03,BP-08,docs/modules/DPIA.md#dpia-16,กิจกรรมที่ใช้ฐาน ม.24(5) ต้องมี LIA ที่อนุมัติ,todo
 DPIA-17,DPIA,ประเมินผลกระทบของระบบ AI,AI impact assessment,Nice,P4,ประเภทอื่น,แนวโน้มตลาด,DPO IT,S,S,N,3,3,0.7,0,2.1,DPX-12,BP-08,docs/modules/DPIA.md#dpia-17,ระบบ AI ในทะเบียนมีผลประเมินล่าสุด,todo
 DPIA-18,DPIA,AI ช่วยกรอกแบบประเมินจากเอกสาร,AI-assisted drafting,Nice,P4,AI,แนวโน้มตลาด,OWNER LLM,M,S,N,5,3,1.0,0,2.8,PLT-22,BP-08,docs/modules/DPIA.md#dpia-18,คำตอบจาก AI ไม่ถูกบันทึกจนกว่าผู้ประเมินยืนยัน,todo
@@ -228,7 +228,7 @@ VEN-11,VEN,ผูกคู่ค้ากับสัญญาและกิจ
 VEN-03,VEN,ผู้ประมวลผลช่วง,Sub-processor management,Should,P3,ทะเบียน,ม.40,VENDOR DPO,S,S,N,3,3,0.7,0,2.1,VEN-01,BP-09,docs/modules/VEN.md#ven-03,ผู้ประมวลผลช่วงที่ยังไม่อนุมัติแสดงเตือน,todo
 VEN-06,VEN,ตรวจหลักฐานและใบรับรอง,Evidence & certificates,Should,P3,ประเมิน,แนวปฏิบัติตลาด,VENDOR SEC,S,S,N,3,3,0.7,0,2.1,VEN-01,BP-09,docs/modules/VEN.md#ven-06,ใบรับรองใกล้หมดอายุถูกแจ้งเตือนล่วงหน้า,todo
 VEN-09,VEN,แผนแก้ไขข้อบกพร่องของคู่ค้า,Vendor remediation plan,Should,P3,ผลประเมิน,แนวปฏิบัติตลาด,VENDOR PROC,S,S,N,3,3,0.7,0,2.1,IAM-04,BP-09,docs/modules/VEN.md#ven-09,คู่ค้าอัปเดตความคืบหน้าผ่านลิงก์ได้,todo
-VEN-10,VEN,ประเมินซ้ำตามรอบ,Periodic re-assessment,Should,P3,ติดตาม,ม.37(1),SCHED,S,XS,N,3,1,0.5,0,1.4,VEN-02,BP-09,docs/modules/VEN.md#ven-10,คู่ค้าถูกส่งแบบประเมินซ้ำตามรอบโดยไม่ต้องสั่งเอง,todo
+VEN-10,VEN,ประเมินซ้ำตามรอบ,Periodic re-assessment,Should,P3,ติดตาม,ม.37(1),SCHED,S,XS,N,3,1,0.5,0,1.4,VEN-02,BP-09,docs/modules/VEN.md#ven-10,คู่ค้าถูกส่งแบบประเมินซ้ำตามรอบโดยไม่ต้องสั่งเอง,done
 VEN-12,VEN,เหตุละเมิดที่เกี่ยวกับคู่ค้า,Vendor incidents,Should,P3,ติดตาม,ม.40(2),VENDOR SEC,S,XS,N,3,1,0.5,0,1.4,BRE-03,BP-09,docs/modules/VEN.md#ven-12,ประวัติเหตุของคู่ค้าแสดงครบ,todo
 VEN-13,VEN,แดชบอร์ดความเสี่ยงคู่ค้า,Vendor risk dashboard,Should,P3,ติดตาม,แนวปฏิบัติตลาด,DPO EXEC,S,M,N,3,5,1.0,0,2.8,PLT-18,BP-09,docs/modules/VEN.md#ven-13,ตัวเลขตรงกับทะเบียนคู่ค้า,todo
 VEN-14,VEN,ยุติการใช้บริการ,Vendor offboarding,Should,P3,ยุติ,"ม.37(3), ม.40",PROC VENDOR,S,S,N,3,3,0.7,0,2.1,VEN-01,BP-09,docs/modules/VEN.md#ven-14,ยุติคู่ค้าได้เมื่อมีใบยืนยันการทำลายและปิดสิทธิ์ครบ,done
