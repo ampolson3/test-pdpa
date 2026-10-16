@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 
 	dpiaservice "pdpa-platform/internal/dpia/service"
 	orgservice "pdpa-platform/internal/org/service"
@@ -23,6 +25,7 @@ import (
 	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/forms"
+	"pdpa-platform/internal/platform/notify"
 	riskservice "pdpa-platform/internal/risk/service"
 )
 
@@ -63,6 +66,9 @@ type Service struct {
 	// Events is nil in cmd/worker (nothing there decides an assessment); VEN-08 publishes the already-
 	// catalogued "vendor.approved" event on a clean approval.
 	Events *events.Publisher
+	// Notify and River drive VEN-10's periodic re-assessment reminder; nil in contexts that don't need them.
+	Notify *notify.Service
+	River  *river.Client[pgx.Tx]
 }
 
 func (s *Service) now() time.Time {

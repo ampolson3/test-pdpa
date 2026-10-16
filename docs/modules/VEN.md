@@ -613,6 +613,22 @@ once one of those features exists, the same "no consumer yet" deferral this code
 
 **Acceptance criteria:** คู่ค้าถูกส่งแบบประเมินซ้ำตามรอบโดยไม่ต้องสั่งเอง
 
+**Implementation note (done):** The same two-step "sweep lists tenants, per-tenant job reads its own rows"
+River pattern PNG-15/ROPA-15/CON-04 already established (CLAUDE.md rule 1) — `vendor.reassessment_sweep`
+(global, daily, `jobs.GlobalKinds`, no tenant transaction) reads `platform.tenants` and enqueues one
+`vendor.reassessment_check` per trial/active tenant; `internal/vendormgmt/service/reassessment.go`'s
+`CheckDueReassessments` runs inside that tenant's own transaction, finds every `approved`/`conditional`
+vendor whose `tier`/`next_assessment_at` (already set by VEN-02's own `RecordIntake`, unread until now) has
+arrived, notifies the relationship owner — falling back to role PROC when none is set, the same "default
+recipients until real per-record routing exists" pattern BRE-07/PNG-04/PNG-15/ROPA-15 use — via
+`vendor.reassessment_due` (migration 00073, th/en × in_app/email, operational text, no DRAFT marker), then
+reschedules `next_assessment_at` one more `reassessmentInterval(tier)` out (the exact function VEN-02's own
+intake already uses), so a redue date lands on the same cadence a fresh intake would and a stale tick
+afterward is a harmless no-op. No new endpoint, permission or UI screen — a pure background reminder, the
+same "no UI screen" pattern PNG-15/ROPA-15 already use (the acceptance criterion is the notification itself).
+Tests: `TestCheckDueReassessments` (the acceptance criterion directly — a due vendor is notified and
+rescheduled into the future; a second immediate check is a harmless no-op), `TestCheckDueReassessments_TwoTenantIsolation`.
+
 <a id="ven-12"></a>
 ### VEN-12 เหตุละเมิดที่เกี่ยวกับคู่ค้า
 

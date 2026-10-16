@@ -20,6 +20,7 @@ import (
 	breach "pdpa-platform/internal/breach/service"
 	cookiescan "pdpa-platform/internal/cookie/scan"
 	cookieservice "pdpa-platform/internal/cookie/service"
+	dpiaservice "pdpa-platform/internal/dpia/service"
 	dsarservice "pdpa-platform/internal/dsar/service"
 	govjobs "pdpa-platform/internal/gov/jobs"
 	govservice "pdpa-platform/internal/gov/service"
@@ -38,6 +39,7 @@ import (
 	"pdpa-platform/internal/platform/notify"
 	"pdpa-platform/internal/platform/workflow"
 	ropaservice "pdpa-platform/internal/ropa/service"
+	vendorservice "pdpa-platform/internal/vendormgmt/service"
 	"pdpa-platform/internal/wiring"
 )
 
@@ -110,11 +112,15 @@ func run() error {
 	river.AddWorker(workers, &cookieservice.ScheduleSweeper{Pool: pool, River: inserter})
 	river.AddWorker(workers, &cookieservice.ScheduleChecker{Service: cookieSvc})
 	ropaSvc := &ropaservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter} // ROPA-15: periodic review reminder
-	wiring.Events(subscribers, ropaSvc)                                                                         // ROPA-10: logs DSAR rejections against their processing activities
+	dpiaSvc := &dpiaservice.Service{Audit: auditservice.New()}                                                  // DPIA-13: breach.activity_linked marks the activity's approved round needs_review
+	wiring.Events(subscribers, ropaSvc, dpiaSvc)                                                                // ROPA-10: logs DSAR rejections against their processing activities
 	river.AddWorker(workers, &ropaservice.ReviewSweeper{Pool: pool, River: inserter})
 	river.AddWorker(workers, &ropaservice.ReviewChecker{Service: ropaSvc})
+	vendorSvc := &vendorservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter} // VEN-10: periodic re-assessment reminder
+	river.AddWorker(workers, &vendorservice.ReassessmentSweeper{Pool: pool, River: inserter})
+	river.AddWorker(workers, &vendorservice.ReassessmentChecker{Service: vendorSvc})
 	river.AddWorker(workers, &workflow.Ticker{Service: wiring.Workflow(notifySvc, inserter, auditservice.New())})
-	breachSvc := wiring.Breach(notifySvc, fileStore(store, inserter), inserter, auditservice.New(), notifySvc.Keyring, nil) // BRE-09 recording is admin-only
+	breachSvc := wiring.Breach(notifySvc, fileStore(store, inserter), inserter, auditservice.New(), notifySvc.Keyring, nil, ropaSvc) // BRE-09 recording is admin-only
 	river.AddWorker(workers, &breach.TimerWorker{Service: breachSvc})
 	river.AddWorker(workers, &breach.NoticeWorker{Service: breachSvc})
 	noticeSvc := &notice.Service{Notify: notifySvc, River: inserter} // PNG-04: 30-day indirect-collection reminders
@@ -145,7 +151,7 @@ func run() error {
 		Workers: workers,
 		PeriodicJobs: []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob(),
 			auditjobs.RetentionPeriodicJob(retentionMonths), govjobs.SweepPeriodicJob(), cookieservice.SweepPeriodicJob(),
-			notice.ReviewSweepPeriodicJob(), ropaservice.ReviewSweepPeriodicJob()},
+			notice.ReviewSweepPeriodicJob(), ropaservice.ReviewSweepPeriodicJob(), vendorservice.ReassessmentSweepPeriodicJob()},
 		SoftStopTimeout: softStop,
 	})
 	if err != nil {
