@@ -320,6 +320,18 @@ export function useActivityMutations(client: ApiClient, id?: string) {
       },
       onSuccess: refresh,
     }),
+    /** ROPA-14 (ST-05): close an activity no longer in use (active -> ended), keeping its full history. */
+    end: useMutation({
+      mutationFn: async (v: { activity: ProcessingActivity; reason: string }) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/end", {
+          params: { path: { id: v.activity.id }, header: ifMatch(v.activity.row_version) },
+          body: { reason: v.reason },
+        });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
     addPurpose: useMutation({
       mutationFn: async (body: ActivityPurposeInput) => {
         const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/purposes", { params: { path: { id: id! } }, body });

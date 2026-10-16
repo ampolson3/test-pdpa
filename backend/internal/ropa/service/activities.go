@@ -61,6 +61,8 @@ type Activity struct {
 	Status            string // draft | pending_approval | active | under_review | ended (ST-05)
 	Completeness      int
 	MissingItems      []string
+	EndedAt           *time.Time
+	EndReason         *string
 	RowVersion        int32
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
@@ -861,10 +863,15 @@ func recipientAudit(r ActivityRecipient) map[string]any {
 }
 
 func toActivity(r ropastore.GetActivityRow) Activity {
-	return Activity{ID: r.ID, LegalEntityID: r.LegalEntityID, OrgUnitID: r.OrgUnitID, Code: r.Code, Name: r.Name,
+	a := Activity{ID: r.ID, LegalEntityID: r.LegalEntityID, OrgUnitID: r.OrgUnitID, Code: r.Code, Name: r.Name,
 		Description: deref(r.Description), Role: r.Role, ControllerPartyID: uuidPtr(r.ControllerPartyID), OwnerUserID: uuidPtr(r.OwnerUserID),
 		Status: r.Status, Completeness: int(r.Completeness), RightsAndAccess: deref(r.RightsAndAccess), RowVersion: r.RowVersion,
-		CreatedAt: r.CreatedAt.Time, UpdatedAt: r.UpdatedAt.Time}
+		CreatedAt: r.CreatedAt.Time, UpdatedAt: r.UpdatedAt.Time, EndReason: r.EndReason}
+	if r.EndedAt.Valid {
+		t := r.EndedAt.Time
+		a.EndedAt = &t
+	}
+	return a
 }
 
 func toActivityPurpose(r ropastore.InsertActivityPurposeRow) ActivityPurpose {

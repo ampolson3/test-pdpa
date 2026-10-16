@@ -12,6 +12,7 @@ import (
 	"pdpa-platform/internal/platform/crypto"
 	"pdpa-platform/internal/platform/jobs"
 	"pdpa-platform/internal/platform/notify"
+	ropaservice "pdpa-platform/internal/ropa/service"
 )
 
 // Acceptance criterion (ROPA-15): an active activity's own owner gets a review-reminder task once its
@@ -26,14 +27,21 @@ func TestCheckDueReviews_NotifiesOwnerAndReschedules(t *testing.T) {
 	e.svc.Notify = &notify.Service{Keyring: &crypto.Keyring{KEK: crypto.NewLocalKEK()}, River: client, Quiet: notify.QuietHours{}}
 
 	var ownerID uuid.UUID
-	activity := completeActivity(t, context.Background(), e, "REVIEW-01")
+	var activity ropaservice.Activity
+	e.in(t, func(ctx context.Context) error { activity = completeActivity(t, ctx, e, "REVIEW-01"); return nil })
 	e.in(t, func(ctx context.Context) error {
 		if err := pdb.MustTxFromContext(ctx).QueryRow(ctx,
 			`INSERT INTO iam.users (tenant_id, email, display_name, status) VALUES (current_setting('app.tenant_id')::uuid, $1, 'Activity Owner', 'active') RETURNING id`,
 			uuid.NewString()[:8]+"@owner.example").Scan(&ownerID); err != nil {
 			return err
 		}
-		_, err := pdb.MustTxFromContext(ctx).Exec(ctx, `UPDATE ropa.processing_activities SET owner_user_id = $2 WHERE id = $1`, activity.ID, ownerID)
+		if _, err := pdb.MustTxFromContext(ctx).Exec(ctx, `UPDATE ropa.processing_activities SET owner_user_id = $2 WHERE id = $1`, activity.ID, ownerID); err != nil {
+			return err
+		}
+		// platform.set_updated_at() bumps row_version on every UPDATE regardless of which columns
+		// changed — refresh the local copy rather than tracking a now-stale ETag.
+		refreshed, err := e.svc.GetActivity(ctx, activity.ID)
+		activity = refreshed
 		return err
 	})
 
@@ -65,7 +73,7 @@ func TestCheckDueReviews_NotifiesOwnerAndReschedules(t *testing.T) {
 	e.in(t, func(ctx context.Context) error {
 		var count int
 		if err := pdb.MustTxFromContext(ctx).QueryRow(ctx,
-			`SELECT count(*) FROM platform.notifications WHERE recipient_user_id = $1 AND template_code = 'ropa.review_due'`,
+			`SELECT count(*) FROM platform.notifications n JOIN platform.notification_templates t ON t.id = n.template_id WHERE n.recipient_user_id = $1 AND t.code = 'ropa.review_due'`,
 			ownerID).Scan(&count); err != nil {
 			return err
 		}
@@ -87,7 +95,7 @@ func TestCheckDueReviews_NotifiesOwnerAndReschedules(t *testing.T) {
 	e.in(t, func(ctx context.Context) error {
 		var count int
 		if err := pdb.MustTxFromContext(ctx).QueryRow(ctx,
-			`SELECT count(*) FROM platform.notifications WHERE recipient_user_id = $1 AND template_code = 'ropa.review_due'`,
+			`SELECT count(*) FROM platform.notifications n JOIN platform.notification_templates t ON t.id = n.template_id WHERE n.recipient_user_id = $1 AND t.code = 'ropa.review_due'`,
 			ownerID).Scan(&count); err != nil {
 			return err
 		}
@@ -119,7 +127,8 @@ func TestCheckDueReviews_FallsBackToDPOWithNoOwner(t *testing.T) {
 		return err
 	})
 
-	activity := completeActivity(t, context.Background(), e, "REVIEW-NODPO")
+	var activity ropaservice.Activity
+	e.in(t, func(ctx context.Context) error { activity = completeActivity(t, ctx, e, "REVIEW-NODPO"); return nil })
 	e.in(t, func(ctx context.Context) error {
 		submitted, err := e.svc.SubmitActivity(ctx, activity.ID, activity.RowVersion)
 		if err != nil {
@@ -146,7 +155,7 @@ func TestCheckDueReviews_FallsBackToDPOWithNoOwner(t *testing.T) {
 	e.in(t, func(ctx context.Context) error {
 		var count int
 		if err := pdb.MustTxFromContext(ctx).QueryRow(ctx,
-			`SELECT count(*) FROM platform.notifications WHERE recipient_user_id = $1 AND template_code = 'ropa.review_due'`,
+			`SELECT count(*) FROM platform.notifications n JOIN platform.notification_templates t ON t.id = n.template_id WHERE n.recipient_user_id = $1 AND t.code = 'ropa.review_due'`,
 			dpoID).Scan(&count); err != nil {
 			return err
 		}
@@ -169,7 +178,8 @@ func TestCheckDueReviews_TwoTenantIsolation(t *testing.T) {
 		e.svc.Notify = &notify.Service{Keyring: &crypto.Keyring{KEK: crypto.NewLocalKEK()}, River: client, Quiet: notify.QuietHours{}}
 	}
 
-	activity := completeActivity(t, context.Background(), a, "REVIEW-ISO")
+	var activity ropaservice.Activity
+	a.in(t, func(ctx context.Context) error { activity = completeActivity(t, ctx, a, "REVIEW-ISO"); return nil })
 	a.in(t, func(ctx context.Context) error {
 		submitted, err := a.svc.SubmitActivity(ctx, activity.ID, activity.RowVersion)
 		if err != nil {

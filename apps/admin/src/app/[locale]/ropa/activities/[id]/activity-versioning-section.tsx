@@ -28,6 +28,8 @@ export function ActivityVersioningSection({ client, activity }: { client: ApiCli
   const versions = useActivityVersions(client, activity.id);
   const [returnReason, setReturnReason] = useState("");
   const [showReturn, setShowReturn] = useState(false);
+  const [endReason, setEndReason] = useState("");
+  const [showEnd, setShowEnd] = useState(false);
   const [fromId, setFromId] = useState("");
   const [toId, setToId] = useState("");
   const diff = useCompareActivityVersions(client, activity.id, fromId || undefined, toId || undefined);
@@ -65,11 +67,37 @@ export function ActivityVersioningSection({ client, activity }: { client: ApiCli
       )}
 
       {activity.status === "active" && canUpdate && (
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={() => m.requestReview.mutate(activity)} disabled={m.requestReview.isPending} data-testid="request-review">
-            {t("versioning.requestReview")}
-          </Button>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => m.requestReview.mutate(activity)} disabled={m.requestReview.isPending} data-testid="request-review">
+              {t("versioning.requestReview")}
+            </Button>
+            <Button variant="secondary" onClick={() => setShowEnd((v) => !v)} data-testid="show-end-activity">
+              {t("versioning.end")}
+            </Button>
+          </div>
           {m.requestReview.isError && <p className="text-red-700" role="alert">{t("versioning.actionError", { detail: detail(m.requestReview.error) })}</p>}
+          {showEnd && (
+            <div className="flex flex-wrap items-center gap-2 rounded-md bg-amber-50 p-3">
+              <input
+                className="rounded-md border border-slate-300 px-2 py-1"
+                placeholder={t("versioning.endReason")}
+                value={endReason}
+                onChange={(e) => setEndReason(e.target.value)}
+              />
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  m.end.mutate({ activity, reason: endReason }, { onSuccess: () => { setShowEnd(false); setEndReason(""); } })
+                }
+                disabled={m.end.isPending || !endReason.trim()}
+                data-testid="confirm-end-activity"
+              >
+                {t("versioning.confirmEnd")}
+              </Button>
+              {m.end.isError && <p className="text-red-700" role="alert">{t("versioning.actionError", { detail: detail(m.end.error) })}</p>}
+            </div>
+          )}
         </div>
       )}
 

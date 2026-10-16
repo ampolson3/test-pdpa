@@ -18,7 +18,7 @@ SET status = 'active', approved_by = NULLIF(current_setting('app.user_id', true)
     updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
 WHERE id = $1 AND row_version = $2 AND status = 'pending_approval'
 RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
-    status, completeness, rights_and_access, row_version, created_at, updated_at
+    status, completeness, rights_and_access, ended_at, end_reason, row_version, created_at, updated_at
 `
 
 type ApproveActivityParams struct {
@@ -39,6 +39,8 @@ type ApproveActivityRow struct {
 	Status            string             `db:"status" json:"status"`
 	Completeness      int16              `db:"completeness" json:"completeness"`
 	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	EndedAt           pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	EndReason         *string            `db:"end_reason" json:"end_reason"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -62,6 +64,8 @@ func (q *Queries) ApproveActivity(ctx context.Context, arg ApproveActivityParams
 		&i.Status,
 		&i.Completeness,
 		&i.RightsAndAccess,
+		&i.EndedAt,
+		&i.EndReason,
 		&i.RowVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -75,7 +79,7 @@ SET status = 'active', updated_at = now(), updated_by = NULLIF(current_setting('
     row_version = row_version + 1
 WHERE id = $1 AND row_version = $2 AND status = 'under_review'
 RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
-    status, completeness, rights_and_access, row_version, created_at, updated_at
+    status, completeness, rights_and_access, ended_at, end_reason, row_version, created_at, updated_at
 `
 
 type ConfirmActivityNoChangeParams struct {
@@ -96,6 +100,8 @@ type ConfirmActivityNoChangeRow struct {
 	Status            string             `db:"status" json:"status"`
 	Completeness      int16              `db:"completeness" json:"completeness"`
 	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	EndedAt           pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	EndReason         *string            `db:"end_reason" json:"end_reason"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -119,6 +125,8 @@ func (q *Queries) ConfirmActivityNoChange(ctx context.Context, arg ConfirmActivi
 		&i.Status,
 		&i.Completeness,
 		&i.RightsAndAccess,
+		&i.EndedAt,
+		&i.EndReason,
 		&i.RowVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -194,9 +202,73 @@ func (q *Queries) DeleteRetentionRule(ctx context.Context, arg DeleteRetentionRu
 	return result.RowsAffected(), nil
 }
 
+const endActivity = `-- name: EndActivity :one
+UPDATE ropa.processing_activities
+SET status = 'ended', ended_at = now(), end_reason = $3,
+    updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
+WHERE id = $1 AND row_version = $2 AND status = 'active'
+RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
+    status, completeness, rights_and_access, ended_at, end_reason, row_version, created_at, updated_at
+`
+
+type EndActivityParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	RowVersion int32     `db:"row_version" json:"row_version"`
+	EndReason  *string   `db:"end_reason" json:"end_reason"`
+}
+
+type EndActivityRow struct {
+	ID                uuid.UUID          `db:"id" json:"id"`
+	LegalEntityID     uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	OrgUnitID         uuid.UUID          `db:"org_unit_id" json:"org_unit_id"`
+	Code              string             `db:"code" json:"code"`
+	Name              string             `db:"name" json:"name"`
+	Description       *string            `db:"description" json:"description"`
+	Role              string             `db:"role" json:"role"`
+	ControllerPartyID pgtype.UUID        `db:"controller_party_id" json:"controller_party_id"`
+	OwnerUserID       pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	Status            string             `db:"status" json:"status"`
+	Completeness      int16              `db:"completeness" json:"completeness"`
+	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	EndedAt           pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	EndReason         *string            `db:"end_reason" json:"end_reason"`
+	RowVersion        int32              `db:"row_version" json:"row_version"`
+	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// ST-05 "active -> ended" edge (ROPA-14's own acceptance criterion): reason is required by the service,
+// not the column (kept nullable so a row ended before this feature's own validation existed would still
+// read back fine) — history (every child table row) stays exactly as it was, only status/ended_at/
+// end_reason change.
+func (q *Queries) EndActivity(ctx context.Context, arg EndActivityParams) (EndActivityRow, error) {
+	row := q.db.QueryRow(ctx, endActivity, arg.ID, arg.RowVersion, arg.EndReason)
+	var i EndActivityRow
+	err := row.Scan(
+		&i.ID,
+		&i.LegalEntityID,
+		&i.OrgUnitID,
+		&i.Code,
+		&i.Name,
+		&i.Description,
+		&i.Role,
+		&i.ControllerPartyID,
+		&i.OwnerUserID,
+		&i.Status,
+		&i.Completeness,
+		&i.RightsAndAccess,
+		&i.EndedAt,
+		&i.EndReason,
+		&i.RowVersion,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getActivity = `-- name: GetActivity :one
 SELECT id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
-    status, completeness, rights_and_access, row_version, created_at, updated_at
+    status, completeness, rights_and_access, ended_at, end_reason, row_version, created_at, updated_at
 FROM ropa.processing_activities
 WHERE id = $1
 `
@@ -214,6 +286,8 @@ type GetActivityRow struct {
 	Status            string             `db:"status" json:"status"`
 	Completeness      int16              `db:"completeness" json:"completeness"`
 	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	EndedAt           pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	EndReason         *string            `db:"end_reason" json:"end_reason"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -235,6 +309,8 @@ func (q *Queries) GetActivity(ctx context.Context, id uuid.UUID) (GetActivityRow
 		&i.Status,
 		&i.Completeness,
 		&i.RightsAndAccess,
+		&i.EndedAt,
+		&i.EndReason,
 		&i.RowVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -284,7 +360,7 @@ INSERT INTO ropa.processing_activities (id, tenant_id, legal_entity_id, org_unit
 VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10,
     NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
 RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
-    status, completeness, rights_and_access, row_version, created_at, updated_at
+    status, completeness, rights_and_access, ended_at, end_reason, row_version, created_at, updated_at
 `
 
 type InsertActivityParams struct {
@@ -313,6 +389,8 @@ type InsertActivityRow struct {
 	Status            string             `db:"status" json:"status"`
 	Completeness      int16              `db:"completeness" json:"completeness"`
 	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	EndedAt           pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	EndReason         *string            `db:"end_reason" json:"end_reason"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -345,6 +423,8 @@ func (q *Queries) InsertActivity(ctx context.Context, arg InsertActivityParams) 
 		&i.Status,
 		&i.Completeness,
 		&i.RightsAndAccess,
+		&i.EndedAt,
+		&i.EndReason,
 		&i.RowVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -570,10 +650,10 @@ func (q *Queries) InsertRetentionRule(ctx context.Context, arg InsertRetentionRu
 
 const listActivities = `-- name: ListActivities :many
 SELECT id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
-    status, completeness, rights_and_access, row_version, created_at, updated_at
+    status, completeness, rights_and_access, ended_at, end_reason, row_version, created_at, updated_at
 FROM ropa.processing_activities
 WHERE ($1::uuid IS NULL OR org_unit_id = $1)
-  AND ($2::text IS NULL OR status = $2)
+  AND (status = $2 OR ($2::text IS NULL AND status <> 'ended'))
   AND ($3::text IS NULL OR name ILIKE '%' || $3 || '%' OR code ILIKE '%' || $3 || '%')
   AND ($4::timestamptz IS NULL OR (created_at, id) < ($4, $5::uuid))
 ORDER BY created_at DESC, id DESC
@@ -602,12 +682,17 @@ type ListActivitiesRow struct {
 	Status            string             `db:"status" json:"status"`
 	Completeness      int16              `db:"completeness" json:"completeness"`
 	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	EndedAt           pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	EndReason         *string            `db:"end_reason" json:"end_reason"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
-// Newest first; keyset cursor on (created_at, id).
+// Newest first; keyset cursor on (created_at, id). ROPA-14's own acceptance criterion: with no explicit
+// status filter, an ended activity is left out of this "current" list — the second clause of the status
+// condition. Searching retroactively is just passing status=ended explicitly, which the first clause of
+// the same condition already allows through for any status value.
 func (q *Queries) ListActivities(ctx context.Context, arg ListActivitiesParams) ([]ListActivitiesRow, error) {
 	rows, err := q.db.Query(ctx, listActivities,
 		arg.OrgUnitID,
@@ -637,6 +722,8 @@ func (q *Queries) ListActivities(ctx context.Context, arg ListActivitiesParams) 
 			&i.Status,
 			&i.Completeness,
 			&i.RightsAndAccess,
+			&i.EndedAt,
+			&i.EndReason,
 			&i.RowVersion,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -799,7 +886,7 @@ func (q *Queries) ListActivityRecipients(ctx context.Context, activityID uuid.UU
 
 const listProcessorActivities = `-- name: ListProcessorActivities :many
 SELECT id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
-    status, completeness, rights_and_access, row_version, created_at, updated_at
+    status, completeness, rights_and_access, ended_at, end_reason, row_version, created_at, updated_at
 FROM ropa.processing_activities
 WHERE role = 'processor'
 ORDER BY code
@@ -818,6 +905,8 @@ type ListProcessorActivitiesRow struct {
 	Status            string             `db:"status" json:"status"`
 	Completeness      int16              `db:"completeness" json:"completeness"`
 	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	EndedAt           pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	EndReason         *string            `db:"end_reason" json:"end_reason"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -847,6 +936,8 @@ func (q *Queries) ListProcessorActivities(ctx context.Context) ([]ListProcessorA
 			&i.Status,
 			&i.Completeness,
 			&i.RightsAndAccess,
+			&i.EndedAt,
+			&i.EndReason,
 			&i.RowVersion,
 			&i.CreatedAt,
 			&i.UpdatedAt,
@@ -917,7 +1008,7 @@ SET status = 'under_review', updated_at = now(), updated_by = NULLIF(current_set
     row_version = row_version + 1
 WHERE id = $1 AND row_version = $2 AND status = 'active'
 RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
-    status, completeness, rights_and_access, row_version, created_at, updated_at
+    status, completeness, rights_and_access, ended_at, end_reason, row_version, created_at, updated_at
 `
 
 type RequestActivityReviewParams struct {
@@ -938,6 +1029,8 @@ type RequestActivityReviewRow struct {
 	Status            string             `db:"status" json:"status"`
 	Completeness      int16              `db:"completeness" json:"completeness"`
 	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	EndedAt           pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	EndReason         *string            `db:"end_reason" json:"end_reason"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -961,6 +1054,8 @@ func (q *Queries) RequestActivityReview(ctx context.Context, arg RequestActivity
 		&i.Status,
 		&i.Completeness,
 		&i.RightsAndAccess,
+		&i.EndedAt,
+		&i.EndReason,
 		&i.RowVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -974,7 +1069,7 @@ SET status = 'draft', updated_at = now(), updated_by = NULLIF(current_setting('a
     row_version = row_version + 1
 WHERE id = $1 AND row_version = $2 AND status = 'pending_approval'
 RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
-    status, completeness, rights_and_access, row_version, created_at, updated_at
+    status, completeness, rights_and_access, ended_at, end_reason, row_version, created_at, updated_at
 `
 
 type ReturnActivityParams struct {
@@ -995,6 +1090,8 @@ type ReturnActivityRow struct {
 	Status            string             `db:"status" json:"status"`
 	Completeness      int16              `db:"completeness" json:"completeness"`
 	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	EndedAt           pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	EndReason         *string            `db:"end_reason" json:"end_reason"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -1018,6 +1115,8 @@ func (q *Queries) ReturnActivity(ctx context.Context, arg ReturnActivityParams) 
 		&i.Status,
 		&i.Completeness,
 		&i.RightsAndAccess,
+		&i.EndedAt,
+		&i.EndReason,
 		&i.RowVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -1045,7 +1144,7 @@ SET status = 'pending_approval', updated_at = now(), updated_by = NULLIF(current
     row_version = row_version + 1
 WHERE id = $1 AND row_version = $2 AND status IN ('draft', 'under_review')
 RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
-    status, completeness, rights_and_access, row_version, created_at, updated_at
+    status, completeness, rights_and_access, ended_at, end_reason, row_version, created_at, updated_at
 `
 
 type SubmitActivityParams struct {
@@ -1066,6 +1165,8 @@ type SubmitActivityRow struct {
 	Status            string             `db:"status" json:"status"`
 	Completeness      int16              `db:"completeness" json:"completeness"`
 	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	EndedAt           pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	EndReason         *string            `db:"end_reason" json:"end_reason"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -1087,6 +1188,8 @@ func (q *Queries) SubmitActivity(ctx context.Context, arg SubmitActivityParams) 
 		&i.Status,
 		&i.Completeness,
 		&i.RightsAndAccess,
+		&i.EndedAt,
+		&i.EndReason,
 		&i.RowVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -1101,7 +1204,7 @@ SET legal_entity_id = $3, org_unit_id = $4, code = $5, name = $6, description = 
     updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
 WHERE id = $1 AND row_version = $2
 RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
-    status, completeness, rights_and_access, row_version, created_at, updated_at
+    status, completeness, rights_and_access, ended_at, end_reason, row_version, created_at, updated_at
 `
 
 type UpdateActivityParams struct {
@@ -1131,6 +1234,8 @@ type UpdateActivityRow struct {
 	Status            string             `db:"status" json:"status"`
 	Completeness      int16              `db:"completeness" json:"completeness"`
 	RightsAndAccess   *string            `db:"rights_and_access" json:"rights_and_access"`
+	EndedAt           pgtype.Timestamptz `db:"ended_at" json:"ended_at"`
+	EndReason         *string            `db:"end_reason" json:"end_reason"`
 	RowVersion        int32              `db:"row_version" json:"row_version"`
 	CreatedAt         pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -1164,6 +1269,8 @@ func (q *Queries) UpdateActivity(ctx context.Context, arg UpdateActivityParams) 
 		&i.Status,
 		&i.Completeness,
 		&i.RightsAndAccess,
+		&i.EndedAt,
+		&i.EndReason,
 		&i.RowVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,

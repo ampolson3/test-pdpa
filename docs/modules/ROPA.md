@@ -777,6 +777,26 @@ test suite already does when neither is reachable. `go build ./...`, `go vet ./.
 
 **Acceptance criteria:** กิจกรรมที่สิ้นสุดไม่ปรากฏในรายงานปัจจุบันแต่ค้นย้อนหลังได้
 
+**Implementation note (done):** `backend/internal/ropa/service/versioning.go`'s `EndActivity` is ST-05's own
+`active -> ended` edge: requires a reason, refuses any status but `active`, keeps every child row (purposes,
+data, retention, controls) and every approved version untouched — only status/ended_at/end_reason change.
+`ListActivities`'s own status filter (`backend/db/queries/ropa/activities.sql`) excludes `ended` rows from the
+default (no-filter) list, but an explicit `status=ended` finds them — the acceptance criterion literally.
+API: `POST /admin/v1/ropa/activities/{id}/end` (`ropa.activity.update`, ETag/If-Match, 409 for any status but
+active, 422 for an empty reason). UI: an "End activity" toggle + reason field on `/ropa/activities/{id}`,
+shown only while `status=active`. Real bug found and fixed while testing this: `ApproveActivity`
+(ROPA-13/ROPA-15) returned an `out.RowVersion` that was already stale the instant it returned — ROPA-15's own
+`SetActivityNextReview` call right after freezing the approved version is a *second* `UPDATE` on the same row,
+and `platform.set_updated_at()`'s trigger bumps `row_version` on every `UPDATE` regardless of which columns
+changed, so the caller's own ETag was off by one from the moment `ApproveActivity` handed it back. Fixed by
+re-reading the row after both updates and using its real `row_version`/`updated_at` in the response — the
+same fix also corrected two pre-existing ROPA-15 test bugs this surfaced (a test calling `completeActivity`
+outside any transaction, and `platform.notifications` queried by a non-existent `template_code` column
+instead of joining `notification_templates`). Tests: `TestEndActivity` (end from active succeeds and is
+excluded from the default list / found via `status=ended`, keeps completeness/history intact; empty reason,
+non-active status and a stale ETag all refused; double-ending refused), `TestEndActivity_TwoTenantIsolation`,
+plus the `TestActivityApproval_Contract` HTTP test's ETag sequence corrected for the real post-approve version.
+
 <a id="ropa-15"></a>
 ### ROPA-15 แจ้งเตือนทบทวน RoPA ตามรอบ
 

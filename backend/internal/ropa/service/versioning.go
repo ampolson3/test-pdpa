@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -137,6 +139,17 @@ func (s *Service) ApproveActivity(ctx context.Context, id uuid.UUID, version int
 	}); err != nil {
 		return Activity{}, err
 	}
+	// SetActivityNextReview is its own UPDATE on this table, so platform.set_updated_at()'s trigger bumps
+	// row_version a second time beyond what ApproveActivity's own RETURNING already captured in out — a
+	// real bug this test caught: the ETag ApproveActivity handed back would already be one behind the
+	// row's true version the instant the caller tried to use it. Re-read the now-final row rather than
+	// merging the two UPDATEs (ROPA-15's own review-cycle write is deliberately kept separate from
+	// ROPA-13's approval write).
+	final, err := s.GetActivity(ctx, id)
+	if err != nil {
+		return Activity{}, err
+	}
+	out.RowVersion, out.UpdatedAt = final.RowVersion, final.UpdatedAt
 	return out, s.audit(ctx, "ropa.activity.approve", id, map[string]any{"status": before.Status}, map[string]any{"status": out.Status, "version_no": next + 1})
 }
 
@@ -215,6 +228,37 @@ func (s *Service) ConfirmActivityNoChange(ctx context.Context, id uuid.UUID, ver
 	out := toActivity(ropastore.GetActivityRow(r))
 	out.Completeness, out.MissingItems = before.Completeness, before.MissingItems
 	return out, s.audit(ctx, "ropa.activity.confirm_no_change", id, map[string]any{"status": before.Status}, map[string]any{"status": out.Status})
+}
+
+// EndActivity is ROPA-14's own ST-05 "active -> ended" edge ("ยุติ / ตั้ง retention"): closes an activity
+// that is no longer in use, keeping its full history (every child table row, every approved version)
+// untouched — only status/ended_at/end_reason change. A reason is required (kept as its own column, not
+// audit-only like ReturnActivity's, since ม.39's own record should show *why* a processing activity
+// stopped without having to dig through the audit log for it).
+func (s *Service) EndActivity(ctx context.Context, id uuid.UUID, version int32, reason string) (Activity, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return Activity{}, fmt.Errorf("%w: reason", ErrInvalid)
+	}
+	before, err := s.GetActivity(ctx, id)
+	if err != nil {
+		return Activity{}, err
+	}
+	if before.RowVersion != version {
+		return Activity{}, ErrVersionMismatch
+	}
+	if before.Status != "active" {
+		return Activity{}, ErrInvalidTransition
+	}
+	r, err := ropastore.New(pdb.MustTxFromContext(ctx)).EndActivity(ctx, ropastore.EndActivityParams{ID: id, RowVersion: version, EndReason: &reason})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Activity{}, ErrVersionMismatch
+	}
+	if err != nil {
+		return Activity{}, err
+	}
+	out := toActivity(ropastore.GetActivityRow(r))
+	return out, s.audit(ctx, "ropa.activity.end", id, map[string]any{"status": before.Status}, map[string]any{"status": out.Status, "reason": reason})
 }
 
 // ListActivityVersions returns an activity's approved rounds, newest first.

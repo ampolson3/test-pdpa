@@ -241,16 +241,19 @@ func TestActivityApproval_Contract(t *testing.T) {
 		t.Errorf("list versions: %d %s", code, body)
 	}
 
-	// Editing an active activity directly is refused.
-	if code, _ := do("PATCH", actURL, &dpo, activity, map[string]string{"If-Match": `"3"`}); code != 409 {
+	// Editing an active activity directly is refused. ApproveActivity's own update bumps row_version once
+	// (2 -> 3) and ROPA-15's SetActivityNextReview call right after it is a second UPDATE on the same row
+	// (platform.set_updated_at() bumps row_version on every UPDATE regardless of which columns changed),
+	// so the real post-approve version is 4, not 3.
+	if code, _ := do("PATCH", actURL, &dpo, activity, map[string]string{"If-Match": `"4"`}); code != 409 {
 		t.Errorf("direct edit of an active activity: %d, want 409", code)
 	}
 
 	// Reopen for review (editor's own ropa.activity.update is enough), then confirm no change.
-	if code, body := do("POST", actURL+"/request-review", &editor, nil, map[string]string{"If-Match": `"3"`}); code != 200 || !strings.Contains(body, `"status":"under_review"`) {
+	if code, body := do("POST", actURL+"/request-review", &editor, nil, map[string]string{"If-Match": `"4"`}); code != 200 || !strings.Contains(body, `"status":"under_review"`) {
 		t.Fatalf("request review: %d %s", code, body)
 	}
-	if code, body := do("POST", actURL+"/confirm-no-change", &editor, nil, map[string]string{"If-Match": `"4"`}); code != 200 || !strings.Contains(body, `"status":"active"`) {
+	if code, body := do("POST", actURL+"/confirm-no-change", &editor, nil, map[string]string{"If-Match": `"5"`}); code != 200 || !strings.Contains(body, `"status":"active"`) {
 		t.Fatalf("confirm no change: %d %s", code, body)
 	}
 

@@ -190,6 +190,22 @@ func (h *Strict) RopaReturnActivity(ctx context.Context, req RopaReturnActivityR
 	return RopaReturnActivity200JSONResponse{Body: toActivityWire(a), Headers: RopaReturnActivity200ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
 }
 
+func (h *Strict) RopaEndActivity(ctx context.Context, req RopaEndActivityRequestObject) (RopaEndActivityResponseObject, error) {
+	v, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	var reason string
+	if req.Body != nil {
+		reason = req.Body.Reason
+	}
+	a, err := h.svc.EndActivity(ctx, req.Id, v, reason)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RopaEndActivity200JSONResponse{Body: toActivityWire(a), Headers: RopaEndActivity200ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
 func (h *Strict) RopaRequestActivityReview(ctx context.Context, req RopaRequestActivityReviewRequestObject) (RopaRequestActivityReviewResponseObject, error) {
 	v, err := parseETag(req.Params.IfMatch)
 	if err != nil {
@@ -461,6 +477,11 @@ func toActivityWire(a ropaservice.Activity) ProcessingActivity {
 		}
 		w.MissingItems = &items
 	}
+	if a.EndedAt != nil {
+		t := a.EndedAt.UTC()
+		w.EndedAt = &t
+	}
+	w.EndReason = a.EndReason
 	return w
 }
 
