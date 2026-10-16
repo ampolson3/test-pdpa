@@ -1,0 +1,89 @@
+{
+  "_comment": "Shared by backend/internal/platform/forms (Go) and packages/form-renderer (TypeScript): both evaluators must produce these results.",
+  "schema": {
+    "sections": [
+      {
+        "key": "basic",
+        "title": { "th": "ข้อมูลทั่วไป", "en": "Basics" },
+        "questions": [
+          { "key": "org_name", "type": "text", "label": { "th": "ชื่อหน่วยงาน" }, "required": true },
+          { "key": "processes_sensitive", "type": "yes_no", "label": { "th": "ประมวลผลข้อมูลอ่อนไหวหรือไม่" }, "required": true, "weight": 2,
+            "options": [ { "value": "yes", "score": 5 }, { "value": "no", "score": 0 } ] },
+          { "key": "sensitive_types", "type": "multi_choice", "label": { "th": "ประเภทข้อมูลอ่อนไหว" }, "required": true,
+            "visible_if": { "question": "processes_sensitive", "op": "eq", "value": "yes" },
+            "options": [ { "value": "health", "label": { "th": "สุขภาพ" }, "score": 3 }, { "value": "biometric", "label": { "th": "ชีวภาพ" }, "score": 4 },
+                         { "value": "criminal", "label": { "th": "ประวัติอาชญากรรม" }, "score": 5 } ] },
+          { "key": "subjects", "type": "number", "label": { "th": "จำนวนเจ้าของข้อมูล" }, "required": true, "min": 0, "max": 10000000 }
+        ]
+      },
+      {
+        "key": "scale",
+        "title": { "th": "ขนาดการประมวลผล" },
+        "visible_if": { "question": "subjects", "op": "gte", "value": 10000 },
+        "questions": [
+          { "key": "large_scale_reason", "type": "textarea", "label": { "th": "เหตุผลที่ต้องประมวลผลจำนวนมาก" }, "required": true, "max_length": 50 },
+          { "key": "contact_email", "type": "email", "label": { "th": "อีเมลผู้รับผิดชอบ" } }
+        ]
+      },
+      {
+        "key": "extra",
+        "title": { "th": "ข้อมูลเพิ่มเติม" },
+        "questions": [
+          { "key": "start_date", "type": "date", "label": { "th": "วันที่เริ่ม" } },
+          { "key": "vendor", "type": "single_choice", "label": { "th": "ผู้ประมวลผล" },
+            "visible_if": { "any": [ { "question": "processes_sensitive", "op": "eq", "value": "yes" }, { "question": "subjects", "op": "gt", "value": 100 } ] },
+            "options": [ { "value": "internal", "label": { "th": "ภายใน" }, "score": 0 }, { "value": "cloud", "label": { "th": "คลาวด์" }, "score": 2 },
+                         { "value": "offshore", "label": { "th": "ต่างประเทศ" }, "score": 4 } ] },
+          { "key": "notes", "type": "text", "label": { "th": "หมายเหตุ" }, "visible_if": { "question": "vendor", "op": "in", "value": ["cloud", "offshore"] } }
+        ]
+      }
+    ]
+  },
+  "scoring": {
+    "bands": [
+      { "key": "low", "label": { "th": "ต่ำ" }, "min": 0, "max": 5 },
+      { "key": "medium", "label": { "th": "ปานกลาง" }, "min": 6, "max": 12 },
+      { "key": "high", "label": { "th": "สูง" }, "min": 13 }
+    ]
+  },
+  "cases": [
+    { "name": "empty, final submit",
+      "answers": {}, "require_all": true,
+      "visible": ["org_name", "processes_sensitive", "subjects", "start_date"],
+      "errors": [ { "question": "org_name", "code": "required" }, { "question": "processes_sensitive", "code": "required" }, { "question": "subjects", "code": "required" } ],
+      "answer_keys": [], "score": 0, "max_score": 10, "band": "low" },
+    { "name": "every branch shown, high risk",
+      "answers": { "org_name": "ACME", "processes_sensitive": "yes", "sensitive_types": ["health", "biometric"], "subjects": 20000,
+                   "large_scale_reason": "many customers", "contact_email": "dpo@acme.example", "vendor": "offshore", "notes": "x" },
+      "require_all": true,
+      "visible": ["org_name", "processes_sensitive", "sensitive_types", "subjects", "large_scale_reason", "contact_email", "start_date", "vendor", "notes"],
+      "errors": [],
+      "answer_keys": ["contact_email", "large_scale_reason", "notes", "org_name", "processes_sensitive", "sensitive_types", "subjects", "vendor"],
+      "score": 21, "max_score": 26, "band": "high" },
+    { "name": "answers to hidden questions are dropped",
+      "answers": { "org_name": "ACME", "processes_sensitive": "no", "sensitive_types": ["health"], "subjects": 50, "vendor": "cloud" },
+      "require_all": true,
+      "visible": ["org_name", "processes_sensitive", "subjects", "start_date"],
+      "errors": [],
+      "answer_keys": ["org_name", "processes_sensitive", "subjects"], "score": 0, "max_score": 10, "band": "low" },
+    { "name": "wrong types and values while drafting",
+      "answers": { "org_name": 5, "processes_sensitive": "maybe", "subjects": -1, "start_date": "2026-13-01" },
+      "require_all": false,
+      "visible": ["org_name", "processes_sensitive", "subjects", "start_date"],
+      "errors": [ { "question": "org_name", "code": "invalid_type" }, { "question": "processes_sensitive", "code": "invalid_option" },
+                  { "question": "subjects", "code": "out_of_range" }, { "question": "start_date", "code": "invalid_date" } ],
+      "answer_keys": [], "score": 0, "max_score": 10, "band": "low" },
+    { "name": "too long and bad e-mail in a conditional section",
+      "answers": { "org_name": "x", "processes_sensitive": "no", "subjects": 10000, "large_scale_reason": "123456789012345678901234567890123456789012345678901", "contact_email": "not-an-email" },
+      "require_all": true,
+      "visible": ["org_name", "processes_sensitive", "subjects", "large_scale_reason", "contact_email", "start_date", "vendor"],
+      "errors": [ { "question": "large_scale_reason", "code": "too_long" }, { "question": "contact_email", "code": "invalid_email" } ],
+      "answer_keys": ["org_name", "processes_sensitive", "subjects"], "score": 0, "max_score": 14, "band": "low" },
+    { "name": "one section only (an assignee's part)",
+      "answers": { "org_name": "ACME", "processes_sensitive": "yes", "sensitive_types": ["health", "biometric"], "subjects": 20000, "vendor": "offshore" },
+      "require_all": true, "sections": ["basic"],
+      "visible": ["org_name", "processes_sensitive", "sensitive_types", "subjects", "large_scale_reason", "contact_email", "start_date", "vendor", "notes"],
+      "errors": [],
+      "answer_keys": ["org_name", "processes_sensitive", "sensitive_types", "subjects"], "score": 17, "max_score": 22, "band": "high" }
+  ]
+}

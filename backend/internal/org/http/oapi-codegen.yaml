@@ -1,0 +1,34 @@
+package: orghttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - orgGetSettings
+    - orgUpdateSettings
+    - orgListExternalParties
+    - orgCreateExternalParty
+    - orgListDuplicateExternalParties
+    - orgGetExternalParty
+    - orgUpdateExternalParty
+    - orgMergeExternalParty
+    - orgListCalendars
+    - orgCreateCalendar
+    - orgUpdateCalendar
+    - orgListHolidays
+    - orgPutHoliday
+    - orgDeleteHoliday
+    - orgListLegalEntities
+    - orgCreateLegalEntity
+    - orgGetLegalEntity
+    - orgUpdateLegalEntity
+    - orgListUnits
+    - orgCreateUnit
+    - orgUpdateUnit
+    - orgMoveUnit
+    - orgCloseUnit
+    - orgListMasterData
+    - orgCreateMasterData
+    - orgUpdateMasterData
+    - orgDeleteMasterData

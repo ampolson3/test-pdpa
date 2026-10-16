@@ -1,0 +1,26 @@
+package: docshttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - platformListDocumentTypes
+    - platformListDocuments
+    - platformCreateDocument
+    - platformGetDocument
+    - platformSaveDocumentDraft
+    - platformListPublishedDocumentVersions
+    - platformExportDocument
+    - platformCompareDocumentVersions
+    - platformListClauses
+    - platformCreateClause
+    - platformGetClause
+    - platformUpdateClause
+    - platformPublishClause
+    - platformRetireClause
+    - platformListDocumentTemplates
+    - platformCreateDocumentTemplate
+    - platformGetDocumentTemplate
+    - platformUpdateDocumentTemplate
+    - platformPublishDocumentTemplate

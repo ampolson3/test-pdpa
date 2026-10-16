@@ -125,6 +125,36 @@
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่างหลัก)
 
+**Implementation — done.** The first feature on the DSA module, built directly on the existing `agreement`
+module (migration 00015) rather than a new schema: `agreement.agreements.agreement_type` already has
+`dpa`/`dsa`/`joint_controller`/`inbound_dpa` in its own CHECK constraint, and `our_role`/`counterpartyRole`
+already express the controller↔processor relationship (DPA-02's own `counterpartyRole` helper) — so this
+feature's whole job is a single pure decision function, no migration, no persisted state.
+
+`internal/agreement/service/type_check.go`'s `RecommendAgreementType(counterpartyRole)` is the literal
+acceptance criterion: ask one question (the data recipient's role) and return the recommended
+`agreement_type` with its PDPA basis — `processor` → `dpa` (ม.40, a processor acting on our instructions),
+`controller` → `dsa` (ม.27, another independent controller receiving or sharing data with us),
+`joint_controller` → `joint_controller` (also ม.27, but a distinct legal relationship from an ordinary DSA,
+so it keeps its own `agreement_type` value rather than being folded into `"dsa"`). Being pure (no
+transaction, no database, no tenant context) makes the acceptance criterion itself ("correct recommendation
+for every role") a direct table test.
+
+API: `GET /admin/v1/agreements/type-check?counterparty_role=...` → `{agreement_type, legal_ref, reason_code}`.
+Gated on `agreement.dsa.read` (already seeded for LEGAL/OWNER/DPO/PRIVACY/AUDIT/GUEST — this feature's own
+actors), not `agreement.dpa.read`, since the question is "which agreement do I need" and the answer can be a
+DSA — asking under the DPA permission would be backwards. UI: a small "Agreement type check" widget on
+`/agreements` (shown only to callers with `agreement.dsa.read`) — pick the counterparty's role, click check,
+see the recommended type + legal reference + a plain-language reason (`agreements.typeCheck.reasons.*`,
+th/en) immediately; no RoPA/vendor to pick, no modal, consistent with "within one click" being the whole
+point of a check this small. Tests: unit (`type_check_test.go` — the acceptance criterion directly, a table
+test over all three roles checking both `agreement_type` and `legal_ref`; an unknown/empty role refused as
+`ErrInvalid`), HTTP contract (`handler_test.go` — 200 for all three roles through the real validator +
+AuthZ, 401 with no principal, 403 for a caller without `agreement.dsa.read`) — the unit tests ran and passed
+against this environment's real toolchain; the HTTP contract test compiles clean but is skipped without a
+reachable Redis, consistent with every other agreement-module contract test in this pass.
+`pnpm --filter @pdpa/admin build`/`tsc` and the `@pdpa/i18n` ICU message tests all verified clean.
+
 <a id="dsa-02"></a>
 ### DSA-02 ข้อมูลคู่สัญญาและบทบาท
 
@@ -145,6 +175,36 @@
 **Frontend (Next.js):** ส่วนคู่สัญญาใน wizard
 
 **Acceptance criteria:** รองรับข้อตกลงที่มีมากกว่าสองฝ่าย
+
+**Implementation — done.** `agreement.parties` (migration 00015) was already fully specified — party_id
+(an ORG-06 external party), legal_entity_id (one of our own, for the joint-controller case), party_role,
+signatory — and DPA-02's own `CreateWizard` already wrote exactly one row there (the counterparty), but
+nothing read, added to, or removed from that table afterward: `ListAgreementPartiesForAgreement` existed
+only as a query raw tests called directly. This feature is the CRUD the acceptance criterion needs —
+`internal/agreement/service/parties.go`'s `ListParties`/`AddParty`/`RemoveParty` — no new migration, two new
+sqlc queries (`InsertAgreementPartyFull`, `DeleteAgreementParty`).
+
+`AddParty` takes exactly one of `party_id`/`legal_entity_id` (refused otherwise as `ErrInvalid`), checked
+visible under RLS the same way DPA-02's own counterparty/legal-entity checks already are (rule 1, via the
+existing `Org.GetExternalParty`/`Org.GetLegalEntity`), and a `party_role` from the table's own CHECK set
+(`disclosing`/`receiving`/`joint_controller`/`controller`/`processor`). Unlike DPA-03's clauses (locked to
+`status = "draft"` since they feed a submit-time completeness check), parties carry no such gate — adding or
+removing one never blocks anything else, so every status can still manage its own party list.
+
+API: `GET`/`POST /admin/v1/agreements/{id}/parties`, `DELETE /admin/v1/agreements/{id}/parties/{partyRowId}`
+— on the already-seeded `agreement.dpa.read`/`.update` (same convention every other agreement sub-resource
+endpoint already uses, since `CreateWizard` still only actually creates `agreement_type = "dpa"` rows; a
+real per-type permission split is DSA-04's problem, not this one's). UI: a "Parties" panel on
+`/agreements/{id}`, right above the clause panel — the counterparty from creation plus an add form (pick an
+external party or one of our own legal entities, then a role) and a remove link per row. Tests: unit
+(`parties_test.go` — the acceptance criterion directly: an agreement starts with one party and grows past
+two with both an external party and our own legal entity as joint controller; both-set/neither-set/unknown
+role/unknown party refused; remove then re-remove is `ErrNotFound`; two-tenant isolation, including that
+tenant B can't even resolve tenant A's agreement id), HTTP contract (`handler_test.go` — 200/201/204/403/404/422
+through the real validator + AuthZ). `go build`/`go vet`/`gofmt` clean; `tsc --noEmit`,
+`pnpm --filter @pdpa/admin build` and `pnpm --filter @pdpa/i18n test` all verified clean — DB-backed test
+execution wasn't available in this environment (no reachable Postgres/Redis this pass), so these ran
+compile-only, consistent with every other agreement-module test in this session.
 
 <a id="dsa-03"></a>
 ### DSA-03 Template DSA มาตรฐาน
@@ -167,6 +227,31 @@
 
 **Acceptance criteria:** มี template ครบ 4 แบบ TH/EN
 
+**Implementation — done.** No new Go code at all, the exact shape DPA-01's own migration already took for
+"dpa": PLT-16's document composer already registers the `"dsa"` doc type (`internal/wiring.Docs`,
+`agreement.dsa.*` permissions — read/create/update/publish already seeded to LEGAL in the baseline RBAC)
+and already has its own generic, doc-type-agnostic template library (`internal/platform/docs/library.go`'s
+`ListTemplates`/`CreateTemplate`/`UpdateTemplate`/`PublishTemplate` on `platform.templates`) that takes
+`doc_type` as an ordinary parameter — nothing ties it to "dpa" specifically. Migration 00060
+(`docs/decisions.md` Q-34) seeds the module doc's own four named variants as global (`tenant_id NULL`)
+published rows, codes `one_way`/`two_way`/`government`/`research`: one-way disclosure, two-way exchange,
+a government-agency variant (citing the receiving agency's own statutory authority alongside ม.24/26/27),
+and a research variant (citing ม.24(1) and requiring anonymization/pseudonymization before use or
+publication) — each covering parties and roles, purpose, legal basis, usage restrictions (ม.27), security
+measures (ม.37(2)), breach notification, data subject rights, and return/destruction/retention, with
+`org_name_th`/`org_name_en`/`dpo_name`/`dpo_email` merge fields resolved the same way every other PLT-16
+document already does. Content opens with a `[ร่าง — ...]`/`[DRAFT — ...]` banner paragraph (rule 8 — legal
+wording stays flagged until Legal reviews it, the same "seed a draft pending review" move
+ORG-07/ROPA-09/PNG-03/DPIA-01/RTG-01/VEN-04/DPA-01 already made). Frontend: the existing
+`/documents/templates` page needed no change — a LEGAL user already sees `"dsa"` as an option there and can
+view, clone or author further `dsa` templates with it. Tests: `TestStandardDsaTemplates_SeededReady` (the
+acceptance criterion directly — all four templates published, global, with both Thai and English content)
+and `TestStandardDsaTemplates_VisibleToAnyTenant` (a second, entirely separate tenant sees all four too,
+with nothing of its own) — both compile-checked clean; this environment has no reachable Postgres this
+pass, so unlike DPA-01's own migration they were not run against a real database (the same limitation
+DSA-01/DSA-02 already noted for the agreement module this session) — the JSON content of all four rows was
+validated as well-formed with a standalone script before being written into the migration.
+
 <a id="dsa-04"></a>
 ### DSA-04 สร้างเอกสารอัตโนมัติจาก RoPA
 
@@ -187,6 +272,35 @@
 **Frontend (Next.js):** ขั้นตอนเลือกกิจกรรมใน wizard
 
 **Acceptance criteria:** ข้อตกลงดึงวัตถุประสงค์ ประเภทข้อมูล ฐาน และระยะเวลาจาก RoPA ถูกต้อง
+
+**Implementation — done.** Two halves, one already built and one genuinely new. The "pull from RoPA" half
+is DPA-04's own `ProcessingSchedule` (`internal/agreement/service/schedule.go`) — already
+agreement_type-agnostic (reads an agreement's own `ActivityIDs`, never checks `agreement_type`), so it
+already satisfies this feature's literal acceptance criterion for a "dsa" agreement with zero new code: the
+same live annex (purposes + lawful basis, data categories, retention, security measures) that DPA-04 proved
+correct against real RoPA data now works unchanged for DSA.
+
+The genuinely new half is actually *creating* a "dsa" agreement at all: DPA-02's `CreateWizard` only ever
+supported `agreement_type = "dpa"`, and its whole counterparty model is a VEN-01 vendor — wrong fit for
+DSA, since a DSA counterparty (another controller, a government agency, a researcher) need not be a tracked
+vendor relationship. `CreateInput` gained `CounterpartyPartyID`/`CounterpartyRole` alongside the existing
+`VendorID`: for `"dpa"` the counterparty is still resolved through `Vendor.GetVendor` with its role derived
+from `OurRole` (unchanged); for `"dsa"` the counterparty is any `Org.GetExternalParty` (rule 1 — visible
+under RLS) with an *explicit* `party_role` (disclosing/receiving/joint_controller/controller/processor —
+DSA-02's own set), since there is no controller↔processor flip to derive it from. `supportedAgreementTypes`
+now includes `"dsa"`. API: `vendor_id` is no longer required on `POST /admin/v1/agreements` — give it for
+`dpa`, or `counterparty_party_id`+`counterparty_role` for `dsa`. UI: the `/agreements` wizard's vendor picker
+is replaced with a counterparty-party + counterparty-role picker whenever `dsa` is selected, and the
+template dropdown now filters by the chosen type (previously hard-coded to `"dpa"`). Tests: unit
+(`dsa_wizard_test.go` — the acceptance criterion directly: a dsa agreement created from an ORG-06
+counterparty (not a vendor) and a RoPA activity has that counterparty on `ListParties` with the given role,
+and its `ProcessingSchedule` resolves without error; missing/invalid `counterparty_role` refused;
+`agreements_test.go`'s own FK-validation table updated for the new dsa shape), HTTP contract
+(`handler_test.go` — a real 201 `dsa` create through `counterparty_party_id`+`counterparty_role`, replacing
+the old "dsa not yet supported" 422 case with a real validation 422 for a dsa request missing those fields).
+`go build`/`go vet`/`gofmt` clean; `tsc --noEmit`, `pnpm --filter @pdpa/admin build` and
+`pnpm --filter @pdpa/i18n test` all verified clean — no reachable Postgres/Redis this pass, so the Go tests
+ran compile-only, consistent with every other agreement-module test this session.
 
 <a id="dsa-05"></a>
 ### DSA-05 ข้อกำหนดที่ต้องมี
@@ -209,6 +323,33 @@
 
 **Acceptance criteria:** ข้อตกลงที่ขาด clause บังคับส่งอนุมัติไม่ได้
 
+**Implementation — done.** `platform.clause_library` + `agreement.mandatory_rules` — the same "คลัง control"
+DPA-03's own migration 00057 already built — were already `agreement_type`-agnostic: every read path in
+`internal/agreement/service/clauses.go` (`MissingMandatoryClauses`/`missingMandatoryClauses`/
+`CheckSubmittable`/`AddClause`) keys off the agreement's own `agreement_type` column, never hardcodes "dpa".
+So this feature needed almost no new Go service code — only new seed data plus one new wiring line.
+Migration `00061_dsa_mandatory_clauses.sql` seeds nine clause topics for `agreement_type='dsa'`, each
+flagged DRAFT (rule 8, `docs/decisions.md` Q-35): `dsa.purpose_limitation`/`dsa.no_excess_use`/
+`dsa.dsar_support`/`dsa.retention_and_destruction`/`dsa.onward_disclosure`/`dsa.termination` (ม.27),
+`dsa.security_measures` (ม.37(2)), `dsa.breach_notification` (ม.37(4), by the same analogy DPA-03 already
+drew for its own breach clause), and `dsa.cross_border_transfer` (ม.28-29) — the only conditional rule
+(`condition: {"requires_transfer": true}`), mirroring DPA-03's own `cross_border_transfer` rule exactly;
+`agreementHasTransfer` already reads this live from `Ropa.ListActivityTransfers` per linked activity
+(rule 9), so no change was needed there either. `cmd/api/main.go` gained the symmetric
+`docsSvc.SetSubmitValidate("dsa", agreementSvc.CheckSubmittable)` line right after the existing "dpa" one —
+the acceptance criterion's own gate, reused unchanged. Frontend: `ClausePanel`
+(`apps/admin/.../agreements/[id]/agreement-detail-content.tsx`) took its `applies_to`/permission-code
+filter from a hardcoded `"dpa"` to the agreement's own `agreement_type` (new `agreementType` prop, the
+same dynamic-filter fix DSA-04 already made for `useDocumentTemplates`'s `doc_type`), so the same panel now
+also lists/attaches "dsa" clauses and checks `agreement.dsa.update` rather than `agreement.dpa.update` for
+a DSA agreement. Tests: `internal/agreement/service/dsa_clauses_test.go`'s
+`TestMissingMandatoryClauses_DsaBlocksUntilAttached` mirrors DPA-03's own clause test exactly — a fresh
+"dsa" agreement (no transfer on record) is missing all eight unconditional clauses and `CheckSubmittable`
+refuses with `ErrMissingMandatoryClauses`; attaching all eight clears the list and lets the document submit.
+`go build`/`go vet`/`gofmt` clean; `tsc --noEmit`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` all verified clean — no reachable Postgres/Redis this pass, so the Go test
+ran compile-only, consistent with every other agreement-module test this session.
+
 <a id="dsa-11"></a>
 ### DSA-11 ทะเบียนข้อตกลงและแจ้งเตือนหมดอายุ
 
@@ -229,6 +370,26 @@
 **Frontend (Next.js):** หน้าทะเบียน DSA
 
 **Acceptance criteria:** ข้อตกลงใกล้หมดอายุถูกแจ้งเตือน
+
+**Implementation — done.** The module doc's own backend note says it plainly: "ทะเบียน DSA (ใช้ร่วมกับ
+DPA-10)". DPA-10's own registry/reminder mechanism (`internal/agreement/service/renewal.go`'s
+`SetSchedule`/`scheduleRenewalReminder`/`FireRenewalReminder`/`ReminderWorker`) never branches on
+`agreement_type` — it reads and writes the shared `agreement.agreements` row generically — so the exact same
+single River checkpoint, `PATCH /admin/v1/agreements/{id}/schedule` endpoint, and `/agreements` list page
+(status/dates/type filter, built since DSA-01) already serve "dsa" agreements with zero new backend code or
+migration. The one real gap this feature closed: `RenewalScheduleSection` on the agreement detail page
+(`apps/admin/.../agreements/[id]/agreement-detail-content.tsx`) hardcoded its edit-permission check to
+`agreement.dpa.update`, so a DSA agreement's own registry section would (for a hypothetical role holding only
+`agreement.dsa.update`, not `agreement.dpa.update`) never show its edit button — fixed the same way DSA-05
+fixed `ClausePanel`'s own permission check, reading `agreement.${agreement.agreement_type}.update` instead.
+Tests: `dsa_renewal_test.go`'s `TestFireRenewalReminder_WorksForDsaAgreementsToo` mirrors DPA-10's own
+`TestFireRenewalReminder_NotifiesLegalAndNoopsWhenStale` exactly but on a "dsa" agreement created through
+DSA-04's `CreateWizard` path — proving the acceptance criterion directly: `SetSchedule` leaves a real
+`river_job` row scheduled at the right moment, and `FireRenewalReminder` writes a real `platform.notifications`
+row for role LEGAL, for a "dsa" agreement exactly like it already does for "dpa". `go build`/`go vet`/`gofmt`
+clean; `tsc --noEmit`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` all verified
+clean — no reachable Postgres/Redis this pass, so the Go test ran compile-only, consistent with every other
+agreement-module test this session.
 
 <a id="dsa-06"></a>
 ### DSA-06 คลังข้อความสัญญา

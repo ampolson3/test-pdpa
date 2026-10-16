@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { Sarabun } from "next/font/google";
 import { locales } from "@pdpa/i18n";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { NotificationBell } from "@/components/notification-bell";
+import { auth } from "@/auth";
 import { Providers } from "./providers";
 import "../globals.css";
 
@@ -31,6 +33,7 @@ export default async function LocaleLayout({
   if (!hasLocale(locales, locale)) notFound();
 
   const t = await getTranslations("common");
+  const session = await auth();
 
   return (
     <html lang={locale} dir="ltr" className={sarabun.variable}>
@@ -39,7 +42,10 @@ export default async function LocaleLayout({
           <Providers>
             <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
               <span className="text-sm font-semibold">{t("appName")}</span>
-              <LocaleSwitcher />
+              <div className="flex items-center gap-2">
+                {session?.accessToken ? <NotificationBell /> : null}
+                <LocaleSwitcher />
+              </div>
             </header>
             {children}
           </Providers>

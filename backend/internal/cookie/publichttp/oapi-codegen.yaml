@@ -1,0 +1,9 @@
+package: cookiepublichttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - cookieGetPublicBanner
+    - cookieSubmitConsent

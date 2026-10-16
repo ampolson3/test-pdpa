@@ -1,0 +1,10 @@
+package: dataflowhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - dataflowGetGraph
+    - dataflowExportGraph
+    - dataflowGetReport

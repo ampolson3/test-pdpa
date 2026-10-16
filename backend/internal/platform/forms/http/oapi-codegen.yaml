@@ -1,0 +1,22 @@
+package: formshttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - platformListFormTypes
+    - platformListForms
+    - platformCreateForm
+    - platformGetForm
+    - platformCreateFormDraft
+    - platformSaveFormDraft
+    - platformPublishForm
+    - platformListFormResponses
+    - platformStartFormResponse
+    - platformGetFormResponse
+    - platformSaveFormAnswers
+    - platformAssignFormSection
+    - platformCompleteFormSection
+    - platformSubmitFormResponse
+    - platformListMyFormSections

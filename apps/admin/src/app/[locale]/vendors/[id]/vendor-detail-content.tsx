@@ -1,0 +1,647 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { usePermission } from "@pdpa/authz";
+import { Button } from "@pdpa/ui";
+import { FormRenderer, type FormSchema, type Language, type Scoring } from "@pdpa/form-renderer";
+import {
+  createApiClient,
+  useVendor,
+  useSaveVendor,
+  useExternalParties,
+  useAgreements,
+  useVendorIntakes,
+  useRecordVendorIntake,
+  useVendorContractStatus,
+  useVendorAssessments,
+  useRecordVendorAssessment,
+  useDecideVendorAssessment,
+  useVendorRemediationItems,
+  useVendorOffboarding,
+  useUpdateVendorOffboarding,
+  useTransitionVendor,
+  useVendorCertificates,
+  useAddVendorCertificate,
+  useDeleteVendorCertificate,
+  useDpiaTemplates,
+  useForm,
+  type VendorDecideAssessmentInput,
+  type VendorOffboardingInput,
+  type StoredFile,
+} from "@pdpa/api-client";
+import { useRendererMessages } from "@/components/form-messages";
+import { FileUploader } from "@/components/file-uploader";
+import { Link } from "@/i18n/routing";
+
+const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
+
+function detail(e: unknown): string {
+  return typeof e === "object" && e !== null ? [(e as { title?: string }).title, (e as { detail?: string }).detail].filter(Boolean).join(" — ") : "";
+}
+
+const TIER_STYLE: Record<string, string> = {
+  low: "bg-emerald-100 text-emerald-800",
+  medium: "bg-amber-100 text-amber-800",
+  high: "bg-orange-100 text-orange-800",
+  critical: "bg-red-100 text-red-800",
+};
+
+const STATUS_STYLE: Record<string, string> = {
+  prospect: "bg-slate-100 text-slate-700",
+  onboarding: "bg-sky-100 text-sky-800",
+  approved: "bg-emerald-100 text-emerald-800",
+  conditional: "bg-amber-100 text-amber-800",
+  rejected: "bg-red-100 text-red-800",
+  offboarding: "bg-amber-100 text-amber-800",
+  terminated: "bg-slate-100 text-slate-500",
+};
+
+/** VEN-01's acceptance criterion: one page per vendor gathering its profile — sibling features (VEN-02
+ *  tiering, VEN-04/05/07 assessments, VEN-08 approval, VEN-11 contracts/activities, ...) add their own
+ *  sections to this same page once built, rather than scattering vendor data across separate screens. */
+export function VendorDetailContent({ id }: { id: string }) {
+  const t = useTranslations("vendors");
+  const ta = useTranslations("agreements");
+  const canRead = usePermission("vendor.vendor.read");
+  const canUpdate = usePermission("vendor.vendor.update");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const vendor = useVendor(client, id);
+  const parties = useExternalParties(client);
+  const agreements = useAgreements(client, { vendorId: id });
+  const contractStatus = useVendorContractStatus(client, id);
+  const save = useSaveVendor(client);
+  const [editing, setEditing] = useState(false);
+  const [serviceDescription, setServiceDescription] = useState("");
+  const [isProcessor, setIsProcessor] = useState(true);
+  const [countries, setCountries] = useState("");
+
+  if (!canRead) return <main className="mx-auto max-w-4xl p-8 text-slate-600">{t("forbidden")}</main>;
+  if (vendor.isPending) return <main className="mx-auto max-w-4xl p-8 text-slate-500">{t("loading")}</main>;
+  if (vendor.isError || !vendor.data) return <main className="mx-auto max-w-4xl p-8 text-red-700">{t("loadError")}</main>;
+
+  const v = vendor.data;
+  const partyRows = parties.data?.pages.flatMap((p) => p.data) ?? [];
+  const party = partyRows.find((p) => p.id === v.party_id);
+
+  const startEdit = () => {
+    save.reset();
+    setServiceDescription(v.service_description);
+    setIsProcessor(v.is_processor);
+    setCountries(v.processing_countries.join(", "));
+    setEditing(true);
+  };
+
+  const submit = () => {
+    save.mutate(
+      {
+        id: v.id, rowVersion: v.row_version,
+        input: {
+          party_id: v.party_id, service_description: serviceDescription, is_processor: isProcessor,
+          relationship_owner_id: v.relationship_owner_id ?? undefined,
+          processing_countries: countries.split(",").map((c) => c.trim()).filter(Boolean),
+        },
+      },
+      { onSuccess: () => setEditing(false) },
+    );
+  };
+
+  return (
+    <main className="mx-auto max-w-4xl space-y-6 p-8 text-sm">
+      <Link className="text-sky-700 underline" href="/vendors">{t("backToList")}</Link>
+
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-semibold">{party?.name_th ?? v.party_id}</h1>
+          <p className="text-slate-600">{v.service_description}</p>
+        </div>
+        <span className={`rounded px-2 py-1 ${STATUS_STYLE[v.status]}`} data-testid="vendor-status">{t(`statuses.${v.status}`)}</span>
+      </header>
+
+      <section className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
+        <h2 className="font-semibold sm:col-span-2">{t("form.details")}</h2>
+        <div><span className="block text-slate-500">{t("form.party")}</span><span>{party?.name_th ?? "—"}</span></div>
+        <div><span className="block text-slate-500">{t("form.tier")}</span><span>{v.tier ? t(`tiers.${v.tier}`) : t("form.tierNotSet")}</span></div>
+        <div><span className="block text-slate-500">{t("form.isProcessor")}</span><span>{v.is_processor ? t("statuses.approved") : "—"}</span></div>
+        <div><span className="block text-slate-500">{t("form.processingCountries")}</span><span>{v.processing_countries.join(", ") || "—"}</span></div>
+        {v.next_assessment_at && <div><span className="block text-slate-500">{t("form.nextAssessmentAt")}</span><span>{v.next_assessment_at}</span></div>}
+
+        {editing ? (
+          <>
+            <label className="sm:col-span-2"><span className="block text-slate-600">{t("form.serviceDescription")}</span>
+              <textarea className={INPUT} rows={2} value={serviceDescription} maxLength={2000}
+                onChange={(e) => setServiceDescription(e.target.value)} /></label>
+            <label><span className="block text-slate-600">{t("form.processingCountries")}</span>
+              <input className={INPUT} value={countries} onChange={(e) => setCountries(e.target.value)} /></label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={isProcessor} onChange={(e) => setIsProcessor(e.target.checked)} />
+              <span className="text-slate-600">{t("form.isProcessor")}</span>
+            </label>
+            {save.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("form.saveError", { detail: detail(save.error) })}</p>}
+            <div className="flex gap-2 sm:col-span-2">
+              <Button onClick={submit} disabled={save.isPending}>{t("form.save")}</Button>
+              <Button variant="secondary" onClick={() => setEditing(false)}>{t("form.cancel")}</Button>
+            </div>
+          </>
+        ) : (
+          canUpdate && <div className="sm:col-span-2"><Button variant="secondary" onClick={startEdit}>{t("form.edit")}</Button></div>
+        )}
+      </section>
+
+      {contractStatus.data?.is_processor && !contractStatus.data.has_dpa && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-amber-900" role="alert">
+          {t("detail.agreements.missingDpaWarning")}
+        </div>
+      )}
+
+      <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4">
+        <h2 className="font-semibold">{t("detail.agreements.title")}</h2>
+        {(agreements.data?.pages.flatMap((p) => p.data) ?? []).length === 0 ? (
+          <p className="text-slate-500">{t("detail.agreements.empty")}</p>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {agreements.data!.pages.flatMap((p) => p.data).map((ag) => (
+              <li key={ag.id} className="space-y-1 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Link className="font-medium text-sky-700 underline" href={`/agreements/${ag.id}`}>
+                    {ag.title}
+                  </Link>
+                  <span className="text-xs text-slate-500">{ta(`statuses.${ag.status}`)}</span>
+                </div>
+                <p className="text-xs text-slate-500">{ag.agreement_no}</p>
+                {ag.activity_ids.length > 0 && (
+                  <p className="text-xs text-slate-500">
+                    {t("detail.agreements.activities")}:{" "}
+                    {ag.activity_ids.map((aid, i) => (
+                      <span key={aid}>
+                        {i > 0 && ", "}
+                        <Link className="underline" href={`/ropa/activities/${aid}`}>
+                          {aid}
+                        </Link>
+                      </span>
+                    ))}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <Link className="text-sky-700 underline" href="/agreements">{t("agreementsLink")}</Link>
+      </section>
+
+      <IntakePanel client={client} vendorId={v.id} canUpdate={canUpdate} />
+      <AssessmentPanel client={client} vendorId={v.id} />
+      <CertificatePanel client={client} vendorId={v.id} canUpdate={canUpdate} />
+      {(v.status === "approved" || v.status === "conditional" || v.status === "offboarding" || v.status === "terminated") && (
+        <OffboardingPanel client={client} vendorId={v.id} status={v.status} rowVersion={v.row_version} />
+      )}
+    </main>
+  );
+}
+
+/** VEN-14's own acceptance criterion: the vendor can only be terminated once access has been revoked and
+ *  either a destruction certificate is on file or no data was ever shared (data_return_status =
+ *  "not_applicable") — the same literal reading the backend's own TransitionVendor guard uses. Starting
+ *  offboarding only needs vendor.vendor.update; terminating needs vendor.vendor.delete, the same
+ *  permanent-status-change permission ORG-06's party merge and DPIA-03's template retire already require. */
+function OffboardingPanel({
+  client, vendorId, status, rowVersion,
+}: { client: ReturnType<typeof createApiClient>; vendorId: string; status: string; rowVersion: number }) {
+  const t = useTranslations("vendors");
+  const canUpdate = usePermission("vendor.vendor.update");
+  const canTerminate = usePermission("vendor.vendor.delete");
+  const offboarding = useVendorOffboarding(client, vendorId);
+  const updateOffboarding = useUpdateVendorOffboarding(client, vendorId);
+  const transition = useTransitionVendor(client, vendorId);
+  const [dataReturnStatus, setDataReturnStatus] = useState<VendorOffboardingInput["data_return_status"]>("pending");
+  const [accessRevoked, setAccessRevoked] = useState(false);
+  const [certificateFileId, setCertificateFileId] = useState<string | undefined>(undefined);
+
+  if (status === "approved" || status === "conditional") {
+    return canUpdate ? (
+      <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4">
+        <h2 className="font-semibold">{t("detail.offboarding.title")}</h2>
+        {transition.isError && <p className="text-red-700" role="alert">{t("detail.offboarding.error", { detail: detail(transition.error) })}</p>}
+        <Button onClick={() => transition.mutate({ rowVersion, to: "offboarding" })} disabled={transition.isPending}>
+          {t("detail.offboarding.start")}
+        </Button>
+      </section>
+    ) : null;
+  }
+
+  if (offboarding.isPending) return null;
+  const o = offboarding.data;
+  if (!o) return null;
+
+  const canComplete = o.access_revoked_at != null && (o.destruction_certificate_file_id != null || o.data_return_status === "not_applicable");
+
+  const save = () => {
+    updateOffboarding.mutate({
+      rowVersion: o.row_version,
+      input: { data_return_status: dataReturnStatus, destruction_certificate_file_id: certificateFileId, access_revoked: accessRevoked || undefined },
+    });
+  };
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.offboarding.title")}</h2>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div><span className="block text-slate-500">{t("detail.offboarding.dataReturnStatus")}</span>
+          <span>{t(`detail.offboarding.dataReturnStatuses.${o.data_return_status}`)}</span></div>
+        <div><span className="block text-slate-500">{t("detail.offboarding.accessRevokedAt")}</span>
+          <span>{o.access_revoked_at ?? "—"}</span></div>
+        <div><span className="block text-slate-500">{t("detail.offboarding.certificate")}</span>
+          <span>{o.destruction_certificate_file_id ? t("detail.offboarding.certificateOnFile") : "—"}</span></div>
+      </div>
+
+      {status === "offboarding" && canUpdate && (
+        <div className="space-y-2 border-t border-slate-100 pt-3">
+          <label className="block"><span className="block text-slate-600">{t("detail.offboarding.dataReturnStatus")}</span>
+            <select className={SELECT} value={dataReturnStatus} onChange={(e) => setDataReturnStatus(e.target.value as VendorOffboardingInput["data_return_status"])}>
+              {(["pending", "returned", "destroyed", "not_applicable"] as const).map((s) => (
+                <option key={s} value={s}>{t(`detail.offboarding.dataReturnStatuses.${s}`)}</option>
+              ))}
+            </select>
+          </label>
+          <div>
+            <span className="block text-slate-600">{t("detail.offboarding.certificate")}</span>
+            <FileUploader onUploaded={(f: StoredFile) => setCertificateFileId(f.id)} />
+          </div>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={accessRevoked} onChange={(e) => setAccessRevoked(e.target.checked)} />
+            <span className="text-slate-600">{t("detail.offboarding.accessRevoked")}</span>
+          </label>
+          {updateOffboarding.isError && <p className="text-red-700" role="alert">{t("detail.offboarding.error", { detail: detail(updateOffboarding.error) })}</p>}
+          <Button onClick={save} disabled={updateOffboarding.isPending}>{t("detail.offboarding.save")}</Button>
+        </div>
+      )}
+
+      {status === "offboarding" && canTerminate && (
+        <div className="border-t border-slate-100 pt-3">
+          {!canComplete && <p className="text-amber-800">{t("detail.offboarding.incomplete")}</p>}
+          {transition.isError && <p className="text-red-700" role="alert">{t("detail.offboarding.error", { detail: detail(transition.error) })}</p>}
+          <Button onClick={() => transition.mutate({ rowVersion, to: "terminated" })} disabled={!canComplete || transition.isPending}>
+            {t("detail.offboarding.terminate")}
+          </Button>
+        </div>
+      )}
+
+      {status === "terminated" && (
+        <p className="text-slate-500">{t("detail.offboarding.completedAt", { date: o.completed_at ? new Date(o.completed_at).toLocaleDateString() : "—" })}</p>
+      )}
+    </section>
+  );
+}
+
+const RESIDUAL_STYLE: Record<string, string> = {
+  low: "bg-emerald-100 text-emerald-800",
+  medium: "bg-amber-100 text-amber-800",
+  high: "bg-orange-100 text-orange-800",
+  critical: "bg-red-100 text-red-800",
+};
+
+/** VEN-07: answer one of VEN-04's published vendor templates once and see the score + residual risk
+ *  level (RRA-02) it classifies to, plus every past cycle. VEN-08: a decider (vendor.assessment.approve)
+ *  can approve / reject / conditionally approve any undecided cycle; conditional approval automatically
+ *  opens the given remediation items, shown in their own list below. */
+function AssessmentPanel({ client, vendorId }: { client: ReturnType<typeof createApiClient>; vendorId: string }) {
+  const t = useTranslations("vendors");
+  const locale = useLocale() as Language;
+  const canRead = usePermission("vendor.assessment.read");
+  const canRecord = usePermission("vendor.assessment.create");
+  const canDecide = usePermission("vendor.assessment.approve");
+  const canReadTemplates = usePermission("assessment.template.read");
+  const list = useVendorAssessments(client, vendorId);
+  const remediation = useVendorRemediationItems(client, vendorId);
+  const templates = useDpiaTemplates(client, "vendor");
+  const published = (templates.data?.data ?? []).filter((tpl) => tpl.status === "published");
+  const [templateId, setTemplateId] = useState("");
+  const chosen = templateId || published[0]?.id;
+  const chosenTemplate = published.find((tpl) => tpl.id === chosen);
+  const form = useForm(client, chosenTemplate?.form_id);
+  const record = useRecordVendorAssessment(client, vendorId);
+  const decide = useDecideVendorAssessment(client, vendorId);
+  const messages = useRendererMessages(locale);
+  const version = form.data?.versions?.find((ver) => ver.id === form.data?.current_version_id);
+
+  if (!canRead) return null;
+  const rows = list.data?.data ?? [];
+  const remediationRows = remediation.data?.data ?? [];
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.assessments.title")}</h2>
+
+      {canRecord && canReadTemplates && (
+        <div className="space-y-3 border-b border-slate-100 pb-3" data-testid="assessment-form">
+          {published.length === 0 ? <p className="text-amber-800">{t("detail.assessments.noTemplate")}</p> : (
+            <select className={SELECT} value={chosen ?? ""} onChange={(e) => setTemplateId(e.target.value)}>
+              {published.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.name}</option>)}
+            </select>
+          )}
+          {version && chosenTemplate && (
+            <FormRenderer schema={version.schema as FormSchema} scoring={version.scoring as Scoring | null} language={locale} messages={messages} showScore
+              idPrefix="vendor-assessment"
+              onSubmit={async (answers) => { await record.mutateAsync({ template_code: chosenTemplate.code, answers }); }}
+              actions={({ submit, busy }) => <Button type="button" onClick={submit} disabled={busy || record.isPending} data-testid="assess-submit">{t("detail.assessments.submit")}</Button>} />
+          )}
+          {record.isError && <p className="text-red-700" role="alert">{t("detail.assessments.submitError", { detail: detail(record.error) })}</p>}
+        </div>
+      )}
+
+      {list.isPending ? <p className="text-slate-500">{t("loading")}</p> : rows.length === 0 ? (
+        <p className="text-slate-500">{t("detail.assessments.empty")}</p>
+      ) : (
+        <ul className="divide-y divide-slate-100 text-sm">
+          {rows.map((a) => (
+            <li key={a.id} className="space-y-2 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-slate-500">{t("detail.assessments.cycle", { n: a.cycle_no })}</span>
+                <span className={`rounded px-2 py-0.5 text-xs font-semibold ${RESIDUAL_STYLE[a.residual_level] ?? "bg-slate-100 text-slate-700"}`}>
+                  {t(`tiers.${a.residual_level}`)}
+                </span>
+                <span className="text-slate-500">{t("detail.assessments.score", { score: a.score })}</span>
+                <span className="text-xs text-slate-500">{new Date(a.created_at).toLocaleDateString()}</span>
+              </div>
+              {a.decision ? (
+                <span className="text-xs text-slate-500">{t(`detail.assessments.decisions.${a.decision}`)}</span>
+              ) : canDecide ? (
+                <DecidePanel assessmentId={a.id} onDecide={(input) => decide.mutateAsync({ assessmentId: a.id, input })} />
+              ) : (
+                <span className="text-xs text-amber-700">{t("detail.assessments.awaitingDecision")}</span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {decide.isError && <p className="text-red-700" role="alert">{t("detail.assessments.decideError", { detail: detail(decide.error) })}</p>}
+
+      <div className="border-t border-slate-100 pt-3">
+        <h3 className="text-sm font-semibold">{t("detail.assessments.remediation.title")}</h3>
+        {remediationRows.length === 0 ? (
+          <p className="text-slate-500 text-sm">{t("detail.assessments.remediation.empty")}</p>
+        ) : (
+          <ul className="divide-y divide-slate-100 text-sm">
+            {remediationRows.map((it) => (
+              <li key={it.id} className="flex items-center justify-between gap-2 py-2">
+                <span>{it.title}</span>
+                <span className={`rounded px-2 py-0.5 text-xs font-semibold ${RESIDUAL_STYLE[it.severity] ?? "bg-slate-100 text-slate-700"}`}>
+                  {t(`detail.assessments.remediation.severity.${it.severity}`)}
+                </span>
+                <span className="text-xs text-slate-500">{t(`detail.assessments.remediation.status.${it.status}`)}</span>
+                {it.due_at && <span className="text-xs text-slate-500">{it.due_at}</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/** VEN-08's own acceptance criterion: choosing "conditional" requires at least one remediation item
+ *  (title + severity), opened automatically together with the decision in one call. */
+function DecidePanel({ assessmentId, onDecide }: { assessmentId: string; onDecide: (input: VendorDecideAssessmentInput) => Promise<unknown> }) {
+  const t = useTranslations("vendors");
+  const [decision, setDecision] = useState<VendorDecideAssessmentInput["decision"]>("approved");
+  const [items, setItems] = useState([{ title: "", severity: "medium" as "low" | "medium" | "high" }]);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async () => {
+    setBusy(true);
+    try {
+      const body: VendorDecideAssessmentInput = { decision };
+      if (decision === "conditional") {
+        body.remediation_items = items.filter((it) => it.title.trim() !== "");
+      }
+      await onDecide(body);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-start gap-2 rounded-md bg-slate-50 p-2" data-testid={`decide-${assessmentId}`}>
+      <select className={SELECT} style={{ maxWidth: 180 }} value={decision} onChange={(e) => setDecision(e.target.value as VendorDecideAssessmentInput["decision"])}>
+        <option value="approved">{t("detail.assessments.decisions.approved")}</option>
+        <option value="conditional">{t("detail.assessments.decisions.conditional")}</option>
+        <option value="rejected">{t("detail.assessments.decisions.rejected")}</option>
+      </select>
+      {decision === "conditional" && (
+        <div className="w-full space-y-1">
+          {items.map((it, i) => (
+            <div key={i} className="flex gap-2">
+              <input className={INPUT} placeholder={t("detail.assessments.remediation.titlePlaceholder")} value={it.title}
+                onChange={(e) => setItems((prev) => prev.map((row, j) => (j === i ? { ...row, title: e.target.value } : row)))} />
+              <select className={SELECT} style={{ maxWidth: 140 }} value={it.severity}
+                onChange={(e) => setItems((prev) => prev.map((row, j) => (j === i ? { ...row, severity: e.target.value as "low" | "medium" | "high" } : row)))}>
+                <option value="low">{t("detail.assessments.remediation.severity.low")}</option>
+                <option value="medium">{t("detail.assessments.remediation.severity.medium")}</option>
+                <option value="high">{t("detail.assessments.remediation.severity.high")}</option>
+              </select>
+            </div>
+          ))}
+          <Button type="button" onClick={() => setItems((prev) => [...prev, { title: "", severity: "medium" }])}>
+            {t("detail.assessments.remediation.addItem")}
+          </Button>
+        </div>
+      )}
+      <Button type="button" onClick={submit} disabled={busy} data-testid={`decide-submit-${assessmentId}`}>
+        {t("detail.assessments.decideSubmit")}
+      </Button>
+    </div>
+  );
+}
+
+const SELECT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
+
+/** VEN-06's own acceptance criterion ("ใบรับรองใกล้หมดอายุถูกแจ้งเตือนล่วงหน้า"): recording a certificate's
+ *  own valid_to is what schedules the 30-day expiry reminder on the backend — this panel is only the list +
+ *  record form, following the same "caller's own clean upload" pattern the offboarding panel's destruction
+ *  certificate already uses. */
+function CertificatePanel({
+  client, vendorId, canUpdate,
+}: { client: ReturnType<typeof createApiClient>; vendorId: string; canUpdate: boolean }) {
+  const t = useTranslations("vendors");
+  const list = useVendorCertificates(client, vendorId);
+  const add = useAddVendorCertificate(client, vendorId);
+  const remove = useDeleteVendorCertificate(client, vendorId);
+  const [open, setOpen] = useState(false);
+  const [certType, setCertType] = useState("");
+  const [issuer, setIssuer] = useState("");
+  const [validFrom, setValidFrom] = useState("");
+  const [validTo, setValidTo] = useState("");
+  const [fileId, setFileId] = useState<string | undefined>(undefined);
+
+  const rows = list.data?.data ?? [];
+
+  const submit = () => {
+    if (!fileId) return;
+    add.mutate(
+      {
+        cert_type: certType, issuer: issuer || undefined, file_id: fileId,
+        valid_from: validFrom || undefined, valid_to: validTo || undefined,
+      },
+      {
+        onSuccess: () => {
+          setOpen(false);
+          setCertType("");
+          setIssuer("");
+          setValidFrom("");
+          setValidTo("");
+          setFileId(undefined);
+        },
+      },
+    );
+  };
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.certificates.title")}</h2>
+
+      {rows.length === 0 ? <p className="text-slate-500">{t("detail.certificates.empty")}</p> : (
+        <ul className="divide-y divide-slate-100 text-sm">
+          {rows.map((c) => (
+            <li key={c.id} className="flex items-center justify-between gap-2 py-2">
+              <div>
+                <span className="font-medium">{c.cert_type}</span>
+                {c.issuer && <span className="ml-2 text-slate-500">{c.issuer}</span>}
+              </div>
+              {c.valid_to && <span className="text-xs text-slate-500">{t("detail.certificates.expiresOn", { date: c.valid_to })}</span>}
+              {canUpdate && (
+                <Button variant="secondary" onClick={() => remove.mutate(c.id)} disabled={remove.isPending}>
+                  {t("detail.certificates.remove")}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {canUpdate && (open ? (
+        <div className="space-y-2 border-t border-slate-100 pt-3">
+          <label className="block"><span className="block text-slate-600">{t("detail.certificates.certType")}</span>
+            <input className={INPUT} value={certType} onChange={(e) => setCertType(e.target.value)} /></label>
+          <label className="block"><span className="block text-slate-600">{t("detail.certificates.issuer")}</span>
+            <input className={INPUT} value={issuer} onChange={(e) => setIssuer(e.target.value)} /></label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="block"><span className="block text-slate-600">{t("detail.certificates.validFrom")}</span>
+              <input type="date" className={INPUT} value={validFrom} onChange={(e) => setValidFrom(e.target.value)} /></label>
+            <label className="block"><span className="block text-slate-600">{t("detail.certificates.validTo")}</span>
+              <input type="date" className={INPUT} value={validTo} onChange={(e) => setValidTo(e.target.value)} /></label>
+          </div>
+          <div>
+            <span className="block text-slate-600">{t("detail.certificates.file")}</span>
+            <FileUploader onUploaded={(f: StoredFile) => setFileId(f.id)} />
+          </div>
+          {add.isError && <p className="text-red-700" role="alert">{t("detail.certificates.saveError", { detail: detail(add.error) })}</p>}
+          <div className="flex gap-2">
+            <Button onClick={submit} disabled={add.isPending || !certType || !fileId}>{t("detail.certificates.add")}</Button>
+            <Button variant="secondary" onClick={() => setOpen(false)}>{t("form.cancel")}</Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="secondary" onClick={() => setOpen(true)}>{t("detail.certificates.add")}</Button>
+      ))}
+    </section>
+  );
+}
+
+/** VEN-02: answer the intake questionnaire once; the system computes the tier (and which VEN-04
+ *  assessment templates it now requires) rather than leaving that to a human's own reading. */
+function IntakePanel({ client, vendorId, canUpdate }: { client: ReturnType<typeof createApiClient>; vendorId: string; canUpdate: boolean }) {
+  const t = useTranslations("vendors");
+  const intakes = useVendorIntakes(client, vendorId);
+  const record = useRecordVendorIntake(client, vendorId);
+  const [open, setOpen] = useState(false);
+  const [dataVolume, setDataVolume] = useState("small");
+  const [sensitiveData, setSensitiveData] = useState(false);
+  const [systemAccessLevel, setSystemAccessLevel] = useState("none");
+  const [crossBorderTransfer, setCrossBorderTransfer] = useState(false);
+
+  const rows = intakes.data?.data ?? [];
+
+  const submit = () => {
+    record.mutate(
+      {
+        answers: {
+          data_volume: dataVolume,
+          sensitive_data: sensitiveData ? "yes" : "no",
+          system_access_level: systemAccessLevel,
+          cross_border_transfer: crossBorderTransfer ? "yes" : "no",
+        },
+      },
+      { onSuccess: () => setOpen(false) },
+    );
+  };
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.intake.title")}</h2>
+
+      {rows.length === 0 ? <p className="text-slate-500">{t("detail.intake.empty")}</p> : (
+        <div className="space-y-1">
+          <h3 className="text-xs font-medium text-slate-500">{t("detail.intake.history")}</h3>
+          <ul className="divide-y divide-slate-100 text-sm">
+            {rows.map((in_) => (
+              <li key={in_.id} className="flex items-center justify-between gap-2 py-1">
+                <span className={`rounded px-2 py-0.5 text-xs ${TIER_STYLE[in_.tier_result] ?? "bg-slate-100 text-slate-700"}`}>
+                  {t(`tiers.${in_.tier_result}`)}
+                </span>
+                <span className="text-slate-500">{t("detail.intake.historyScore", { score: in_.inherent_score })}</span>
+                <span className="text-slate-500">{t("detail.intake.historyDate", { date: new Date(in_.created_at).toLocaleDateString() })}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {record.isSuccess && (
+        <div className="rounded-md bg-emerald-50 p-2 text-sm text-emerald-800">
+          <p>{t("detail.intake.result", { tier: t(`tiers.${record.data.intake.tier_result}`), score: record.data.intake.inherent_score })}</p>
+          <p>
+            {record.data.required_assessment_codes.length > 0
+              ? t("detail.intake.requiredAssessments", { codes: record.data.required_assessment_codes.join(", ") })
+              : t("detail.intake.requiredAssessmentsNone")}
+          </p>
+        </div>
+      )}
+
+      {canUpdate && (open ? (
+        <div className="space-y-3 border-t border-slate-100 pt-3">
+          <label className="block"><span className="block text-slate-600">{t("detail.intake.dataVolume")}</span>
+            <select className={SELECT} value={dataVolume} onChange={(e) => setDataVolume(e.target.value)}>
+              {(["small", "medium", "large", "very_large"] as const).map((v) => (
+                <option key={v} value={v}>{t(`detail.intake.dataVolumeOptions.${v}`)}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={sensitiveData} onChange={(e) => setSensitiveData(e.target.checked)} />
+            <span className="text-slate-600">{t("detail.intake.sensitiveData")}</span>
+          </label>
+          <label className="block"><span className="block text-slate-600">{t("detail.intake.systemAccessLevel")}</span>
+            <select className={SELECT} value={systemAccessLevel} onChange={(e) => setSystemAccessLevel(e.target.value)}>
+              {(["none", "read_only", "read_write", "admin"] as const).map((v) => (
+                <option key={v} value={v}>{t(`detail.intake.systemAccessLevelOptions.${v}`)}</option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={crossBorderTransfer} onChange={(e) => setCrossBorderTransfer(e.target.checked)} />
+            <span className="text-slate-600">{t("detail.intake.crossBorderTransfer")}</span>
+          </label>
+          {record.isError && <p className="text-red-700" role="alert">{t("detail.intake.submitError", { detail: detail(record.error) })}</p>}
+          <div className="flex gap-2">
+            <Button onClick={submit} disabled={record.isPending}>{t("detail.intake.submit")}</Button>
+            <Button variant="secondary" onClick={() => setOpen(false)}>{t("form.cancel")}</Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="secondary" onClick={() => setOpen(true)}>{t("detail.intake.newRound")}</Button>
+      ))}
+    </section>
+  );
+}

@@ -7,7 +7,7 @@
 
 | หัวข้อ | รายละเอียด |
 |---|---|
-| Go package | `backend/internal/vendor` |
+| Go package | `backend/internal/vendormgmt` — **not** `backend/internal/vendor` as originally planned: a directory literally named `vendor` anywhere under the module triggers Go's own vendoring-directory import rewriting (`pdpa-platform/internal/vendor/store` fails to build with "must be imported as store"), discovered while building VEN-01. The PostgreSQL schema, permission codes (`vendor.*`) and API prefix (`/admin/v1/vendors`) are unaffected — only the Go source directory moved. |
 | PostgreSQL schema | [`vendor`](../data/vendor.md) (7 ตาราง) |
 | Admin API prefix | `/admin/v1/vendors` |
 | Endpoint ที่ SA กำหนดแล้ว | `POST /admin/v1/vendors/intakes` — คำขอรับคู่ค้าใหม่ (BP-09) |
@@ -122,6 +122,37 @@
 
 **Acceptance criteria:** คู่ค้าหนึ่งรายมีหน้าเดียวที่รวมข้อมูลทุกโมดูล
 
+**Implementation (VEN-01) — done:** The first feature on the `vendor` schema — `vendor.vendors` was already
+fully specified in the baseline migrations (party_id → `org.external_parties` UQ, relationship_owner_id →
+`iam.users`, is_processor, tier, data_access jsonb, processing_countries char(2)[], ST-06's own status column
+defaulting to `prospect`) — no new migration. `internal/vendormgmt/service` (see the Go-package note above for
+why the directory isn't literally `vendor`) is plain CRUD on the profile fields plus the FK-visibility checks
+rule 1 requires: `party_id` via a newly-reused `orgservice.GetExternalParty` (ORG-06), `relationship_owner_id`
+via `iamservice.Names`. `SaveVendor` deliberately never touches `status`/`tier`/`next_assessment_at`/
+`approved_at`/`offboarded_at` — a new vendor always lands `prospect` (the column's own DB default, ST-06's
+`[*] → prospect` edge) and every other ST-06 transition belongs to a sibling feature not built yet (VEN-02
+tiering, VEN-05/07 assessment, VEN-08 approval, VEN-09 remediation, VEN-14 offboarding). The insert is wrapped
+in `pdb.Savepoint` since `uq_vendors_party_id` is a real unique constraint (one vendor row per external party)
+— the same pattern `org.SaveLegalEntity`/ROPA-03's own unique-constraint checks already use, so a duplicate
+party_id doesn't abort the whole request transaction.
+
+The acceptance criterion ("คู่ค้าหนึ่งรายมีหน้าเดียวที่รวมข้อมูลทุกโมดูล") is read literally as "the page is the
+single place every later VEN/DPA/DSA feature adds its section to," not as a claim that those sibling modules
+already exist to aggregate from — today the page shows exactly the profile this feature owns (status badge,
+tier when set, processing countries, service description, relationship owner) with nothing yet to show from
+VEN-02/04/05/07/08/09/11/14 (none built). API: `GET`/`POST /admin/v1/vendors` (cursor pagination, same shape as
+every other module's list), `GET`/`PATCH /admin/v1/vendors/{id}` (ETag/If-Match) — all on the already-seeded
+`vendor.vendor.*` permissions, no new code. UI: `/vendors` (list + create form, a party picker from ORG-06's
+own `useExternalParties`, an owner picker reusing PLT-07's `useMentionSearch`) and `/vendors/{id}` (the single
+profile page the acceptance criterion names, with its own inline edit). Tests: unit (validation, both
+FK-visibility checks, duplicate-party refused without aborting the transaction, update never changes status,
+two-tenant isolation incl. one tenant's party_id refused for another tenant's vendor), HTTP contract
+(401/403/400 schema/404/412/422/428) through the real validator + AuthZ. `pnpm --filter @pdpa/admin build`/
+`tsc` and the `@pdpa/i18n` ICU message tests both verified clean; not verified in a live browser session (the
+dev-login server action didn't produce a session cookie against this session's local stack — the same
+Keycloak-less limitation several earlier features, e.g. ROPA-02/DPO-01, already flagged rather than a bug
+newly introduced here).
+
 <a id="ven-02"></a>
 ### VEN-02 จัดระดับความเสี่ยงคู่ค้า
 
@@ -143,6 +174,53 @@
 
 **Acceptance criteria:** tier ถูกคำนวณตามเกณฑ์และกำหนดแบบประเมินที่ต้องส่ง
 
+**Implementation — done.** `internal/vendormgmt/service/intake.go` (`vendor.vendor.*`, shared with VEN-01 — no
+new permission code) reuses PLT-06 exactly the way the module doc's own backend note calls for ("แบบ intake →
+คำนวณ tier อัตโนมัติ → กำหนดชุดแบบประเมิน"): `platform.form_definitions.form_type` already allowed `'intake'`
+and `internal/wiring/forms.go`'s own comment had named it "reserved but unregistered" since PLT-06 shipped —
+this feature registers it (`vendor.vendor.approve` to design/publish, matching DPO-09's own "the DPO designs
+and publishes, staff record a run" split; `vendor.vendor.update` to respond, matching VEN-01's own actor line
+"PROC DPO"). `vendor.intakes`/`vendor.vendors.tier` were already fully specified in the baseline migrations —
+no new table. Migration 00058 (`docs/decisions.md` Q-33) seeds one global `"intake"`-type form, code
+`vendor_intake`: four questions (`data_volume`/`sensitive_data`/`system_access_level`/`cross_border_transfer`,
+the four factors ม.37(1)/ม.40 and the module doc's own "ประเภทและปริมาณข้อมูล ข้อมูลอ่อนไหว และการโอนต่างประเทศ"
+name directly) scored into bands keyed exactly `low`/`medium`/`high`/`critical` — matching
+`vendor.intakes.tier_result`'s own CHECK constraint, so `forms.Result.Band` lands on `tier_result` with no
+separate mapping step (the same CHECK-matching move DPIA-01's own screening bands used for
+`assess.assessments.status`).
+
+`RecordIntake` is the one-shot path every intake answers through — `forms.Service.Record` (the mechanism
+breach risk assessments and DPO-09's security checklist already use for a form filled in one atomic call, not
+through PLT-06's draft/section-assignment admin flow), resolving the published `vendor_intake` form via a new
+`publishedIntakeVersion` (mirrors DPIA-01's own `screeningVersion`: current *published* version only, a
+tenant's own same-coded override preferred over the global default). The resulting `vendor.intakes` row and
+`vendor.vendors.tier`/`next_assessment_at` update happen in the same call; `RequiredAssessmentCodes(tier,
+crossBorderTransfer)` is a pure function naming VEN-04's own seeded template codes
+(`vendor_pdpa`/`vendor_security`/`vendor_transfer`, migration 00053) a tier now calls for — a tunable business
+default, not a legally-mandated rule (no `docs/decisions.md` entry: changing which tier requires which
+template changes no data model or legally-required behaviour), documented inline: every tier but `low` gets
+`vendor_pdpa`, `high`/`critical` also get `vendor_security`, and `vendor_transfer` is required whenever the
+intake's own `cross_border_transfer` answer was `"yes"` regardless of tier — an otherwise low-risk engagement
+that still moves data abroad still needs that specific check. `reassessmentInterval(tier)` is a second tunable
+default (6/12/18/24 months by tier) feeding `next_assessment_at` — a scheduling convenience, not the legal
+deadline VEN-10's own periodic re-assessment feature (not built) will eventually drive from a real schedule.
+
+API: `GET`/`POST /admin/v1/vendors/{id}/intakes` (list — newest first — and record; no pagination, a vendor's
+own tiering history is short), same shape as every other module's child-table endpoints. UI: a "Risk tiering"
+section on `/vendors/{id}` (VEN-01's own single profile page, per its "include" relationship with this
+feature) — past rounds with a tier badge, an inline intake form (the four questions above), and the computed
+tier + required-template codes shown right after submitting. Tests: unit (the acceptance criterion directly —
+a low-risk answer set lands `low` with no required template, a maximally-risky one lands `critical` with all
+three VEN-04 codes required; `RequiredAssessmentCodes`'s boundary cases per tier/cross-border combination;
+missing required answers refused; unknown vendor refused; two-tenant isolation of both the vendor and its
+intake history — the seeded global form itself stays visible to every tenant by design, the same ORG-07
+master-data pattern), HTTP contract (401/403/404/422/201/200) through the real validator + AuthZ.
+`pnpm --filter @pdpa/admin build`/`tsc` and the `@pdpa/i18n` ICU message tests both verified clean; not
+verified against a real Postgres in this pass (no reachable database in this environment) — `sqlc generate`
+and `oapi-codegen` were run for real and produced the exact store/HTTP code checked in (confirmed byte-identical
+to what was hand-written first), so only the DB-backed test run itself is unverified, the same gap the
+session's own earlier notes on Docker/Keycloak-less local stacks already flag elsewhere.
+
 <a id="ven-04"></a>
 ### VEN-04 คลังแบบประเมินคู่ค้า
 
@@ -163,6 +241,27 @@
 **Frontend (Next.js):** หน้าคลังแบบประเมินคู่ค้า
 
 **Acceptance criteria:** มี template พร้อมใช้อย่างน้อย 3 ชุด
+
+**Implementation — done.** No new Go code at all: DPIA-03's own generic template library (`internal/dpia/
+service/templates.go`'s `ListTemplates`/`GetTemplateByID`/`CreateTemplate`/`CloneTemplate`/
+`PublishTemplate`/`RetireTemplate`, all on `assess.templates` + a PLT-06 "assessment" form, gated on the
+already-seeded `assessment.template.*` codes) was never hardcoded to `assessment_type='dpia'` — it takes the
+type as a plain parameter, and `'vendor'` was already in `assess.templates`' own CHECK constraint, unused
+until now. VEN-04 is purely data: migration 00053 (`docs/decisions.md` Q-31) seeds 3 global
+(`tenant_id NULL`) published templates — PDPA compliance (ม.40), information security mapped to ISO/IEC
+27001/27701 control areas, and cross-border data transfer — the same "seed a draft flagged for legal/security
+review" move ORG-07/ROPA-09/PNG-03/DPIA-01/RTG-01 already made; each template's own `name` carries the
+"(ร่าง — รอฝ่ายกฎหมายตรวจ)" marker directly in the data, since the shared template-library page (built for
+DPIA-03, used by every assessment_type) has no per-row banner mechanism of its own to hook into. Frontend:
+the existing `/settings/dpia-templates` page gained one hook — its `filterType` state now reads an initial
+`?type=` query param (`useSearchParams`) — so `/vendors` can deep-link straight to the vendor-filtered view
+instead of a new, duplicate screen; `/vendors`'s header gained a plain link there. Tests:
+`TestVendorAssessmentTemplates_SeededReady` (the acceptance criterion directly — at least 3 published vendor
+templates, each with real `legal_refs` and a resolvable published form version, including the three specific
+seeded codes) and `TestVendorAssessmentTemplates_VisibleToAnyTenant` (a second, entirely separate tenant sees
+them too, with no provisioning of its own — the same global-visibility pattern ORG-07's master data already
+proved) — both run against the real seeded migration on a real Postgres. Migration verified both directions
+(`up`/`down`/`up` against the real local Postgres) before committing.
 
 <a id="ven-05"></a>
 ### VEN-05 พอร์ทัลให้คู่ค้าตอบแบบประเมิน
@@ -206,6 +305,88 @@
 
 **Acceptance criteria:** คะแนนคำนวณถูกต้องตามน้ำหนักทุกกรณีทดสอบ
 
+**Implementation — done.** The scoring/weighting itself needed no new machinery: VEN-04's own templates are
+plain PLT-06 "assessment" forms (yes_no questions with weighted option scores into bands —
+`forms.Evaluate`'s existing scoring engine), so "คิดคะแนนจากคำตอบและน้ำหนักคำถาม" is already correct the
+moment a vendor's answers are run through it. What this feature actually builds is the two missing pieces:
+somewhere for a *vendor's* answered run to live (not a DPIA activity's), and a residual-risk-level mapping
+on top of the raw score.
+
+`vendor.vendor_assessments.assessment_id` is a NOT NULL FK into `assess.assessments` — the same table DPIA
+owns and already uses for its own screening/necessity rounds, with `subject_type='vendor'` already in that
+table's own CHECK constraint, unused until now. Per rule 9 (a module reads/writes only its own schema),
+vendormgmt never touches `assess.*` directly — `dpiaservice.Service` gained a new, subject-type-agnostic
+counterpart to DPIA-01's own `Screen`: `RecordSubjectAssessment(ctx, templateID, subjectType, subjectID,
+title, answers)` (`backend/internal/dpia/service/subject_assessment.go`, new file). It reuses the existing
+unexported `screeningVersion` helper (confirms the template is published, resolves its current form version)
+and the existing generic `InsertAssessment` sqlc query — both already took `subject_type`/`subject_id` as
+separate parameters from the `activity_id` convenience column, so no schema or query change was needed there
+either.
+
+"สรุประดับความเสี่ยง...และความเสี่ยงคงเหลือ" is answered by reusing RRA-02's own risk-matrix machinery rather
+than inventing a second scoring scale: `riskservice.ClassifyScore(matrix, ratio)`
+(`backend/internal/risk/service/matrices.go`, new function, a one-dimensional counterpart to the existing
+`Classify(matrix, likelihood, impact)`) takes `ratio = 1 - score/maxScore` (0 = every answer scored the best
+it could, 1 = the worst possible), scales it onto the same `1..(len(LikelihoodLevels)*len(ImpactLevels))`
+point range `Classify`'s own grid already uses, then walks the identical `Thresholds` ladder — so a vendor's
+residual risk reads on the exact same tenant-configured scale (3×3/4×4/5×5, custom threshold labels) as every
+other risk classification in the system. No SA spec defined this score→level mapping — flagged for review
+here, the same "invent structure, flag for review" move this codebase already made for PLT-05/PLT-06's JSON
+formats. Real edge case found and fixed while writing `ClassifyScore`: a perfect score (ratio=0, so score=0)
+falls below every threshold, since a matrix's thresholds are only guaranteed to cover from `MinScore >= 1`
+upward (`normalize()`'s own rule, assuming `Classify`'s likelihood×impact grid which never scores below 1) —
+originally this returned an error for the *best possible* outcome, exactly backwards; fixed to floor at the
+matrix's own lowest/most lenient threshold instead of erroring.
+
+`ClassifyScore`'s vocabulary (`low/medium/high/very_high`, matching `risk.activity_scores.level`'s own CHECK)
+doesn't quite match `vendor.vendor_assessments.residual_level`'s CHECK (`low/medium/high/critical`) — fixed in
+`RecordAssessment` with an explicit translation (`"very_high"` → `"critical"`) right after classifying, with
+a comment explaining why, rather than widening either CHECK to match the other.
+
+`vendormgmt.Service` gained two direct concrete fields, `Dpia *dpiaservice.Service` and `Risk
+*riskservice.Service` — not local rule-9 interfaces, since neither `dpia` nor `risk` imports `vendormgmt` in
+either direction (confirmed by grep), so there's no cycle to route around; wired once in `cmd/api/main.go`
+right after both services exist. `internal/vendormgmt/service/assessments.go`'s `RecordAssessment(ctx,
+vendorID, templateCode, answers)` resolves the vendor (`GetVendor`), resolves the template by code among
+`s.Dpia.ListTemplates(ctx, "vendor")` filtered to `status == "published"`, calls `RecordSubjectAssessment`,
+classifies the resulting ratio against the tenant's own default risk matrix, computes the next `cycle_no` per
+vendor (`NextVendorAssessmentCycle`, a plain `MAX(cycle_no)+1` scan) and inserts the row wrapped in
+`pdb.Savepoint` (the established pattern for a write that can hit a real unique/check constraint without
+aborting the whole request transaction). `decision`/`decided_by`/`decided_at` are left NULL — deliberately
+not built here: that's VEN-08's job (approve/reject/conditional, not yet built), the same "build only the
+minimal slice this feature needs" pattern this codebase uses throughout (e.g. ROPA-01 deferring
+`discovered_by_finding_id`). The forms engine's own `forms.Service.Record` performs no permission check
+itself (confirmed by reading its source — the `Policy.Respond` field modules register in
+`internal/wiring/forms.go` is documentation only, for a hypothetical generic endpoint no module actually
+calls through); every module, VEN-07 included, gates the write through its own HTTP endpoint's own
+`x-permission` instead — `vendor.assessment.read`/`.create` (the baseline seed's own dedicated code for this
+resource; moved there from an initial, incorrect `vendor.vendor.read`/`.update` once VEN-08's own build
+surfaced the mismatch — see VEN-08's note below). `RecordAssessment` also drives ST-06#1's own
+`prospect -> onboarding` edge on a vendor's first-ever cycle (a gap VEN-08's own build found and fixed here
+too — see below); a second/later cycle on an already-onboarded vendor is a harmless no-op transition.
+
+API: `GET`/`POST /admin/v1/vendors/{id}/assessments` (no pagination, same shape as VEN-02's own
+`/intakes` — a vendor's own assessment history is never long). UI: an "Assessments" panel on `/vendors/{id}`,
+right after VEN-02's own intake panel — a published-template picker (reusing DPIA-03's own
+`useDpiaTemplates(client, "vendor")` hook) feeding the shared `FormRenderer` component (the same
+DPO-09/VEN-02 pattern: answer once, atomically, no draft/section-assignment flow), then a list of past cycles
+with their score and residual-risk badge (reusing the existing `tiers.*` i18n keys, since VEN-04's own
+low/medium/high/critical enum coincides exactly with `vendor_assessments.residual_level`).
+
+Tests: unit (`assessments_test.go` — the acceptance criterion directly: answering every question with the
+best option scores the maximum and classifies "low"; answering every question with the worst option scores
+zero and classifies "high"; cycle numbers increment correctly across rounds and `ListAssessments`/
+`GetAssessment` round-trip; an unknown template code is refused; a vendor with no risk matrix configured is
+refused; two-tenant isolation), `TestClassifyScore_RatioOntoSameThresholds` in `risk/service` (the ratio=0/1
+boundary cases and the floor-instead-of-error fix, plus out-of-range ratios refused), HTTP contract
+(401/403/201/200/422/404) through the real validator + AuthZ chain. `go build`/`go vet`/`gofmt` clean;
+`tsc --noEmit` and `pnpm --filter @pdpa/admin build` both verified clean — no Postgres/Redis reachable in
+this environment this round, so tests are compile-verified only, the same caveat VEN-01/VEN-02/VEN-11 already
+recorded. Not done: VEN-08's own decision workflow (approve/reject/conditional on a recorded assessment,
+`vendor.remediation_items` for a conditional approval's remediation plan) and VEN-05's guest-portal answer
+path (needs IAM-04/PLT-17, not built) — both sibling features layered on the same `vendor_assessments` row,
+not built here.
+
 <a id="ven-08"></a>
 ### VEN-08 อนุมัติหรือปฏิเสธคู่ค้า
 
@@ -227,6 +408,76 @@
 
 **Acceptance criteria:** อนุมัติแบบมีเงื่อนไขสร้างแผนแก้ไขอัตโนมัติ
 
+**Implementation — done.** VEN-08's own actor line names two roles ("ผู้ประเมินให้ความเห็น" and "ผู้มีอำนาจ
+อนุมัติ"), but the module doc's backend note itself collapses to one atomic decision call — this builds
+exactly that: `vendormgmt.Service.DecideAssessment` (`backend/internal/vendormgmt/service/assessments.go`)
+records a human decision on one of VEN-07's own answered `vendor.vendor_assessments` cycles. No new
+migration: `decision`/`decided_by`/`decided_at` on that table, `vendor.remediation_items`, and the already-
+seeded `vendor.assessment.approve` permission (DPO-only in the baseline RBAC seed — EXEC, named in the
+module doc, has no grant on `vendor.assessment.*` there, the same actor/RBAC gap DPIA-10/DPIA-05 already
+documented for their own EXEC/OWNER lines) were all already fully specified.
+
+Real permission-code bug found and fixed while building this: VEN-07's own two endpoints
+(`vendorListAssessments`/`vendorRecordAssessment`) had been gated on `vendor.vendor.read`/`.update` — the
+vendor *profile's* own permission codes — even though a dedicated `vendor.assessment.*` code
+(`vendor.assessment.{read,create,update,delete,approve,execute}`) already existed in the baseline
+permission seed for exactly this resource, with its own actor grants (SEC/PROC/PRIVACY get `.create`, DPO
+gets everything including `.approve`, GUEST gets `.read`/`.update` for VEN-05's own future guest-portal
+flow) that don't line up with `vendor.vendor.*`'s own grants at all. Left as `vendor.vendor.*`, VEN-08's own
+decide endpoint would have had no correct permission to gate on — `vendor.vendor.approve` exists but means
+"approve a vendor record," not "approve an assessment cycle." Fixed by moving both VEN-07 endpoints onto
+`vendor.assessment.read`/`.create` (rule 2: a new endpoint's code must name the resource it actually checks,
+not a nearby one that happens to work) before adding VEN-08's own `vendor.assessment.approve`-gated endpoint
+on top — a one-line `x-permission` fix in `api/openapi/openapi.yaml`, no Go or test logic affected since
+`forms.Service.Record` itself performs no permission check (confirmed by reading its source — every module,
+VEN-07 included, has always gated through its own HTTP endpoint, never the engine).
+
+The literal acceptance criterion doubles as this feature's own discovery of a real gap in VEN-01/VEN-07:
+`docs/states/state-machines.yaml#ST-06-1` (`vendor.vendors.status`) declares `prospect -> onboarding` on
+"ส่งแบบประเมิน (guest link)" and `onboarding -> approved|conditional|rejected` on "decision = ...", but
+nothing ever drove the first edge — VEN-01 only ever writes the default `prospect`, and VEN-07's own
+`RecordAssessment` (its own package doc comment already said status transitions belong to "VEN-02/05/07/08")
+never actually moved it. Fixed in the same pass: `RecordAssessment` now calls a new `MarkVendorOnboarding`
+query (`WHERE status = 'prospect'`) right after recording a cycle — a no-row update when the vendor is
+already past `prospect` is deliberately not an error, so a reassessment of an already-onboarded/approved/
+conditional vendor still succeeds. `DecideAssessment` itself enforces the second edge: refuses (`vendor.
+invalid_transition`, 409) unless the vendor is currently `onboarding` and the cycle's own `decision` is
+still `NULL` (`WHERE decision IS NULL` on the update — a concurrent second decision is a no-row update, not
+a silent overwrite), then moves the vendor to `approved`/`conditional`/`rejected` in the same transaction
+(`DecideVendorStatus`, stamping `approved_at` only for a clean approval).
+
+"อนุมัติแบบมีเงื่อนไขสร้างแผนแก้ไขอัตโนมัติ" itself: a `conditional` decision requires at least one
+`remediation_items` entry (title + severity, refused with `ErrInvalid` before anything is written otherwise)
+— each is inserted into `vendor.remediation_items` (already fully specified in the baseline migrations,
+linked via `vendor_assessment_id` back to the cycle that opened it) in the same call, `status` defaulting to
+its own column default, `'open'`. `approved`/`rejected` never touch that table. A clean `approved` decision
+also publishes the already-catalogued `vendor.approved` event (`docs/architecture/events.yaml`, producer
+`vendor`, consumers "จัดซื้อ"/"agreement" — sitting unused since the baseline) carrying `vendor_id`/`tier`/
+`expires_at` (`next_assessment_at`, VEN-02's own reassessment-interval column) through the normal outbox
+(rule 6); `vendormgmt.Service` gained an `Events *events.Publisher` field for this, nil in `cmd/worker` (no
+job there ever decides an assessment).
+
+API: `POST /admin/v1/vendors/{id}/assessments/{assessmentId}/decision` (`vendor.assessment.approve`, 409 on
+an already-decided cycle or a non-`onboarding` vendor, 422 for a bad decision value or a conditional decision
+with no items) → `{assessment, remediation_items}`; `GET /admin/v1/vendors/{id}/remediation-items`
+(`vendor.assessment.read`) for the vendor's own full plan across every cycle. UI: `/vendors/{id}`'s existing
+assessment panel (VEN-07) gained a `DecidePanel` per undecided cycle — a decision picker that reveals a
+dynamic title+severity list only for `conditional` — and a remediation-plan list below it; a decided cycle
+shows its decision as plain text instead of the panel, and a caller without `.approve` sees an "awaiting
+decision" note rather than the form. Tests: unit (the acceptance criterion directly — a conditional decision
+opens exactly the given items, linked to the right cycle, vendor lands `conditional`; a clean approval moves
+the vendor to `approved`, stamps `approved_at`, and publishes exactly one `vendor.approved` outbox row; a
+rejection moves the vendor to `rejected`; re-deciding an already-decided cycle is refused; deciding against a
+vendor not currently `onboarding` is refused; conditional with no items is refused; two-tenant isolation),
+HTTP contract (403 without `.approve`, 200 happy path for a conditional decision with real remediation items
+visible on the separate listing endpoint, 409 on redecide, 422 on conditional-with-no-items) through the real
+validator + AuthZ chain. `go build`/`go vet`/`gofmt` clean; `tsc --noEmit` and `pnpm --filter @pdpa/admin
+build` both verified clean — no Postgres/Redis reachable in this environment this round, so both the unit
+and HTTP contract tests are compile-verified only, the same caveat VEN-01/VEN-02/VEN-07/VEN-11 already
+recorded. Not done: VEN-09's own remediation-item tracking/progress UI for the vendor side (a guest-portal
+update flow, needs VEN-05/IAM-04 first) and VEN-10's periodic re-assessment trigger (`approved ->
+conditional` on "ประเมินซ้ำพบช่องว่าง") — both sibling features layered on the same tables, not built here.
+
 <a id="ven-11"></a>
 ### VEN-11 ผูกคู่ค้ากับสัญญาและกิจกรรม
 
@@ -247,6 +498,36 @@
 **Frontend (Next.js):** แท็บความเชื่อมโยงของคู่ค้า
 
 **Acceptance criteria:** คู่ค้าที่เป็นผู้ประมวลผลแต่ไม่มี DPA ถูกแจ้งเตือน
+
+**Implementation — done.** Scoped to exactly the literal acceptance criterion (a processor vendor without a
+DPA is flagged), read against the module doc's own frontend note — "แท็บความเชื่อมโยงของคู่ค้า" names the
+vendor's *own* (singular) linkage tab, not a cross-vendor monitoring list — so this is a single-vendor check
+callable from one vendor's detail page, not a new paginated "vendors without DPA" list endpoint.
+
+`internal/agreement/service/vendor_status.go` (new): `VendorContractStatus(ctx, vendorID)` — `agreement`
+already imports `vendormgmt` (its `Vendor` interface's `GetVendor`, used since DPA-10), so per rule 9 this
+cross-cutting check (vendor.is_processor + agreement.agreements existence) lives on the `agreement` side of
+that one-way dependency, not inside `vendormgmt` (which must never import `agreement` back). A new sqlc
+query, `CountAgreementsForVendorByType` (`backend/db/queries/agreement/agreements.sql`, no migration — both
+tables and their `vendor_id`/`agreement_type`/`is_processor` columns already existed), is a live `count(*)`,
+not a stored flag: computed fresh on every call, so it can never go stale the way a persisted flag would —
+the same rule DSAR-07's `SLAStatus` and ROPA-08's own conditional completeness item already follow. An
+unknown/not-visible-under-RLS vendor id is `ErrInvalid` (422), proving tenant isolation the same way every
+other FK-visibility check in this codebase does.
+
+API: `GET /admin/v1/agreements/vendor-contract-status?vendor_id=...` (`agreement.dpa.read`, no new permission
+code) → `{vendor_id, is_processor, has_dpa}`. UI: `useVendorContractStatus` (api-client) queried from
+`/vendors/{id}`'s detail page; an amber warning banner renders right above the existing "DPA / DSA
+agreements" section only when `is_processor && !has_dpa` (`vendors.detail.agreements.missingDpaWarning`,
+th/en). Tests: unit (`vendor_status_test.go` — the acceptance criterion directly: a processor vendor reads
+`has_dpa=false` before any agreement exists and `true` right after one is created via `CreateWizard`, with
+no change to `is_processor`; an unknown vendor id is refused; two-tenant isolation, including that tenant B
+can't even resolve tenant A's vendor id), HTTP contract (`handler_test.go` — 200 before/after with the exact
+`is_processor`/`has_dpa` values, 422 for an unknown vendor id) through the real validator + AuthZ chain.
+`go build`/`go vet`/`gofmt` clean; `tsc --noEmit`, `pnpm --filter @pdpa/admin build` and
+`pnpm --filter @pdpa/i18n test` all verified clean. Not built: "ผลประเมิน" (assessment results) on the same
+tab — VEN-05/07/08 (vendor risk assessment) aren't built yet, so there's nothing to show; add that section
+once one of those features exists, the same "no consumer yet" deferral this codebase uses elsewhere.
 
 <a id="ven-03"></a>
 ### VEN-03 ผู้ประมวลผลช่วง
@@ -290,6 +571,41 @@
 
 **Acceptance criteria:** ใบรับรองใกล้หมดอายุถูกแจ้งเตือนล่วงหน้า
 
+**Implementation (VEN-06) — done:** `internal/vendormgmt/service/certificates.go` (`vendor.vendors`'s own
+`vendor.certificates` table, already fully specified in the baseline migrations — no new migration for the
+table itself). `AddCertificate` is plain CRUD on top of two existing checks this module already has: the
+vendor visible under RLS (rule 1, `GetVendor`) and the evidence file the caller's own clean, still-unattached
+PLT-09 upload (`Files.Get`/`Files.Attach`, the exact pattern VEN-14's own destruction certificate and DSAR-04's
+agent document already use) — attached to a new `CertificateEntityType` ("vendor_certificate"). The acceptance
+criterion itself is a single reminder checkpoint per certificate's own `valid_to` — the same one-time-per-record
+pattern DPA-10's `agreement.renewal_reminder` already established, not a recurring sweep (a certificate's
+expiry date doesn't move on its own the way a recurring re-assessment cycle does): `scheduleCertificateExpiryReminder`
+enqueues `vendor.certificate_expiry` (River, unique per certificate) `CertificateExpiryNoticeDays` (30, a plain
+config default — not a `docs/decisions.md` question, CLAUDE.md's "implement the listed default as config") ahead
+of `valid_to`, or at once if that moment has already passed. `FireCertificateExpiryReminder` re-reads the
+certificate and no-ops if `valid_to` no longer matches what the job was scheduled for (edited or deleted since)
+or the certificate is gone — then notifies the vendor's `relationship_owner_id`, falling back to role SEC (the
+module doc's own actor) via `iamservice.UsersWithRole`, the same "default recipients until real per-record
+routing exists" fallback BRE-07/PNG-04/VEN-10 already use. Migration 00075 seeds the `vendor.certificate_expiry`
+template (th/en × in_app/email, operational text, no DRAFT marker — rule 8 is about legal/notice wording, not
+this). API: `GET`/`POST /admin/v1/vendors/{id}/certificates`, `DELETE /admin/v1/vendors/{id}/certificates/{certificateId}`
+— all on the already-seeded `vendor.vendor.{read,create,update,delete}` (no new permission code). UI: a
+"Certificates" section on `/vendors/{id}` — list with issuer/expiry, a record form (type/issuer/valid dates +
+`FileUploader`), remove. `cmd/worker` registers `CertificateReminderWorker`. Tests: unit
+(`internal/vendormgmt/service/certificates_test.go` — validation incl. an unknown vendor and an already-attached
+file refused, `valid_to` before `valid_from` refused, the scheduled job's `scheduled_at` matches `valid_to` minus
+the notice period, the acceptance criterion directly — the owner is notified, or role SEC with none set, and a
+stale/unknown fire call is a harmless no-op — list/delete round-trip). A real test-fixture gotcha hit while
+building this: unlike `vendor.offboardings.destruction_certificate_file_id` (no FK), `vendor.certificates.file_id`
+has a real FK to `platform.files`, so the fixture needs an actually-inserted row, not just an in-memory one — the
+same move DSAR-04's own `attachableUpload` already makes. Not verified live against a real Postgres/Redis in a
+fresh session, but both were reachable during this pass and the full `go test -p 1 ./internal/vendormgmt/...`
+suite ran for real (two pre-existing, unrelated failures — `TestListIntakes_NewestFirstAndIsolation`,
+`TestOffboarding_FullLifecycle`/`TestOffboarding_RequiresDeletePermission` — confirmed via `git stash` to exist
+identically without this change). `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build`
+all verified clean.
+
 <a id="ven-09"></a>
 ### VEN-09 แผนแก้ไขข้อบกพร่องของคู่ค้า
 
@@ -331,6 +647,22 @@
 **Frontend (Next.js):** ตั้งรอบประเมินต่อ tier
 
 **Acceptance criteria:** คู่ค้าถูกส่งแบบประเมินซ้ำตามรอบโดยไม่ต้องสั่งเอง
+
+**Implementation note (done):** The same two-step "sweep lists tenants, per-tenant job reads its own rows"
+River pattern PNG-15/ROPA-15/CON-04 already established (CLAUDE.md rule 1) — `vendor.reassessment_sweep`
+(global, daily, `jobs.GlobalKinds`, no tenant transaction) reads `platform.tenants` and enqueues one
+`vendor.reassessment_check` per trial/active tenant; `internal/vendormgmt/service/reassessment.go`'s
+`CheckDueReassessments` runs inside that tenant's own transaction, finds every `approved`/`conditional`
+vendor whose `tier`/`next_assessment_at` (already set by VEN-02's own `RecordIntake`, unread until now) has
+arrived, notifies the relationship owner — falling back to role PROC when none is set, the same "default
+recipients until real per-record routing exists" pattern BRE-07/PNG-04/PNG-15/ROPA-15 use — via
+`vendor.reassessment_due` (migration 00073, th/en × in_app/email, operational text, no DRAFT marker), then
+reschedules `next_assessment_at` one more `reassessmentInterval(tier)` out (the exact function VEN-02's own
+intake already uses), so a redue date lands on the same cadence a fresh intake would and a stale tick
+afterward is a harmless no-op. No new endpoint, permission or UI screen — a pure background reminder, the
+same "no UI screen" pattern PNG-15/ROPA-15 already use (the acceptance criterion is the notification itself).
+Tests: `TestCheckDueReassessments` (the acceptance criterion directly — a due vendor is notified and
+rescheduled into the future; a second immediate check is a harmless no-op), `TestCheckDueReassessments_TwoTenantIsolation`.
 
 <a id="ven-12"></a>
 ### VEN-12 เหตุละเมิดที่เกี่ยวกับคู่ค้า
@@ -394,6 +726,10 @@
 **Frontend (Next.js):** ขั้นตอน offboarding
 
 **Acceptance criteria:** ยุติคู่ค้าได้เมื่อมีใบยืนยันการทำลายและปิดสิทธิ์ครบ
+
+**Implementation:** `internal/vendormgmt/service/offboarding.go` on the already-specified
+`vendor.vendors`/`vendor.offboardings` tables (no new migration) — see `CLAUDE.md`'s `### VEN-14` entry for
+the full note.
 
 <a id="ven-15"></a>
 ### VEN-15 AI ช่วยประเมินคู่ค้า

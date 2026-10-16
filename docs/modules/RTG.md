@@ -106,6 +106,9 @@
 
 **หมายเหตุ:** ดึงเข้า P1: จุดขายหลักเทียบ OneTrust; เนื้อหาจาก T15
 
+**สถานะ implementation:** done — see `CLAUDE.md`'s RTG-01 section. T15's own deliverable wasn't available, so
+content is a 51-activity draft (`docs/decisions.md` Q-28) pending legal review.
+
 <a id="rtg-04"></a>
 ### RTG-04 สร้าง RoPA จาก template ในไม่กี่ขั้นตอน
 
@@ -129,6 +132,28 @@
 
 **หมายเหตุ:** ดึงเข้า P1 คู่กับ RTG-01
 
+**Implementation (RTG-04):** `backend/internal/ropa/service/from_template.go`'s `CreateActivitiesFromTemplates`
+(`ropa.activity.create`, shared with ROPA-05 — no new permission or migration): a thin loop over ROPA-05's own
+`CreateActivityFromTemplate` against one resolved department (`org.GetOrgUnit`'s own `LegalEntityID`, so the
+caller only picks a department — the wizard's third step — not a separate legal-entity field). Each created
+activity's code is the template's own `code` (already unique platform-wide), so the caller never has to type
+20 codes by hand. The whole batch runs inside the request's own transaction (rule 1 — this service never opens
+one): any failure partway through — an unknown template id, or a duplicate code because one of the chosen
+templates was already used for this department — rolls every activity in the batch back with it, the same
+all-or-nothing contract PLT-14's `import.apply` already established for a bulk write. Capped at
+`MaxBatchActivityTemplates = 50` (comfortable headroom over this feature's own 20-activity acceptance
+criterion, not an arbitrary round number).
+
+API: `POST /admin/v1/ropa/activities/batch-from-templates` (`ProcessingActivityBatchFromTemplatesInput`:
+`org_unit_id`, `activity_template_ids` (1–50), optional `owner_user_id`) → 201 `{data: [ProcessingActivity]}`.
+UI: a new page, `/ropa/templates/batch` (the module doc's own UX note: "มีหน้าจอใหม่") — the literal 3-step
+wizard + summary the frontend note calls for (job category → multi-select activities → department → a summary
+listing every chosen activity before the one create call), linked from `/ropa/templates`' own header. Tests:
+unit (the acceptance criterion directly — 20 template ids in one call yield 20 real, independently-scoped
+activities, each already carrying its own template's defaults; an unknown id anywhere in the batch rolls back
+the whole call, nothing partial survives; empty/oversized batches refused), HTTP contract (403/400 schema/201,
+a 10-activity batch's response carries exactly 10 entries).
+
 <a id="rtg-05"></a>
 ### RTG-05 Wizard ถาม-ตอบภาษาง่าย
 
@@ -150,6 +175,54 @@
 
 **Acceptance criteria:** ผู้ใช้ทั่วไปสร้าง RoPA ครบหัวข้อได้โดยไม่ต้องรู้ศัพท์กฎหมาย
 
+**Implementation — done.** `internal/ropa/service/wizard.go` (`ropa.activity.create`/`.update`, already seeded
+and already held by OWNER — no new permission or migration). `CreateActivityFromWizard` is literally the
+module doc's own backend note: a fixed sequence of plain-language questions, each answer mapped by a small Go
+lookup table to a real RoPA field — not a generic PLT-06 form. `internal/wiring/forms.go`'s `"questionnaire"`
+form type (`ropa.template.*`, seeded for exactly this feature's actor — OWNER holds `ropa.template.execute`)
+stays reserved-but-unused: the acceptance criterion is a fixed, structural mapping (one question per RoPA
+sub-resource, same shape every time), not a branching Q&A that would benefit from PLT-06's own conditional-
+section engine, the same reasoning PNG-01/PNG-04 already used for not reinstantiating a generic engine when
+direct composition covers the literal criterion.
+
+Three small lookup tables carry the "ภาษาง่าย → ม.39" translation: `wizardLawfulBasisCodes` (4 plain reasons
+→ real `org.lawful_bases` codes: "เจ้าของข้อมูลยินยอม"→CONSENT, "ต้องทำตามสัญญา"→CONTRACT, "กฎหมายกำหนด"→
+LEGAL_OBLIGATION, "ประโยชน์โดยชอบด้วยกฎหมาย"→LEGITIMATE_INTEREST — these four are genuinely stable platform-
+default codes from the baseline migration, not tenant-editable away), `wizardRetentionPlans` (4 plain
+durations → a `RetentionMonths`/`RetentionBasis`/`TriggerEvent` triple, `DisposalMethod` always "delete" —
+"anonymize"/"destroy"/"return" are legal/technical jargon the wizard doesn't ask about), and
+`wizardRecipientRoles` (3 plain descriptions → a real `recipient_role` enum value). Choosing the consent
+reason without a real `consent_purpose_id` is refused before anything is written (ROPA-06's own rule,
+surfaced through the wizard rather than bypassed). Every actual write reuses ROPA-03's own existing
+`SaveActivity`/`AddActivityPurpose`/`AddActivityData`/`AddRetentionRule`/`AddActivityRecipient` calls — no
+duplicated FK-visibility logic, the same "compose from the platform's own existing writes" pattern ROPA-05's
+own `CreateActivityFromTemplate` already established.
+
+Deliberately out of scope, so the wizard never has to ask about something it has no plain-language framing
+for: role is always "controller" (the common case for a department building its own entry — a processor-role
+activity still goes through ROPA-03/RTG-04 directly), one data subject type and at most one recipient, no
+security controls (ROPA-09 is its own screen), and the data source is always "direct". None of these block the
+resulting activity from being edited further on its own detail page — the wizard only has to get a real,
+reviewable first draft started, read the same way PNG-01's own wizard reads "a complete draft within 30
+minutes, not a finished one." `security_controls` (and, for the rare processor case, `controller`) still show
+as missing items right after creation — expected, not a bug: "ครบหัวข้อ" is read as every topic the wizard
+itself asks about (purpose + lawful basis, who the data is about, what's collected, how long it's kept, and
+optionally who it's shared with), not literally 100% of ROPA-03's own completeness score.
+
+API: `POST /admin/v1/ropa/activities/from-wizard` → the created `ProcessingActivity` (201, same shape every
+other create-activity endpoint returns). UI: a new page, `/ropa/wizard` — six steps (basics, purpose +
+plain-language legal reason, data, retention, optional recipient, a summary before the one create call fires —
+the same "preview before the one call" pattern RTG-04's own batch wizard already uses), linked from
+`/ropa/activities`'s own header. Tests: unit (the acceptance criterion directly — every plain-language answer
+lands as the right real field; choosing "consent" without a consent purpose is refused, then succeeds once
+given one; the optional recipient question creates nothing when skipped and a real recipient row when
+answered; every other validation rule; two-tenant isolation of the legal entity/org unit FK), HTTP contract
+(401/403/201/422) through the real validator + AuthZ chain. `go build`/`go vet`/`gofmt` clean across the whole
+backend; `tsc --noEmit`, `pnpm --filter @pdpa/admin build` and `pnpm --filter @pdpa/i18n test` all verified
+clean — no Postgres/Redis reachable in this environment this round, so both test files are compile-verified
+and skip-cleanly-verified only, the same caveat this codebase's own recent features (DPX-05/DPX-06) already
+recorded.
+
 <a id="rtg-06"></a>
 ### RTG-06 ค่าแนะนำพร้อมเหตุผล
 
@@ -170,6 +243,42 @@
 **Frontend (Next.js):** ป้ายค่าแนะนำ + เหตุผล + ปุ่มยืนยัน
 
 **Acceptance criteria:** ค่าแนะนำทุกข้อมีเหตุผลอ้างมาตรา และไม่ถูกบันทึกจนกว่าผู้ใช้ยืนยัน
+
+**Implementation — done.** RTG-01's own `rationale`/`legal_refs` columns (migration 00049) were seeded with
+exactly this feature in mind but never surfaced per item before — this feature decomposes them into a
+real per-item recommendation instead of ROPA-05's own "copy everything at once" bulk apply.
+`internal/ropa/service/suggestions.go`'s `Suggest(ctx, templateID)` reads one RTG-01 template's
+`defaults` jsonb (the same `templateDefaults` shape ROPA-05's `CreateActivityFromTemplate` already
+decodes — factored the lookup+decode step into a shared `loadTemplateDefaults` helper used by both) and
+decorates each purpose/data/retention item with a rationale that cites a *real* legal article: a
+purpose's own lawful basis resolved against this tenant's visible `org.lawful_bases.section_ref` (ม.24/26
+— the specific one, not the template's own generic "มาตรา 24/26" pair), a data category cited to ม.26
+when `is_sensitive` or ม.39(2) (the RoPA's own "ประเภทข้อมูลส่วนบุคคล" item) otherwise, and retention
+cited to ม.39(3) plus the template's own plain-language `retention_basis_th`. `Suggest` only reads — it
+never writes anything, proven directly by a test that calls it and then checks no activity exists.
+`ApplySuggestedItems(ctx, activityID, in)` is the write half: indices into the exact same ordered slices
+`Suggest` returned select which items to actually add, through the very same
+`AddActivityPurpose`/`AddActivityData`/`AddRetentionRule` calls ROPA-03's own manual entry and ROPA-05's
+bulk copy already use — a selectively-confirmed item is otherwise indistinguishable from one typed in by
+hand. `GetActivity` proves the target activity is the caller's own (rule 1) before anything is written;
+an out-of-range index is refused as `ErrInvalid` before any write starts.
+
+API: `GET /admin/v1/ropa/templates/activities/{activityTemplateId}/suggest` (`ropa.template.read`,
+read-only) and `POST /admin/v1/ropa/activities/{id}/apply-suggestions` (`ropa.activity.update` — adding
+child rows to an existing activity, the same permission `AddActivityPurpose`'s own direct endpoint
+already uses, not `.create` which is for the whole-activity endpoints). UI: a new "ค่าแนะนำจากกิจกรรม
+มาตรฐาน (RTG-06)" section on `/ropa/activities/{id}`, above RRA-01's own risk-score section — a job
+category + standard-activity picker, then a checklist per purpose/data/retention item showing its
+rationale, and an "ยืนยันรายการที่เลือก" button that only becomes active once at least one item is
+checked. Tests: unit (the acceptance criterion directly — every suggested item cites a real article and
+the purpose's citation is the lawful basis's own specific section_ref, not the template's generic pair;
+`Suggest` writes nothing; selecting only a subset writes exactly that subset and nothing else; an
+out-of-range index is refused before any write; an unknown template id is `ErrInvalid`; cross-tenant
+`ApplySuggestedItems` is `ErrNotFound`), HTTP contract (401/403/200 for suggest; 200 for apply with the
+selected purpose present and the unselected data absent) through the real validator + AuthZ.
+`go build`/`go vet`/`gofmt` clean; `tsc --noEmit`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` all verified clean — no reachable Postgres/Redis this pass, so the Go
+tests ran compile-only, consistent with every other test this session.
 
 <a id="rtg-12"></a>
 ### RTG-12 ส่งออก template และร่าง RoPA
