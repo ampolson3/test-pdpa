@@ -34,8 +34,8 @@ func TestCatalog_MatchesEventsYAML(t *testing.T) {
 	if !bytes.Equal(got, want) {
 		t.Fatal("catalog.gen.go is stale — run `go generate ./internal/platform/events`")
 	}
-	if len(events.Catalog) != 41 {
-		t.Errorf("catalog has %d events, want 41", len(events.Catalog))
+	if len(events.Catalog) != 42 {
+		t.Errorf("catalog has %d events, want 42", len(events.Catalog))
 	}
 	if !jobs.GlobalKinds[events.SweepArgs{}.Kind()] {
 		t.Error("outbox.sweep must be registered in jobs.GlobalKinds")
