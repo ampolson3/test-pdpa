@@ -1089,6 +1089,19 @@
         "certificate": "Destruction certificate",
         "certificateOnFile": "On file",
         "completedAt": "Terminated on {date}"
+      },
+      "certificates": {
+        "title": "Certificates (VEN-06)",
+        "empty": "No certificates on file yet.",
+        "certType": "Certificate type",
+        "issuer": "Issuer",
+        "validFrom": "Valid from",
+        "validTo": "Valid to",
+        "file": "Evidence file",
+        "add": "Add certificate",
+        "remove": "Remove",
+        "saveError": "Couldn't save: {detail}",
+        "expiresOn": "Expires {date}"
       }
     }
   },

@@ -13011,6 +13011,109 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/vendors/{id}/certificates:
+    get:
+      operationId: vendorListCertificates
+      tags: [vendor]
+      summary: A vendor's evidence & compliance certificates (VEN-06, ISO 27001, SOC 2, …)
+      x-permission: vendor.vendor.read
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VendorCertificate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: vendorAddCertificate
+      tags: [vendor]
+      summary: Record a certificate — its evidence file schedules this feature's own expiry reminder once valid_to is set
+      x-permission: vendor.vendor.update
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorCertificateInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorCertificate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/vendors/{id}/certificates/{certificateId}:
+    delete:
+      operationId: vendorDeleteCertificate
+      tags: [vendor]
+      summary: Remove a certificate record (not its evidence file)
+      x-permission: vendor.vendor.update
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: certificateId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/vendors/{id}/offboarding:
     get:
       operationId: vendorGetOffboarding
@@ -17193,6 +17296,34 @@ components:
         closed_at: {$ref: '#/components/schemas/Timestamp'}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    VendorCertificate:
+      type: object
+      required: [id, vendor_id, cert_type, file_id, row_version, created_at, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        vendor_id: {$ref: '#/components/schemas/Uuid'}
+        cert_type: {type: string, maxLength: 40}
+        issuer: {type: [string, 'null']}
+        file_id: {$ref: '#/components/schemas/Uuid'}
+        valid_from: {type: [string, 'null'], format: date}
+        valid_to: {type: [string, 'null'], format: date}
+        verified_by:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
+    VendorCertificateInput:
+      type: object
+      required: [cert_type, file_id]
+      properties:
+        cert_type: {type: string, maxLength: 40}
+        issuer: {type: string}
+        file_id: {$ref: '#/components/schemas/Uuid'}
+        valid_from: {type: string, format: date}
+        valid_to:
+          description: Schedules this feature's own expiry-reminder checkpoint (VEN-06)
+          type: string
+          format: date
     VendorDecideAssessmentResult:
       type: object
       required: [assessment, remediation_items]

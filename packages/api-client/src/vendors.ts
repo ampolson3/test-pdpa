@@ -15,6 +15,8 @@ export type VendorDecideAssessmentResult = components["schemas"]["VendorDecideAs
 export type VendorRemediationItem = components["schemas"]["VendorRemediationItem"];
 export type VendorOffboarding = components["schemas"]["VendorOffboarding"];
 export type VendorOffboardingInput = components["schemas"]["VendorOffboardingInput"];
+export type VendorCertificate = components["schemas"]["VendorCertificate"];
+export type VendorCertificateInput = components["schemas"]["VendorCertificateInput"];
 
 const vendorsKey = ["vendor", "vendors"] as const;
 
@@ -214,5 +216,49 @@ export function useTransitionVendor(client: ApiClient, vendorId: string) {
       qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "offboarding"] });
       qc.invalidateQueries({ queryKey: vendorsKey });
     },
+  });
+}
+
+/** GET /admin/v1/vendors/{id}/certificates (VEN-06) — a vendor's own compliance certificates, soonest-expiring first. */
+export function useVendorCertificates(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, vendorId ?? "", "certificates"],
+    enabled: !!vendorId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/vendors/{id}/certificates", { params: { path: { id: vendorId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/certificates — record a certificate against the caller's own clean, still-
+ *  unattached upload; a valid_to schedules the 30-day expiry reminder. */
+export function useAddVendorCertificate(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: VendorCertificateInput) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/certificates", {
+        params: { path: { id: vendorId } },
+        body: input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "certificates"] }),
+  });
+}
+
+/** DELETE /admin/v1/vendors/{id}/certificates/{certificateId}. */
+export function useDeleteVendorCertificate(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (certificateId: string) => {
+      const { error } = await client.DELETE("/admin/v1/vendors/{id}/certificates/{certificateId}", {
+        params: { path: { id: vendorId, certificateId } },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "certificates"] }),
   });
 }

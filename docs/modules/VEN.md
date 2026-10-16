@@ -571,6 +571,41 @@ once one of those features exists, the same "no consumer yet" deferral this code
 
 **Acceptance criteria:** ใบรับรองใกล้หมดอายุถูกแจ้งเตือนล่วงหน้า
 
+**Implementation (VEN-06) — done:** `internal/vendormgmt/service/certificates.go` (`vendor.vendors`'s own
+`vendor.certificates` table, already fully specified in the baseline migrations — no new migration for the
+table itself). `AddCertificate` is plain CRUD on top of two existing checks this module already has: the
+vendor visible under RLS (rule 1, `GetVendor`) and the evidence file the caller's own clean, still-unattached
+PLT-09 upload (`Files.Get`/`Files.Attach`, the exact pattern VEN-14's own destruction certificate and DSAR-04's
+agent document already use) — attached to a new `CertificateEntityType` ("vendor_certificate"). The acceptance
+criterion itself is a single reminder checkpoint per certificate's own `valid_to` — the same one-time-per-record
+pattern DPA-10's `agreement.renewal_reminder` already established, not a recurring sweep (a certificate's
+expiry date doesn't move on its own the way a recurring re-assessment cycle does): `scheduleCertificateExpiryReminder`
+enqueues `vendor.certificate_expiry` (River, unique per certificate) `CertificateExpiryNoticeDays` (30, a plain
+config default — not a `docs/decisions.md` question, CLAUDE.md's "implement the listed default as config") ahead
+of `valid_to`, or at once if that moment has already passed. `FireCertificateExpiryReminder` re-reads the
+certificate and no-ops if `valid_to` no longer matches what the job was scheduled for (edited or deleted since)
+or the certificate is gone — then notifies the vendor's `relationship_owner_id`, falling back to role SEC (the
+module doc's own actor) via `iamservice.UsersWithRole`, the same "default recipients until real per-record
+routing exists" fallback BRE-07/PNG-04/VEN-10 already use. Migration 00075 seeds the `vendor.certificate_expiry`
+template (th/en × in_app/email, operational text, no DRAFT marker — rule 8 is about legal/notice wording, not
+this). API: `GET`/`POST /admin/v1/vendors/{id}/certificates`, `DELETE /admin/v1/vendors/{id}/certificates/{certificateId}`
+— all on the already-seeded `vendor.vendor.{read,create,update,delete}` (no new permission code). UI: a
+"Certificates" section on `/vendors/{id}` — list with issuer/expiry, a record form (type/issuer/valid dates +
+`FileUploader`), remove. `cmd/worker` registers `CertificateReminderWorker`. Tests: unit
+(`internal/vendormgmt/service/certificates_test.go` — validation incl. an unknown vendor and an already-attached
+file refused, `valid_to` before `valid_from` refused, the scheduled job's `scheduled_at` matches `valid_to` minus
+the notice period, the acceptance criterion directly — the owner is notified, or role SEC with none set, and a
+stale/unknown fire call is a harmless no-op — list/delete round-trip). A real test-fixture gotcha hit while
+building this: unlike `vendor.offboardings.destruction_certificate_file_id` (no FK), `vendor.certificates.file_id`
+has a real FK to `platform.files`, so the fixture needs an actually-inserted row, not just an in-memory one — the
+same move DSAR-04's own `attachableUpload` already makes. Not verified live against a real Postgres/Redis in a
+fresh session, but both were reachable during this pass and the full `go test -p 1 ./internal/vendormgmt/...`
+suite ran for real (two pre-existing, unrelated failures — `TestListIntakes_NewestFirstAndIsolation`,
+`TestOffboarding_FullLifecycle`/`TestOffboarding_RequiresDeletePermission` — confirmed via `git stash` to exist
+identically without this change). `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build`
+all verified clean.
+
 <a id="ven-09"></a>
 ### VEN-09 แผนแก้ไขข้อบกพร่องของคู่ค้า
 

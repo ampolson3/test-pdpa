@@ -4420,6 +4420,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/vendors/{id}/certificates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A vendor's evidence & compliance certificates (VEN-06, ISO 27001, SOC 2, …) */
+        get: operations["vendorListCertificates"];
+        put?: never;
+        /** Record a certificate — its evidence file schedules this feature's own expiry reminder once valid_to is set */
+        post: operations["vendorAddCertificate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/vendors/{id}/certificates/{certificateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a certificate record (not its evidence file) */
+        delete: operations["vendorDeleteCertificate"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/vendors/{id}/offboarding": {
         parameters: {
             query?: never;
@@ -6316,6 +6351,33 @@ export interface components {
             closed_at?: components["schemas"]["Timestamp"];
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
+        };
+        VendorCertificate: {
+            id: components["schemas"]["Uuid"];
+            vendor_id: components["schemas"]["Uuid"];
+            cert_type: string;
+            issuer?: string | null;
+            file_id: components["schemas"]["Uuid"];
+            /** Format: date */
+            valid_from?: string | null;
+            /** Format: date */
+            valid_to?: string | null;
+            verified_by?: components["schemas"]["Uuid"] | null;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        VendorCertificateInput: {
+            cert_type: string;
+            issuer?: string;
+            file_id: components["schemas"]["Uuid"];
+            /** Format: date */
+            valid_from?: string;
+            /**
+             * Format: date
+             * @description Schedules this feature's own expiry-reminder checkpoint (VEN-06)
+             */
+            valid_to?: string;
         };
         VendorDecideAssessmentResult: {
             assessment: components["schemas"]["VendorAssessment"];
@@ -19949,6 +20011,97 @@ export interface operations {
                         data: components["schemas"]["VendorRemediationItem"][];
                     };
                 };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    vendorListCertificates: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["VendorCertificate"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    vendorAddCertificate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorCertificateInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorCertificate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    vendorDeleteCertificate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                certificateId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

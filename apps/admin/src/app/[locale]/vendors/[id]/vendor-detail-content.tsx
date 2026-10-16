@@ -21,6 +21,9 @@ import {
   useVendorOffboarding,
   useUpdateVendorOffboarding,
   useTransitionVendor,
+  useVendorCertificates,
+  useAddVendorCertificate,
+  useDeleteVendorCertificate,
   useDpiaTemplates,
   useForm,
   type VendorDecideAssessmentInput,
@@ -188,6 +191,7 @@ export function VendorDetailContent({ id }: { id: string }) {
 
       <IntakePanel client={client} vendorId={v.id} canUpdate={canUpdate} />
       <AssessmentPanel client={client} vendorId={v.id} />
+      <CertificatePanel client={client} vendorId={v.id} canUpdate={canUpdate} />
       {(v.status === "approved" || v.status === "conditional" || v.status === "offboarding" || v.status === "terminated") && (
         <OffboardingPanel client={client} vendorId={v.id} status={v.status} rowVersion={v.row_version} />
       )}
@@ -452,6 +456,98 @@ function DecidePanel({ assessmentId, onDecide }: { assessmentId: string; onDecid
 }
 
 const SELECT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
+
+/** VEN-06's own acceptance criterion ("ใบรับรองใกล้หมดอายุถูกแจ้งเตือนล่วงหน้า"): recording a certificate's
+ *  own valid_to is what schedules the 30-day expiry reminder on the backend — this panel is only the list +
+ *  record form, following the same "caller's own clean upload" pattern the offboarding panel's destruction
+ *  certificate already uses. */
+function CertificatePanel({
+  client, vendorId, canUpdate,
+}: { client: ReturnType<typeof createApiClient>; vendorId: string; canUpdate: boolean }) {
+  const t = useTranslations("vendors");
+  const list = useVendorCertificates(client, vendorId);
+  const add = useAddVendorCertificate(client, vendorId);
+  const remove = useDeleteVendorCertificate(client, vendorId);
+  const [open, setOpen] = useState(false);
+  const [certType, setCertType] = useState("");
+  const [issuer, setIssuer] = useState("");
+  const [validFrom, setValidFrom] = useState("");
+  const [validTo, setValidTo] = useState("");
+  const [fileId, setFileId] = useState<string | undefined>(undefined);
+
+  const rows = list.data?.data ?? [];
+
+  const submit = () => {
+    if (!fileId) return;
+    add.mutate(
+      {
+        cert_type: certType, issuer: issuer || undefined, file_id: fileId,
+        valid_from: validFrom || undefined, valid_to: validTo || undefined,
+      },
+      {
+        onSuccess: () => {
+          setOpen(false);
+          setCertType("");
+          setIssuer("");
+          setValidFrom("");
+          setValidTo("");
+          setFileId(undefined);
+        },
+      },
+    );
+  };
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.certificates.title")}</h2>
+
+      {rows.length === 0 ? <p className="text-slate-500">{t("detail.certificates.empty")}</p> : (
+        <ul className="divide-y divide-slate-100 text-sm">
+          {rows.map((c) => (
+            <li key={c.id} className="flex items-center justify-between gap-2 py-2">
+              <div>
+                <span className="font-medium">{c.cert_type}</span>
+                {c.issuer && <span className="ml-2 text-slate-500">{c.issuer}</span>}
+              </div>
+              {c.valid_to && <span className="text-xs text-slate-500">{t("detail.certificates.expiresOn", { date: c.valid_to })}</span>}
+              {canUpdate && (
+                <Button variant="secondary" onClick={() => remove.mutate(c.id)} disabled={remove.isPending}>
+                  {t("detail.certificates.remove")}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {canUpdate && (open ? (
+        <div className="space-y-2 border-t border-slate-100 pt-3">
+          <label className="block"><span className="block text-slate-600">{t("detail.certificates.certType")}</span>
+            <input className={INPUT} value={certType} onChange={(e) => setCertType(e.target.value)} /></label>
+          <label className="block"><span className="block text-slate-600">{t("detail.certificates.issuer")}</span>
+            <input className={INPUT} value={issuer} onChange={(e) => setIssuer(e.target.value)} /></label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="block"><span className="block text-slate-600">{t("detail.certificates.validFrom")}</span>
+              <input type="date" className={INPUT} value={validFrom} onChange={(e) => setValidFrom(e.target.value)} /></label>
+            <label className="block"><span className="block text-slate-600">{t("detail.certificates.validTo")}</span>
+              <input type="date" className={INPUT} value={validTo} onChange={(e) => setValidTo(e.target.value)} /></label>
+          </div>
+          <div>
+            <span className="block text-slate-600">{t("detail.certificates.file")}</span>
+            <FileUploader onUploaded={(f: StoredFile) => setFileId(f.id)} />
+          </div>
+          {add.isError && <p className="text-red-700" role="alert">{t("detail.certificates.saveError", { detail: detail(add.error) })}</p>}
+          <div className="flex gap-2">
+            <Button onClick={submit} disabled={add.isPending || !certType || !fileId}>{t("detail.certificates.add")}</Button>
+            <Button variant="secondary" onClick={() => setOpen(false)}>{t("form.cancel")}</Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="secondary" onClick={() => setOpen(true)}>{t("detail.certificates.add")}</Button>
+      ))}
+    </section>
+  );
+}
 
 /** VEN-02: answer the intake questionnaire once; the system computes the tier (and which VEN-04
  *  assessment templates it now requires) rather than leaving that to a human's own reading. */

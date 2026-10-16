@@ -2994,6 +2994,49 @@ withdrawn, the receipt attached and persisted, re-readable afterward) and the no
 `go vet ./...`, `gofmt -l` (clean), `pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/api-client
 typecheck` and `pnpm --filter @pdpa/admin build` all verified clean.
 
+### VEN-06 ตรวจหลักฐานและใบรับรอง (`docs/modules/VEN.md#ven-06`) — done
+`internal/vendormgmt/service/certificates.go` (`vendor.vendor.{read,create,update,delete}`, shared with every
+other vendor-record write — no new permission code): `vendor.certificates` was already fully specified in the
+baseline migrations, unused until now. `AddCertificate` is plain CRUD built on two checks this module already
+had — the vendor visible under RLS (rule 1, `GetVendor`) and the evidence file the caller's own clean,
+still-unattached PLT-09 upload (`Files.Get`/`Files.Attach`, the exact "caller's own clean upload" pattern
+VEN-14's own destruction certificate and DSAR-04's agent document already use) — attached to a new
+`CertificateEntityType` ("vendor_certificate"). The acceptance criterion itself ("ใบรับรองใกล้หมดอายุถูกแจ้ง
+เตือนล่วงหน้า") is a single reminder checkpoint per certificate's own `valid_to`, the same one-time-per-record
+pattern DPA-10's `agreement.renewal_reminder` already established — not a recurring sweep, since a
+certificate's expiry date doesn't move on its own the way a recurring re-assessment cycle does:
+`scheduleCertificateExpiryReminder` enqueues `vendor.certificate_expiry` (River, unique per certificate)
+`CertificateExpiryNoticeDays` (30, a plain config default per CLAUDE.md's own "implement the listed default as
+config" — not a `docs/decisions.md` question) ahead of `valid_to`, or at once if that moment has already
+passed (the same "late-recorded event still alerts" rule PNG-04/DSAR-07/DPA-10 already use).
+`FireCertificateExpiryReminder` re-reads the certificate and no-ops if `valid_to` no longer matches what the
+job was scheduled for (edited or deleted since) or the certificate is gone, then notifies the vendor's
+`relationship_owner_id`, falling back to role SEC (the module doc's own actor) via `iamservice.UsersWithRole`
+— the same "default recipients until real per-record routing exists" fallback BRE-07/PNG-04/VEN-10 already use.
+Migration 00075 seeds the `vendor.certificate_expiry` template (th/en × in_app/email, operational text, no
+DRAFT marker — rule 8 is about legal/notice wording, not this).
+
+API: `GET`/`POST /admin/v1/vendors/{id}/certificates`, `DELETE /admin/v1/vendors/{id}/certificates/{certificateId}`.
+UI: a "Certificates" section on `/vendors/{id}` (list with issuer/expiry, a record form with
+`FileUploader`, remove). `cmd/worker` registers `CertificateReminderWorker`. Tests:
+`internal/vendormgmt/service/certificates_test.go` — validation (unknown vendor, an already-attached file,
+`valid_to` before `valid_from`, all refused), the scheduled job's `scheduled_at` matching `valid_to` minus the
+notice period, the acceptance criterion directly (the owner notified, or role SEC with none set; a
+stale/unknown fire call a harmless no-op), list/delete round-trip. Two real gotchas hit while testing: (1)
+`pgtype.Date` round-trips through Postgres as date-only (midnight UTC), so a test's own `time.Now()`-derived
+comparison value needs the same truncation before comparing, or a direct `time.Time.Equal` check — including
+the service's own internal "stale schedule" check — never matches; (2) unlike
+`vendor.offboardings.destruction_certificate_file_id` (no FK), `vendor.certificates.file_id` has a real FK to
+`platform.files`, so the test fixture needs an actually-inserted row, not just an in-memory one — the same
+move DSAR-04's own `attachableUpload` already makes; and a `platform.notifications` count check must run
+through the request's own transaction (`pdb.MustTxFromContext(ctx)`), not a bare pool query outside it, since
+RLS hides every row from a connection with no `app.tenant_id` set. `go build ./...`, `go vet ./...`,
+`gofmt -l` (clean), the full `go test -p 1 ./internal/vendormgmt/...` suite run live against a real Postgres
+(two pre-existing, unrelated failures — `TestListIntakes_NewestFirstAndIsolation`,
+`TestOffboarding_FullLifecycle`/`TestOffboarding_RequiresDeletePermission` — confirmed via `git stash` to exist
+identically without this change), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test`
+and `pnpm --filter @pdpa/admin build` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

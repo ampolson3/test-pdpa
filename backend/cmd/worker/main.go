@@ -119,6 +119,7 @@ func run() error {
 	vendorSvc := &vendorservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter} // VEN-10: periodic re-assessment reminder
 	river.AddWorker(workers, &vendorservice.ReassessmentSweeper{Pool: pool, River: inserter})
 	river.AddWorker(workers, &vendorservice.ReassessmentChecker{Service: vendorSvc})
+	river.AddWorker(workers, &vendorservice.CertificateReminderWorker{Service: vendorSvc}) // VEN-06: certificate expiry reminder
 	river.AddWorker(workers, &workflow.Ticker{Service: wiring.Workflow(notifySvc, inserter, auditservice.New())})
 	breachSvc := wiring.Breach(notifySvc, fileStore(store, inserter), inserter, auditservice.New(), notifySvc.Keyring, nil, ropaSvc) // BRE-09 recording is admin-only
 	river.AddWorker(workers, &breach.TimerWorker{Service: breachSvc})

@@ -63,6 +63,9 @@ export {
   useVendorOffboarding,
   useUpdateVendorOffboarding,
   useTransitionVendor,
+  useVendorCertificates,
+  useAddVendorCertificate,
+  useDeleteVendorCertificate,
   type Vendor,
   type VendorInput,
   type VendorStatus,
@@ -77,6 +80,8 @@ export {
   type VendorRemediationItem,
   type VendorOffboarding,
   type VendorOffboardingInput,
+  type VendorCertificate,
+  type VendorCertificateInput,
 } from "./vendors";
 export {
   useRetentionSchedules,

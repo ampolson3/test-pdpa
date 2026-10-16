@@ -286,8 +286,9 @@ func run() error {
 		},
 	})
 	dataflowSvc := &dataflowservice.Service{Ropa: ropaSvc, Org: orgSvc, PDF: render.FromEnv(), Image: render.ImageFromEnv()} // DFG-01/03: the data flow diagram, read live off RoPA; DFG-08: image/report export
-	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc}                                        // VEN-01: vendor/processor registry; VEN-14: destruction certificate
+	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc, River: riverClient}                    // VEN-01: vendor/processor registry; VEN-14: destruction certificate; VEN-06: schedule the cert expiry reminder on write
 	fileSvc.EntityPermissions[vendorservice.OffboardingEntityType] = "vendor.vendor.read"                                    // VEN-14 destruction certificate
+	fileSvc.EntityPermissions[vendorservice.CertificateEntityType] = "vendor.vendor.read"                                    // VEN-06 certificate evidence
 	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc, Risk: riskSvc}                               // RRA-07: closing a "ropa_gap" task re-checks the rule
 	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read"                                         // DPO-01 appointment order / PDPC evidence
 	riskSvc.Dpo = dpoSvc                                                                                                     // DPIA-07/RRA-07: owner + due date on a control, or a gap finding, opens a dpo.tasks job

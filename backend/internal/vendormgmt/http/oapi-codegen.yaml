@@ -15,6 +15,9 @@ output-options:
     - vendorRecordAssessment
     - vendorDecideAssessment
     - vendorListRemediationItems
+    - vendorListCertificates
+    - vendorAddCertificate
+    - vendorDeleteCertificate
     - vendorGetOffboarding
     - vendorUpdateOffboarding
     - vendorTransitionVendor

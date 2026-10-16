@@ -1089,6 +1089,19 @@
         "certificate": "ใบยืนยันการทำลายข้อมูล",
         "certificateOnFile": "มีไฟล์แล้ว",
         "completedAt": "ยุติคู่ค้าเมื่อ {date}"
+      },
+      "certificates": {
+        "title": "ใบรับรอง (VEN-06)",
+        "empty": "ยังไม่มีใบรับรองในระบบ",
+        "certType": "ประเภทใบรับรอง",
+        "issuer": "ผู้ออกใบรับรอง",
+        "validFrom": "มีผลตั้งแต่",
+        "validTo": "มีผลถึง",
+        "file": "ไฟล์หลักฐาน",
+        "add": "เพิ่มใบรับรอง",
+        "remove": "ลบ",
+        "saveError": "บันทึกไม่สำเร็จ: {detail}",
+        "expiresOn": "หมดอายุ {date}"
       }
     }
   },
