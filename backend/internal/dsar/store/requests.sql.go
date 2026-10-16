@@ -278,6 +278,24 @@ func (q *Queries) LockRequestNumbering(ctx context.Context, year string) error {
 	return err
 }
 
+const setRequestConsentReceipt = `-- name: SetRequestConsentReceipt :exec
+UPDATE dsar.requests SET details = details || jsonb_build_object('consent_receipt_no', $1::text),
+    updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE id = $2
+`
+
+type SetRequestConsentReceiptParams struct {
+	ReceiptNo string    `db:"receipt_no" json:"receipt_no"`
+	ID        uuid.UUID `db:"id" json:"id"`
+}
+
+// DSAR-21: the consent receipt a withdraw-consent request's own automatic CON update produced, attached to
+// the request itself the same way DataSource already lives in this jsonb column, no new table/migration.
+func (q *Queries) SetRequestConsentReceipt(ctx context.Context, arg SetRequestConsentReceiptParams) error {
+	_, err := q.db.Exec(ctx, setRequestConsentReceipt, arg.ReceiptNo, arg.ID)
+	return err
+}
+
 const setRequestVerified = `-- name: SetRequestVerified :exec
 UPDATE dsar.requests SET verified_at = $1, updated_at = now(),
     updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid

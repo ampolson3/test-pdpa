@@ -50,8 +50,11 @@ type Request struct {
 	// collected directly from the subject — stored in dsar.requests.details (the baseline schema's own
 	// catch-all jsonb column, unused until now) and disclosed in the generated access response letter.
 	DataSource *string
-	RowVersion int32
-	UpdatedAt  time.Time
+	// ConsentReceiptNo is DSAR-21's own trace: the consent receipt number a withdraw-consent request's
+	// automatic CON update produced, same jsonb column as DataSource.
+	ConsentReceiptNo *string
+	RowVersion       int32
+	UpdatedAt        time.Time
 }
 
 type CreateRequestInput struct {
@@ -66,7 +69,8 @@ type CreateRequestInput struct {
 }
 
 type requestDetails struct {
-	DataSource *string `json:"data_source,omitempty"`
+	DataSource       *string `json:"data_source,omitempty"`
+	ConsentReceiptNo *string `json:"consent_receipt_no,omitempty"` // DSAR-21
 }
 
 // CreateRequest is the minimal slice of DSAR-01/02's job this feature needs: receive a request and start its
@@ -356,6 +360,17 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, rowVersion int32
 		}
 	}
 
+	// DSAR-21: a fulfilled withdraw-consent request withdraws the requester's own active purposes in CON.
+	if in.To == "completed" {
+		receiptNo, err := s.withdrawConsentIfApplicable(ctx, out, rt)
+		if err != nil {
+			return Request{}, nil, err
+		}
+		if receiptNo != nil {
+			out.ConsentReceiptNo = receiptNo
+		}
+	}
+
 	var purpose string
 	switch in.To {
 	case "awaiting_info":
@@ -395,6 +410,7 @@ func toRequest(r dsarstore.GetRequestRow) Request {
 	var details requestDetails
 	if len(r.Details) > 0 && json.Unmarshal(r.Details, &details) == nil {
 		req.DataSource = details.DataSource
+		req.ConsentReceiptNo = details.ConsentReceiptNo
 	}
 	return req
 }

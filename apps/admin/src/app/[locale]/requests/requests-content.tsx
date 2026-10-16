@@ -628,7 +628,14 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
                   </td>
                   <td className="px-3 py-2">{formatDate(r.due_at, locale, { day: "numeric", month: "short", year: "numeric" })}</td>
                   <td className="px-3 py-2"><span className={`rounded px-2 py-0.5 ${SLA_STYLE[r.sla_status]}`} data-testid={`sla-${r.id}`}>{t(`sla.${r.sla_status}`)}</span></td>
-                  <td className="px-3 py-2"><span className={`rounded px-2 py-0.5 ${STATUS_STYLE[r.status]}`}>{t(`statuses.${r.status}`)}</span></td>
+                  <td className="px-3 py-2">
+                    <span className={`rounded px-2 py-0.5 ${STATUS_STYLE[r.status]}`}>{t(`statuses.${r.status}`)}</span>
+                    {r.consent_receipt_no && (
+                      <span className="ml-1 rounded bg-emerald-100 px-1.5 py-0.5 text-xs text-emerald-800" data-testid={`consent-withdrawn-${r.id}`} title={r.consent_receipt_no}>
+                        {t("consentWithdrawnBadge")}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-3 py-2 space-x-3">
                     {canExecute && NEXT_STEPS[r.status].length > 0 && (
                       <button type="button" className="text-sky-700 underline" data-testid={`action-toggle-${r.id}`}

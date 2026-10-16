@@ -154,7 +154,8 @@ func toRequestWire(r dsarservice.Request) DsarRequest {
 	w := DsarRequest{Id: r.ID, RequestNo: r.RequestNo, RequestTypeId: r.RequestTypeID, LegalEntityId: r.LegalEntityID,
 		Channel: DsarRequestChannel(r.Channel), OnBehalf: r.OnBehalf, Status: DsarRequestStatus(r.Status),
 		ReceivedAt: r.ReceivedAt.UTC(), DueAt: r.DueAt.UTC(), SlaStatus: DsarSlaStatus(dsarservice.SLAStatus(time.Now().UTC(), r.DueAt)),
-		RejectionReasonCode: r.RejectionReasonCode, DataSource: r.DataSource, RowVersion: int(r.RowVersion), UpdatedAt: r.UpdatedAt.UTC()}
+		RejectionReasonCode: r.RejectionReasonCode, DataSource: r.DataSource, ConsentReceiptNo: r.ConsentReceiptNo,
+		RowVersion: int(r.RowVersion), UpdatedAt: r.UpdatedAt.UTC()}
 	if r.Outcome != nil {
 		o := DsarOutcome(*r.Outcome)
 		w.Outcome = &o

@@ -53,6 +53,13 @@ WHERE id = $1 AND row_version = $5
 RETURNING id, request_no, request_type_id, legal_entity_id, channel, on_behalf, details, status, received_at,
     due_at, verified_at, closed_at, outcome, rejection_reason_code, assignee_user_id, row_version, updated_at;
 
+-- name: SetRequestConsentReceipt :exec
+-- DSAR-21: the consent receipt a withdraw-consent request's own automatic CON update produced, attached to
+-- the request itself the same way DataSource already lives in this jsonb column, no new table/migration.
+UPDATE dsar.requests SET details = details || jsonb_build_object('consent_receipt_no', @receipt_no::text),
+    updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE id = @id;
+
 -- name: UpdateRequestAssignee :one
 -- DSAR-07: who is notified as "the responsible person" alongside role DPO when the SLA reminder fires.
 UPDATE dsar.requests SET assignee_user_id = $2,

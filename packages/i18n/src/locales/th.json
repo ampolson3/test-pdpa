@@ -2755,6 +2755,7 @@
     "allStatuses": "ทุกสถานะ",
     "dueBy": "ครบกำหนด",
     "statusLabel": "สถานะ",
+    "consentWithdrawnBadge": "ถอนความยินยอมใน CON แล้ว",
     "sla": {
       "label": "SLA",
       "on_track": "ตามกำหนด",

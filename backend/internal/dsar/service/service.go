@@ -69,6 +69,9 @@ type Ropa interface {
 type Consent interface {
 	Subjects(ctx context.Context, identifierType, value string) ([]consentservice.SubjectSummary, error)
 	GetProfile(ctx context.Context, id uuid.UUID) (consentservice.Profile, error)
+	// WithdrawAllActive is DSAR-21's own write: every purpose the subject currently holds ACTIVE
+	// consent for, withdrawn in one call once a withdraw-consent request is fulfilled.
+	WithdrawAllActive(ctx context.Context, subjectID uuid.UUID, reasonCode string) (consentservice.Receipt, error)
 }
 
 type Service struct {

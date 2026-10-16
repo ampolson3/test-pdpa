@@ -848,3 +848,34 @@ and vets clean and skips the same way the rest of this module's own test suite a
 **Frontend (Next.js):** แสดงผลการอัปเดตความยินยอมในหน้าคำขอ
 
 **Acceptance criteria:** คำขอถอนความยินยอมอัปเดตสถานะใน CON อัตโนมัติ
+
+**Implementation (DSAR-21):** `internal/dsar/service/consent_integration.go`'s `withdrawConsentIfApplicable`,
+called from `Transition` right after the existing `dsar.completed` event publish, whenever a request
+reaches `completed` and its own `dsar.request_types.code` is `withdraw_consent` (ม.19) — the acceptance
+criterion's own literal scope; "คัดค้านการตลาด" (objection to marketing) is deliberately not wired the same
+way, since nothing in this schema distinguishes a marketing purpose from any other, so there's no reliable
+way to withdraw only the marketing ones (add it once a real `is_marketing` flag exists on a purpose, the same
+"no consumer yet" deferral this codebase uses throughout). The requester's own decrypted contact (the same
+`decryptRequesterContact` DSAR-06/DSAR-15 already use) is matched against consent's own subject registry via
+the already-exported `Consent.Subjects` (rule 9 — dsar never writes to the consent schema directly), then a
+new `consentservice.Service.WithdrawAllActive(ctx, subjectID, reasonCode)` withdraws every purpose that
+subject currently holds `ACTIVE` — the same `checkDecisions`/`writeDecisions`/`channelForPreferenceUpdate`
+plumbing CON-18's own `UpdatePreferences` already uses, minus the OTP step: the caller (dsar) has already
+verified the requester's identity through its own flow (DSAR-06) before this is ever reached, so re-verifying
+would just burn IAM-05's 5-attempt cap for no benefit. The `source` CHECK constraint already had `'dsar'`
+reserved for exactly this. The withdrawal is a harmless no-op — not an error — for a requester with no
+matching consent subject, or with nothing currently active (most DSAR requests are never also a consent
+decision). "แนบ receipt ในคำขอ" is `dsar.requests.details`'s own jsonb catch-all (the same column DSAR-03's
+own `data_source` already uses, no new table): a new `SetRequestConsentReceipt` query merges in
+`consent_receipt_no`, and `Transition`'s own in-memory `out` is updated with it directly (re-reading the row
+back would have shown the same value one call later, but updating it in place avoids that round trip and a
+real bug this surfaced: the first draft left `out` stale, since the write happened after `out` was already
+built — fixed by threading the receipt number back through the call's own return value instead of discarding
+it). API: `consent_receipt_no` added to `DsarRequest`. UI: `/requests`' status column gained a small badge
+once a request carries one (title = the receipt number). Tests:
+`internal/dsar/service/consent_integration_test.go` — the acceptance criterion directly through the real
+`verifying → in_review → in_progress → completed` chain (a withdraw-consent request's own active purpose is
+withdrawn, the resulting receipt attached and persisted, re-readable afterward) and the no-match no-op case,
+both against a `fakeConsent` test double widened with a `WithdrawAllActive` stub. `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean), `pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/api-client
+typecheck` and `pnpm --filter @pdpa/admin build` all verified clean.

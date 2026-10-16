@@ -2755,6 +2755,7 @@
     "allStatuses": "All statuses",
     "dueBy": "Due by",
     "statusLabel": "Status",
+    "consentWithdrawnBadge": "Consent withdrawn in CON",
     "sla": {
       "label": "SLA",
       "on_track": "On track",

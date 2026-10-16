@@ -2959,6 +2959,41 @@ notification (PLT-07) already notifies the mentioned user in-app/email on every 
 setup, which already satisfies "gets notified"; a per-user channel toggle has no consumer yet anywhere PLT-07
 is used, the same "no consumer yet" deferral this codebase uses throughout.
 
+### DSAR-21 เชื่อมกับระบบ Consent (`docs/modules/DSAR.md#dsar-21`) — done, withdraw_consent only
+`internal/dsar/service/consent_integration.go`'s `withdrawConsentIfApplicable`, called from `Transition`
+right after the existing `dsar.completed` event publish, fires whenever a request reaches `completed` and
+its own right-type code is `withdraw_consent` (ม.19) — the acceptance criterion's own literal scope.
+"คัดค้านการตลาด" (objection to marketing) is deliberately not wired the same way: nothing in this schema
+distinguishes a marketing purpose from any other one, so there's no reliable way to withdraw only the
+marketing purposes out of a subject's full list — the same "no consumer yet" deferral this codebase uses
+throughout; add it once a real `is_marketing` flag exists to filter by. The requester's own decrypted contact
+(the same `decryptRequesterContact` DSAR-06/DSAR-15 already use) is matched against consent's own subject
+registry via the already-exported `Consent.Subjects` (rule 9 — dsar never writes to the consent schema
+directly), then a new `consentservice.Service.WithdrawAllActive(ctx, subjectID, reasonCode)` withdraws every
+purpose that subject currently holds `ACTIVE` — the same `checkDecisions`/`writeDecisions`/
+`channelForPreferenceUpdate` plumbing CON-18's own `UpdatePreferences` already uses, minus the OTP step: the
+caller has already verified the requester's identity through its own flow (DSAR-06) before this is ever
+reached, so re-verifying would just burn IAM-05's 5-attempt cap for no benefit. `source`'s CHECK constraint
+already had `'dsar'` reserved for exactly this. A requester with no matching consent subject, or with
+nothing currently active, is a harmless no-op, not an error — most DSAR requests are never also a consent
+decision.
+
+"แนบ receipt ในคำขอ" reuses `dsar.requests.details`'s own jsonb catch-all — the same column DSAR-03's own
+`data_source` already uses, no new table: a new `SetRequestConsentReceipt` query merges in
+`consent_receipt_no`. Real bug found and fixed while testing: `Transition`'s own in-memory `out` (the value
+it returns) was built from the DB row *before* this hook's own write ran, so the very first version of this
+feature returned a request whose `ConsentReceiptNo` read `nil` even though the column was correctly updated
+underneath it — fixed by having `withdrawConsentIfApplicable` return the receipt number it wrote (or nil)
+and setting it directly on `out` in `Transition`, rather than relying on a second read-back. API:
+`consent_receipt_no` added to `DsarRequest`. UI: `/requests`' status column gained a small badge once a
+request carries one (its title shows the receipt number). Tests:
+`internal/dsar/service/consent_integration_test.go` — the acceptance criterion directly through the real
+`verifying → in_review → in_progress → completed` chain (a withdraw-consent request's own active purpose is
+withdrawn, the receipt attached and persisted, re-readable afterward) and the no-match no-op case, against a
+`fakeConsent` test double (DSAR-15's own) widened with a `WithdrawAllActive` stub. `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean), `pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/api-client
+typecheck` and `pnpm --filter @pdpa/admin build` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

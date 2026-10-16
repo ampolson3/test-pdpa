@@ -7405,6 +7405,8 @@ export interface components {
             rejection_reason_code?: string | null;
             assignee_user_id?: components["schemas"]["Uuid"] | null;
             data_source?: string | null;
+            /** @description The consent receipt a fulfilled withdraw-consent request's own automatic CON update produced (DSAR-21), if any */
+            consent_receipt_no?: string | null;
             row_version: number;
             /** Format: date-time */
             updated_at: string;

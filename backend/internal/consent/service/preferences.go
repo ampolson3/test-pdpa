@@ -337,3 +337,49 @@ func (s *Service) UpdatePreferences(ctx context.Context, verificationID uuid.UUI
 	}
 	return s.writeDecisions(ctx, channel, sub, kept)
 }
+
+// WithdrawAllActive withdraws every purpose a subject currently holds ACTIVE consent for — DSAR-21's own
+// write path, called once a withdraw-consent (ม.19) DSAR request is fulfilled. Unlike UpdatePreferences
+// (CON-18), this takes no OTP: the caller has already verified the requester's identity through its own
+// flow (DSAR-06) before ever reaching this call, so re-verifying here would just burn IAM-05's attempt cap
+// for no benefit. A subject with nothing currently active is a harmless no-op (zero decisions), not an
+// error — most DSAR withdrawal requests arrive long after the subject's own consent already lapsed.
+func (s *Service) WithdrawAllActive(ctx context.Context, subjectID uuid.UUID, reasonCode string) (Receipt, error) {
+	profile, err := s.GetProfile(ctx, subjectID)
+	if err != nil {
+		return Receipt{}, err
+	}
+	_, cpPurposes, err := s.activePreferencePurposes(ctx)
+	if err != nil {
+		return Receipt{}, err
+	}
+	byCode := map[string]CPPurpose{}
+	for _, p := range cpPurposes {
+		byCode[p.Code] = p
+	}
+	var decisions []Decision
+	for _, st := range profile.Statuses {
+		if st.Status != StatusActive {
+			continue
+		}
+		p, ok := byCode[st.PurposeCode]
+		if !ok || p.CurrentVersionNo == nil {
+			continue
+		}
+		decisions = append(decisions, Decision{PurposeCode: st.PurposeCode, PurposeVersionNo: *p.CurrentVersionNo, Decision: TxWithdrawn, ReasonCode: reasonCode})
+	}
+	if len(decisions) == 0 {
+		return Receipt{}, nil
+	}
+	synthetic := CollectionPoint{Purposes: cpPurposes}
+	sub := Submission{SubjectID: &subjectID, Decisions: decisions, Language: "th", Source: "dsar"}
+	kept, err := s.checkDecisions(ctx, synthetic, sub)
+	if err != nil {
+		return Receipt{}, err
+	}
+	channel, err := s.channelForPreferenceUpdate(ctx, kept)
+	if err != nil {
+		return Receipt{}, err
+	}
+	return s.writeDecisions(ctx, channel, sub, kept)
+}

@@ -22,6 +22,8 @@ import (
 type fakeConsent struct {
 	byContact map[string]uuid.UUID
 	profiles  map[uuid.UUID]consentservice.Profile
+	// withdrawn records every subject WithdrawAllActive was called for (DSAR-21's own test hook).
+	withdrawn []uuid.UUID
 }
 
 func newFakeConsent() *fakeConsent {
@@ -49,6 +51,28 @@ func (f *fakeConsent) GetProfile(ctx context.Context, id uuid.UUID) (consentserv
 		return consentservice.Profile{}, errors.New("not found")
 	}
 	return p, nil
+}
+
+// WithdrawAllActive is DSAR-21's own test stub: withdraws every ACTIVE status in place and records the
+// call, mirroring just enough of the real consent.Service.WithdrawAllActive for the dsar-side test to check.
+func (f *fakeConsent) WithdrawAllActive(ctx context.Context, subjectID uuid.UUID, reasonCode string) (consentservice.Receipt, error) {
+	p, ok := f.profiles[subjectID]
+	if !ok {
+		return consentservice.Receipt{}, errors.New("not found")
+	}
+	var withdrew bool
+	for i := range p.Statuses {
+		if p.Statuses[i].Status == consentservice.StatusActive {
+			p.Statuses[i].Status = consentservice.StatusWithdrawn
+			withdrew = true
+		}
+	}
+	f.profiles[subjectID] = p
+	if !withdrew {
+		return consentservice.Receipt{}, nil
+	}
+	f.withdrawn = append(f.withdrawn, subjectID)
+	return consentservice.Receipt{No: "RCPT-TEST-" + subjectID.String()[:8], SubjectID: subjectID}, nil
 }
 
 func exportEnv(t *testing.T, suffix string) (env, *fakeFiles, *fakeConsent) {
