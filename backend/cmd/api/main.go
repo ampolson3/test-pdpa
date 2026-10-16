@@ -267,12 +267,24 @@ func run() error {
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
 	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
-	cookieSvc := &cookieservice.Service{Audit: auditSvc, Org: orgSvc, Notify: notifySvc, River: riverClient}                 // CON-01: cookie consent banner
-	riskSvc := riskservice.New()                                                                                             // ROPA-09's ม.37(1) controls catalog
-	riskSvc.Audit = auditSvc                                                                                                 // RRA-02: risk matrix CRUD audit
-	ropaTemplatesSvc := templatesservice.New()                                                                               // RTG-01: the platform's standard activity library (read-only)
-	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc}                // ROPA-05: create an activity from one of these templates
-	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}                                                               // RRA-01: score an activity from its own RoPA data
+	cookieSvc := &cookieservice.Service{Audit: auditSvc, Org: orgSvc, Notify: notifySvc, River: riverClient}                     // CON-01: cookie consent banner
+	riskSvc := riskservice.New()                                                                                                 // ROPA-09's ม.37(1) controls catalog
+	riskSvc.Audit = auditSvc                                                                                                     // RRA-02: risk matrix CRUD audit
+	ropaTemplatesSvc := templatesservice.New()                                                                                   // RTG-01: the platform's standard activity library (read-only)
+	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc, Collab: collabSvc} // ROPA-05: create an activity from one of these templates; ROPA-12: Q&A task list
+	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}                                                                   // RRA-01: score an activity from its own RoPA data
+	// ROPA-12: comments, mentions and activity (PLT-07) on the processing activity itself — the Q&A tab;
+	// an unresolved top-level comment naming a user is that user's own open question (MyOpenQuestions).
+	collabSvc.Register(ropaservice.ActivityCollabEntityType, collab.Policy{
+		ReadPermission: "ropa.activity.read", WritePermission: "ropa.activity.update",
+		Exists: func(ctx context.Context, id uuid.UUID) (bool, error) {
+			_, err := ropaSvc.GetActivity(ctx, id)
+			if errors.Is(err, ropaservice.ErrNotFound) {
+				return false, nil
+			}
+			return err == nil, err
+		},
+	})
 	dataflowSvc := &dataflowservice.Service{Ropa: ropaSvc, Org: orgSvc, PDF: render.FromEnv(), Image: render.ImageFromEnv()} // DFG-01/03: the data flow diagram, read live off RoPA; DFG-08: image/report export
 	vendorSvc := &vendorservice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc}                                        // VEN-01: vendor/processor registry; VEN-14: destruction certificate
 	fileSvc.EntityPermissions[vendorservice.OffboardingEntityType] = "vendor.vendor.read"                                    // VEN-14 destruction certificate

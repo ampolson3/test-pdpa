@@ -10,6 +10,7 @@ import {
   useActivities,
   useActivityMutations,
   useLegalEntities,
+  useMyOpenQuestions,
   useOrgUnits,
   type ActivityRole,
   type ActivityStatus,
@@ -46,6 +47,7 @@ export function ActivitiesContent() {
   const [importing, setImporting] = useState(false);
 
   const list = useActivities(client, { status: statusFilter || undefined, org_unit_id: orgUnitFilter || undefined, q: q || undefined });
+  const myQuestions = useMyOpenQuestions(client);
   const { save } = useActivityMutations(client);
   const entities = useLegalEntities(client);
   const units = useOrgUnits(client, legalEntityId);
@@ -95,6 +97,22 @@ export function ActivitiesContent() {
           {canCreate && <Button onClick={() => { save.reset(); setDraft({ ...blank }); }}>{t("newActivity")}</Button>}
         </div>
       </header>
+
+      {!!myQuestions.data?.length && (
+        <section className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-4" data-testid="my-open-questions">
+          <h2 className="font-semibold">{t("myOpenQuestions.title")}</h2>
+          <ul className="divide-y divide-amber-100">
+            {myQuestions.data.map((q) => (
+              <li key={q.comment_id} className="py-2">
+                <Link className="font-medium underline" href={`/ropa/activities/${q.activity_id}`}>
+                  {q.activity_code} — {q.activity_name}
+                </Link>
+                <p className="text-slate-700">{t("myOpenQuestions.askedBy", { name: q.author_name })}: {q.body}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {canCreate && importing && (
         <div className="space-y-2 rounded-md border border-slate-200 bg-white p-4">

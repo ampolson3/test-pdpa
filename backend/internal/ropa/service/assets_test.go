@@ -54,6 +54,8 @@ func setup(t *testing.T, suffix string) env {
 			_, _ = tx.Exec(ctx, `DELETE FROM org.org_units`)
 			_, _ = tx.Exec(ctx, `UPDATE org.legal_entities SET parent_id = NULL`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
+			_, _ = tx.Exec(ctx, `DELETE FROM platform.comments`)
+			_, _ = tx.Exec(ctx, `DELETE FROM iam.users WHERE id != $1`, tenant.UserID)
 			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
 			return err
 		})

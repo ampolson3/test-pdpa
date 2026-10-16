@@ -9297,6 +9297,35 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/ropa/activities/questions:
+    get:
+      operationId: ropaMyOpenQuestions
+      tags: [ropa]
+      summary: Open (unanswered) Q&A questions on any activity that @mention the caller (ROPA-12)
+      description: Every unresolved top-level comment on a ropa_activity record naming the caller in its @mentions — the caller's own open-question task list.
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RopaOpenQuestion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/ropa/activities/{id}:
     get:
       operationId: ropaGetActivity
@@ -19447,6 +19476,26 @@ components:
         created_at:
           $ref: '#/components/schemas/Timestamp'
         updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    RopaOpenQuestion:
+      type: object
+      required: [comment_id, activity_id, activity_code, activity_name, author_id, author_name, body, created_at]
+      properties:
+        comment_id:
+          $ref: '#/components/schemas/Uuid'
+        activity_id:
+          $ref: '#/components/schemas/Uuid'
+        activity_code:
+          type: string
+        activity_name:
+          type: string
+        author_id:
+          $ref: '#/components/schemas/Uuid'
+        author_name:
+          type: string
+        body:
+          type: string
+        created_at:
           $ref: '#/components/schemas/Timestamp'
     Attachment:
       type: object

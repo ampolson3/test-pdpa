@@ -172,6 +172,7 @@ export {
   useActivityVersions,
   useCompareActivityVersions,
   useActivityMutations,
+  useMyOpenQuestions,
   type ProcessingActivity,
   type ProcessingActivityInput,
   type ActivityRole,
@@ -206,6 +207,7 @@ export {
   type ProcessingActivityWizardRecipientKind,
   type ActivityVersion,
   type ActivityVersionDiff,
+  type RopaOpenQuestion,
 } from "./activities";
 export {
   useTemplateSets,

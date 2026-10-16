@@ -58,6 +58,21 @@ func (h *Strict) RopaExportProcessorActivities(ctx context.Context, _ RopaExport
 		Headers: RopaExportProcessorActivities200ResponseHeaders{ContentDisposition: &name}}, nil
 }
 
+func (h *Strict) RopaMyOpenQuestions(ctx context.Context, _ RopaMyOpenQuestionsRequestObject) (RopaMyOpenQuestionsResponseObject, error) {
+	list, err := h.svc.MyOpenQuestions(ctx)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := RopaMyOpenQuestions200JSONResponse{Data: make([]RopaOpenQuestion, 0, len(list))}
+	for _, q := range list {
+		resp.Data = append(resp.Data, RopaOpenQuestion{
+			CommentId: q.CommentID, ActivityId: q.ActivityID, ActivityCode: q.ActivityCode, ActivityName: q.ActivityName,
+			AuthorId: q.AuthorID, AuthorName: q.AuthorName, Body: q.Body, CreatedAt: q.CreatedAt.UTC(),
+		})
+	}
+	return resp, nil
+}
+
 func (h *Strict) RopaCreateActivity(ctx context.Context, req RopaCreateActivityRequestObject) (RopaCreateActivityResponseObject, error) {
 	a, err := h.svc.SaveActivity(ctx, toActivityInput(*req.Body), 0)
 	if err != nil {

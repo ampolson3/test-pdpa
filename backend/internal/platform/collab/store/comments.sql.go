@@ -188,6 +188,66 @@ func (q *Queries) ListComments(ctx context.Context, arg ListCommentsParams) ([]L
 	return items, nil
 }
 
+const listOpenQuestionsForUser = `-- name: ListOpenQuestionsForUser :many
+SELECT id, entity_type, entity_id, parent_id, author_id, body, mentions, resolved_at, row_version, created_at, updated_at
+FROM platform.comments
+WHERE entity_type = $1 AND parent_id IS NULL AND resolved_at IS NULL AND $2::uuid = ANY(mentions)
+ORDER BY created_at
+LIMIT 200
+`
+
+type ListOpenQuestionsForUserParams struct {
+	EntityType string    `db:"entity_type" json:"entity_type"`
+	UserID     uuid.UUID `db:"user_id" json:"user_id"`
+}
+
+type ListOpenQuestionsForUserRow struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	EntityType string             `db:"entity_type" json:"entity_type"`
+	EntityID   uuid.UUID          `db:"entity_id" json:"entity_id"`
+	ParentID   pgtype.UUID        `db:"parent_id" json:"parent_id"`
+	AuthorID   uuid.UUID          `db:"author_id" json:"author_id"`
+	Body       string             `db:"body" json:"body"`
+	Mentions   []uuid.UUID        `db:"mentions" json:"mentions"`
+	ResolvedAt pgtype.Timestamptz `db:"resolved_at" json:"resolved_at"`
+	RowVersion int32              `db:"row_version" json:"row_version"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// Unresolved top-level comments of one record type that @mention this user (ROPA-12's open-question task list).
+func (q *Queries) ListOpenQuestionsForUser(ctx context.Context, arg ListOpenQuestionsForUserParams) ([]ListOpenQuestionsForUserRow, error) {
+	rows, err := q.db.Query(ctx, listOpenQuestionsForUser, arg.EntityType, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListOpenQuestionsForUserRow
+	for rows.Next() {
+		var i ListOpenQuestionsForUserRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.EntityType,
+			&i.EntityID,
+			&i.ParentID,
+			&i.AuthorID,
+			&i.Body,
+			&i.Mentions,
+			&i.ResolvedAt,
+			&i.RowVersion,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRecordActivity = `-- name: ListRecordActivity :many
 SELECT id, occurred_at, actor_type, actor_id, action, before, after
 FROM platform.audit_log

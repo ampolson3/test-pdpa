@@ -756,6 +756,43 @@ test suite already does when neither is reachable. `go build ./...`, `go vet ./.
 
 **Acceptance criteria:** คำถามที่ยังไม่ตอบแสดงในรายการงานของผู้รับ
 
+**Implementation (ROPA-12):** Reuses PLT-07's own comment/mention layer exactly as this feature's backend
+note says — no new table, migration, or permission code. `ropa.processing_activities` is now a registered
+collab record type (`ropa_activity`, `cmd/api/main.go`'s `collabSvc.Register`, `ropa.activity.read`/
+`.update`, `Exists` backed by the already-exported `GetActivity`) — a "question" is just a top-level comment
+on the activity, "answered" is the existing `resolved` flag PLT-07's own `SetResolved` already toggles; a
+reply is the answer itself.
+
+The acceptance criterion itself ("unanswered questions show in the recipient's own task list") needed one
+small addition to PLT-07 that no other module had needed yet: `collab.Service.OpenQuestionsFor(ctx,
+entityType, userID)` (new sqlc query `ListOpenQuestionsForUser`) — every unresolved top-level comment of one
+record type that `@mentions` a given user, across every record of that type, not just one already-known
+record; `collab.Comment` gained `EntityType`/`EntityID` fields (populated for every read, not only this one)
+so a caller spanning many records can tell which one each question belongs to. Being named in a comment's
+own `mentions` already proves the author could see that user, so this skips the per-record `Exists`/
+permission check `Comments` makes for a single known record — RLS on `platform.comments` still scopes it to
+the caller's own tenant. `internal/ropa/service/questions.go`'s `MyOpenQuestions` calls it for
+`ropa_activity` as the caller's own user id, then resolves each comment's activity via `GetActivity` (a
+record the caller can no longer see — deleted, or RLS-scoped out since the question was asked — is silently
+skipped rather than erroring the whole list).
+
+API: `GET /admin/v1/ropa/activities/questions` (`ropa.activity.read`, a static path registered ahead of
+`/{id}` — the same `processor-export` pattern ROPA-04 already uses). The generic `/admin/v1/platform/
+records/ropa_activity/{id}/comments` endpoints (PLT-07) are the Q&A tab's own read/write/reply/resolve path
+— no bespoke ropa-specific comment endpoint was needed. UI: a "ถาม-ตอบกับ DPO หรือที่ปรึกษา" section on
+`/ropa/activities/{id}` mounting the shared `RecordCollaboration` component (`entityType="ropa_activity"`,
+the same pattern DPIA-14/DSAR-17 already use), and a "คำถามที่รอตอบ" panel on `/ropa/activities` itself
+(`useMyOpenQuestions`) — every open question naming the signed-in user, across every activity, linking
+straight to its activity. Tests: `internal/ropa/service/questions_test.go` — the acceptance criterion
+directly (a question asked of one user shows in their own task list and nobody else's, replying and
+resolving drops it off), two-tenant isolation of `platform.comments`' own RLS. `go build`/`go vet`/
+`gofmt -l` clean, `pnpm --filter @pdpa/i18n test`/`@pdpa/api-client typecheck`/`@pdpa/admin build` all
+verified clean. Not done, deliberately: "ตั้งค่าการแจ้งเตือนสถานะ" (configurable notification settings) —
+`AddComment`'s own `collab.mention` notification (PLT-07) already notifies the mentioned user in-app/email
+on every question with no further setup, which already satisfies "gets notified"; a per-user channel toggle
+has no consumer yet anywhere PLT-07 is used, the same "no consumer yet" deferral this codebase uses
+throughout.
+
 <a id="ropa-14"></a>
 ### ROPA-14 วงจรชีวิตของกิจกรรม
 

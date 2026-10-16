@@ -106,7 +106,7 @@ ROPA-13,ROPA,เวอร์ชันและการอนุมัติ,Ver
 ROPA-16,ROPA,ออกรายงาน RoPA,RoPA export,Must,P1,รายงาน,ม.39,DPO AUDIT,M,S,N,5,3,1.0,0,2.8,PLT-18,BP-05,docs/modules/ROPA.md#ropa-16,ไฟล์ที่ส่งออกพร้อมส่ง สคส. เมื่อร้องขอ,todo
 ROPA-18,ROPA,นำเข้า RoPA จาก Excel เดิม,Bulk import,Should,P1,นำเข้า,แนวปฏิบัติตลาด,DPO,M,S,N,5,3,1.0,0,2.8,PLT-14,BP-05,docs/modules/ROPA.md#ropa-18,นำเข้า RoPA 500 กิจกรรมจาก Excel ได้ และรายงานรายการที่ต้องแก้,done
 ROPA-11,ROPA,แบบสอบถามเก็บข้อมูลจากหน่วยงาน,Data mapping questionnaire,Should,P3,Workflow,ม.39,DPO OWNER,M,S,N,5,3,1.0,0,2.8,"PLT-06, ROPA-03",BP-05,docs/modules/ROPA.md#ropa-11,คำตอบที่อนุมัติแล้วเข้า RoPA อัตโนมัติ,todo
-ROPA-12,ROPA,ถาม-ตอบกับ DPO หรือที่ปรึกษา,Activity Q&A,Should,P3,Workflow,แนวปฏิบัติตลาด,OWNER DPO,XS,S,N,1,3,0.5,0,1.4,PLT-07,BP-05,docs/modules/ROPA.md#ropa-12,คำถามที่ยังไม่ตอบแสดงในรายการงานของผู้รับ,todo
+ROPA-12,ROPA,ถาม-ตอบกับ DPO หรือที่ปรึกษา,Activity Q&A,Should,P3,Workflow,แนวปฏิบัติตลาด,OWNER DPO,XS,S,N,1,3,0.5,0,1.4,PLT-07,BP-05,docs/modules/ROPA.md#ropa-12,คำถามที่ยังไม่ตอบแสดงในรายการงานของผู้รับ,done
 ROPA-14,ROPA,วงจรชีวิตของกิจกรรม,Activity lifecycle,Should,P3,Workflow,ม.39,OWNER,S,XS,N,3,1,0.5,0,1.4,ROPA-03,BP-05,docs/modules/ROPA.md#ropa-14,กิจกรรมที่สิ้นสุดไม่ปรากฏในรายงานปัจจุบันแต่ค้นย้อนหลังได้,done
 ROPA-15,ROPA,แจ้งเตือนทบทวน RoPA ตามรอบ,Periodic review reminder,Should,P3,Workflow,ม.39,SCHED OWNER,S,XS,N,3,1,0.5,0,1.4,PLT-10,BP-05,docs/modules/ROPA.md#ropa-15,เจ้าของกิจกรรมได้รับงานทบทวนตามรอบ,done
 ROPA-17,ROPA,แดชบอร์ด RoPA,RoPA dashboard,Should,P3,รายงาน,แนวปฏิบัติตลาด,DPO EXEC,S,M,Y,3,5,1.0,2.0,2.8,PLT-18,BP-05,docs/modules/ROPA.md#ropa-17,ตัวเลขใน dashboard ตรงกับทะเบียน,todo

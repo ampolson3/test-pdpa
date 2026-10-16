@@ -1356,6 +1356,10 @@
     "closeImport": "Close import",
     "importHint": "Upload an .xlsx/.csv with one row per activity (code, name, legal entity, department, purpose, lawful basis, data category, subject type, retention). Legal entity/department/master-data columns are fuzzy-matched by name.",
     "exportProcessorRopa": "Export processor RoPA (CSV)",
+    "myOpenQuestions": {
+      "title": "Questions waiting on you",
+      "askedBy": "Asked by {name}"
+    },
     "filterStatus": "Status",
     "allStatuses": "All statuses",
     "filterUnit": "Department",
@@ -1428,7 +1432,8 @@
       "rejections": "DSAR rejections (ม.39(7))",
       "riskScore": "Risk score (RRA-01)",
       "suggestions": "Suggested defaults from a standard activity (RTG-06)",
-      "gaps": "Legal gaps (RRA-04)"
+      "gaps": "Legal gaps (RRA-04)",
+      "qa": "Q&A with the DPO or an advisor"
     },
     "gaps": {
       "analyze": "Check for gaps",

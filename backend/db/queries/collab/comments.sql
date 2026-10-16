@@ -33,6 +33,14 @@ DELETE FROM platform.comments c
 WHERE c.id = @id AND c.row_version = @row_version AND c.author_id = @author_id
   AND NOT EXISTS (SELECT 1 FROM platform.comments r WHERE r.parent_id = c.id);
 
+-- name: ListOpenQuestionsForUser :many
+-- Unresolved top-level comments of one record type that @mention this user (ROPA-12's open-question task list).
+SELECT id, entity_type, entity_id, parent_id, author_id, body, mentions, resolved_at, row_version, created_at, updated_at
+FROM platform.comments
+WHERE entity_type = @entity_type AND parent_id IS NULL AND resolved_at IS NULL AND @user_id::uuid = ANY(mentions)
+ORDER BY created_at
+LIMIT 200;
+
 -- name: ListRecordAttachments :many
 SELECT id, file_name, mime_type, size_bytes, av_status, created_at, created_by
 FROM platform.files WHERE entity_type = @entity_type AND entity_id = @entity_id

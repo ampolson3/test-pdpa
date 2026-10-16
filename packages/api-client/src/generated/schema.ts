@@ -3135,6 +3135,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/activities/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Open (unanswered) Q&A questions on any activity that @mention the caller (ROPA-12)
+         * @description Every unresolved top-level comment on a ropa_activity record naming the caller in its @mentions — the caller's own open-question task list.
+         */
+        get: operations["ropaMyOpenQuestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/activities/{id}": {
         parameters: {
             query?: never;
@@ -8044,6 +8064,16 @@ export interface components {
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
             updated_at: components["schemas"]["Timestamp"];
+        };
+        RopaOpenQuestion: {
+            comment_id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            activity_code: string;
+            activity_name: string;
+            author_id: components["schemas"]["Uuid"];
+            author_name: string;
+            body: string;
+            created_at: components["schemas"]["Timestamp"];
         };
         Attachment: {
             id: components["schemas"]["Uuid"];
@@ -16758,6 +16788,33 @@ export interface operations {
                 };
                 content: {
                     "text/csv": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaMyOpenQuestions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RopaOpenQuestion"][];
+                    };
                 };
             };
             401: components["responses"]["Unauthorized"];

@@ -35,6 +35,7 @@ export type ProcessingActivityWizardRetention = components["schemas"]["Processin
 export type ProcessingActivityWizardRecipientKind = components["schemas"]["ProcessingActivityWizardRecipientKind"];
 export type ActivityVersion = components["schemas"]["ActivityVersion"];
 export type ActivityVersionDiff = components["schemas"]["ActivityVersionDiff"];
+export type RopaOpenQuestion = components["schemas"]["RopaOpenQuestion"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const activitiesKey = ["ropa", "activities"] as const;
@@ -436,4 +437,16 @@ export function useActivityMutations(client: ApiClient, id?: string) {
       onSuccess: refresh,
     }),
   };
+}
+
+/** ROPA-12: the caller's own open (unanswered) Q&A questions across every activity — a task list. */
+export function useMyOpenQuestions(client: ApiClient) {
+  return useQuery({
+    queryKey: [...activitiesKey, "questions", "mine"],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/activities/questions", {});
+      if (error) throw error;
+      return data.data;
+    },
+  });
 }

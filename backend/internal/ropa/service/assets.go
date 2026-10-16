@@ -23,6 +23,7 @@ import (
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/collab"
 	"pdpa-platform/internal/platform/notify"
 	riskservice "pdpa-platform/internal/risk/service"
 	ropastore "pdpa-platform/internal/ropa/store"
@@ -37,6 +38,7 @@ var classifications = []string{"public", "internal", "confidential", "restricted
 
 var (
 	ErrNotFound        = errors.New("ropa: not found")
+	ErrForbidden       = errors.New("ropa: not allowed")
 	ErrInvalid         = errors.New("ropa: invalid input")
 	ErrVersionMismatch = errors.New("ropa: version mismatch")
 )
@@ -83,6 +85,9 @@ type Service struct {
 	// Notify and River drive ROPA-15's periodic review reminder; nil in contexts that don't need them.
 	Notify *notify.Service
 	River  *river.Client[pgx.Tx]
+	// Collab is PLT-07's shared comment/mention layer, reused as-is for ROPA-12's activity Q&A; nil in
+	// contexts that never read/write questions (e.g. the worker's own review-reminder jobs).
+	Collab *collab.Service
 	// Now is the clock (injectable for deadline tests); nil means time.Now.
 	Now func() time.Time
 }

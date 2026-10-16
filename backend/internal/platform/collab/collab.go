@@ -79,6 +79,8 @@ func (s *Service) FilePermissions() map[string]string {
 // Comment is a comment with its author's name resolved.
 type Comment struct {
 	ID         uuid.UUID
+	EntityType string
+	EntityID   uuid.UUID
 	ParentID   *uuid.UUID
 	AuthorID   uuid.UUID
 	AuthorName string
@@ -131,6 +133,28 @@ func (s *Service) Comments(ctx context.Context, entityType string, entityID uuid
 		return nil, err
 	}
 	rows, err := collabstore.New(pdb.MustTxFromContext(ctx)).ListComments(ctx, collabstore.ListCommentsParams{EntityType: entityType, EntityID: entityID})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Comment, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toComment(collabstore.GetCommentRow(r)))
+	}
+	return out, s.withNames(ctx, out)
+}
+
+// OpenQuestionsFor is the caller's own open-question task list (ROPA-12): every unresolved top-level
+// comment of entityType that @mentions userID, across every record of that type — not just one. Being
+// named in a comment's own mentions already proves the author could see the user, so this skips the
+// per-record Exists check Comments/authorize make for a single known record; RLS still scopes it to the
+// caller's own tenant.
+func (s *Service) OpenQuestionsFor(ctx context.Context, entityType string, userID uuid.UUID) ([]Comment, error) {
+	if _, ok := s.Policies[entityType]; !ok {
+		return nil, ErrUnknownType
+	}
+	rows, err := collabstore.New(pdb.MustTxFromContext(ctx)).ListOpenQuestionsForUser(ctx, collabstore.ListOpenQuestionsForUserParams{
+		EntityType: entityType, UserID: userID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -416,7 +440,8 @@ func plainExcerpt(body string) string {
 
 func toComment(r collabstore.GetCommentRow) Comment {
 	c := Comment{
-		ID: r.ID, AuthorID: r.AuthorID, Body: r.Body, Mentions: r.Mentions, Resolved: r.ResolvedAt.Valid,
+		ID: r.ID, EntityType: r.EntityType, EntityID: r.EntityID, AuthorID: r.AuthorID, Body: r.Body,
+		Mentions: r.Mentions, Resolved: r.ResolvedAt.Valid,
 		RowVersion: r.RowVersion, CreatedAt: r.CreatedAt.Time, UpdatedAt: r.UpdatedAt.Time,
 	}
 	if r.ParentID.Valid {
