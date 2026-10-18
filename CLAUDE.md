@@ -3037,6 +3037,43 @@ RLS hides every row from a connection with no `app.tenant_id` set. `go build ./.
 identically without this change), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test`
 and `pnpm --filter @pdpa/admin build` all verified clean.
 
+### VEN-03 ผู้ประมวลผลช่วง (`docs/modules/VEN.md#ven-03`) — done
+`internal/vendormgmt/service/sub_processors.go` (`vendor.vendor.{read,create,update,delete}`, shared with
+every other vendor-record write — no new permission code): `vendor.sub_processors` was already fully
+specified in the baseline migrations, unused until now. `AddSubProcessor` is plain CRUD on the two checks
+this module already had — the vendor visible under RLS (rule 1, `GetVendor`) and the sub-processor's own
+external party (`Org.GetExternalParty`) — and every new row always starts `status = "pending"` (the
+schema's own default): the acceptance criterion's own data half, since nothing can ever be created
+already-approved. It also alerts every DPO at once (`alertSubProcessorAdded`, the same synchronous
+`iamservice.UsersWithRole("DPO")` + in_app/email pattern BRE's own incident `alert` already uses — not a
+background sweep, since there's nothing time-based to wait for here) via a new `vendor.sub_processor_added`
+template (migration 00076, th/en × in_app/email, operational text, no DRAFT marker — rule 8 is about
+legal/notice wording, not this).
+
+`DecideSubProcessor` approves or rejects a still-`pending` row and needs `vendor.vendor.approve` beyond the
+endpoint's own `vendor.vendor.update` — checked directly against `authz.FromContext(ctx)`, the same
+permanent-decision permission VEN-14's own terminate and ORG-06/DPIA-03's own permanent status changes
+already reuse rather than minting a new code. The UI-facing half of the acceptance criterion
+("ที่ยังไม่อนุมัติแสดงเตือน") needs no special endpoint: `ListSubProcessors` always returns every row's own
+`status`, so a still-pending one is never hidden from the admin UI's own warning badge. Deliberately no
+state-machine entry: a flat `pending -> approved | rejected` has no further edges to encode.
+
+API: `GET`/`POST /admin/v1/vendors/{id}/sub-processors`,
+`POST /admin/v1/vendors/{id}/sub-processors/{subProcessorId}/decision` (ETag/If-Match). UI: a
+"Sub-processors" section on `/vendors/{id}` — a list with an amber "not yet approved" warning on pending
+rows, approve/reject buttons gated on `vendor.vendor.approve`, and a record form (external-party picker
+reusing the page's own `useExternalParties` list, service, comma-separated countries). Tests:
+`internal/vendormgmt/service/sub_processors_test.go` — the acceptance criterion directly (a new
+sub-processor always starts pending and alerts every DPO user; validation — unknown vendor, unknown party,
+empty service; `DecideSubProcessor` refused without `vendor.vendor.approve`, on a bad decision value, on a
+stale ETag, and on a second decision against an already-decided row; a real decision sets
+`approved_by`/`approved_at`), two-tenant isolation of both the list and a cross-tenant decide attempt. A
+real sqlc gotcha hit again here (same shape BRE-15/VEN-06 already found): every `sub_processors.sql` query
+shares one column layout but sqlc generates a distinct named Row type per query, so `toSubProcessor`
+converts through a local `subProcessorRow` mirror rather than reusing any one query's own generated type.
+`go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `pnpm --filter @pdpa/api-client
+typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

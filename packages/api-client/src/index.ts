@@ -66,6 +66,9 @@ export {
   useVendorCertificates,
   useAddVendorCertificate,
   useDeleteVendorCertificate,
+  useVendorSubProcessors,
+  useAddVendorSubProcessor,
+  useDecideVendorSubProcessor,
   type Vendor,
   type VendorInput,
   type VendorStatus,
@@ -82,6 +85,8 @@ export {
   type VendorOffboardingInput,
   type VendorCertificate,
   type VendorCertificateInput,
+  type VendorSubProcessor,
+  type VendorSubProcessorInput,
 } from "./vendors";
 export {
   useRetentionSchedules,

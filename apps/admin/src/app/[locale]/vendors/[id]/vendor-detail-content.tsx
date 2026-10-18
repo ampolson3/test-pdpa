@@ -24,6 +24,9 @@ import {
   useVendorCertificates,
   useAddVendorCertificate,
   useDeleteVendorCertificate,
+  useVendorSubProcessors,
+  useAddVendorSubProcessor,
+  useDecideVendorSubProcessor,
   useDpiaTemplates,
   useForm,
   type VendorDecideAssessmentInput,
@@ -192,6 +195,7 @@ export function VendorDetailContent({ id }: { id: string }) {
       <IntakePanel client={client} vendorId={v.id} canUpdate={canUpdate} />
       <AssessmentPanel client={client} vendorId={v.id} />
       <CertificatePanel client={client} vendorId={v.id} canUpdate={canUpdate} />
+      <SubProcessorPanel client={client} vendorId={v.id} canUpdate={canUpdate} />
       {(v.status === "approved" || v.status === "conditional" || v.status === "offboarding" || v.status === "terminated") && (
         <OffboardingPanel client={client} vendorId={v.id} status={v.status} rowVersion={v.row_version} />
       )}
@@ -544,6 +548,97 @@ function CertificatePanel({
         </div>
       ) : (
         <Button variant="secondary" onClick={() => setOpen(true)}>{t("detail.certificates.add")}</Button>
+      ))}
+    </section>
+  );
+}
+
+/** VEN-03's own acceptance criterion ("ผู้ประมวลผลช่วงที่ยังไม่อนุมัติแสดงเตือน"): every sub-processor starts
+ *  pending and alerts the DPO team at once — this panel lists each one's own status with a warning badge on
+ *  anything still pending, plus the record form and the DPO-only approve/reject decision. */
+function SubProcessorPanel({
+  client, vendorId, canUpdate,
+}: { client: ReturnType<typeof createApiClient>; vendorId: string; canUpdate: boolean }) {
+  const t = useTranslations("vendors");
+  const canApprove = usePermission("vendor.vendor.approve");
+  const parties = useExternalParties(client);
+  const list = useVendorSubProcessors(client, vendorId);
+  const add = useAddVendorSubProcessor(client, vendorId);
+  const decide = useDecideVendorSubProcessor(client, vendorId);
+  const [open, setOpen] = useState(false);
+  const [partyId, setPartyId] = useState("");
+  const [service, setService] = useState("");
+  const [countries, setCountries] = useState("");
+
+  const rows = list.data?.data ?? [];
+  const partyRows = parties.data?.pages.flatMap((p) => p.data) ?? [];
+
+  const submit = () => {
+    if (!partyId) return;
+    add.mutate(
+      { party_id: partyId, service, countries: countries.split(",").map((c) => c.trim()).filter(Boolean) },
+      { onSuccess: () => { setOpen(false); setPartyId(""); setService(""); setCountries(""); } },
+    );
+  };
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.subProcessors.title")}</h2>
+
+      {rows.length === 0 ? <p className="text-slate-500">{t("detail.subProcessors.empty")}</p> : (
+        <ul className="divide-y divide-slate-100 text-sm">
+          {rows.map((sp) => {
+            const party = partyRows.find((p) => p.id === sp.party_id);
+            return (
+              <li key={sp.id} className="space-y-1 py-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{party?.name_th ?? sp.party_id}</span>
+                  <span className="text-slate-500">{sp.service}</span>
+                  <span className="text-xs text-slate-500">{sp.countries.join(", ")}</span>
+                  <span className={`rounded px-2 py-0.5 text-xs font-semibold ${sp.status === "pending" ? "bg-amber-100 text-amber-800" : sp.status === "approved" ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"}`}>
+                    {t(`detail.subProcessors.statuses.${sp.status}`)}
+                  </span>
+                </div>
+                {sp.status === "pending" && (
+                  <p className="text-xs text-amber-800" role="alert">{t("detail.subProcessors.unapprovedWarning")}</p>
+                )}
+                {sp.status === "pending" && canApprove && (
+                  <div className="flex gap-2">
+                    <Button onClick={() => decide.mutate({ subProcessorId: sp.id, rowVersion: sp.row_version, decision: "approved" })} disabled={decide.isPending}>
+                      {t("detail.subProcessors.approve")}
+                    </Button>
+                    <Button variant="secondary" onClick={() => decide.mutate({ subProcessorId: sp.id, rowVersion: sp.row_version, decision: "rejected" })} disabled={decide.isPending}>
+                      {t("detail.subProcessors.reject")}
+                    </Button>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {decide.isError && <p className="text-red-700" role="alert">{t("detail.subProcessors.decideError", { detail: detail(decide.error) })}</p>}
+
+      {canUpdate && (open ? (
+        <div className="space-y-2 border-t border-slate-100 pt-3">
+          <label className="block"><span className="block text-slate-600">{t("detail.subProcessors.party")}</span>
+            <select className={SELECT} value={partyId} onChange={(e) => setPartyId(e.target.value)}>
+              <option value="">—</option>
+              {partyRows.map((p) => <option key={p.id} value={p.id}>{p.name_th}</option>)}
+            </select>
+          </label>
+          <label className="block"><span className="block text-slate-600">{t("detail.subProcessors.service")}</span>
+            <input className={INPUT} value={service} onChange={(e) => setService(e.target.value)} /></label>
+          <label className="block"><span className="block text-slate-600">{t("detail.subProcessors.countries")}</span>
+            <input className={INPUT} value={countries} onChange={(e) => setCountries(e.target.value)} /></label>
+          {add.isError && <p className="text-red-700" role="alert">{t("detail.subProcessors.saveError", { detail: detail(add.error) })}</p>}
+          <div className="flex gap-2">
+            <Button onClick={submit} disabled={add.isPending || !partyId || !service}>{t("detail.subProcessors.add")}</Button>
+            <Button variant="secondary" onClick={() => setOpen(false)}>{t("form.cancel")}</Button>
+          </div>
+        </div>
+      ) : (
+        <Button variant="secondary" onClick={() => setOpen(true)}>{t("detail.subProcessors.add")}</Button>
       ))}
     </section>
   );

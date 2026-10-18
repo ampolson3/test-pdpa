@@ -1102,6 +1102,25 @@
         "remove": "ลบ",
         "saveError": "บันทึกไม่สำเร็จ: {detail}",
         "expiresOn": "หมดอายุ {date}"
+      },
+      "subProcessors": {
+        "title": "ผู้ประมวลผลช่วง (VEN-03)",
+        "empty": "ยังไม่มีผู้ประมวลผลช่วงในระบบ",
+        "party": "ผู้ประมวลผลช่วง",
+        "service": "บริการ",
+        "countries": "ประเทศ",
+        "status": "สถานะ",
+        "statuses": {
+          "pending": "รออนุมัติ",
+          "approved": "อนุมัติแล้ว",
+          "rejected": "ปฏิเสธ"
+        },
+        "unapprovedWarning": "ยังไม่ได้รับอนุมัติให้ใช้งาน",
+        "add": "เพิ่มผู้ประมวลผลช่วง",
+        "approve": "อนุมัติ",
+        "reject": "ปฏิเสธ",
+        "saveError": "บันทึกไม่สำเร็จ: {detail}",
+        "decideError": "ตัดสินใจไม่สำเร็จ: {detail}"
       }
     }
   },

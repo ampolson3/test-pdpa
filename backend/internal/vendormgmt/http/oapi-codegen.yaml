@@ -18,6 +18,9 @@ output-options:
     - vendorListCertificates
     - vendorAddCertificate
     - vendorDeleteCertificate
+    - vendorListSubProcessors
+    - vendorAddSubProcessor
+    - vendorDecideSubProcessor
     - vendorGetOffboarding
     - vendorUpdateOffboarding
     - vendorTransitionVendor

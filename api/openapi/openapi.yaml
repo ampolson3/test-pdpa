@@ -13114,6 +13114,130 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/vendors/{id}/sub-processors:
+    get:
+      operationId: vendorListSubProcessors
+      tags: [vendor]
+      summary: A vendor's own sub-processors (VEN-03, ม.40) — unapproved ones need to be flagged by the UI
+      x-permission: vendor.vendor.read
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VendorSubProcessor'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: vendorAddSubProcessor
+      tags: [vendor]
+      summary: Record a sub-processor the vendor uses — starts pending; approval is a separate decision (VEN-03)
+      x-permission: vendor.vendor.update
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorSubProcessorInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorSubProcessor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/vendors/{id}/sub-processors/{subProcessorId}/decision:
+    post:
+      operationId: vendorDecideSubProcessor
+      tags: [vendor]
+      summary: Approve or reject a pending sub-processor before it is used (VEN-03)
+      x-permission: vendor.vendor.approve
+      x-module: vendor
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: subProcessorId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VendorSubProcessorDecisionInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VendorSubProcessor'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/vendors/{id}/offboarding:
     get:
       operationId: vendorGetOffboarding
@@ -17324,6 +17448,38 @@ components:
           description: Schedules this feature's own expiry-reminder checkpoint (VEN-06)
           type: string
           format: date
+    VendorSubProcessor:
+      type: object
+      required: [id, vendor_id, party_id, service, countries, status, row_version, created_at, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        vendor_id: {$ref: '#/components/schemas/Uuid'}
+        party_id: {$ref: '#/components/schemas/Uuid'}
+        service: {type: string, maxLength: 2000}
+        countries:
+          type: array
+          items: {type: string, minLength: 2, maxLength: 2}
+        status: {type: string, enum: [pending, approved, rejected]}
+        approved_by:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        approved_at: {type: [string, 'null'], format: date-time}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
+    VendorSubProcessorInput:
+      type: object
+      required: [party_id, service]
+      properties:
+        party_id: {$ref: '#/components/schemas/Uuid'}
+        service: {type: string, maxLength: 2000}
+        countries:
+          type: array
+          items: {type: string, minLength: 2, maxLength: 2}
+    VendorSubProcessorDecisionInput:
+      type: object
+      required: [decision]
+      properties:
+        decision: {type: string, enum: [approved, rejected]}
     VendorDecideAssessmentResult:
       type: object
       required: [assessment, remediation_items]

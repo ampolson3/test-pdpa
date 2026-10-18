@@ -1102,6 +1102,25 @@
         "remove": "Remove",
         "saveError": "Couldn't save: {detail}",
         "expiresOn": "Expires {date}"
+      },
+      "subProcessors": {
+        "title": "Sub-processors (VEN-03)",
+        "empty": "No sub-processors recorded yet.",
+        "party": "Sub-processor",
+        "service": "Service",
+        "countries": "Countries",
+        "status": "Status",
+        "statuses": {
+          "pending": "Pending approval",
+          "approved": "Approved",
+          "rejected": "Rejected"
+        },
+        "unapprovedWarning": "Not yet approved for use",
+        "add": "Record sub-processor",
+        "approve": "Approve",
+        "reject": "Reject",
+        "saveError": "Couldn't save: {detail}",
+        "decideError": "Couldn't decide: {detail}"
       }
     }
   },

@@ -4455,6 +4455,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/vendors/{id}/sub-processors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A vendor's own sub-processors (VEN-03, ม.40) — unapproved ones need to be flagged by the UI */
+        get: operations["vendorListSubProcessors"];
+        put?: never;
+        /** Record a sub-processor the vendor uses — starts pending; approval is a separate decision (VEN-03) */
+        post: operations["vendorAddSubProcessor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/vendors/{id}/sub-processors/{subProcessorId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve or reject a pending sub-processor before it is used (VEN-03) */
+        post: operations["vendorDecideSubProcessor"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/vendors/{id}/offboarding": {
         parameters: {
             query?: never;
@@ -6378,6 +6413,30 @@ export interface components {
              * @description Schedules this feature's own expiry-reminder checkpoint (VEN-06)
              */
             valid_to?: string;
+        };
+        VendorSubProcessor: {
+            id: components["schemas"]["Uuid"];
+            vendor_id: components["schemas"]["Uuid"];
+            party_id: components["schemas"]["Uuid"];
+            service: string;
+            countries: string[];
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected";
+            approved_by?: components["schemas"]["Uuid"] | null;
+            /** Format: date-time */
+            approved_at?: string | null;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        VendorSubProcessorInput: {
+            party_id: components["schemas"]["Uuid"];
+            service: string;
+            countries?: string[];
+        };
+        VendorSubProcessorDecisionInput: {
+            /** @enum {string} */
+            decision: "approved" | "rejected";
         };
         VendorDecideAssessmentResult: {
             assessment: components["schemas"]["VendorAssessment"];
@@ -20106,6 +20165,110 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    vendorListSubProcessors: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["VendorSubProcessor"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    vendorAddSubProcessor: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorSubProcessorInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorSubProcessor"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    vendorDecideSubProcessor: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                subProcessorId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VendorSubProcessorDecisionInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VendorSubProcessor"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     vendorGetOffboarding: {

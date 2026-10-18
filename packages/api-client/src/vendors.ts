@@ -17,6 +17,8 @@ export type VendorOffboarding = components["schemas"]["VendorOffboarding"];
 export type VendorOffboardingInput = components["schemas"]["VendorOffboardingInput"];
 export type VendorCertificate = components["schemas"]["VendorCertificate"];
 export type VendorCertificateInput = components["schemas"]["VendorCertificateInput"];
+export type VendorSubProcessor = components["schemas"]["VendorSubProcessor"];
+export type VendorSubProcessorInput = components["schemas"]["VendorSubProcessorInput"];
 
 const vendorsKey = ["vendor", "vendors"] as const;
 
@@ -260,5 +262,52 @@ export function useDeleteVendorCertificate(client: ApiClient, vendorId: string) 
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "certificates"] }),
+  });
+}
+
+/** GET /admin/v1/vendors/{id}/sub-processors (VEN-03) — every row carries its own status so the UI can
+ *  flag the ones not yet approved. */
+export function useVendorSubProcessors(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, vendorId ?? "", "sub-processors"],
+    enabled: !!vendorId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/vendors/{id}/sub-processors", { params: { path: { id: vendorId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/sub-processors — always starts "pending"; alerts the DPO team at once. */
+export function useAddVendorSubProcessor(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: VendorSubProcessorInput) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/sub-processors", {
+        params: { path: { id: vendorId } },
+        body: input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "sub-processors"] }),
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/sub-processors/{subProcessorId}/decision — approve or reject a pending
+ *  sub-processor before it is used (If-Match on the sub-processor's own row). */
+export function useDecideVendorSubProcessor(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { subProcessorId: string; rowVersion: number; decision: "approved" | "rejected" }) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/sub-processors/{subProcessorId}/decision", {
+        params: { path: { id: vendorId, subProcessorId: v.subProcessorId }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: { decision: v.decision },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "sub-processors"] }),
   });
 }
