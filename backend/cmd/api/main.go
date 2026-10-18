@@ -304,6 +304,7 @@ func run() error {
 	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc, Audit: auditSvc, PDF: render.FromEnv(), Risk: riskSvc} // DPIA-01/02: screening on the "assessment" form type; DPIA-04: RoPA-sourced description; DPIA-15: PDF/Word report; DPIA-06: risk identification & scoring
 	riskSvc.DpiaTrigger = dpiaSvc                                                                                                       // RRA-03: a high/very_high risk score opens a DPIA round
 	vendorSvc.Dpia, vendorSvc.Risk = dpiaSvc, riskSvc                                                                                   // VEN-07: answer a VEN-04 template and classify the score on the tenant's own risk matrix
+	dpoSvc.Dpia = dpiaSvc                                                                                                               // DPO-02: ม.41(2) requirement-check screening via dpia's generic ScreenSubject
 	vendorSvc.Events = &events.Publisher{River: riverClient}                                                                            // VEN-08: publish "vendor.approved" on a clean approval
 	ropaSvc.Dpia = wiring.RopaDpia{Dpia: dpiaSvc}                                                                                       // DPX-06: run a transfer impact assessment (TIA) against a logged cross-border transfer
 	// DPIA-14: comments, attachments and an activity feed (PLT-07) on the assessment, satisfying the "ผู้แก้ไข

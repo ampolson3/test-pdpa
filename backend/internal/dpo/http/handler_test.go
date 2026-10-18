@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
+	dpiaservice "pdpa-platform/internal/dpia/service"
 	dpohttp "pdpa-platform/internal/dpo/http"
 	dposervice "pdpa-platform/internal/dpo/service"
 	orgservice "pdpa-platform/internal/org/service"
@@ -422,5 +423,169 @@ func TestTaskEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("POST", item+"/status", &noAccess, map[string]string{"status": "done"}, map[string]string{"If-Match": `"2"`}); code != 403 {
 		t.Errorf("update without any dpo.task permission: %d, want 403", code)
+	}
+}
+
+// TestRequirementCheckEndpoints_Contract is DPO-02's own HTTP contract test: 401/403/201/200/422 through the
+// real validator + AuthZ chain. The global "dpo_requirement_check" screening template (migration 00077) needs
+// no fixture creation — it's already published and visible to every tenant.
+func TestRequirementCheckEndpoints_Contract(t *testing.T) {
+	ctx := context.Background()
+	rdb := redis.NewClient(&redis.Options{Addr: envOr("TEST_REDIS_ADDR", "localhost:6379")})
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		t.Skipf("no Redis: %v", err)
+	}
+	t.Cleanup(func() { rdb.Close() })
+	app := dbtest.Pool(t)
+	tenant := dbtest.SeedTenant(t, ctx, app, dbtest.PlatformPool(t), "dporeqhttp")
+
+	owner := dbtest.OwnerPool(t)
+	t.Cleanup(func() {
+		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
+			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM dpo.requirement_checks`)
+			_, _ = tx.Exec(ctx, `DELETE FROM assess.answers`)
+			_, _ = tx.Exec(ctx, `DELETE FROM assess.assessments`)
+			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
+			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
+			return err
+		})
+	})
+	orgSvc := &orgservice.Service{Audit: audit.New()}
+	formsSvc := wiring.Forms(nil, audit.New())
+	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Audit: audit.New()}
+	svc := &dposervice.Service{Audit: audit.New(), Org: orgSvc, Forms: formsSvc, Dpia: dpiaSvc}
+
+	var legalEntity uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
+			Permissions: []string{"org.structure.create"}})
+		e, err := orgSvc.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ทดสอบ 2 จำกัด", IsController: true}, 0)
+		legalEntity = e.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	validateMw, _ := validate.Middleware(spec, nil)
+	perms := map[string]string{}
+	for _, item := range spec.Paths.Map() {
+		for _, op := range item.Operations() {
+			if code, ok := op.Extensions["x-permission"].(string); ok {
+				perms[strings.ToUpper(op.OperationID[:1])+op.OperationID[1:]] = code
+			}
+		}
+	}
+	other := uuid.New()
+	grants := map[string][]string{
+		tenant.UserID.String(): {"dpo.profile.read", "dpo.profile.create", "assessment.template.read"},
+		other.String():         {"dpo.profile.read", "assessment.template.read"},
+	}
+	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
+		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
+	})
+	t.Cleanup(func() {
+		for uid := range grants {
+			_ = cache.Invalidate(context.Background(), tenant.ID.String(), uid)
+		}
+	})
+
+	r := chi.NewRouter()
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if u := req.Header.Get("X-Test-User"); u != "" {
+				req = req.WithContext(httpx.WithPrincipal(req.Context(), httpx.Principal{TenantID: tenant.ID.String(), UserID: u, ActorType: "user"}))
+			}
+			next.ServeHTTP(w, req)
+		})
+	})
+	r.Use(validateMw)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			p, ok := httpx.PrincipalFromContext(req.Context())
+			if !ok {
+				next.ServeHTTP(w, req)
+				return
+			}
+			_ = pdb.WithTenantTx(req.Context(), app, p.TenantID, p.UserID, func(ctx context.Context) error {
+				next.ServeHTTP(w, req.WithContext(ctx))
+				return nil
+			})
+		})
+	})
+	strict := dpohttp.NewStrictHandlerWithOptions(dpohttp.NewStrict(svc),
+		[]dpohttp.StrictMiddlewareFunc{authz.StrictMiddleware[dpohttp.StrictHandlerFunc](cache, func(op string) (string, bool) { c, ok := perms[op]; return c, ok })},
+		dpohttp.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				if p, ok := err.(httpx.Problem); ok {
+					httpx.WriteProblem(w, r, p)
+					return
+				}
+				httpx.WriteProblem(w, r, httpx.Internal())
+			},
+		})
+	dpohttp.HandlerWithOptions(strict, dpohttp.ChiServerOptions{BaseRouter: r})
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	do := func(method, path string, user *uuid.UUID, body any, headers map[string]string) (int, string) {
+		var buf bytes.Buffer
+		if body != nil {
+			_ = json.NewEncoder(&buf).Encode(body)
+		}
+		req, _ := http.NewRequest(method, srv.URL+path, &buf)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if user != nil {
+			req.Header.Set("X-Test-User", user.String())
+		}
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		var out bytes.Buffer
+		_, _ = out.ReadFrom(res.Body)
+		return res.StatusCode, out.String()
+	}
+	admin, viewer := tenant.UserID, other
+	in := map[string]any{"legal_entity_id": legalEntity, "answers": map[string]any{
+		"public_authority": "no", "large_scale_processing": "yes", "regular_monitoring": "no", "sensitive_or_criminal_core": "no"}}
+
+	if code, _ := do("POST", "/admin/v1/dpo/requirement-checks", nil, in, nil); code != 401 {
+		t.Errorf("no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", "/admin/v1/dpo/requirement-checks", &viewer, in, nil); code != 403 {
+		t.Errorf("create with read permission only: %d, want 403", code)
+	}
+	if code, body := do("POST", "/admin/v1/dpo/requirement-checks", &admin, map[string]any{"legal_entity_id": uuid.New(),
+		"answers": map[string]any{"public_authority": "no", "large_scale_processing": "no", "regular_monitoring": "no", "sensitive_or_criminal_core": "no"}}, nil); code != 422 || !strings.Contains(body, "dpo.invalid_input") {
+		t.Errorf("unknown legal entity: %d %s, want 422", code, body)
+	}
+	code, body := do("POST", "/admin/v1/dpo/requirement-checks", &admin, in, nil)
+	if code != 201 || !strings.Contains(body, `"result":"required"`) {
+		t.Fatalf("create: %d %s", code, body)
+	}
+	var created dpohttp.DpoRequirementCheck
+	_ = json.Unmarshal([]byte(body), &created)
+	if created.Basis == "" {
+		t.Error("basis reason is empty")
+	}
+	if code, _ := do("GET", "/admin/v1/dpo/requirement-checks?legal_entity_id="+legalEntity.String(), nil, nil, nil); code != 401 {
+		t.Errorf("list no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", "/admin/v1/dpo/requirement-checks?legal_entity_id="+legalEntity.String(), &viewer, nil, nil); code != 200 || !strings.Contains(body, created.Id.String()) {
+		t.Errorf("list: %d %s", code, body)
 	}
 }

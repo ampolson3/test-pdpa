@@ -69,7 +69,10 @@ func setup(t *testing.T, suffix string) env {
 var securityPerms = []string{"dpo.profile.read", "dpo.profile.create", "dpo.profile.update",
 	"dpo.risk.read", "dpo.risk.create", "dpo.risk.update", "dpo.risk.approve",
 	// only needed by TestAssess_RejectsNonSecurityForm, to publish a form of a different type
-	"ropa.template.read", "ropa.template.create", "ropa.template.update", "ropa.template.publish"}
+	"ropa.template.read", "ropa.template.create", "ropa.template.update", "ropa.template.publish",
+	// DPO-02: AssessDpoRequirement reads the global "dpo_check" screening form via dpia's own ScreenSubject,
+	// which needs read access on the "assessment" form type (wiring.Forms' own policy for it).
+	"assessment.template.read"}
 
 // in runs fn as the tenant's admin in one transaction (as the Tx middleware would).
 func (e env) in(t *testing.T, fn func(ctx context.Context) error) {

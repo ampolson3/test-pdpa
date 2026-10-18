@@ -3655,6 +3655,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpo/requirement-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every ม.41(2) DPO-requirement screening round for a legal entity, newest first (DPO-02) */
+        get: operations["dpoListRequirementChecks"];
+        put?: never;
+        /** Answer the ม.41(2) / 2023 PDPC-notice DPO-appointment checklist for a legal entity (DPO-02) */
+        post: operations["dpoAssessRequirementCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpo/appointments": {
         parameters: {
             query?: never;
@@ -6799,6 +6817,35 @@ export interface components {
             ended_at?: string | null;
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * @example {
+         *       "legal_entity_id": "00000000-0000-0000-0000-000000000000",
+         *       "answers": {
+         *         "public_authority": "no",
+         *         "large_scale_processing": "no",
+         *         "regular_monitoring": "no",
+         *         "sensitive_or_criminal_core": "no"
+         *       }
+         *     }
+         */
+        DpoRequirementCheckInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            /** @description Answers keyed by the checklist's question codes (public_authority, large_scale_processing, regular_monitoring, sensitive_or_criminal_core), each "yes" or "no" */
+            answers: {
+                [key: string]: unknown;
+            };
+        };
+        DpoRequirementCheck: {
+            id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            assessment_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            result: "required" | "not_required";
+            basis: string;
+            assessed_at: components["schemas"]["Timestamp"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
         };
         DpoRemediationTask: {
             id: components["schemas"]["Uuid"];
@@ -18085,6 +18132,67 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    dpoListRequirementChecks: {
+        parameters: {
+            query: {
+                legal_entity_id: components["schemas"]["Uuid"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpoRequirementCheck"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dpoAssessRequirementCheck: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpoRequirementCheckInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoRequirementCheck"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     dpoListAppointments: {

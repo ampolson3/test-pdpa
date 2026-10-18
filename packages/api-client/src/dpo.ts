@@ -7,11 +7,42 @@ export type DpoType = components["schemas"]["DpoType"];
 export type DpoSecurityAssessment = components["schemas"]["DpoSecurityAssessment"];
 export type DpoRemediationTask = components["schemas"]["DpoRemediationTask"];
 export type DpoDeadlineItem = components["schemas"]["DpoDeadlineItem"];
+export type DpoRequirementCheck = components["schemas"]["DpoRequirementCheck"];
+export type DpoRequirementCheckInput = components["schemas"]["DpoRequirementCheckInput"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const appointmentsKey = ["dpo", "appointments"] as const;
 const assessmentsKey = ["dpo", "security-assessments"] as const;
 const deadlinesKey = ["dpo", "deadlines"] as const;
+const requirementChecksKey = ["dpo", "requirement-checks"] as const;
+
+/** GET /admin/v1/dpo/requirement-checks (DPO-02), newest first, for one legal entity. */
+export function useRequirementChecks(client: ApiClient, legalEntityId: string | undefined) {
+  return useQuery({
+    queryKey: [...requirementChecksKey, legalEntityId ?? ""],
+    enabled: !!legalEntityId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpo/requirement-checks", {
+        params: { query: { legal_entity_id: legalEntityId! } },
+      });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/dpo/requirement-checks — ม.41(2) + ประกาศ สคส. 2566 OR-rule screening for a legal entity. */
+export function useAssessRequirementCheck(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: DpoRequirementCheckInput) => {
+      const { data, error } = await client.POST("/admin/v1/dpo/requirement-checks", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: requirementChecksKey }),
+  });
+}
 
 /** GET /admin/v1/dpo/deadlines (DPO-05): near-deadline and overdue work from every module that already tracks a legal deadline, on one page. */
 export function useDeadlines(client: ApiClient) {

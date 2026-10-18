@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	breachservice "pdpa-platform/internal/breach/service"
+	dpiaservice "pdpa-platform/internal/dpia/service"
 	dpostore "pdpa-platform/internal/dpo/store"
 	dsarservice "pdpa-platform/internal/dsar/service"
 	iamservice "pdpa-platform/internal/iam/service"
@@ -69,6 +70,9 @@ type Service struct {
 	// RRA-07: closing a "ropa_gap" task re-checks that finding's activity and clears the gap if the rule
 	// no longer applies.
 	Risk *riskservice.Service
+	// Dpia is DPO-02's own screening engine (ScreenSubject, a generic rule-9-clean addition to dpia/service) —
+	// a direct concrete field, not an interface: dpia never imports dpo, so there is no cycle to route around.
+	Dpia *dpiaservice.Service
 	Now  func() time.Time
 }
 

@@ -410,12 +410,16 @@ export {
   useAssessment,
   useRecordAssessment,
   useDeadlines,
+  useRequirementChecks,
+  useAssessRequirementCheck,
   type DpoAppointment,
   type DpoAppointmentInput,
   type DpoType,
   type DpoSecurityAssessment,
   type DpoRemediationTask,
   type DpoDeadlineItem,
+  type DpoRequirementCheck,
+  type DpoRequirementCheckInput,
 } from "./dpo";
 export {
   useTenants,

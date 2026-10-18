@@ -3074,6 +3074,52 @@ converts through a local `subProcessorRow` mirror rather than reusing any one qu
 `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `pnpm --filter @pdpa/api-client
 typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` all verified clean.
 
+### DPO-02 ประเมินหน้าที่ต้องแต่งตั้ง DPO (`docs/modules/DPO.md#dpo-02`) — done
+`internal/dpo/service/requirement_check.go` (`dpo.profile.{read,create}`, already seeded — no new permission
+code): the ม.41(2)/2023-notice checklist is a 4-question OR rule (`decideDpoRequirement` — any one flagged
+criterion already triggers `required`, zero flagged is `not_required`), unlike DPIA-02's own multi-factor
+threshold. It reuses a new, additive-only generic method on `dpiaservice.Service`,
+`ScreenSubject` (`internal/dpia/service/subject_screening.go`, backed by a new `db/queries/dpia/
+subject_screening.sql` — `GetTemplateByCodeAndType`/`GetLatestAssessmentForSubject`, generic counterparts to
+DPIA-01's own activity-specific queries), rather than touching DPIA-01/02's own `Screen` — rule 9: `dpia` owns
+the `assess` schema, `dpo` only calls its exported service, and the OR-based decision rule itself is a
+caller-supplied `Decide func(factorCount int, factors []forms.Contribution) (result, reason string)`, so dpo's
+own judgement never lives inside dpia. `ScreenSubject` answers a published `assess.templates` checklist for any
+`subject_type`/`subject_id` (not just a RoPA activity) via `forms.Evaluate`/`forms.Contributions`, round-chains
+through `previous_id` exactly like `Screen` already does, and persists one `assess.assessments` row + one
+`assess.answers` row per factor.
+
+No new schema for the template itself: `assess.templates.assessment_type`'s own CHECK constraint already listed
+`'dpo_check'` since the baseline migrations, unused until now — the same "the schema already anticipated this"
+pattern DPX-06/Q-36 and DPIA-01's own Q-26 already found. Migration 00077 seeds a global (`tenant_id NULL`)
+`platform.form_definitions`/`form_versions` + `assess.templates` row (code `dpo_requirement_check`, assessment
+type `dpo_check`) with the 4 yes/no questions paraphrasing ม.41(2) and the 2023 PDPC notice from this feature's
+own module-doc description — flagged DRAFT pending legal review (`docs/decisions.md` Q-37, the same move
+ORG-07/ROPA-09/PNG-03/DPIA-01/DPX-06 already made for seeded content with no official source to copy). `dpo.
+requirement_checks` (already fully specified in the baseline migrations, `assessment_id` already a real FK to
+`assess.assessments`) stores each round's result/basis — new sqlc queries `InsertRequirementCheck`/
+`GetLatestRequirementCheckForLegalEntity`/`ListRequirementChecks` (`db/queries/dpo/requirement_checks.sql`).
+`dpo.Service` gained a direct concrete `Dpia *dpiaservice.Service` field (no import cycle — `dpia` never imports
+`dpo`), wired in `cmd/api/main.go` right after `dpiaSvc` is constructed (`dpoSvc.Dpia = dpiaSvc`). `AssessDpoRequirement`
+checks the legal entity is visible under RLS (rule 1, `Org.GetLegalEntity`) before calling `ScreenSubject`, and
+translates `dpia`'s own `ValidationError`/`ErrBadTemplate` sentinels into `dpo`'s own (rule 9 — the HTTP layer
+never needs to know about `dpia`'s error types).
+
+API: `GET`/`POST /admin/v1/dpo/requirement-checks` (`legal_entity_id` query filter on the list; no ETag — a
+round is a new, append-style record, not an edited one). UI: a "DPO appointment requirement check" section on
+`/settings/dpo` (4 checkboxes + run button, a required/not_required result banner showing the basis text, and a
+list of past rounds) mounted above the existing DPO-09 security-assessments section. Tests: unit
+(`internal/dpo/service/requirement_check_test.go` — not_required with every criterion "no"; the acceptance
+criterion directly: a single flagged criterion returns `required` with a non-empty basis citing the notice;
+`GetLatestRequirementCheck`/`ListRequirementChecks` round-trip; unknown legal entity refused as `ErrInvalid`;
+`GetLatestRequirementCheck` is `ErrNotFound` before any round exists; two-tenant isolation), HTTP contract
+(`internal/dpo/http/handler_test.go`'s `TestRequirementCheckEndpoints_Contract` — 401/403/422/201/200 through the
+real validator + AuthZ chain). `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), the
+full `go test -p 1 ./internal/dpo/... ./internal/dpia/...` suite against a real Postgres/Redis (no regressions —
+including the pre-existing `dpia` screening/DPIA-10/opinion/necessity/diff/registry/report suites, which the new
+`ScreenSubject` method never touches), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test`
+and `pnpm --filter @pdpa/admin build` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

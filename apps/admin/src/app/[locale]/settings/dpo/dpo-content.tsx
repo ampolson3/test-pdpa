@@ -16,6 +16,8 @@ import {
   useForms,
   useLegalEntities,
   useRecordAssessment,
+  useAssessRequirementCheck,
+  useRequirementChecks,
   type DpoAppointment,
   type DpoSecurityAssessment,
   type DpoType,
@@ -194,8 +196,81 @@ export function DpoContent() {
       ))}
       {legalEntityId && list.hasNextPage && <Button variant="secondary" onClick={() => list.fetchNextPage()}>{t("more")}</Button>}
 
+      {legalEntityId && <RequirementCheckPanel legalEntityId={legalEntityId} />}
       {legalEntityId && <SecurityAssessments legalEntityId={legalEntityId} />}
     </main>
+  );
+}
+
+const CRITERIA = ["public_authority", "large_scale_processing", "regular_monitoring", "sensitive_or_criminal_core"] as const;
+
+/** DPO-02: ม.41(2) + ประกาศ สคส. 2566 — answer the OR-rule checklist for a legal entity and see past rounds. */
+function RequirementCheckPanel({ legalEntityId }: { legalEntityId: string }) {
+  const t = useTranslations("dpo");
+  const locale = useLocale() as Language;
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const canRead = usePermission("dpo.profile.read");
+  const canCreate = usePermission("dpo.profile.create");
+  const list = useRequirementChecks(client, legalEntityId);
+  const assess = useAssessRequirementCheck(client);
+  const [answers, setAnswers] = useState<Record<string, "yes" | "no">>(
+    Object.fromEntries(CRITERIA.map((c) => [c, "no"])) as Record<string, "yes" | "no">,
+  );
+
+  if (!canRead) return null;
+  const rows = list.data ?? [];
+  const latest = rows[0];
+
+  const submit = () => {
+    assess.mutate({ legal_entity_id: legalEntityId, answers });
+  };
+
+  return (
+    <section className="space-y-4 border-t border-slate-200 pt-6">
+      <h2 className="text-lg font-semibold">{t("requirementCheck.title")}</h2>
+      <p className="text-slate-600">{t("requirementCheck.intro")}</p>
+
+      {canCreate && (
+        <div className="space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="requirement-check-form">
+          {CRITERIA.map((c) => (
+            <label key={c} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={answers[c] === "yes"}
+                onChange={(e) => setAnswers((prev) => ({ ...prev, [c]: e.target.checked ? "yes" : "no" }))}
+              />
+              <span>{t(`requirementCheck.criteria.${c}`)}</span>
+            </label>
+          ))}
+          <Button onClick={submit} disabled={assess.isPending} data-testid="requirement-check-submit">
+            {t("requirementCheck.submit")}
+          </Button>
+          {assess.isError && <p className="text-red-700" role="alert">{problemText(assess.error)}</p>}
+          {assess.data && (
+            <p className={assess.data.result === "required" ? "rounded-md bg-amber-50 p-3 text-amber-800" : "rounded-md bg-emerald-50 p-3 text-emerald-800"}>
+              {t(`requirementCheck.result.${assess.data.result}`)} — {assess.data.basis}
+            </p>
+          )}
+        </div>
+      )}
+
+      {list.isPending ? <p className="text-slate-500">{t("loading")}</p> : rows.length === 0 ? (
+        <p className="rounded-md bg-amber-50 p-3 text-amber-800">{t("requirementCheck.empty")}</p>
+      ) : (
+        <ul className="space-y-2" data-testid="requirement-check-list">
+          {rows.map((c) => (
+            <li key={c.id} className="rounded-md border border-slate-200 bg-white p-3">
+              <span className={c.result === "required" ? "rounded bg-amber-100 px-2 py-0.5 text-amber-800" : "rounded bg-emerald-100 px-2 py-0.5 text-emerald-800"}>
+                {t(`requirementCheck.result.${c.result}`)}
+              </span>{" "}
+              <span className="text-xs text-slate-500">{formatDate(c.assessed_at, locale as Locale, { month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+              <p className="mt-1 text-slate-700">{c.basis}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+      {latest && <p className="sr-only" data-testid="requirement-check-latest-result">{latest.result}</p>}
+    </section>
   );
 }
 

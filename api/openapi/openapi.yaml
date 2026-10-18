@@ -10634,6 +10634,72 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dpo/requirement-checks:
+    get:
+      operationId: dpoListRequirementChecks
+      tags: [dpo]
+      summary: Every ม.41(2) DPO-requirement screening round for a legal entity, newest first (DPO-02)
+      x-permission: dpo.profile.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: legal_entity_id
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpoRequirementCheck'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: dpoAssessRequirementCheck
+      tags: [dpo]
+      summary: Answer the ม.41(2) / 2023 PDPC-notice DPO-appointment checklist for a legal entity (DPO-02)
+      x-permission: dpo.profile.create
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DpoRequirementCheckInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoRequirementCheck'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/dpo/appointments:
     get:
       operationId: dpoListAppointments
@@ -17927,6 +17993,34 @@ components:
         ended_at: {type: [string, 'null'], format: date}
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
+    DpoRequirementCheckInput:
+      type: object
+      required: [legal_entity_id, answers]
+      properties:
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        answers:
+          type: object
+          description: Answers keyed by the checklist's question codes (public_authority, large_scale_processing, regular_monitoring, sensitive_or_criminal_core), each "yes" or "no"
+          additionalProperties: true
+      example:
+        legal_entity_id: 00000000-0000-0000-0000-000000000000
+        answers:
+          public_authority: 'no'
+          large_scale_processing: 'no'
+          regular_monitoring: 'no'
+          sensitive_or_criminal_core: 'no'
+    DpoRequirementCheck:
+      type: object
+      required: [id, legal_entity_id, assessment_id, result, basis, assessed_at, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        assessment_id: {$ref: '#/components/schemas/Uuid'}
+        result: {type: string, enum: [required, not_required]}
+        basis: {type: string}
+        assessed_at: {$ref: '#/components/schemas/Timestamp'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
     DpoRemediationTask:
       type: object
       required: [id, task_no, title, status, priority, row_version, created_at]

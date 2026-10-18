@@ -266,6 +266,32 @@ for a form type fails opaquely; test grants for `"security"` (and the cross-type
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
 
+**Implementation (done):** `internal/dpo/service/requirement_check.go` (`AssessDpoRequirement`, `dpo.profile.*`,
+already seeded — no new permission code). ม.41(2)/2023-notice is a 4-question OR-rule checklist (`decideDpoRequirement`
+— any one flagged criterion already triggers `required`, zero flagged is `not_required`), answered against the
+global `dpo_check`/`dpo_requirement_check` screening template (migration 00077, `assess.templates.assessment_type`'s
+own CHECK already listed `'dpo_check'` since the baseline — the same "schema already anticipated this" pattern
+DPX-06/Q-36 and DPIA-01's own Q-26 found) via a new generic, additive-only method on `dpiaservice.Service`,
+`ScreenSubject` (`internal/dpia/service/subject_screening.go`) — parameterized by assessment_type/template code/
+subject_type/subject_id/title/answers and a caller-supplied `Decide` function, so dpo's own ม.41(2) judgement lives
+in the `dpo` package, never in `dpia` (rule 9: dpia owns the `assess` schema, dpo only calls its exported service).
+`dpo.Service` gained a direct concrete `Dpia *dpiaservice.Service` field (no import cycle — dpia never imports dpo),
+wired in `cmd/api/main.go` right after `dpiaSvc` is constructed. `dpo.requirement_checks` (already fully specified in
+the baseline migrations) stores each round's result/basis/assessment_id — new sqlc queries
+`InsertRequirementCheck`/`GetLatestRequirementCheckForLegalEntity`/`ListRequirementChecks`
+(`db/queries/dpo/requirement_checks.sql`). API: `GET`/`POST /admin/v1/dpo/requirement-checks`
+(`dpo.profile.{read,create}`). UI: a "DPO appointment requirement check" section on `/settings/dpo` (4 checkboxes +
+run button, result banner, past-rounds list) above the existing security-assessments section. `docs/decisions.md`
+Q-37 flags the seeded checklist content as DRAFT pending legal review (rule 8's spirit — paraphrased from the
+module doc's own description, not copied from the official notice text). Tests: unit
+(`internal/dpo/service/requirement_check_test.go` — not_required with no criteria met, the acceptance criterion
+directly: any single flagged criterion returns required with a reason citing the notice, unknown legal entity
+refused, two-tenant isolation), HTTP contract (`internal/dpo/http/handler_test.go`'s
+`TestRequirementCheckEndpoints_Contract` — 401/403/422/201/200 through the real validator + AuthZ). `go build`/
+`go vet`/`gofmt -l` and the full `go test -p 1 ./internal/dpo/... ./internal/dpia/...` suite (real Postgres/Redis,
+no regressions) all verified clean, plus `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test`
+and `pnpm --filter @pdpa/admin build`.
+
 <a id="dpo-06"></a>
 ### DPO-06 Tasks Management
 

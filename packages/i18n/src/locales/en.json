@@ -687,6 +687,22 @@
       "answer": "Answer",
       "tasks": "Remediation tasks opened automatically"
     },
+    "requirementCheck": {
+      "title": "DPO appointment requirement check",
+      "intro": "Under section 41(2) and the PDPC's 2023 notice — any one criterion already triggers the duty to appoint a DPO",
+      "criteria": {
+        "public_authority": "The organization is a government body designated by the committee",
+        "large_scale_processing": "Collects, uses or discloses personal data at scale (100,000 or more records)",
+        "regular_monitoring": "A core activity involves regular, systematic monitoring of data subjects' behavior",
+        "sensitive_or_criminal_core": "A core activity processes sensitive data (section 26) or criminal record data"
+      },
+      "submit": "Run the check",
+      "empty": "No requirement checks recorded yet",
+      "result": {
+        "required": "A DPO must be appointed",
+        "not_required": "No DPO appointment required"
+      }
+    },
     "deadlinesLink": "Deadline notification center"
   },
   "dpia": {

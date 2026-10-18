@@ -5,6 +5,8 @@ generate:
   models: true
 output-options:
   include-operation-ids:
+    - dpoListRequirementChecks
+    - dpoAssessRequirementCheck
     - dpoListAppointments
     - dpoCreateAppointment
     - dpoGetAppointment
