@@ -296,7 +296,8 @@ func run() error {
 	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
 	formsSvc := wiring.Forms(notifySvc, auditSvc)
 	consentSvc := &consentservice.Service{Versioning: versioningSvc, Events: &events.Publisher{River: riverClient},
-		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc, Verification: iamSvc} // CON-11: guardian OTP (IAM-05)
+		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc, Verification: iamSvc, // CON-11: guardian OTP (IAM-05)
+		PortalBaseURL: os.Getenv("PORTAL_PUBLIC_URL")} // CON-23: double opt-in confirmation link base
 	consentSvc.RegisterVersioning()
 	ropaSvc.Consent = consentSvc                                                                                                        // ROPA-03: evidence of explicit consent for sensitive-data purposes
 	dpoSvc.Forms = formsSvc                                                                                                             // DPO-09: the security-measures checklist

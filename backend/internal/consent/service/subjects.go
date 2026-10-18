@@ -329,6 +329,7 @@ type PublicCollectionPoint struct {
 	Name               string
 	Channel            string
 	VerificationMethod string // none | otp | magic_link | idp (CON-19)
+	DoubleOptIn        bool   // CON-23
 	Language           string
 	Purposes           []PublicPurpose
 }
@@ -360,7 +361,8 @@ func (s *Service) PublicView(ctx context.Context, id uuid.UUID, lang string) (Pu
 	if err != nil {
 		return PublicCollectionPoint{}, err
 	}
-	out := PublicCollectionPoint{Code: cp.Code, Name: cp.Name, Channel: cp.Channel, VerificationMethod: cp.VerificationMethod, Language: lang, Purposes: []PublicPurpose{}}
+	out := PublicCollectionPoint{Code: cp.Code, Name: cp.Name, Channel: cp.Channel, VerificationMethod: cp.VerificationMethod,
+		DoubleOptIn: cp.DoubleOptIn, Language: lang, Purposes: []PublicPurpose{}}
 	for _, p := range cp.Purposes {
 		if p.Status != "active" || p.CurrentVersionNo == nil {
 			continue

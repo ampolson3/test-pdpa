@@ -3120,6 +3120,73 @@ including the pre-existing `dpia` screening/DPIA-10/opinion/necessity/diff/regis
 `ScreenSubject` method never touches), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test`
 and `pnpm --filter @pdpa/admin build` all verified clean.
 
+### CON-23 Double Opt-In (`docs/modules/CON.md#con-23`) — done
+`consent.double_optin_requests` was already fully specified in the baseline migration (00005_consent.sql)
+— a row per PENDING transaction, its own confirmation token hash and expiry — completely unused until now,
+so this needed no new migration for the table. `CollectionPointInput`/`ConsentCollectionPoint`/
+`PublicCollectionPoint` gained `double_opt_in` (a per-collection-point toggle, not per-purpose — the module
+doc's own "ตั้งค่า double opt-in ต่อ collection point"). `internal/consent/service/transitions.go`'s
+`Decide()` gained a `doubleOptInRequired` parameter alongside CON-11's own `guardianRequired`: the PENDING
+trigger is now `(guardianRequired || doubleOptInRequired) && current == ""` — **guardian consent always
+takes priority** when both would apply to the very same first-ever decision, since a minor's own double
+opt-in link is no stronger proof than the decision it would confirm; `record.go`'s per-decision loop
+computes `doubleOptInRequired := !guardianRequired && (d.purpose.DoubleOptIn || cp.DoubleOptIn)` and routes
+every such PENDING write to `requestDoubleOptInConfirmation` instead of CON-11's own guardian-approval path.
+
+`internal/consent/service/double_optin.go` (new): `requestDoubleOptInConfirmation` issues a 32-byte random
+hex token, stores only its SHA-256 hash (`consent.double_optin_requests.token_hash`, rule 3 — the token
+itself is never persisted or logged), and sends a link
+(`{PortalBaseURL}/{lang}/consent-confirm/{collection-point-public-key}?token=...`) to the subject's own
+e-mail/SMS via PLT-04 — `Service` gained a `PortalBaseURL string` field (the backend's own counterpart to
+`PORTAL_PUBLIC_URL`, which until now only the frontend read; falls back to the same
+`http://localhost:3001` default the admin app's own pages use). `ConfirmDoubleOptIn` — the acceptance
+criterion itself, "ความยินยอมมีผลหลังยืนยันเท่านั้น" — looks the request up by its token's own hash (the
+token is the only secret the link carries; the public key only resolves the tenant before this runs),
+refuses an already-decided or expired request, then writes the CONFIRMED transaction + ACTIVE status in
+the same transaction as every other consent decision this module records; a redelivered confirm with the
+same token is a harmless `ErrInvalidTransition`, not a duplicate activation. `SweepDueDoubleOptInRequests`
+is CON-23's own expiry path, the same "sweep lists tenants, per-tenant job reads its own rows" River
+pattern CON-04/PNG-15/ROPA-15/VEN-10 already established (`consent.double_opt_in_sweep`, hourly,
+`jobs.GlobalKinds` → `consent.double_opt_in_check` per tenant): a link nobody ever clicked within its 48h
+window (`DoubleOptInExpiry`, a tunable default per CLAUDE.md's own "implement the listed default as
+config") is cancelled to NOT_GIVEN via `CancelPending()` — ST-01's own already-declared PENDING → NOT_GIVEN
+edge, no state-machine change needed.
+
+New public endpoint `POST /public/v1/consents/double-opt-in/confirm` (`X-Public-Key` names the tenant,
+`Idempotency-Key` required per rule 10, body `{token}`) → 200 `{status: "confirmed", purpose_code}`.
+`internal/consent/publichttp/handler.go`'s `ConsentConfirmDoubleOptIn` mirrors
+`ConsentVerifyGuardianApproval`'s own shape exactly. Migration 00078 seeds the `consent.double_opt_in`
+notification template (th/en × email/sms — operational text about a link, not legal wording describing an
+already-effective decision, so no DRAFT marker per rule 8). Real pre-existing bug found and fixed while
+wiring the public read: `ConsentGetPublicCollectionPoint` hardcoded `DoubleOptIn: false` in its response
+instead of reading the real column — the exact same pattern CON-19 had already found and fixed for
+`verification_method`.
+
+API: `double_opt_in` added to `CollectionPointInput`/`ConsentCollectionPoint`/`PublicCollectionPoint`;
+`POST /public/v1/consents/double-opt-in/confirm` (`x-permission: public`, `x-module: consent`). UI:
+`/consent/collection-points`'s editor gained a "Double opt-in" checkbox next to the verification-method
+field, and a new portal page `/[locale]/consent-confirm/[key]` (a Confirm **button**, not an
+auto-confirming page load — an e-mail link-preview scanner fetching the page must never activate the
+consent on the subject's own behalf; the server action posts the token from the URL's own query string).
+Tests: unit (`internal/consent/service/transitions_test.go` — `Decide`'s new parameter incl. the
+guardian-priority case; `internal/consent/service/double_optin_test.go` — the acceptance criterion
+end to end via a white-box read of the queued notification's own encrypted `link` variable to recover the
+real token, confirming activates the purpose and a second confirm with the same token is a harmless
+no-op; an unknown token is `ErrNotFound`; the sweep cancels an unconfirmed link to NOT_GIVEN and a second
+sweep is a no-op; two-tenant isolation of the sweep itself), HTTP contract
+(`internal/consent/http/handler_test.go` — the admin `double_opt_in` round-trip through create → publish →
+public submit → confirm, a wrong token refused with 404, a second confirm not succeeding again, through the
+real validator + AuthZ + publickeys + Idempotency + Tx chain). Not verified live against a real
+Postgres/Redis — the same environment limitation this codebase's other recent passes already disclosed;
+every test compiles and vets clean and skips the same way the rest of this module's own suite already does
+here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no
+regressions, full backend suite), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n
+test`, and `pnpm --filter @pdpa/admin build` / `pnpm --filter @pdpa/portal build` (incl. the new
+`/[locale]/consent-confirm/[key]` route) all verified clean. Not done, deliberately (no consumer yet, the
+same deferral this codebase uses throughout): `magic_link`/`idp` as alternate confirmation mechanisms (the
+module doc names only an e-mail/SMS link; CON-19's own verification_method column already anticipates the
+others with no consumer either).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

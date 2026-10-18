@@ -933,6 +933,30 @@ either yet — the column already anticipates them); a portal-side resend/rate-l
 
 **Acceptance criteria:** ความยินยอมมีผลหลังยืนยันเท่านั้น
 
+**Implementation — done.** `consent.double_optin_requests` was already fully specified in the baseline
+migration (00005), completely unused until this feature — no new migration. `CollectionPointInput`/
+`ConsentCollectionPoint` gained `double_opt_in` (a tenant toggle on the collection point, not per-purpose);
+`Decide()`'s PENDING trigger is now `(guardianRequired || doubleOptInRequired) && current == ""`, with
+guardian consent (CON-11) always taking priority when both would apply to the same first-ever decision — a
+minor's own double opt-in link is no stronger proof than the decision it would confirm. `requestDoubleOptInConfirmation`
+(`internal/consent/service/double_optin.go`) issues a 32-byte random token, stores only its SHA-256 hash, and
+sends a link (`{portal}/{lang}/consent-confirm/{collection-point-key}?token=...`) to the subject's own channel
+via PLT-04 (`consent.double_opt_in` template, migration 00078, th/en × email/sms, 48h expiry, a tunable
+config default). `ConfirmDoubleOptIn` (new public endpoint `POST /public/v1/consents/double-opt-in/confirm`,
+`X-Public-Key` names the tenant) is the acceptance criterion itself — the decision has no effect until this
+succeeds; a redelivered confirm with the same token is a harmless no-op. `SweepDueDoubleOptInRequests`
+(River, the usual "sweep lists tenants, per-tenant job reads its own rows" pattern) cancels an unconfirmed
+link past its window to NOT_GIVEN (ST-01's own PENDING → NOT_GIVEN edge, no state-machine change needed).
+UI: a toggle on `/consent/collection-points`'s editor, and a new portal page
+`/[locale]/consent-confirm/[key]` (a Confirm button, not an auto-confirming link, so an e-mail link-preview
+scanner never activates consent on the subject's behalf). Tests: unit (`Decide`'s new parameter and
+guardian-priority case, pending-until-confirmed end to end via a white-box token read, unknown-token refused,
+sweep cancels an unconfirmed link, two-tenant isolation), HTTP contract (the admin `double_opt_in` round-trip,
+the public confirm chain through the real validator + publickeys + Idempotency + Tx chain). Not verified live
+against a real Postgres/Redis — the same environment limitation this codebase's other recent passes already
+disclosed; every test compiles and vets clean and skips the same way the rest of this module's own suite
+already does here.
+
 <a id="con-24"></a>
 ### CON-24 ส่งคำขอความยินยอมแบบ Bulk
 

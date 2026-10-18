@@ -3,10 +3,12 @@ package consenthttp_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -22,6 +24,7 @@ import (
 	consent "pdpa-platform/internal/consent/service"
 	iamservice "pdpa-platform/internal/iam/service"
 	"pdpa-platform/internal/pkg/authz"
+	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/idempotency"
 	"pdpa-platform/internal/pkg/validate"
@@ -501,6 +504,97 @@ func TestConsentEndpoints_Contract(t *testing.T) {
 	if res := do("POST", startPath, nil, map[string]any{"identifier": map[string]string{"type": "email", "value": "pc@example.com"}}, map[string]string{"Idempotency-Key": uuid.NewString()}); res.code != 404 {
 		t.Errorf("start-verification with a retired key: %d, want 404", res.code)
 	}
+
+	// ---- CON-23: double opt-in ----
+	doiPurpose := f.LivePurpose(t, "MKT-DOI-C", consenttest.Content("MKT-DOI-C", "ยินยอมรับข่าวสาร"))
+	doiDraft := do("POST", "/admin/v1/consent/collection-points", &alice, map[string]any{"code": "DOI-C-SIGNUP", "name": "สมัครแบบยืนยันซ้ำ", "channel": "web",
+		"legal_entity_id": f.EntityA, "double_opt_in": true, "purposes": []any{map[string]any{"purpose_id": doiPurpose.ID, "required": false}}}, nil)
+	if doiDraft.code != 201 || doiDraft.body["double_opt_in"] != true {
+		t.Fatalf("create double opt-in collection point: %d %v", doiDraft.code, doiDraft.body)
+	}
+	doiPub := do("POST", "/admin/v1/consent/collection-points/"+doiDraft.body["id"].(string)+"/publish", &alice,
+		map[string]any{"separate_text": true, "not_bundled": true, "plain_language": true, "withdrawal_info": true}, map[string]string{"If-Match": doiDraft.hdr.Get("ETag")})
+	if doiPub.code != 200 {
+		t.Fatalf("publish double opt-in collection point: %d %v", doiPub.code, doiPub.body)
+	}
+	doiKey := doiPub.body["public_key"].(string)
+	doiSubmit := do("POST", "/public/v1/consents", nil, map[string]any{
+		"subject":   map[string]any{"identifiers": []map[string]string{{"type": "email", "value": "doi-http@example.com"}}},
+		"decisions": []map[string]any{{"purpose_code": "MKT-DOI-C", "purpose_version_no": 1, "decision": "CONSENTED"}},
+	}, map[string]string{"X-Public-Key": doiKey, "Idempotency-Key": uuid.NewString()})
+	if doiSubmit.code != 201 {
+		t.Fatalf("double opt-in submission: %d %v", doiSubmit.code, doiSubmit.body)
+	}
+	doiTxs, _ := doiSubmit.body["transactions"].([]any)
+	if len(doiTxs) != 1 || doiTxs[0].(map[string]any)["status"] != "PENDING" {
+		t.Fatalf("expected a PENDING transaction, got %v", doiTxs)
+	}
+	doiReqs, _ := doiSubmit.body["double_opt_in_requests"].([]any)
+	if len(doiReqs) != 1 {
+		t.Fatalf("expected one double_opt_in_requests entry, got %v", doiSubmit.body)
+	}
+
+	doiToken := lastDoubleOptInToken(t, f)
+	if doiToken == "" {
+		t.Fatal("expected a double opt-in token to have been sent")
+	}
+	confirmPath := "/public/v1/consents/double-opt-in/confirm"
+	if res := do("POST", confirmPath, nil, map[string]any{"token": "wrong-token-wrong-token-wrong-token"}, map[string]string{"X-Public-Key": doiKey, "Idempotency-Key": uuid.NewString()}); res.code != 404 {
+		t.Errorf("wrong token: %d, want 404", res.code)
+	}
+	doiConfirm := do("POST", confirmPath, nil, map[string]any{"token": doiToken}, map[string]string{"X-Public-Key": doiKey, "Idempotency-Key": uuid.NewString()})
+	if doiConfirm.code != 200 || doiConfirm.body["status"] != "confirmed" || doiConfirm.body["purpose_code"] != "MKT-DOI-C" {
+		t.Fatalf("confirm double opt-in: %d %v", doiConfirm.code, doiConfirm.body)
+	}
+	// A redelivered confirm with the same token is a harmless no-op, not a 200 again.
+	if res := do("POST", confirmPath, nil, map[string]any{"token": doiToken}, map[string]string{"X-Public-Key": doiKey, "Idempotency-Key": uuid.NewString()}); res.code == 200 {
+		t.Errorf("second confirm with the same token should not succeed again: %d %v", res.code, res.body)
+	}
+}
+
+// lastDoubleOptInToken decrypts the most recently queued consent.double_opt_in notification's own "link"
+// variable and returns its token query parameter — the same white-box technique the service-level test
+// uses, since the token is never otherwise exposed by any API response (by design).
+func lastDoubleOptInToken(t *testing.T, f *consenttest.Fixture) string {
+	t.Helper()
+	var token string
+	err := pdb.WithTenantTx(context.Background(), f.App, f.A.ID.String(), "", func(ctx context.Context) error {
+		tx := pdb.MustTxFromContext(ctx)
+		var payloadJSON []byte
+		if err := tx.QueryRow(ctx, `SELECT n.payload FROM platform.notifications n JOIN platform.notification_templates t ON t.id = n.template_id
+			WHERE t.code = 'consent.double_opt_in' ORDER BY n.created_at DESC LIMIT 1`).Scan(&payloadJSON); err != nil {
+			return err
+		}
+		var p struct {
+			VarsEnc string `json:"vars_enc"`
+		}
+		if err := json.Unmarshal(payloadJSON, &p); err != nil {
+			return err
+		}
+		varsEnc, err := base64.StdEncoding.DecodeString(p.VarsEnc)
+		if err != nil {
+			return err
+		}
+		plain, err := f.Svc.Keyring.Decrypt(ctx, "notification", "platform.notifications.payload.vars_enc", varsEnc)
+		if err != nil {
+			return err
+		}
+		var vars map[string]any
+		if err := json.Unmarshal(plain, &vars); err != nil {
+			return err
+		}
+		link, _ := vars["link"].(string)
+		u, err := url.Parse(link)
+		if err != nil {
+			return err
+		}
+		token = u.Query().Get("token")
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return token
 }
 
 // fakeIamNotifier captures the OTP a StartVerification call would have sent (PLT-04), so the contract test can

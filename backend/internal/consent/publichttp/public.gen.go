@@ -433,6 +433,39 @@ func (e ConsentSubmitPublicConsentJSONBodySubjectGuardianRelationship) Valid() b
 	}
 }
 
+// Defines values for ConsentConfirmDoubleOptInParamsAcceptLanguage.
+const (
+	ConsentConfirmDoubleOptInParamsAcceptLanguageEn ConsentConfirmDoubleOptInParamsAcceptLanguage = "en"
+	ConsentConfirmDoubleOptInParamsAcceptLanguageTh ConsentConfirmDoubleOptInParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentConfirmDoubleOptInParamsAcceptLanguage enum.
+func (e ConsentConfirmDoubleOptInParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ConsentConfirmDoubleOptInParamsAcceptLanguageEn:
+		return true
+	case ConsentConfirmDoubleOptInParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentConfirmDoubleOptIn200JSONResponseBodyStatus.
+const (
+	Confirmed ConsentConfirmDoubleOptIn200JSONResponseBodyStatus = "confirmed"
+)
+
+// Valid indicates whether the value is a known member of the ConsentConfirmDoubleOptIn200JSONResponseBodyStatus enum.
+func (e ConsentConfirmDoubleOptIn200JSONResponseBodyStatus) Valid() bool {
+	switch e {
+	case Confirmed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ConsentVerifyGuardianApprovalParamsAcceptLanguage.
 const (
 	ConsentVerifyGuardianApprovalParamsAcceptLanguageEn ConsentVerifyGuardianApprovalParamsAcceptLanguage = "en"
@@ -863,6 +896,27 @@ type ConsentSubmitPublicConsentJSONBodyLanguage string
 // ConsentSubmitPublicConsentJSONBodySubjectGuardianRelationship defines parameters for ConsentSubmitPublicConsent.
 type ConsentSubmitPublicConsentJSONBodySubjectGuardianRelationship string
 
+// ConsentConfirmDoubleOptInJSONBody defines parameters for ConsentConfirmDoubleOptIn.
+type ConsentConfirmDoubleOptInJSONBody struct {
+	Token string `json:"token"`
+}
+
+// ConsentConfirmDoubleOptInParams defines parameters for ConsentConfirmDoubleOptIn.
+type ConsentConfirmDoubleOptInParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ConsentConfirmDoubleOptInParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+	XPublicKey     string                                         `json:"X-Public-Key"`
+
+	// IdempotencyKey Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it).
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ConsentConfirmDoubleOptInParamsAcceptLanguage defines parameters for ConsentConfirmDoubleOptIn.
+type ConsentConfirmDoubleOptInParamsAcceptLanguage string
+
+// ConsentConfirmDoubleOptIn200JSONResponseBodyStatus defines parameters for ConsentConfirmDoubleOptIn.
+type ConsentConfirmDoubleOptIn200JSONResponseBodyStatus string
+
 // ConsentVerifyGuardianApprovalJSONBody defines parameters for ConsentVerifyGuardianApproval.
 type ConsentVerifyGuardianApprovalJSONBody struct {
 	Code string `json:"code"`
@@ -978,6 +1032,9 @@ type ConsentViewPreferenceCenterParamsAcceptLanguage string
 // ConsentSubmitPublicConsentJSONRequestBody defines body for ConsentSubmitPublicConsent for application/json ContentType.
 type ConsentSubmitPublicConsentJSONRequestBody ConsentSubmitPublicConsentJSONBody
 
+// ConsentConfirmDoubleOptInJSONRequestBody defines body for ConsentConfirmDoubleOptIn for application/json ContentType.
+type ConsentConfirmDoubleOptInJSONRequestBody ConsentConfirmDoubleOptInJSONBody
+
 // ConsentVerifyGuardianApprovalJSONRequestBody defines body for ConsentVerifyGuardianApproval for application/json ContentType.
 type ConsentVerifyGuardianApprovalJSONRequestBody ConsentVerifyGuardianApprovalJSONBody
 
@@ -1001,6 +1058,9 @@ type ServerInterface interface {
 	// ConsentSubmitPublicConsent Record a data subject's decisions from a published collection point (BP-01)
 	// (POST /public/v1/consents)
 	ConsentSubmitPublicConsent(w http.ResponseWriter, r *http.Request, params ConsentSubmitPublicConsentParams)
+	// ConsentConfirmDoubleOptIn The data subject confirms their own e-mailed/SMS link (CON-23) — the decision this token was issued for has effect only now
+	// (POST /public/v1/consents/double-opt-in/confirm)
+	ConsentConfirmDoubleOptIn(w http.ResponseWriter, r *http.Request, params ConsentConfirmDoubleOptInParams)
 	// ConsentVerifyGuardianApproval The guardian confirms their OTP (CON-11, ม.20) — every purpose still PENDING for the minor becomes ACTIVE
 	// (POST /public/v1/consents/guardian-approvals/{id}/verify)
 	ConsentVerifyGuardianApproval(w http.ResponseWriter, r *http.Request, id Uuid, params ConsentVerifyGuardianApprovalParams)
@@ -1031,6 +1091,12 @@ func (_ Unimplemented) ConsentGetPublicCollectionPoint(w http.ResponseWriter, r 
 // ConsentSubmitPublicConsent Record a data subject's decisions from a published collection point (BP-01)
 // (POST /public/v1/consents)
 func (_ Unimplemented) ConsentSubmitPublicConsent(w http.ResponseWriter, r *http.Request, params ConsentSubmitPublicConsentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConsentConfirmDoubleOptIn The data subject confirms their own e-mailed/SMS link (CON-23) — the decision this token was issued for has effect only now
+// (POST /public/v1/consents/double-opt-in/confirm)
+func (_ Unimplemented) ConsentConfirmDoubleOptIn(w http.ResponseWriter, r *http.Request, params ConsentConfirmDoubleOptInParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1201,6 +1267,93 @@ func (siw *ServerInterfaceWrapper) ConsentSubmitPublicConsent(w http.ResponseWri
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ConsentSubmitPublicConsent(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConsentConfirmDoubleOptIn operation middleware
+func (siw *ServerInterfaceWrapper) ConsentConfirmDoubleOptIn(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConsentConfirmDoubleOptInParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ConsentConfirmDoubleOptInParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "X-Public-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Public-Key")]; found {
+		var XPublicKey string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Public-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Public-Key", valueList[0], &XPublicKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Public-Key", Err: err})
+			return
+		}
+
+		params.XPublicKey = XPublicKey
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Public-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Public-Key", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConsentConfirmDoubleOptIn(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1744,6 +1897,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/public/v1/consents/guardian-approvals/{id}/verify", wrapper.ConsentVerifyGuardianApproval)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/public/v1/consents/double-opt-in/confirm", wrapper.ConsentConfirmDoubleOptIn)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/public/v1/collection-points/{key}", wrapper.ConsentGetPublicCollectionPoint)
 	})
 
@@ -1945,6 +2101,131 @@ type ConsentSubmitPublicConsent429ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response ConsentSubmitPublicConsent429ApplicationProblemPlusJSONResponse) VisitConsentSubmitPublicConsentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentConfirmDoubleOptInRequestObject struct {
+	Params ConsentConfirmDoubleOptInParams
+	Body   *ConsentConfirmDoubleOptInJSONRequestBody
+}
+
+type ConsentConfirmDoubleOptInResponseObject interface {
+	VisitConsentConfirmDoubleOptInResponse(w http.ResponseWriter) error
+}
+
+type ConsentConfirmDoubleOptIn200JSONResponse struct {
+	PurposeCode string                                             `json:"purpose_code"`
+	Status      ConsentConfirmDoubleOptIn200JSONResponseBodyStatus `json:"status"`
+}
+
+func (response ConsentConfirmDoubleOptIn200JSONResponse) VisitConsentConfirmDoubleOptInResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentConfirmDoubleOptIn400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentConfirmDoubleOptIn400ApplicationProblemPlusJSONResponse) VisitConsentConfirmDoubleOptInResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentConfirmDoubleOptIn404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentConfirmDoubleOptIn404ApplicationProblemPlusJSONResponse) VisitConsentConfirmDoubleOptInResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentConfirmDoubleOptIn409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentConfirmDoubleOptIn409ApplicationProblemPlusJSONResponse) VisitConsentConfirmDoubleOptInResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentConfirmDoubleOptIn422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentConfirmDoubleOptIn422ApplicationProblemPlusJSONResponse) VisitConsentConfirmDoubleOptInResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentConfirmDoubleOptIn428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentConfirmDoubleOptIn428ApplicationProblemPlusJSONResponse) VisitConsentConfirmDoubleOptInResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentConfirmDoubleOptIn429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentConfirmDoubleOptIn429ApplicationProblemPlusJSONResponse) VisitConsentConfirmDoubleOptInResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -2546,6 +2827,9 @@ type StrictServerInterface interface {
 	// ConsentSubmitPublicConsent Record a data subject's decisions from a published collection point (BP-01)
 	// (POST /public/v1/consents)
 	ConsentSubmitPublicConsent(ctx context.Context, request ConsentSubmitPublicConsentRequestObject) (ConsentSubmitPublicConsentResponseObject, error)
+	// ConsentConfirmDoubleOptIn The data subject confirms their own e-mailed/SMS link (CON-23) — the decision this token was issued for has effect only now
+	// (POST /public/v1/consents/double-opt-in/confirm)
+	ConsentConfirmDoubleOptIn(ctx context.Context, request ConsentConfirmDoubleOptInRequestObject) (ConsentConfirmDoubleOptInResponseObject, error)
 	// ConsentVerifyGuardianApproval The guardian confirms their OTP (CON-11, ม.20) — every purpose still PENDING for the minor becomes ACTIVE
 	// (POST /public/v1/consents/guardian-approvals/{id}/verify)
 	ConsentVerifyGuardianApproval(ctx context.Context, request ConsentVerifyGuardianApprovalRequestObject) (ConsentVerifyGuardianApprovalResponseObject, error)
@@ -2655,6 +2939,39 @@ func (sh *strictHandler) ConsentSubmitPublicConsent(w http.ResponseWriter, r *ht
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ConsentSubmitPublicConsentResponseObject); ok {
 		if err := validResponse.VisitConsentSubmitPublicConsentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConsentConfirmDoubleOptIn operation middleware
+func (sh *strictHandler) ConsentConfirmDoubleOptIn(w http.ResponseWriter, r *http.Request, params ConsentConfirmDoubleOptInParams) {
+	var request ConsentConfirmDoubleOptInRequestObject
+
+	request.Params = params
+
+	var body ConsentConfirmDoubleOptInJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConsentConfirmDoubleOptIn(ctx, request.(ConsentConfirmDoubleOptInRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConsentConfirmDoubleOptIn")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConsentConfirmDoubleOptInResponseObject); ok {
+		if err := validResponse.VisitConsentConfirmDoubleOptInResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

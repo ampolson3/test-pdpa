@@ -110,12 +110,13 @@ type RecordedTransaction struct {
 
 // Receipt is what Record returns.
 type Receipt struct {
-	ID                uuid.UUID
-	No                string
-	SubjectID         uuid.UUID
-	OccurredAt        time.Time
-	Transactions      []RecordedTransaction
-	GuardianApprovals []GuardianApprovalRef
+	ID                  uuid.UUID
+	No                  string
+	SubjectID           uuid.UUID
+	OccurredAt          time.Time
+	Transactions        []RecordedTransaction
+	GuardianApprovals   []GuardianApprovalRef
+	DoubleOptInRequests []DoubleOptInRef
 }
 
 // DecisionError names the purposes a submission got wrong (codes the caller maps to 422 field errors).
@@ -297,7 +298,8 @@ func (s *Service) writeDecisions(ctx context.Context, cp CollectionPoint, sub Su
 		}
 		prefs := canonical(d.in.Preferences)
 		guardianRequired := sub.IsMinor && d.purpose.MinAge != nil
-		txType, status, err := Decide(current, d.in.Decision, current == StatusActive && d.in.Decision == TxConsented && !sameJSON(curPrefs, prefs), guardianRequired)
+		doubleOptInRequired := !guardianRequired && (d.purpose.DoubleOptIn || cp.DoubleOptIn)
+		txType, status, err := Decide(current, d.in.Decision, current == StatusActive && d.in.Decision == TxConsented && !sameJSON(curPrefs, prefs), guardianRequired, doubleOptInRequired)
 		if err != nil {
 			return Receipt{}, err
 		}
@@ -357,8 +359,24 @@ func (s *Service) writeDecisions(ctx context.Context, cp CollectionPoint, sub Su
 			return Receipt{}, err
 		}
 	}
-	anyPending := slices.ContainsFunc(writes, func(w statusWrite) bool { return w.status == StatusPending })
-	if anyPending {
+	anyGuardianPending := false
+	for i, w := range writes {
+		if w.status != StatusPending {
+			continue
+		}
+		if sub.IsMinor && kept[i].purpose.MinAge != nil {
+			anyGuardianPending = true
+			continue
+		}
+		// CON-23: every other pending write got there via the double opt-in gate (Decide's own
+		// precedence — guardian always wins when both would apply), so it gets its own confirmation link.
+		ref, err := s.requestDoubleOptInConfirmation(ctx, sub, w.txID, kept[i].purpose.Code, cp)
+		if err != nil {
+			return Receipt{}, err
+		}
+		out.DoubleOptInRequests = append(out.DoubleOptInRequests, ref)
+	}
+	if anyGuardianPending {
 		ref, err := s.requestGuardianApproval(ctx, subjectID, sub, rid)
 		if err != nil {
 			return Receipt{}, err

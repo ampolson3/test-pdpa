@@ -97,3 +97,22 @@ export async function startVerification(
   if (res.ok) return { ok: true, verification_id: json.verification_id, channel: json.channel };
   return { ok: false, problem: { status: res.status, code: json.code ?? "unknown", title: json.title ?? "", errors: json.errors } };
 }
+
+// CON-23: confirms the e-mailed/SMS link for a double-opt-in-gated collection point. The decision this
+// token was issued for has no effect until this call succeeds.
+export async function confirmDoubleOptIn(
+  key: string,
+  idempotencyKey: string,
+  token: string,
+  language: string,
+): Promise<{ ok: true; purpose_code: string } | { ok: false; problem: Problem }> {
+  const res = await fetch(`${API_BASE}/public/v1/consents/double-opt-in/confirm`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Public-Key": key, "Idempotency-Key": idempotencyKey, "Accept-Language": language, ...(await forwarded()) },
+    body: JSON.stringify({ token }),
+    cache: "no-store",
+  });
+  const json = await res.json().catch(() => ({}));
+  if (res.ok) return { ok: true, purpose_code: json.purpose_code };
+  return { ok: false, problem: { status: res.status, code: json.code ?? "unknown", title: json.title ?? "", errors: json.errors } };
+}

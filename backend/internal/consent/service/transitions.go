@@ -13,11 +13,14 @@ const (
 	TxWithdrawn          = "WITHDRAWN"
 	TxExtended           = "EXTENDED"
 	TxChangedPreferences = "CHANGED_PREFERENCES"
-	// TxPending/TxConfirmed are CON-11's guardian gate (ม.20): a minor's CONSENTED decision on an age-gated
-	// purpose records PENDING instead of taking effect, and only becomes CONFIRMED once the guardian verifies
-	// their own OTP (IAM-05) — see ConfirmGuardianApproval in guardian.go.
+	// TxPending/TxConfirmed/TxCancelled are the shared machinery behind both CON-11's guardian gate (ม.20) and
+	// CON-23's double opt-in: a first-ever CONSENTED decision on a gated purpose records PENDING instead of
+	// taking effect, and only becomes CONFIRMED once the guardian's OTP (guardian.go) or the subject's own
+	// e-mailed/SMS link (double_optin.go) is confirmed — or CANCELLED if the double opt-in link's own
+	// confirmation window expires first (ST-01's own PENDING -> NOT_GIVEN edge).
 	TxPending   = "PENDING"
 	TxConfirmed = "CONFIRMED"
+	TxCancelled = "CANCELLED"
 )
 
 // allowed is ST-01#1: from → to. Initial states are reached from "" (no status yet).
@@ -34,18 +37,20 @@ var allowed = map[[2]string]bool{
 // NOT_CONSENTED transition out of ACTIVE, and an unverified web form must not withdraw someone's consent —
 // withdrawal is its own WITHDRAWN decision (decisions.md Q-21). Confirming an ACTIVE consent (same or newer
 // version) renews it (EXTENDED), or records the new preferences. Withdrawing what isn't given is
-// ErrInvalidTransition. guardianRequired is CON-11 (ม.20): a *brand-new* subject's first CONSENTED decision on
-// a guardian-gated purpose records PENDING instead of taking effect immediately (ST-01's documented "" ->
-// PENDING initial edge) — ConfirmGuardianApproval moves it to ACTIVE once the guardian verifies. Once a
-// subject has any prior status (even NOT_GIVEN/WITHDRAWN/EXPIRED) a later CONSENTED goes straight to ACTIVE,
-// same as an ungated purpose: `docs/states/state-machines.yaml#ST-01` declares no edge back into PENDING from
-// those states, only PENDING <-> ACTIVE and PENDING -> NOT_GIVEN.
-func Decide(current, decision string, preferencesChanged, guardianRequired bool) (txType, status string, err error) {
+// ErrInvalidTransition. guardianRequired is CON-11 (ม.20) and doubleOptInRequired is CON-23: a *brand-new*
+// subject's first CONSENTED decision on a gated purpose records PENDING instead of taking effect immediately
+// (ST-01's documented "" -> PENDING initial edge) — ConfirmGuardianApproval/ConfirmDoubleOptIn moves it to
+// ACTIVE once the guardian/subject confirms. Once a subject has any prior status (even NOT_GIVEN/WITHDRAWN/
+// EXPIRED) a later CONSENTED goes straight to ACTIVE, same as an ungated purpose: `docs/states/
+// state-machines.yaml#ST-01` declares no edge back into PENDING from those states, only PENDING <-> ACTIVE
+// and PENDING -> NOT_GIVEN. When both gates apply to the same first decision, guardian consent takes priority
+// (a minor's own double opt-in link is no stronger proof than the decision it would confirm).
+func Decide(current, decision string, preferencesChanged, guardianRequired, doubleOptInRequired bool) (txType, status string, err error) {
 	switch decision {
 	case TxConsented:
 		switch current {
 		case "", StatusNotGiven, StatusWithdrawn, StatusExpired:
-			if guardianRequired && current == "" {
+			if (guardianRequired || doubleOptInRequired) && current == "" {
 				txType, status = TxPending, StatusPending
 			} else {
 				txType, status = TxConsented, StatusActive
@@ -94,6 +99,8 @@ func eventFor(txType string) string {
 		return "consent.withdrawn"
 	case TxChangedPreferences:
 		return "consent.preferences_changed"
+	case TxCancelled:
+		return "consent.denied"
 	}
 	return ""
 }
@@ -101,3 +108,8 @@ func eventFor(txType string) string {
 // ConfirmPending is CON-11's other half: once the guardian verifies, every purpose PENDING for the minor
 // moves to ACTIVE (ST-01's existing PENDING -> ACTIVE edge).
 func ConfirmPending() (txType, status string) { return TxConfirmed, StatusActive }
+
+// CancelPending is CON-23's own expiry path: a double opt-in link that was never confirmed in time never
+// takes effect at all (ST-01's existing PENDING -> NOT_GIVEN edge), not an error — most links are simply
+// never clicked.
+func CancelPending() (txType, status string) { return TxCancelled, StatusNotGiven }

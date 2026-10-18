@@ -4733,6 +4733,63 @@ paths:
           $ref: '#/components/responses/PreconditionRequired'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /public/v1/consents/double-opt-in/confirm:
+    post:
+      operationId: consentConfirmDoubleOptIn
+      tags: [consent]
+      summary: The data subject confirms their own e-mailed/SMS link (CON-23) — the decision this token was issued for has effect only now
+      description: The public key (X-Public-Key) of the original submission's collection point names the tenant. token is the one embedded in the confirmation link sent by consentSubmitPublicConsent.
+      x-permission: public
+      x-module: consent
+      security: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: X-Public-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{22,64}$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              additionalProperties: false
+              properties:
+                token:
+                  type: string
+                  minLength: 32
+                  maxLength: 128
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, purpose_code]
+                properties:
+                  status:
+                    type: string
+                    enum: [confirmed]
+                  purpose_code:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /admin/v1/breach/incidents:
     get:
       operationId: breachListIncidents
@@ -20551,6 +20608,9 @@ components:
           type: string
           description: CON-19 — identity check required before a public submission is recorded; defaults to "none"
           enum: [none, otp, magic_link, idp]
+        double_opt_in:
+          type: boolean
+          description: CON-23 — a first-ever CONSENTED decision at this collection point records PENDING until the subject confirms via an e-mailed/SMS link; defaults to false
         purposes:
           type: array
           maxItems: 50
@@ -20606,6 +20666,9 @@ components:
           type: string
           description: CON-19 — identity check required before a public submission is recorded
           enum: [none, otp, magic_link, idp]
+        double_opt_in:
+          type: boolean
+          description: CON-23 — a first-ever CONSENTED decision at this collection point records PENDING until the subject confirms via an e-mailed/SMS link
         checklist:
           $ref: '#/components/schemas/ConsentChecklist'
         published_at:

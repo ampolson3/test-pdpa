@@ -84,8 +84,8 @@ func (q *Queries) GetCollectionPointByCode(ctx context.Context, code string) (uu
 }
 
 const insertCollectionPoint = `-- name: InsertCollectionPoint :exec
-INSERT INTO consent.collection_points (id, tenant_id, code, name, channel, legal_entity_id, allowed_origins, verification_method, created_by, updated_by)
-VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7,
+INSERT INTO consent.collection_points (id, tenant_id, code, name, channel, legal_entity_id, allowed_origins, verification_method, double_opt_in, created_by, updated_by)
+VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7, $8,
         NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
 `
 
@@ -97,9 +97,11 @@ type InsertCollectionPointParams struct {
 	LegalEntityID      uuid.UUID `db:"legal_entity_id" json:"legal_entity_id"`
 	AllowedOrigins     []string  `db:"allowed_origins" json:"allowed_origins"`
 	VerificationMethod string    `db:"verification_method" json:"verification_method"`
+	DoubleOptIn        bool      `db:"double_opt_in" json:"double_opt_in"`
 }
 
 // CON-19: verification_method (none/otp/magic_link/idp) was already in the baseline schema, unused until now.
+// CON-23: double_opt_in likewise.
 func (q *Queries) InsertCollectionPoint(ctx context.Context, arg InsertCollectionPointParams) error {
 	_, err := q.db.Exec(ctx, insertCollectionPoint,
 		arg.ID,
@@ -109,6 +111,7 @@ func (q *Queries) InsertCollectionPoint(ctx context.Context, arg InsertCollectio
 		arg.LegalEntityID,
 		arg.AllowedOrigins,
 		arg.VerificationMethod,
+		arg.DoubleOptIn,
 	)
 	return err
 }
@@ -138,6 +141,7 @@ func (q *Queries) InsertCollectionPointPurpose(ctx context.Context, arg InsertCo
 const listCollectionPointPurposes = `-- name: ListCollectionPointPurposes :many
 SELECT cpp.collection_point_id, cpp.purpose_id, cpp.is_required, cpp.display_order,
        p.code, p.name_th, p.name_en, p.status, p.is_sensitive, p.requires_explicit, p.min_age, p.lifespan_days,
+       p.double_opt_in,
        p.current_version_id, v.version_no AS current_version_no, v.text_th, v.text_en, v.explicit_text_th, v.explicit_text_en
 FROM consent.collection_point_purposes cpp
 JOIN consent.purposes p ON p.id = cpp.purpose_id
@@ -159,6 +163,7 @@ type ListCollectionPointPurposesRow struct {
 	RequiresExplicit  bool        `db:"requires_explicit" json:"requires_explicit"`
 	MinAge            *int16      `db:"min_age" json:"min_age"`
 	LifespanDays      *int32      `db:"lifespan_days" json:"lifespan_days"`
+	DoubleOptIn       bool        `db:"double_opt_in" json:"double_opt_in"`
 	CurrentVersionID  pgtype.UUID `db:"current_version_id" json:"current_version_id"`
 	CurrentVersionNo  *int32      `db:"current_version_no" json:"current_version_no"`
 	TextTh            *string     `db:"text_th" json:"text_th"`
@@ -189,6 +194,7 @@ func (q *Queries) ListCollectionPointPurposes(ctx context.Context, collectionPoi
 			&i.RequiresExplicit,
 			&i.MinAge,
 			&i.LifespanDays,
+			&i.DoubleOptIn,
 			&i.CurrentVersionID,
 			&i.CurrentVersionNo,
 			&i.TextTh,
@@ -355,7 +361,7 @@ func (q *Queries) RetireCollectionPoint(ctx context.Context, id uuid.UUID) error
 
 const updateCollectionPoint = `-- name: UpdateCollectionPoint :execrows
 UPDATE consent.collection_points
-SET name = $3, channel = $4, legal_entity_id = $5, allowed_origins = $6, verification_method = $7, row_version = row_version + 1,
+SET name = $3, channel = $4, legal_entity_id = $5, allowed_origins = $6, verification_method = $7, double_opt_in = $8, row_version = row_version + 1,
     updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
 WHERE id = $1 AND row_version = $2
 `
@@ -368,6 +374,7 @@ type UpdateCollectionPointParams struct {
 	LegalEntityID      uuid.UUID `db:"legal_entity_id" json:"legal_entity_id"`
 	AllowedOrigins     []string  `db:"allowed_origins" json:"allowed_origins"`
 	VerificationMethod string    `db:"verification_method" json:"verification_method"`
+	DoubleOptIn        bool      `db:"double_opt_in" json:"double_opt_in"`
 }
 
 func (q *Queries) UpdateCollectionPoint(ctx context.Context, arg UpdateCollectionPointParams) (int64, error) {
@@ -379,6 +386,7 @@ func (q *Queries) UpdateCollectionPoint(ctx context.Context, arg UpdateCollectio
 		arg.LegalEntityID,
 		arg.AllowedOrigins,
 		arg.VerificationMethod,
+		arg.DoubleOptIn,
 	)
 	if err != nil {
 		return 0, err

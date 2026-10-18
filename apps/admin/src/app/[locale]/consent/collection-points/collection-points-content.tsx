@@ -142,6 +142,7 @@ function CPForm({ cp, onSaved }: { cp?: ConsentCollectionPoint; onSaved: (cp: Co
     legal_entity_id: cp?.legal_entity_id ?? "",
     allowed_origins: cp?.allowed_origins ?? [],
     verification_method: (cp?.verification_method ?? "none") as CollectionPointInput["verification_method"],
+    double_opt_in: cp?.double_opt_in ?? false,
     purposes: cp?.purposes.map((p) => ({ purpose_id: p.purpose_id, required: p.required })) ?? [],
   });
   const entityId = v.legal_entity_id || entities.data?.[0]?.id || "";
@@ -190,6 +191,12 @@ function CPForm({ cp, onSaved }: { cp?: ConsentCollectionPoint; onSaved: (cp: Co
             </select>
             <span className="text-xs text-slate-500">{t("cp.verificationMethodHint")}</span>
           </label>
+          <label className="flex items-center gap-2">
+            <input type="checkbox" checked={v.double_opt_in ?? false}
+              onChange={(e) => setV({ ...v, double_opt_in: e.target.checked })} data-testid="cp-double-opt-in" />
+            <span className="font-medium">{t("cp.doubleOptIn")}</span>
+          </label>
+          {v.double_opt_in && <p className="text-xs text-slate-500 md:col-span-2">{t("cp.doubleOptInHint")}</p>}
         </div>
         <fieldset className="space-y-1">
           <legend className="font-medium">{t("cp.purposes")}</legend>

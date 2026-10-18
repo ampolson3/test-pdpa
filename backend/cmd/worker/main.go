@@ -18,6 +18,7 @@ import (
 
 	agreementservice "pdpa-platform/internal/agreement/service"
 	breach "pdpa-platform/internal/breach/service"
+	consentservice "pdpa-platform/internal/consent/service"
 	cookiescan "pdpa-platform/internal/cookie/scan"
 	cookieservice "pdpa-platform/internal/cookie/service"
 	dpiaservice "pdpa-platform/internal/dpia/service"
@@ -111,6 +112,10 @@ func run() error {
 	river.AddWorker(workers, &cookieservice.ScanWorker{Service: cookieSvc})
 	river.AddWorker(workers, &cookieservice.ScheduleSweeper{Pool: pool, River: inserter})
 	river.AddWorker(workers, &cookieservice.ScheduleChecker{Service: cookieSvc})
+	consentSvc := &consentservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, Keyring: notifySvc.Keyring,
+		PortalBaseURL: envOr("PORTAL_PUBLIC_URL", "")} // CON-23: double opt-in sweep (expires unconfirmed links)
+	river.AddWorker(workers, &consentservice.DoubleOptInSweeper{Pool: pool, River: inserter})
+	river.AddWorker(workers, &consentservice.DoubleOptInChecker{Service: consentSvc})
 	ropaSvc := &ropaservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter} // ROPA-15: periodic review reminder
 	dpiaSvc := &dpiaservice.Service{Audit: auditservice.New()}                                                  // DPIA-13: breach.activity_linked marks the activity's approved round needs_review
 	wiring.Events(subscribers, ropaSvc, dpiaSvc)                                                                // ROPA-10: logs DSAR rejections against their processing activities
@@ -152,7 +157,8 @@ func run() error {
 		Workers: workers,
 		PeriodicJobs: []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob(),
 			auditjobs.RetentionPeriodicJob(retentionMonths), govjobs.SweepPeriodicJob(), cookieservice.SweepPeriodicJob(),
-			notice.ReviewSweepPeriodicJob(), ropaservice.ReviewSweepPeriodicJob(), vendorservice.ReassessmentSweepPeriodicJob()},
+			notice.ReviewSweepPeriodicJob(), ropaservice.ReviewSweepPeriodicJob(), vendorservice.ReassessmentSweepPeriodicJob(),
+			consentservice.DoubleOptInSweepPeriodicJob()},
 		SoftStopTimeout: softStop,
 	})
 	if err != nil {

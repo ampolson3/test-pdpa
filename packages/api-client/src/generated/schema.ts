@@ -1705,6 +1705,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/v1/consents/double-opt-in/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The data subject confirms their own e-mailed/SMS link (CON-23) — the decision this token was issued for has effect only now
+         * @description The public key (X-Public-Key) of the original submission's collection point names the tenant. token is the one embedded in the confirmation link sent by consentSubmitPublicConsent.
+         */
+        post: operations["consentConfirmDoubleOptIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/breach/incidents": {
         parameters: {
             query?: never;
@@ -8547,6 +8567,8 @@ export interface components {
              * @enum {string}
              */
             verification_method?: "none" | "otp" | "magic_link" | "idp";
+            /** @description CON-23 — a first-ever CONSENTED decision at this collection point records PENDING until the subject confirms via an e-mailed/SMS link; defaults to false */
+            double_opt_in?: boolean;
             purposes: {
                 purpose_id: components["schemas"]["Uuid"];
                 required: boolean;
@@ -8568,6 +8590,8 @@ export interface components {
              * @enum {string}
              */
             verification_method?: "none" | "otp" | "magic_link" | "idp";
+            /** @description CON-23 — a first-ever CONSENTED decision at this collection point records PENDING until the subject confirms via an e-mailed/SMS link */
+            double_opt_in?: boolean;
             checklist?: components["schemas"]["ConsentChecklist"];
             published_at?: components["schemas"]["Timestamp"];
             purposes: {
@@ -13369,6 +13393,48 @@ export interface operations {
                         /** @enum {string} */
                         status: "approved";
                         confirmed_purposes: string[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    consentConfirmDoubleOptIn: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                "X-Public-Key": string;
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    token: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "confirmed";
+                        purpose_code: string;
                     };
                 };
             };

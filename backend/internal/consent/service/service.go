@@ -67,7 +67,11 @@ type Service struct {
 	// Verification is IAM-05 (rule 9): the guardian's own OTP before a guardian-gated consent (CON-11, ม.20)
 	// takes effect. Nil where guardian consent isn't exercised (e.g. tests that don't need it).
 	Verification *iamservice.Service
-	Now          func() time.Time
+	// PortalBaseURL is CON-23's own confirmation link base (e.g. "https://portal.example.com") — the backend's
+	// own counterpart to PORTAL_PUBLIC_URL, which only the frontend reads today; empty falls back to the same
+	// http://localhost:3001 default the admin app's own pages use.
+	PortalBaseURL string
+	Now           func() time.Time
 }
 
 func (s *Service) now() time.Time {

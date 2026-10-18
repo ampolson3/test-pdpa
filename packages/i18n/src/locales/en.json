@@ -2068,6 +2068,8 @@
         "magic_link": "Magic link (not available yet)",
         "idp": "External IdP (not available yet)"
       },
+      "doubleOptIn": "Double opt-in",
+      "doubleOptInHint": "CON-23 — a first-ever consent here records PENDING until the subject confirms the link sent to their own e-mail/SMS; the decision has no effect until then.",
       "publishTitle": "Publishing",
       "checklistIntro": "Confirm the form meets s.19 before publishing",
       "publish": "Publish",
@@ -2254,6 +2256,19 @@
           "invalid": "The code you entered is incorrect, expired, or already used",
           "identifier_mismatch": "The code doesn't match the e-mail or phone number you gave"
         }
+      }
+    },
+    "doubleOptIn": {
+      "title": "Confirm your consent",
+      "intro": "Your consent takes effect only once you confirm this link.",
+      "confirm": "Confirm",
+      "confirming": "Confirming…",
+      "confirmed": "Thank you — your consent for \"{purposeCode}\" is now active.",
+      "errors": {
+        "not_found": "This confirmation link is invalid.",
+        "invalid_transition": "This link has already been used, has expired, or is no longer valid.",
+        "unavailable": "We couldn't confirm this right now. Please try again shortly.",
+        "generic": "Something went wrong. Please try again."
       }
     },
     "notice": {

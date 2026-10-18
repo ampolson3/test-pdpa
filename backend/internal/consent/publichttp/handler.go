@@ -65,7 +65,7 @@ func (h *Strict) ConsentGetPublicCollectionPoint(ctx context.Context, req Consen
 		return nil, consenthttp.ToProblem(err)
 	}
 	out := PublicCollectionPoint{Code: v.Code, Name: v.Name, Channel: PublicCollectionPointChannel(v.Channel),
-		DoubleOptIn: false, VerificationMethod: PublicCollectionPointVerificationMethod(v.VerificationMethod), Purposes: []PublicPurpose{}}
+		DoubleOptIn: v.DoubleOptIn, VerificationMethod: PublicCollectionPointVerificationMethod(v.VerificationMethod), Purposes: []PublicPurpose{}}
 	ageGate := false
 	for _, p := range v.Purposes {
 		pp := PublicPurpose{Code: p.Code, VersionNo: int(p.VersionNo), Name: p.Name, Text: p.Text,
@@ -191,6 +191,17 @@ func (h *Strict) ConsentVerifyGuardianApproval(ctx context.Context, req ConsentV
 		return nil, consenthttp.ToProblem(err)
 	}
 	return ConsentVerifyGuardianApproval200JSONResponse{Status: Approved, ConfirmedPurposes: confirmed}, nil
+}
+
+func (h *Strict) ConsentConfirmDoubleOptIn(ctx context.Context, req ConsentConfirmDoubleOptInRequestObject) (ConsentConfirmDoubleOptInResponseObject, error) {
+	if _, err := collectionPoint(ctx); err != nil {
+		return nil, err
+	}
+	purposeCode, err := h.svc.ConfirmDoubleOptIn(ctx, req.Body.Token)
+	if err != nil {
+		return nil, consenthttp.ToProblem(err)
+	}
+	return ConsentConfirmDoubleOptIn200JSONResponse{Status: Confirmed, PurposeCode: purposeCode}, nil
 }
 
 // ---- preference centre (CON-18) ----

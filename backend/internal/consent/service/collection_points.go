@@ -49,6 +49,7 @@ type CPPurpose struct {
 	ExplicitText     Text
 	MinAge           *int16
 	LifespanDays     *int32
+	DoubleOptIn      bool
 }
 
 // CollectionPoint is a place consent is collected (web form, app, branch counter, call centre, API).
@@ -60,6 +61,7 @@ type CollectionPoint struct {
 	LegalEntityID      uuid.UUID
 	Status             string // draft | active | retired
 	VerificationMethod string // none | otp | magic_link | idp (CON-19)
+	DoubleOptIn        bool   // CON-23: a first-ever CONSENTED decision here records PENDING until confirmed
 	PublicKey          string // issued on the first publish
 	AllowedOrigins     []string
 	Checklist          *Checklist
@@ -77,6 +79,7 @@ type CollectionPointInput struct {
 	LegalEntityID      uuid.UUID
 	AllowedOrigins     []string
 	VerificationMethod string // none | otp | magic_link | idp (CON-19); "" normalizes to "none"
+	DoubleOptIn        bool   // CON-23: a first-ever CONSENTED decision here records PENDING until confirmed
 	Purposes           []CPPurposeInput
 }
 
@@ -145,7 +148,7 @@ func (s *Service) CreateCollectionPoint(ctx context.Context, in CollectionPointI
 	}
 	err = pdb.Savepoint(ctx, func(ctx context.Context) error {
 		return consentstore.New(pdb.MustTxFromContext(ctx)).InsertCollectionPoint(ctx, consentstore.InsertCollectionPointParams{ID: id, Code: in.Code, Name: in.Name,
-			Channel: in.Channel, LegalEntityID: in.LegalEntityID, AllowedOrigins: in.AllowedOrigins, VerificationMethod: in.VerificationMethod})
+			Channel: in.Channel, LegalEntityID: in.LegalEntityID, AllowedOrigins: in.AllowedOrigins, VerificationMethod: in.VerificationMethod, DoubleOptIn: in.DoubleOptIn})
 	})
 	if isUnique(err) {
 		return CollectionPoint{}, invalid("code exists")
@@ -183,7 +186,7 @@ func (s *Service) UpdateCollectionPoint(ctx context.Context, id uuid.UUID, versi
 		return CollectionPoint{}, err
 	}
 	if n, err := q.UpdateCollectionPoint(ctx, consentstore.UpdateCollectionPointParams{ID: id, RowVersion: version, Name: in.Name, Channel: in.Channel,
-		LegalEntityID: in.LegalEntityID, AllowedOrigins: in.AllowedOrigins, VerificationMethod: in.VerificationMethod}); err != nil || n == 0 {
+		LegalEntityID: in.LegalEntityID, AllowedOrigins: in.AllowedOrigins, VerificationMethod: in.VerificationMethod, DoubleOptIn: in.DoubleOptIn}); err != nil || n == 0 {
 		if err == nil {
 			err = ErrVersionMismatch
 		}
@@ -380,15 +383,15 @@ func cpPurposes(ctx context.Context, q *consentstore.Queries, id uuid.UUID) ([]C
 		out = append(out, CPPurpose{PurposeID: p.PurposeID, Code: p.Code, Name: Text{Th: p.NameTh, En: deref(p.NameEn)}, Status: p.Status,
 			IsSensitive: p.IsSensitive, Required: p.IsRequired, CurrentVersionID: uuidPtr(p.CurrentVersionID), CurrentVersionNo: p.CurrentVersionNo,
 			ConsentText: Text{Th: deref(p.TextTh), En: deref(p.TextEn)}, ExplicitText: Text{Th: deref(p.ExplicitTextTh), En: deref(p.ExplicitTextEn)},
-			MinAge: p.MinAge, LifespanDays: p.LifespanDays})
+			MinAge: p.MinAge, LifespanDays: p.LifespanDays, DoubleOptIn: p.DoubleOptIn})
 	}
 	return out, nil
 }
 
 func toCP(r consentstore.GetCollectionPointRow) CollectionPoint {
 	cp := CollectionPoint{ID: r.ID, Code: r.Code, Name: r.Name, Channel: r.Channel, LegalEntityID: r.LegalEntityID, Status: r.Status,
-		VerificationMethod: r.VerificationMethod,
-		PublicKey:          deref(r.PublicKey), AllowedOrigins: r.AllowedOrigins, RowVersion: r.RowVersion, UpdatedAt: r.UpdatedAt.Time}
+		VerificationMethod: r.VerificationMethod, DoubleOptIn: r.DoubleOptIn,
+		PublicKey: deref(r.PublicKey), AllowedOrigins: r.AllowedOrigins, RowVersion: r.RowVersion, UpdatedAt: r.UpdatedAt.Time}
 	if len(r.PublishChecklist) > 0 {
 		cp.Checklist = &Checklist{}
 		_ = json.Unmarshal(r.PublishChecklist, cp.Checklist)
