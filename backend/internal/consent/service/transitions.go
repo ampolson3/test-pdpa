@@ -12,6 +12,7 @@ const (
 	TxNotConsented       = "NOT_CONSENTED"
 	TxWithdrawn          = "WITHDRAWN"
 	TxExtended           = "EXTENDED"
+	TxExpired            = "EXPIRED"
 	TxChangedPreferences = "CHANGED_PREFERENCES"
 	// TxPending/TxConfirmed/TxCancelled are the shared machinery behind both CON-11's guardian gate (ม.20) and
 	// CON-23's double opt-in: a first-ever CONSENTED decision on a gated purpose records PENDING instead of
@@ -97,6 +98,8 @@ func eventFor(txType string) string {
 		return "consent.denied"
 	case TxWithdrawn:
 		return "consent.withdrawn"
+	case TxExpired:
+		return "consent.expired"
 	case TxChangedPreferences:
 		return "consent.preferences_changed"
 	case TxCancelled:

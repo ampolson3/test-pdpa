@@ -2214,6 +2214,9 @@
         "openbao_transit": "master keys in OpenBao Transit",
         "local_development": "development keys (not for production)"
       }
+    },
+    "nearExpiry": {
+      "title": "Consents expiring soon"
     }
   },
   "portal": {

@@ -9,6 +9,7 @@ import {
   CONSENT_LEGACY_IMPORT_TYPE,
   createApiClient,
   useCollectionPoints,
+  useConsentNearExpiry,
   useConsentSettings,
   useConsentSubject,
   useConsentSubjectMutations,
@@ -59,6 +60,7 @@ export function SubjectsContent() {
         </div>
       )}
       <StorageCard />
+      <NearExpiryCard />
       <form className="flex flex-wrap items-end gap-2" onSubmit={(e) => { e.preventDefault(); setSearch(draft.value.trim() ? { type: draft.type, value: draft.value.trim() } : null); }}>
         <select className={`${field} w-40`} value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as SubjectIdentifier["type"] })}>
           {ID_TYPES.map((x) => <option key={x} value={x}>{t(`idType.${x}`)}</option>)}
@@ -103,6 +105,29 @@ function StorageCard() {
     <p className="rounded-md bg-slate-100 p-3 text-slate-700" data-testid="storage-card">
       {t("summary", { region: s.data.data_region, encryption: s.data.identifier_encryption.toUpperCase() })} · {t(`km.${s.data.key_management}`)}
     </p>
+  );
+}
+
+/** CON-20: the module doc's own "รายการที่ใกล้หมดอายุ" — active consents expiring within 30 days. */
+function NearExpiryCard() {
+  const t = useTranslations("consent.nearExpiry");
+  const locale = useLocale() as Locale;
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const list = useConsentNearExpiry(client);
+  const text = useText();
+  if (!list.data || list.data.length === 0) return null;
+  return (
+    <div className="rounded-md border border-amber-200 bg-amber-50 p-3" data-testid="near-expiry-card">
+      <h2 className="mb-1 text-xs font-medium text-amber-800">{t("title")}</h2>
+      <ul className="space-y-1">
+        {list.data.map((n) => (
+          <li key={`${n.subject_id}-${n.purpose_code}`} className="flex flex-wrap justify-between gap-2 text-amber-900" data-testid={`near-expiry-${n.purpose_code}`}>
+            <span>{text(n.purpose_name)}</span>
+            <span className="text-xs">{formatDate(n.expires_at, locale, { year: "numeric", month: "short", day: "numeric" })}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

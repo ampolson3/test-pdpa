@@ -3301,6 +3301,39 @@ is not-found; two-tenant isolation), HTTP contract (`internal/dpia/http/handler_
 `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
 `/ropa/activities/[id]` route) all verified clean.
 
+### CON-20 วันหมดอายุและต่ออายุ (`docs/modules/CON.md#con-20`) — done
+Most of this feature's scope was already built by earlier passes: `consent.purposes.lifespan_days` (set on the
+purpose form), the lifespan→`expires_at` computation on every CONSENTED write, `TxExtended`/EXTENDED on
+renewing an already-ACTIVE purpose, and ST-01's `ACTIVE <-> EXPIRED` edges — only the daily sweep and its own
+read list were missing. `backend/db/queries/consent/expiry.sql` (`ListDueExpirations`/`ListNearExpiry`, no new
+migration — `consent_transactions`' CHECK constraints already include `'EXPIRED'`/`'system'`) and
+`internal/consent/service/expiry.go`: `CheckDueExpirations`/`expireStatus` mirror `writeDecisions`' own
+hash-chain mechanics directly rather than routing through `checkDecisions`/`Decide` (expiry is the system's own
+decision, not a data subject's); the EXPIRED transaction's receipt is attributed to the same collection point
+the subject's prior transaction for that purpose used (no "system" channel value exists to invent one with).
+`expireStatus` re-locks and re-checks the status row before writing, so a status renewed/withdrawn since the
+sweep's own read is silently skipped, not wrongly expired; once EXPIRED a row no longer matches
+`ListDueExpirations`' own filter, so a retried sweep is a harmless no-op — the same idempotency PNG-15/ROPA-15/
+VEN-10 already rely on. `ExpirySweepArgs`/`ExpirySweeper`/`ExpirySweepPeriodicJob`/`ExpiryCheckArgs`/
+`ExpiryChecker` are CON-23's own double opt-in sweep's exact "sweep lists tenants, per-tenant job reads its own
+rows" pattern, just daily instead of hourly — expiry is date-granular, unlike CON-23's own 48-hour window.
+
+API: `GET /admin/v1/consent/near-expiry` (`consent.record.read`, already-seeded; `within_days` query param,
+default 30 — a plain config default, not a decisions.md question). UI: `/consent/subjects` gained a "Consents
+expiring soon" card (`NearExpiryCard`) — the module doc's own "รายการที่ใกล้หมดอายุ." A renewal-reminder
+*notification* (distinct from this read-only list) is deliberately not built: no portal/notification-channel
+consumer exists for a per-subject push yet — the literal acceptance criterion only needs the EXPIRED transition
+and its event, which the sweep already delivers in full. Tests: unit (`internal/consent/service/expiry_test.go`
+— the acceptance criterion directly: past-due becomes EXPIRED with a chained transaction and a published
+`consent.expired` outbox row; not-yet-due untouched; repeat check a no-op; `ListNearExpiry`'s window
+include/exclude; two-tenant isolation), HTTP contract (`internal/consent/http/handler_test.go` —
+401/403/200 through the real validator + AuthZ). Not verified live against a real Postgres/Redis — the same
+environment limitation this codebase's other recent passes already disclosed; every test compiles and vets
+clean and skips the same way the rest of this module's own suite already does here. `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean), `go test -count=1 ./...` (no regressions, full backend suite),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

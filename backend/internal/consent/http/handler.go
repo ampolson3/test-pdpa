@@ -222,6 +222,33 @@ func (h *Strict) ConsentListSubjects(ctx context.Context, _ ConsentListSubjectsR
 	return resp, nil
 }
 
+// ConsentListNearExpiry is CON-20's own frontend note: every ACTIVE consent expiring within the given
+// window (default consent.NearExpiryDefaultDays).
+func (h *Strict) ConsentListNearExpiry(ctx context.Context, req ConsentListNearExpiryRequestObject) (ConsentListNearExpiryResponseObject, error) {
+	within := 0
+	if req.Params.WithinDays != nil {
+		within = *req.Params.WithinDays
+	}
+	list, err := h.svc.ListNearExpiry(ctx, within)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	resp := ConsentListNearExpiry200JSONResponse{Data: make([]ConsentNearExpiry, 0, len(list))}
+	for _, n := range list {
+		var w ConsentNearExpiry
+		if err := convert(map[string]any{
+			"subject_id":   n.SubjectID,
+			"purpose_code": n.PurposeCode,
+			"purpose_name": map[string]any{"th": n.PurposeName.Th, "en": n.PurposeName.En},
+			"expires_at":   n.ExpiresAt.UTC(),
+		}, &w); err != nil {
+			return nil, err
+		}
+		resp.Data = append(resp.Data, w)
+	}
+	return resp, nil
+}
+
 func (h *Strict) ConsentSearchSubjects(ctx context.Context, req ConsentSearchSubjectsRequestObject) (ConsentSearchSubjectsResponseObject, error) {
 	value := ""
 	if req.Body.Identifier.Value != nil {

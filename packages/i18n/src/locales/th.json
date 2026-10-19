@@ -2214,6 +2214,9 @@
         "openbao_transit": "กุญแจหลักใน OpenBao Transit",
         "local_development": "กุญแจสำหรับการพัฒนา (ห้ามใช้จริง)"
       }
+    },
+    "nearExpiry": {
+      "title": "ความยินยอมที่ใกล้หมดอายุ"
     }
   },
   "portal": {

@@ -72,7 +72,7 @@ CON-21,CON,ค้นหา แดชบอร์ด และส่งออก,
 CON-22,CON,นำเข้าความยินยอมเดิม,Bulk import,Should,P1,ความยินยอม,แนวปฏิบัติตลาด,IT,M,S,N,5,3,1.0,0,2.8,"PLT-14, CON-15",,docs/modules/CON.md#con-22,ข้อมูลจากระบบ Consent เดิมนำเข้าครบและ reconcile ยอดตรง,done
 CON-05,CON,นโยบายคุกกี้อัตโนมัติ,Auto cookie policy,Should,P3,คุกกี้,ม.23,DPO,S,S,N,3,3,0.7,0,2.1,CON-04,BP-03,docs/modules/CON.md#con-05,ตารางในหน้า Cookie Policy ตรงกับผลสแกนล่าสุด,todo
 CON-07,CON,หลายโดเมนและ Mobile SDK,Multi-domain & mobile SDK,Should,P3,คุกกี้,แนวปฏิบัติตลาดไทย,IT,M,L,N,5,10,1.8,0,5.2,CON-16,BP-03,docs/modules/CON.md#con-07,แอปตัวอย่างบันทึกและอ่านสถานะความยินยอมผ่าน SDK ได้,todo
-CON-20,CON,วันหมดอายุและต่ออายุ,Consent expiry & renewal,Should,P3,ความยินยอม,แนวปฏิบัติตลาด,SCHED DS,M,S,N,5,3,1.0,0,2.8,PLT-10,BP-02,docs/modules/CON.md#con-20,ความยินยอมที่ครบอายุเปลี่ยนสถานะอัตโนมัติและระบบปลายทางได้รับ event,todo
+CON-20,CON,วันหมดอายุและต่ออายุ,Consent expiry & renewal,Should,P3,ความยินยอม,แนวปฏิบัติตลาด,SCHED DS,M,S,N,5,3,1.0,0,2.8,PLT-10,BP-02,docs/modules/CON.md#con-20,ความยินยอมที่ครบอายุเปลี่ยนสถานะอัตโนมัติและระบบปลายทางได้รับ event,done
 CON-23,CON,Double Opt-In,Double opt-in,Should,P3,ความยินยอม,แนวปฏิบัติตลาด,DS,S,S,N,3,3,0.7,0,2.1,IAM-05,BP-01,docs/modules/CON.md#con-23,ความยินยอมมีผลหลังยืนยันเท่านั้น,done
 CON-24,CON,ส่งคำขอความยินยอมแบบ Bulk,Bulk consent request campaign,Should,P3,ความยินยอม,แนวปฏิบัติตลาด,MKT DS,M,M,Y,5,5,1.2,2.0,3.5,"PLT-04, CON-18",,docs/modules/CON.md#con-24,แคมเปญแสดงจำนวนส่ง / เปิด / ตอบ และส่งซ้ำเฉพาะผู้ยังไม่ตอบได้,todo
 CON-08,CON,A/B testing และวัด consent rate,Banner A/B testing,Nice,P4,คุกกี้,แนวโน้มตลาด,MKT,M,M,Y,5,5,1.2,2.0,3.5,"CON-01, PLT-18",BP-03,docs/modules/CON.md#con-08,ผลการทดลองแสดงอัตรายินยอมต่อ variant พร้อมจำนวนตัวอย่าง,todo

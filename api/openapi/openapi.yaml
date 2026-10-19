@@ -4186,6 +4186,43 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/consent/near-expiry:
+    get:
+      operationId: consentListNearExpiry
+      tags:
+      - consent
+      summary: Active consents expiring soon (CON-20)
+      x-permission: consent.record.read
+      x-module: consent
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: within_days
+        in: query
+        description: Window in days from now; defaults to 30 when omitted or non-positive.
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 3650
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConsentNearExpiry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/consent/subjects/{id}:
     get:
       operationId: consentGetSubject
@@ -20874,6 +20911,22 @@ components:
         row_version:
           type: integer
         updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    ConsentNearExpiry:
+      type: object
+      required:
+      - subject_id
+      - purpose_code
+      - purpose_name
+      - expires_at
+      properties:
+        subject_id:
+          $ref: '#/components/schemas/Uuid'
+        purpose_code:
+          type: string
+        purpose_name:
+          $ref: '#/components/schemas/ConsentText'
+        expires_at:
           $ref: '#/components/schemas/Timestamp'
     ConsentSubjectSummary:
       type: object

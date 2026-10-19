@@ -321,6 +321,42 @@ func TestConsentEndpoints_Contract(t *testing.T) {
 		t.Errorf("settings: %d %v, want data_region TH and identifier_encryption aes-256-gcm", res.code, res.body)
 	}
 
+	// ---- CON-20: consent expiry and renewal — the near-expiry list ----
+	lifespan := 10
+	nearExpiryContent := consenttest.Content("NEAR-EXP", "ยินยอมที่มีอายุ")
+	nearExpiryContent.LifespanDays = &lifespan
+	nearExpiryPurpose := f.LivePurpose(t, "NEAR-EXP", nearExpiryContent)
+	nearExpiryCP := f.LiveCP(t, "NEAR-EXP-CP", consent.CPPurposeInput{PurposeID: nearExpiryPurpose.ID})
+	nearExpirySubmit := map[string]any{
+		"subject":   map[string]any{"identifiers": []map[string]string{{"type": "email", "value": "near-expiry@example.com"}}},
+		"decisions": []map[string]any{{"purpose_code": "NEAR-EXP", "purpose_version_no": 1, "decision": "CONSENTED"}},
+	}
+	nearExpiryHdr := map[string]string{"X-Public-Key": nearExpiryCP.PublicKey, "Idempotency-Key": uuid.NewString()}
+	if res := do("POST", "/public/v1/consents", nil, nearExpirySubmit, nearExpiryHdr); res.code != 201 {
+		t.Fatalf("near-expiry submission: %d %v", res.code, res.body)
+	}
+	if res := do("GET", "/admin/v1/consent/near-expiry", nil, nil, nil); res.code != 401 {
+		t.Errorf("near-expiry, no principal: %d, want 401", res.code)
+	}
+	if res := do("GET", "/admin/v1/consent/near-expiry", &dpoLess, nil, nil); res.code != 403 {
+		t.Errorf("near-expiry, reader without consent.record.read: %d, want 403", res.code)
+	}
+	res := do("GET", "/admin/v1/consent/near-expiry?within_days=30", &alice, nil, nil)
+	if res.code != 200 {
+		t.Fatalf("near-expiry: %d %v", res.code, res.body)
+	}
+	nearExpiryData, _ := res.body["data"].([]any)
+	foundNearExpiry := false
+	for _, it := range nearExpiryData {
+		m, _ := it.(map[string]any)
+		if m["purpose_code"] == "NEAR-EXP" {
+			foundNearExpiry = true
+		}
+	}
+	if !foundNearExpiry {
+		t.Errorf("near-expiry: expected NEAR-EXP in %v", nearExpiryData)
+	}
+
 	// ---- CON-11: guardian consent (ม.20) ----
 	minorContent := consenttest.Content("MKT-MINOR", "ยินยอมรับการตลาด")
 	minAge := 13

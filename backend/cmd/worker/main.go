@@ -116,6 +116,9 @@ func run() error {
 		PortalBaseURL: envOr("PORTAL_PUBLIC_URL", "")} // CON-23: double opt-in sweep (expires unconfirmed links)
 	river.AddWorker(workers, &consentservice.DoubleOptInSweeper{Pool: pool, River: inserter})
 	river.AddWorker(workers, &consentservice.DoubleOptInChecker{Service: consentSvc})
+	// CON-20: daily expiry sweep (ACTIVE consents past their own expires_at move to EXPIRED)
+	river.AddWorker(workers, &consentservice.ExpirySweeper{Pool: pool, River: inserter})
+	river.AddWorker(workers, &consentservice.ExpiryChecker{Service: consentSvc})
 	ropaSvc := &ropaservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter} // ROPA-15: periodic review reminder
 	dpiaSvc := &dpiaservice.Service{Audit: auditservice.New()}                                                  // DPIA-13: breach.activity_linked marks the activity's approved round needs_review
 	wiring.Events(subscribers, ropaSvc, dpiaSvc)                                                                // ROPA-10: logs DSAR rejections against their processing activities
@@ -158,7 +161,7 @@ func run() error {
 		PeriodicJobs: []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob(),
 			auditjobs.RetentionPeriodicJob(retentionMonths), govjobs.SweepPeriodicJob(), cookieservice.SweepPeriodicJob(),
 			notice.ReviewSweepPeriodicJob(), ropaservice.ReviewSweepPeriodicJob(), vendorservice.ReassessmentSweepPeriodicJob(),
-			consentservice.DoubleOptInSweepPeriodicJob()},
+			consentservice.DoubleOptInSweepPeriodicJob(), consentservice.ExpirySweepPeriodicJob()},
 		SoftStopTimeout: softStop,
 	})
 	if err != nil {

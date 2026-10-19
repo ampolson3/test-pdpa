@@ -963,6 +963,53 @@ change. `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n te
 
 **Acceptance criteria:** ความยินยอมที่ครบอายุเปลี่ยนสถานะอัตโนมัติและระบบปลายทางได้รับ event
 
+**Implementation — done.** Most of this feature's scope was already built by earlier passes: `consent.purposes.
+lifespan_days` (set on the purpose form, `/consent/purposes`), the lifespan→`expires_at` computation on every
+CONSENTED write, the `TxExtended`/EXTENDED transaction on renewing an already-ACTIVE purpose (ST-01's own
+`ACTIVE → ACTIVE` self-edge via `Decide`), and ST-01's `ACTIVE <-> EXPIRED` edges in
+`docs/states/state-machines.yaml` were all already in place — only the daily sweep and its own read list were
+missing. `backend/db/queries/consent/expiry.sql` (`ListDueExpirations`/`ListNearExpiry`, no new migration —
+`consent_transactions.transaction_type`'s CHECK already includes `'EXPIRED'` and `source` already includes
+`'system'`) and `internal/consent/service/expiry.go`: `CheckDueExpirations`/`expireStatus` mirror
+`writeDecisions`' own hash-chain mechanics directly (`receiptRecord`/`txRecord`/`.hash()`/`newReceiptNo`) rather
+than routing through `checkDecisions`/`Decide` — expiry is the system's own decision, not a data subject's, so
+reusing that public-facing path would be a worse fit, not a better one. The EXPIRED transaction's receipt is
+attributed to the same collection point the subject's prior transaction for that purpose was recorded against
+(resolved via `consent_status.last_transaction_id` → `consent_transactions.receipt_id` →
+`consent_receipts.collection_point_id`/`channel`) — there's no "system" channel value to invent one with, and
+reusing the original channel is the more accurate record of where the now-expired consent came from.
+`expireStatus` re-locks and re-checks the status row (`LockSubjectChain` + `LockStatus`) before writing, so a
+status renewed or withdrawn between the sweep's own read and the per-row write is silently skipped, not wrongly
+expired — and once a row is EXPIRED it no longer matches `ListDueExpirations`' own `WHERE status = 'ACTIVE'`
+filter, so a retried/second sweep is naturally a no-op, the same idempotency every other daily-sweep feature in
+this codebase (PNG-15/ROPA-15/VEN-10) already relies on. `ExpirySweepArgs`/`ExpirySweeper`/
+`ExpirySweepPeriodicJob`/`ExpiryCheckArgs`/`ExpiryChecker` are CON-23's own double opt-in sweep's exact
+"sweep lists tenants, per-tenant job reads its own rows" pattern (CLAUDE.md rule 1), just daily
+(`consent.expiry_sweep`/`consent.expiry_check`, `river.PeriodicInterval(24*time.Hour)`) rather than hourly —
+expiry is date-granular (`lifespan_days`), unlike CON-23's own 48-hour confirmation window.
+
+API: `GET /admin/v1/consent/near-expiry` (`consent.record.read`, already-seeded — no new permission code;
+`within_days` query param, default `NearExpiryDefaultDays = 30` — a plain config default per CLAUDE.md's own
+"implement the listed default as config," not a `docs/decisions.md` question, since it only shapes which rows
+the admin UI's own list surfaces). UI: `/consent/subjects` gained a "Consents expiring soon" card
+(`NearExpiryCard`, shown above the subject search) listing each near-due purpose with its own expiry date —
+the module doc's own "รายการที่ใกล้หมดอายุ." "แจ้งเตือนต่ออายุ" (a renewal-reminder *notification*, distinct
+from this read-only list) is deliberately not built: no portal/notification-channel consumer exists for a
+per-subject push yet, the same "no consumer yet" deferral this codebase uses throughout — the literal
+acceptance criterion only requires the EXPIRED transition and its event, which the sweep already delivers in
+full; a reminder notification can be layered on top of `ListNearExpiry` later without any schema change.
+
+Tests: unit (`internal/consent/service/expiry_test.go` — the acceptance criterion directly: a consent past its
+own lifespan moves to EXPIRED with a chained transaction and a published `consent.expired` outbox row; not yet
+due is untouched; a repeat check is a harmless no-op; `ListNearExpiry`'s window includes a near-due purpose and
+excludes one further out; two-tenant isolation), HTTP contract (`internal/consent/http/handler_test.go` —
+401/403/200 through the real validator + AuthZ, a real near-expiry purpose present in the response). Not
+verified live against a real Postgres/Redis — the same environment limitation this codebase's other recent
+passes already disclosed; every test compiles and vets clean and skips the same way the rest of this module's
+own test suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file),
+`go test -count=1 ./...` (no regressions, full backend suite), `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` all verified clean.
+
 <a id="con-23"></a>
 ### CON-23 Double Opt-In
 

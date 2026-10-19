@@ -1480,6 +1480,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/consent/near-expiry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active consents expiring soon (CON-20) */
+        get: operations["consentListNearExpiry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/consent/subjects/{id}": {
         parameters: {
             query?: never;
@@ -8680,6 +8697,12 @@ export interface components {
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
         };
+        ConsentNearExpiry: {
+            subject_id: components["schemas"]["Uuid"];
+            purpose_code: string;
+            purpose_name: components["schemas"]["ConsentText"];
+            expires_at: components["schemas"]["Timestamp"];
+        };
         ConsentSubjectSummary: {
             id: components["schemas"]["Uuid"];
             key: string;
@@ -13040,6 +13063,36 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    consentListNearExpiry: {
+        parameters: {
+            query?: {
+                /** @description Window in days from now; defaults to 30 when omitted or non-positive. */
+                within_days?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ConsentNearExpiry"][];
+                    };
+                };
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };

@@ -9,6 +9,7 @@ export type ConsentCollectionPoint = components["schemas"]["ConsentCollectionPoi
 export type CollectionPointInput = components["schemas"]["CollectionPointInput"];
 export type ConsentChecklist = components["schemas"]["ConsentChecklist"];
 export type ConsentSubjectSummary = components["schemas"]["ConsentSubjectSummary"];
+export type ConsentNearExpiry = components["schemas"]["ConsentNearExpiry"];
 export type ConsentSubjectProfile = components["schemas"]["ConsentSubjectProfile"];
 export type ConsentVerifyResult = components["schemas"]["ConsentVerifyResult"];
 export type ConsentDecisionInput = components["schemas"]["ConsentDecisionInput"];
@@ -153,6 +154,20 @@ export function useConsentSubjects(client: ApiClient, search: SubjectIdentifier 
         return data.data;
       }
       const { data, error } = await client.GET("/admin/v1/consent/subjects");
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** CON-20: active consents expiring within the given window (default 30 days). */
+export function useConsentNearExpiry(client: ApiClient, withinDays?: number) {
+  return useQuery({
+    queryKey: ["consent", "near-expiry", withinDays ?? 30],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/consent/near-expiry", {
+        params: { query: withinDays ? { within_days: withinDays } : {} },
+      });
       if (error) throw error;
       return data.data;
     },

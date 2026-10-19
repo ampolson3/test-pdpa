@@ -17,6 +17,7 @@ output-options:
     - consentPublishCollectionPoint
     - consentRetireCollectionPoint
     - consentListSubjects
+    - consentListNearExpiry
     - consentSearchSubjects
     - consentGetSubject
     - consentVerifySubject
