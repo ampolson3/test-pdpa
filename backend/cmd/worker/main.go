@@ -99,7 +99,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileStore(store, inserter), River: inserter, Audit: auditservice.New()}
+	importSvc := &importer.Service{Types: wiring.ImportTypes(&crypto.Keyring{KEK: kek}, inserter), Files: fileStore(store, inserter), River: inserter, Audit: auditservice.New()}
 	river.AddWorker(workers, &importer.Preparer{Service: importSvc})
 	river.AddWorker(workers, &importer.Validator{Service: importSvc})
 	river.AddWorker(workers, &importer.Applier{Service: importSvc})

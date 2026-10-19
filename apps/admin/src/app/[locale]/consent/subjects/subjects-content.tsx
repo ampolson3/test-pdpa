@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
 import { formatDate, type Locale } from "@pdpa/i18n";
 import {
+  CONSENT_LEGACY_IMPORT_TYPE,
   createApiClient,
   useCollectionPoints,
   useConsentSettings,
@@ -15,6 +16,7 @@ import {
   type ConsentDecisionInput,
   type SubjectIdentifier,
 } from "@pdpa/api-client";
+import { ImportWizard } from "@/components/import-wizard";
 import { StatusBadge, field, input, problemText, useText } from "../shared";
 
 const ID_TYPES = ["email", "phone", "customer_id", "national_id", "passport", "line_uid", "other"] as const;
@@ -24,12 +26,18 @@ export function SubjectsContent() {
   const t = useTranslations("consent");
   const canRead = usePermission("consent.record.read");
   const canRecord = usePermission("consent.onbehalf.create");
+  const canImport = usePermission("consent.bulk.execute");
   const client = useMemo(() => createApiClient("/api/bff"), []);
   const [draft, setDraft] = useState<{ type: SubjectIdentifier["type"]; value: string }>({ type: "email", value: "" });
   const [search, setSearch] = useState<SubjectIdentifier | null>(null);
   const list = useConsentSubjects(client, search);
   const [selected, setSelected] = useState<string | "new" | null>(null);
+  const [importing, setImporting] = useState(false);
   const locale = useLocale() as Locale;
+  // CON-22: ImportWizard calls onDone when its status becomes done; keep the callback stable.
+  const refresh = useRef(list.refetch);
+  useEffect(() => { refresh.current = list.refetch; });
+  const onImported = useCallback(() => { void refresh.current(); }, []);
   if (!canRead) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
 
   return (
@@ -39,8 +47,17 @@ export function SubjectsContent() {
           <h1 className="text-xl font-semibold">{t("subjects.title")}</h1>
           <p className="text-slate-600">{t("subjects.intro")}</p>
         </div>
-        {canRecord && <Button onClick={() => setSelected("new")} data-testid="new-record">{t("subjects.recordNew")}</Button>}
+        <div className="flex flex-wrap gap-2">
+          {canImport && <Button variant="secondary" onClick={() => setImporting(!importing)} data-testid="toggle-legacy-import">{importing ? t("subjects.closeImport") : t("subjects.importLegacy")}</Button>}
+          {canRecord && <Button onClick={() => setSelected("new")} data-testid="new-record">{t("subjects.recordNew")}</Button>}
+        </div>
       </header>
+      {importing && canImport && (
+        <div className="space-y-2 rounded-md border border-slate-200 bg-white p-3">
+          <p className="text-xs text-slate-500">{t("subjects.importLegacyHint")}</p>
+          <ImportWizard importType={CONSENT_LEGACY_IMPORT_TYPE} onDone={onImported} />
+        </div>
+      )}
       <StorageCard />
       <form className="flex flex-wrap items-end gap-2" onSubmit={(e) => { e.preventDefault(); setSearch(draft.value.trim() ? { type: draft.type, value: draft.value.trim() } : null); }}>
         <select className={`${field} w-40`} value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as SubjectIdentifier["type"] })}>

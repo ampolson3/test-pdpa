@@ -12,6 +12,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const activateCollectionPoint = `-- name: ActivateCollectionPoint :exec
+UPDATE consent.collection_points SET status = 'active', row_version = row_version + 1,
+    updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE id = $1
+`
+
+// CON-22: activates a collection point with none of CON-09's own public-facing steps (no checklist
+// attestation, no public_key) — the legacy-import point this backs is never reached from /public/v1.
+func (q *Queries) ActivateCollectionPoint(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, activateCollectionPoint, id)
+	return err
+}
+
 const deleteCollectionPointPurposes = `-- name: DeleteCollectionPointPurposes :exec
 DELETE FROM consent.collection_point_purposes WHERE collection_point_id = $1
 `

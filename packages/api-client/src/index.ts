@@ -331,6 +331,7 @@ export {
   useConsentSettings,
   usePreferenceCenterLink,
   usePreferenceCenterMutations,
+  CONSENT_LEGACY_IMPORT_TYPE,
   type ConsentPurpose,
   type PurposeContent,
   type ConsentText,

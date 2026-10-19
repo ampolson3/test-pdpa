@@ -16,6 +16,9 @@ export type ConsentRecordInput = components["schemas"]["ConsentRecordInput"];
 export type ConsentResult = components["schemas"]["ConsentResult"];
 export type SubjectIdentifier = components["schemas"]["SubjectIdentifier"];
 
+/** CON-22's own PLT-14 import type code, for the import wizard's `type` parameter. */
+export const CONSENT_LEGACY_IMPORT_TYPE = "consent.legacy";
+
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 
 /** Purposes (CON-12) with their published versions. */

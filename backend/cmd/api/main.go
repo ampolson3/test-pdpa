@@ -265,7 +265,7 @@ func run() error {
 	fileSvc.EntityPermissions[orgservice.OrgSettingsEntityType] = "org.settings.read" // ORG-20 branding logo
 
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
-	importSvc := &importer.Service{Types: wiring.ImportTypes(), Files: fileSvc, River: riverClient, Audit: auditSvc}
+	importSvc := &importer.Service{Types: wiring.ImportTypes(keyring, riverClient), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
 	cookieSvc := &cookieservice.Service{Audit: auditSvc, Org: orgSvc, Notify: notifySvc, River: riverClient}                     // CON-01: cookie consent banner
 	riskSvc := riskservice.New()                                                                                                 // ROPA-09's ม.37(1) controls catalog

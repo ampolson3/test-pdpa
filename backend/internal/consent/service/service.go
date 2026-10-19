@@ -54,6 +54,10 @@ func (e *CheckError) Unwrap() error { return ErrPublishChecks }
 type Org interface {
 	GetLegalEntity(ctx context.Context, id uuid.UUID) (orgservice.LegalEntity, error)
 	ListMaster(ctx context.Context, kind string) ([]orgservice.MasterItem, error)
+	// ListLegalEntities is CON-22's own lookup: resolving a legacy import row's legal entity by its
+	// registration number (the real, already-unique business key — ORG-01's own mod-11-checked id) rather
+	// than a free-text fuzzy name match, since every legal entity already carries one.
+	ListLegalEntities(ctx context.Context) ([]orgservice.LegalEntity, error)
 }
 
 // Service runs the consent module for the tenant of the transaction in ctx.

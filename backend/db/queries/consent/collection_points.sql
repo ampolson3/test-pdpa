@@ -38,6 +38,13 @@ SET status = 'active', public_key = coalesce(public_key, @public_key), publish_c
     updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
 WHERE id = @id;
 
+-- name: ActivateCollectionPoint :exec
+-- CON-22: activates a collection point with none of CON-09's own public-facing steps (no checklist
+-- attestation, no public_key) — the legacy-import point this backs is never reached from /public/v1.
+UPDATE consent.collection_points SET status = 'active', row_version = row_version + 1,
+    updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE id = $1;
+
 -- name: RetireCollectionPoint :exec
 UPDATE consent.collection_points SET status = 'retired', row_version = row_version + 1,
     updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid

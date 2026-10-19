@@ -847,6 +847,57 @@ either yet — the column already anticipates them); a portal-side resend/rate-l
 
 **หมายเหตุ:** ดึงเข้า P1 เพื่อย้ายข้อมูลตอน go-live (T26)
 
+**Implementation — done.** `internal/consent/service/import.go` is a new PLT-14 import type
+(`consentservice.ImportType = "consent.legacy"`, registered in `internal/wiring.ImportTypes()`, widened to
+take `keyring`/`riverClient` so the consent `Service` instance it builds for the import type has PLT-13
+encryption and PLT-11 event publishing — both `cmd/api` and `cmd/worker` already construct those before
+calling it, so no new config). One row per (data subject × purpose) decision from the legacy system:
+`legal_entity_registration_no` (ORG-01's own mod-11-checked business key — exact match, not a fuzzy name
+match, since every legal entity already carries one), `identifier_type`/`identifier_value`, `purpose_code`
+(matched against the tenant's own currently-published purposes), `decision` (consented/not_consented/
+withdrawn) and `occurred_at` (the legacy decision's own original date). Every row writes through the exact
+same `checkDecisions`/`writeDecisions` core every live submission uses — real hash-chained receipts,
+append-only transactions, the ST-01 status projection, `consent.*` events — so "ทำเครื่องหมายว่าเป็นข้อมูล
+นำเข้า" is literal: `Submission.Source = "import"` (already in `consent_transactions.source`'s own CHECK
+constraint, migration 00005, unused until now) against a new per-legal-entity "legacy import" collection
+point (`channel = "import"`, CON-01's own `channels` var already reserved that value for exactly this —
+"import ... points are made by their own features"; activated via a new minimal `ActivateCollectionPoint`
+query, skipping CON-09's checklist/public-key publish step entirely since it's never reached from
+`/public/v1`). "ตรวจซ้ำ" (dedup) needed no new code: `writeDecisions`' own blind-index subject resolution
+already finds-or-creates by identifier, so two legacy rows for the same person land on one subject.
+
+A `withdrawn` legacy row is this feature's own trickiest case: ST-01 declares no `"" -> WITHDRAWN"` edge
+(only `ACTIVE -> WITHDRAWN`), and per CLAUDE.md's own source-priority order (migrations > `docs/states` >
+...) this feature doesn't invent one — a "withdrawn" row implies consent was given at some point before it
+was taken back, so it's replayed as two receipts at the same original date (`Submission.OccurredAt *time.Time`,
+a new field on the existing `Submission` struct, backward-compatible since `Record()`/`UpdatePreferences()`
+never set it): a synthetic CONSENTED receipt immediately followed by WITHDRAWN. `writeDecisions`' own
+monotonic chain-ordering (each subject's receipts already get bumped a moment past the previous one, a
+property that existed for ordinary concurrent submissions) keeps both correctly sequenced on one chain
+without any new logic there.
+
+"reconcile ยอดตรง" is read literally against PLT-14's own mechanism, not a bespoke reconciliation table:
+`consent.reconcile_items`/`reconcile_runs` are CON-21's own downstream-webhook-drift tables (a materially
+different concern), so this feature doesn't touch them. PLT-14's all-or-nothing `Apply` plus its
+per-row error report (unknown legal entity / purpose / bad identifier / bad decision / bad date, one
+`FieldError` per failing column) already is the reconciliation: N valid rows import as N real receipts, and
+every rejected row is named with its reason before anything is written. API: unchanged — the import type is
+consumed through PLT-14's own generic `/admin/v1/platform/imports` endpoints
+(`consent.bulk.execute`, already seeded in the baseline permission migration, role IT — no new permission
+code or migration). UI: `/consent/subjects` gained an "Import legacy consent data" toggle (gated on
+`consent.bulk.execute`) mounting the shared `ImportWizard` component, the same reuse pattern
+`/settings/master-data`/`/settings/calendar`/`/ropa/activities` already established for their own PLT-14
+import types. Tests (`internal/consent/service/import_test.go`, run live against a real Postgres): a
+consented row lands ACTIVE, a not_consented row lands NOT_GIVEN, a withdrawn row lands WITHDRAWN with both
+synthetic transactions on record; an unknown legal entity / unknown purpose / bad identifier / bad decision /
+bad date are each refused at validation with the right column; two-tenant isolation (tenant B can't resolve
+tenant A's own registration number or see its imported subject). `go build ./...`, `go vet ./...`,
+`gofmt -l` and `go test -count=1 ./internal/consent/service/... ./internal/consent/http/...` all verified
+clean against a real Postgres 16 (port 5433); the package's own pre-existing CON-23 double-opt-in test
+failures (unrelated — a separate bug in `double_optin.go`'s own event-catalog wiring) are untouched by this
+change. `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/consent/subjects` route) all verified clean.
+
 <a id="con-05"></a>
 ### CON-05 นโยบายคุกกี้อัตโนมัติ
 

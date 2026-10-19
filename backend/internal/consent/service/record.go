@@ -63,6 +63,11 @@ type Submission struct {
 	UserAgent         string
 	CapturedBy        *uuid.UUID
 	IdempotencyKey    string
+	// OccurredAt is CON-22's own override: a legacy-import row carries the old system's real decision date,
+	// not "now". Nil for every other caller (Record/UpdatePreferences), which keeps today's own s.now()
+	// default — writeDecisions still enforces the subject's own chain staying monotonic either way, so a
+	// historical date is honoured only while it doesn't precede that subject's own last receipt.
+	OccurredAt *time.Time
 	// Public submissions (a web form) decide every purpose of the form and can't withdraw — that needs the
 	// verified preference centre (CON-18/19).
 	Public bool
@@ -255,6 +260,9 @@ func (s *Service) writeDecisions(ctx context.Context, cp CollectionPoint, sub Su
 	}
 	prev := ""
 	occurred := s.now().Truncate(time.Microsecond)
+	if sub.OccurredAt != nil {
+		occurred = sub.OccurredAt.UTC().Truncate(time.Microsecond)
+	}
 	last, err := q.LastReceipt(ctx, subjectID)
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):

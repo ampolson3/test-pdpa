@@ -3226,6 +3226,51 @@ on every touched file), `go test ./...` (no regressions, full backend suite),
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
 `pnpm --filter @pdpa/admin build` all verified clean.
 
+### CON-22 นำเข้าความยินยอมเดิม (`docs/modules/CON.md#con-22`) — done
+`internal/consent/service/import.go` is a new PLT-14 import type (`consentservice.ImportType =
+"consent.legacy"`, registered in `internal/wiring.ImportTypes()`, widened to take `keyring`/`riverClient`
+so the consent `Service` instance it builds has PLT-13 encryption and PLT-11 event publishing — both
+`cmd/api`/`cmd/worker` already construct those before calling it, no new config, no migration). One row per
+(data subject × purpose) legacy decision: `legal_entity_registration_no` resolved by exact match against
+ORG-01's own mod-11-checked business key (`orgservice.ListLegalEntities`, already exported for ROPA-18) —
+simpler and more robust than a fuzzy name match, since every legal entity already carries one; `purpose_code`
+against the tenant's own currently-published purposes; `decision` (consented/not_consented/withdrawn);
+`occurred_at` (the legacy decision's own original date, `importer.ParseDate`). Every row writes through the
+exact same `checkDecisions`/`writeDecisions` core every live submission uses — hash-chained receipts,
+append-only transactions, the ST-01 status projection, `consent.*` events — against a new per-legal-entity
+"legacy import" collection point (`channel = "import"`, CON-01's own `channels` var already reserved that
+value for exactly this; activated via a new minimal `ActivateCollectionPoint` sqlc query, skipping CON-09's
+checklist/public-key publish step since it's never reached from `/public/v1`); `Submission.Source = "import"`
+is already in `consent_transactions.source`'s own CHECK constraint (migration 00005), unused until now. "ตรวจ
+ซ้ำ" needed no new code — `writeDecisions`' own blind-index subject resolution already finds-or-creates by
+identifier.
+
+A `withdrawn` row is the trickiest case: ST-01 declares no `"" -> WITHDRAWN` edge (only `ACTIVE ->
+WITHDRAWN`), so per CLAUDE.md's own source-priority order this doesn't invent one — it's replayed as two
+receipts at the same original date (`Submission.OccurredAt *time.Time`, a new, backward-compatible field on
+the existing struct — `Record()`/`UpdatePreferences()` never set it): a synthetic CONSENTED immediately
+followed by WITHDRAWN, kept correctly sequenced by `writeDecisions`' own pre-existing monotonic
+chain-ordering with no new logic there. "reconcile ยอดตรง" is read literally against PLT-14's own mechanism,
+not a bespoke table: `consent.reconcile_items`/`reconcile_runs` are CON-21's own, materially different
+downstream-webhook-drift concern — PLT-14's all-or-nothing `Apply` plus its per-row error report (unknown
+legal entity / purpose / bad identifier / bad decision / bad date) already is the reconciliation.
+
+No new permission or migration — `consent.bulk.execute` (role IT) was already seeded in the baseline
+permission migration, unused until now. API: unchanged, consumed through PLT-14's own generic
+`/admin/v1/platform/imports` endpoints. UI: `/consent/subjects` gained an "Import legacy consent data"
+toggle (gated on `consent.bulk.execute`) mounting the shared `ImportWizard`, the same reuse pattern
+`/settings/master-data`/`/settings/calendar`/`/ropa/activities` already established. Tests
+(`internal/consent/service/import_test.go`, run live against a real Postgres 16): a consented row lands
+ACTIVE, not_consented lands NOT_GIVEN, withdrawn lands WITHDRAWN with both synthetic transactions on record;
+an unknown legal entity / unknown purpose / bad identifier / bad decision / bad date are each refused at
+validation naming the right column; two-tenant isolation (tenant B resolves neither tenant A's registration
+number nor its imported subject). `go build ./...`, `go vet ./...`, `gofmt -l` and
+`go test -count=1 ./internal/consent/service/... ./internal/consent/http/...` all verified clean against a
+real Postgres (port 5433); the package's own pre-existing CON-23 double-opt-in failures (a separate,
+unrelated bug in `double_optin.go`'s own event-catalog wiring) are untouched by this change.
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/consent/subjects` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 
