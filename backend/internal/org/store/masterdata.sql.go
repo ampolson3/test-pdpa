@@ -519,6 +519,32 @@ func (q *Queries) ListProcessingPurposes(ctx context.Context) ([]ListProcessingP
 	return items, nil
 }
 
+const masterCodeExists = `-- name: MasterCodeExists :one
+SELECT CASE $1::text
+    WHEN 'data_categories' THEN EXISTS (SELECT 1 FROM org.data_categories WHERE code = $2::text)
+    WHEN 'data_subject_types' THEN EXISTS (SELECT 1 FROM org.data_subject_types WHERE code = $2::text)
+    ELSE EXISTS (SELECT 1 FROM org.processing_purposes WHERE code = $2::text)
+END::boolean
+`
+
+type MasterCodeExistsParams struct {
+	Kind string `db:"kind" json:"kind"`
+	Code string `db:"code" json:"code"`
+}
+
+// ORG-08: whether *any* row of the kind (global default or this tenant's own) already uses the code —
+// RLS already scopes "this tenant's own" to the caller's own tenant. Used by the PLT-14 import's own
+// Validate so a duplicate code is reported in the dry-run error report, before Apply ever writes anything
+// (CreateMaster's own equivalent check only catches a global-default shadow pre-insert; a duplicate
+// against the tenant's own existing code there is instead caught by the real unique constraint at insert
+// time, which is fine for a single create but too late for an import's own "detect before saving").
+func (q *Queries) MasterCodeExists(ctx context.Context, arg MasterCodeExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, masterCodeExists, arg.Kind, arg.Code)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const updateDataCategory = `-- name: UpdateDataCategory :one
 UPDATE org.data_categories
 SET name_th = $3, name_en = $4, is_sensitive = $5, sensitive_type = $6, parent_id = $7, row_version = row_version + 1,

@@ -32,3 +32,4 @@ output-options:
     - orgCreateMasterData
     - orgUpdateMasterData
     - orgDeleteMasterData
+    - orgExportMasterData

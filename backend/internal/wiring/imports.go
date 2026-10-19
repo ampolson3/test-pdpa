@@ -14,7 +14,8 @@ func ImportTypes() importer.Registry {
 	org := &orgservice.Service{Audit: audit.New()}
 	ropa := &ropaservice.Service{Audit: audit.New(), Org: org}
 	return importer.Registry{
-		orgservice.HolidayImportType:   org.HolidayImport(),
-		ropaservice.ActivityImportType: ropa.ActivityImport(),
+		orgservice.HolidayImportType:    org.HolidayImport(),
+		orgservice.MasterDataImportType: org.MasterDataImport(),
+		ropaservice.ActivityImportType:  ropa.ActivityImport(),
 	}
 }

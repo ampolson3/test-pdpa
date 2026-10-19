@@ -3187,6 +3187,45 @@ same deferral this codebase uses throughout): `magic_link`/`idp` as alternate co
 module doc names only an e-mail/SMS link; CON-19's own verification_method column already anticipates the
 others with no consumer either).
 
+### ORG-08 นำเข้าและส่งออกข้อมูลตั้งต้น (`docs/modules/ORG.md#org-08`) — done
+Builds on ORG-07's own `org.{data_categories,data_subject_types,processing_purposes}` (editable kinds only
+— `lawful_bases`/`countries` stay read-only, as ORG-07 already established) and PLT-14's generic import
+framework — no new migration for either side's own tables. The acceptance criterion
+("นำเข้าแล้วรายการซ้ำถูกตรวจพบก่อนบันทึก") needed a broader duplicate check than `CreateMaster` already had:
+its own `GlobalCodeExists` only catches a new row shadowing a global default pre-insert, leaving a duplicate
+against the tenant's *own* existing code to surface only as a real unique-constraint error at insert time —
+fine for one row, too late for a bulk import's own "detect before saving." `db/queries/org/masterdata.sql`
+gained `MasterCodeExists` (no `tenant_id IS NULL` filter — RLS alone already scopes "any row of this kind
+visible to the caller," i.e. global + the tenant's own), used only by the new import's `Validate` step.
+
+`internal/org/service/masterdata_import.go` registers `org.master_data` (`orgservice.MasterDataImportType`)
+in `internal/wiring.ImportTypes()`: `Validate` checks the kind is one of the three editable ones and the code
+matches `masterCode`'s own regex, then calls `MasterCodeExists` and reports a duplicate per PLT-14's own
+error-report convention (never writing anything); `Apply` just calls the already-existing `CreateMaster` per
+row inside the import's own all-or-nothing savepoint. `internal/org/service/masterdata_export.go`'s
+`ExportMaster(ctx, kind)` is the CSV half (ORG-19/ROPA-04's own BOM + `encoding/csv` convention): since an
+export has no single row to attribute an audit entry to, it builds its own `audit.Entry{}` directly
+(`writeExportAudit`) rather than the generic per-row `s.audit` helper — the exact pattern ROPA-04's own
+processor export already established for the identical problem. New endpoint
+`GET /admin/v1/org/master-data/{kind}/export` (`org.masterdata.read`, no new permission code) is registered
+ahead of the existing `/master-data/{kind}/{id}` in the OpenAPI spec — the same static-before-dynamic
+ordering ROPA-04's own `/activities/processor-export` already relies on.
+
+API: `GET /admin/v1/org/master-data/{kind}/export` (`text/csv`, `Content-Disposition: attachment`). UI:
+`/settings/master-data` gained an "Import" toggle (editable kinds + `canCreate` only) mounting the shared
+`ImportWizard` component (the same reuse pattern `/settings/calendar`'s own ORG-20 holiday import already
+established) and an always-visible "Export" link per kind. Tests: unit
+(`internal/org/service/masterdata_import_test.go` — the acceptance criterion directly: a row whose code
+already exists is reported in the dry-run validation and never written; an unknown kind/malformed code is
+refused the same way; `ExportMaster` includes both global defaults and the tenant's own rows), HTTP contract
+(`internal/org/http/handler_test.go` — 401 with no principal, 200 with real CSV content through the real
+validator). Not verified live against a real Postgres/Redis — the same environment limitation this
+codebase's other recent passes already disclosed; every test compiles and vets clean and skips the same way
+the rest of this module's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean
+on every touched file), `go test ./...` (no regressions, full backend suite),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

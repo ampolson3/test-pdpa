@@ -5,6 +5,14 @@ export type MasterDataKind = components["schemas"]["MasterDataKind"];
 export type MasterDataItem = components["schemas"]["MasterDataItem"];
 export type MasterDataInput = components["schemas"]["MasterDataInput"];
 
+/** ORG-08's own PLT-14 import type code, for the import wizard's `type` parameter. */
+export const MASTER_DATA_IMPORT_TYPE = "org.master_data";
+
+/** The master-data CSV export URL through the BFF (ORG-08) — a plain link, the browser downloads it. */
+export function masterDataExportHref(bffBaseUrl: string, kind: MasterDataKind): string {
+  return `${bffBaseUrl}/admin/v1/org/master-data/${kind}/export`;
+}
+
 /** GET /admin/v1/org/master-data/{kind} (ORG-07): platform defaults, then the tenant's own. */
 export function useMasterData(client: ApiClient, kind: MasterDataKind) {
   return useQuery({

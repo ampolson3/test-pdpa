@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -665,6 +666,24 @@ func (e OrgCreateMasterDataParamsAcceptLanguage) Valid() bool {
 	case OrgCreateMasterDataParamsAcceptLanguageEn:
 		return true
 	case OrgCreateMasterDataParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrgExportMasterDataParamsAcceptLanguage.
+const (
+	OrgExportMasterDataParamsAcceptLanguageEn OrgExportMasterDataParamsAcceptLanguage = "en"
+	OrgExportMasterDataParamsAcceptLanguageTh OrgExportMasterDataParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the OrgExportMasterDataParamsAcceptLanguage enum.
+func (e OrgExportMasterDataParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case OrgExportMasterDataParamsAcceptLanguageEn:
+		return true
+	case OrgExportMasterDataParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -1405,6 +1424,15 @@ type OrgCreateMasterDataParams struct {
 // OrgCreateMasterDataParamsAcceptLanguage defines parameters for OrgCreateMasterData.
 type OrgCreateMasterDataParamsAcceptLanguage string
 
+// OrgExportMasterDataParams defines parameters for OrgExportMasterData.
+type OrgExportMasterDataParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *OrgExportMasterDataParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// OrgExportMasterDataParamsAcceptLanguage defines parameters for OrgExportMasterData.
+type OrgExportMasterDataParamsAcceptLanguage string
+
 // OrgDeleteMasterDataParams defines parameters for OrgDeleteMasterData.
 type OrgDeleteMasterDataParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -1618,6 +1646,9 @@ type ServerInterface interface {
 	// OrgCreateMasterData Add a tenant entry (data categories, data subject types and processing purposes only)
 	// (POST /admin/v1/org/master-data/{kind})
 	OrgCreateMasterData(w http.ResponseWriter, r *http.Request, kind MasterDataKind, params OrgCreateMasterDataParams)
+	// OrgExportMasterData Export one kind of master data (defaults then the tenant's own) as CSV (ORG-08) — audited
+	// (GET /admin/v1/org/master-data/{kind}/export)
+	OrgExportMasterData(w http.ResponseWriter, r *http.Request, kind MasterDataKind, params OrgExportMasterDataParams)
 	// OrgDeleteMasterData Remove a tenant entry nothing refers to
 	// (DELETE /admin/v1/org/master-data/{kind}/{id})
 	OrgDeleteMasterData(w http.ResponseWriter, r *http.Request, kind MasterDataKind, id Uuid, params OrgDeleteMasterDataParams)
@@ -1756,6 +1787,12 @@ func (_ Unimplemented) OrgListMasterData(w http.ResponseWriter, r *http.Request,
 // OrgCreateMasterData Add a tenant entry (data categories, data subject types and processing purposes only)
 // (POST /admin/v1/org/master-data/{kind})
 func (_ Unimplemented) OrgCreateMasterData(w http.ResponseWriter, r *http.Request, kind MasterDataKind, params OrgCreateMasterDataParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// OrgExportMasterData Export one kind of master data (defaults then the tenant's own) as CSV (ORG-08) — audited
+// (GET /admin/v1/org/master-data/{kind}/export)
+func (_ Unimplemented) OrgExportMasterData(w http.ResponseWriter, r *http.Request, kind MasterDataKind, params OrgExportMasterDataParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2847,6 +2884,56 @@ func (siw *ServerInterfaceWrapper) OrgCreateMasterData(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// OrgExportMasterData operation middleware
+func (siw *ServerInterfaceWrapper) OrgExportMasterData(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "kind" -------------
+	var kind MasterDataKind
+
+	err = runtime.BindStyledParameterWithOptions("simple", "kind", chi.URLParam(r, "kind"), &kind, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "kind", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params OrgExportMasterDataParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage OrgExportMasterDataParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.OrgExportMasterData(w, r, kind, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // OrgDeleteMasterData operation middleware
 func (siw *ServerInterfaceWrapper) OrgDeleteMasterData(w http.ResponseWriter, r *http.Request) {
 
@@ -3606,6 +3693,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/org/master-data/{kind}", wrapper.OrgCreateMasterData)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/org/master-data/{kind}/export", wrapper.OrgExportMasterData)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/admin/v1/org/master-data/{kind}/{id}", wrapper.OrgDeleteMasterData)
@@ -5404,6 +5494,91 @@ func (response OrgCreateMasterData422ApplicationProblemPlusJSONResponse) VisitOr
 	return err
 }
 
+type OrgExportMasterDataRequestObject struct {
+	Kind   MasterDataKind `json:"kind"`
+	Params OrgExportMasterDataParams
+}
+
+type OrgExportMasterDataResponseObject interface {
+	VisitOrgExportMasterDataResponse(w http.ResponseWriter) error
+}
+
+type OrgExportMasterData200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type OrgExportMasterData200TextcsvResponse struct {
+	Body          io.Reader
+	Headers       OrgExportMasterData200ResponseHeaders
+	ContentLength int64
+}
+
+func (response OrgExportMasterData200TextcsvResponse) VisitOrgExportMasterDataResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "text/csv")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type OrgExportMasterData400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response OrgExportMasterData400ApplicationProblemPlusJSONResponse) VisitOrgExportMasterDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgExportMasterData401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response OrgExportMasterData401ApplicationProblemPlusJSONResponse) VisitOrgExportMasterDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type OrgExportMasterData403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response OrgExportMasterData403ApplicationProblemPlusJSONResponse) VisitOrgExportMasterDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type OrgDeleteMasterDataRequestObject struct {
 	Kind   MasterDataKind `json:"kind"`
 	Id     Uuid           `json:"id"`
@@ -6536,6 +6711,9 @@ type StrictServerInterface interface {
 	// OrgCreateMasterData Add a tenant entry (data categories, data subject types and processing purposes only)
 	// (POST /admin/v1/org/master-data/{kind})
 	OrgCreateMasterData(ctx context.Context, request OrgCreateMasterDataRequestObject) (OrgCreateMasterDataResponseObject, error)
+	// OrgExportMasterData Export one kind of master data (defaults then the tenant's own) as CSV (ORG-08) — audited
+	// (GET /admin/v1/org/master-data/{kind}/export)
+	OrgExportMasterData(ctx context.Context, request OrgExportMasterDataRequestObject) (OrgExportMasterDataResponseObject, error)
 	// OrgDeleteMasterData Remove a tenant entry nothing refers to
 	// (DELETE /admin/v1/org/master-data/{kind}/{id})
 	OrgDeleteMasterData(ctx context.Context, request OrgDeleteMasterDataRequestObject) (OrgDeleteMasterDataResponseObject, error)
@@ -7141,6 +7319,33 @@ func (sh *strictHandler) OrgCreateMasterData(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(OrgCreateMasterDataResponseObject); ok {
 		if err := validResponse.VisitOrgCreateMasterDataResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// OrgExportMasterData operation middleware
+func (sh *strictHandler) OrgExportMasterData(w http.ResponseWriter, r *http.Request, kind MasterDataKind, params OrgExportMasterDataParams) {
+	var request OrgExportMasterDataRequestObject
+
+	request.Kind = kind
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.OrgExportMasterData(ctx, request.(OrgExportMasterDataRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "OrgExportMasterData")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(OrgExportMasterDataResponseObject); ok {
+		if err := validResponse.VisitOrgExportMasterDataResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

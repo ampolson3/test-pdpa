@@ -3,7 +3,9 @@ package orghttp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"time"
 
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/httpx"
@@ -52,6 +54,17 @@ func (h *Strict) OrgDeleteMasterData(ctx context.Context, req OrgDeleteMasterDat
 		return nil, masterProblem(err)
 	}
 	return OrgDeleteMasterData204Response{}, nil
+}
+
+// OrgExportMasterData is ORG-08's export half: one kind of master data as CSV.
+func (h *Strict) OrgExportMasterData(ctx context.Context, req OrgExportMasterDataRequestObject) (OrgExportMasterDataResponseObject, error) {
+	buf, _, err := h.svc.ExportMaster(ctx, string(req.Kind))
+	if err != nil {
+		return nil, masterProblem(err)
+	}
+	name := fmt.Sprintf(`attachment; filename="master-data-%s-%s.csv"`, req.Kind, time.Now().UTC().Format("20060102-150405"))
+	return OrgExportMasterData200TextcsvResponse{Body: buf, ContentLength: int64(buf.Len()),
+		Headers: OrgExportMasterData200ResponseHeaders{ContentDisposition: &name}}, nil
 }
 
 func masterInput(b MasterDataInput) orgservice.MasterItem {

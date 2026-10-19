@@ -1,10 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
-import { createApiClient, useMasterData, useMasterDataMutations, type MasterDataInput, type MasterDataItem, type MasterDataKind } from "@pdpa/api-client";
+import {
+  createApiClient,
+  masterDataExportHref,
+  MASTER_DATA_IMPORT_TYPE,
+  useMasterData,
+  useMasterDataMutations,
+  type MasterDataInput,
+  type MasterDataItem,
+  type MasterDataKind,
+} from "@pdpa/api-client";
+import { ImportWizard } from "@/components/import-wizard";
 
 const KINDS: MasterDataKind[] = ["data_categories", "data_subject_types", "processing_purposes", "lawful_bases", "countries"];
 const EDITABLE = new Set<MasterDataKind>(["data_categories", "data_subject_types", "processing_purposes"]);
@@ -51,7 +61,12 @@ function KindTable({ kind }: { kind: MasterDataKind }) {
   const m = useMasterDataMutations(client, kind);
   const [q, setQ] = useState("");
   const [draft, setDraft] = useState<{ item?: MasterDataItem; v: Draft } | null>(null);
+  const [importing, setImporting] = useState(false);
   const editable = EDITABLE.has(kind);
+  // ORG-08: ImportWizard calls onDone when its status becomes done; keep the callback stable.
+  const refresh = useRef(list.refetch);
+  useEffect(() => { refresh.current = list.refetch; });
+  const onImported = useCallback(() => { void refresh.current(); }, []);
 
   const name = (it: MasterDataItem) => (locale === "en" && it.name_en) || it.name_th;
   const needle = q.trim().toLowerCase();
@@ -85,8 +100,18 @@ function KindTable({ kind }: { kind: MasterDataKind }) {
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <input className="rounded-md border border-slate-300 px-2 py-1" placeholder={t("search")} aria-label={t("search")} value={q} onChange={(e) => setQ(e.target.value)} />
-        {!editable ? <span className="text-slate-500">{t("readOnly")}</span> : canCreate && <Button variant="secondary" onClick={() => setDraft({ v: { ...empty } })}>{t("add")}</Button>}
+        <div className="flex flex-wrap items-center gap-2">
+          {!editable ? <span className="text-slate-500">{t("readOnly")}</span> : canCreate && <Button variant="secondary" onClick={() => setDraft({ v: { ...empty } })}>{t("add")}</Button>}
+          {editable && canCreate && <Button variant="secondary" onClick={() => setImporting(!importing)}>{importing ? t("closeImport") : t("import")}</Button>}
+          <a className="text-slate-700 underline" href={masterDataExportHref("/api/bff", kind)}>{t("export")}</a>
+        </div>
       </div>
+      {importing && editable && (
+        <div className="space-y-2 rounded-md border border-slate-200 bg-white p-3">
+          <p className="text-xs text-slate-500">{t("importHint")}</p>
+          <ImportWizard importType={MASTER_DATA_IMPORT_TYPE} onDone={onImported} />
+        </div>
+      )}
       {failure != null && <p className="text-red-700" role="alert">{t("actionError", { detail: detail(failure) })}</p>}
       {draft && (
         <div className="grid gap-2 rounded-md border border-slate-200 bg-white p-3 sm:grid-cols-4" data-testid="master-form">

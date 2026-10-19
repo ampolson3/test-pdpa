@@ -1783,7 +1783,11 @@
     "readOnly": "Read-only list",
     "loading": "Loading…",
     "loadError": "Couldn't load. Please try again.",
-    "actionError": "Couldn't do that: {detail}"
+    "actionError": "Couldn't do that: {detail}",
+    "import": "Import",
+    "closeImport": "Close import",
+    "importHint": "ORG-08 — upload an Excel or CSV file. Duplicate codes are reported before anything is saved.",
+    "export": "Export CSV"
   },
   "forms": {
     "title": "Forms and assessments",

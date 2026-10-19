@@ -3296,6 +3296,39 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/org/master-data/{kind}/export:
+    get:
+      operationId: orgExportMasterData
+      tags: [org]
+      summary: Export one kind of master data (defaults then the tenant's own) as CSV (ORG-08) — audited
+      x-permission: org.masterdata.read
+      x-module: org
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: kind
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/MasterDataKind'
+      responses:
+        '200':
+          description: CSV (UTF-8 with BOM)
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            text/csv:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/org/master-data/{kind}/{id}:
     patch:
       operationId: orgUpdateMasterData

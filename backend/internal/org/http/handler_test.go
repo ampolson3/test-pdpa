@@ -371,4 +371,12 @@ func TestCalendarEndpoints_Contract(t *testing.T) {
 	if code, _ := do("DELETE", md+"data_subject_types/"+mdItem.Id.String(), &admin, nil, map[string]string{"If-Match": `"2"`}); code != 204 {
 		t.Errorf("delete: %d, want 204", code)
 	}
+
+	// ORG-08: export, behind the same org.masterdata.read permission as the list endpoint.
+	if code, _ := do("GET", md+"countries/export", nil, nil, nil); code != 401 {
+		t.Errorf("export, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", md+"countries/export", &dpo, nil, nil); code != 200 || !strings.Contains(body, "code,name_th,name_en") || !strings.Contains(body, "ไทย") {
+		t.Errorf("export countries: %d %.200s", code, body)
+	}
 }

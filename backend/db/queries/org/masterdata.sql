@@ -76,6 +76,19 @@ SELECT CASE sqlc.arg(kind)::text
     ELSE EXISTS (SELECT 1 FROM org.processing_purposes WHERE tenant_id IS NULL AND code = sqlc.arg(code)::text)
 END::boolean;
 
+-- name: MasterCodeExists :one
+-- ORG-08: whether *any* row of the kind (global default or this tenant's own) already uses the code —
+-- RLS already scopes "this tenant's own" to the caller's own tenant. Used by the PLT-14 import's own
+-- Validate so a duplicate code is reported in the dry-run error report, before Apply ever writes anything
+-- (CreateMaster's own equivalent check only catches a global-default shadow pre-insert; a duplicate
+-- against the tenant's own existing code there is instead caught by the real unique constraint at insert
+-- time, which is fine for a single create but too late for an import's own "detect before saving").
+SELECT CASE sqlc.arg(kind)::text
+    WHEN 'data_categories' THEN EXISTS (SELECT 1 FROM org.data_categories WHERE code = sqlc.arg(code)::text)
+    WHEN 'data_subject_types' THEN EXISTS (SELECT 1 FROM org.data_subject_types WHERE code = sqlc.arg(code)::text)
+    ELSE EXISTS (SELECT 1 FROM org.processing_purposes WHERE code = sqlc.arg(code)::text)
+END::boolean;
+
 -- name: ListLawfulBases :many
 SELECT code, section_ref, name_th, name_en, for_sensitive, requires_consent, requires_lia FROM org.lawful_bases ORDER BY for_sensitive, section_ref, code;
 

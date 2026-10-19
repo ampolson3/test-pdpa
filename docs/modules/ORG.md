@@ -291,6 +291,32 @@ acceptance, isolation), HTTP contract (401/403/400 schema/412/428)
 
 **Acceptance criteria:** นำเข้าแล้วรายการซ้ำถูกตรวจพบก่อนบันทึก
 
+**Implementation — done.** Built directly on PLT-14's generic import framework and the already-exported
+`ListMaster`/`CreateMaster` (ORG-07) — no migration. `org.MasterDataImportType` ("org.master_data")
+registers a 4-column row (kind, code, name_th, name_en) for the three editable kinds
+(data_categories/data_subject_types/processing_purposes; lawful_bases/countries stay read-only, same as
+through the ordinary create endpoint). The acceptance criterion itself: `Validate` checks the code against
+a new query, `MasterCodeExists` (any row of the kind — global default or this tenant's own, RLS already
+scopes "own") — a duplicate is reported in the dry-run error report before `Apply` ever writes anything.
+This closes a real gap `CreateMaster`'s own single-row path left open: its own pre-insert check
+(`GlobalCodeExists`) only catches a global-default shadow; a duplicate against the tenant's *own* existing
+code was only ever caught by the real unique constraint at insert time — fine for one row, too late for "detect
+before saving" on a bulk import. Export: `ExportMaster(kind)` — `GET /admin/v1/org/master-data/{kind}/export`
+(`org.masterdata.read`, same permission as the list endpoint) — defaults then the tenant's own rows as CSV
+(UTF-8 BOM, the export itself audited as `org.master_data.export`, following ORG-19/ROPA-04's own export
+shape), a static path registered ahead of `/{kind}/{id}` the same way ROPA-04's own processor-export is.
+UI: `/settings/master-data` gained an Import/Export toggle per kind, mounting the shared `ImportWizard`
+(editable kinds only) and a plain export link (every kind, including the read-only ones). Tests: unit
+(the acceptance criterion directly — a code already used by a global default, and later by the tenant's own
+just-imported row, is both caught in `Validate` before `Apply` runs; an unknown kind, a read-only kind and a
+badly-formatted code are all refused; `ExportMaster` includes both defaults and the tenant's own rows),
+HTTP contract (401/200 on the new export endpoint through the real validator). Not verified live against a
+real Postgres/Redis — the same environment limitation this codebase's other recent passes already disclosed;
+every test compiles and vets clean and skips the same way the rest of this module's own suite already does
+here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean), `go test ./...` (no regressions, full backend
+suite), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` all verified clean.
+
 <a id="org-21"></a>
 ### ORG-21 เลือกที่เก็บข้อมูลและรูปแบบติดตั้ง
 
