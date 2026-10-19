@@ -10,6 +10,9 @@ export type DpiaNecessity = components["schemas"]["DpiaNecessity"];
 export type DpiaAssessmentDiff = components["schemas"]["DpiaAssessmentDiff"];
 export type DpiaOpinion = components["schemas"]["DpiaOpinion"];
 export type DpiaOpinionRecommendation = components["schemas"]["DpiaOpinionRecommendation"];
+export type DpiaConsultation = components["schemas"]["DpiaConsultation"];
+export type DpiaConsultationInput = components["schemas"]["DpiaConsultationInput"];
+export type DpiaConsultationStakeholderType = components["schemas"]["DpiaConsultationStakeholderType"];
 export type DpiaRegistryEntry = components["schemas"]["DpiaRegistryEntry"];
 export type DpiaRisk = components["schemas"]["DpiaRisk"];
 export type DpiaRiskInput = components["schemas"]["DpiaRiskInput"];
@@ -202,6 +205,47 @@ export function useRecordDpiaOpinion(client: ApiClient) {
     },
     onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "opinions"] }),
   });
+}
+
+/** GET /admin/v1/dpia/assessments/{id}/consultations (DPIA-11) — the stakeholder consultation log, oldest first. */
+export function useDpiaConsultations(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...assessmentsKey, id ?? "", "consultations"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpia/assessments/{id}/consultations", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST / DELETE on DPIA-11's own consultation log. */
+export function useDpiaConsultationMutations(client: ApiClient, assessmentId: string | undefined) {
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: [...assessmentsKey, assessmentId ?? "", "consultations"] });
+  return {
+    add: useMutation({
+      mutationFn: async (input: DpiaConsultationInput) => {
+        const { data, error } = await client.POST("/admin/v1/dpia/assessments/{id}/consultations", {
+          params: { path: { id: assessmentId! } },
+          body: input,
+        });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    remove: useMutation({
+      mutationFn: async (consultationId: string) => {
+        const { error } = await client.DELETE("/admin/v1/dpia/assessments/{id}/consultations/{consultationId}", {
+          params: { path: { id: assessmentId!, consultationId } },
+        });
+        if (error) throw error;
+      },
+      onSuccess: refresh,
+    }),
+  };
 }
 
 const riskCatalogKey = ["dpia", "risk-catalog"] as const;

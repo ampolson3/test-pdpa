@@ -3271,6 +3271,36 @@ unrelated bug in `double_optin.go`'s own event-catalog wiring) are untouched by 
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build` (incl. the updated `/consent/subjects` route) all verified clean.
 
+### DPIA-11 บันทึกการปรึกษาผู้มีส่วนได้เสีย (`docs/modules/DPIA.md#dpia-11`) — done
+`assess.consultations` was already fully specified in the baseline migrations (migration 00011,
+`stakeholder_type` CHECK incl. data_subject/processor/expert/internal/regulator, `consulted_at`/`summary`/
+`response`), unused until now — no new migration. `internal/dpia/service/consultations.go`
+(`assessment.dpia.{read,update}`, shared with DPIA-05's own necessity checklist — no new permission code):
+`AddConsultation`/`ListConsultations`/`RemoveConsultation`, plain CRUD with `GetAssessment` already proving
+tenant scoping before any write (rule 1, DPIA-04/05's own pattern) — no per-row update endpoint, following
+ROPA-03's own "no update; delete+recreate" convention. `summary` is the issue/objection raised, `response`
+the explanation given back, read literally from the feature's own description.
+
+The acceptance criterion ("รายงาน DPIA แสดงบันทึกการปรึกษา") is a new section on DPIA-15's existing
+live-composed report: `report.go`'s `ReportData` gained `Consultations []ReportConsultation`, filled the same
+way `Approvals` already is from `ListOpinions`, rendered as its own "Stakeholder consultation log" heading
+(oldest first) right after the approvals section, in both th/en — nothing persisted, the same "never a stale
+copy" discipline DPIA-04/12 already established.
+
+API: `GET`/`POST /admin/v1/dpia/assessments/{id}/consultations`,
+`DELETE /admin/v1/dpia/assessments/{id}/consultations/{consultationId}` — same shape as DPIA-10's own
+opinions endpoints. UI: a consultation-log panel on `/ropa/activities/{id}`'s DPIA section, shown alongside
+the decision panel for any round past screening. Tests: unit
+(`internal/dpia/service/consultations_test.go` — the acceptance criterion directly: a recorded consultation
+lists oldest-first and shows up verbatim in the live-composed report; field validation incl. an unknown
+stakeholder_type and a zero date; an unknown assessment id refused; remove deletes the row, a second remove
+is not-found; two-tenant isolation), HTTP contract (`internal/dpia/http/handler_test.go`'s own
+`TestDpiaEndpoints_Contract`, extended with the list/add/remove sequence through the real validator + AuthZ).
+`go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test -count=1
+./internal/dpia/...` (no regressions, real Postgres 16 + Redis), `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
+`/ropa/activities/[id]` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

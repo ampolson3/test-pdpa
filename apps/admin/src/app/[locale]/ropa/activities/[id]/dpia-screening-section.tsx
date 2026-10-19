@@ -8,6 +8,7 @@ import { Link } from "@/i18n/routing";
 import { formatDate, type Locale } from "@pdpa/i18n";
 import {
   type ApiClient,
+  type DpiaConsultationStakeholderType,
   type DpiaOpinionRecommendation,
   type DpiaRiskControlStatus,
   type DpiaRiskInput,
@@ -17,6 +18,8 @@ import {
   useDpiaAssessmentDescription,
   useDpiaAssessmentDiff,
   useDpiaAssessments,
+  useDpiaConsultationMutations,
+  useDpiaConsultations,
   useDpiaNecessity,
   useDpiaOpinions,
   useIdentifyRisk,
@@ -119,6 +122,10 @@ export function DpiaScreeningSection({ client, activityId, currentUserId }: { cl
 
       {latest && latest.status !== "screening" && latest.status !== "closed" && (
         <DpiaDecisionPanel client={client} assessment={latest} />
+      )}
+
+      {latest && latest.status !== "screening" && latest.status !== "not_required" && (
+        <DpiaConsultationPanel client={client} assessmentId={latest.id} />
       )}
 
       {canScreen && (
@@ -414,6 +421,99 @@ function DpiaDecisionPanel({ client, assessment }: { client: ApiClient; assessme
 
       {canApprove && ["approved", "rejected", "not_required"].includes(assessment.status) && (
         <Button onClick={() => go("closed")}>{t("decision.close")}</Button>
+      )}
+    </section>
+  );
+}
+
+const STAKEHOLDER_TYPES: DpiaConsultationStakeholderType[] = ["data_subject", "processor", "expert", "internal", "regulator"];
+
+/** DPIA-11: record who was consulted, when, the issue raised and the explanation given back — shown in the
+ *  DPIA-15 report's own "stakeholder consultation log" section. */
+function DpiaConsultationPanel({ client, assessmentId }: { client: ApiClient; assessmentId: string }) {
+  const t = useTranslations("dpia");
+  const locale = useLocale() as Locale;
+  const canUpdate = usePermission("assessment.dpia.update");
+  const consultations = useDpiaConsultations(client, assessmentId);
+  const m = useDpiaConsultationMutations(client, assessmentId);
+  const [draft, setDraft] = useState({ stakeholder: "", stakeholder_type: "data_subject" as DpiaConsultationStakeholderType, consulted_at: "", summary: "", response: "" });
+
+  const submit = () => {
+    m.add.mutate(
+      { stakeholder: draft.stakeholder.trim(), stakeholder_type: draft.stakeholder_type, consulted_at: draft.consulted_at, summary: draft.summary.trim(), response: draft.response.trim() || undefined },
+      { onSuccess: () => setDraft({ stakeholder: "", stakeholder_type: "data_subject", consulted_at: "", summary: "", response: "" }) },
+    );
+  };
+
+  return (
+    <section className="space-y-2 rounded-md border border-slate-200 bg-white p-3 text-sm" data-testid="dpia-consultations">
+      <h3 className="font-semibold">{t("consultations.title")}</h3>
+      {consultations.data?.length ? (
+        <ul className="space-y-2">
+          {consultations.data.map((c) => (
+            <li key={c.id} className="rounded border border-slate-100 p-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-medium">{c.stakeholder}</span>
+                <span className="flex items-center gap-2 text-xs text-slate-500">
+                  <span>{t(`consultations.stakeholderType.${c.stakeholder_type}`)}</span>
+                  <span>{formatDate(c.consulted_at, locale, { year: "numeric", month: "short", day: "numeric" })}</span>
+                  {canUpdate && (
+                    <button className="text-red-700 underline" onClick={() => m.remove.mutate(c.id)} disabled={m.remove.isPending}>
+                      {t("consultations.remove")}
+                    </button>
+                  )}
+                </span>
+              </div>
+              <p className="text-slate-700">{c.summary}</p>
+              {c.response && <p className="text-slate-500">{t("consultations.response")}: {c.response}</p>}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-slate-500">{t("consultations.none")}</p>
+      )}
+      {canUpdate && (
+        <div className="space-y-2 border-t border-slate-100 pt-2">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <input
+              className="rounded border border-slate-300 p-2"
+              placeholder={t("consultations.stakeholderPlaceholder")}
+              value={draft.stakeholder}
+              onChange={(e) => setDraft({ ...draft, stakeholder: e.target.value })}
+            />
+            <select
+              className="rounded border border-slate-300 p-2"
+              value={draft.stakeholder_type}
+              onChange={(e) => setDraft({ ...draft, stakeholder_type: e.target.value as DpiaConsultationStakeholderType })}
+            >
+              {STAKEHOLDER_TYPES.map((s) => (
+                <option key={s} value={s}>{t(`consultations.stakeholderType.${s}`)}</option>
+              ))}
+            </select>
+            <input
+              type="date"
+              className="rounded border border-slate-300 p-2"
+              value={draft.consulted_at}
+              onChange={(e) => setDraft({ ...draft, consulted_at: e.target.value })}
+            />
+          </div>
+          <textarea
+            className="w-full rounded border border-slate-300 p-2"
+            placeholder={t("consultations.summaryPlaceholder")}
+            value={draft.summary}
+            onChange={(e) => setDraft({ ...draft, summary: e.target.value })}
+          />
+          <textarea
+            className="w-full rounded border border-slate-300 p-2"
+            placeholder={t("consultations.responsePlaceholder")}
+            value={draft.response}
+            onChange={(e) => setDraft({ ...draft, response: e.target.value })}
+          />
+          {m.add.isError && <p className="text-red-700">{t("submitError", { detail: detail(m.add.error) })}</p>}
+          <Button onClick={submit} disabled={m.add.isPending || !draft.stakeholder.trim() || !draft.consulted_at || !draft.summary.trim()}>
+            {t("consultations.add")}
+          </Button>
+        </div>
       )}
     </section>
   );

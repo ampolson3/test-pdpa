@@ -11723,6 +11723,109 @@ paths:
           $ref: '#/components/responses/Conflict'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpia/assessments/{id}/consultations:
+    get:
+      operationId: dpiaListConsultations
+      tags: [dpia]
+      summary: 'DPIA-11: every stakeholder consultation recorded against this assessment, oldest first'
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpiaConsultation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dpiaAddConsultation
+      tags: [dpia]
+      summary: 'DPIA-11: record one consultation (who was consulted, when, the issue, and the response)'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DpiaConsultationInput'
+      responses:
+        '201':
+          description: Recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaConsultation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpia/assessments/{id}/consultations/{consultationId}:
+    delete:
+      operationId: dpiaRemoveConsultation
+      tags: [dpia]
+      summary: 'DPIA-11: remove a recorded consultation'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: consultationId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/dpia/risk-catalog:
     get:
       operationId: dpiaRiskCatalog
@@ -18266,6 +18369,40 @@ components:
         opinion: {type: string}
         recommendation: {$ref: '#/components/schemas/DpiaOpinionRecommendation'}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    DpiaConsultationStakeholderType:
+      type: string
+      enum: [data_subject, processor, expert, internal, regulator]
+    DpiaConsultation:
+      type: object
+      required: [id, assessment_id, stakeholder, stakeholder_type, consulted_at, summary, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        assessment_id: {$ref: '#/components/schemas/Uuid'}
+        stakeholder: {type: string}
+        stakeholder_type: {$ref: '#/components/schemas/DpiaConsultationStakeholderType'}
+        consulted_at: {type: string, format: date}
+        summary: {type: string}
+        response: {type: string}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    DpiaConsultationInput:
+      type: object
+      required: [stakeholder, stakeholder_type, consulted_at, summary]
+      additionalProperties: false
+      properties:
+        stakeholder:
+          type: string
+          minLength: 1
+          maxLength: 200
+        stakeholder_type: {$ref: '#/components/schemas/DpiaConsultationStakeholderType'}
+        consulted_at: {type: string, format: date}
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        response:
+          type: string
+          maxLength: 4000
     DpiaRiskCatalogItem:
       type: object
       description: 'DPIA-06''s own ready-made risk catalog (a static starter list, not a tenant-editable table — see docs/decisions.md Q-33): picking one only prefills the "add risk" form''s title/description.'

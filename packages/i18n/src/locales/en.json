@@ -844,6 +844,23 @@
         "less_invasive_considered": "A less invasive alternative was considered before choosing this approach"
       }
     },
+    "consultations": {
+      "title": "Stakeholder consultation log",
+      "none": "No consultation recorded yet",
+      "add": "Record consultation",
+      "remove": "Remove",
+      "response": "Response",
+      "stakeholderPlaceholder": "Who was consulted",
+      "summaryPlaceholder": "The issue raised / objection",
+      "responsePlaceholder": "The explanation given back (optional)",
+      "stakeholderType": {
+        "data_subject": "Data subject",
+        "processor": "Processor",
+        "expert": "Expert",
+        "internal": "Internal",
+        "regulator": "Regulator"
+      }
+    },
     "risks": {
       "title": "Risk identification & scoring (DPIA-06)",
       "empty": "No risks identified yet",

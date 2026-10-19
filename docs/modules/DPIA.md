@@ -625,6 +625,38 @@ a real Postgres + Redis, not just compiled.
 
 **Acceptance criteria:** รายงาน DPIA แสดงบันทึกการปรึกษา
 
+**Implementation — done.** `assess.consultations` was already fully specified in the baseline migrations
+(migration 00011, `stakeholder`/`stakeholder_type` CHECK incl. data_subject/processor/expert/internal/
+regulator/`consulted_at`/`summary`/`response`) — unused until now, no new migration.
+`internal/dpia/service/consultations.go` (`assessment.dpia.{read,update}`, shared with DPIA-05's own
+necessity checklist — no new permission code): `AddConsultation`/`ListConsultations`/`RemoveConsultation` —
+plain CRUD, `GetAssessment` already proving the assessment is the caller's tenant (rule 1, the same reasoning
+DPIA-04/05's own child writes already use) before any read/write. `summary` is the issue or objection raised,
+`response` the explanation given back — read literally from the feature's own description ("บันทึกการปรึกษา
+... และข้อโต้แย้งพร้อมคำชี้แจง"). No per-row update endpoint (ROPA-03's own "no update; editing a child is
+delete+recreate" convention) — a consultation has no other feature depending on an in-place edit.
+
+The acceptance criterion itself ("รายงาน DPIA แสดงบันทึกการปรึกษา") is a new section on DPIA-15's existing
+live-composed report: `report.go`'s `ReportData` gained `Consultations []ReportConsultation`, filled from
+`ListConsultations` the same way `Approvals` is filled from `ListOpinions` — rendered as its own bulleted
+"Stakeholder consultation log" heading (oldest first: who, their type, the date, the issue and, when given,
+the response) right after the existing approvals section, in both th/en. API:
+`GET`/`POST /admin/v1/dpia/assessments/{id}/consultations`,
+`DELETE /admin/v1/dpia/assessments/{id}/consultations/{consultationId}` — same shape as DPIA-10's own
+opinions endpoints. UI: a "Stakeholder consultation log" panel on `/ropa/activities/{id}`'s DPIA section,
+shown alongside the decision panel for any round past screening — a record form (stakeholder/type/date/
+issue/response) plus a list with remove. Tests: unit (`internal/dpia/service/consultations_test.go` — the
+acceptance criterion directly: a recorded consultation is listed oldest-first and shows up verbatim in the
+live-composed report; field validation incl. an unknown stakeholder_type and a zero date; an unknown
+assessment id refused; remove deletes the row and a second remove is refused as not-found; two-tenant
+isolation), HTTP contract (`internal/dpia/http/handler_test.go`'s own `TestDpiaEndpoints_Contract`, extended
+with the consultation list/add/remove sequence through the real validator + AuthZ — 403 without `.update`,
+400 for an empty stakeholder per the schema's own `minLength`, 201/200/204 happy path). `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file), `go test -count=1 ./internal/dpia/...` (no
+regressions, real Postgres 16 + Redis) all verified clean. `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
+`/ropa/activities/[id]` route) all verified clean.
+
 <a id="dpia-13"></a>
 ### DPIA-13 ทบทวนเมื่อกิจกรรมเปลี่ยนหรือครบรอบ
 

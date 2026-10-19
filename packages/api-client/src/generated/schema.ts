@@ -4022,6 +4022,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpia/assessments/{id}/consultations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPIA-11: every stakeholder consultation recorded against this assessment, oldest first */
+        get: operations["dpiaListConsultations"];
+        put?: never;
+        /** DPIA-11: record one consultation (who was consulted, when, the issue, and the response) */
+        post: operations["dpiaAddConsultation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpia/assessments/{id}/consultations/{consultationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** DPIA-11: remove a recorded consultation */
+        delete: operations["dpiaRemoveConsultation"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpia/risk-catalog": {
         parameters: {
             query?: never;
@@ -7006,6 +7041,28 @@ export interface components {
             opinion: string;
             recommendation: components["schemas"]["DpiaOpinionRecommendation"];
             created_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        DpiaConsultationStakeholderType: "data_subject" | "processor" | "expert" | "internal" | "regulator";
+        DpiaConsultation: {
+            id: components["schemas"]["Uuid"];
+            assessment_id: components["schemas"]["Uuid"];
+            stakeholder: string;
+            stakeholder_type: components["schemas"]["DpiaConsultationStakeholderType"];
+            /** Format: date */
+            consulted_at: string;
+            summary: string;
+            response?: string;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        DpiaConsultationInput: {
+            stakeholder: string;
+            stakeholder_type: components["schemas"]["DpiaConsultationStakeholderType"];
+            /** Format: date */
+            consulted_at: string;
+            summary: string;
+            response?: string;
         };
         /** @description DPIA-06's own ready-made risk catalog (a static starter list, not a tenant-editable table — see docs/decisions.md Q-33): picking one only prefills the "add risk" form's title/description. */
         DpiaRiskCatalogItem: {
@@ -19090,6 +19147,97 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpiaListConsultations: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpiaConsultation"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpiaAddConsultation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpiaConsultationInput"];
+            };
+        };
+        responses: {
+            /** @description Recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpiaConsultation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpiaRemoveConsultation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                consultationId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     dpiaRiskCatalog: {

@@ -314,6 +314,43 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 		t.Errorf("re-assess necessity: %d %s", code, body)
 	}
 
+	// DPIA-11: stakeholder consultation log.
+	consultPath := item + "/consultations"
+	if code, body := do("GET", consultPath, &reader2, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list consultations (none yet): %d %s", code, body)
+	}
+	if code, _ := do("POST", consultPath, &reader2, map[string]any{
+		"stakeholder": "x", "stakeholder_type": "expert", "consulted_at": "2026-03-01", "summary": "y",
+	}, nil); code != 403 {
+		t.Errorf("add consultation with read-only permission: %d, want 403", code)
+	}
+	if code, _ := do("POST", consultPath, &admin, map[string]any{
+		"stakeholder": "", "stakeholder_type": "expert", "consulted_at": "2026-03-01", "summary": "y",
+	}, nil); code != 400 {
+		t.Errorf("empty stakeholder: %d, want 400 (schema minLength)", code)
+	}
+	code, body = do("POST", consultPath, &admin, map[string]any{
+		"stakeholder": "คุณสมชาย", "stakeholder_type": "data_subject", "consulted_at": "2026-03-01",
+		"summary": "กังวลเรื่องข้อมูล", "response": "จะจำกัดระยะเวลาเก็บ",
+	}, nil)
+	if code != 201 || !strings.Contains(body, `"stakeholder":"`+"คุณสมชาย"+`"`) {
+		t.Fatalf("add consultation: %d %s", code, body)
+	}
+	var consultation dpiahttp.DpiaConsultation
+	_ = json.Unmarshal([]byte(body), &consultation)
+	if code, body := do("GET", consultPath, &reader2, nil, nil); code != 200 || !strings.Contains(body, `"stakeholder_type":"data_subject"`) {
+		t.Errorf("list consultations: %d %s", code, body)
+	}
+	if code, _ := do("DELETE", consultPath+"/"+consultation.Id.String(), &reader2, nil, nil); code != 403 {
+		t.Errorf("remove consultation with read-only permission: %d, want 403", code)
+	}
+	if code, _ := do("DELETE", consultPath+"/"+consultation.Id.String(), &admin, nil, nil); code != 204 {
+		t.Errorf("remove consultation: %d, want 204", code)
+	}
+	if code, body := do("GET", consultPath, &reader2, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list consultations after remove: %d %s", code, body)
+	}
+
 	// DPIA-06: identify and score a risk against the tenant's own matrix, while this round is still
 	// in_progress (set up above, before the DPIA-10 section below moves it on to closed).
 	risksPath := item + "/risks"

@@ -28,6 +28,15 @@ type ReportApproval struct {
 	CreatedAt      string // RFC3339, kept as a plain string here — the report is text, not an API response
 }
 
+// ReportConsultation is one stakeholder consultation (DPIA-11) — the report's own "บันทึกการปรึกษา".
+type ReportConsultation struct {
+	Stakeholder     string
+	StakeholderType string
+	ConsultedAt     string // date, kept as a plain string for the same reason ReportApproval.CreatedAt is
+	Summary         string
+	Response        string
+}
+
 // ReportData is everything DPIA-15's acceptance criterion asks the report to show, computed live (the same
 // "never a stale copy" discipline DPIA-04/12 already established) from the assessment's own round, its RoPA
 // activity's linked security measures, and every DPO opinion recorded on it.
@@ -41,6 +50,7 @@ type ReportData struct {
 	Score           float64
 	Measures        []ReportMeasure
 	Approvals       []ReportApproval
+	Consultations   []ReportConsultation
 }
 
 func (s *Service) reportData(ctx context.Context, assessmentID uuid.UUID) (ReportData, error) {
@@ -103,6 +113,17 @@ func (s *Service) reportData(ctx context.Context, assessmentID uuid.UUID) (Repor
 			})
 		}
 	}
+
+	consultations, err := s.ListConsultations(ctx, assessmentID)
+	if err != nil {
+		return ReportData{}, err
+	}
+	for _, c := range consultations {
+		out.Consultations = append(out.Consultations, ReportConsultation{
+			Stakeholder: c.Stakeholder, StakeholderType: c.StakeholderType, ConsultedAt: c.ConsultedAt.Format("2006-01-02"),
+			Summary: c.Summary, Response: c.Response,
+		})
+	}
 	return out, nil
 }
 
@@ -114,14 +135,23 @@ var reportLabels = map[string]map[string]string{
 		"title": "รายงาน DPIA", "screening": "ผลคัดกรองและคะแนน", "round": "รอบที่ %d", "status": "สถานะ: %s",
 		"result": "ผล: %s", "score": "คะแนน: %.1f", "reason": "เหตุผล: %s", "measures": "มาตรการความปลอดภัย",
 		"noMeasures": "ยังไม่มีมาตรการความปลอดภัยที่เชื่อมกับกิจกรรมนี้", "approvals": "ความเห็นและผู้อนุมัติ",
-		"noApprovals": "ยังไม่มีความเห็นที่บันทึกไว้",
+		"noApprovals": "ยังไม่มีความเห็นที่บันทึกไว้", "consultations": "บันทึกการปรึกษาผู้มีส่วนได้เสีย",
+		"noConsultations": "ยังไม่มีการปรึกษาที่บันทึกไว้", "consultResponse": "คำชี้แจง",
 	},
 	"en": {
 		"title": "DPIA Report", "screening": "Screening result and score", "round": "Round %d", "status": "Status: %s",
 		"result": "Result: %s", "score": "Score: %.1f", "reason": "Reason: %s", "measures": "Security measures",
 		"noMeasures": "No security measures linked to this activity yet", "approvals": "Opinions and approvers",
-		"noApprovals": "No opinion recorded yet",
+		"noApprovals": "No opinion recorded yet", "consultations": "Stakeholder consultation log",
+		"noConsultations": "No consultation recorded yet", "consultResponse": "Response",
 	},
+}
+
+// stakeholderTypeLabels names each assess.consultations.stakeholder_type value for the report (operational
+// labels, not legal wording — rule 8 doesn't apply).
+var stakeholderTypeLabels = map[string]map[string]string{
+	"th": {"data_subject": "เจ้าของข้อมูล", "processor": "ผู้ประมวลผล", "expert": "ผู้เชี่ยวชาญ", "internal": "ภายในองค์กร", "regulator": "หน่วยงานกำกับดูแล"},
+	"en": {"data_subject": "Data subject", "processor": "Processor", "expert": "Expert", "internal": "Internal", "regulator": "Regulator"},
 }
 
 func heading(lang string, level int, text string) render.Node {
@@ -179,6 +209,26 @@ func reportInput(lang string, d ReportData) render.Input {
 		var items []string
 		for _, a := range d.Approvals {
 			items = append(items, fmt.Sprintf("%s — %s — %s (%s)", a.DpoName, a.Recommendation, a.Opinion, a.CreatedAt))
+		}
+		content = append(content, bulletList(items))
+	}
+
+	content = append(content, heading(lang, 2, l["consultations"]))
+	if len(d.Consultations) == 0 {
+		content = append(content, paragraph(l["noConsultations"]))
+	} else {
+		stLabels := stakeholderTypeLabels[lang]
+		var items []string
+		for _, c := range d.Consultations {
+			st := stLabels[c.StakeholderType]
+			if st == "" {
+				st = c.StakeholderType
+			}
+			line := fmt.Sprintf("%s (%s) — %s — %s", c.Stakeholder, st, c.ConsultedAt, c.Summary)
+			if c.Response != "" {
+				line += fmt.Sprintf(" · %s: %s", l["consultResponse"], c.Response)
+			}
+			items = append(items, line)
 		}
 		content = append(content, bulletList(items))
 	}
