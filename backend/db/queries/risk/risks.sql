@@ -45,3 +45,12 @@ RETURNING *;
 UPDATE risk.risks SET residual_likelihood = $2, residual_impact = $3, residual_score = $4, residual_level = $5, updated_at = now()
 WHERE id = $1
 RETURNING *;
+
+-- RRA-08: flips the risk itself into/out of "accepted" — RecordAcceptance (status='accepted') and the
+-- expiry reminder's own revert (status='open') both go through this one setter, guarded by row_version so
+-- a concurrent edit is never silently clobbered.
+-- name: SetRiskStatus :one
+UPDATE risk.risks SET status = $2, updated_at = now(),
+    updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
+WHERE id = $1 AND row_version = $3
+RETURNING *;

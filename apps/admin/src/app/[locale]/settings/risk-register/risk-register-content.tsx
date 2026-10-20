@@ -9,7 +9,10 @@ import {
   createApiClient,
   useRiskRegister,
   useSaveRiskRegisterEntry,
+  useAcceptances,
+  useRecordAcceptance,
   type RiskRegisterEntry,
+  type ApiClient,
 } from "@pdpa/api-client";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
@@ -52,12 +55,14 @@ export function RiskRegisterContent() {
   const canRead = usePermission("dpo.risk.read");
   const canCreate = usePermission("dpo.risk.create");
   const canUpdate = usePermission("dpo.risk.update");
+  const canApprove = usePermission("dpo.risk.approve");
   const client = useMemo(() => createApiClient("/api/bff"), []);
   const [status, setStatus] = useState<string>("");
   const [sourceType, setSourceType] = useState<string>("");
   const list = useRiskRegister(client, { status: status || undefined, source_type: sourceType || undefined });
   const save = useSaveRiskRegisterEntry(client);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [acceptancesFor, setAcceptancesFor] = useState<string | null>(null);
 
   if (!canRead) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
 
@@ -172,10 +177,16 @@ export function RiskRegisterContent() {
                     </Link>
                   ) : null}
                 </td>
-                <td className="py-2">
+                <td className="py-2 space-x-2">
                   {canUpdate && r.source_type === "manual" && (
                     <button className="text-sky-700 underline" onClick={() => { save.reset(); setDraft(fromRisk(r)); }}>{t("edit")}</button>
                   )}
+                  <button
+                    className="text-sky-700 underline"
+                    onClick={() => setAcceptancesFor(acceptancesFor === r.id ? null : r.id)}
+                  >
+                    {t("acceptances.toggle")}
+                  </button>
                 </td>
               </tr>
             ))}
@@ -187,6 +198,75 @@ export function RiskRegisterContent() {
           {t("loading")}
         </Button>
       )}
+
+      {acceptancesFor && (
+        <AcceptancesPanel client={client} riskId={acceptancesFor} canApprove={canApprove} t={t} />
+      )}
     </main>
+  );
+}
+
+/** RRA-08's own section: past acceptances for one risk, plus (when the caller holds dpo.risk.approve) a
+ *  form to record a new one — reason + review date. */
+function AcceptancesPanel({
+  client, riskId, canApprove, t,
+}: { client: ApiClient; riskId: string; canApprove: boolean; t: ReturnType<typeof useTranslations> }) {
+  const list = useAcceptances(client, riskId);
+  const record = useRecordAcceptance(client);
+  const [reason, setReason] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
+
+  const submit = () => {
+    if (!reason.trim() || !expiresAt) return;
+    record.mutate(
+      { riskId, input: { reason, expires_at: expiresAt } },
+      { onSuccess: () => { setReason(""); setExpiresAt(""); } },
+    );
+  };
+
+  return (
+    <fieldset className="space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="acceptances-panel">
+      <legend className="px-1 font-semibold">{t("acceptances.title")}</legend>
+
+      {list.isPending ? (
+        <p className="text-slate-500">{t("loading")}</p>
+      ) : list.isError ? (
+        <p className="text-red-700">{t("loadError")}</p>
+      ) : (list.data ?? []).length === 0 ? (
+        <p className="text-slate-500">{t("acceptances.empty")}</p>
+      ) : (
+        <table className="w-full border-collapse text-left text-sm" data-testid="acceptances-table">
+          <thead>
+            <tr className="border-b border-slate-200 text-slate-500">
+              <th className="py-1">{t("acceptances.reason")}</th>
+              <th className="py-1">{t("acceptances.expiresAt")}</th>
+              <th className="py-1">{t("acceptances.recordedAt")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(list.data ?? []).map((a) => (
+              <tr key={a.id} className="border-b border-slate-100">
+                <td className="py-1">{a.reason}</td>
+                <td className="py-1">{a.expires_at}</td>
+                <td className="py-1">{new Date(a.created_at).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {canApprove && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="sm:col-span-2"><span className="block text-slate-600">{t("acceptances.reason")}</span>
+            <input className={INPUT} value={reason} onChange={(e) => setReason(e.target.value)} /></label>
+          <label><span className="block text-slate-600">{t("acceptances.expiresAt")}</span>
+            <input className={INPUT} type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} /></label>
+          {record.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("form.saveError", { detail: detail(record.error) })}</p>}
+          <div className="sm:col-span-2">
+            <Button onClick={submit} disabled={record.isPending || !reason.trim() || !expiresAt}>{t("acceptances.record")}</Button>
+          </div>
+        </div>
+      )}
+    </fieldset>
   );
 }

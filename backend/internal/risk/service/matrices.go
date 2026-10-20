@@ -19,9 +19,11 @@ import (
 )
 
 var (
-	ErrNotFound        = errors.New("risk: not found")
-	ErrInvalid         = errors.New("risk: invalid")
-	ErrVersionMismatch = errors.New("risk: version mismatch")
+	ErrNotFound          = errors.New("risk: not found")
+	ErrInvalid           = errors.New("risk: invalid")
+	ErrVersionMismatch   = errors.New("risk: version mismatch")
+	ErrForbidden         = errors.New("risk: forbidden")
+	ErrInvalidTransition = errors.New("risk: invalid transition")
 )
 
 // validLevels is exactly risk.activity_scores.level's own CHECK constraint — a matrix's thresholds may only

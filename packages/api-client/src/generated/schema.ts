@@ -5015,6 +5015,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/risk/risks/{id}/acceptances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RRA-08: every acceptance ever recorded for a risk, newest first */
+        get: operations["riskListAcceptances"];
+        put?: never;
+        /** RRA-08: record acceptance of the risk's own residual as-is, with a reason and a review date — flips the risk to status=accepted and schedules the one reminder at expires_at */
+        post: operations["riskRecordAcceptance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/governance/retention-schedules": {
         parameters: {
             query?: never;
@@ -7069,6 +7087,26 @@ export interface components {
             treatment?: "mitigate" | "accept" | "transfer" | "avoid" | null;
             /** @enum {string} */
             status: "open" | "in_treatment" | "accepted" | "closed";
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @description RRA-08: approval_id/approved_by stay implicit — the caller recording this already holds dpo.risk.approve and so already is the approver. */
+        RiskAcceptanceInput: {
+            reason: string;
+            /** Format: date */
+            expires_at: string;
+        };
+        /** @description RRA-08: one risk.acceptances row — who accepted the risk's own residual, why, and until when it holds before review is due again. */
+        RiskAcceptance: {
+            id: components["schemas"]["Uuid"];
+            risk_id: components["schemas"]["Uuid"];
+            reason: string;
+            /** Format: uuid */
+            approved_by?: string | null;
+            /** Format: date-time */
+            approved_at?: string | null;
+            /** Format: date */
+            expires_at: string;
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
         };
@@ -21870,6 +21908,71 @@ export interface operations {
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    riskListAcceptances: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RiskAcceptance"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    riskRecordAcceptance: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiskAcceptanceInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskAcceptance"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     govListRetentionSchedules: {

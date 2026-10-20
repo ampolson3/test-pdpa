@@ -228,6 +228,10 @@ func problem(err error) error {
 		return httpx.VersionMismatch()
 	case errors.Is(err, riskservice.ErrInvalid):
 		return httpx.UnprocessableEntity("risk.invalid_input", err.Error())
+	case errors.Is(err, riskservice.ErrInvalidTransition):
+		return httpx.InvalidTransition("risk")
+	case errors.Is(err, riskservice.ErrForbidden):
+		return httpx.AuthzDenied()
 	}
 	return err
 }

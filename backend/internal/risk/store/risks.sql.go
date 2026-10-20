@@ -310,6 +310,56 @@ func (q *Queries) SetResidualRisk(ctx context.Context, arg SetResidualRiskParams
 	return i, err
 }
 
+const setRiskStatus = `-- name: SetRiskStatus :one
+UPDATE risk.risks SET status = $2, updated_at = now(),
+    updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
+WHERE id = $1 AND row_version = $3
+RETURNING id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id, asset_id, vendor_id, likelihood, impact, inherent_score, residual_likelihood, residual_impact, residual_score, level, treatment, status, review_at, created_at, created_by, updated_at, updated_by, row_version, residual_level
+`
+
+type SetRiskStatusParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	Status     string    `db:"status" json:"status"`
+	RowVersion int32     `db:"row_version" json:"row_version"`
+}
+
+// RRA-08: flips the risk itself into/out of "accepted" — RecordAcceptance (status='accepted') and the
+// expiry reminder's own revert (status='open') both go through this one setter, guarded by row_version so
+// a concurrent edit is never silently clobbered.
+func (q *Queries) SetRiskStatus(ctx context.Context, arg SetRiskStatusParams) (RiskRisk, error) {
+	row := q.db.QueryRow(ctx, setRiskStatus, arg.ID, arg.Status, arg.RowVersion)
+	var i RiskRisk
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.SourceType,
+		&i.SourceID,
+		&i.Title,
+		&i.Description,
+		&i.OwnerUserID,
+		&i.ActivityID,
+		&i.AssetID,
+		&i.VendorID,
+		&i.Likelihood,
+		&i.Impact,
+		&i.InherentScore,
+		&i.ResidualLikelihood,
+		&i.ResidualImpact,
+		&i.ResidualScore,
+		&i.Level,
+		&i.Treatment,
+		&i.Status,
+		&i.ReviewAt,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.RowVersion,
+		&i.ResidualLevel,
+	)
+	return i, err
+}
+
 const updateRisk = `-- name: UpdateRisk :one
 UPDATE risk.risks SET
     title = $2, description = $3, owner_user_id = $4, likelihood = $5, impact = $6, inherent_score = $7,

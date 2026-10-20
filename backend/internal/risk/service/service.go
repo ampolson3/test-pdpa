@@ -8,11 +8,15 @@ package service
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/notify"
 	riskstore "pdpa-platform/internal/risk/store"
 )
 
@@ -33,9 +37,21 @@ type Service struct {
 	Dpo         DpoTasks    // DPIA-07: open a remediation task when a control gets an owner/due date (nil until dpo registers itself)
 	Notice      Notice      // RRA-04: whether a notice already covers an activity (nil until notice registers itself)
 	Vendor      Vendor      // RRA-09: FK-visibility check for a risk's own vendor link (nil until vendormgmt registers itself)
+	// Notify and River drive RRA-08's own acceptance-review reminder; nil in contexts that don't need them.
+	Notify *notify.Service
+	River  *river.Client[pgx.Tx]
+	// Now is clock-injectable for tests (RRA-08's own expiry check); nil means time.Now in production.
+	Now func() time.Time
 }
 
 func New() *Service { return &Service{} }
+
+func (s *Service) now() time.Time {
+	if s.Now != nil {
+		return s.Now()
+	}
+	return time.Now()
+}
 
 func (s *Service) ListControls(ctx context.Context) ([]Control, error) {
 	rows, err := riskstore.New(pdb.MustTxFromContext(ctx)).ListControls(ctx)

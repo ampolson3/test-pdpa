@@ -3505,6 +3505,15 @@
       "accept": "Accept",
       "transfer": "Transfer",
       "avoid": "Avoid"
+    },
+    "acceptances": {
+      "toggle": "Acceptances",
+      "title": "Risk acceptance",
+      "empty": "No acceptance recorded yet.",
+      "reason": "Reason",
+      "expiresAt": "Review by",
+      "recordedAt": "Recorded",
+      "record": "Record acceptance"
     }
   }
 }

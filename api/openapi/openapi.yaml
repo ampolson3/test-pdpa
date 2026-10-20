@@ -14744,6 +14744,80 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/risk/risks/{id}/acceptances:
+    get:
+      operationId: riskListAcceptances
+      tags: [risk]
+      summary: 'RRA-08: every acceptance ever recorded for a risk, newest first'
+      x-permission: dpo.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/RiskAcceptance'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: riskRecordAcceptance
+      tags: [risk]
+      summary: 'RRA-08: record acceptance of the risk''s own residual as-is, with a reason and a review date — flips the risk to status=accepted and schedules the one reminder at expires_at'
+      x-permission: dpo.risk.approve
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskAcceptanceInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskAcceptance'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/governance/retention-schedules:
     get:
       operationId: govListRetentionSchedules
@@ -18546,6 +18620,31 @@ components:
         status:
           type: string
           enum: [open, in_treatment, accepted, closed]
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    RiskAcceptanceInput:
+      type: object
+      description: 'RRA-08: approval_id/approved_by stay implicit — the caller recording this already holds dpo.risk.approve and so already is the approver.'
+      required: [reason, expires_at]
+      additionalProperties: false
+      properties:
+        reason: {type: string, minLength: 1, maxLength: 4000}
+        expires_at: {type: string, format: date}
+    RiskAcceptance:
+      type: object
+      description: 'RRA-08: one risk.acceptances row — who accepted the risk''s own residual, why, and until when it holds before review is due again.'
+      required: [id, risk_id, reason, expires_at, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        risk_id: {$ref: '#/components/schemas/Uuid'}
+        reason: {type: string}
+        approved_by:
+          type: [string, 'null']
+          format: uuid
+        approved_at:
+          type: [string, 'null']
+          format: date-time
+        expires_at: {type: string, format: date}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
     DpoSecurityAssessment:

@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
@@ -755,6 +756,7 @@ func TestRiskRegisterEndpoints_Contract(t *testing.T) {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM risk.acceptances`)
 			_, _ = tx.Exec(ctx, `DELETE FROM risk.risks`)
 			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
 			return err
@@ -777,7 +779,7 @@ func TestRiskRegisterEndpoints_Contract(t *testing.T) {
 	}
 	reader := uuid.New()
 	grants := map[string][]string{
-		tenant.UserID.String(): {"dpo.risk.read", "dpo.risk.create", "dpo.risk.update"},
+		tenant.UserID.String(): {"dpo.risk.read", "dpo.risk.create", "dpo.risk.update", "dpo.risk.approve"},
 		reader.String():        {"dpo.risk.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
@@ -903,5 +905,38 @@ func TestRiskRegisterEndpoints_Contract(t *testing.T) {
 	code, body = do("PUT", item, &admin, update, map[string]string{"If-Match": etagOf(int(created.RowVersion))})
 	if code != 200 || !strings.Contains(body, `"title":"unpatched legacy system (renamed)"`) || !strings.Contains(body, `"status":"in_treatment"`) {
 		t.Fatalf("update: %d %s", code, body)
+	}
+
+	// RRA-08: acceptances, on the same risk.
+	acceptances := item + "/acceptances"
+	if code, _ := do("GET", acceptances, nil, nil, nil); code != 401 {
+		t.Errorf("list acceptances, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", acceptances, &reader, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list acceptances (none yet): %d %s", code, body)
+	}
+	expiresAt := time.Now().UTC().AddDate(0, 6, 0).Format("2006-01-02")
+	acceptInput := map[string]any{"reason": "accepted for the quarter", "expires_at": expiresAt}
+	if code, _ := do("POST", acceptances, &reader, acceptInput, nil); code != 403 {
+		t.Errorf("record acceptance without dpo.risk.approve: %d, want 403", code)
+	}
+	if code, body := do("POST", acceptances, &admin, map[string]any{"reason": "x"}, nil); code != 400 {
+		t.Errorf("record acceptance missing expires_at: %d %s, want 400 (schema)", code, body)
+	}
+	code, body = do("POST", acceptances, &admin, acceptInput, nil)
+	if code != 201 || !strings.Contains(body, `"reason":"accepted for the quarter"`) || !strings.Contains(body, `"expires_at":"`+expiresAt+`"`) {
+		t.Fatalf("record acceptance: %d %s", code, body)
+	}
+	if code, body := do("GET", item, &reader, nil, nil); code != 200 || !strings.Contains(body, `"status":"accepted"`) {
+		t.Errorf("risk after acceptance: %d %s, want status=accepted", code, body)
+	}
+	if code, body := do("GET", acceptances, &reader, nil, nil); code != 200 || !strings.Contains(body, `"reason":"accepted for the quarter"`) {
+		t.Errorf("list acceptances after recording one: %d %s", code, body)
+	}
+	if code, _ := do("POST", acceptances, &admin, map[string]any{"reason": "past", "expires_at": "2000-01-01"}, nil); code != 422 {
+		t.Errorf("record acceptance with expires_at not in the future: %d, want 422", code)
+	}
+	if code, _ := do("GET", "/admin/v1/risk/risks/"+uuid.New().String()+"/acceptances", &admin, nil, nil); code != 404 {
+		t.Errorf("list acceptances for an unknown risk: %d, want 404", code)
 	}
 }

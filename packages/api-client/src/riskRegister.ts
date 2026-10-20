@@ -3,9 +3,12 @@ import type { ApiClient, components } from "./client";
 
 export type RiskRegisterEntry = components["schemas"]["RiskRegisterEntry"];
 export type RiskRegisterInput = components["schemas"]["RiskRegisterInput"];
+export type RiskAcceptance = components["schemas"]["RiskAcceptance"];
+export type RiskAcceptanceInput = components["schemas"]["RiskAcceptanceInput"];
 
 const riskRegisterKey = ["risk", "register"] as const;
 const riskKey = (id: string) => [...riskRegisterKey, id] as const;
+const acceptancesKey = (riskId: string) => [...riskRegisterKey, riskId, "acceptances"] as const;
 
 /** GET /admin/v1/risk/risks (RRA-09) — every risk regardless of source (dpia/activity/vendor/manual/...),
  *  in one shared register. */
@@ -66,6 +69,41 @@ export function useSaveRiskRegisterEntry(client: ApiClient) {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: riskRegisterKey });
       if (data?.id) qc.invalidateQueries({ queryKey: riskKey(data.id) });
+    },
+  });
+}
+
+/** GET /admin/v1/risk/risks/{id}/acceptances (RRA-08) — every acceptance ever recorded for this risk,
+ *  newest first. */
+export function useAcceptances(client: ApiClient, riskId: string | undefined) {
+  return useQuery({
+    queryKey: acceptancesKey(riskId ?? ""),
+    enabled: !!riskId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/risk/risks/{id}/acceptances", { params: { path: { id: riskId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/risk/risks/{id}/acceptances — record acceptance of the risk's own residual (reason +
+ *  review date). Flips the risk to status=accepted and schedules the one reminder at expires_at. */
+export function useRecordAcceptance(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { riskId: string; input: RiskAcceptanceInput }) => {
+      const { data, error } = await client.POST("/admin/v1/risk/risks/{id}/acceptances", {
+        params: { path: { id: v.riskId } },
+        body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, v) => {
+      qc.invalidateQueries({ queryKey: acceptancesKey(v.riskId) });
+      qc.invalidateQueries({ queryKey: riskKey(v.riskId) });
+      qc.invalidateQueries({ queryKey: riskRegisterKey });
     },
   });
 }

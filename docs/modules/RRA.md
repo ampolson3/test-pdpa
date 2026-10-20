@@ -514,6 +514,48 @@ here, so the Go tests were verified by `go build`/`go vet`/`gofmt -l` (compile-c
 
 **Acceptance criteria:** การยอมรับหมดอายุและเตือนทบทวนตามวันที่ตั้ง
 
+**Implementation — done.** `risk.acceptances` was already fully specified in the baseline migrations
+(`reason`, nullable `approval_id`/`approved_by`/`approved_at`, `expires_at`) — no new migration for the table
+itself. `internal/risk/service/acceptances.go`'s `RecordAcceptance` is gated directly by the already-seeded
+`dpo.risk.approve` permission (DPO + EXEC, matching this feature's own actor line exactly) rather than routed
+through PLT-08's generic `platform.approvals`/`versioning.Service` — that engine is built for versioned
+*documents* with content to freeze at publish time, and this is a single, one-time decision with no document
+to version, the same "build only the minimal slice this feature needs" reasoning VEN-03/VEN-14/ORG-06/DPIA-03
+already established for their own permanent-decision gates. The caller recording the acceptance already *is*
+the approver, so `approval_id` stays NULL; a closed risk has nothing left to accept (`ErrInvalidTransition`)
+and `expires_at` must be a real future review date (`ErrInvalid`). The risk itself flips to `status =
+accepted` in the same call; a fresh `RecordAcceptance` before a prior one expires simply supersedes it.
+
+The acceptance criterion itself is a single reminder checkpoint scheduled exactly *at* `expires_at` — not a
+notice period ahead of it the way VEN-06's own certificate reminder works, since the criterion names one date
+for both "the acceptance expires" and "reminds for review." `FireAcceptanceReviewReminder` (migration 00079
+seeds the `risk.acceptance_review` template, th/en × in_app/email, operational text, no DRAFT marker — rule 8
+is about legal/notice wording, not this) checks the acceptance's own `expires_at` still matches what the job
+was scheduled for and that it's still the risk's *latest* acceptance (`GetLatestAcceptanceForRisk`) before
+acting — a stale job from a superseded acceptance is a harmless no-op. When it fires for real: the risk
+reverts from `accepted` back to `open` (only if an owner hasn't already moved it on by hand) and every DPO is
+notified — closing the loop with DPIA-08's own `EnsureRemediationTask`, which skips `accepted` risks, so a
+still-significant risk becomes remediation-task-eligible again the moment its acceptance lapses.
+
+API: `GET`/`POST /admin/v1/risk/risks/{id}/acceptances` (list on `dpo.risk.read`, create on `dpo.risk.approve`
+— new `RiskAcceptance`/`RiskAcceptanceInput` schemas, no new permission code). UI: an "Acceptances" toggle per
+row on `/settings/risk-register` — past acceptances (reason/review date/recorded date) and, for a caller
+holding `dpo.risk.approve`, a form to record a new one. `cmd/worker` registers
+`riskservice.AcceptanceReviewWorker`; `cmd/api`'s own `riskSvc` gets `Notify`/`River` wired (scheduling happens
+at write time, through the API request's own transaction, the same pattern VEN-06's `vendorSvc` already
+uses). Tests: unit (`internal/risk/service/acceptances_test.go` — the acceptance criterion directly: recording
+an acceptance sets the risk to accepted and schedules the one reminder exactly at `expires_at`; the
+`dpo.risk.approve` gate refused without it; a closed risk and a non-future `expires_at` both refused; firing
+the reminder reverts an expired, still-accepted risk to open and notifies DPO; a stale or superseded reminder
+is a harmless no-op; two-tenant isolation), HTTP contract
+(`internal/risk/http/handler_test.go`'s `TestRiskRegisterEndpoints_Contract`, extended with
+401/403/400/201/200/404/422 on the new endpoints through the real validator + AuthZ). Not verified live
+against a real Postgres/Redis — the same environment limitation this codebase's other recent passes already
+disclosed; every test compiles and vets clean and skips the same way the rest of this module's own suite
+already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/settings/risk-register` route) all verified clean.
+
 <a id="rra-09"></a>
 ### RRA-09 ทะเบียนความเสี่ยงด้านข้อมูลส่วนบุคคล
 

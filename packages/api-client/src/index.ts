@@ -54,8 +54,12 @@ export {
   useRiskRegister,
   useRiskRegisterEntry,
   useSaveRiskRegisterEntry,
+  useAcceptances,
+  useRecordAcceptance,
   type RiskRegisterEntry,
   type RiskRegisterInput,
+  type RiskAcceptance,
+  type RiskAcceptanceInput,
 } from "./riskRegister";
 export {
   useVendors,
