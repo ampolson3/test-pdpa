@@ -738,3 +738,170 @@ func TestRemediateGapFindingEndpoint_Contract(t *testing.T) {
 		t.Errorf("remediate unknown finding: %d, want 404", code)
 	}
 }
+
+// Contract test for the risk register endpoints (RRA-09) behind the real OpenAPI validator and AuthZ.
+// Permissions here are dpo.risk.* (the register's own family), not ropa.risk.* used by the other tests above.
+func TestRiskRegisterEndpoints_Contract(t *testing.T) {
+	ctx := context.Background()
+	rdb := redis.NewClient(&redis.Options{Addr: envOr("TEST_REDIS_ADDR", "localhost:6379")})
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		t.Skipf("no Redis: %v", err)
+	}
+	t.Cleanup(func() { rdb.Close() })
+	app := dbtest.Pool(t)
+	tenant := dbtest.SeedTenant(t, ctx, app, dbtest.PlatformPool(t), "riskregisterhttp")
+
+	owner := dbtest.OwnerPool(t)
+	t.Cleanup(func() {
+		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
+			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM risk.risks`)
+			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
+			return err
+		})
+	})
+	svc := &riskservice.Service{Audit: audit.New()}
+
+	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	validateMw, _ := validate.Middleware(spec, nil)
+	perms := map[string]string{}
+	for _, item := range spec.Paths.Map() {
+		for _, op := range item.Operations() {
+			if code, ok := op.Extensions["x-permission"].(string); ok {
+				perms[strings.ToUpper(op.OperationID[:1])+op.OperationID[1:]] = code
+			}
+		}
+	}
+	reader := uuid.New()
+	grants := map[string][]string{
+		tenant.UserID.String(): {"dpo.risk.read", "dpo.risk.create", "dpo.risk.update"},
+		reader.String():        {"dpo.risk.read"},
+	}
+	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
+		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
+	})
+	t.Cleanup(func() {
+		for uid := range grants {
+			_ = cache.Invalidate(context.Background(), tenant.ID.String(), uid)
+		}
+	})
+
+	r := chi.NewRouter()
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if u := req.Header.Get("X-Test-User"); u != "" {
+				req = req.WithContext(httpx.WithPrincipal(req.Context(), httpx.Principal{TenantID: tenant.ID.String(), UserID: u, ActorType: "user"}))
+			}
+			next.ServeHTTP(w, req)
+		})
+	})
+	r.Use(validateMw)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			p, ok := httpx.PrincipalFromContext(req.Context())
+			if !ok {
+				next.ServeHTTP(w, req)
+				return
+			}
+			_ = pdb.WithTenantTx(req.Context(), app, p.TenantID, p.UserID, func(ctx context.Context) error {
+				next.ServeHTTP(w, req.WithContext(ctx))
+				return nil
+			})
+		})
+	})
+	strict := riskhttp.NewStrictHandlerWithOptions(riskhttp.NewStrict(svc),
+		[]riskhttp.StrictMiddlewareFunc{authz.StrictMiddleware[riskhttp.StrictHandlerFunc](cache, func(op string) (string, bool) { c, ok := perms[op]; return c, ok })},
+		riskhttp.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				if p, ok := err.(httpx.Problem); ok {
+					httpx.WriteProblem(w, r, p)
+					return
+				}
+				httpx.WriteProblem(w, r, httpx.Internal())
+			},
+		})
+	riskhttp.HandlerWithOptions(strict, riskhttp.ChiServerOptions{BaseRouter: r})
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	do := func(method, path string, user *uuid.UUID, body any, headers map[string]string) (int, string) {
+		var buf bytes.Buffer
+		if body != nil {
+			_ = json.NewEncoder(&buf).Encode(body)
+		}
+		req, _ := http.NewRequest(method, srv.URL+path, &buf)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if user != nil {
+			req.Header.Set("X-Test-User", user.String())
+		}
+		for k, v := range headers {
+			req.Header.Set(k, v)
+		}
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		var out bytes.Buffer
+		_, _ = out.ReadFrom(res.Body)
+		return res.StatusCode, out.String()
+	}
+	admin := tenant.UserID
+
+	if code, _ := do("GET", "/admin/v1/risk/risks", nil, nil, nil); code != 401 {
+		t.Errorf("no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", "/admin/v1/risk/risks", &reader, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list (none yet): %d %s", code, body)
+	}
+	newRisk := map[string]any{"source_type": "manual", "title": "unpatched legacy system", "likelihood": 3, "impact": 3}
+	if code, _ := do("POST", "/admin/v1/risk/risks", &reader, newRisk, nil); code != 403 {
+		t.Errorf("create with read only: %d, want 403", code)
+	}
+	if code, body := do("POST", "/admin/v1/risk/risks", &admin, map[string]any{"title": "x"}, nil); code != 400 {
+		t.Errorf("missing required fields: %d %s, want 400 (schema)", code, body)
+	}
+	code, body := do("POST", "/admin/v1/risk/risks", &admin, newRisk, nil)
+	if code != 201 || !strings.Contains(body, `"title":"unpatched legacy system"`) || !strings.Contains(body, `"source_type":"manual"`) {
+		t.Fatalf("create: %d %s", code, body)
+	}
+	var created riskhttp.RiskRegisterEntry
+	_ = json.Unmarshal([]byte(body), &created)
+	item := "/admin/v1/risk/risks/" + created.Id.String()
+
+	if code, body := do("GET", item, &reader, nil, nil); code != 200 || !strings.Contains(body, created.Id.String()) {
+		t.Errorf("get: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/risk/risks/"+uuid.New().String(), &admin, nil, nil); code != 404 {
+		t.Errorf("unknown risk: %d, want 404", code)
+	}
+	if code, body := do("GET", "/admin/v1/risk/risks", &reader, nil, nil); code != 200 || !strings.Contains(body, created.Id.String()) {
+		t.Errorf("list: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/risk/risks?source_type=dpia", &reader, nil, nil); code != 200 || strings.Contains(body, created.Id.String()) {
+		t.Errorf("source_type filter excluding the manual risk: %d %s", code, body)
+	}
+
+	update := map[string]any{"source_type": "manual", "title": "unpatched legacy system (renamed)", "likelihood": 3, "impact": 3, "status": "in_treatment"}
+	if code, _ := do("PUT", item, &admin, update, nil); code != 428 {
+		t.Errorf("update, no If-Match: %d, want 428", code)
+	}
+	if code, _ := do("PUT", item, &admin, update, map[string]string{"If-Match": `"99"`}); code != 412 {
+		t.Errorf("update, stale version: %d, want 412", code)
+	}
+	if code, _ := do("PUT", item, &reader, update, map[string]string{"If-Match": etagOf(int(created.RowVersion))}); code != 403 {
+		t.Errorf("update without update permission: %d, want 403", code)
+	}
+	code, body = do("PUT", item, &admin, update, map[string]string{"If-Match": etagOf(int(created.RowVersion))})
+	if code != 200 || !strings.Contains(body, `"title":"unpatched legacy system (renamed)"`) || !strings.Contains(body, `"status":"in_treatment"`) {
+		t.Fatalf("update: %d %s", code, body)
+	}
+}

@@ -32,6 +32,7 @@ type Service struct {
 	DpiaTrigger DpiaTrigger // RRA-03: open a DPIA when an activity scores high/very_high (nil until dpia registers itself)
 	Dpo         DpoTasks    // DPIA-07: open a remediation task when a control gets an owner/due date (nil until dpo registers itself)
 	Notice      Notice      // RRA-04: whether a notice already covers an activity (nil until notice registers itself)
+	Vendor      Vendor      // RRA-09: FK-visibility check for a risk's own vendor link (nil until vendormgmt registers itself)
 }
 
 func New() *Service { return &Service{} }

@@ -34,6 +34,9 @@ type ActivitySignals struct {
 type Ropa interface {
 	// ActivityVisible reports whether id is a real activity visible under the caller's RLS.
 	ActivityVisible(ctx context.Context, id uuid.UUID) (bool, error)
+	// AssetVisible is RRA-09's own "ระบบ" (system) link — whether id is a real ropa.assets row visible
+	// under the caller's RLS.
+	AssetVisible(ctx context.Context, id uuid.UUID) (bool, error)
 	Signals(ctx context.Context, id uuid.UUID) (ActivitySignals, error)
 	// MissingItems is ROPA-03's own live completeness check, reused by RRA-04's no_lawful_basis/
 	// no_retention/transfer_no_basis/sensitive_no_consent gap rules instead of recomputing them.

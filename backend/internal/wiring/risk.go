@@ -9,6 +9,7 @@ import (
 	orgservice "pdpa-platform/internal/org/service"
 	riskservice "pdpa-platform/internal/risk/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
+	vendorservice "pdpa-platform/internal/vendormgmt/service"
 )
 
 // RiskRopa adapts the real ropa + org services to risk/service's own local Ropa interface (RRA-01) — a
@@ -23,6 +24,15 @@ var highVolumeBands = map[string]bool{"10k_100k": true, "gt_100k": true}
 
 func (a RiskRopa) ActivityVisible(ctx context.Context, id uuid.UUID) (bool, error) {
 	_, err := a.Ropa.GetActivity(ctx, id)
+	if errors.Is(err, ropaservice.ErrNotFound) {
+		return false, nil
+	}
+	return err == nil, err
+}
+
+// AssetVisible is RRA-09's own "ระบบ" (system) link.
+func (a RiskRopa) AssetVisible(ctx context.Context, id uuid.UUID) (bool, error) {
+	_, err := a.Ropa.GetAsset(ctx, id)
 	if errors.Is(err, ropaservice.ErrNotFound) {
 		return false, nil
 	}
@@ -99,4 +109,19 @@ func (a RiskRopa) Signals(ctx context.Context, id uuid.UUID) (riskservice.Activi
 	sig.ControlCount = len(controls)
 
 	return sig, nil
+}
+
+// RiskVendor adapts vendormgmt's own service to risk/service's local Vendor interface (RRA-09) — a direct
+// import the other way is impossible, since internal/vendormgmt/service already imports internal/risk/
+// service for its own vendor-assessment work (rule 9: no cycle).
+type RiskVendor struct {
+	Vendor *vendorservice.Service
+}
+
+func (a RiskVendor) VendorVisible(ctx context.Context, id uuid.UUID) (bool, error) {
+	_, err := a.Vendor.GetVendor(ctx, id)
+	if errors.Is(err, vendorservice.ErrNotFound) {
+		return false, nil
+	}
+	return err == nil, err
 }

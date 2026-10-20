@@ -51,6 +51,13 @@ export {
 } from "./parties";
 export { useAssets, useSaveAsset, type Asset, type AssetInput, type AssetType } from "./assets";
 export {
+  useRiskRegister,
+  useRiskRegisterEntry,
+  useSaveRiskRegisterEntry,
+  type RiskRegisterEntry,
+  type RiskRegisterInput,
+} from "./riskRegister";
+export {
   useVendors,
   useVendor,
   useSaveVendor,

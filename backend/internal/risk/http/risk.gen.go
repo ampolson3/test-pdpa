@@ -80,19 +80,19 @@ func (e RiskFactorContributionContributesTo) Valid() bool {
 
 // Defines values for RiskGapFindingStatus.
 const (
-	Open     RiskGapFindingStatus = "open"
-	Resolved RiskGapFindingStatus = "resolved"
-	Waived   RiskGapFindingStatus = "waived"
+	RiskGapFindingStatusOpen     RiskGapFindingStatus = "open"
+	RiskGapFindingStatusResolved RiskGapFindingStatus = "resolved"
+	RiskGapFindingStatusWaived   RiskGapFindingStatus = "waived"
 )
 
 // Valid indicates whether the value is a known member of the RiskGapFindingStatus enum.
 func (e RiskGapFindingStatus) Valid() bool {
 	switch e {
-	case Open:
+	case RiskGapFindingStatusOpen:
 		return true
-	case Resolved:
+	case RiskGapFindingStatusResolved:
 		return true
-	case Waived:
+	case RiskGapFindingStatusWaived:
 		return true
 	default:
 		return false
@@ -138,6 +138,216 @@ func (e RiskLevel) Valid() bool {
 	case RiskLevelMedium:
 		return true
 	case RiskLevelVeryHigh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskRegisterEntryLevel.
+const (
+	RiskRegisterEntryLevelHigh     RiskRegisterEntryLevel = "high"
+	RiskRegisterEntryLevelLow      RiskRegisterEntryLevel = "low"
+	RiskRegisterEntryLevelMedium   RiskRegisterEntryLevel = "medium"
+	RiskRegisterEntryLevelVeryHigh RiskRegisterEntryLevel = "very_high"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterEntryLevel enum.
+func (e RiskRegisterEntryLevel) Valid() bool {
+	switch e {
+	case RiskRegisterEntryLevelHigh:
+		return true
+	case RiskRegisterEntryLevelLow:
+		return true
+	case RiskRegisterEntryLevelMedium:
+		return true
+	case RiskRegisterEntryLevelVeryHigh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskRegisterEntryResidualLevel.
+const (
+	RiskRegisterEntryResidualLevelHigh        RiskRegisterEntryResidualLevel = "high"
+	RiskRegisterEntryResidualLevelLessThannil RiskRegisterEntryResidualLevel = "<nil>"
+	RiskRegisterEntryResidualLevelLow         RiskRegisterEntryResidualLevel = "low"
+	RiskRegisterEntryResidualLevelMedium      RiskRegisterEntryResidualLevel = "medium"
+	RiskRegisterEntryResidualLevelVeryHigh    RiskRegisterEntryResidualLevel = "very_high"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterEntryResidualLevel enum.
+func (e RiskRegisterEntryResidualLevel) Valid() bool {
+	switch e {
+	case RiskRegisterEntryResidualLevelHigh:
+		return true
+	case RiskRegisterEntryResidualLevelLessThannil:
+		return true
+	case RiskRegisterEntryResidualLevelLow:
+		return true
+	case RiskRegisterEntryResidualLevelMedium:
+		return true
+	case RiskRegisterEntryResidualLevelVeryHigh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskRegisterEntrySourceType.
+const (
+	RiskRegisterEntrySourceTypeActivity RiskRegisterEntrySourceType = "activity"
+	RiskRegisterEntrySourceTypeAudit    RiskRegisterEntrySourceType = "audit"
+	RiskRegisterEntrySourceTypeBreach   RiskRegisterEntrySourceType = "breach"
+	RiskRegisterEntrySourceTypeDpia     RiskRegisterEntrySourceType = "dpia"
+	RiskRegisterEntrySourceTypeManual   RiskRegisterEntrySourceType = "manual"
+	RiskRegisterEntrySourceTypeVendor   RiskRegisterEntrySourceType = "vendor"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterEntrySourceType enum.
+func (e RiskRegisterEntrySourceType) Valid() bool {
+	switch e {
+	case RiskRegisterEntrySourceTypeActivity:
+		return true
+	case RiskRegisterEntrySourceTypeAudit:
+		return true
+	case RiskRegisterEntrySourceTypeBreach:
+		return true
+	case RiskRegisterEntrySourceTypeDpia:
+		return true
+	case RiskRegisterEntrySourceTypeManual:
+		return true
+	case RiskRegisterEntrySourceTypeVendor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskRegisterEntryStatus.
+const (
+	RiskRegisterEntryStatusAccepted    RiskRegisterEntryStatus = "accepted"
+	RiskRegisterEntryStatusClosed      RiskRegisterEntryStatus = "closed"
+	RiskRegisterEntryStatusInTreatment RiskRegisterEntryStatus = "in_treatment"
+	RiskRegisterEntryStatusOpen        RiskRegisterEntryStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterEntryStatus enum.
+func (e RiskRegisterEntryStatus) Valid() bool {
+	switch e {
+	case RiskRegisterEntryStatusAccepted:
+		return true
+	case RiskRegisterEntryStatusClosed:
+		return true
+	case RiskRegisterEntryStatusInTreatment:
+		return true
+	case RiskRegisterEntryStatusOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskRegisterEntryTreatment.
+const (
+	RiskRegisterEntryTreatmentAccept      RiskRegisterEntryTreatment = "accept"
+	RiskRegisterEntryTreatmentAvoid       RiskRegisterEntryTreatment = "avoid"
+	RiskRegisterEntryTreatmentLessThannil RiskRegisterEntryTreatment = "<nil>"
+	RiskRegisterEntryTreatmentMitigate    RiskRegisterEntryTreatment = "mitigate"
+	RiskRegisterEntryTreatmentTransfer    RiskRegisterEntryTreatment = "transfer"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterEntryTreatment enum.
+func (e RiskRegisterEntryTreatment) Valid() bool {
+	switch e {
+	case RiskRegisterEntryTreatmentAccept:
+		return true
+	case RiskRegisterEntryTreatmentAvoid:
+		return true
+	case RiskRegisterEntryTreatmentLessThannil:
+		return true
+	case RiskRegisterEntryTreatmentMitigate:
+		return true
+	case RiskRegisterEntryTreatmentTransfer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskRegisterInputSourceType.
+const (
+	RiskRegisterInputSourceTypeActivity RiskRegisterInputSourceType = "activity"
+	RiskRegisterInputSourceTypeAudit    RiskRegisterInputSourceType = "audit"
+	RiskRegisterInputSourceTypeBreach   RiskRegisterInputSourceType = "breach"
+	RiskRegisterInputSourceTypeDpia     RiskRegisterInputSourceType = "dpia"
+	RiskRegisterInputSourceTypeManual   RiskRegisterInputSourceType = "manual"
+	RiskRegisterInputSourceTypeVendor   RiskRegisterInputSourceType = "vendor"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterInputSourceType enum.
+func (e RiskRegisterInputSourceType) Valid() bool {
+	switch e {
+	case RiskRegisterInputSourceTypeActivity:
+		return true
+	case RiskRegisterInputSourceTypeAudit:
+		return true
+	case RiskRegisterInputSourceTypeBreach:
+		return true
+	case RiskRegisterInputSourceTypeDpia:
+		return true
+	case RiskRegisterInputSourceTypeManual:
+		return true
+	case RiskRegisterInputSourceTypeVendor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskRegisterInputStatus.
+const (
+	RiskRegisterInputStatusAccepted    RiskRegisterInputStatus = "accepted"
+	RiskRegisterInputStatusClosed      RiskRegisterInputStatus = "closed"
+	RiskRegisterInputStatusInTreatment RiskRegisterInputStatus = "in_treatment"
+	RiskRegisterInputStatusOpen        RiskRegisterInputStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterInputStatus enum.
+func (e RiskRegisterInputStatus) Valid() bool {
+	switch e {
+	case RiskRegisterInputStatusAccepted:
+		return true
+	case RiskRegisterInputStatusClosed:
+		return true
+	case RiskRegisterInputStatusInTreatment:
+		return true
+	case RiskRegisterInputStatusOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskRegisterInputTreatment.
+const (
+	RiskRegisterInputTreatmentAccept   RiskRegisterInputTreatment = "accept"
+	RiskRegisterInputTreatmentAvoid    RiskRegisterInputTreatment = "avoid"
+	RiskRegisterInputTreatmentMitigate RiskRegisterInputTreatment = "mitigate"
+	RiskRegisterInputTreatmentTransfer RiskRegisterInputTreatment = "transfer"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterInputTreatment enum.
+func (e RiskRegisterInputTreatment) Valid() bool {
+	switch e {
+	case RiskRegisterInputTreatmentAccept:
+		return true
+	case RiskRegisterInputTreatmentAvoid:
+		return true
+	case RiskRegisterInputTreatmentMitigate:
+		return true
+	case RiskRegisterInputTreatmentTransfer:
 		return true
 	default:
 		return false
@@ -324,6 +534,132 @@ func (e RiskUpdateMatrixParamsAcceptLanguage) Valid() bool {
 	case RiskUpdateMatrixParamsAcceptLanguageEn:
 		return true
 	case RiskUpdateMatrixParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskListRisksParamsStatus.
+const (
+	RiskListRisksParamsStatusAccepted    RiskListRisksParamsStatus = "accepted"
+	RiskListRisksParamsStatusClosed      RiskListRisksParamsStatus = "closed"
+	RiskListRisksParamsStatusInTreatment RiskListRisksParamsStatus = "in_treatment"
+	RiskListRisksParamsStatusOpen        RiskListRisksParamsStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the RiskListRisksParamsStatus enum.
+func (e RiskListRisksParamsStatus) Valid() bool {
+	switch e {
+	case RiskListRisksParamsStatusAccepted:
+		return true
+	case RiskListRisksParamsStatusClosed:
+		return true
+	case RiskListRisksParamsStatusInTreatment:
+		return true
+	case RiskListRisksParamsStatusOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskListRisksParamsSourceType.
+const (
+	RiskListRisksParamsSourceTypeActivity RiskListRisksParamsSourceType = "activity"
+	RiskListRisksParamsSourceTypeAudit    RiskListRisksParamsSourceType = "audit"
+	RiskListRisksParamsSourceTypeBreach   RiskListRisksParamsSourceType = "breach"
+	RiskListRisksParamsSourceTypeDpia     RiskListRisksParamsSourceType = "dpia"
+	RiskListRisksParamsSourceTypeManual   RiskListRisksParamsSourceType = "manual"
+	RiskListRisksParamsSourceTypeVendor   RiskListRisksParamsSourceType = "vendor"
+)
+
+// Valid indicates whether the value is a known member of the RiskListRisksParamsSourceType enum.
+func (e RiskListRisksParamsSourceType) Valid() bool {
+	switch e {
+	case RiskListRisksParamsSourceTypeActivity:
+		return true
+	case RiskListRisksParamsSourceTypeAudit:
+		return true
+	case RiskListRisksParamsSourceTypeBreach:
+		return true
+	case RiskListRisksParamsSourceTypeDpia:
+		return true
+	case RiskListRisksParamsSourceTypeManual:
+		return true
+	case RiskListRisksParamsSourceTypeVendor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskListRisksParamsAcceptLanguage.
+const (
+	RiskListRisksParamsAcceptLanguageEn RiskListRisksParamsAcceptLanguage = "en"
+	RiskListRisksParamsAcceptLanguageTh RiskListRisksParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RiskListRisksParamsAcceptLanguage enum.
+func (e RiskListRisksParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RiskListRisksParamsAcceptLanguageEn:
+		return true
+	case RiskListRisksParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskCreateRiskParamsAcceptLanguage.
+const (
+	RiskCreateRiskParamsAcceptLanguageEn RiskCreateRiskParamsAcceptLanguage = "en"
+	RiskCreateRiskParamsAcceptLanguageTh RiskCreateRiskParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RiskCreateRiskParamsAcceptLanguage enum.
+func (e RiskCreateRiskParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RiskCreateRiskParamsAcceptLanguageEn:
+		return true
+	case RiskCreateRiskParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskGetRiskParamsAcceptLanguage.
+const (
+	RiskGetRiskParamsAcceptLanguageEn RiskGetRiskParamsAcceptLanguage = "en"
+	RiskGetRiskParamsAcceptLanguageTh RiskGetRiskParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RiskGetRiskParamsAcceptLanguage enum.
+func (e RiskGetRiskParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RiskGetRiskParamsAcceptLanguageEn:
+		return true
+	case RiskGetRiskParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskUpdateRiskEntryParamsAcceptLanguage.
+const (
+	RiskUpdateRiskEntryParamsAcceptLanguageEn RiskUpdateRiskEntryParamsAcceptLanguage = "en"
+	RiskUpdateRiskEntryParamsAcceptLanguageTh RiskUpdateRiskEntryParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RiskUpdateRiskEntryParamsAcceptLanguage enum.
+func (e RiskUpdateRiskEntryParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RiskUpdateRiskEntryParamsAcceptLanguageEn:
+		return true
+	case RiskUpdateRiskEntryParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -537,6 +873,82 @@ type RiskMatrixInput struct {
 	Thresholds       []RiskThreshold `json:"thresholds"`
 }
 
+// RiskRegisterEntry RRA-09: one risk.risks row as the shared privacy risk register shows it — the same row DPIA-06's own DpiaRisk reads, here carrying its source and every entity link.
+type RiskRegisterEntry struct {
+	ActivityId *openapi_types.UUID `json:"activity_id,omitempty"`
+	AssetId    *openapi_types.UUID `json:"asset_id,omitempty"`
+
+	// CreatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	CreatedAt   Timestamp `json:"created_at"`
+	Description *string   `json:"description,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id            Uuid                   `json:"id"`
+	Impact        int                    `json:"impact"`
+	InherentScore float32                `json:"inherent_score"`
+	Level         RiskRegisterEntryLevel `json:"level"`
+	Likelihood    int                    `json:"likelihood"`
+
+	// OwnerUserId UUIDv7 generated by the API
+	OwnerUserId        *Uuid                           `json:"owner_user_id,omitempty"`
+	ResidualImpact     *int                            `json:"residual_impact,omitempty"`
+	ResidualLevel      *RiskRegisterEntryResidualLevel `json:"residual_level,omitempty"`
+	ResidualLikelihood *int                            `json:"residual_likelihood,omitempty"`
+	ResidualScore      *float32                        `json:"residual_score,omitempty"`
+	RowVersion         int                             `json:"row_version"`
+	SourceType         RiskRegisterEntrySourceType     `json:"source_type"`
+	Status             RiskRegisterEntryStatus         `json:"status"`
+	Title              string                          `json:"title"`
+	Treatment          *RiskRegisterEntryTreatment     `json:"treatment,omitempty"`
+	VendorId           *openapi_types.UUID             `json:"vendor_id,omitempty"`
+}
+
+// RiskRegisterEntryLevel defines model for RiskRegisterEntry.Level.
+type RiskRegisterEntryLevel string
+
+// RiskRegisterEntryResidualLevel defines model for RiskRegisterEntry.ResidualLevel.
+type RiskRegisterEntryResidualLevel string
+
+// RiskRegisterEntrySourceType defines model for RiskRegisterEntry.SourceType.
+type RiskRegisterEntrySourceType string
+
+// RiskRegisterEntryStatus defines model for RiskRegisterEntry.Status.
+type RiskRegisterEntryStatus string
+
+// RiskRegisterEntryTreatment defines model for RiskRegisterEntry.Treatment.
+type RiskRegisterEntryTreatment string
+
+// RiskRegisterInput RRA-09. activity_id/asset_id/vendor_id are read only on create — PUT never moves a register entry's own link.
+type RiskRegisterInput struct {
+	// ActivityId UUIDv7 generated by the API
+	ActivityId *Uuid `json:"activity_id,omitempty"`
+
+	// AssetId UUIDv7 generated by the API
+	AssetId     *Uuid   `json:"asset_id,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Impact      int     `json:"impact"`
+	Likelihood  int     `json:"likelihood"`
+
+	// OwnerUserId UUIDv7 generated by the API
+	OwnerUserId *Uuid                       `json:"owner_user_id,omitempty"`
+	SourceType  RiskRegisterInputSourceType `json:"source_type"`
+	Status      *RiskRegisterInputStatus    `json:"status,omitempty"`
+	Title       string                      `json:"title"`
+	Treatment   *RiskRegisterInputTreatment `json:"treatment,omitempty"`
+
+	// VendorId UUIDv7 generated by the API
+	VendorId *Uuid `json:"vendor_id,omitempty"`
+}
+
+// RiskRegisterInputSourceType defines model for RiskRegisterInput.SourceType.
+type RiskRegisterInputSourceType string
+
+// RiskRegisterInputStatus defines model for RiskRegisterInput.Status.
+type RiskRegisterInputStatus string
+
+// RiskRegisterInputTreatment defines model for RiskRegisterInput.Treatment.
+type RiskRegisterInputTreatment string
+
 // RiskRemediateFindingInput defines model for RiskRemediateFindingInput.
 type RiskRemediateFindingInput struct {
 	// AssigneeUserId UUIDv7 generated by the API
@@ -566,8 +978,14 @@ type Uuid = openapi_types.UUID
 // AcceptLanguage defines model for AcceptLanguage.
 type AcceptLanguage string
 
+// Cursor defines model for Cursor.
+type Cursor = string
+
 // IfMatch defines model for IfMatch.
 type IfMatch = string
+
+// Limit defines model for Limit.
+type Limit = int
 
 // BadRequest RFC 9457 problem details with a stable machine-readable `code`
 type BadRequest = Problem
@@ -668,6 +1086,58 @@ type RiskUpdateMatrixParams struct {
 // RiskUpdateMatrixParamsAcceptLanguage defines parameters for RiskUpdateMatrix.
 type RiskUpdateMatrixParamsAcceptLanguage string
 
+// RiskListRisksParams defines parameters for RiskListRisks.
+type RiskListRisksParams struct {
+	// Cursor Opaque cursor from `next_cursor` of the previous page
+	Cursor      *Cursor                        `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit       *Limit                         `form:"limit,omitempty" json:"limit,omitempty"`
+	Status      *RiskListRisksParamsStatus     `form:"status,omitempty" json:"status,omitempty"`
+	SourceType  *RiskListRisksParamsSourceType `form:"source_type,omitempty" json:"source_type,omitempty"`
+	OwnerUserId *Uuid                          `form:"owner_user_id,omitempty" json:"owner_user_id,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RiskListRisksParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RiskListRisksParamsStatus defines parameters for RiskListRisks.
+type RiskListRisksParamsStatus string
+
+// RiskListRisksParamsSourceType defines parameters for RiskListRisks.
+type RiskListRisksParamsSourceType string
+
+// RiskListRisksParamsAcceptLanguage defines parameters for RiskListRisks.
+type RiskListRisksParamsAcceptLanguage string
+
+// RiskCreateRiskParams defines parameters for RiskCreateRisk.
+type RiskCreateRiskParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RiskCreateRiskParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RiskCreateRiskParamsAcceptLanguage defines parameters for RiskCreateRisk.
+type RiskCreateRiskParamsAcceptLanguage string
+
+// RiskGetRiskParams defines parameters for RiskGetRisk.
+type RiskGetRiskParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RiskGetRiskParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RiskGetRiskParamsAcceptLanguage defines parameters for RiskGetRisk.
+type RiskGetRiskParamsAcceptLanguage string
+
+// RiskUpdateRiskEntryParams defines parameters for RiskUpdateRiskEntry.
+type RiskUpdateRiskEntryParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RiskUpdateRiskEntryParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// RiskUpdateRiskEntryParamsAcceptLanguage defines parameters for RiskUpdateRiskEntry.
+type RiskUpdateRiskEntryParamsAcceptLanguage string
+
 // RiskAnalyzeActivityParams defines parameters for RiskAnalyzeActivity.
 type RiskAnalyzeActivityParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -713,6 +1183,12 @@ type RiskCreateMatrixJSONRequestBody = RiskMatrixInput
 // RiskUpdateMatrixJSONRequestBody defines body for RiskUpdateMatrix for application/json ContentType.
 type RiskUpdateMatrixJSONRequestBody = RiskMatrixInput
 
+// RiskCreateRiskJSONRequestBody defines body for RiskCreateRisk for application/json ContentType.
+type RiskCreateRiskJSONRequestBody = RiskRegisterInput
+
+// RiskUpdateRiskEntryJSONRequestBody defines body for RiskUpdateRiskEntry for application/json ContentType.
+type RiskUpdateRiskEntryJSONRequestBody = RiskRegisterInput
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// RiskListOpenGapFindings The tenant-wide gap register (RRA-04) — every open finding across every activity, newest first
@@ -739,6 +1215,18 @@ type ServerInterface interface {
 	// RiskUpdateMatrix Change a risk matrix's own levels, thresholds or default flag — the acceptance criterion itself (RRA-02), since Classify always reads the current row live, never a cached score
 	// (PUT /admin/v1/risk/matrices/{id})
 	RiskUpdateMatrix(w http.ResponseWriter, r *http.Request, id Uuid, params RiskUpdateMatrixParams)
+	// RiskListRisks RRA-09: the shared privacy risk register — every risk.risks row regardless of source (DPIA / RoPA activity / vendor / breach / audit / manual), newest first
+	// (GET /admin/v1/risk/risks)
+	RiskListRisks(w http.ResponseWriter, r *http.Request, params RiskListRisksParams)
+	// RiskCreateRisk RRA-09: log a risk directly into the register — a RoPA activity, a system (ropa.assets) or a vendor, or a plain manual entry; DPIA-06's own DpiaIdentifyRisk covers the dpia-sourced case
+	// (POST /admin/v1/risk/risks)
+	RiskCreateRisk(w http.ResponseWriter, r *http.Request, params RiskCreateRiskParams)
+	// RiskGetRisk RRA-09: one register entry by id
+	// (GET /admin/v1/risk/risks/{id})
+	RiskGetRisk(w http.ResponseWriter, r *http.Request, id Uuid, params RiskGetRiskParams)
+	// RiskUpdateRiskEntry RRA-09: edit a register entry's own title/description/owner/score/treatment/status — never its activity/asset/vendor link, which is set only at creation
+	// (PUT /admin/v1/risk/risks/{id})
+	RiskUpdateRiskEntry(w http.ResponseWriter, r *http.Request, id Uuid, params RiskUpdateRiskEntryParams)
 	// RiskAnalyzeActivity Re-run every active gap rule against this activity's current RoPA data now (RRA-04) — the acceptance criterion itself, since every rule type must be detected
 	// (POST /admin/v1/ropa/activities/{id}/gap-analysis)
 	RiskAnalyzeActivity(w http.ResponseWriter, r *http.Request, id Uuid, params RiskAnalyzeActivityParams)
@@ -802,6 +1290,30 @@ func (_ Unimplemented) RiskGetMatrix(w http.ResponseWriter, r *http.Request, id 
 // RiskUpdateMatrix Change a risk matrix's own levels, thresholds or default flag — the acceptance criterion itself (RRA-02), since Classify always reads the current row live, never a cached score
 // (PUT /admin/v1/risk/matrices/{id})
 func (_ Unimplemented) RiskUpdateMatrix(w http.ResponseWriter, r *http.Request, id Uuid, params RiskUpdateMatrixParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RiskListRisks RRA-09: the shared privacy risk register — every risk.risks row regardless of source (DPIA / RoPA activity / vendor / breach / audit / manual), newest first
+// (GET /admin/v1/risk/risks)
+func (_ Unimplemented) RiskListRisks(w http.ResponseWriter, r *http.Request, params RiskListRisksParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RiskCreateRisk RRA-09: log a risk directly into the register — a RoPA activity, a system (ropa.assets) or a vendor, or a plain manual entry; DPIA-06's own DpiaIdentifyRisk covers the dpia-sourced case
+// (POST /admin/v1/risk/risks)
+func (_ Unimplemented) RiskCreateRisk(w http.ResponseWriter, r *http.Request, params RiskCreateRiskParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RiskGetRisk RRA-09: one register entry by id
+// (GET /admin/v1/risk/risks/{id})
+func (_ Unimplemented) RiskGetRisk(w http.ResponseWriter, r *http.Request, id Uuid, params RiskGetRiskParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RiskUpdateRiskEntry RRA-09: edit a register entry's own title/description/owner/score/treatment/status — never its activity/asset/vendor link, which is set only at creation
+// (PUT /admin/v1/risk/risks/{id})
+func (_ Unimplemented) RiskUpdateRiskEntry(w http.ResponseWriter, r *http.Request, id Uuid, params RiskUpdateRiskEntryParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1248,6 +1760,276 @@ func (siw *ServerInterfaceWrapper) RiskUpdateMatrix(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// RiskListRisks operation middleware
+func (siw *ServerInterfaceWrapper) RiskListRisks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RiskListRisksParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "source_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source_type", r.URL.Query(), &params.SourceType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "owner_user_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "owner_user_id", r.URL.Query(), &params.OwnerUserId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "owner_user_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "owner_user_id", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RiskListRisksParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RiskListRisks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RiskCreateRisk operation middleware
+func (siw *ServerInterfaceWrapper) RiskCreateRisk(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RiskCreateRiskParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RiskCreateRiskParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RiskCreateRisk(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RiskGetRisk operation middleware
+func (siw *ServerInterfaceWrapper) RiskGetRisk(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RiskGetRiskParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RiskGetRiskParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RiskGetRisk(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RiskUpdateRiskEntry operation middleware
+func (siw *ServerInterfaceWrapper) RiskUpdateRiskEntry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RiskUpdateRiskEntryParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RiskUpdateRiskEntryParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RiskUpdateRiskEntry(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RiskAnalyzeActivity operation middleware
 func (siw *ServerInterfaceWrapper) RiskAnalyzeActivity(w http.ResponseWriter, r *http.Request) {
 
@@ -1596,6 +2378,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/risk/gap-findings/{id}/remediate", wrapper.RiskRemediateGapFinding)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/risk/risks", wrapper.RiskListRisks)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/risk/risks", wrapper.RiskCreateRisk)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/risk/risks/{id}", wrapper.RiskGetRisk)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/v1/risk/risks/{id}", wrapper.RiskUpdateRiskEntry)
 	})
 
 	return r
@@ -2292,6 +3086,393 @@ func (response RiskUpdateMatrix428ApplicationProblemPlusJSONResponse) VisitRiskU
 	return err
 }
 
+type RiskListRisksRequestObject struct {
+	Params RiskListRisksParams
+}
+
+type RiskListRisksResponseObject interface {
+	VisitRiskListRisksResponse(w http.ResponseWriter) error
+}
+
+type RiskListRisks200JSONResponse struct {
+	Data       []RiskRegisterEntry `json:"data"`
+	NextCursor *string             `json:"next_cursor"`
+}
+
+func (response RiskListRisks200JSONResponse) VisitRiskListRisksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListRisks400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response RiskListRisks400ApplicationProblemPlusJSONResponse) VisitRiskListRisksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListRisks401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RiskListRisks401ApplicationProblemPlusJSONResponse) VisitRiskListRisksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListRisks403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RiskListRisks403ApplicationProblemPlusJSONResponse) VisitRiskListRisksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskCreateRiskRequestObject struct {
+	Params RiskCreateRiskParams
+	Body   *RiskCreateRiskJSONRequestBody
+}
+
+type RiskCreateRiskResponseObject interface {
+	VisitRiskCreateRiskResponse(w http.ResponseWriter) error
+}
+
+type RiskCreateRisk201ResponseHeaders struct {
+	ETag *string
+}
+
+type RiskCreateRisk201JSONResponse struct {
+	Body    RiskRegisterEntry
+	Headers RiskCreateRisk201ResponseHeaders
+}
+
+func (response RiskCreateRisk201JSONResponse) VisitRiskCreateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskCreateRisk400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response RiskCreateRisk400ApplicationProblemPlusJSONResponse) VisitRiskCreateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskCreateRisk401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RiskCreateRisk401ApplicationProblemPlusJSONResponse) VisitRiskCreateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskCreateRisk403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RiskCreateRisk403ApplicationProblemPlusJSONResponse) VisitRiskCreateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskCreateRisk422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response RiskCreateRisk422ApplicationProblemPlusJSONResponse) VisitRiskCreateRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskGetRiskRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RiskGetRiskParams
+}
+
+type RiskGetRiskResponseObject interface {
+	VisitRiskGetRiskResponse(w http.ResponseWriter) error
+}
+
+type RiskGetRisk200JSONResponse RiskRegisterEntry
+
+func (response RiskGetRisk200JSONResponse) VisitRiskGetRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskGetRisk401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RiskGetRisk401ApplicationProblemPlusJSONResponse) VisitRiskGetRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskGetRisk403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RiskGetRisk403ApplicationProblemPlusJSONResponse) VisitRiskGetRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskGetRisk404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RiskGetRisk404ApplicationProblemPlusJSONResponse) VisitRiskGetRiskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskUpdateRiskEntryRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RiskUpdateRiskEntryParams
+	Body   *RiskUpdateRiskEntryJSONRequestBody
+}
+
+type RiskUpdateRiskEntryResponseObject interface {
+	VisitRiskUpdateRiskEntryResponse(w http.ResponseWriter) error
+}
+
+type RiskUpdateRiskEntry200ResponseHeaders struct {
+	ETag *string
+}
+
+type RiskUpdateRiskEntry200JSONResponse struct {
+	Body    RiskRegisterEntry
+	Headers RiskUpdateRiskEntry200ResponseHeaders
+}
+
+func (response RiskUpdateRiskEntry200JSONResponse) VisitRiskUpdateRiskEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskUpdateRiskEntry400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response RiskUpdateRiskEntry400ApplicationProblemPlusJSONResponse) VisitRiskUpdateRiskEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskUpdateRiskEntry401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RiskUpdateRiskEntry401ApplicationProblemPlusJSONResponse) VisitRiskUpdateRiskEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskUpdateRiskEntry403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RiskUpdateRiskEntry403ApplicationProblemPlusJSONResponse) VisitRiskUpdateRiskEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskUpdateRiskEntry404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RiskUpdateRiskEntry404ApplicationProblemPlusJSONResponse) VisitRiskUpdateRiskEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskUpdateRiskEntry412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response RiskUpdateRiskEntry412ApplicationProblemPlusJSONResponse) VisitRiskUpdateRiskEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskUpdateRiskEntry422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response RiskUpdateRiskEntry422ApplicationProblemPlusJSONResponse) VisitRiskUpdateRiskEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskUpdateRiskEntry428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response RiskUpdateRiskEntry428ApplicationProblemPlusJSONResponse) VisitRiskUpdateRiskEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type RiskAnalyzeActivityRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params RiskAnalyzeActivityParams
@@ -2620,6 +3801,18 @@ type StrictServerInterface interface {
 	// RiskUpdateMatrix Change a risk matrix's own levels, thresholds or default flag — the acceptance criterion itself (RRA-02), since Classify always reads the current row live, never a cached score
 	// (PUT /admin/v1/risk/matrices/{id})
 	RiskUpdateMatrix(ctx context.Context, request RiskUpdateMatrixRequestObject) (RiskUpdateMatrixResponseObject, error)
+	// RiskListRisks RRA-09: the shared privacy risk register — every risk.risks row regardless of source (DPIA / RoPA activity / vendor / breach / audit / manual), newest first
+	// (GET /admin/v1/risk/risks)
+	RiskListRisks(ctx context.Context, request RiskListRisksRequestObject) (RiskListRisksResponseObject, error)
+	// RiskCreateRisk RRA-09: log a risk directly into the register — a RoPA activity, a system (ropa.assets) or a vendor, or a plain manual entry; DPIA-06's own DpiaIdentifyRisk covers the dpia-sourced case
+	// (POST /admin/v1/risk/risks)
+	RiskCreateRisk(ctx context.Context, request RiskCreateRiskRequestObject) (RiskCreateRiskResponseObject, error)
+	// RiskGetRisk RRA-09: one register entry by id
+	// (GET /admin/v1/risk/risks/{id})
+	RiskGetRisk(ctx context.Context, request RiskGetRiskRequestObject) (RiskGetRiskResponseObject, error)
+	// RiskUpdateRiskEntry RRA-09: edit a register entry's own title/description/owner/score/treatment/status — never its activity/asset/vendor link, which is set only at creation
+	// (PUT /admin/v1/risk/risks/{id})
+	RiskUpdateRiskEntry(ctx context.Context, request RiskUpdateRiskEntryRequestObject) (RiskUpdateRiskEntryResponseObject, error)
 	// RiskAnalyzeActivity Re-run every active gap rule against this activity's current RoPA data now (RRA-04) — the acceptance criterion itself, since every rule type must be detected
 	// (POST /admin/v1/ropa/activities/{id}/gap-analysis)
 	RiskAnalyzeActivity(ctx context.Context, request RiskAnalyzeActivityRequestObject) (RiskAnalyzeActivityResponseObject, error)
@@ -2902,6 +4095,126 @@ func (sh *strictHandler) RiskUpdateMatrix(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RiskUpdateMatrixResponseObject); ok {
 		if err := validResponse.VisitRiskUpdateMatrixResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RiskListRisks operation middleware
+func (sh *strictHandler) RiskListRisks(w http.ResponseWriter, r *http.Request, params RiskListRisksParams) {
+	var request RiskListRisksRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RiskListRisks(ctx, request.(RiskListRisksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RiskListRisks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RiskListRisksResponseObject); ok {
+		if err := validResponse.VisitRiskListRisksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RiskCreateRisk operation middleware
+func (sh *strictHandler) RiskCreateRisk(w http.ResponseWriter, r *http.Request, params RiskCreateRiskParams) {
+	var request RiskCreateRiskRequestObject
+
+	request.Params = params
+
+	var body RiskCreateRiskJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RiskCreateRisk(ctx, request.(RiskCreateRiskRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RiskCreateRisk")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RiskCreateRiskResponseObject); ok {
+		if err := validResponse.VisitRiskCreateRiskResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RiskGetRisk operation middleware
+func (sh *strictHandler) RiskGetRisk(w http.ResponseWriter, r *http.Request, id Uuid, params RiskGetRiskParams) {
+	var request RiskGetRiskRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RiskGetRisk(ctx, request.(RiskGetRiskRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RiskGetRisk")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RiskGetRiskResponseObject); ok {
+		if err := validResponse.VisitRiskGetRiskResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RiskUpdateRiskEntry operation middleware
+func (sh *strictHandler) RiskUpdateRiskEntry(w http.ResponseWriter, r *http.Request, id Uuid, params RiskUpdateRiskEntryParams) {
+	var request RiskUpdateRiskEntryRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body RiskUpdateRiskEntryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RiskUpdateRiskEntry(ctx, request.(RiskUpdateRiskEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RiskUpdateRiskEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RiskUpdateRiskEntryResponseObject); ok {
+		if err := validResponse.VisitRiskUpdateRiskEntryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -3437,5 +3437,69 @@
     "success": "Thank you — your report has been recorded as {incidentNo}. The incident response team has been notified.",
     "error": "We couldn't submit your report. Please try again.",
     "notFound": "This report form is not available."
+  },
+  "riskRegister": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view the risk register.",
+    "title": "Privacy Risk Register",
+    "intro": "Every risk from DPIA, RoPA activities and vendors in one shared register — filter by status, source or owner.",
+    "newRisk": "Add risk",
+    "loading": "Loading…",
+    "loadError": "Failed to load. Please try again.",
+    "empty": "No risks recorded yet.",
+    "edit": "Edit",
+    "filters": {
+      "status": "Status",
+      "sourceType": "Source",
+      "all": "All"
+    },
+    "sourceTypes": {
+      "dpia": "DPIA",
+      "activity": "RoPA activity",
+      "vendor": "Vendor",
+      "breach": "Breach",
+      "audit": "Audit",
+      "manual": "Manual"
+    },
+    "statuses": {
+      "open": "Open",
+      "in_treatment": "In treatment",
+      "accepted": "Accepted",
+      "closed": "Closed"
+    },
+    "levels": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "very_high": "Very high"
+    },
+    "table": {
+      "title": "Title",
+      "source": "Source",
+      "level": "Level",
+      "status": "Status",
+      "score": "Score"
+    },
+    "form": {
+      "newTitle": "Add risk",
+      "editTitle": "Edit risk",
+      "sourceType": "Source",
+      "title": "Title",
+      "description": "Description",
+      "likelihood": "Likelihood (1-5)",
+      "impact": "Impact (1-5)",
+      "status": "Status",
+      "treatment": "Treatment",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saveError": "Failed to save: {detail}",
+      "linksNote": "Links to an activity/asset/vendor are set only when the risk is first identified and are never changed by editing it here."
+    },
+    "treatments": {
+      "mitigate": "Mitigate",
+      "accept": "Accept",
+      "transfer": "Transfer",
+      "avoid": "Avoid"
+    }
   }
 }

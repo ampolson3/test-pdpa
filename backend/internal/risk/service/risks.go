@@ -19,19 +19,29 @@ import (
 // sourceTypes is exactly risk.risks.source_type's own CHECK constraint.
 var sourceTypes = map[string]bool{"dpia": true, "activity": true, "vendor": true, "breach": true, "audit": true, "manual": true}
 
+// Vendor is what risk reads from the vendormgmt module (rule 9) to check a risk's own vendor link is a real,
+// visible vendor.vendors row before writing it.
+type Vendor interface {
+	VendorVisible(ctx context.Context, id uuid.UUID) (bool, error)
+}
+
 // Risk is one risk.risks row — the shared risk register the module doc's own backend note anticipates every
 // of DPIA/vendor/breach eventually feeding (DPIA-06 is its first real writer). Deliberately scoped to what
 // DPIA-06's own acceptance criterion needs: identify + score against the tenant matrix. AssetID/VendorID and
 // the whole residual-risk/treatment-plan half of the table are DPIA-07's own job layered on top later — the
 // same "leave the FK/column for the feature that actually needs it" deferral this codebase uses throughout.
 type Risk struct {
-	ID            uuid.UUID
-	SourceType    string // dpia | activity | vendor | breach | audit | manual
-	SourceID      *uuid.UUID
-	Title         string
-	Description   string
-	OwnerUserID   *uuid.UUID
-	ActivityID    *uuid.UUID
+	ID          uuid.UUID
+	SourceType  string // dpia | activity | vendor | breach | audit | manual
+	SourceID    *uuid.UUID
+	Title       string
+	Description string
+	OwnerUserID *uuid.UUID
+	ActivityID  *uuid.UUID
+	// AssetID/VendorID are RRA-09's own links ("ผูกกิจกรรม / ระบบ / คู่ค้า") — set only at identification
+	// time, like ActivityID already was; never changed by UpdateRisk.
+	AssetID       *uuid.UUID
+	VendorID      *uuid.UUID
 	Likelihood    int
 	Impact        int
 	InherentScore float64
@@ -91,13 +101,34 @@ func (s *Service) IdentifyRisk(ctx context.Context, r Risk) (Risk, error) {
 			return Risk{}, fmt.Errorf("%w: activity_id", ErrInvalid)
 		}
 	}
+	if r.AssetID != nil {
+		ok, err := s.Ropa.AssetVisible(ctx, *r.AssetID)
+		if err != nil {
+			return Risk{}, err
+		}
+		if !ok {
+			return Risk{}, fmt.Errorf("%w: asset_id", ErrInvalid)
+		}
+	}
+	if r.VendorID != nil {
+		if s.Vendor == nil {
+			return Risk{}, fmt.Errorf("%w: vendor_id", ErrInvalid)
+		}
+		ok, err := s.Vendor.VendorVisible(ctx, *r.VendorID)
+		if err != nil {
+			return Risk{}, err
+		}
+		if !ok {
+			return Risk{}, fmt.Errorf("%w: vendor_id", ErrInvalid)
+		}
+	}
 	id, err := uuid.NewV7()
 	if err != nil {
 		return Risk{}, err
 	}
 	row, err := riskstore.New(pdb.MustTxFromContext(ctx)).InsertRisk(ctx, riskstore.InsertRiskParams{
 		ID: id, SourceType: r.SourceType, SourceID: pgUUID(r.SourceID), Title: r.Title, Description: opt(r.Description),
-		OwnerUserID: pgUUID(r.OwnerUserID), ActivityID: pgUUID(r.ActivityID),
+		OwnerUserID: pgUUID(r.OwnerUserID), ActivityID: pgUUID(r.ActivityID), AssetID: pgUUID(r.AssetID), VendorID: pgUUID(r.VendorID),
 		Likelihood: int16(r.Likelihood), Impact: int16(r.Impact), InherentScore: numeric(score), Level: level,
 	})
 	if err != nil {
@@ -193,11 +224,64 @@ func (s *Service) UpdateRisk(ctx context.Context, id uuid.UUID, r Risk, version 
 	return out, nil
 }
 
+// RiskCursor is the register's own (created_at, id) keyset cursor (RRA-09).
+type RiskCursor struct {
+	CreatedAt time.Time
+	ID        uuid.UUID
+}
+
+// RiskFilter narrows ListRisks — every field optional, "" / nil meaning no filter.
+type RiskFilter struct {
+	Status      string
+	SourceType  string
+	OwnerUserID *uuid.UUID
+	After       *RiskCursor
+	Limit       int
+}
+
+const riskRegisterPageSize = 50
+
+// ListRisks is RRA-09's own acceptance criterion made literal: the one register every source_type (dpia,
+// activity/RoPA, vendor, breach, audit, manual) lands in, since nothing here filters by source_type unless
+// the caller asks for one specifically.
+func (s *Service) ListRisks(ctx context.Context, f RiskFilter) ([]Risk, *RiskCursor, error) {
+	limit := f.Limit
+	if limit <= 0 || limit > riskRegisterPageSize {
+		limit = riskRegisterPageSize
+	}
+	p := riskstore.ListRisksParams{Lim: int32(limit + 1)}
+	if f.Status != "" {
+		p.Status = &f.Status
+	}
+	if f.SourceType != "" {
+		p.SourceType = &f.SourceType
+	}
+	p.OwnerUserID = pgUUID(f.OwnerUserID)
+	if f.After != nil {
+		p.CursorAt = pgtype.Timestamptz{Time: f.After.CreatedAt, Valid: true}
+		p.CursorID = pgtype.UUID{Bytes: f.After.ID, Valid: true}
+	}
+	rows, err := riskstore.New(pdb.MustTxFromContext(ctx)).ListRisks(ctx, p)
+	if err != nil {
+		return nil, nil, err
+	}
+	out := make([]Risk, 0, len(rows))
+	for i, r := range rows {
+		if i == limit {
+			last := out[len(out)-1]
+			return out, &RiskCursor{CreatedAt: last.CreatedAt, ID: last.ID}, nil
+		}
+		out = append(out, toRisk(r))
+	}
+	return out, nil, nil
+}
+
 func toRisk(r riskstore.RiskRisk) Risk {
 	f, _ := r.InherentScore.Float64Value()
 	out := Risk{
 		ID: r.ID, SourceType: r.SourceType, SourceID: uuidPtr(r.SourceID), Title: r.Title, Description: derefStr(r.Description),
-		OwnerUserID: uuidPtr(r.OwnerUserID), ActivityID: uuidPtr(r.ActivityID), Likelihood: int(r.Likelihood), Impact: int(r.Impact),
+		OwnerUserID: uuidPtr(r.OwnerUserID), ActivityID: uuidPtr(r.ActivityID), AssetID: uuidPtr(r.AssetID), VendorID: uuidPtr(r.VendorID),
+		Likelihood: int(r.Likelihood), Impact: int(r.Impact),
 		InherentScore: f.Float64, Level: r.Level, ResidualLevel: r.ResidualLevel,
 		Treatment: derefStr(r.Treatment), Status: r.Status, RowVersion: r.RowVersion,
 	}

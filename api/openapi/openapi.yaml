@@ -14547,6 +14547,165 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/risk/risks:
+    get:
+      operationId: riskListRisks
+      tags: [risk]
+      summary: 'RRA-09: the shared privacy risk register — every risk.risks row regardless of source (DPIA / RoPA activity / vendor / breach / audit / manual), newest first'
+      x-permission: dpo.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [open, in_treatment, accepted, closed]
+        - name: source_type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [dpia, activity, vendor, breach, audit, manual]
+        - name: owner_user_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: One page
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, next_cursor]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/RiskRegisterEntry'}
+                  next_cursor:
+                    type: [string, 'null']
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: riskCreateRisk
+      tags: [risk]
+      summary: 'RRA-09: log a risk directly into the register — a RoPA activity, a system (ropa.assets) or a vendor, or a plain manual entry; DPIA-06''s own DpiaIdentifyRisk covers the dpia-sourced case'
+      x-permission: dpo.risk.create
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskRegisterInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskRegisterEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/risk/risks/{id}:
+    get:
+      operationId: riskGetRisk
+      tags: [risk]
+      summary: 'RRA-09: one register entry by id'
+      x-permission: dpo.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskRegisterEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: riskUpdateRiskEntry
+      tags: [risk]
+      summary: 'RRA-09: edit a register entry''s own title/description/owner/score/treatment/status — never its activity/asset/vendor link, which is set only at creation'
+      x-permission: dpo.risk.update
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskRegisterInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskRegisterEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/governance/retention-schedules:
     get:
       operationId: govListRetentionSchedules
@@ -18283,6 +18442,70 @@ components:
         assignee_user_id: {$ref: '#/components/schemas/Uuid'}
         due_at: {type: string, format: date}
         priority: {type: string, enum: [low, medium, high, urgent]}
+    RiskRegisterInput:
+      type: object
+      description: 'RRA-09. activity_id/asset_id/vendor_id are read only on create — PUT never moves a register entry''s own link.'
+      required: [source_type, title, likelihood, impact]
+      additionalProperties: false
+      properties:
+        source_type:
+          type: string
+          enum: [dpia, activity, vendor, breach, audit, manual]
+        title: {type: string, minLength: 1, maxLength: 300}
+        description: {type: string, maxLength: 4000}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        asset_id: {$ref: '#/components/schemas/Uuid'}
+        vendor_id: {$ref: '#/components/schemas/Uuid'}
+        likelihood: {type: integer, minimum: 1}
+        impact: {type: integer, minimum: 1}
+        treatment:
+          type: string
+          enum: [mitigate, accept, transfer, avoid]
+        status:
+          type: string
+          enum: [open, in_treatment, accepted, closed]
+    RiskRegisterEntry:
+      type: object
+      description: 'RRA-09: one risk.risks row as the shared privacy risk register shows it — the same row DPIA-06''s own DpiaRisk reads, here carrying its source and every entity link.'
+      required: [id, source_type, title, likelihood, impact, inherent_score, level, status, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        source_type:
+          type: string
+          enum: [dpia, activity, vendor, breach, audit, manual]
+        title: {type: string}
+        description: {type: string}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        activity_id:
+          type: [string, 'null']
+          format: uuid
+        asset_id:
+          type: [string, 'null']
+          format: uuid
+        vendor_id:
+          type: [string, 'null']
+          format: uuid
+        likelihood: {type: integer}
+        impact: {type: integer}
+        inherent_score: {type: number}
+        level:
+          type: string
+          enum: [low, medium, high, very_high]
+        residual_likelihood: {type: [integer, 'null']}
+        residual_impact: {type: [integer, 'null']}
+        residual_score: {type: [number, 'null']}
+        residual_level:
+          type: [string, 'null']
+          enum: [low, medium, high, very_high, null]
+        treatment:
+          type: [string, 'null']
+          enum: [mitigate, accept, transfer, avoid, null]
+        status:
+          type: string
+          enum: [open, in_treatment, accepted, closed]
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
     DpoSecurityAssessment:
       type: object
       required: [id, legal_entity_id, form_submission_id, score, result, factors, assessed_at]

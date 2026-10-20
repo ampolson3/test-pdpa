@@ -53,9 +53,9 @@ func (q *Queries) GetRisk(ctx context.Context, id uuid.UUID) (RiskRisk, error) {
 const insertRisk = `-- name: InsertRisk :one
 
 INSERT INTO risk.risks (id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id,
-    likelihood, impact, inherent_score, level, status, created_by, updated_by)
-VALUES ($1, NULLIF(current_setting('app.tenant_id', true), '')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'open',
-        NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
+    asset_id, vendor_id, likelihood, impact, inherent_score, level, status, created_by, updated_by)
+VALUES ($1, NULLIF(current_setting('app.tenant_id', true), '')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+        'open', NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
 RETURNING id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id, asset_id, vendor_id, likelihood, impact, inherent_score, residual_likelihood, residual_impact, residual_score, level, treatment, status, review_at, created_at, created_by, updated_at, updated_by, row_version, residual_level
 `
 
@@ -67,6 +67,8 @@ type InsertRiskParams struct {
 	Description   *string        `db:"description" json:"description"`
 	OwnerUserID   pgtype.UUID    `db:"owner_user_id" json:"owner_user_id"`
 	ActivityID    pgtype.UUID    `db:"activity_id" json:"activity_id"`
+	AssetID       pgtype.UUID    `db:"asset_id" json:"asset_id"`
+	VendorID      pgtype.UUID    `db:"vendor_id" json:"vendor_id"`
 	Likelihood    int16          `db:"likelihood" json:"likelihood"`
 	Impact        int16          `db:"impact" json:"impact"`
 	InherentScore pgtype.Numeric `db:"inherent_score" json:"inherent_score"`
@@ -76,6 +78,8 @@ type InsertRiskParams struct {
 // DPIA-06 (ระบุและให้คะแนนความเสี่ยง): a tenant-wide risk register entry (risk.risks), scored against the
 // tenant's own matrix (RRA-02). source_type/source_id name whichever feature identified it — "dpia" for
 // DPIA-06, with source_id the assess.assessments round.
+// RRA-09: asset_id/vendor_id (ม.37(1): "ผูกกิจกรรม / ระบบ / คู่ค้า") are set only at creation, exactly like
+// activity_id already was — the register's own edit path never moves a risk's link afterward.
 func (q *Queries) InsertRisk(ctx context.Context, arg InsertRiskParams) (RiskRisk, error) {
 	row := q.db.QueryRow(ctx, insertRisk,
 		arg.ID,
@@ -85,6 +89,8 @@ func (q *Queries) InsertRisk(ctx context.Context, arg InsertRiskParams) (RiskRis
 		arg.Description,
 		arg.OwnerUserID,
 		arg.ActivityID,
+		arg.AssetID,
+		arg.VendorID,
 		arg.Likelihood,
 		arg.Impact,
 		arg.InherentScore,
@@ -120,6 +126,81 @@ func (q *Queries) InsertRisk(ctx context.Context, arg InsertRiskParams) (RiskRis
 		&i.ResidualLevel,
 	)
 	return i, err
+}
+
+const listRisks = `-- name: ListRisks :many
+SELECT id, tenant_id, source_type, source_id, title, description, owner_user_id, activity_id, asset_id, vendor_id, likelihood, impact, inherent_score, residual_likelihood, residual_impact, residual_score, level, treatment, status, review_at, created_at, created_by, updated_at, updated_by, row_version, residual_level FROM risk.risks
+WHERE ($1::text IS NULL OR status = $1)
+  AND ($2::text IS NULL OR source_type = $2)
+  AND ($3::uuid IS NULL OR owner_user_id = $3)
+  AND ($4::timestamptz IS NULL OR (created_at, id) < ($4, $5::uuid))
+ORDER BY created_at DESC, id DESC
+LIMIT $6
+`
+
+type ListRisksParams struct {
+	Status      *string            `db:"status" json:"status"`
+	SourceType  *string            `db:"source_type" json:"source_type"`
+	OwnerUserID pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	CursorAt    pgtype.Timestamptz `db:"cursor_at" json:"cursor_at"`
+	CursorID    pgtype.UUID        `db:"cursor_id" json:"cursor_id"`
+	Lim         int32              `db:"lim" json:"lim"`
+}
+
+// RRA-09: the shared privacy risk register — every risk.risks row regardless of source_type (dpia/
+// activity/vendor/breach/audit/manual), newest first, keyset cursor on (created_at, id).
+func (q *Queries) ListRisks(ctx context.Context, arg ListRisksParams) ([]RiskRisk, error) {
+	rows, err := q.db.Query(ctx, listRisks,
+		arg.Status,
+		arg.SourceType,
+		arg.OwnerUserID,
+		arg.CursorAt,
+		arg.CursorID,
+		arg.Lim,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RiskRisk
+	for rows.Next() {
+		var i RiskRisk
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.SourceType,
+			&i.SourceID,
+			&i.Title,
+			&i.Description,
+			&i.OwnerUserID,
+			&i.ActivityID,
+			&i.AssetID,
+			&i.VendorID,
+			&i.Likelihood,
+			&i.Impact,
+			&i.InherentScore,
+			&i.ResidualLikelihood,
+			&i.ResidualImpact,
+			&i.ResidualScore,
+			&i.Level,
+			&i.Treatment,
+			&i.Status,
+			&i.ReviewAt,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.UpdatedAt,
+			&i.UpdatedBy,
+			&i.RowVersion,
+			&i.ResidualLevel,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listRisksByIDs = `-- name: ListRisksByIDs :many
@@ -252,6 +333,9 @@ type UpdateRiskParams struct {
 	RowVersion    int32          `db:"row_version" json:"row_version"`
 }
 
+// Deliberately never touches activity_id/asset_id/vendor_id (set once at InsertRisk time) — DPIA-06's own
+// UpdateRisk caller passes no such fields at all, so widening this SET clause to include them would silently
+// clear a link every DPIA-sourced risk already has the moment any later DPIA edit ran.
 func (q *Queries) UpdateRisk(ctx context.Context, arg UpdateRiskParams) (RiskRisk, error) {
 	row := q.db.QueryRow(ctx, updateRisk,
 		arg.ID,

@@ -3334,6 +3334,54 @@ clean and skips the same way the rest of this module's own suite already does he
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build` all verified clean.
 
+### RRA-09 ทะเบียนความเสี่ยงด้านข้อมูลส่วนบุคคล (`docs/modules/RRA.md#rra-09`) — done
+`risk.risks` (baseline migration) already *is* the single shared register table — every row already
+carried `source_type` (dpia/activity/vendor/breach/audit/manual) — so this feature's real gap against the
+literal acceptance criterion ("ความเสี่ยงจาก DPIA / RoPA / คู่ค้ารวมอยู่ในทะเบียนเดียว") was (a) a general
+list endpoint not tied to one DPIA assessment, and (b) activating the table's own already-FK-wired, unused
+`asset_id`/`vendor_id` columns (the module doc's own "ผูกกิจกรรม / ระบบ / คู่ค้า") — no new migration.
+Permission: `dpo.risk.*` (baseline migration 00019, literally labeled "ทะเบียนความเสี่ยง", DPO+SEC exactly
+matching this feature's own actors) — distinct from `ropa.risk.*` (per-activity risk/gap, RRA-01/RRA-04's
+own family) — no new permission code.
+
+`backend/internal/risk/service/risks.go`'s `IdentifyRisk` now FK-checks an optional `AssetID` (the `Ropa`
+interface's new `AssetVisible`, rule 1) and `VendorID` (a new local `Vendor` interface — rule 9:
+`vendormgmt/service` already imports `risk/service` for its own vendor-assessment work, so the reverse
+import is impossible; wired as `wiring.RiskVendor{Vendor: vendorSvc}` in `cmd/api/main.go`, nil in
+`cmd/worker` since this feature adds no job) — a `VendorID` given with no adapter wired is refused outright
+(`ErrInvalid`), never silently accepted as unverifiable. `ListRisks(ctx, RiskFilter{...})` is the register
+itself: cursor-paginated on `(created_at, id)` (every other list's own keyset pattern), `source_type`
+narrowing to exactly one source or omitted for every risk regardless of source — the acceptance criterion
+directly.
+
+Real regression caught before it shipped: widening `UpdateRisk`'s own SQL to also set
+`activity_id`/`asset_id`/`vendor_id` would have silently cleared a DPIA-sourced risk's `activity_id` on its
+very next DPIA-06/07 edit, since that caller's own `fromRiskInput` converter never populates those fields —
+Go's zero value and "caller wants to clear this" are indistinguishable. Fixed by keeping `UpdateRisk`
+scoped to exactly its original 9 columns, with a code comment warning against widening it again; a link is
+set only once, at `IdentifyRisk` time. `TestUpdateRisk_NeverMovesLinks` guards this directly.
+
+API: `GET`/`POST /admin/v1/risk/risks`, `GET`/`PUT /admin/v1/risk/risks/{id}` (ETag/If-Match) — new
+`RiskRegisterInput`/`RiskRegisterEntry` schemas. UI: a new page, `/settings/risk-register`
+(status/source-type filters, create/edit form) — reached by direct URL like `/settings/risk-matrices`
+already is (this codebase's own already-disclosed "no central nav" gap, IAM-03); editing through this page
+is restricted to `source_type = "manual"` rows — a DPIA/RoPA/vendor-linked risk is edited from that
+module's own panel instead, consistent with "build only the minimal slice this feature needs." Tests: unit
+(`internal/risk/service/register_test.go` — the acceptance criterion directly: a dpia-, an activity- and a
+manual-sourced risk all land in one `ListRisks` call and `source_type` narrows correctly; asset/vendor link
+round-trip and FK-visibility refusal for both; a vendor_id refused with no `Vendor` adapter wired; the
+UpdateRisk-never-clobbers-links regression; two-tenant isolation), HTTP contract
+(`internal/risk/http/handler_test.go`'s new `TestRiskRegisterEndpoints_Contract` — 401/403/400/201/200/404/
+428/412 through the real validator + AuthZ, using `dpo.risk.*` grants unlike this file's other, `ropa.risk.*`
+tests). A real Postgres/Redis were reachable this pass — every test, this feature's own and the full
+backend regression suite, ran live rather than skipping (`go build ./...`, `go vet ./...`, `gofmt -l`
+clean, `go test -count=1 ./...` with no regressions). `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the new
+`/settings/risk-register` route) all verified clean. Not done: RRA-04's own automated legal gap analysis as
+a further `source_type` producer (a separate backlog row); a UI picker for linking an activity/asset/vendor
+to a *new* risk from this page (no consumer yet — every real link today is made by the sourcing module's
+own feature at identification time).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

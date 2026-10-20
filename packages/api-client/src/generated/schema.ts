@@ -4962,6 +4962,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/risk/risks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RRA-09: the shared privacy risk register — every risk.risks row regardless of source (DPIA / RoPA activity / vendor / breach / audit / manual), newest first */
+        get: operations["riskListRisks"];
+        put?: never;
+        /** RRA-09: log a risk directly into the register — a RoPA activity, a system (ropa.assets) or a vendor, or a plain manual entry; DPIA-06's own DpiaIdentifyRisk covers the dpia-sourced case */
+        post: operations["riskCreateRisk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/risk/risks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RRA-09: one register entry by id */
+        get: operations["riskGetRisk"];
+        /** RRA-09: edit a register entry's own title/description/owner/score/treatment/status — never its activity/asset/vendor link, which is set only at creation */
+        put: operations["riskUpdateRiskEntry"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/governance/retention-schedules": {
         parameters: {
             query?: never;
@@ -6965,6 +7001,54 @@ export interface components {
             due_at?: string;
             /** @enum {string} */
             priority?: "low" | "medium" | "high" | "urgent";
+        };
+        /** @description RRA-09. activity_id/asset_id/vendor_id are read only on create — PUT never moves a register entry's own link. */
+        RiskRegisterInput: {
+            /** @enum {string} */
+            source_type: "dpia" | "activity" | "vendor" | "breach" | "audit" | "manual";
+            title: string;
+            description?: string;
+            owner_user_id?: components["schemas"]["Uuid"];
+            activity_id?: components["schemas"]["Uuid"];
+            asset_id?: components["schemas"]["Uuid"];
+            vendor_id?: components["schemas"]["Uuid"];
+            likelihood: number;
+            impact: number;
+            /** @enum {string} */
+            treatment?: "mitigate" | "accept" | "transfer" | "avoid";
+            /** @enum {string} */
+            status?: "open" | "in_treatment" | "accepted" | "closed";
+        };
+        /** @description RRA-09: one risk.risks row as the shared privacy risk register shows it — the same row DPIA-06's own DpiaRisk reads, here carrying its source and every entity link. */
+        RiskRegisterEntry: {
+            id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            source_type: "dpia" | "activity" | "vendor" | "breach" | "audit" | "manual";
+            title: string;
+            description?: string;
+            owner_user_id?: components["schemas"]["Uuid"];
+            /** Format: uuid */
+            activity_id?: string | null;
+            /** Format: uuid */
+            asset_id?: string | null;
+            /** Format: uuid */
+            vendor_id?: string | null;
+            likelihood: number;
+            impact: number;
+            inherent_score: number;
+            /** @enum {string} */
+            level: "low" | "medium" | "high" | "very_high";
+            residual_likelihood?: number | null;
+            residual_impact?: number | null;
+            residual_score?: number | null;
+            /** @enum {string|null} */
+            residual_level?: "low" | "medium" | "high" | "very_high" | null;
+            /** @enum {string|null} */
+            treatment?: "mitigate" | "accept" | "transfer" | "avoid" | null;
+            /** @enum {string} */
+            status: "open" | "in_treatment" | "accepted" | "closed";
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
         };
         DpoSecurityAssessment: {
             id: components["schemas"]["Uuid"];
@@ -21597,6 +21681,141 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    riskListRisks: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from `next_cursor` of the previous page */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                status?: "open" | "in_treatment" | "accepted" | "closed";
+                source_type?: "dpia" | "activity" | "vendor" | "breach" | "audit" | "manual";
+                owner_user_id?: components["schemas"]["Uuid"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RiskRegisterEntry"][];
+                        next_cursor: string | null;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    riskCreateRisk: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiskRegisterInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskRegisterEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    riskGetRisk: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskRegisterEntry"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    riskUpdateRiskEntry: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiskRegisterInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskRegisterEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     govListRetentionSchedules: {
