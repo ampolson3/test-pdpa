@@ -3466,6 +3466,48 @@ skips the same way the rest of this module's own suite already does here. `go bu
 @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated `/settings/risk-register` route)
 all verified clean.
 
+### DSAR-05 รับเรื่องร้องเรียนและสอบถาม (`docs/modules/DSAR.md#dsar-05`) — done
+The backend "same workflow" half of the acceptance criterion needed no new code: DSAR-13 (built earlier)
+already seeded the `complaint`/`inquiry` right types (migration `00043_dsar_request_types.sql`) and already
+built the full generic ST-02 8-state/17-edge `Transition` machine (`internal/dsar/service/requests.go`) that
+every right type — complaint and inquiry included — already walks identically through to `completed`, and
+DSAR-08's own `rightSubtaskAction` map already routes both to the `review` subtask action — confirmed by grep
+before writing anything, the same "done, no new code" pattern this codebase already used for ROPA-07/PNG-14.
+So a complaint or inquiry was already tracked to close exactly like any other request from the moment
+DSAR-13 shipped; this feature's real, narrow gap was the *visible* half of its own frontend note
+("ตัวเลือกประเภทในฟอร์มและตัวกรอง" — a type picker **and** a type filter): the create-form's picker already
+existed, but no `request_type_id` filter existed anywhere — not on `GET /admin/v1/dsar/requests`, not on the
+`/requests` admin page — only a `status` filter did, so complaints/inquiries already shared the one queue but
+couldn't be filtered to their own view.
+
+Added consistently through every layer this codebase's other list filters already use: `ListRequests`
+(`backend/db/queries/dsar/requests.sql`) gained an optional `request_type_id` clause alongside its existing
+`status`/`search`/cursor filters (`sqlc generate`); `dsarservice.RequestFilter` gained a
+`RequestTypeID *uuid.UUID` field; `dsarListRequests`'s OpenAPI operation gained a `request_type_id` query
+parameter (`api/openapi/openapi.yaml` → `make gen` → `oapi-codegen`, already on the
+`internal/dsar/http/oapi-codegen.yaml` allowlist, no edit needed there this time); `DsarListRequests`
+(`internal/dsar/http/requests.go`) wires it through. Frontend: `useDsarRequests`
+(`packages/api-client/src/dsar.ts`) widened with `request_type_id`, `/requests`' own filter bar
+(`apps/admin/src/app/[locale]/requests/requests-content.tsx`) gained a type `<select>` next to the existing
+status filter, and a new `allTypes` i18n key (th/en). No migration, no new permission code or table — every
+table, permission and transition this needed was already in place from DSAR-08/DSAR-13.
+
+Tests: `internal/dsar/service/requests_test.go`'s `TestListRequests_FiltersByRequestType` (the acceptance
+criterion directly — a complaint and an access request land in the same unfiltered queue, `request_type_id`
+narrows to exactly one, and the complaint is then driven through the real `verifying → in_review →
+in_progress → completed` chain to prove it closes exactly like any other request) and
+`TestListRequests_FiltersByRequestType_TwoTenantIsolation`; `internal/dsar/http/handler_test.go`'s
+`TestDsarEndpoints_Contract` extended with a complaint create + filter-by-type round trip through the real
+validator + AuthZ. Not verified live against a real Postgres/Redis — the same environment limitation this
+codebase's other recent passes already disclosed (both were reachable earlier in this session for other
+features, not for this pass); every test compiles and vets clean and skips the same way the rest of this
+module's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched
+file), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/requests` route) all verified clean. `IAM-01` was
+checked and deliberately skipped this pass despite looking dependency-unblocked: `docs/decisions.md` Q-18
+explicitly flags it as blocked on an unresolved architect/PoC decision (T13, the Keycloak multi-tenant
+model) — not something to guess at.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

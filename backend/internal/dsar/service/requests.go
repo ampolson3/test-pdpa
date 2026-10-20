@@ -171,6 +171,10 @@ type RequestCursor struct {
 
 type RequestFilter struct {
 	Status string
+	// RequestTypeID narrows to one right type (DSAR-05) — e.g. complaint/inquiry — so those land in a
+	// filtered view of the exact same queue every other right type already shares, rather than a separate
+	// list.
+	RequestTypeID *uuid.UUID
 	// Search is DSAR-17's history/search box: a request number (matched as a substring, case-insensitive) or
 	// an e-mail address (matched exactly by blind index — never decrypted to search, rule 3). Anything
 	// containing "@" is treated as an e-mail; anything else as a request-number fragment.
@@ -189,6 +193,9 @@ func (s *Service) ListRequests(ctx context.Context, f RequestFilter) ([]Request,
 	p := dsarstore.ListRequestsParams{Lim: int32(limit + 1)}
 	if f.Status != "" {
 		p.Status = &f.Status
+	}
+	if f.RequestTypeID != nil {
+		p.RequestTypeID = pgtype.UUID{Bytes: *f.RequestTypeID, Valid: true}
 	}
 	if search := strings.TrimSpace(f.Search); search != "" {
 		if strings.Contains(search, "@") {

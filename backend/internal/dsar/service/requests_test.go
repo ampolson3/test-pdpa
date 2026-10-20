@@ -275,6 +275,140 @@ func TestListRequests_SearchesByRequestNoOrEmail(t *testing.T) {
 	})
 }
 
+// TestListRequests_FiltersByRequestType is DSAR-05's acceptance criterion: a complaint (or inquiry) is just
+// another right type on the same ST-02 workflow every request shares, filterable to its own queue view by
+// request_type_id, and tracked through to completed exactly like any other request type.
+func TestListRequests_FiltersByRequestType(t *testing.T) {
+	e := setup(t, "dsarcomplaint")
+	var leID, complaintTypeID, accessTypeID uuid.UUID
+	e.in(t, func(ctx context.Context) error {
+		leID, _ = seedLegalEntityAndType(t, ctx, e)
+		types, err := e.svc.ListRequestTypes(ctx)
+		if err != nil {
+			return err
+		}
+		for _, rt := range types {
+			switch rt.Code {
+			case "complaint":
+				complaintTypeID = rt.ID
+			case "access":
+				accessTypeID = rt.ID
+			}
+		}
+		if complaintTypeID == uuid.Nil || accessTypeID == uuid.Nil {
+			t.Fatal("expected both complaint and access request types to be seeded (migration 00043)")
+		}
+		return nil
+	})
+
+	var complaint, access dsarservice.Request
+	e.in(t, func(ctx context.Context) error {
+		var err error
+		complaint, err = e.svc.CreateRequest(ctx, dsarservice.CreateRequestInput{RequestTypeID: complaintTypeID, LegalEntityID: leID,
+			Channel: "web", RequesterName: "ร้องเรียน หนึ่ง", RequesterContact: "complainant@example.com", ContactKind: crypto.KindEmail})
+		if err != nil {
+			return err
+		}
+		access, err = e.svc.CreateRequest(ctx, dsarservice.CreateRequestInput{RequestTypeID: accessTypeID, LegalEntityID: leID,
+			Channel: "web", RequesterName: "ขอสำเนา สอง", RequesterContact: "accessor@example.com", ContactKind: crypto.KindEmail})
+		return err
+	})
+
+	e.in(t, func(ctx context.Context) error {
+		list, _, err := e.svc.ListRequests(ctx, dsarservice.RequestFilter{RequestTypeID: &complaintTypeID})
+		if err != nil {
+			return err
+		}
+		if len(list) != 1 || list[0].ID != complaint.ID {
+			t.Fatalf("filter by complaint request_type_id: got %d results, want exactly the complaint", len(list))
+		}
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		list, _, err := e.svc.ListRequests(ctx, dsarservice.RequestFilter{RequestTypeID: &accessTypeID})
+		if err != nil {
+			return err
+		}
+		if len(list) != 1 || list[0].ID != access.ID {
+			t.Fatalf("filter by access request_type_id: got %d results, want exactly the access request", len(list))
+		}
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		list, _, err := e.svc.ListRequests(ctx, dsarservice.RequestFilter{})
+		if err != nil {
+			return err
+		}
+		if len(list) != 2 {
+			t.Fatalf("no filter: got %d results, want both requests in the same queue", len(list))
+		}
+		return nil
+	})
+
+	// The complaint walks the exact same ST-02 transitions every other right type already does — "tracked
+	// through to close just like a [regular] request" is this generic machine, not special-cased logic.
+	e.in(t, func(ctx context.Context) error {
+		outcome := "fulfilled"
+		var err error
+		_, _, err = e.svc.Transition(ctx, complaint.ID, complaint.RowVersion, dsarservice.TransitionInput{To: "verifying"})
+		if err != nil {
+			return err
+		}
+		_, _, err = e.svc.Transition(ctx, complaint.ID, complaint.RowVersion+1, dsarservice.TransitionInput{To: "in_review"})
+		if err != nil {
+			return err
+		}
+		_, _, err = e.svc.Transition(ctx, complaint.ID, complaint.RowVersion+2, dsarservice.TransitionInput{To: "in_progress"})
+		if err != nil {
+			return err
+		}
+		_, _, err = e.svc.Transition(ctx, complaint.ID, complaint.RowVersion+3, dsarservice.TransitionInput{To: "completed", Outcome: &outcome})
+		return err
+	})
+	e.in(t, func(ctx context.Context) error {
+		got, err := e.svc.GetRequest(ctx, complaint.ID)
+		if err != nil {
+			return err
+		}
+		if got.Status != "completed" || got.ClosedAt == nil {
+			t.Fatalf("expected the complaint to be closed, got status=%q closed_at=%v", got.Status, got.ClosedAt)
+		}
+		return nil
+	})
+}
+
+// TestListRequests_FiltersByRequestType_TwoTenantIsolation proves the filter never leaks another tenant's
+// requests of the same type.
+func TestListRequests_FiltersByRequestType_TwoTenantIsolation(t *testing.T) {
+	e1 := setup(t, "dsarcompa")
+	e2 := setup(t, "dsarcompb")
+	var leID1, typeID1 uuid.UUID
+	e1.in(t, func(ctx context.Context) error {
+		leID1, typeID1 = seedLegalEntityAndType(t, ctx, e1)
+		return nil
+	})
+	var typeID2 uuid.UUID
+	e2.in(t, func(ctx context.Context) error {
+		_, typeID2 = seedLegalEntityAndType(t, ctx, e2)
+		return nil
+	})
+	e1.in(t, func(ctx context.Context) error {
+		_, err := e1.svc.CreateRequest(ctx, dsarservice.CreateRequestInput{RequestTypeID: typeID1, LegalEntityID: leID1,
+			Channel: "web", RequesterName: "A", RequesterContact: "a@example.com", ContactKind: crypto.KindEmail})
+		return err
+	})
+	e2.in(t, func(ctx context.Context) error {
+		list, _, err := e2.svc.ListRequests(ctx, dsarservice.RequestFilter{RequestTypeID: &typeID2})
+		if err != nil {
+			return err
+		}
+		if len(list) != 0 {
+			t.Fatalf("tenant B must not see tenant A's requests of the same type: got %d", len(list))
+		}
+		return nil
+	})
+}
+
 // TestTransition_ResultLetterGeneratedWithRequesterNameAndType is DSAR-13's acceptance criterion: completing
 // a request immediately produces a response-letter draft whose text carries the request's own type name and
 // the (decrypted) requester's name — both languages.

@@ -2846,6 +2846,7 @@
     "more": "Load more",
     "filterStatus": "Filter by status",
     "allStatuses": "All statuses",
+    "allTypes": "All types",
     "dueBy": "Due by",
     "statusLabel": "Status",
     "consentWithdrawnBadge": "Consent withdrawn in CON",

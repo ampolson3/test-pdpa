@@ -1422,6 +1422,9 @@ type DsarListRequestTypesParamsAcceptLanguage string
 type DsarListRequestsParams struct {
 	Status *DsarRequestStatus `form:"status,omitempty" json:"status,omitempty"`
 
+	// RequestTypeId DSAR-05: narrow to one right type (e.g. complaint/inquiry) — the same queue every other right type already shares.
+	RequestTypeId *Uuid `form:"request_type_id,omitempty" json:"request_type_id,omitempty"`
+
 	// Search DSAR-17 history search — a request number (substring match) or an e-mail address (exact blind-index match).
 	Search *string `form:"search,omitempty" json:"search,omitempty"`
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -2280,6 +2283,19 @@ func (siw *ServerInterfaceWrapper) DsarListRequests(w http.ResponseWriter, r *ht
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "request_type_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "request_type_id", r.URL.Query(), &params.RequestTypeId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "request_type_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "request_type_id", Err: err})
 		}
 		return
 	}

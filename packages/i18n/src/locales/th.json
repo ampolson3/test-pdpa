@@ -2846,6 +2846,7 @@
     "more": "โหลดเพิ่มเติม",
     "filterStatus": "กรองตามสถานะ",
     "allStatuses": "ทุกสถานะ",
+    "allTypes": "ทุกประเภท",
     "dueBy": "ครบกำหนด",
     "statusLabel": "สถานะ",
     "consentWithdrawnBadge": "ถอนความยินยอมใน CON แล้ว",

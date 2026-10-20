@@ -35,14 +35,26 @@ export function useDsarRequestTypes(client: ApiClient) {
 }
 
 /** GET /admin/v1/dsar/requests (ST-02), newest first. `search` is DSAR-17's history search: a request number
- *  (substring) or an e-mail (exact blind-index match). */
-export function useDsarRequests(client: ApiClient, filter: { status?: DsarRequestStatus; search?: string } = {}) {
+ *  (substring) or an e-mail (exact blind-index match). `request_type_id` is DSAR-05's own filter — narrows
+ *  to one right type (e.g. complaint/inquiry) in the same queue every other right type already shares. */
+export function useDsarRequests(
+  client: ApiClient,
+  filter: { status?: DsarRequestStatus; request_type_id?: string; search?: string } = {},
+) {
   return useInfiniteQuery({
     queryKey: [...requestsKey, filter],
     initialPageParam: undefined as string | undefined,
     queryFn: async ({ pageParam }) => {
       const { data, error } = await client.GET("/admin/v1/dsar/requests", {
-        params: { query: { status: filter.status, search: filter.search || undefined, cursor: pageParam, limit: 50 } },
+        params: {
+          query: {
+            status: filter.status,
+            request_type_id: filter.request_type_id || undefined,
+            search: filter.search || undefined,
+            cursor: pageParam,
+            limit: 50,
+          },
+        },
       });
       if (error) throw error;
       return data;

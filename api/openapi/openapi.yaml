@@ -6663,6 +6663,12 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/DsarRequestStatus'
+        - name: request_type_id
+          in: query
+          required: false
+          description: 'DSAR-05: narrow to one right type (e.g. complaint/inquiry) — the same queue every other right type already shares.'
+          schema:
+            $ref: '#/components/schemas/Uuid'
         - name: search
           in: query
           required: false

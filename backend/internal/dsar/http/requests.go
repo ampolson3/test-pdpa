@@ -44,6 +44,10 @@ func (h *Strict) DsarListRequests(ctx context.Context, req DsarListRequestsReque
 		s := string(*req.Params.Status)
 		f.Status = s
 	}
+	if req.Params.RequestTypeId != nil {
+		id := uuid.UUID(*req.Params.RequestTypeId)
+		f.RequestTypeID = &id
+	}
 	if req.Params.Search != nil {
 		f.Search = *req.Params.Search
 	}

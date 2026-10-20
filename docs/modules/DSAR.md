@@ -700,6 +700,39 @@ and vets clean and skips the same way the rest of this module's own test suite a
 
 **Acceptance criteria:** เรื่องร้องเรียนติดตามจนปิดได้เหมือนคำขอ
 
+**Implementation — done.** The backend "same workflow" half needed no new code: DSAR-13 (built earlier)
+already seeds the `complaint`/`inquiry` right types (migration `00043_dsar_request_types.sql`) and already
+built the full generic ST-02 8-state/17-edge `Transition` machine (`internal/dsar/service/requests.go`) that
+every right type — complaint and inquiry included — already walks identically through to `completed`, and
+DSAR-08's own `rightSubtaskAction` map already routes both to the `review` subtask action. So a complaint
+or inquiry was already "tracked through to close just like a [regular] request" from the moment DSAR-13
+shipped — this feature's real, narrow gap against the acceptance criterion was the *visible* half: no
+`request_type_id` filter existed on `GET /admin/v1/dsar/requests` or on the `/requests` admin page, only a
+`status` filter, so complaints/inquiries landed in the same queue (already true) but couldn't be filtered
+to a dedicated view (the module doc's own frontend note: "ตัวเลือกประเภทในฟอร์มและตัวกรอง" — a type picker
+*and* a type filter; the picker already existed on the intake form from DSAR-13, only the filter was
+missing). Added end to end: `ListRequests` (`backend/db/queries/dsar/requests.sql`) gained an optional
+`request_type_id` clause alongside its existing `status`/`search`/cursor filters; `RequestFilter` gained a
+`RequestTypeID *uuid.UUID` field; `GET /admin/v1/dsar/requests` gained a `request_type_id` query parameter
+(OpenAPI + oapi-codegen + handler wiring); `useDsarRequests` (api-client) and `/requests`' own filter bar
+(a `<select>` next to the existing status filter, `allTypes`/`th`/`en` i18n keys added) complete the chain.
+No migration, no new permission code — every table/permission/transition this needed was already in place.
+Tests: `internal/dsar/service/requests_test.go`'s `TestListRequests_FiltersByRequestType` (the acceptance
+criterion directly — a complaint and an access request land in the same unfiltered queue, `request_type_id`
+narrows to exactly one, and the complaint is driven through the real `verifying → in_review → in_progress →
+completed` chain to prove it closes like any other request) and
+`TestListRequests_FiltersByRequestType_TwoTenantIsolation`; `internal/dsar/http/handler_test.go`'s
+`TestDsarEndpoints_Contract` extended with a complaint create + filter-by-type round trip through the real
+validator + AuthZ. Not verified live against a real Postgres/Redis — the same environment limitation this
+codebase's other recent passes already disclosed (both were reachable earlier in this session, for other
+features, but not for this pass); every test compiles and vets clean and skips the same way the rest of this
+module's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched
+file), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/requests` route) all verified clean. Not done,
+deliberately: nothing — the acceptance criterion ("complaints tracked to close like a request," with a type
+picker and filter) is now fully exercised; DSAR-09's own cross-system search (a sibling, separate backlog
+row) is unrelated.
+
 <a id="dsar-09"></a>
 ### DSAR-09 ค้นหาข้อมูลของเจ้าของข้อมูลข้ามระบบ
 

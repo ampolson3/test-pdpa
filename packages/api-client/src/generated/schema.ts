@@ -15131,6 +15131,8 @@ export interface operations {
         parameters: {
             query?: {
                 status?: components["schemas"]["DsarRequestStatus"];
+                /** @description DSAR-05: narrow to one right type (e.g. complaint/inquiry) — the same queue every other right type already shares. */
+                request_type_id?: components["schemas"]["Uuid"];
                 /** @description DSAR-17 history search — a request number (substring match) or an e-mail address (exact blind-index match). */
                 search?: string;
                 cursor?: string;

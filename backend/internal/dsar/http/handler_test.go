@@ -91,7 +91,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 		legalEntity = e.ID
 		return err
 	})
-	var requestTypeID, accessTypeID uuid.UUID
+	var requestTypeID, accessTypeID, complaintTypeID uuid.UUID
 	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
 		types, err := svc.ListRequestTypes(ctx)
 		if err != nil || len(types) == 0 {
@@ -101,6 +101,9 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 		for _, rt := range types {
 			if rt.Code == "access" {
 				accessTypeID = rt.ID
+			}
+			if rt.Code == "complaint" {
+				complaintTypeID = rt.ID
 			}
 		}
 		return nil
@@ -256,6 +259,24 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", "/admin/v1/dsar/requests?search=nobody@example.com", &viewer, nil); code != 200 || strings.Contains(body, created.RequestNo) {
 		t.Errorf("search by unknown email: %d %s", code, body)
+	}
+	// DSAR-05: request_type_id narrows the queue to one right type (e.g. complaint) — the same workflow, a
+	// filtered view of it.
+	complaintCreate := map[string]any{"request_type_id": complaintTypeID, "legal_entity_id": legalEntity, "channel": "web",
+		"requester_name": "ผู้ร้องเรียน", "requester_contact": "complainant@example.com", "contact_kind": "email"}
+	code, body = do("POST", "/admin/v1/dsar/requests", &admin, complaintCreate)
+	if code != 201 {
+		t.Fatalf("create complaint: %d %s", code, body)
+	}
+	var complaintReq dsarhttp.DsarRequest
+	_ = json.Unmarshal([]byte(body), &complaintReq)
+	if code, body := do("GET", "/admin/v1/dsar/requests?request_type_id="+complaintTypeID.String(), &viewer, nil); code != 200 ||
+		!strings.Contains(body, complaintReq.RequestNo) || strings.Contains(body, created.RequestNo) {
+		t.Errorf("filter by complaint request_type_id: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/dsar/requests?request_type_id="+accessTypeID.String(), &viewer, nil); code != 200 ||
+		!strings.Contains(body, created.RequestNo) || strings.Contains(body, complaintReq.RequestNo) {
+		t.Errorf("filter by access request_type_id: %d %s", code, body)
 	}
 	if code, body := do("GET", item, &viewer, nil); code != 200 || !strings.Contains(body, `"sla_status"`) {
 		t.Errorf("expected sla_status on the request: %d %s", code, body)

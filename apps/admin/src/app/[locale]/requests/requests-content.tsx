@@ -469,13 +469,18 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
   const client = useMemo(() => createApiClient("/api/bff"), []);
 
   const [statusFilter, setStatusFilter] = useState<DsarRequestStatus | "">("");
+  const [typeFilter, setTypeFilter] = useState("");
   const [search, setSearch] = useState("");
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [verifyId, setVerifyId] = useState<string | null>(null);
   const [subtaskId, setSubtaskId] = useState<string | null>(null);
   const [agentId, setAgentId] = useState<string | null>(null);
   const [packageId, setPackageId] = useState<string | null>(null);
-  const list = useDsarRequests(client, { status: statusFilter || undefined, search: search || undefined });
+  const list = useDsarRequests(client, {
+    status: statusFilter || undefined,
+    request_type_id: typeFilter || undefined,
+    search: search || undefined,
+  });
   const types = useDsarRequestTypes(client);
   const entities = useLegalEntities(client);
   const activities = useActivities(client, {});
@@ -598,6 +603,11 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
         <select className={INPUT + " w-auto"} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as DsarRequestStatus | "")}>
           <option value="">{t("allStatuses")}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{t(`statuses.${s}`)}</option>)}
+        </select>
+        <span className="text-slate-600">{t("form.requestType")}</span>
+        <select className={INPUT + " w-auto"} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} data-testid="request-type-filter">
+          <option value="">{t("allTypes")}</option>
+          {typeRows.map((rt) => <option key={rt.id} value={rt.id}>{typeName(rt.id)}</option>)}
         </select>
         <label className="flex items-center gap-2">
           <span className="text-slate-600">{t("search.label")}</span>

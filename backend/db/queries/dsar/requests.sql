@@ -33,11 +33,13 @@ FROM dsar.requests WHERE id = $1;
 -- name: ListRequests :many
 -- DSAR-17: request_no is matched as a case-insensitive substring (ม.39(7) "ค้นหาด้วยเลขคำขอ"); an email or
 -- other identifier is matched by exact blind index (never decrypted to search — rule 3), computed by the
--- caller before this query runs.
+-- caller before this query runs. DSAR-05: request_type_id narrows to one right type (e.g. complaint/inquiry),
+-- so complaints/inquiries can be filtered to in the same queue every other right type already shares.
 SELECT id, request_no, request_type_id, legal_entity_id, channel, on_behalf, details, status, received_at,
     due_at, verified_at, closed_at, outcome, rejection_reason_code, assignee_user_id, row_version, updated_at
 FROM dsar.requests
 WHERE (sqlc.narg(status)::text IS NULL OR status = sqlc.narg(status))
+  AND (sqlc.narg(request_type_id)::uuid IS NULL OR request_type_id = sqlc.narg(request_type_id))
   AND (sqlc.narg(request_no)::text IS NULL OR request_no ILIKE '%' || sqlc.narg(request_no)::text || '%')
   AND (sqlc.narg(blind_index)::bytea IS NULL OR requester_blind_index = sqlc.narg(blind_index)::bytea)
   AND (sqlc.narg(cursor_at)::timestamptz IS NULL
