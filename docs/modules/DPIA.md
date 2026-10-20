@@ -390,9 +390,9 @@ owner refused; duplicate link refused without poisoning the transaction; owner+d
 `dpia.Service`'s own wrapper (editable-status gate, cross-assessment risk rejection), HTTP contract
 (401/403/201/200/204/428/200) through the real validator. Full backend `go test -count=1 -p 1 ./...` exits 0
 (no regressions anywhere in the branch); `pnpm --filter @pdpa/admin build` and the `@pdpa/i18n` ICU message
-tests both verified clean. Not done: DPIA-08 (the sibling "extend" feature named in the module's own relation
-list) — recommending which controls to add, not just linking a chosen one — is a separate Should feature, not
-part of this acceptance criterion.
+tests both verified clean. Not done here: DPIA-08 (the sibling "extend" feature named in the module's own
+relation list) — confirming a still-significant risk's presence in the shared register and opening its
+remediation task — is a separate Should feature, built in its own later pass (see `#dpia-08` below).
 
 <a id="dpia-09"></a>
 ### DPIA-09 เชิญผู้ร่วมประเมิน
@@ -603,6 +603,57 @@ a real Postgres + Redis, not just compiled.
 **Frontend (Next.js):** ปุ่มส่งเข้าทะเบียน
 
 **Acceptance criteria:** ความเสี่ยงคงเหลือปรากฏในทะเบียนพร้อมลิงก์กลับ
+
+**Implementation — done.** DPIA-06's own `IdentifyRisk` already writes every risk directly into `risk.risks`
+(RRA-09's shared register, read literally — not a separate store to "send" a risk into), so this feature's
+real gap against the literal acceptance criterion was the "ลิงก์กลับ" (link back) and the remediation-task
+half. `risk.Risk` gained `EffectiveLevel()` (residual once computed by DPIA-07's own control-linking, else
+inherent) and a new `EnsureRemediationTask(ctx, riskID)` (`internal/risk/service/risk_controls.go`): opens
+exactly one `dpo.tasks` job for a risk whose effective level is high/very_high and whose own status isn't
+already `accepted`/`closed` — but only once per risk, ever, via a new `DpoTasks.HasTaskForRisk` dedup check
+(`internal/dpo/service/risk_controls.go`'s `HasTaskForRisk`, rule 9: risk never queries `dpo.tasks` itself) —
+so a risk already carrying a task from an earlier DPIA-07 control (owner+due date) or an earlier call here is
+a harmless no-op, never a duplicate. `internal/dpia/service/risks.go`'s `SubmitRiskToRegister(ctx,
+assessmentID, riskID)` is the module's own thin wrapper: proves the risk is actually linked to this assessment
+(the same `requireLinkedRisk` guard `UpdateRisk`/`AddRiskControl` already share — a risk id from another
+assessment is refused with `ErrNotFound`), then calls `EnsureRemediationTask` and returns the risk's current
+register entry plus whether this call actually opened a task — allowed at *any* assessment status (unlike
+`IdentifyRisk`/`UpdateRisk`, which only work on an open round), since a round already closed can still have a
+residual risk that needs following up on.
+
+The wire-level "link back" is `RiskRegisterEntry.source_id` (RRA-09's own schema, additive — exposes
+`risk.risks.source_id`, which already existed in Go but was never on the wire), plus the already-existing
+`activity_id` RRA-09 exposed: `/settings/risk-register`'s own table gained a "Linked to" column linking
+straight to `/ropa/activities/{activity_id}` for any risk that carries one (dpia-sourced risks always do once
+their round has a linked RoPA activity) — read literally, "appears in the register with a link back" is about
+being able to navigate *from* the register *to* the source, which activity_id alone already answers; source_id
+is exposed for completeness even though no UI reads it yet (no DPIA-per-assessment detail page exists to link
+to — `/ropa/activities/{id}`'s own DPIA section is where that round already lives).
+
+API: `POST /admin/v1/dpia/assessments/{id}/risks/{riskId}/submit-to-register` (`assessment.dpia.update`, no
+`If-Match` — the response reports `task_opened`, not an edited resource) → `{risk, task_opened}`. UI:
+a "ส่งเข้าทะเบียนความเสี่ยง (DPIA-08)" button per risk row on `/ropa/activities/{id}`'s existing DPIA-06 risk
+panel (next to the existing "mitigation measures" toggle), showing whether this click actually opened a new
+task or found one already open. Tests: unit (`internal/risk/service/ensure_remediation_test.go` — the
+acceptance criterion's own core rule: a high-level open risk gets exactly one task and a repeat call never
+duplicates it; a low-level risk is skipped; an accepted/closed risk is skipped even at a high level; a risk
+whose *residual* level has dropped below high after mitigation is no longer significant even though its
+inherent level still is; two-tenant isolation), `internal/dpia/service/submit_to_register_test.go` (the same
+acceptance criterion through the assessment it belongs to — first submit opens a task, second is a no-op, the
+returned risk is the real dpia-sourced register entry; an unlinked risk id refused; two-tenant isolation), HTTP
+contract (`internal/dpia/http/handler_test.go`'s existing `TestDpiaEndpoints_Contract`, extended with
+401/403/200/404 on the new endpoint through the real validator + AuthZ, run inline with the file's own existing
+risk-identify/update/control sequence on the same risk). A real Postgres/Redis were reachable earlier in this
+session (for RRA-09, the sibling feature this one builds directly on) but became unreachable partway through
+this pass — every test here compiles and vets clean and skips the same way the rest of this module's own
+suite already does without one; the full backend regression suite (`go build ./...`, `go vet ./...`, `gofmt
+-l` on every touched file) ran clean with no new failures. `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
+`/ropa/activities/[id]` and `/settings/risk-register` routes) all verified clean. Not done, deliberately: an
+automatic trigger tying `SubmitRiskToRegister` to a specific DPIA-10 transition (e.g. firing it for every
+still-open risk the moment a round closes) — the module doc's own FE note ("ปุ่มส่งเข้าทะเบียน", a button) reads
+as an explicit DPO action, not a background sweep, so this stays a deliberate per-risk click; wiring a
+scheduled sweep instead would be a materially different, unasked-for feature.
 
 <a id="dpia-11"></a>
 ### DPIA-11 บันทึกการปรึกษาผู้มีส่วนได้เสีย

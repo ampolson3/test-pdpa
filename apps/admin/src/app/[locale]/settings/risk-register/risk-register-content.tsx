@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
+import { Link } from "@/i18n/routing";
 import {
   createApiClient,
   useRiskRegister,
@@ -152,6 +153,7 @@ export function RiskRegisterContent() {
               <th className="py-2">{t("table.level")}</th>
               <th className="py-2">{t("table.score")}</th>
               <th className="py-2">{t("table.status")}</th>
+              <th className="py-2">{t("table.linkedTo")}</th>
               <th className="py-2" />
             </tr>
           </thead>
@@ -163,6 +165,13 @@ export function RiskRegisterContent() {
                 <td className="py-2">{t(`levels.${r.level}`)}</td>
                 <td className="py-2">{r.inherent_score}</td>
                 <td className="py-2">{t(`statuses.${r.status}`)}</td>
+                <td className="py-2">
+                  {r.activity_id ? (
+                    <Link href={`/ropa/activities/${r.activity_id}`} className="text-sky-700 underline">
+                      {t("table.viewActivity")}
+                    </Link>
+                  ) : null}
+                </td>
                 <td className="py-2">
                   {canUpdate && r.source_type === "manual" && (
                     <button className="text-sky-700 underline" onClick={() => { save.reset(); setDraft(fromRisk(r)); }}>{t("edit")}</button>

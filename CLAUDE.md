@@ -3382,6 +3382,46 @@ a further `source_type` producer (a separate backlog row); a UI picker for linki
 to a *new* risk from this page (no consumer yet — every real link today is made by the sourcing module's
 own feature at identification time).
 
+### DPIA-08 เชื่อมทะเบียนความเสี่ยงและงานแก้ไข (`docs/modules/DPIA.md#dpia-08`) — done
+DPIA-06's own `IdentifyRisk` already writes every risk directly into `risk.risks` (RRA-09's shared register,
+read literally — not a separate store to "send" a risk into), so this feature's real gap against the literal
+acceptance criterion ("ความเสี่ยงคงเหลือปรากฏในทะเบียนพร้อมลิงก์กลับ") was the link-back and remediation-task
+half. `risk.Risk` gained `EffectiveLevel()` (residual once computed by DPIA-07's own control-linking, else
+inherent) and a new `EnsureRemediationTask(ctx, riskID)` (`internal/risk/service/risk_controls.go`): opens
+exactly one `dpo.tasks` job for a risk whose effective level is high/very_high and not already
+`accepted`/`closed` — only once per risk, ever, via a new `DpoTasks.HasTaskForRisk` dedup check
+(`internal/dpo/service/risk_controls.go`, rule 9: risk never queries `dpo.tasks` itself) — so a risk already
+carrying a task from an earlier DPIA-07 control or an earlier call here is a harmless no-op, never a
+duplicate. `internal/dpia/service/risks.go`'s `SubmitRiskToRegister(ctx, assessmentID, riskID)` is the
+module's own thin wrapper: proves the risk is linked to this assessment (the same `requireLinkedRisk` guard
+`UpdateRisk`/`AddRiskControl` share), calls `EnsureRemediationTask`, and returns the risk's current register
+entry plus whether this call opened a task — allowed at any assessment status, since a closed round can
+still have a residual risk needing follow-up.
+
+The "link back" is `RiskRegisterEntry.source_id` (new on the wire, additive) plus the already-exposed
+`activity_id`: `/settings/risk-register`'s table gained a "Linked to" column linking straight to
+`/ropa/activities/{activity_id}` for any risk that carries one — read literally, "appears in the register
+with a link back" is about navigating *from* the register *to* the source, which `activity_id` alone already
+answers.
+
+API: `POST /admin/v1/dpia/assessments/{id}/risks/{riskId}/submit-to-register` (`assessment.dpia.update`, no
+If-Match — the response reports `task_opened`, not an edited resource) → `{risk, task_opened}`. UI: a "ส่งเข้า
+ทะเบียนความเสี่ยง (DPIA-08)" button per risk row on `/ropa/activities/{id}`'s existing DPIA-06 risk panel.
+Tests: unit (`internal/risk/service/ensure_remediation_test.go` — a high-level open risk gets exactly one
+task and a repeat call never duplicates it; low-level and accepted/closed risks are skipped; a risk whose
+residual level dropped below high is no longer significant even though its inherent level still is;
+two-tenant isolation), `internal/dpia/service/submit_to_register_test.go` (the same acceptance criterion
+through the owning assessment; an unlinked risk id refused; two-tenant isolation), HTTP contract
+(`internal/dpia/http/handler_test.go`'s existing `TestDpiaEndpoints_Contract` extended with
+401/403/200/404 on the new endpoint). A real Postgres/Redis were reachable earlier this session (for RRA-09,
+the sibling feature this builds on) but became unreachable partway through this pass — every test compiles
+and vets clean and skips the same way the rest of this module's own suite already does without one; the full
+backend regression suite (`go build ./...`, `go vet ./...`, `gofmt -l`) ran clean with no new failures.
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/ropa/activities/[id]` and `/settings/risk-register` routes) all verified clean.
+Not done, deliberately: an automatic trigger tying this to a specific DPIA-10 transition — the module doc's
+own FE note ("ปุ่มส่งเข้าทะเบียน", a button) reads as an explicit DPO action, not a background sweep.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

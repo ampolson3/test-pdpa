@@ -4163,6 +4163,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpia/assessments/{id}/risks/{riskId}/submit-to-register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** DPIA-08: confirm a still-significant risk is on record in the shared risk register (RRA-09) and open its remediation task if one isn't already open */
+        post: operations["dpiaSubmitRiskToRegister"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpia/templates": {
         parameters: {
             query?: never;
@@ -7024,6 +7041,11 @@ export interface components {
             id: components["schemas"]["Uuid"];
             /** @enum {string} */
             source_type: "dpia" | "activity" | "vendor" | "breach" | "audit" | "manual";
+            /**
+             * Format: uuid
+             * @description DPIA-08: the originating record (e.g. the assess.assessments row) a source_type=dpia risk was identified from, for the register's own "link back" to it.
+             */
+            source_id?: string | null;
             title: string;
             description?: string;
             owner_user_id?: components["schemas"]["Uuid"];
@@ -19670,6 +19692,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpiaSubmitRiskToRegister: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                riskId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The risk's current register entry, plus whether a new remediation task was opened by this call */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        risk: components["schemas"]["RiskRegisterEntry"];
+                        task_opened: boolean;
+                    };
+                };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

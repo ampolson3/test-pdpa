@@ -97,7 +97,7 @@ func fromRiskRegisterInput(b RiskRegisterInput) riskservice.Risk {
 }
 
 func toRiskRegisterWire(r riskservice.Risk) RiskRegisterEntry {
-	w := RiskRegisterEntry{Id: r.ID, SourceType: RiskRegisterEntrySourceType(r.SourceType), Title: r.Title,
+	w := RiskRegisterEntry{Id: r.ID, SourceType: RiskRegisterEntrySourceType(r.SourceType), SourceId: r.SourceID, Title: r.Title,
 		OwnerUserId: r.OwnerUserID, ActivityId: r.ActivityID, AssetId: r.AssetID, VendorId: r.VendorID,
 		Likelihood: r.Likelihood, Impact: r.Impact, InherentScore: float32(r.InherentScore), Level: RiskRegisterEntryLevel(r.Level),
 		Status: RiskRegisterEntryStatus(r.Status), RowVersion: int(r.RowVersion), CreatedAt: r.CreatedAt.UTC()}

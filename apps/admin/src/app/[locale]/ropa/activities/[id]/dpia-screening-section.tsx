@@ -30,6 +30,7 @@ import {
   useRiskControls,
   useScreenActivity,
   useSecurityControls,
+  useSubmitRiskToRegister,
   useTransitionDpiaAssessment,
   useUpdateRiskControlStatus,
   dpiaReportHref,
@@ -536,6 +537,8 @@ function DpiaRiskPanel({ client, assessmentId }: { client: ApiClient; assessment
   const risks = useAssessmentRisks(client, assessmentId);
   const identify = useIdentifyRisk(client);
   const remove = useRemoveAssessmentRisk(client);
+  const submitToRegister = useSubmitRiskToRegister(client);
+  const [submittedId, setSubmittedId] = useState<string | null>(null);
 
   const [catalogCode, setCatalogCode] = useState("");
   const [title, setTitle] = useState("");
@@ -612,6 +615,26 @@ function DpiaRiskPanel({ client, assessmentId }: { client: ApiClient; assessment
                   {controlsRiskId === r.id ? t("risks.controls.hide") : t("risks.controls.show")}
                 </button>
                 {controlsRiskId === r.id && <DpiaRiskControlsPanel client={client} assessmentId={assessmentId} riskId={r.id} canUpdate={canUpdate} />}
+                {canUpdate && (
+                  <div className="mt-1">
+                    <button
+                      type="button"
+                      className="text-sky-700 underline"
+                      onClick={() => {
+                        setSubmittedId(r.id);
+                        submitToRegister.mutate({ assessmentId, riskId: r.id });
+                      }}
+                      disabled={submitToRegister.isPending}
+                    >
+                      {t("risks.submitToRegister")}
+                    </button>
+                    {submittedId === r.id && submitToRegister.data && (
+                      <p className="text-slate-500">
+                        {submitToRegister.data.task_opened ? t("risks.submitToRegisterTaskOpened") : t("risks.submitToRegisterAlreadyOpen")}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
               {canUpdate && (
                 <button

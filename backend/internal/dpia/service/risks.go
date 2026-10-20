@@ -190,6 +190,37 @@ func (s *Service) RemoveRiskControl(ctx context.Context, assessmentID, riskID, c
 	return s.Risk.RemoveRiskControl(ctx, riskID, controlID)
 }
 
+// SubmitRiskToRegister is DPIA-08's own acceptance criterion: a risk already identified on this round
+// (DPIA-06) is already a real risk.risks row visible in the shared register (RRA-09) the moment it's
+// identified — nothing more to "send" there — so this call's own job is risk/service's
+// EnsureRemediationTask (rule 9: dpia never opens a dpo.tasks job itself), confirming a still-significant
+// risk gets a tracked remediation task if it doesn't already have one. Allowed at any assessment status
+// (unlike IdentifyRisk/UpdateRisk) — a round already closed may still have a residual risk that needs
+// following up on.
+func (s *Service) SubmitRiskToRegister(ctx context.Context, assessmentID, riskID uuid.UUID) (riskservice.Risk, bool, error) {
+	if _, err := s.GetAssessment(ctx, assessmentID); err != nil {
+		return riskservice.Risk{}, false, err
+	}
+	if err := s.requireLinkedRisk(ctx, assessmentID, riskID); err != nil {
+		return riskservice.Risk{}, false, err
+	}
+	opened, err := s.Risk.EnsureRemediationTask(ctx, riskID)
+	if err != nil {
+		return riskservice.Risk{}, false, err
+	}
+	risk, err := s.Risk.GetRisk(ctx, riskID)
+	if err != nil {
+		return riskservice.Risk{}, false, err
+	}
+	if opened {
+		if err := s.audit(ctx, "dpia.risk.submit_to_register", AssessmentEntityType, assessmentID, nil,
+			map[string]any{"risk_id": riskID, "task_opened": true}); err != nil {
+			return riskservice.Risk{}, false, err
+		}
+	}
+	return risk, opened, nil
+}
+
 func (s *Service) requireLinkedRisk(ctx context.Context, assessmentID, riskID uuid.UUID) error {
 	ids, err := dpiastore.New(pdb.MustTxFromContext(ctx)).ListAssessmentRiskIDs(ctx, assessmentID)
 	if err != nil {

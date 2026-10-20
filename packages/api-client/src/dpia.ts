@@ -321,6 +321,23 @@ export function useRemoveAssessmentRisk(client: ApiClient) {
   });
 }
 
+/** POST /admin/v1/dpia/assessments/{id}/risks/{riskId}/submit-to-register (DPIA-08) — confirm a
+ *  still-significant risk is on record in the shared risk register (RRA-09) and open its remediation task
+ *  if one isn't already open. Returns whether this call actually opened a new task. */
+export function useSubmitRiskToRegister(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { assessmentId: string; riskId: string }) => {
+      const { data, error } = await client.POST("/admin/v1/dpia/assessments/{id}/risks/{riskId}/submit-to-register", {
+        params: { path: { id: v.assessmentId, riskId: v.riskId } },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "risks"] }),
+  });
+}
+
 /** GET /admin/v1/dpia/assessments/{id}/risks/{riskId}/controls (DPIA-07) — mitigation measures linked to a risk. */
 export function useRiskControls(client: ApiClient, assessmentId: string | undefined, riskId: string | undefined) {
   return useQuery({

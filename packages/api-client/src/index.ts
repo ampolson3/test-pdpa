@@ -483,6 +483,7 @@ export {
   useIdentifyRisk,
   useUpdateRisk,
   useRemoveAssessmentRisk,
+  useSubmitRiskToRegister,
   useRiskControls,
   useAddRiskControl,
   useUpdateRiskControlStatus,

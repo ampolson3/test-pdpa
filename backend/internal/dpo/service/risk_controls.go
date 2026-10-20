@@ -13,6 +13,19 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 )
 
+// HasTaskForRisk is DPIA-08's own dedup check: true once any dpo.tasks row already names this risk as its
+// own source — regardless of status — so EnsureRemediationTask (risk/service) never opens a second task for
+// a risk that already has one, whether from an earlier DPIA-07 control (owner+due) or an earlier DPIA-08
+// submit-to-register call. Implements risk/service's own local DpoTasks interface structurally (rule 9).
+func (s *Service) HasTaskForRisk(ctx context.Context, riskID uuid.UUID) (bool, error) {
+	q := dpostore.New(pdb.MustTxFromContext(ctx))
+	rows, err := q.ListTasksBySource(ctx, dpostore.ListTasksBySourceParams{SourceType: "risk", SourceID: pgUUID(&riskID)})
+	if err != nil {
+		return false, err
+	}
+	return len(rows) > 0, nil
+}
+
 // OpenRiskControlTask opens one dpo.tasks job ("SEC-<year>-NNNN", source_type "risk", the same bucket
 // DPO-09's own openRemediationTask already uses for security findings) for DPIA-07's own "ผู้รับผิดชอบและ
 // วันเสร็จ → task": a mitigation measure given both an owner and a due date gets a real tracked task, not

@@ -43,6 +43,10 @@ type DpoTasks interface {
 	// OpenGapRemediationTask is RRA-07's own task-opening call: a legal-gap finding, given an assignee,
 	// due date and priority, opens one dpo.tasks job ("ropa_gap" source) instead of DPIA-07's "risk" one.
 	OpenGapRemediationTask(ctx context.Context, findingID uuid.UUID, title, description string, assigneeUserID *uuid.UUID, dueAt *time.Time, priority string) (uuid.UUID, error)
+	// HasTaskForRisk is DPIA-08's own dedup check (EnsureRemediationTask) — true once any dpo.tasks row
+	// already names this risk as its own source, from any caller (an earlier DPIA-07 control or an earlier
+	// EnsureRemediationTask call), so a risk is never given a second remediation task.
+	HasTaskForRisk(ctx context.Context, riskID uuid.UUID) (bool, error)
 }
 
 // AddRiskControl links a control from the catalog to a risk, optionally with an owner and due date — giving
@@ -220,6 +224,53 @@ func (s *Service) recomputeResidual(ctx context.Context, riskID uuid.UUID) error
 		ID: riskID, ResidualLikelihood: &l16, ResidualImpact: &i16, ResidualScore: numeric(score), ResidualLevel: &level,
 	})
 	return err
+}
+
+// highRemediationLevels is "ยังเหลือ" (still significant) for DPIA-08's own "ความเสี่ยงคงเหลือ...สร้างงานแก้ไข
+// อัตโนมัติ": a risk whose effective level (residual once at least one control has been linked, else
+// inherent) reads high or very_high still needs active work.
+var highRemediationLevels = map[string]bool{"high": true, "very_high": true}
+
+// EffectiveLevel is the residual level once computed, else the inherent one — what a caller means by "this
+// risk's current level" once mitigation may have started.
+func (r Risk) EffectiveLevel() string {
+	if r.ResidualLevel != nil {
+		return *r.ResidualLevel
+	}
+	return r.Level
+}
+
+// EnsureRemediationTask is DPIA-08's own acceptance criterion ("residual risk ... creates a remediation
+// task automatically"): opens one dpo.tasks job for this risk if it's still significant (effective level
+// high/very_high) and not yet accepted/closed — but only once per risk, ever (s.Dpo.HasTaskForRisk, rule 9:
+// risk never queries dpo.tasks itself). A risk that's already accepted/closed, whose level doesn't warrant
+// one, or that already has a task (from an earlier DPIA-07 control or an earlier call here) is a harmless
+// no-op, never a duplicate — returns whether this call actually opened one.
+func (s *Service) EnsureRemediationTask(ctx context.Context, riskID uuid.UUID) (bool, error) {
+	risk, err := s.GetRisk(ctx, riskID)
+	if err != nil {
+		return false, err
+	}
+	if risk.Status == "accepted" || risk.Status == "closed" {
+		return false, nil
+	}
+	if !highRemediationLevels[risk.EffectiveLevel()] {
+		return false, nil
+	}
+	if s.Dpo == nil {
+		return false, nil
+	}
+	exists, err := s.Dpo.HasTaskForRisk(ctx, riskID)
+	if err != nil {
+		return false, err
+	}
+	if exists {
+		return false, nil
+	}
+	if _, err := s.Dpo.OpenRiskControlTask(ctx, riskID, "ความเสี่ยงคงเหลือต้องจัดการ: "+risk.Title, risk.Description, nil, nil); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func toRiskControl(r riskstore.ListRiskControlsRow) RiskControl {

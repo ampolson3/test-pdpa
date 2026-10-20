@@ -896,11 +896,14 @@ type RiskRegisterEntry struct {
 	ResidualLikelihood *int                            `json:"residual_likelihood,omitempty"`
 	ResidualScore      *float32                        `json:"residual_score,omitempty"`
 	RowVersion         int                             `json:"row_version"`
-	SourceType         RiskRegisterEntrySourceType     `json:"source_type"`
-	Status             RiskRegisterEntryStatus         `json:"status"`
-	Title              string                          `json:"title"`
-	Treatment          *RiskRegisterEntryTreatment     `json:"treatment,omitempty"`
-	VendorId           *openapi_types.UUID             `json:"vendor_id,omitempty"`
+
+	// SourceId DPIA-08: the originating record (e.g. the assess.assessments row) a source_type=dpia risk was identified from, for the register's own "link back" to it.
+	SourceId   *openapi_types.UUID         `json:"source_id,omitempty"`
+	SourceType RiskRegisterEntrySourceType `json:"source_type"`
+	Status     RiskRegisterEntryStatus     `json:"status"`
+	Title      string                      `json:"title"`
+	Treatment  *RiskRegisterEntryTreatment `json:"treatment,omitempty"`
+	VendorId   *openapi_types.UUID         `json:"vendor_id,omitempty"`
 }
 
 // RiskRegisterEntryLevel defines model for RiskRegisterEntry.Level.

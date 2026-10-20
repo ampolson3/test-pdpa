@@ -892,7 +892,10 @@
           "implemented": "ดำเนินการแล้ว",
           "not_effective": "ไม่ได้ผล"
         }
-      }
+      },
+      "submitToRegister": "ส่งเข้าทะเบียนความเสี่ยง (DPIA-08)",
+      "submitToRegisterTaskOpened": "ส่งเข้าทะเบียนแล้ว — เปิดงานแก้ไขใหม่สำหรับความเสี่ยงนี้",
+      "submitToRegisterAlreadyOpen": "ส่งเข้าทะเบียนแล้ว — ความเสี่ยงนี้มีงานแก้ไขที่เปิดอยู่แล้ว"
     },
     "history": "ประวัติ",
     "form": {
@@ -3478,7 +3481,9 @@
       "source": "แหล่งที่มา",
       "level": "ระดับ",
       "status": "สถานะ",
-      "score": "คะแนน"
+      "score": "คะแนน",
+      "linkedTo": "ผูกกับ",
+      "viewActivity": "ดูกิจกรรม RoPA"
     },
     "form": {
       "newTitle": "เพิ่มความเสี่ยง",

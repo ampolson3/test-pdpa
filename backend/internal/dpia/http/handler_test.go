@@ -18,6 +18,7 @@ import (
 
 	dpiahttp "pdpa-platform/internal/dpia/http"
 	dpiaservice "pdpa-platform/internal/dpia/service"
+	dposervice "pdpa-platform/internal/dpo/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
@@ -52,6 +53,7 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM dpo.tasks`)
 			_, _ = tx.Exec(ctx, `DELETE FROM assess.assessment_risks`)
 			_, _ = tx.Exec(ctx, `DELETE FROM risk.risks`)
 			_, _ = tx.Exec(ctx, `DELETE FROM risk.risk_matrices`)
@@ -74,6 +76,7 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	riskSvc := &riskservice.Service{Audit: audit.New()}
 	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: riskSvc}
 	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}
+	riskSvc.Dpo = &dposervice.Service{Audit: audit.New()} // DPIA-08: submit-to-register opens a real dpo.tasks job
 	formsSvc := wiring.Forms(nil, audit.New())
 	svc := &dpiaservice.Service{Audit: audit.New(), Forms: formsSvc, Ropa: ropaSvc, Org: orgSvc, Risk: riskSvc}
 
@@ -385,6 +388,27 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 	if code, _ := do("PUT", "/admin/v1/dpia/assessments/"+second.Id.String()+"/risks/"+risk.Id.String(), &admin,
 		map[string]any{"title": "a", "likelihood": 1, "impact": 1}, map[string]string{"If-Match": `"2"`}); code != 404 {
 		t.Errorf("update risk from a round it isn't linked to: %d, want 404", code)
+	}
+
+	// DPIA-08: the risk is now level "high" (score 9, updated just above) and has no task yet — submitting
+	// it to the register opens exactly one dpo.tasks remediation job.
+	submitPath := riskPath + "/submit-to-register"
+	if code, _ := do("POST", submitPath, nil, nil, nil); code != 401 {
+		t.Errorf("submit-to-register no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", submitPath, &reader2, nil, nil); code != 403 {
+		t.Errorf("submit-to-register with read-only permission: %d, want 403", code)
+	}
+	code, body = do("POST", submitPath, &admin, nil, nil)
+	if code != 200 || !strings.Contains(body, `"task_opened":true`) {
+		t.Fatalf("submit-to-register (first call): %d %s", code, body)
+	}
+	code, body = do("POST", submitPath, &admin, nil, nil)
+	if code != 200 || !strings.Contains(body, `"task_opened":false`) {
+		t.Errorf("submit-to-register (second call, already has a task): %d %s", code, body)
+	}
+	if code, _ := do("POST", risksPath+"/"+uuid.New().String()+"/submit-to-register", &admin, nil, nil); code != 404 {
+		t.Errorf("submit-to-register unknown risk id: %d, want 404", code)
 	}
 
 	// DPIA-07: link a mitigation measure to the risk, mark it implemented and watch the residual

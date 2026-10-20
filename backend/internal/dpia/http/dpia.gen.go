@@ -555,6 +555,138 @@ func (e FormQuestionType) Valid() bool {
 	}
 }
 
+// Defines values for RiskRegisterEntryLevel.
+const (
+	RiskRegisterEntryLevelHigh     RiskRegisterEntryLevel = "high"
+	RiskRegisterEntryLevelLow      RiskRegisterEntryLevel = "low"
+	RiskRegisterEntryLevelMedium   RiskRegisterEntryLevel = "medium"
+	RiskRegisterEntryLevelVeryHigh RiskRegisterEntryLevel = "very_high"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterEntryLevel enum.
+func (e RiskRegisterEntryLevel) Valid() bool {
+	switch e {
+	case RiskRegisterEntryLevelHigh:
+		return true
+	case RiskRegisterEntryLevelLow:
+		return true
+	case RiskRegisterEntryLevelMedium:
+		return true
+	case RiskRegisterEntryLevelVeryHigh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskRegisterEntryResidualLevel.
+const (
+	RiskRegisterEntryResidualLevelHigh        RiskRegisterEntryResidualLevel = "high"
+	RiskRegisterEntryResidualLevelLessThannil RiskRegisterEntryResidualLevel = "<nil>"
+	RiskRegisterEntryResidualLevelLow         RiskRegisterEntryResidualLevel = "low"
+	RiskRegisterEntryResidualLevelMedium      RiskRegisterEntryResidualLevel = "medium"
+	RiskRegisterEntryResidualLevelVeryHigh    RiskRegisterEntryResidualLevel = "very_high"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterEntryResidualLevel enum.
+func (e RiskRegisterEntryResidualLevel) Valid() bool {
+	switch e {
+	case RiskRegisterEntryResidualLevelHigh:
+		return true
+	case RiskRegisterEntryResidualLevelLessThannil:
+		return true
+	case RiskRegisterEntryResidualLevelLow:
+		return true
+	case RiskRegisterEntryResidualLevelMedium:
+		return true
+	case RiskRegisterEntryResidualLevelVeryHigh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskRegisterEntrySourceType.
+const (
+	Activity RiskRegisterEntrySourceType = "activity"
+	Audit    RiskRegisterEntrySourceType = "audit"
+	Breach   RiskRegisterEntrySourceType = "breach"
+	Dpia     RiskRegisterEntrySourceType = "dpia"
+	Manual   RiskRegisterEntrySourceType = "manual"
+	Vendor   RiskRegisterEntrySourceType = "vendor"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterEntrySourceType enum.
+func (e RiskRegisterEntrySourceType) Valid() bool {
+	switch e {
+	case Activity:
+		return true
+	case Audit:
+		return true
+	case Breach:
+		return true
+	case Dpia:
+		return true
+	case Manual:
+		return true
+	case Vendor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskRegisterEntryStatus.
+const (
+	RiskRegisterEntryStatusAccepted    RiskRegisterEntryStatus = "accepted"
+	RiskRegisterEntryStatusClosed      RiskRegisterEntryStatus = "closed"
+	RiskRegisterEntryStatusInTreatment RiskRegisterEntryStatus = "in_treatment"
+	RiskRegisterEntryStatusOpen        RiskRegisterEntryStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterEntryStatus enum.
+func (e RiskRegisterEntryStatus) Valid() bool {
+	switch e {
+	case RiskRegisterEntryStatusAccepted:
+		return true
+	case RiskRegisterEntryStatusClosed:
+		return true
+	case RiskRegisterEntryStatusInTreatment:
+		return true
+	case RiskRegisterEntryStatusOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskRegisterEntryTreatment.
+const (
+	RiskRegisterEntryTreatmentAccept      RiskRegisterEntryTreatment = "accept"
+	RiskRegisterEntryTreatmentAvoid       RiskRegisterEntryTreatment = "avoid"
+	RiskRegisterEntryTreatmentLessThannil RiskRegisterEntryTreatment = "<nil>"
+	RiskRegisterEntryTreatmentMitigate    RiskRegisterEntryTreatment = "mitigate"
+	RiskRegisterEntryTreatmentTransfer    RiskRegisterEntryTreatment = "transfer"
+)
+
+// Valid indicates whether the value is a known member of the RiskRegisterEntryTreatment enum.
+func (e RiskRegisterEntryTreatment) Valid() bool {
+	switch e {
+	case RiskRegisterEntryTreatmentAccept:
+		return true
+	case RiskRegisterEntryTreatmentAvoid:
+		return true
+	case RiskRegisterEntryTreatmentLessThannil:
+		return true
+	case RiskRegisterEntryTreatmentMitigate:
+		return true
+	case RiskRegisterEntryTreatmentTransfer:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AcceptLanguage.
 const (
 	AcceptLanguageEn AcceptLanguage = "en"
@@ -981,6 +1113,24 @@ func (e DpiaUpdateRiskControlStatusParamsAcceptLanguage) Valid() bool {
 	case DpiaUpdateRiskControlStatusParamsAcceptLanguageEn:
 		return true
 	case DpiaUpdateRiskControlStatusParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpiaSubmitRiskToRegisterParamsAcceptLanguage.
+const (
+	DpiaSubmitRiskToRegisterParamsAcceptLanguageEn DpiaSubmitRiskToRegisterParamsAcceptLanguage = "en"
+	DpiaSubmitRiskToRegisterParamsAcceptLanguageTh DpiaSubmitRiskToRegisterParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpiaSubmitRiskToRegisterParamsAcceptLanguage enum.
+func (e DpiaSubmitRiskToRegisterParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpiaSubmitRiskToRegisterParamsAcceptLanguageEn:
+		return true
+	case DpiaSubmitRiskToRegisterParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -1706,6 +1856,54 @@ type Problem struct {
 	Type      string        `json:"type"`
 }
 
+// RiskRegisterEntry RRA-09: one risk.risks row as the shared privacy risk register shows it — the same row DPIA-06's own DpiaRisk reads, here carrying its source and every entity link.
+type RiskRegisterEntry struct {
+	ActivityId *openapi_types.UUID `json:"activity_id,omitempty"`
+	AssetId    *openapi_types.UUID `json:"asset_id,omitempty"`
+
+	// CreatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	CreatedAt   Timestamp `json:"created_at"`
+	Description *string   `json:"description,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id            Uuid                   `json:"id"`
+	Impact        int                    `json:"impact"`
+	InherentScore float32                `json:"inherent_score"`
+	Level         RiskRegisterEntryLevel `json:"level"`
+	Likelihood    int                    `json:"likelihood"`
+
+	// OwnerUserId UUIDv7 generated by the API
+	OwnerUserId        *Uuid                           `json:"owner_user_id,omitempty"`
+	ResidualImpact     *int                            `json:"residual_impact,omitempty"`
+	ResidualLevel      *RiskRegisterEntryResidualLevel `json:"residual_level,omitempty"`
+	ResidualLikelihood *int                            `json:"residual_likelihood,omitempty"`
+	ResidualScore      *float32                        `json:"residual_score,omitempty"`
+	RowVersion         int                             `json:"row_version"`
+
+	// SourceId DPIA-08: the originating record (e.g. the assess.assessments row) a source_type=dpia risk was identified from, for the register's own "link back" to it.
+	SourceId   *openapi_types.UUID         `json:"source_id,omitempty"`
+	SourceType RiskRegisterEntrySourceType `json:"source_type"`
+	Status     RiskRegisterEntryStatus     `json:"status"`
+	Title      string                      `json:"title"`
+	Treatment  *RiskRegisterEntryTreatment `json:"treatment,omitempty"`
+	VendorId   *openapi_types.UUID         `json:"vendor_id,omitempty"`
+}
+
+// RiskRegisterEntryLevel defines model for RiskRegisterEntry.Level.
+type RiskRegisterEntryLevel string
+
+// RiskRegisterEntryResidualLevel defines model for RiskRegisterEntry.ResidualLevel.
+type RiskRegisterEntryResidualLevel string
+
+// RiskRegisterEntrySourceType defines model for RiskRegisterEntry.SourceType.
+type RiskRegisterEntrySourceType string
+
+// RiskRegisterEntryStatus defines model for RiskRegisterEntry.Status.
+type RiskRegisterEntryStatus string
+
+// RiskRegisterEntryTreatment defines model for RiskRegisterEntry.Treatment.
+type RiskRegisterEntryTreatment string
+
 // Timestamp RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
 type Timestamp = time.Time
 
@@ -1971,6 +2169,15 @@ type DpiaUpdateRiskControlStatusParams struct {
 // DpiaUpdateRiskControlStatusParamsAcceptLanguage defines parameters for DpiaUpdateRiskControlStatus.
 type DpiaUpdateRiskControlStatusParamsAcceptLanguage string
 
+// DpiaSubmitRiskToRegisterParams defines parameters for DpiaSubmitRiskToRegister.
+type DpiaSubmitRiskToRegisterParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpiaSubmitRiskToRegisterParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpiaSubmitRiskToRegisterParamsAcceptLanguage defines parameters for DpiaSubmitRiskToRegister.
+type DpiaSubmitRiskToRegisterParamsAcceptLanguage string
+
 // DpiaTransitionAssessmentJSONBody defines parameters for DpiaTransitionAssessment.
 type DpiaTransitionAssessmentJSONBody struct {
 	Reason *string                            `json:"reason,omitempty"`
@@ -2219,6 +2426,9 @@ type ServerInterface interface {
 	// DpiaUpdateRiskControlStatus DPIA-07: change a linked control's own status (e.g. planned -> implemented)
 	// (PUT /admin/v1/dpia/assessments/{id}/risks/{riskId}/controls/{controlId})
 	DpiaUpdateRiskControlStatus(w http.ResponseWriter, r *http.Request, id Uuid, riskId Uuid, controlId Uuid, params DpiaUpdateRiskControlStatusParams)
+	// DpiaSubmitRiskToRegister DPIA-08: confirm a still-significant risk is on record in the shared risk register (RRA-09) and open its remediation task if one isn't already open
+	// (POST /admin/v1/dpia/assessments/{id}/risks/{riskId}/submit-to-register)
+	DpiaSubmitRiskToRegister(w http.ResponseWriter, r *http.Request, id Uuid, riskId Uuid, params DpiaSubmitRiskToRegisterParams)
 	// DpiaTransitionAssessment DPIA-10: submit for review, request more info, decide (approved/rejected/needs_review), resume or close (ST-05#2) — deciding or closing needs assessment.dpia.approve beyond the endpoint's own permission
 	// (POST /admin/v1/dpia/assessments/{id}/transition)
 	DpiaTransitionAssessment(w http.ResponseWriter, r *http.Request, id Uuid, params DpiaTransitionAssessmentParams)
@@ -2381,6 +2591,12 @@ func (_ Unimplemented) DpiaRemoveRiskControl(w http.ResponseWriter, r *http.Requ
 // DpiaUpdateRiskControlStatus DPIA-07: change a linked control's own status (e.g. planned -> implemented)
 // (PUT /admin/v1/dpia/assessments/{id}/risks/{riskId}/controls/{controlId})
 func (_ Unimplemented) DpiaUpdateRiskControlStatus(w http.ResponseWriter, r *http.Request, id Uuid, riskId Uuid, controlId Uuid, params DpiaUpdateRiskControlStatusParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpiaSubmitRiskToRegister DPIA-08: confirm a still-significant risk is on record in the shared risk register (RRA-09) and open its remediation task if one isn't already open
+// (POST /admin/v1/dpia/assessments/{id}/risks/{riskId}/submit-to-register)
+func (_ Unimplemented) DpiaSubmitRiskToRegister(w http.ResponseWriter, r *http.Request, id Uuid, riskId Uuid, params DpiaSubmitRiskToRegisterParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3692,6 +3908,65 @@ func (siw *ServerInterfaceWrapper) DpiaUpdateRiskControlStatus(w http.ResponseWr
 	handler.ServeHTTP(w, r)
 }
 
+// DpiaSubmitRiskToRegister operation middleware
+func (siw *ServerInterfaceWrapper) DpiaSubmitRiskToRegister(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "riskId" -------------
+	var riskId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "riskId", chi.URLParam(r, "riskId"), &riskId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "riskId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpiaSubmitRiskToRegisterParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpiaSubmitRiskToRegisterParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpiaSubmitRiskToRegister(w, r, id, riskId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // DpiaTransitionAssessment operation middleware
 func (siw *ServerInterfaceWrapper) DpiaTransitionAssessment(w http.ResponseWriter, r *http.Request) {
 
@@ -4499,6 +4774,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/admin/v1/dpia/assessments/{id}/risks/{riskId}/controls/{controlId}", wrapper.DpiaUpdateRiskControlStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dpia/assessments/{id}/risks/{riskId}/submit-to-register", wrapper.DpiaSubmitRiskToRegister)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/dpia/templates", wrapper.DpiaListTemplates)
@@ -6454,6 +6732,82 @@ func (response DpiaUpdateRiskControlStatus428ApplicationProblemPlusJSONResponse)
 	return err
 }
 
+type DpiaSubmitRiskToRegisterRequestObject struct {
+	Id     Uuid `json:"id"`
+	RiskId Uuid `json:"riskId"`
+	Params DpiaSubmitRiskToRegisterParams
+}
+
+type DpiaSubmitRiskToRegisterResponseObject interface {
+	VisitDpiaSubmitRiskToRegisterResponse(w http.ResponseWriter) error
+}
+
+type DpiaSubmitRiskToRegister200JSONResponse struct {
+	// Risk RRA-09: one risk.risks row as the shared privacy risk register shows it — the same row DPIA-06's own DpiaRisk reads, here carrying its source and every entity link.
+	Risk       RiskRegisterEntry `json:"risk"`
+	TaskOpened bool              `json:"task_opened"`
+}
+
+func (response DpiaSubmitRiskToRegister200JSONResponse) VisitDpiaSubmitRiskToRegisterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaSubmitRiskToRegister401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaSubmitRiskToRegister401ApplicationProblemPlusJSONResponse) VisitDpiaSubmitRiskToRegisterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaSubmitRiskToRegister403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaSubmitRiskToRegister403ApplicationProblemPlusJSONResponse) VisitDpiaSubmitRiskToRegisterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpiaSubmitRiskToRegister404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpiaSubmitRiskToRegister404ApplicationProblemPlusJSONResponse) VisitDpiaSubmitRiskToRegisterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DpiaTransitionAssessmentRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params DpiaTransitionAssessmentParams
@@ -7506,6 +7860,9 @@ type StrictServerInterface interface {
 	// DpiaUpdateRiskControlStatus DPIA-07: change a linked control's own status (e.g. planned -> implemented)
 	// (PUT /admin/v1/dpia/assessments/{id}/risks/{riskId}/controls/{controlId})
 	DpiaUpdateRiskControlStatus(ctx context.Context, request DpiaUpdateRiskControlStatusRequestObject) (DpiaUpdateRiskControlStatusResponseObject, error)
+	// DpiaSubmitRiskToRegister DPIA-08: confirm a still-significant risk is on record in the shared risk register (RRA-09) and open its remediation task if one isn't already open
+	// (POST /admin/v1/dpia/assessments/{id}/risks/{riskId}/submit-to-register)
+	DpiaSubmitRiskToRegister(ctx context.Context, request DpiaSubmitRiskToRegisterRequestObject) (DpiaSubmitRiskToRegisterResponseObject, error)
 	// DpiaTransitionAssessment DPIA-10: submit for review, request more info, decide (approved/rejected/needs_review), resume or close (ST-05#2) — deciding or closing needs assessment.dpia.approve beyond the endpoint's own permission
 	// (POST /admin/v1/dpia/assessments/{id}/transition)
 	DpiaTransitionAssessment(ctx context.Context, request DpiaTransitionAssessmentRequestObject) (DpiaTransitionAssessmentResponseObject, error)
@@ -8204,6 +8561,34 @@ func (sh *strictHandler) DpiaUpdateRiskControlStatus(w http.ResponseWriter, r *h
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DpiaUpdateRiskControlStatusResponseObject); ok {
 		if err := validResponse.VisitDpiaUpdateRiskControlStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpiaSubmitRiskToRegister operation middleware
+func (sh *strictHandler) DpiaSubmitRiskToRegister(w http.ResponseWriter, r *http.Request, id Uuid, riskId Uuid, params DpiaSubmitRiskToRegisterParams) {
+	var request DpiaSubmitRiskToRegisterRequestObject
+
+	request.Id = id
+	request.RiskId = riskId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpiaSubmitRiskToRegister(ctx, request.(DpiaSubmitRiskToRegisterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpiaSubmitRiskToRegister")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpiaSubmitRiskToRegisterResponseObject); ok {
+		if err := validResponse.VisitDpiaSubmitRiskToRegisterResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -106,6 +106,43 @@ func (h *Strict) DpiaRemoveRiskControl(ctx context.Context, req DpiaRemoveRiskCo
 	return DpiaRemoveRiskControl204Response{}, nil
 }
 
+func (h *Strict) DpiaSubmitRiskToRegister(ctx context.Context, req DpiaSubmitRiskToRegisterRequestObject) (DpiaSubmitRiskToRegisterResponseObject, error) {
+	r, opened, err := h.svc.SubmitRiskToRegister(ctx, req.Id, req.RiskId)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return DpiaSubmitRiskToRegister200JSONResponse{Risk: toRiskRegisterWire(r), TaskOpened: opened}, nil
+}
+
+func toRiskRegisterWire(r riskservice.Risk) RiskRegisterEntry {
+	w := RiskRegisterEntry{Id: r.ID, SourceType: RiskRegisterEntrySourceType(r.SourceType), SourceId: r.SourceID, Title: r.Title,
+		OwnerUserId: r.OwnerUserID, ActivityId: r.ActivityID, AssetId: r.AssetID, VendorId: r.VendorID,
+		Likelihood: r.Likelihood, Impact: r.Impact, InherentScore: float32(r.InherentScore), Level: RiskRegisterEntryLevel(r.Level),
+		Status: RiskRegisterEntryStatus(r.Status), RowVersion: int(r.RowVersion), CreatedAt: r.CreatedAt.UTC()}
+	if r.Description != "" {
+		w.Description = &r.Description
+	}
+	if r.Treatment != "" {
+		t := RiskRegisterEntryTreatment(r.Treatment)
+		w.Treatment = &t
+	}
+	if r.ResidualLikelihood != nil {
+		w.ResidualLikelihood = r.ResidualLikelihood
+	}
+	if r.ResidualImpact != nil {
+		w.ResidualImpact = r.ResidualImpact
+	}
+	if r.ResidualScore != nil {
+		v := float32(*r.ResidualScore)
+		w.ResidualScore = &v
+	}
+	if r.ResidualLevel != nil {
+		l := RiskRegisterEntryResidualLevel(*r.ResidualLevel)
+		w.ResidualLevel = &l
+	}
+	return w
+}
+
 func toRiskControlWire(c riskservice.RiskControl) DpiaRiskControl {
 	w := DpiaRiskControl{RiskId: c.RiskID, ControlId: c.ControlID, ControlCode: c.ControlCode, ControlName: c.ControlName,
 		ControlCategory: c.ControlCategory, Status: DpiaRiskControlStatus(c.Status), OwnerUserId: c.OwnerUserID,

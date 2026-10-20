@@ -29,6 +29,7 @@ output-options:
     - dpiaAddRiskControl
     - dpiaUpdateRiskControlStatus
     - dpiaRemoveRiskControl
+    - dpiaSubmitRiskToRegister
     - dpiaGetNecessity
     - dpiaAssessNecessity
     - dpiaListTemplates

@@ -892,7 +892,10 @@
           "implemented": "Implemented",
           "not_effective": "Not effective"
         }
-      }
+      },
+      "submitToRegister": "Submit to risk register (DPIA-08)",
+      "submitToRegisterTaskOpened": "Submitted — a new remediation task was opened for this risk.",
+      "submitToRegisterAlreadyOpen": "Submitted — this risk already has an open remediation task."
     },
     "history": "History",
     "form": {
@@ -3478,7 +3481,9 @@
       "source": "Source",
       "level": "Level",
       "status": "Status",
-      "score": "Score"
+      "score": "Score",
+      "linkedTo": "Linked to",
+      "viewActivity": "View RoPA activity"
     },
     "form": {
       "newTitle": "Add risk",
