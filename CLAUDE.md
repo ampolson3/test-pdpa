@@ -3634,6 +3634,17 @@ logged in `docs/known-issues.md` (`AGR-01`, `TEST-01`) and out of this feature's
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build` (incl. the updated `/agreements/[id]` route) all verified clean.
 
+### DSA-09 เวอร์ชันและประวัติ (`docs/modules/DSA.md#dsa-09`) — done, no new code
+The module doc's own backend note already says it: "ใช้เวอร์ชันและ log การดาวน์โหลดเดียวกับ DPA" — use the
+same version/download log as DPA. DPA-08 (this same pass) built both halves keyed only by `document_id`,
+with no `agreement_type` branch anywhere: `/agreements/{id}` (DPA-02, shared by every agreement regardless
+of type) links to the generic `/documents/{id}` editor for PLT-08's own `RecordVersions` history, and now
+also mounts DPA-08's `DownloadLogSection`. A `"dsa"` agreement already exercises exactly this path — DPA-08's own `Export`/`DownloadLog` code reads
+only `document_id`, never `agreement_type`, and DSA-08's own `TestReviewLifecycle_WorksForDsaAgreementsToo`
+already proved a `"dsa"` agreement's document goes through the identical PLT-08 version machinery a `"dpa"`
+one does. Marked done as documentation only (backlog + module doc) — no migration, code or test changes
+needed, the same "done, no new code" pattern ROPA-07/PNG-14 already used.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

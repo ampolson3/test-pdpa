@@ -482,6 +482,11 @@ silently failing every `"dsa"` test in the package (never-wired `agreement.dsa.*
 
 **Acceptance criteria:** เห็นประวัติการแก้ไขและดาวน์โหลด
 
+**สถานะ: done, no new code** — see `CLAUDE.md`'s own `### DSA-09` entry. Already fully covered the moment
+DPA-08 shipped: `/agreements/{id}` (DPA-02) mounts PLT-08's own `RecordVersions`-style history on the
+linked `/documents/{id}` page and DPA-08's own `DownloadLogSection` keyed only by `document_id`, for every
+agreement regardless of `agreement_type` — no `"dpa"`/`"dsa"` branch anywhere in that code.
+
 <a id="dsa-10"></a>
 ### DSA-10 ส่งออกและลงนามอิเล็กทรอนิกส์
 

@@ -256,7 +256,7 @@ DSA-11,DSA,ทะเบียนข้อตกลงและแจ้งเต
 DSA-06,DSA,คลังข้อความสัญญา,Clause library,Should,P3,ข้อกำหนด,แนวปฏิบัติตลาด,LEGAL,S,M,N,3,5,1.0,0,2.8,PLT-16,BP-10,docs/modules/DSA.md#dsa-06,แก้ clause แล้วเอกสารใหม่ใช้เวอร์ชันล่าสุด,todo
 DSA-07,DSA,ภาคผนวกประกอบข้อตกลง,Annexes,Should,P3,ข้อกำหนด,แนวปฏิบัติตลาด,LEGAL OWNER,S,S,N,3,3,0.7,0,2.1,"DSA-04, DFG-08",BP-10,docs/modules/DSA.md#dsa-07,ภาคผนวกแนบภาพแผนผังล่าสุดได้,todo
 DSA-08,DSA,ตรวจทานและอนุมัติ,Review & approval,Should,P3,กำกับ,แนวปฏิบัติตลาด,DPO LEGAL,XS,XS,N,1,1,0.2,0,0.7,DPA-07,BP-10,docs/modules/DSA.md#dsa-08,ส่งลงนามได้หลังอนุมัติเท่านั้น,done
-DSA-09,DSA,เวอร์ชันและประวัติ,Versions & history,Should,P3,กำกับ,แนวปฏิบัติตลาด,LEGAL,XS,XS,N,1,1,0.2,0,0.7,DPA-08,BP-10,docs/modules/DSA.md#dsa-09,เห็นประวัติการแก้ไขและดาวน์โหลด,todo
+DSA-09,DSA,เวอร์ชันและประวัติ,Versions & history,Should,P3,กำกับ,แนวปฏิบัติตลาด,LEGAL,XS,XS,N,1,1,0.2,0,0.7,DPA-08,BP-10,docs/modules/DSA.md#dsa-09,เห็นประวัติการแก้ไขและดาวน์โหลด,done
 DSA-10,DSA,ส่งออกและลงนามอิเล็กทรอนิกส์,Export & e-signature,Should,P3,ลงนาม,พ.ร.บ.ว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544,LEGAL COUNTER ESIGN,XS,XS,N,1,1,0.2,0,0.7,DPA-09,BP-10,docs/modules/DSA.md#dsa-10,ไฟล์ที่ลงนามถูกเก็บกลับอัตโนมัติ,todo
 DSA-12,DSA,ผูกข้อตกลงกับกิจกรรมและแผนผัง,Link to RoPA & data flow,Should,P3,ติดตาม,ม.39,DPO,S,S,N,3,3,0.7,0,2.1,DFG-04,BP-10,docs/modules/DSA.md#dsa-12,เส้นทางส่งข้อมูลให้ผู้ควบคุมรายอื่นที่ไม่มี DSA ถูกเตือน,todo
 DSA-13,DSA,ติดตามภาระผูกพันตามข้อตกลง,Obligation tracking,Nice,P4,ติดตาม,"ม.37(2), ม.37(3)",OWNER SCHED,M,S,N,5,3,1.0,0,2.8,DSA-11,BP-10,docs/modules/DSA.md#dsa-13,ภาระผูกพันที่ถึงกำหนดสร้างงานอัตโนมัติ,todo
