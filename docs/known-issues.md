@@ -39,6 +39,70 @@
 
 ---
 
+## TEST-01 — รัน `go test ./...` เต็มรูปแบบครั้งแรกกับ Postgres/Redis จริง พบว่า 20+ แพ็กเกจล้มเหลวจริง
+
+- **สถานะ:** open — ต้องการ triage แยกต่างหาก ไม่ใช่งานที่ทำพร้อม DSA-08
+- **พบเมื่อ:** 2026-10-21 ระหว่างทำ DSA-08 — รัน `go test -count=1 ./...` แบบเต็มเป็นครั้งแรกในเซสชันนี้ที่
+  Postgres/Redis reachable ตลอดทั้งรัน (รันนานพอที่จะไม่ถูก skip กลางคัน)
+- **อาการ:** 43 บรรทัด FAIL กระจายอยู่ใน 20 แพ็กเกจ: `agreement/{http,service}` (ดู AGR-01 ด้านล่าง — ส่วนที่
+  เกี่ยวกับ DSA-08 เองแก้แล้ว), `breach/publichttp`, `consent/{http,service}`, `cookie/service`,
+  `dsar/{http,publichttp,service}`, `gov/{http,service}`, `notice/service`, `pkg/modulegate`,
+  `platform/{forms,forms/http,jobs}`, `risk/{http,service}`, `ropa/service`, `vendormgmt/{http,service}`
+- **ทำไม test เดิมไม่จับ:** แทบทุกฟีเจอร์ที่สร้างฟีเจอร์เหล่านี้ขึ้นมาระบุไว้ใน CLAUDE.md ของตัวเองว่า
+  "not verified live against a real Postgres/Redis... skips the same way" — Postgres/Redis ไม่ reachable
+  ตอนฟีเจอร์ส่วนใหญ่ถูกสร้าง เทสต์จึง skip มาตลอดจนถึงตอนนี้ นี่คือครั้งแรกที่ full suite ถูกรันจริงแบบ
+  ไม่ถูกตัดตอนกลางคันตั้งแต่ Postgres/Redis กลับมา reachable ในเซสชันนี้
+- **ยังไม่ได้ diagnose อาการแต่ละตัว:** ปริมาณงาน (20 แพ็กเกจ) เกินขอบเขตของ DSA-08 — ตัวอย่างอาการที่เห็นขณะ
+  สแกนผ่านๆ: `vendormgmt/http`'s `record certificate: 500`, `vendormgmt/service`'s
+  `TestOffboarding_FullLifecycle` (FK violation บน `destruction_certificate_file_id`), `ropa/service` และ
+  `risk/service` ล้มเหลวเป็นชุดใหญ่ (25s/22s แต่ละแพ็กเกจ) — ต้องดู log เต็มทีละแพ็กเกจเพื่อแยกบั๊กจริงออกจาก
+  ปัญหาเฉพาะ fixture ของเทสต์เอง (ตามที่ AGR-01 เจอว่าเป็นกรณีนี้ไปแล้วหลายจุด)
+- **แนวทางแก้ที่เป็นไปได้:** ทำ pass แยกต่างหาก ไล่ทีละแพ็กเกจจาก log เต็ม (`/tmp/full_test_run.log` ในเซสชันนี้
+  — ไม่ persist ข้ามเซสชัน ต้องรันใหม่) แยกบั๊กจริงในโค้ด service ออกจากบั๊กใน test fixture เอง (pattern ที่
+  AGR-01 พบคือ permission/wiring ที่ไม่ครบใน test setup ไม่ใช่โค้ด production)
+- **ผลกระทบ:** ไม่กระทบ DSA-08 เอง (agreement package เองผ่านครบหลังแก้ AGR-01) แต่เป็นสัญญาณว่าโมดูลจำนวนมาก
+  มีบั๊กจริงหรือบั๊ก fixture ที่ไม่เคยถูกตรวจสอบเลยตั้งแต่สร้าง — ความเสี่ยงสำคัญที่ควร triage ก่อน production
+
+---
+
+## AGR-01 — `internal/agreement/service` ทดสอบหลายตัวล้มเหลวจริงเมื่อรันกับ Postgres จริง (ไม่เคยถูกรันมาก่อน)
+
+- **สถานะ:** open
+- **พบเมื่อ:** 2026-10-21 ระหว่างทำ DSA-08 (ตรวจทานและอนุมัติ — "dsa" ของ DPA-07's own review/approval
+  mirror) เมื่อรัน `go test ./internal/agreement/...` จริงเป็นครั้งแรกกับ Postgres/Redis ที่ reachable ในเซสชันนี้
+  — การ pass ของ test suite นี้ที่บันทึกไว้ใน CLAUDE.md ของฟีเจอร์ก่อนหน้า (DPA-10/DSA-11 เป็นต้น) ล้วนมีข้อความ
+  "not verified live against a real Postgres/Redis... skips" กำกับไว้ จึงไม่เคยถูกรันจริงมาก่อนเซสชันนี้
+- **อาการ (ยังไม่แก้ — อยู่นอกขอบเขตของ DSA-08):**
+  1. `TestAddParty_SupportsMoreThanTwoParties` / `TestAddParty_Validation` / `TestRemoveParty`
+     (`parties_test.go`) ล้มเหลวด้วย `ropa: invalid input: code` — ดูเหมือนปัญหาที่ fixture ของเทสต์เหล่านี้
+     เอง (อาจเป็นรหัสกิจกรรม RoPA ที่ fixture สร้างไม่ผ่าน validation ของ ROPA-03/06)
+  2. `TestSetSchedule_ValidatesAndSchedulesReminder` (`renewal_test.go:92`) ล้มเหลวเพราะ `effective_to`
+     ที่อ่านกลับมาเป็น midnight UTC พอดี (`2027-01-19 00:00:00 +0000 UTC`) แต่ assert เทียบกับเวลาปัจจุบัน
+     แบบเต็ม (`...08:43:27...`) — ดูเหมือนปัญหาการเทียบเวลาของเทสต์เอง (`pgtype.Date` ปัดเป็น date-only
+     เมื่อ round-trip ผ่าน Postgres ตามที่ VEN-06 เคยพบปัญหาแบบเดียวกันมาแล้ว) ไม่ใช่บั๊กในโค้ด service จริง
+  3. `TestFireRenewalReminder_NotifiesLegalAndNoopsWhenStale` และ
+     `TestFireRenewalReminder_WorksForDsaAgreementsToo` (`renewal_test.go`, `dsa_renewal_test.go`) ล้มเหลว
+     ด้วย "expected at least one platform.notifications row for role LEGAL" — การแจ้งเตือนของ DPA-10/DSA-11
+     เมื่อ renewal reminder ทำงานไม่ถูกสร้างขึ้นจริงในสภาพแวดล้อมนี้
+  4. `TestAgreementEndpoints_Contract` (`handler_test.go:315`): `PATCH .../schedule` ด้วย
+     `renewal_notice_days: -1` ตอบ 400 (schema validation) แทนที่จะเป็น 422 ตามที่เทสต์คาดหวัง — แปลว่า
+     OpenAPI schema เองมี `minimum` constraint บน `renewal_notice_days` ที่ดักค่าติดลบไว้ก่อนถึงชั้น service
+     validation (ซึ่งเทสต์คาดว่าจะเป็นผู้ดัก) — ต้องดูว่า schema หรือเทสต์ผิดคาด
+- **ทำไม test เดิมไม่จับ:** ทุก entry ของ DPA-10/DSA-11/VEN-06 ใน CLAUDE.md ระบุชัดว่า "not verified live" —
+  Postgres/Redis ไม่ reachable ตอนฟีเจอร์เหล่านี้ถูกสร้าง เทสต์จึง skip เสมอ
+- **สิ่งที่แก้แล้วระหว่างทำ DSA-08 (ไม่ใช่บั๊กเหล่านี้ แต่เป็นบั๊กจริงที่พบและแก้แล้วในรอบเดียวกัน):**
+  `backend/internal/agreement/service/agreements_test.go`'s shared `permissions`/`setup()` และ
+  `backend/internal/agreement/http/handler_test.go`'s `grants` map ไม่เคยให้สิทธิ์ `agreement.dsa.create`/
+  `.update` หรือ wire `SetSubmitValidate`/`SetOnTransition` สำหรับ `"dsa"` เลย — ทำให้ทุกเทสต์ที่สร้าง/อนุมัติ
+  agreement ประเภท `"dsa"` ล้มเหลวด้วย `docs: forbidden` / `versioning: forbidden` เมื่อรันจริงเป็นครั้งแรก
+  (แก้แล้วในคอมมิตเดียวกับ DSA-08)
+- **แนวทางแก้ที่เป็นไปได้:** ตรวจ fixture ของแต่ละเทสต์ทีละตัว (1–3) และตัดสินใจเรื่อง schema vs. service-layer
+  validation ของ `renewal_notice_days` (4) — งานแยกจาก DSA-08 เอง
+- **ผลกระทบ:** ไม่กระทบ acceptance criterion ของ DPA-07/DSA-08 เอง (ซึ่งผ่านแล้ว) แต่เป็นสัญญาณว่า
+  DPA-10/VEN-06/DSA-11's own renewal-reminder mechanism อาจมีบั๊กจริงที่ยังไม่เคยถูกตรวจสอบ
+
+---
+
 ## แม่แบบสำหรับบั๊กใหม่
 
 ```markdown

@@ -109,7 +109,7 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 	reader := uuid.New()
 	noPerm := uuid.New()
 	grants := map[string][]string{
-		tenant.UserID.String(): {"agreement.dpa.read", "agreement.dpa.create", "agreement.dpa.update", "agreement.dsa.read"},
+		tenant.UserID.String(): {"agreement.dpa.read", "agreement.dpa.create", "agreement.dpa.update", "agreement.dsa.read", "agreement.dsa.create", "agreement.dsa.update"},
 		reader.String():        {"agreement.dpa.read", "agreement.dsa.read"},
 		noPerm.String():        {},
 	}

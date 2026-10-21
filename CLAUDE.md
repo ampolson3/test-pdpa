@@ -3546,6 +3546,48 @@ here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file)
 (no regressions, full backend suite), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n
 test` and `pnpm --filter @pdpa/admin build` (incl. the updated `/agreements/[id]` route) all verified clean.
 
+### DSA-08 ตรวจทานและอนุมัติ (`docs/modules/DSA.md#dsa-08`) — done, no new service/API code
+DPA-07 (built in the previous pass) already made this generic: `internal/wiring/docs.go` registers both
+`"dpa"` and `"dsa"` with the same `Approver: "DPO"` policy, and `cmd/api/main.go` already calls
+`docsSvc.SetOnTransition("dsa", agreementSvc.OnDocumentTransition)` right alongside its `"dpa"` call —
+`OnDocumentTransition`/`SendForSignature` (`internal/agreement/service/review.go`) never branch on
+`agreement_type` at all, so a `"dsa"` agreement already mirrors ST-04's status (draft → in_review → approved)
+and gates `send-for-signature` on `approved` exactly like a `"dpa"` one. This pass's own job was proving that
+literally, not writing new mechanism — the same "done, no new code" pattern ROPA-07/PNG-14 already used, except
+here proving it needed a real test, since nothing had ever exercised a `"dsa"` agreement through the actual
+`versioning.Submit`/`Decide` chain before.
+
+**Real, pre-existing gap found and fixed while writing that proof**: `internal/agreement/service/
+agreements_test.go`'s shared `setup()`/`permissions` var and `internal/agreement/http/handler_test.go`'s
+`grants` map had `agreement.dpa.*` permissions and `SetSubmitValidate`/`SetOnTransition` wiring for `"dpa"`
+only — never `"dsa"`'s own codes (`agreement.dsa.create`/`.update`, already seeded in the baseline permission
+migration) or the matching hook wiring. Every sibling `"dsa"` test already in this package
+(`dsa_clauses_test.go`, `dsa_wizard_test.go`, `dsa_renewal_test.go`) was consequently failing with
+`docs: forbidden` / `versioning: forbidden` the moment it actually ran against a reachable Postgres — invisible
+until now because every one of those features' own CLAUDE.md entries disclosed "not verified live against a
+real Postgres/Redis... skips", so this was the first time any of them had actually executed. Fixed by adding
+`agreement.dsa.create`/`.update` to both fixtures' own grants and wiring `SetSubmitValidate("dsa", ...)`/
+`SetOnTransition("dsa", ...)` in `agreements_test.go`'s `setup()` exactly the way `cmd/api/main.go` already does
+— not new production code, a test-fixture gap that was silently failing every `"dsa"` test in the package.
+
+New test: `internal/agreement/service/dsa_review_test.go`'s `TestReviewLifecycle_WorksForDsaAgreementsToo` —
+DSA-08's own acceptance criterion directly, mirroring `review_test.go`'s own DPA-07 test: a fresh `"dsa"`
+agreement (via `createDsaAgreement`, DSA-04's own helper) submitted with every mandatory DSA clause attached
+(`requiredDsaClauseCodes`, DSA-05's own) walks draft → in_review → approved → out_for_signature, refused both
+before approval and a second time after. Also fixed the `handler_test.go` HTTP contract test's own
+`TestAgreementEndpoints_Contract`, whose existing "create dsa" assertion (already written, never previously
+run) was failing the identical way for the identical reason.
+
+Verified live against a real Postgres/Redis — reachable in this session (unlike the deferrals most recent
+passes disclosed) — `go build ./...`, `go vet ./...`, and the full `internal/agreement/...` suite run for real:
+every `"dsa"`-related test now passes, including the new one and the three sibling tests the fixture gap was
+silently breaking. Found but **deliberately left open**, logged in `docs/known-issues.md#agr-01` rather than
+fixed here as scope creep beyond DSA-08's own acceptance criterion: `TestAddParty_*` (ropa fixture validation),
+`TestSetSchedule_ValidatesAndSchedulesReminder` (a date-precision test-assertion mismatch), and
+`TestFireRenewalReminder_*` (DPA-10/VEN-06's own renewal-reminder notification not appearing) — all
+unrelated to `agreement_type`/review-approval, all first-ever-run failures in DPA-10/VEN-06's own mechanism, not
+this feature's.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

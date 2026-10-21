@@ -454,6 +454,13 @@ agreement-module test this session.
 
 **Acceptance criteria:** ส่งลงนามได้หลังอนุมัติเท่านั้น
 
+**สถานะ:** done — ดูรายละเอียดใน `CLAUDE.md#dsa-08-ตรวจทานและอนุมัติ`. DPA-07's own `OnDocumentTransition`/
+`SendForSignature` (`internal/agreement/service/review.go`) is `agreement_type`-agnostic and already wired for
+`"dsa"` in `cmd/api/main.go` — this pass's own work was a test proving that literally
+(`internal/agreement/service/dsa_review_test.go`) plus fixing a real, pre-existing test-fixture gap that was
+silently failing every `"dsa"` test in the package (never-wired `agreement.dsa.*` permissions and
+`SetSubmitValidate`/`SetOnTransition` hooks in the test setup, unrelated to production code).
+
 <a id="dsa-09"></a>
 ### DSA-09 เวอร์ชันและประวัติ
 

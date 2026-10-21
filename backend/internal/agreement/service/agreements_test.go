@@ -24,6 +24,7 @@ import (
 
 var permissions = []string{
 	"agreement.dpa.read", "agreement.dpa.create", "agreement.dpa.update",
+	"agreement.dsa.read", "agreement.dsa.create", "agreement.dsa.update",
 	"org.structure.read", "org.structure.update", "vendor.vendor.read", "vendor.vendor.create",
 	"ropa.activity.read", "ropa.activity.create",
 }
@@ -73,6 +74,8 @@ func setup(t *testing.T, suffix string) env {
 	svc := &agreementservice.Service{Docs: docsSvc, Org: orgSvc, Vendor: vendorSvc, Ropa: ropaSvc, Audit: audit.New()}
 	docsSvc.SetSubmitValidate("dpa", svc.CheckSubmittable)   // DPA-03: ม.40 mandatory clauses gate Submit
 	docsSvc.SetOnTransition("dpa", svc.OnDocumentTransition) // DPA-07: mirror the review lifecycle into agreement.agreements.status
+	docsSvc.SetSubmitValidate("dsa", svc.CheckSubmittable)   // DSA-05: same gate, "dsa" document type
+	docsSvc.SetOnTransition("dsa", svc.OnDocumentTransition) // DSA-08: same hook, shared by dpa/dsa (cmd/api/main.go wires both identically)
 
 	var dpo uuid.UUID
 	if err := pdb.WithTenantTx(ctx, owner, tenant.ID.String(), "", func(ctx context.Context) error {
