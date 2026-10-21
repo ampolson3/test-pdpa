@@ -483,6 +483,76 @@ func (q *Queries) LockAgreementNumbering(ctx context.Context, prefix string) err
 	return err
 }
 
+const sendAgreementForSignature = `-- name: SendAgreementForSignature :one
+UPDATE agreement.agreements
+SET status = 'out_for_signature', row_version = row_version + 1, updated_at = now(),
+    updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE id = $1 AND row_version = $2 AND status = 'approved'
+RETURNING id, tenant_id, agreement_type, agreement_no, title, our_role, counterparty_id, vendor_id, template_id, document_id, sharing_direction, is_government, status, effective_from, effective_to, auto_renew, renewal_notice_days, signed_at, terminated_at, termination_reason, created_at, created_by, updated_at, updated_by, row_version
+`
+
+type SendAgreementForSignatureParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	RowVersion int32     `db:"row_version" json:"row_version"`
+}
+
+// DPA-07's own acceptance criterion: approved -> out_for_signature ("ส่งลงนาม"), only from approved.
+func (q *Queries) SendAgreementForSignature(ctx context.Context, arg SendAgreementForSignatureParams) (AgreementAgreement, error) {
+	row := q.db.QueryRow(ctx, sendAgreementForSignature, arg.ID, arg.RowVersion)
+	var i AgreementAgreement
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.AgreementType,
+		&i.AgreementNo,
+		&i.Title,
+		&i.OurRole,
+		&i.CounterpartyID,
+		&i.VendorID,
+		&i.TemplateID,
+		&i.DocumentID,
+		&i.SharingDirection,
+		&i.IsGovernment,
+		&i.Status,
+		&i.EffectiveFrom,
+		&i.EffectiveTo,
+		&i.AutoRenew,
+		&i.RenewalNoticeDays,
+		&i.SignedAt,
+		&i.TerminatedAt,
+		&i.TerminationReason,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
+const setAgreementStatusByDocumentID = `-- name: SetAgreementStatusByDocumentID :execrows
+UPDATE agreement.agreements
+SET status = $1, row_version = row_version + 1, updated_at = now(),
+    updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE document_id = $2
+`
+
+type SetAgreementStatusByDocumentIDParams struct {
+	Status     string    `db:"status" json:"status"`
+	DocumentID uuid.UUID `db:"document_id" json:"document_id"`
+}
+
+// DPA-07: ST-04's own agreement.agreements.status, kept in step with the underlying PLT-08 version's
+// review lifecycle (docs.Service's OnTransition hook) — a 0-row result means document_id isn't an
+// agreement (no error: not every PLT-16 document wraps one), a harmless no-op.
+func (q *Queries) SetAgreementStatusByDocumentID(ctx context.Context, arg SetAgreementStatusByDocumentIDParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setAgreementStatusByDocumentID, arg.Status, arg.DocumentID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const updateAgreementSchedule = `-- name: UpdateAgreementSchedule :one
 UPDATE agreement.agreements
 SET effective_from = $1, effective_to = $2, auto_renew = $3,

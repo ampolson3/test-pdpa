@@ -107,6 +107,7 @@ type Service struct {
 	validators       map[string]func(ctx context.Context, id uuid.UUID, d Draft, previous *Draft) error
 	submitValidators map[string]func(ctx context.Context, id uuid.UUID) error
 	onPublished      map[string]func(ctx context.Context, id uuid.UUID, u PublishedUpdate) error
+	onTransition     map[string]func(ctx context.Context, id uuid.UUID, status string) error
 }
 
 // PublishedUpdate is what SetOnPublished's hook sees right after a document type's generic publish step froze
@@ -183,6 +184,27 @@ func (s *Service) published(docType string) func(ctx context.Context, id uuid.UU
 	return s.onPublished[docType]
 }
 
+// SetOnTransition registers a document type's own hook for the review lifecycle (versioning.Policy's own
+// OnTransition, forwarded here by docType) — DPA-07's own need: a module whose record keeps a parallel,
+// more detailed state machine (agreement.agreements.status, ST-04) learns when the underlying version
+// enters in_review/approved/draft so its own service method can mirror that in the same transaction
+// (CLAUDE.md rule 5 — only the owning module's service may write that column). Call once at start-up, same
+// sequencing rule as SetValidate.
+func (s *Service) SetOnTransition(docType string, fn func(ctx context.Context, id uuid.UUID, status string) error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.onTransition == nil {
+		s.onTransition = map[string]func(ctx context.Context, id uuid.UUID, status string) error{}
+	}
+	s.onTransition[docType] = fn
+}
+
+func (s *Service) transition(docType string) func(ctx context.Context, id uuid.UUID, status string) error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.onTransition[docType]
+}
+
 // Register offers a document type (at start-up, in internal/wiring).
 func (s *Service) Register(docType string, p Policy) {
 	if p.Approver == "" {
@@ -243,6 +265,12 @@ func (s *Service) RegisterVersioning() {
 			},
 			OnPublish: func(ctx context.Context, id uuid.UUID, snapshot json.RawMessage) error {
 				return s.publish(ctx, docType, id, snapshot)
+			},
+			OnTransition: func(ctx context.Context, id uuid.UUID, status string) error {
+				if fn := s.transition(docType); fn != nil {
+					return fn(ctx, id, status)
+				}
+				return nil
 			},
 		})
 	}

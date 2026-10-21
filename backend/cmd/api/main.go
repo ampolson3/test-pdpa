@@ -333,6 +333,8 @@ func run() error {
 	dataflowSvc.Vendor, dataflowSvc.Agreement = vendorSvc, agreementSvc // DFG-04: a processor recipient with no DPA is flagged on the diagram
 	docsSvc.SetSubmitValidate("dpa", agreementSvc.CheckSubmittable)     // DPA-03: ม.40 mandatory clauses gate the agreement document's submit-for-approval
 	docsSvc.SetSubmitValidate("dsa", agreementSvc.CheckSubmittable)     // DSA-05: ม.27/28-29/37(2) mandatory clauses — same type-agnostic gate as DPA-03's
+	docsSvc.SetOnTransition("dpa", agreementSvc.OnDocumentTransition)   // DPA-07: mirror the review lifecycle into agreement.agreements.status (ST-04)
+	docsSvc.SetOnTransition("dsa", agreementSvc.OnDocumentTransition)   // DSA-08: same ST-04 status column, shared by dpa/dsa
 	noticeSvc := &noticeservice.Service{Audit: auditSvc, Org: orgSvc, Ropa: ropaSvc, Docs: docsSvc, Files: fileSvc, Notify: notifySvc, River: riverClient,
 		Dpo: dpoSvc, Consent: consentSvc, // PNG-07: re-consent task + material-change alert
 		EnforceChecklist: os.Getenv("NOTICE_CHECKLIST_ENFORCE") != "false", EnforceTranslationSync: os.Getenv("NOTICE_TRANSLATION_SYNC_ENFORCE") != "false"}

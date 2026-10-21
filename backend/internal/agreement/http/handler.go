@@ -206,6 +206,18 @@ func (h *Strict) AgreementSetSchedule(ctx context.Context, req AgreementSetSched
 	return AgreementSetSchedule200JSONResponse{Body: toAgreementWire(a), Headers: AgreementSetSchedule200ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
 }
 
+func (h *Strict) AgreementSendForSignature(ctx context.Context, req AgreementSendForSignatureRequestObject) (AgreementSendForSignatureResponseObject, error) {
+	rv, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	a, err := h.svc.SendForSignature(ctx, req.Id, rv)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return AgreementSendForSignature200JSONResponse{Body: toAgreementWire(a), Headers: AgreementSendForSignature200ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
 func etag(v int32) *string {
 	s := `"` + strconv.Itoa(int(v)) + `"`
 	return &s
@@ -319,6 +331,8 @@ func problem(err error) error {
 		return httpx.UnprocessableEntity("agreement.invalid_input", err.Error())
 	case errors.Is(err, agreementservice.ErrVersionMismatch):
 		return httpx.VersionMismatch()
+	case errors.Is(err, agreementservice.ErrInvalidTransition):
+		return httpx.InvalidTransition("agreement")
 	}
 	return err
 }

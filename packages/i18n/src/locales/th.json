@@ -1187,6 +1187,9 @@
     },
     "statuses": {
       "draft": "ร่าง",
+      "in_review": "กำลังทบทวน",
+      "approved": "อนุมัติแล้ว",
+      "out_for_signature": "รอลงนาม",
       "active": "ใช้งาน",
       "expired": "หมดอายุ",
       "terminated": "สิ้นสุด"
@@ -1208,6 +1211,12 @@
       "activities": "กิจกรรม RoPA ที่ครอบคลุม",
       "noActivities": "ยังไม่ได้ผูกกับกิจกรรมใด",
       "openDocument": "เปิดเอกสาร →",
+      "review": {
+        "hint": "ส่งตรวจ ทบทวน และอนุมัติทำได้ที่หน้าเอกสาร — ไปทบทวนที่นั่นก่อน",
+        "sendForSignature": "ส่งลงนาม",
+        "sendError": "ส่งลงนามไม่สำเร็จ: {detail}",
+        "sent": "ส่งลงนามแล้ว"
+      },
       "renewalSchedule": {
         "title": "ทะเบียน: วันเริ่ม/สิ้นสุด และการต่ออายุ",
         "effectiveFrom": "มีผลตั้งแต่",

@@ -79,3 +79,20 @@ RETURNING *;
 
 -- name: DeleteAgreementParty :execrows
 DELETE FROM agreement.parties WHERE id = @id AND agreement_id = @agreement_id;
+
+-- name: SetAgreementStatusByDocumentID :execrows
+-- DPA-07: ST-04's own agreement.agreements.status, kept in step with the underlying PLT-08 version's
+-- review lifecycle (docs.Service's OnTransition hook) — a 0-row result means document_id isn't an
+-- agreement (no error: not every PLT-16 document wraps one), a harmless no-op.
+UPDATE agreement.agreements
+SET status = @status, row_version = row_version + 1, updated_at = now(),
+    updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE document_id = @document_id;
+
+-- name: SendAgreementForSignature :one
+-- DPA-07's own acceptance criterion: approved -> out_for_signature ("ส่งลงนาม"), only from approved.
+UPDATE agreement.agreements
+SET status = 'out_for_signature', row_version = row_version + 1, updated_at = now(),
+    updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
+WHERE id = @id AND row_version = @row_version AND status = 'approved'
+RETURNING *;

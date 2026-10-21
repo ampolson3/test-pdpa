@@ -318,6 +318,21 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 		t.Errorf("set schedule, unknown agreement: %d, want 404", code)
 	}
 
+	// DPA-07: send-for-signature is refused unless the agreement is already approved.
+	sendForSig := item + "/send-for-signature"
+	if code, _ := do("POST", sendForSig, nil, nil, map[string]string{"If-Match": etagOf(int(scheduled.RowVersion))}); code != 401 {
+		t.Errorf("send-for-signature, no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", sendForSig, &admin, nil, nil); code != 428 {
+		t.Errorf("send-for-signature, no If-Match: %d, want 428", code)
+	}
+	if code, _ := do("POST", sendForSig, &admin, nil, map[string]string{"If-Match": etagOf(int(scheduled.RowVersion))}); code != 409 {
+		t.Errorf("send-for-signature while still draft: %d, want 409", code)
+	}
+	if code, _ := do("POST", "/admin/v1/agreements/"+uuid.New().String()+"/send-for-signature", &admin, nil, map[string]string{"If-Match": `"0"`}); code != 404 {
+		t.Errorf("send-for-signature, unknown agreement: %d, want 404", code)
+	}
+
 	// VEN-11: now that a DPA exists for this vendor, has_dpa reads true.
 	if code, body := do("GET", status, &reader, nil, nil); code != 200 || !strings.Contains(body, `"has_dpa":true`) {
 		t.Errorf("vendor-contract-status after DPA created: %d %s, want has_dpa:true", code, body)

@@ -3508,6 +3508,44 @@ checked and deliberately skipped this pass despite looking dependency-unblocked:
 explicitly flags it as blocked on an unresolved architect/PoC decision (T13, the Keycloak multi-tenant
 model) — not something to guess at.
 
+### DPA-07 ตรวจทานและอนุมัติ (`docs/modules/DPA.md#dpa-07`) — done
+"ใช้ workflow อนุมัติกลาง" and "ปุ่มส่งตรวจ + ความเห็น" were already true for free: `"dpa"`/`"dsa"` are
+registered with PLT-08's generic approval engine (`internal/wiring/docs.go`, `Approver: "DPO"`), and every
+agreement already routes through the generic `RecordVersions`/`/approvals` inbox UI on its linked document
+page — the same mechanism PNG-14's own "done, no new code" entry already cites. The real gap was that
+`agreement.agreements.status` (ST-04's own 7-state machine) was stuck at `draft` forever — nothing updated it
+as the underlying PLT-08 version moved through submit/approve/reject (`db/queries/agreement/agreements.sql`'s
+own comment said so literally: "status transitions belong to DPA-06/07/08/09, not built yet") — so there was
+no record-level "approved" fact yet for "ส่งลงนามได้หลังอนุมัติเท่านั้น" to literally gate.
+
+Added a new, additive extension point mirroring `OnPublish`'s own precedent: `versioning.Policy.OnTransition`
+(called from `Submit`/`Decide` right after the version's own status changes — `in_review`/`draft`/`approved`
+— never writing the module's own record itself, since ST-04's rule is that a status column changes only
+through its owning module's service method) and `docs.Service.SetOnTransition` forwarding it by docType —
+wired for `"dpa"`/`"dsa"` in `cmd/api/main.go`. `internal/agreement/service/review.go`'s
+`OnDocumentTransition` mirrors the three PLT-08 states 1:1 onto ST-04's identically-named ones (a new sqlc
+query, `SetAgreementStatusByDocumentID`); `SendForSignature` is the acceptance criterion's own literal
+action — `approved -> out_for_signature`, enforced by the guarded `UPDATE ... WHERE status = 'approved'`
+itself, not a separate read-then-check a concurrent change could race. `out_for_signature`/`active`/
+`expired`/`terminated` beyond that stay DPA-08/09/12/13's own jobs — no e-signature exchange, no renewal/
+termination lifecycle, sibling features this one doesn't depend on.
+
+API: `POST /admin/v1/agreements/{id}/send-for-signature` (ETag/If-Match, `agreement.dpa.update` — the same
+umbrella permission every other agreement-engine endpoint already reuses for both dpa/dsa, no new code), 409
+`agreement.invalid_transition` when the agreement isn't already approved. UI: a new section on
+`/agreements/{id}` showing the review hint and, once approved, the send-for-signature button; the status
+badge's color map widened for `in_review`/`approved`/`out_for_signature`. Tests:
+`internal/agreement/service/review_test.go` (`TestReviewLifecycle_MirrorsAgreementStatus` — draft → in_review
+on submit, refused before approved, approved on DPO decision, a stale ETag refused distinctly from "not
+approved yet", then the acceptance criterion itself: approved → out_for_signature, refused a second time
+from that state; `TestReviewLifecycle_ReturnGoesBackToDraft` — a DPO return sends the agreement itself back
+to draft), HTTP contract (401/428/409/404 through the real validator + AuthZ). Not verified live against a
+real Postgres/Redis — the same environment limitation this codebase's other recent passes already disclosed;
+every test compiles and vets clean and skips the same way the rest of this module's own suite already does
+here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test -count=1 ./...`
+(no regressions, full backend suite), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n
+test` and `pnpm --filter @pdpa/admin build` (incl. the updated `/agreements/[id]` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

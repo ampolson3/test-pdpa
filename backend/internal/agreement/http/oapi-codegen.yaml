@@ -14,6 +14,7 @@ output-options:
     - agreementMissingClauses
     - agreementProcessingSchedule
     - agreementSetSchedule
+    - agreementSendForSignature
     - agreementVendorContractStatus
     - agreementTypeCheck
     - agreementListParties

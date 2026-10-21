@@ -189,6 +189,22 @@ export function useSetAgreementSchedule(client: ApiClient, agreementId: string) 
   });
 }
 
+/** POST /admin/v1/agreements/{id}/send-for-signature — DPA-07's own acceptance criterion: approved ->
+ * out_for_signature, refused unless the agreement is already approved. */
+export function useSendAgreementForSignature(client: ApiClient, agreementId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { rowVersion: number }) => {
+      const { data, error } = await client.POST("/admin/v1/agreements/{id}/send-for-signature", {
+        params: { path: { id: agreementId }, header: { "If-Match": `"${v.rowVersion}"` } },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...agreementsKey, agreementId] }),
+  });
+}
+
 /** GET /admin/v1/agreements/vendor-contract-status — VEN-11: flags a processor vendor with no DPA on
  * record, computed live from the agreement registry (never persisted, so it can't go stale). */
 export function useVendorContractStatus(client: ApiClient, vendorId: string | undefined) {

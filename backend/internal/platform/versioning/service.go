@@ -61,6 +61,14 @@ type Policy struct {
 	Validate func(ctx context.Context, entityID uuid.UUID) error
 	// OnPublish applies the published snapshot to the module's record, in the same transaction.
 	OnPublish func(ctx context.Context, entityID uuid.UUID, snapshot json.RawMessage) error
+	// OnTransition tells the module a version just moved to "in_review" (Submit), "draft" (Decide:
+	// rejected/returned) or "approved" (Decide: the last step approved) — in the same transaction, right
+	// after the change. Unlike OnPublish, it never writes the module's own record itself: a module whose
+	// record keeps its own, more detailed state machine in parallel (DPA-07's agreement.agreements.status,
+	// ST-04) still changes that column only through its own service method (CLAUDE.md rule 5); this hook
+	// just tells it what happened so that method can decide the real, module-owned transition. Optional;
+	// nil skips the call.
+	OnTransition func(ctx context.Context, entityID uuid.UUID, status string) error
 }
 
 // Service runs versions and approvals for the tenant of the transaction in ctx.
@@ -321,6 +329,11 @@ func (s *Service) Submit(ctx context.Context, id uuid.UUID, rowVersion int32) (V
 	if err != nil {
 		return Version{}, err
 	}
+	if p.OnTransition != nil {
+		if err := p.OnTransition(ctx, v.EntityID, "in_review"); err != nil {
+			return Version{}, err
+		}
+	}
 	return out, s.audit(ctx, "platform.version.submit", v.ID, map[string]any{"status": "draft"}, map[string]any{"status": "in_review", "steps": len(p.Steps)})
 }
 
@@ -352,7 +365,8 @@ func (s *Service) Decide(ctx context.Context, approvalID uuid.UUID, rowVersion i
 	if err != nil {
 		return Version{}, ErrForbidden
 	}
-	if _, _, err := s.authorize(ctx, a.EntityType, "read"); err != nil {
+	p, _, err := s.authorize(ctx, a.EntityType, "read")
+	if err != nil {
 		return Version{}, ErrNotFound
 	}
 	vr, err := q.LockVersion(ctx, a.RecordVersionID.Bytes)
@@ -404,6 +418,11 @@ func (s *Service) Decide(ctx context.Context, approvalID uuid.UUID, rowVersion i
 		}
 	case last:
 		if next, err = s.setStatus(ctx, v, "approved", nil); err != nil {
+			return Version{}, err
+		}
+	}
+	if next.Status != v.Status && p.OnTransition != nil {
+		if err := p.OnTransition(ctx, v.EntityID, next.Status); err != nil {
 			return Version{}, err
 		}
 	}

@@ -30,9 +30,10 @@ import (
 const EntityType = "agreement"
 
 var (
-	ErrNotFound        = errors.New("agreement: not found")
-	ErrInvalid         = errors.New("agreement: invalid")
-	ErrVersionMismatch = errors.New("agreement: version mismatch")
+	ErrNotFound          = errors.New("agreement: not found")
+	ErrInvalid           = errors.New("agreement: invalid")
+	ErrVersionMismatch   = errors.New("agreement: version mismatch")
+	ErrInvalidTransition = errors.New("agreement: invalid transition")
 )
 
 // Org is what agreement reads from the org module (rule 9): the counterparty and our own legal entity must

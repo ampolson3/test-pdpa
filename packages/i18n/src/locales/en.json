@@ -1187,6 +1187,9 @@
     },
     "statuses": {
       "draft": "Draft",
+      "in_review": "In review",
+      "approved": "Approved",
+      "out_for_signature": "Out for signature",
       "active": "Active",
       "expired": "Expired",
       "terminated": "Terminated"
@@ -1208,6 +1211,12 @@
       "activities": "Covered RoPA activities",
       "noActivities": "No activities linked yet.",
       "openDocument": "Open document →",
+      "review": {
+        "hint": "Submit, review and approve happen on the linked document page — review it there first.",
+        "sendForSignature": "Send for signature",
+        "sendError": "Couldn't send for signature: {detail}",
+        "sent": "Sent for signature."
+      },
       "renewalSchedule": {
         "title": "Registry: start/end dates & renewal",
         "effectiveFrom": "Effective from",

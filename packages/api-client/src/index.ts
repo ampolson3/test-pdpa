@@ -125,6 +125,7 @@ export {
   useRemoveAgreementClause,
   useProcessingSchedule,
   useSetAgreementSchedule,
+  useSendAgreementForSignature,
   useVendorContractStatus,
   useAgreementTypeCheck,
   useAgreementParties,

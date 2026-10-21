@@ -31,6 +31,7 @@ var permissions = []string{
 type env struct {
 	app    *pgxpool.Pool
 	tenant dbtest.Tenant
+	dpo    uuid.UUID
 	svc    *agreementservice.Service
 	org    *orgservice.Service
 	vendor *vendorservice.Service
@@ -56,6 +57,7 @@ func setup(t *testing.T, suffix string) env {
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM vendor.vendors`, `DELETE FROM org.org_units`,
 				`UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`,
 				`DELETE FROM org.external_parties`, `DELETE FROM platform.audit_log`,
+				`DELETE FROM iam.role_assignments`,
 			} {
 				_, _ = tx.Exec(ctx, q)
 			}
@@ -69,17 +71,40 @@ func setup(t *testing.T, suffix string) env {
 	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
 	docsSvc.RegisterVersioning()
 	svc := &agreementservice.Service{Docs: docsSvc, Org: orgSvc, Vendor: vendorSvc, Ropa: ropaSvc, Audit: audit.New()}
-	docsSvc.SetSubmitValidate("dpa", svc.CheckSubmittable) // DPA-03: ม.40 mandatory clauses gate Submit
-	return env{app: app, tenant: tenant, svc: svc, org: orgSvc, vendor: vendorSvc, ropa: ropaSvc, ver: versioningSvc}
+	docsSvc.SetSubmitValidate("dpa", svc.CheckSubmittable)   // DPA-03: ม.40 mandatory clauses gate Submit
+	docsSvc.SetOnTransition("dpa", svc.OnDocumentTransition) // DPA-07: mirror the review lifecycle into agreement.agreements.status
+
+	var dpo uuid.UUID
+	if err := pdb.WithTenantTx(ctx, owner, tenant.ID.String(), "", func(ctx context.Context) error {
+		tx := pdb.MustTxFromContext(ctx)
+		if err := tx.QueryRow(ctx,
+			`INSERT INTO iam.users (tenant_id, email, display_name, status) VALUES ($1, $2, 'Dee DPO', 'active') RETURNING id`,
+			tenant.ID, uuid.NewString()[:8]+"@agreement.example").Scan(&dpo); err != nil {
+			return err
+		}
+		_, err := tx.Exec(ctx, `INSERT INTO iam.role_assignments (tenant_id, user_id, role_id, scope_type)
+			SELECT $1, $2, id, 'tenant' FROM iam.roles WHERE code = 'DPO' AND tenant_id IS NULL`, tenant.ID, dpo)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return env{app: app, tenant: tenant, dpo: dpo, svc: svc, org: orgSvc, vendor: vendorSvc, ropa: ropaSvc, ver: versioningSvc}
 }
 
 func (e env) in(t *testing.T, fn func(ctx context.Context) error) {
 	t.Helper()
-	if err := pdb.WithTenantTx(context.Background(), e.app, e.tenant.ID.String(), e.tenant.UserID.String(), func(ctx context.Context) error {
-		return fn(authz.WithGrants(ctx, authz.Grants{TenantID: e.tenant.ID.String(), UserID: e.tenant.UserID.String(), Permissions: permissions}))
-	}); err != nil {
+	if err := e.inAs(e.tenant.UserID, permissions, nil, fn); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// inAs runs fn as a specific user with the given permissions/roles — used for the DPO's own approval steps
+// (PLT-08 maker-checker refuses the same user as both author and approver, so this needs a real second
+// user, not just different grants for the same one).
+func (e env) inAs(user uuid.UUID, permissions, roles []string, fn func(ctx context.Context) error) error {
+	return pdb.WithTenantTx(context.Background(), e.app, e.tenant.ID.String(), user.String(), func(ctx context.Context) error {
+		return fn(authz.WithGrants(ctx, authz.Grants{TenantID: e.tenant.ID.String(), UserID: user.String(), Permissions: permissions, Roles: roles}))
+	})
 }
 
 // fixture seeds a legal entity, an org unit, an external party + vendor, and one RoPA activity: everything

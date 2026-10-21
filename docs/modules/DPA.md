@@ -507,6 +507,47 @@ list still works unchanged), full backend test suite and `pnpm --filter @pdpa/ad
 
 **Acceptance criteria:** ส่งลงนามได้หลังอนุมัติเท่านั้น
 
+**Implementation — done.** "ใช้ workflow อนุมัติกลาง" and "ปุ่มส่งตรวจ + ความเห็น" were already true for free:
+`"dpa"`/`"dsa"` are registered with PLT-08's generic approval engine (`internal/wiring/docs.go`, `Approver:
+"DPO"`), and every agreement already routes through the generic `RecordVersions`/`/approvals` inbox UI on its
+linked document page (`/documents/{document_id}`) — the same mechanism PNG-14's own "done, no new code" entry
+already cites. What was actually missing: `agreement.agreements.status` (ST-04's own 7-state machine —
+`draft`/`in_review`/`approved`/`out_for_signature`/`active`/`expired`/`terminated`) was stuck at `draft`
+forever, since nothing updated it as the underlying PLT-08 version moved through submit/approve/reject —
+`db/queries/agreement/agreements.sql`'s own comment said so literally ("status transitions belong to
+DPA-06/07/08/09, not built yet"). Without that, there was nothing for a "ส่งลงนามได้หลังอนุมัติเท่านั้น" gate
+to literally gate — the module had no record-level concept of "approved" to check against yet.
+
+Added a new, additive extension point mirroring `OnPublish`'s own precedent: `versioning.Policy.OnTransition`
+(called from `Submit`/`Decide` right after the version's own status changes — `in_review`/`draft`/`approved`
+— never writing the module's own record itself, since ST-04's own rule is that a status column changes only
+through its owning module's service method) and `docs.Service.SetOnTransition` forwarding it by docType —
+wired for `"dpa"`/`"dsa"` in `cmd/api/main.go`. `internal/agreement/service/review.go`'s
+`OnDocumentTransition` mirrors the three PLT-08 states 1:1 onto ST-04's identically-named ones via a new
+sqlc query (`SetAgreementStatusByDocumentID`); `SendForSignature` is the acceptance criterion's own literal
+action — `approved -> out_for_signature`, enforced by the guarded `UPDATE ... WHERE status = 'approved'`
+itself, not a separate read-then-check a concurrent change could race. `out_for_signature`/`active`/
+`expired`/`terminated` beyond that stay DPA-08/09/12/13's own jobs — no e-signature exchange, no renewal/
+termination lifecycle, both sibling features this one doesn't depend on.
+
+API: `POST /admin/v1/agreements/{id}/send-for-signature` (ETag/If-Match, `agreement.dpa.update` — the same
+umbrella permission `agreementSetSchedule`/every other agreement-engine endpoint already reuses for both
+dpa/dsa, no new code), 409 `agreement.invalid_transition` when the agreement isn't already approved. UI: a
+new section on `/agreements/{id}` showing the review hint and, once approved, the send-for-signature button
+(gated on holding the update permission); the status badge's color map widened for `in_review`/`approved`/
+`out_for_signature`. Tests: unit (`internal/agreement/service/review_test.go` —
+`TestReviewLifecycle_MirrorsAgreementStatus`: draft → in_review on submit, refused before approved
+(`ErrInvalidTransition`), approved on DPO decision, a stale ETag refused distinctly
+(`ErrVersionMismatch`), then the acceptance criterion itself — approved → out_for_signature, and a second
+call from that state refused the same way; `TestReviewLifecycle_ReturnGoesBackToDraft`: a DPO return sends
+the agreement itself back to draft, not stuck at in_review), HTTP contract (401/428/409/404 through the real
+validator + AuthZ). Not verified live against a real Postgres/Redis — the same environment limitation this
+codebase's other recent passes already disclosed; every test compiles and vets clean and skips the same way
+the rest of this module's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean
+on every touched file), `go test -count=1 ./...` (no regressions, full backend suite),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/agreements/[id]` route) all verified clean.
+
 <a id="dpa-08"></a>
 ### DPA-08 เวอร์ชันและประวัติการดาวน์โหลด
 

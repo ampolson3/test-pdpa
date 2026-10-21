@@ -575,6 +575,24 @@ func (e AgreementSetScheduleParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for AgreementSendForSignatureParamsAcceptLanguage.
+const (
+	AgreementSendForSignatureParamsAcceptLanguageEn AgreementSendForSignatureParamsAcceptLanguage = "en"
+	AgreementSendForSignatureParamsAcceptLanguageTh AgreementSendForSignatureParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the AgreementSendForSignatureParamsAcceptLanguage enum.
+func (e AgreementSendForSignatureParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case AgreementSendForSignatureParamsAcceptLanguageEn:
+		return true
+	case AgreementSendForSignatureParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Agreement defines model for Agreement.
 type Agreement struct {
 	ActivityIds []Uuid `json:"activity_ids"`
@@ -848,6 +866,9 @@ type IfMatch = string
 // BadRequest RFC 9457 problem details with a stable machine-readable `code`
 type BadRequest = Problem
 
+// Conflict RFC 9457 problem details with a stable machine-readable `code`
+type Conflict = Problem
+
 // Forbidden RFC 9457 problem details with a stable machine-readable `code`
 type Forbidden = Problem
 
@@ -1011,6 +1032,18 @@ type AgreementSetScheduleParams struct {
 // AgreementSetScheduleParamsAcceptLanguage defines parameters for AgreementSetSchedule.
 type AgreementSetScheduleParamsAcceptLanguage string
 
+// AgreementSendForSignatureParams defines parameters for AgreementSendForSignature.
+type AgreementSendForSignatureParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *AgreementSendForSignatureParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// AgreementSendForSignatureParamsAcceptLanguage defines parameters for AgreementSendForSignature.
+type AgreementSendForSignatureParamsAcceptLanguage string
+
 // AgreementCreateAgreementJSONRequestBody defines body for AgreementCreateAgreement for application/json ContentType.
 type AgreementCreateAgreementJSONRequestBody = AgreementCreateInput
 
@@ -1067,6 +1100,9 @@ type ServerInterface interface {
 	// AgreementSetSchedule DPA-10: set the registry's own start/end dates and renewal settings — reschedules the expiry reminder
 	// (PATCH /admin/v1/agreements/{id}/schedule)
 	AgreementSetSchedule(w http.ResponseWriter, r *http.Request, id Uuid, params AgreementSetScheduleParams)
+	// AgreementSendForSignature DPA-07: approved -> out_for_signature ("ส่งลงนาม") — refused unless the agreement is already approved
+	// (POST /admin/v1/agreements/{id}/send-for-signature)
+	AgreementSendForSignature(w http.ResponseWriter, r *http.Request, id Uuid, params AgreementSendForSignatureParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -1154,6 +1190,12 @@ func (_ Unimplemented) AgreementProcessingSchedule(w http.ResponseWriter, r *htt
 // AgreementSetSchedule DPA-10: set the registry's own start/end dates and renewal settings — reschedules the expiry reminder
 // (PATCH /admin/v1/agreements/{id}/schedule)
 func (_ Unimplemented) AgreementSetSchedule(w http.ResponseWriter, r *http.Request, id Uuid, params AgreementSetScheduleParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AgreementSendForSignature DPA-07: approved -> out_for_signature ("ส่งลงนาม") — refused unless the agreement is already approved
+// (POST /admin/v1/agreements/{id}/send-for-signature)
+func (_ Unimplemented) AgreementSendForSignature(w http.ResponseWriter, r *http.Request, id Uuid, params AgreementSendForSignatureParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1949,6 +1991,79 @@ func (siw *ServerInterfaceWrapper) AgreementSetSchedule(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// AgreementSendForSignature operation middleware
+func (siw *ServerInterfaceWrapper) AgreementSendForSignature(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AgreementSendForSignatureParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage AgreementSendForSignatureParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AgreementSendForSignature(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -2075,6 +2190,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Patch(options.BaseURL+"/admin/v1/agreements/{id}/schedule", wrapper.AgreementSetSchedule)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/agreements/{id}/send-for-signature", wrapper.AgreementSendForSignature)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/agreements/vendor-contract-status", wrapper.AgreementVendorContractStatus)
 	})
 	r.Group(func(r chi.Router) {
@@ -2109,6 +2227,8 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 }
 
 type BadRequestApplicationProblemPlusJSONResponse Problem
+
+type ConflictApplicationProblemPlusJSONResponse Problem
 
 type ForbiddenApplicationProblemPlusJSONResponse Problem
 
@@ -3269,6 +3389,135 @@ func (response AgreementSetSchedule428ApplicationProblemPlusJSONResponse) VisitA
 	return err
 }
 
+type AgreementSendForSignatureRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params AgreementSendForSignatureParams
+}
+
+type AgreementSendForSignatureResponseObject interface {
+	VisitAgreementSendForSignatureResponse(w http.ResponseWriter) error
+}
+
+type AgreementSendForSignature200ResponseHeaders struct {
+	ETag *string
+}
+
+type AgreementSendForSignature200JSONResponse struct {
+	Body    Agreement
+	Headers AgreementSendForSignature200ResponseHeaders
+}
+
+func (response AgreementSendForSignature200JSONResponse) VisitAgreementSendForSignatureResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AgreementSendForSignature401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response AgreementSendForSignature401ApplicationProblemPlusJSONResponse) VisitAgreementSendForSignatureResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AgreementSendForSignature403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response AgreementSendForSignature403ApplicationProblemPlusJSONResponse) VisitAgreementSendForSignatureResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AgreementSendForSignature404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response AgreementSendForSignature404ApplicationProblemPlusJSONResponse) VisitAgreementSendForSignatureResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AgreementSendForSignature409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response AgreementSendForSignature409ApplicationProblemPlusJSONResponse) VisitAgreementSendForSignatureResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AgreementSendForSignature412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response AgreementSendForSignature412ApplicationProblemPlusJSONResponse) VisitAgreementSendForSignatureResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AgreementSendForSignature428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response AgreementSendForSignature428ApplicationProblemPlusJSONResponse) VisitAgreementSendForSignatureResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// AgreementListAgreements The tenant's DPA/DSA agreements, newest first (DPA-02)
@@ -3313,6 +3562,9 @@ type StrictServerInterface interface {
 	// AgreementSetSchedule DPA-10: set the registry's own start/end dates and renewal settings — reschedules the expiry reminder
 	// (PATCH /admin/v1/agreements/{id}/schedule)
 	AgreementSetSchedule(ctx context.Context, request AgreementSetScheduleRequestObject) (AgreementSetScheduleResponseObject, error)
+	// AgreementSendForSignature DPA-07: approved -> out_for_signature ("ส่งลงนาม") — refused unless the agreement is already approved
+	// (POST /admin/v1/agreements/{id}/send-for-signature)
+	AgreementSendForSignature(ctx context.Context, request AgreementSendForSignatureRequestObject) (AgreementSendForSignatureResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -3751,6 +4003,33 @@ func (sh *strictHandler) AgreementSetSchedule(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(AgreementSetScheduleResponseObject); ok {
 		if err := validResponse.VisitAgreementSetScheduleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AgreementSendForSignature operation middleware
+func (sh *strictHandler) AgreementSendForSignature(w http.ResponseWriter, r *http.Request, id Uuid, params AgreementSendForSignatureParams) {
+	var request AgreementSendForSignatureRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AgreementSendForSignature(ctx, request.(AgreementSendForSignatureRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AgreementSendForSignature")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AgreementSendForSignatureResponseObject); ok {
+		if err := validResponse.VisitAgreementSendForSignatureResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

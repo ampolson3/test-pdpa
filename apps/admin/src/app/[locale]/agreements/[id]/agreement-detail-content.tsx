@@ -14,6 +14,7 @@ import {
   useClauses,
   useProcessingSchedule,
   useSetAgreementSchedule,
+  useSendAgreementForSignature,
   useAgreementParties,
   useAddAgreementParty,
   useRemoveAgreementParty,
@@ -28,6 +29,9 @@ import { Link } from "@/i18n/routing";
 
 const STATUS_STYLE: Record<string, string> = {
   draft: "bg-slate-100 text-slate-700",
+  in_review: "bg-sky-100 text-sky-800",
+  approved: "bg-sky-100 text-sky-800",
+  out_for_signature: "bg-amber-100 text-amber-800",
   active: "bg-emerald-100 text-emerald-800",
   expired: "bg-amber-100 text-amber-800",
   terminated: "bg-slate-100 text-slate-500",
@@ -68,6 +72,8 @@ export function AgreementDetailContent({ id }: { id: string }) {
         {a.effective_to && <div><dt className="text-slate-500">{t("detail.effectiveTo")}</dt><dd>{a.effective_to}</dd></div>}
       </dl>
 
+      <SendForSignatureSection client={client} agreement={a} />
+
       <RenewalScheduleSection client={client} agreement={a} />
 
       <section className="space-y-2">
@@ -105,6 +111,33 @@ function detail(e: unknown): string {
  *  DSA-11: the reminder mechanism itself (SetSchedule/FireRenewalReminder) is already agreement_type-agnostic
  *  server-side ("ใช้ร่วมกับ DPA-10" per the module doc) — the permission check here reads the agreement's own
  *  agreement_type instead of hardcoding "dpa", so a DSA agreement's registry is editable too. */
+// SendForSignatureSection is DPA-07's own acceptance criterion: the one action this feature gates — moving
+// the agreement from approved to out_for_signature — shown only once there's something to do about it
+// (approved, or already sent), since draft/in_review are worked from the linked document's own approval
+// panel, not from here.
+function SendForSignatureSection({ client, agreement }: { client: ApiClient; agreement: Agreement }) {
+  const t = useTranslations("agreements");
+  const canUpdate = usePermission(`agreement.${agreement.agreement_type}.update`);
+  const sendForSignature = useSendAgreementForSignature(client, agreement.id);
+
+  if (agreement.status !== "approved" && agreement.status !== "out_for_signature") return null;
+
+  return (
+    <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4">
+      <p className="text-slate-600">{t("detail.review.hint")}</p>
+      {agreement.status === "out_for_signature" && <p className="text-emerald-700">{t("detail.review.sent")}</p>}
+      {agreement.status === "approved" && canUpdate && (
+        <>
+          <Button onClick={() => sendForSignature.mutate({ rowVersion: agreement.row_version })} disabled={sendForSignature.isPending}>
+            {t("detail.review.sendForSignature")}
+          </Button>
+          {sendForSignature.isError && <p className="text-red-700" role="alert">{t("detail.review.sendError", { detail: detail(sendForSignature.error) })}</p>}
+        </>
+      )}
+    </section>
+  );
+}
+
 function RenewalScheduleSection({ client, agreement }: { client: ApiClient; agreement: Agreement }) {
   const t = useTranslations("agreements");
   const canUpdate = usePermission(`agreement.${agreement.agreement_type}.update`);
