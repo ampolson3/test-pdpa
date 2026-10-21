@@ -1265,6 +1265,12 @@
           "controller": "Controller",
           "processor": "Processor"
         }
+      },
+      "downloadLog": {
+        "title": "Download history",
+        "empty": "No downloads yet",
+        "version": "Version {version}",
+        "loadError": "Failed to load download history"
       }
     },
     "form": {

@@ -7792,6 +7792,41 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/documents/{id}/downloads:
+    get:
+      operationId: platformListDocumentDownloads
+      tags:
+      - platform
+      summary: Download history of a document — who downloaded which version, when, in which format and language (DPA-08)
+      x-permission: authenticated
+      x-module: platform
+      security:
+      - adminJwt: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DocumentDownload'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/platform/documents/{id}/compare:
     get:
       operationId: platformCompareDocumentVersions
@@ -22377,6 +22412,36 @@ components:
                 type: array
                 items:
                   type: string
+    DocumentDownload:
+      type: object
+      required:
+      - id
+      - version
+      - format
+      - language
+      - user_id
+      - downloaded_at
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        version:
+          type: integer
+        format:
+          type: string
+          enum:
+          - pdf
+          - docx
+          - html
+        language:
+          type: string
+          enum:
+          - th
+          - en
+        user_id:
+          $ref: '#/components/schemas/Uuid'
+        downloaded_at:
+          type: string
+          format: date-time
     PublishedDocumentVersion:
       type: object
       required:

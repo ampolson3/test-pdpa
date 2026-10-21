@@ -218,6 +218,31 @@ func (q *Queries) InsertDocument(ctx context.Context, arg InsertDocumentParams) 
 	return i, err
 }
 
+const insertDocumentDownload = `-- name: InsertDocumentDownload :exec
+
+INSERT INTO platform.document_downloads (tenant_id, document_id, version_no, format, language, user_id)
+VALUES (current_setting('app.tenant_id')::uuid, $1, $2, $3, $4,
+        NULLIF(current_setting('app.user_id', true), '')::uuid)
+`
+
+type InsertDocumentDownloadParams struct {
+	DocumentID uuid.UUID `db:"document_id" json:"document_id"`
+	VersionNo  int32     `db:"version_no" json:"version_no"`
+	Format     string    `db:"format" json:"format"`
+	Language   string    `db:"language" json:"language"`
+}
+
+// DPA-08: who downloaded which version of a document, and when — shared by every doc type via docs.Service.Export.
+func (q *Queries) InsertDocumentDownload(ctx context.Context, arg InsertDocumentDownloadParams) error {
+	_, err := q.db.Exec(ctx, insertDocumentDownload,
+		arg.DocumentID,
+		arg.VersionNo,
+		arg.Format,
+		arg.Language,
+	)
+	return err
+}
+
 const insertDocumentVersion = `-- name: InsertDocumentVersion :one
 INSERT INTO platform.document_versions (id, tenant_id, document_id, version_no, content, languages, change_summary, effective_from,
                                         approved_by, approved_at, created_by, updated_by)
@@ -254,6 +279,49 @@ func (q *Queries) InsertDocumentVersion(ctx context.Context, arg InsertDocumentV
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
+}
+
+const listDocumentDownloads = `-- name: ListDocumentDownloads :many
+SELECT id, document_id, version_no, format, language, user_id, downloaded_at
+FROM platform.document_downloads WHERE document_id = $1 ORDER BY downloaded_at DESC
+`
+
+type ListDocumentDownloadsRow struct {
+	ID           uuid.UUID          `db:"id" json:"id"`
+	DocumentID   uuid.UUID          `db:"document_id" json:"document_id"`
+	VersionNo    int32              `db:"version_no" json:"version_no"`
+	Format       string             `db:"format" json:"format"`
+	Language     string             `db:"language" json:"language"`
+	UserID       uuid.UUID          `db:"user_id" json:"user_id"`
+	DownloadedAt pgtype.Timestamptz `db:"downloaded_at" json:"downloaded_at"`
+}
+
+func (q *Queries) ListDocumentDownloads(ctx context.Context, documentID uuid.UUID) ([]ListDocumentDownloadsRow, error) {
+	rows, err := q.db.Query(ctx, listDocumentDownloads, documentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDocumentDownloadsRow
+	for rows.Next() {
+		var i ListDocumentDownloadsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DocumentID,
+			&i.VersionNo,
+			&i.Format,
+			&i.Language,
+			&i.UserID,
+			&i.DownloadedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listDocumentVersions = `-- name: ListDocumentVersions :many

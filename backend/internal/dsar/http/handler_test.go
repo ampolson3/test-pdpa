@@ -65,7 +65,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
 				`DELETE FROM dsar.verifications`, `DELETE FROM iam.subject_verifications`, `DELETE FROM dsar.subtasks`,
-				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
+				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM ropa.assets`, `DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
 				`DELETE FROM iam.users WHERE email = 'dsarhttp-assignee@dbtest.example'`,
 			} {

@@ -2621,6 +2621,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/platform/documents/{id}/downloads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download history of a document — who downloaded which version, when, in which format and language (DPA-08) */
+        get: operations["platformListDocumentDownloads"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/platform/documents/{id}/compare": {
         parameters: {
             query?: never;
@@ -9245,6 +9262,17 @@ export interface components {
                 fields: string[];
                 clauses: string[];
             };
+        };
+        DocumentDownload: {
+            id: components["schemas"]["Uuid"];
+            version: number;
+            /** @enum {string} */
+            format: "pdf" | "docx" | "html";
+            /** @enum {string} */
+            language: "th" | "en";
+            user_id: components["schemas"]["Uuid"];
+            /** Format: date-time */
+            downloaded_at: string;
         };
         PublishedDocumentVersion: {
             id: components["schemas"]["Uuid"];
@@ -16042,6 +16070,35 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformListDocumentDownloads: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DocumentDownload"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     platformCompareDocumentVersions: {

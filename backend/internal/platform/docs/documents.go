@@ -664,65 +664,120 @@ func (s *Service) PublishedVersionOf(ctx context.Context, versionID uuid.UUID) (
 // Export renders a PLT-08 version of a document (nil: the newest) in one language as pdf, docx or html. A version
 // that isn't published carries the DRAFT banner; a published one is rendered from its frozen content.
 func (s *Service) Export(ctx context.Context, id uuid.UUID, recordVersionID *uuid.UUID, lang, format string) ([]byte, string, error) {
-	in, err := s.versionInput(ctx, id, recordVersionID, lang)
+	in, versionNo, err := s.versionInput(ctx, id, recordVersionID, lang)
 	if err != nil {
 		return nil, "", err
 	}
 	name := fmt.Sprintf("%s-%s", in.Title, lang)
+	var b []byte
 	switch format {
 	case "pdf":
 		if s.PDF == nil {
 			return nil, "", render.ErrNoRenderer
 		}
-		b, err := s.PDF.PDF(ctx, render.HTML(in))
-		return b, name + ".pdf", err
+		if b, err = s.PDF.PDF(ctx, render.HTML(in)); err != nil {
+			return nil, "", err
+		}
 	case "docx":
-		b, err := render.DOCX(in)
-		return b, name + ".docx", err
+		if b, err = render.DOCX(in); err != nil {
+			return nil, "", err
+		}
 	case "html":
-		return render.HTML(in), name + ".html", nil
+		b = render.HTML(in)
+	default:
+		return nil, "", invalid("format")
 	}
-	return nil, "", invalid("format")
+	s.recordDownload(ctx, id, versionNo, lang, format)
+	return b, name + "." + format, nil
 }
 
-// versionInput resolves one version (nil: the newest) of a document for rendering in lang.
-func (s *Service) versionInput(ctx context.Context, id uuid.UUID, recordVersionID *uuid.UUID, lang string) (render.Input, error) {
+// recordDownload logs a document download (DPA-08). Best-effort: a logging failure never fails the
+// download itself, the same "never let evidence bookkeeping break the real request" principle PLT-11's
+// own best-effort metrics writes already use.
+func (s *Service) recordDownload(ctx context.Context, documentID uuid.UUID, versionNo int32, lang, format string) {
+	if _, _, ok := currentUser(ctx); !ok {
+		return
+	}
+	_ = docsstore.New(pdb.MustTxFromContext(ctx)).InsertDocumentDownload(ctx, docsstore.InsertDocumentDownloadParams{
+		DocumentID: documentID,
+		VersionNo:  versionNo,
+		Format:     format,
+		Language:   lang,
+	})
+}
+
+// DownloadLogEntry is one recorded download of a document version (DPA-08).
+type DownloadLogEntry struct {
+	ID           uuid.UUID
+	VersionNo    int32
+	Format       string
+	Language     string
+	UserID       uuid.UUID
+	DownloadedAt time.Time
+}
+
+// DownloadLog lists every recorded download of a document, newest first.
+func (s *Service) DownloadLog(ctx context.Context, id uuid.UUID) ([]DownloadLogEntry, error) {
+	if _, err := s.Get(ctx, id); err != nil {
+		return nil, err
+	}
+	rows, err := docsstore.New(pdb.MustTxFromContext(ctx)).ListDocumentDownloads(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]DownloadLogEntry, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, DownloadLogEntry{
+			ID:           r.ID,
+			VersionNo:    r.VersionNo,
+			Format:       r.Format,
+			Language:     r.Language,
+			UserID:       r.UserID,
+			DownloadedAt: r.DownloadedAt.Time,
+		})
+	}
+	return out, nil
+}
+
+// versionInput resolves one version (nil: the newest) of a document for rendering in lang, and returns
+// that version's own number so a caller (Export) can log which version was rendered.
+func (s *Service) versionInput(ctx context.Context, id uuid.UUID, recordVersionID *uuid.UUID, lang string) (render.Input, int32, error) {
 	if lang != "th" && lang != "en" {
-		return render.Input{}, invalid("language")
+		return render.Input{}, 0, invalid("language")
 	}
 	doc, err := s.Get(ctx, id)
 	if err != nil {
-		return render.Input{}, err
+		return render.Input{}, 0, err
 	}
 	v := doc.Latest
 	if recordVersionID != nil {
 		x, err := s.Versioning.Get(ctx, *recordVersionID)
 		if err != nil || x.EntityType != EntityType(doc.DocType) || x.EntityID != id {
-			return render.Input{}, ErrNotFound
+			return render.Input{}, 0, ErrNotFound
 		}
 		v = &x
 	}
 	if v == nil {
-		return render.Input{}, ErrNotFound
+		return render.Input{}, 0, ErrNotFound
 	}
 	var inputs map[string]render.Input
 	if v.Status == "published" || v.Status == "superseded" {
 		r, err := docsstore.New(pdb.MustTxFromContext(ctx)).GetDocumentVersionByNo(ctx, docsstore.GetDocumentVersionByNoParams{DocumentID: id, VersionNo: v.No})
 		if err != nil {
-			return render.Input{}, err
+			return render.Input{}, 0, err
 		}
 		var f frozen
 		if err := json.Unmarshal(r.Content, &f); err != nil {
-			return render.Input{}, err
+			return render.Input{}, 0, err
 		}
 		inputs = buildInputs(f)
 	} else {
 		var d Draft
 		if err := json.Unmarshal(v.Snapshot, &d); err != nil {
-			return render.Input{}, err
+			return render.Input{}, 0, err
 		}
 		if inputs, err = s.inputs(ctx, d, v.No); err != nil {
-			return render.Input{}, err
+			return render.Input{}, 0, err
 		}
 		for k, x := range inputs {
 			x.Draft = true
@@ -731,9 +786,9 @@ func (s *Service) versionInput(ctx context.Context, id uuid.UUID, recordVersionI
 	}
 	in, ok := inputs[lang]
 	if !ok {
-		return render.Input{}, invalid("the version has no %s text", lang)
+		return render.Input{}, 0, invalid("the version has no %s text", lang)
 	}
-	return in, nil
+	return in, v.No, nil
 }
 
 // Comparison is the difference between two versions of a document in one language.
@@ -745,11 +800,11 @@ type Comparison struct {
 
 // Compare lines up two PLT-08 versions of a document (drafts included) block by block, as a reader sees them.
 func (s *Service) Compare(ctx context.Context, id, from, to uuid.UUID, lang string) (Comparison, error) {
-	a, err := s.versionInput(ctx, id, &from, lang)
+	a, _, err := s.versionInput(ctx, id, &from, lang)
 	if err != nil {
 		return Comparison{}, err
 	}
-	b, err := s.versionInput(ctx, id, &to, lang)
+	b, _, err := s.versionInput(ctx, id, &to, lang)
 	if err != nil {
 		return Comparison{}, err
 	}

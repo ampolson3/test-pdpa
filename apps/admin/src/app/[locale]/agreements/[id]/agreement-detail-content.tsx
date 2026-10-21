@@ -20,6 +20,7 @@ import {
   useRemoveAgreementParty,
   useExternalParties,
   useLegalEntities,
+  useDocumentDownloads,
   type ApiClient,
   type Agreement,
   type AgreementPartyInput,
@@ -94,6 +95,8 @@ export function AgreementDetailContent({ id }: { id: string }) {
       <ClausePanel client={client} agreementId={id} agreementType={a.agreement_type} isDraft={a.status === "draft"} />
 
       <ProcessingScheduleSection client={client} agreementId={id} />
+
+      <DownloadLogSection client={client} documentId={a.document_id} />
 
       <Link className="inline-block rounded-md bg-sky-700 px-3 py-1.5 text-white" href={`/documents/${a.document_id}`}>{t("detail.openDocument")}</Link>
     </main>
@@ -199,6 +202,36 @@ function RenewalScheduleSection({ client, agreement }: { client: ApiClient; agre
         </div>
       ) : (
         canUpdate && <Button variant="secondary" onClick={startEdit}>{t("detail.renewalSchedule.edit")}</Button>
+      )}
+    </section>
+  );
+}
+
+/** DPA-08: who downloaded which version of the linked document, when, in which format and language —
+ *  the same generic PLT-16 download log every doc type shares (docs.Service.Export). */
+function DownloadLogSection({ client, documentId }: { client: ApiClient; documentId: string }) {
+  const t = useTranslations("agreements");
+  const log = useDocumentDownloads(client, documentId);
+
+  return (
+    <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.downloadLog.title")}</h2>
+      {log.isPending && <p className="text-slate-500">{t("loading")}</p>}
+      {log.isError && <p className="text-red-700" role="alert">{t("detail.downloadLog.loadError")}</p>}
+      {log.data && log.data.length === 0 && <p className="text-slate-500">{t("detail.downloadLog.empty")}</p>}
+      {log.data && log.data.length > 0 && (
+        <table className="w-full text-left text-sm">
+          <tbody>
+            {log.data.map((entry) => (
+              <tr key={entry.id} className="border-t border-slate-100">
+                <td className="py-1 text-slate-600">{new Date(entry.downloaded_at).toLocaleString()}</td>
+                <td className="py-1">{t("detail.downloadLog.version", { version: entry.version })}</td>
+                <td className="py-1 uppercase text-slate-500">{entry.format}</td>
+                <td className="py-1 uppercase text-slate-500">{entry.language}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </section>
   );

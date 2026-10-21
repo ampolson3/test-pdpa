@@ -43,7 +43,7 @@ func setup(t *testing.T, suffix string) env {
 			for _, q := range []string{
 				`DELETE FROM agreement.clauses`, `DELETE FROM agreement.agreement_activities`, `DELETE FROM agreement.parties`,
 				`DELETE FROM agreement.agreements`, `DELETE FROM platform.approvals`, `DELETE FROM platform.record_versions`,
-				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
+				`DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM vendor.vendors`, `DELETE FROM ropa.processing_activities`,
 				`DELETE FROM org.external_parties`, `DELETE FROM org.org_units`, `DELETE FROM org.legal_entities`,
 				`DELETE FROM platform.audit_log`,

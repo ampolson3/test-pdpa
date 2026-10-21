@@ -2695,6 +2695,17 @@ type PlatformDocument struct {
 	LegalEntityID    pgtype.UUID        `db:"legal_entity_id" json:"legal_entity_id"`
 }
 
+type PlatformDocumentDownload struct {
+	ID           uuid.UUID          `db:"id" json:"id"`
+	TenantID     uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	DocumentID   uuid.UUID          `db:"document_id" json:"document_id"`
+	VersionNo    int32              `db:"version_no" json:"version_no"`
+	Format       string             `db:"format" json:"format"`
+	Language     string             `db:"language" json:"language"`
+	UserID       uuid.UUID          `db:"user_id" json:"user_id"`
+	DownloadedAt pgtype.Timestamptz `db:"downloaded_at" json:"downloaded_at"`
+}
+
 // เวอร์ชันของเอกสาร (ProseMirror JSON + ไฟล์ที่ render)
 type PlatformDocumentVersion struct {
 	ID            uuid.UUID          `db:"id" json:"id"`

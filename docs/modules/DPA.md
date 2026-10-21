@@ -569,6 +569,11 @@ build` (incl. the updated `/agreements/[id]` route) all verified clean.
 
 **Acceptance criteria:** เห็นว่าใครดาวน์โหลดเวอร์ชันใดเมื่อไร
 
+**สถานะ: done** — see `CLAUDE.md`'s own `### DPA-08` entry for the full implementation note. Built
+generically on PLT-16 (`platform.document_downloads`, `docs.Service.Export`/`DownloadLog`), not agreement-
+specific: version history itself was already PLT-08 (`RecordVersions`); this feature added the download log
+every PLT-16 document type shares.
+
 <a id="dpa-09"></a>
 ### DPA-09 ส่งออกและลงนามอิเล็กทรอนิกส์
 

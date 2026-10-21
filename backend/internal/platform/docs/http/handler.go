@@ -203,13 +203,34 @@ func contentType(name string) string {
 	return "application/octet-stream"
 }
 
+func (h *Strict) PlatformListDocumentDownloads(ctx context.Context, req PlatformListDocumentDownloadsRequestObject) (PlatformListDocumentDownloadsResponseObject, error) {
+	entries, err := h.svc.DownloadLog(ctx, req.Id)
+	if err != nil {
+		return nil, ToProblem(err)
+	}
+	out := PlatformListDocumentDownloads200JSONResponse{Data: make([]DocumentDownload, 0, len(entries))}
+	for _, e := range entries {
+		out.Data = append(out.Data, DocumentDownload{
+			Id:           e.ID,
+			Version:      int(e.VersionNo),
+			Format:       DocumentDownloadFormat(e.Format),
+			Language:     DocumentDownloadLanguage(e.Language),
+			UserId:       e.UserID,
+			DownloadedAt: e.DownloadedAt,
+		})
+	}
+	return out, nil
+}
+
 func (h *Strict) PlatformCompareDocumentVersions(ctx context.Context, req PlatformCompareDocumentVersionsRequestObject) (PlatformCompareDocumentVersionsResponseObject, error) {
 	p := req.Params
 	c, err := h.svc.Compare(ctx, req.Id, p.From, p.To, string(p.Language))
 	if err != nil {
 		return nil, ToProblem(err)
 	}
-	ref := func(v versioning.Version) map[string]any { return map[string]any{"id": v.ID, "version": v.No, "status": v.Status} }
+	ref := func(v versioning.Version) map[string]any {
+		return map[string]any{"id": v.ID, "version": v.No, "status": v.Status}
+	}
 	var out DocumentComparison
 	err = convert(map[string]any{"from": ref(c.From), "to": ref(c.To), "changes": c.Changes, "summary": c.Summary}, &out)
 	return PlatformCompareDocumentVersions200JSONResponse(out), err

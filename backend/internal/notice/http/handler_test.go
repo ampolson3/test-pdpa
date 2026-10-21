@@ -56,7 +56,7 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 			for _, q := range []string{
 				`DELETE FROM notice.indirect_collections`, `DELETE FROM platform.files`,
 				`DELETE FROM notice.notice_activity_links`, `DELETE FROM notice.notices`,
-				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
+				`DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM org.external_parties`, `DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
 			} {
 				_, _ = tx.Exec(ctx, q)

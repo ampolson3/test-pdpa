@@ -166,7 +166,7 @@ func (f *Fixture) cleanup(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), f.Owner, tn.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{`UPDATE platform.documents SET current_version_id = NULL`, `DELETE FROM platform.document_versions`,
-				`DELETE FROM platform.documents`, `DELETE FROM platform.templates WHERE tenant_id IS NOT NULL`,
+				`DELETE FROM platform.document_downloads`, `DELETE FROM platform.documents`, `DELETE FROM platform.templates WHERE tenant_id IS NOT NULL`,
 				`DELETE FROM platform.clause_library WHERE tenant_id IS NOT NULL`, `DELETE FROM platform.approvals`, `DELETE FROM platform.record_versions`,
 				`DELETE FROM platform.files`, `DELETE FROM platform.notifications`, `DELETE FROM platform.audit_log`, `DELETE FROM platform.tenant_keys`,
 				`DELETE FROM org.legal_entities`} {

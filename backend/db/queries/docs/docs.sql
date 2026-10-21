@@ -71,3 +71,14 @@ UPDATE platform.document_versions SET render_status = @render_status WHERE id = 
 SELECT id, document_id, version_no, content, languages, pdf_file_id, docx_file_id, pdf_en_file_id, docx_en_file_id, render_status,
        change_summary, effective_from, approved_by, approved_at, created_at, created_by
 FROM platform.document_versions WHERE document_id = $1 AND version_no = $2;
+
+-- DPA-08: who downloaded which version of a document, and when — shared by every doc type via docs.Service.Export.
+
+-- name: InsertDocumentDownload :exec
+INSERT INTO platform.document_downloads (tenant_id, document_id, version_no, format, language, user_id)
+VALUES (current_setting('app.tenant_id')::uuid, @document_id, @version_no, @format, @language,
+        NULLIF(current_setting('app.user_id', true), '')::uuid);
+
+-- name: ListDocumentDownloads :many
+SELECT id, document_id, version_no, format, language, user_id, downloaded_at
+FROM platform.document_downloads WHERE document_id = $1 ORDER BY downloaded_at DESC;

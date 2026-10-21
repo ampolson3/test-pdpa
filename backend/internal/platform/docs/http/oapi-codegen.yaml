@@ -12,6 +12,7 @@ output-options:
     - platformSaveDocumentDraft
     - platformListPublishedDocumentVersions
     - platformExportDocument
+    - platformListDocumentDownloads
     - platformCompareDocumentVersions
     - platformListClauses
     - platformCreateClause

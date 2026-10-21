@@ -83,7 +83,7 @@ func TestNoticePublicEndpoints_Contract(t *testing.T) {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
 				`DELETE FROM notice.notice_versions`, `DELETE FROM platform.public_keys`, `DELETE FROM notice.notices`,
-				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
+				`DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM org.legal_entities`, `DELETE FROM iam.role_assignments`, `DELETE FROM platform.audit_log`,
 			} {
 				_, _ = tx.Exec(ctx, q)

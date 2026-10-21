@@ -164,7 +164,7 @@ func (f *Fixture) cleanup(t *testing.T) {
 				`DELETE FROM breach.evidence`, `DELETE FROM breach.assessments`, `DELETE FROM breach.timeline_events`, `DELETE FROM breach.incidents`,
 				`DELETE FROM platform.form_submissions`, `UPDATE platform.form_definitions SET current_version_id = NULL`, `DELETE FROM platform.form_versions`,
 				`DELETE FROM platform.form_definitions`, `UPDATE platform.documents SET current_version_id = NULL`, `DELETE FROM platform.document_versions`,
-				`DELETE FROM platform.documents`, `DELETE FROM platform.approvals`, `DELETE FROM platform.record_versions`,
+				`DELETE FROM platform.document_downloads`, `DELETE FROM platform.documents`, `DELETE FROM platform.approvals`, `DELETE FROM platform.record_versions`,
 				`DELETE FROM platform.files`, `DELETE FROM platform.notifications`, `DELETE FROM platform.outbox_events`, `DELETE FROM platform.audit_log`,
 				`DELETE FROM platform.tenant_keys`, `DELETE FROM iam.role_assignments`, `DELETE FROM org.legal_entities`} {
 				if _, err := tx.Exec(ctx, q); err != nil {

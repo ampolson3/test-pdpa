@@ -54,7 +54,7 @@ func setup(t *testing.T, suffix string) env {
 				`DELETE FROM ropa.activity_controls`, `DELETE FROM ropa.retention_rules`,
 				`DELETE FROM ropa.activity_data`, `DELETE FROM ropa.activity_purposes`,
 				`DELETE FROM platform.approvals`, `DELETE FROM platform.record_versions`,
-				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
+				`DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM vendor.vendors`, `DELETE FROM org.org_units`,
 				`UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`,
 				`DELETE FROM org.external_parties`, `DELETE FROM platform.audit_log`,

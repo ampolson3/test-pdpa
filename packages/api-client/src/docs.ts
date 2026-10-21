@@ -7,6 +7,7 @@ export type ComposedDocument = components["schemas"]["Document"];
 export type DocumentDraft = components["schemas"]["DocumentDraft"];
 export type DocumentContent = components["schemas"]["DocumentContent"];
 export type PublishedDocumentVersion = components["schemas"]["PublishedDocumentVersion"];
+export type DocumentDownload = components["schemas"]["DocumentDownload"];
 export type DocumentComparison = components["schemas"]["DocumentComparison"];
 export type DocumentClause = components["schemas"]["DocumentClause"];
 export type DocumentClauseDetail = components["schemas"]["DocumentClauseDetail"];
@@ -80,6 +81,19 @@ export function useDocumentComparison(client: ApiClient, id: string, from?: stri
       });
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+/** Download history of a document — who downloaded which version, when, in which format and language (DPA-08). */
+export function useDocumentDownloads(client: ApiClient, id: string) {
+  return useQuery({
+    queryKey: [...docKey(id), "downloads"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/platform/documents/{id}/downloads", { params: { path: { id } } });
+      if (error) throw error;
+      return data.data;
     },
   });
 }

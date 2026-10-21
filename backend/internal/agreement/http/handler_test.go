@@ -55,7 +55,7 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
 				`DELETE FROM agreement.clauses`, `DELETE FROM agreement.agreement_activities`, `DELETE FROM agreement.parties`, `DELETE FROM agreement.agreements`,
-				`DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
+				`DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM vendor.vendors`, `UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`,
 				`DELETE FROM org.external_parties`, `DELETE FROM platform.audit_log`,
 			} {

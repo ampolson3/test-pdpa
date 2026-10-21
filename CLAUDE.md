@@ -3588,6 +3588,52 @@ fixed here as scope creep beyond DSA-08's own acceptance criterion: `TestAddPart
 unrelated to `agreement_type`/review-approval, all first-ever-run failures in DPA-10/VEN-06's own mechanism, not
 this feature's.
 
+### DPA-08 เวอร์ชันและประวัติการดาวน์โหลด (`docs/modules/DPA.md#dpa-08`) — done
+Built generically on PLT-16, not agreement-specific: version history itself ("ผู้แก้ไข วันที่") was already
+PLT-08's own `RecordVersions`/`/approvals` machinery every document type shares — this feature's real,
+narrow gap was the download-log half of its own acceptance criterion ("เห็นว่าใครดาวน์โหลดเวอร์ชันใดเมื่อไร"),
+which nothing in this codebase tracked. New append-only table `platform.document_downloads` (migration
+00080, the same shape `ropa.activity_versions` already established for an evidence log nothing should ever
+edit after the fact — no `row_version`/`updated_at`, REVOKE UPDATE/DELETE/TRUNCATE in
+`deploy/db/10-grants.sql`). `docs.Service.versionInput` now also returns the resolved version's own number
+(a signature widening — its only other caller, `Compare`, ignores the new value), so `Export` can call a new
+`recordDownload` right after successfully building the file — best-effort (a logging failure never fails the
+real download, the same principle PLT-11's own best-effort metrics writes already use) and skipped entirely
+for a caller with no resolvable user (a worker context, say) rather than fail the NOT NULL `user_id` column.
+`docs.Service.DownloadLog(ctx, id)` is the read side — proves the caller can see the document via the same
+`Get(ctx, id)` RLS-scoped lookup every other read uses before listing its downloads, newest first.
+
+API: `GET /admin/v1/platform/documents/{id}/downloads` (`x-permission: authenticated`, `x-module: platform`
+— real enforcement happens inside `docs.Service` like every other PLT-16 endpoint). UI: a "Download
+history" section on `/agreements/{id}` (the first and, for now, only consumer — dpa/dsa agreements), listing
+every recorded download's time/version/format/language; the same component will suit any future doc type
+without new backend work.
+
+Real regression found and fixed while testing this: every test fixture across the codebase that creates a
+PLT-16 document and cleans it up by `DELETE FROM platform.documents` in a tenant-teardown list had no
+matching `DELETE FROM platform.document_downloads` first — the moment a test actually called `Export` as an
+authenticated user (logging a download row), that `DELETE FROM platform.documents` silently failed on the
+new FK (ignored errors in these cleanup loops), orphaning the document, its downloads, and eventually the
+whole tenant at `dbtest`'s own final teardown. Fixed in every affected fixture (`internal/agreement/service`,
+`internal/agreement/http`, `internal/breach/breachtest`, `internal/dataflow/service`, `internal/dsar/http`,
+`internal/dsar/service`, `internal/notice/http`, `internal/notice/publichttp`, `internal/notice/service`,
+`internal/platform/docs/docstest`) by deleting `platform.document_downloads` immediately before
+`platform.documents` in each one's own cleanup list — a pattern any future append-only table referencing
+`platform.documents` needs to repeat.
+
+Tests: `internal/agreement/service/dpa08_download_test.go` — the acceptance criterion directly (two exports
+of the same document, in different formats, are both logged with the right user/version/format/language,
+newest first; a failed export logs nothing) and two-tenant isolation (`DownloadLog` refuses a document the
+caller's tenant doesn't own), both built on the existing lightweight agreement-service fixture (no S3/clamd
+needed — `docstest.Setup`'s own fixture does need both, so the test lives here instead). Verified live
+against a real Postgres/Redis in this session: `go build ./...`, `go vet ./...`, and the full
+`internal/agreement/...`, `internal/notice/...`, `internal/dsar/...`, `internal/breach/...`,
+`internal/dataflow/...`, `internal/platform/docs/...` suites — no regressions from this change; every
+pre-existing failure in those packages (confirmed via `git stash` to exist identically on HEAD) is already
+logged in `docs/known-issues.md` (`AGR-01`, `TEST-01`) and out of this feature's scope.
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/agreements/[id]` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 
