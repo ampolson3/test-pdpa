@@ -358,6 +358,58 @@ func (s *Service) PublicCategories(ctx context.Context) ([]Category, error) {
 	return out, nil
 }
 
+// CookiePolicyEntry is one row of CON-05's own Cookie Policy table — a live read of this domain's active
+// cookies (ListCookiesByDomain), each joined with its category's own bilingual name. Reading it live,
+// rather than a snapshot taken at some earlier point, is what makes it always match the latest CON-04 scan
+// — the acceptance criterion itself ("ตารางในหน้า Cookie Policy ตรงกับผลสแกนล่าสุด").
+type CookiePolicyEntry struct {
+	Name           string
+	ProviderDomain string
+	CategoryCode   string
+	CategoryNameTh string
+	CategoryNameEn string
+	StorageType    string
+	Duration       string
+	DescriptionTh  string
+	DescriptionEn  string
+}
+
+// PublicCookiePolicy is the public, permission-free twin of ListCookies for the Cookie Policy page — the
+// same no-permission-check shape PublicBannerConfig/PublicCategories already use, since the public key
+// itself already proves tenant scope. An inactive cookie (deleted/superseded by a later scan) is left out.
+func (s *Service) PublicCookiePolicy(ctx context.Context, domainID uuid.UUID) ([]CookiePolicyEntry, error) {
+	rows, err := cookiestore.New(pdb.MustTxFromContext(ctx)).ListCookiesByDomain(ctx, domainID)
+	if err != nil {
+		return nil, err
+	}
+	cats, err := s.PublicCategories(ctx)
+	if err != nil {
+		return nil, err
+	}
+	byID := make(map[uuid.UUID]Category, len(cats))
+	for _, c := range cats {
+		byID[c.ID] = c
+	}
+	out := make([]CookiePolicyEntry, 0, len(rows))
+	for _, r := range rows {
+		if !r.IsActive {
+			continue
+		}
+		e, err := toCookieEntry(r.ID, r.DomainID, r.Name, r.ProviderDomain, r.CategoryID, r.StorageType, r.Duration, r.Descriptions, r.IsActive, r.RowVersion)
+		if err != nil {
+			return nil, err
+		}
+		pe := CookiePolicyEntry{Name: e.Name, ProviderDomain: e.ProviderDomain, StorageType: e.StorageType, Duration: e.Duration, DescriptionTh: e.DescriptionTh, DescriptionEn: e.DescriptionEn}
+		if e.CategoryID != nil {
+			if c, ok := byID[*e.CategoryID]; ok {
+				pe.CategoryCode, pe.CategoryNameTh, pe.CategoryNameEn = c.Code, c.NameTh, c.NameEn
+			}
+		}
+		out = append(out, pe)
+	}
+	return out, nil
+}
+
 func contains(list []string, v string) bool {
 	for _, item := range list {
 		if item == v {

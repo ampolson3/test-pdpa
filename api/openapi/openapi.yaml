@@ -16600,6 +16600,36 @@ paths:
                 $ref: '#/components/schemas/CookiePublicBanner'
         '404':
           $ref: '#/components/responses/NotFound'
+  /public/v1/cookie-banners/{key}/policy:
+    get:
+      operationId: cookieGetPublicPolicy
+      tags: [cookie]
+      summary: The Cookie Policy table for this domain, no login (CON-05)
+      description: |
+        A live read of every active cookie catalogued for this domain (CON-02's own manual entries plus
+        CON-04's own scanner-found ones), each with its category name — so the table always matches the
+        latest scan with no separate snapshot to go stale. Tenant is resolved from `key` the same way as
+        the published-banner endpoint; a domain with no published banner yet reads as 404.
+      x-permission: public
+      x-module: cookie
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CookiePublicPolicy'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /public/v1/cookie-banners/{key}/consents:
     post:
       operationId: cookieSubmitConsent
@@ -19982,6 +20012,29 @@ components:
         action:
           type: string
           enum: [block, allow]
+    CookiePublicPolicy:
+      type: object
+      required: [domain_id, cookies]
+      properties:
+        domain_id: {$ref: '#/components/schemas/Uuid'}
+        cookies:
+          type: array
+          items: {$ref: '#/components/schemas/CookiePolicyEntry'}
+    CookiePolicyEntry:
+      type: object
+      required: [name, provider_domain, storage_type]
+      properties:
+        name: {type: string}
+        provider_domain: {type: string}
+        category_code: {type: string}
+        category_name_th: {type: string}
+        category_name_en: {type: string}
+        storage_type:
+          type: string
+          enum: [http_cookie, js_cookie, local_storage, session_storage, pixel]
+        duration: {type: string}
+        description_th: {type: string}
+        description_en: {type: string}
     CookieCookie:
       type: object
       required: [id, domain_id, name, provider_domain, storage_type, is_active, row_version]

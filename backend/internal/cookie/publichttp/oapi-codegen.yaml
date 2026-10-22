@@ -6,4 +6,5 @@ generate:
 output-options:
   include-operation-ids:
     - cookieGetPublicBanner
+    - cookieGetPublicPolicy
     - cookieSubmitConsent

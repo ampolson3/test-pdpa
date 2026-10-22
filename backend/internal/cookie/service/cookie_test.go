@@ -44,6 +44,16 @@ func setup(t *testing.T, suffix string) env {
 	app := dbtest.Pool(t)
 	tenant := dbtest.SeedTenant(t, ctx, app, dbtest.PlatformPool(t), suffix)
 	legalEntity := uuid.Must(uuid.NewV7())
+	// cookie.domains.legal_entity_id is a real FK to org.legal_entities, which bypasses RLS (rule 1) —
+	// so beyond fakeOrg's own service-layer visibility check, a real row with this exact id must exist
+	// for RegisterDomain's own insert to succeed against the live constraint.
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		tx, _ := pdb.TxFromContext(ctx)
+		_, err := tx.Exec(ctx, `INSERT INTO org.legal_entities (id, tenant_id, name_th) VALUES ($1, $2, 'dbtest')`, legalEntity, tenant.ID)
+		return err
+	}); err != nil {
+		t.Fatalf("dbtest: seed legal entity: %v", err)
+	}
 	return env{app: app, tenant: tenant, legalEntity: legalEntity,
 		svc: &cookie.Service{Audit: audit.New(), Org: fakeOrg{visible: legalEntity}}}
 }

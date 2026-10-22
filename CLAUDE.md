@@ -3670,6 +3670,60 @@ full `internal/dataflow/...` and `internal/agreement/...` suites (no regressions
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build` (incl. the unchanged-but-reverified `/data-flow` and `/agreements/[id]` routes) all verified clean.
 
+### CON-05 นโยบายคุกกี้อัตโนมัติ (`docs/modules/CON.md#con-05`) — done
+Builds on CON-02's own `cookie.cookies` (manual entries) and CON-04's own scanner (which auto-creates/
+updates the same table from a live crawl) — no new table or migration. The literal acceptance criterion
+("ตารางในหน้า Cookie Policy ตรงกับผลสแกนล่าสุด") is answered by never snapshotting anything: `cookie.
+Service.PublicCookiePolicy(ctx, domainID)` (`internal/cookie/service/banners.go`) is a live, permission-free
+read of a domain's active cookies (`ListCookiesByDomain`, the same no-permission-check shape
+`PublicBannerConfig`/`PublicCategories` already use — the public key itself already proves tenant scope),
+each joined with its category's own bilingual name — so a row a scan just wrote, or a row just deleted, is
+reflected the very next read, with nothing to go stale. New public endpoint
+`GET /public/v1/cookie-banners/{key}/policy` (`cookieGetPublicPolicy`, `x-permission: public`, mirroring
+`cookieGetPublicBanner`'s own shape exactly) → `CookiePublicPolicy{domain_id, cookies: [CookiePolicyEntry]}`.
+
+Frontend: a new portal page, `apps/portal/src/app/[locale]/cookie-policy/[key]` (a plain server component
+reading `/public/v1/cookie-banners/{key}/policy` directly, the same `getPublicCookiePolicy`/`getPublicNotice`
+split PNG-06 already established) renders the table in the viewer's own locale; `/settings/cookie-banners`
+gained a "Cookie Policy page" panel next to the SDK's own install snippet, showing the public link and an
+iframe embed snippet once the domain's banner has published at least once (the same `public_key` the SDK
+snippet already keys off). `apps/portal/src/proxy.ts`'s own PNG-08 frame-ancestors exception (read-only
+public content behind an unguessable key, no form, no session, nothing a clickjacking attack could abuse)
+was widened to cover `/[locale]/cookie-policy/[key]` alongside `/[locale]/n/[key]` — the embed snippet
+literally can't render in an iframe without it.
+
+Real pre-existing bug found and fixed while writing the test for this: every `internal/cookie/service` test
+calling `RegisterDomain` passed a `legalEntityID` only ever checked by the service's own mocked `fakeOrg`
+interface, never actually inserted into `org.legal_entities` — harmless until `00018_foreign_keys.sql` added
+a real `fk_domains_legal_entity_id` FK (`cookie.domains.legal_entity_id → org.legal_entities.id`, bypassing
+RLS per rule 1), which every one of that package's own tests then violated on every single `RegisterDomain`
+call. Masked entirely until now: `RegisterDomain`'s `pdb.Savepoint` failure branch always reports "domain
+already registered" regardless of the real underlying error, and this package's own test suite had never
+actually run against a reachable Postgres before this pass (the same first-live-run pattern
+`docs/known-issues.md#test-01` already documents for ~20 other packages) — every prior CLAUDE.md entry for
+CON-01/02/04/06 disclosed "not verified live... skips," so the bug sat invisible the whole time. Fixed in
+`internal/cookie/service/cookie_test.go`'s shared `setup()`: a real `org.legal_entities` row is now inserted
+with the exact `legalEntity` id `fakeOrg` already claims is visible, restoring every pre-existing test in the
+package (not just this feature's own) to green.
+
+Tests: `internal/cookie/service/con05_test.go` — the acceptance criterion directly (a cookie catalogued
+through `CreateCookie` appears in `PublicCookiePolicy` immediately with its category's name, and disappears
+immediately once deleted — the same live-read behavior a CON-04 scan's own create/update would produce) and
+two-tenant isolation; HTTP contract (`internal/cookie/publichttp/handler_test.go`'s existing
+`TestCookiePublicEndpoints_Contract`, extended with a catalogued cookie and the new policy endpoint: 404 for
+an unknown key, 200 with the cookie's name/category/bilingual description through the real validator +
+publickeys + Idempotency + Tx chain). Verified live against this session's own real Postgres 16 + Redis —
+not skipped: `go build ./...`, `go vet ./...`, `gofmt -l` (clean), `go test -count=1 ./internal/cookie/...`
+(every package green, including every pre-existing test the FK-violation bug above was silently breaking).
+`pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/api-client typecheck`, and
+`pnpm --filter @pdpa/admin build` / `pnpm --filter @pdpa/portal build` (incl. the new
+`/[locale]/cookie-policy/[key]` route and the widened `/settings/cookie-banners` panel) all verified clean.
+Not done, deliberately (no consumer yet, the same deferral this codebase uses throughout): a storage-type
+breakdown beyond CON-04's own disclosed limitation (every scanned cookie reads as `http_cookie`), and a
+dedicated diff-against-previous-scan view — CON-05's own "ตารางในหน้า Cookie Policy ตรงกับผลสแกนล่าสุด" is
+satisfied by a live read with nothing to diff against; a literal round-by-round comparison is CON-04's own
+scan-history table, already browsable on `/settings/cookie-banners`.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

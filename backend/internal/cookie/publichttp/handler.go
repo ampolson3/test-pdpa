@@ -104,6 +104,28 @@ func (h *Strict) CookieGetPublicBanner(ctx context.Context, _ CookieGetPublicBan
 	return CookieGetPublicBanner200JSONResponse(out), nil
 }
 
+// CookieGetPublicPolicy is CON-05's own acceptance criterion: the Cookie Policy table, always a live read
+// of the domain's active cookies so it can never drift from the latest CON-04 scan.
+func (h *Strict) CookieGetPublicPolicy(ctx context.Context, _ CookieGetPublicPolicyRequestObject) (CookieGetPublicPolicyResponseObject, error) {
+	k, err := cookieDomain(ctx)
+	if err != nil {
+		return nil, err
+	}
+	entries, err := h.svc.PublicCookiePolicy(ctx, k.EntityID)
+	if err != nil {
+		return nil, problem(err)
+	}
+	out := CookiePublicPolicy{DomainId: k.EntityID, Cookies: make([]CookiePolicyEntry, 0, len(entries))}
+	for _, e := range entries {
+		out.Cookies = append(out.Cookies, CookiePolicyEntry{
+			Name: e.Name, ProviderDomain: e.ProviderDomain, StorageType: CookiePolicyEntryStorageType(e.StorageType),
+			CategoryCode: strPtr(e.CategoryCode), CategoryNameTh: strPtr(e.CategoryNameTh), CategoryNameEn: strPtr(e.CategoryNameEn),
+			Duration: strPtr(e.Duration), DescriptionTh: strPtr(e.DescriptionTh), DescriptionEn: strPtr(e.DescriptionEn),
+		})
+	}
+	return CookieGetPublicPolicy200JSONResponse(out), nil
+}
+
 func (h *Strict) CookieSubmitConsent(ctx context.Context, req CookieSubmitConsentRequestObject) (CookieSubmitConsentResponseObject, error) {
 	if _, err := cookieDomain(ctx); err != nil {
 		return nil, err

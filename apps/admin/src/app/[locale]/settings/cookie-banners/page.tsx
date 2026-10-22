@@ -10,7 +10,10 @@ export default async function CookieBannersPage() {
   if (!me) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("signInRequired")}</main>;
   return (
     <GrantsProvider grants={{ roles: me.roles, permissions: me.permissions, scopes: me.scopes }}>
-      <CookieBannersContent apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080"} />
+      <CookieBannersContent
+        apiBase={process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080"}
+        portalUrl={process.env.PORTAL_PUBLIC_URL ?? "http://localhost:3001"}
+      />
     </GrantsProvider>
   );
 }

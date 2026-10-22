@@ -52,7 +52,8 @@ func TestCookiePublicEndpoints_Contract(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
-				`DELETE FROM cookie.consent_records`, `DELETE FROM cookie.banner_configs`, `DELETE FROM cookie.domains`,
+				`DELETE FROM cookie.consent_records`, `DELETE FROM cookie.cookies`, `DELETE FROM cookie.script_rules`,
+				`DELETE FROM cookie.banner_configs`, `DELETE FROM cookie.domains`,
 				`DELETE FROM cookie.categories`, `DELETE FROM platform.public_keys`, `DELETE FROM org.legal_entities`,
 				`DELETE FROM platform.audit_log`,
 			} {
@@ -96,6 +97,13 @@ func TestCookiePublicEndpoints_Contract(t *testing.T) {
 			t.Fatal("expected a seeded \"analytics\" category")
 		}
 		if _, err := svc.CreateScriptRule(ctx, d.ID, cookieservice.CreateScriptRuleInput{Pattern: "googletagmanager.com", CategoryID: analyticsID}); err != nil {
+			return err
+		}
+		// CON-05: a catalogued cookie the policy endpoint must list.
+		if _, err := svc.CreateCookie(ctx, d.ID, cookieservice.CreateCookieInput{
+			Name: "_ga", ProviderDomain: "google.com", CategoryID: &analyticsID, StorageType: "http_cookie",
+			Duration: "2 ปี", DescriptionTh: "ใช้วิเคราะห์การเข้าชม", DescriptionEn: "Used for traffic analysis",
+		}); err != nil {
 			return err
 		}
 		bc, err := svc.CreateBannerConfig(ctx, d.ID, cookieservice.CreateBannerConfigInput{Layout: "bar", Texts: cookieservice.BannerTexts{
@@ -182,6 +190,16 @@ func TestCookiePublicEndpoints_Contract(t *testing.T) {
 	// CON-02: the SDK reads script_rules off this same response to gate matching scripts by category.
 	if !strings.Contains(body, `"script_rules"`) || !strings.Contains(body, `"googletagmanager.com"`) || !strings.Contains(body, `"category_code":"analytics"`) {
 		t.Errorf("get banner missing script_rules: %s", body)
+	}
+
+	// CON-05: the Cookie Policy table — a live read, so the catalogued cookie is already there.
+	if code, _ := do("GET", "/public/v1/cookie-banners/not-a-real-key-not-a-real-key/policy", "", nil); code != 404 {
+		t.Errorf("unknown key: %d, want 404", code)
+	}
+	code, body = do("GET", "/public/v1/cookie-banners/"+publicKey+"/policy", "", nil)
+	if code != 200 || !strings.Contains(body, `"name":"_ga"`) || !strings.Contains(body, `"category_code":"analytics"`) ||
+		!strings.Contains(body, `"category_name_en":"Analytics"`) || !strings.Contains(body, `"description_en":"Used for traffic analysis"`) {
+		t.Fatalf("get policy: %d %s", code, body)
 	}
 
 	// 428: Idempotency-Key is required on every /public/v1 POST (rule 10).

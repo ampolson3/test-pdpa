@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import {
   createApiClient,
@@ -45,8 +45,9 @@ const EMPTY_THEME: CookieBannerTheme = {
   primary_color: "", text_color: "", button_text_color: "", logo_url: "", position: undefined, custom_css: "",
 };
 
-export function CookieBannersContent({ apiBase }: { apiBase: string }) {
+export function CookieBannersContent({ apiBase, portalUrl }: { apiBase: string; portalUrl: string }) {
   const t = useTranslations("cookieBanners");
+  const locale = useLocale();
   const canRead = usePermission("cookie.banner.read");
   const canCreate = usePermission("cookie.banner.create");
   const canUpdate = usePermission("cookie.banner.update");
@@ -205,6 +206,8 @@ export function CookieBannersContent({ apiBase }: { apiBase: string }) {
           domain={selectedDomain}
           categories={cats}
           apiBase={apiBase}
+          portalUrl={portalUrl}
+          locale={locale}
           canCreate={canCreate}
           canUpdate={canUpdate}
           canPublish={canPublish}
@@ -219,11 +222,13 @@ export function CookieBannersContent({ apiBase }: { apiBase: string }) {
   );
 }
 
-function BannerSection({ client, domain, categories, apiBase, canCreate, canUpdate, canPublish, canDelete, canScanRead, canScanCreate, canScanUpdate, onClose }: {
+function BannerSection({ client, domain, categories, apiBase, portalUrl, locale, canCreate, canUpdate, canPublish, canDelete, canScanRead, canScanCreate, canScanUpdate, onClose }: {
   client: ReturnType<typeof createApiClient>;
   domain: CookieDomain;
   categories: CookieCategory[];
   apiBase: string;
+  portalUrl: string;
+  locale: string;
   canCreate: boolean;
   canUpdate: boolean;
   canPublish: boolean;
@@ -288,6 +293,33 @@ function BannerSection({ client, domain, categories, apiBase, canCreate, canUpda
           <pre className="mt-1 overflow-x-auto rounded bg-slate-900 p-2 text-xs text-slate-100" data-testid="install-snippet">{snippet}</pre>
         </div>
       )}
+
+      {/* CON-05: a hosted Cookie Policy page, always a live read so it can never drift from the latest
+          scan — the same public_key the SDK's own install snippet already uses. */}
+      <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+        <p className="text-sm font-medium">{t("cookiePolicyTitle")}</p>
+        <p className="mt-1 text-xs text-slate-500">{t("cookiePolicyHint")}</p>
+        {domain.public_key ? (
+          (() => {
+            const policyLink = `${portalUrl.replace(/\/$/, "")}/${locale}/cookie-policy/${domain.public_key}`;
+            const policyEmbed = `<iframe src="${policyLink}" style="width:100%;min-height:400px;border:0;" title="${t("cookiePolicyTitle")}"></iframe>`;
+            return (
+              <div className="mt-2 space-y-2">
+                <p className="text-xs">
+                  <span className="font-medium">{t("cookiePolicyLink")}: </span>
+                  <a className="text-sky-700 underline" href={policyLink} target="_blank" rel="noreferrer">{policyLink}</a>
+                </p>
+                <div>
+                  <p className="text-xs font-medium">{t("cookiePolicyEmbed")}</p>
+                  <pre className="mt-1 overflow-x-auto rounded bg-slate-900 p-2 text-xs text-slate-100" data-testid="cookie-policy-embed">{policyEmbed}</pre>
+                </div>
+              </div>
+            );
+          })()
+        ) : (
+          <p className="mt-2 text-xs text-slate-500">{t("cookiePolicyPending")}</p>
+        )}
+      </div>
 
       <table className="w-full text-sm">
         <thead className="text-left text-slate-500">

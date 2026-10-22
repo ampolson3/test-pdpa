@@ -2327,6 +2327,16 @@
       "published": "Published",
       "view": "View"
     },
+    "cookiePolicy": {
+      "title": "Cookie Policy",
+      "intro": "This is the current list of cookies used on this website, kept in sync with our latest cookie scan.",
+      "empty": "No cookies are catalogued yet.",
+      "colName": "Name",
+      "colProvider": "Provider domain",
+      "colCategory": "Category",
+      "colDuration": "Duration",
+      "colDescription": "Description"
+    },
     "dsar": {
       "intro": "Use this form to submit a data subject rights request directly to the organization.",
       "requestType": "What would you like to do?",
@@ -3316,6 +3326,11 @@
     "bannerFor": "Banner for {domain}",
     "close": "Close",
     "installSnippet": "Install snippet",
+    "cookiePolicyTitle": "Cookie Policy page (CON-05)",
+    "cookiePolicyHint": "A live table of every active cookie catalogued for this domain, always matching the latest scan — link to it directly or embed it on your own Cookie Policy page.",
+    "cookiePolicyLink": "Public link",
+    "cookiePolicyEmbed": "Embed snippet",
+    "cookiePolicyPending": "Publish a banner for this domain first — the public link is issued then.",
     "version": "Version",
     "bannerStatuses": {
       "draft": "Draft",

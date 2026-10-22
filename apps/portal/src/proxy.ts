@@ -17,8 +17,10 @@ const intl = createMiddleware(routing);
 // A notice page (/[locale]/n/[key]) is read-only public legal text behind a random, unguessable key,
 // with no form, no session and no action a clickjacking attack could abuse, unlike the consent form
 // or DSAR intake pages this policy still protects — so frame-ancestors opens up for that one route
-// instead of weakening the default for everything else.
-const embeddableNoticePath = /^\/(?:th|en)\/n\/[^/]+\/?$/;
+// instead of weakening the default for everything else. CON-05's own Cookie Policy page
+// (/[locale]/cookie-policy/[key]) is the same shape — a read-only table behind the domain's own
+// public key, meant to be embedded on the tenant's own website — so it joins the same exception.
+const embeddableNoticePath = /^\/(?:th|en)\/(?:n|cookie-policy)\/[^/]+\/?$/;
 
 export default function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");

@@ -919,6 +919,8 @@ change. `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n te
 
 **Acceptance criteria:** ตารางในหน้า Cookie Policy ตรงกับผลสแกนล่าสุด
 
+**สถานะ:** done — see CLAUDE.md § CON-05 for the implementation note.
+
 <a id="con-07"></a>
 ### CON-07 หลายโดเมนและ Mobile SDK
 
