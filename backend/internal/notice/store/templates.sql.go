@@ -42,10 +42,38 @@ func (q *Queries) GetWizardTemplateContent(ctx context.Context, subjectTypeCode 
 	return items, nil
 }
 
-const listWizardTemplateGroups = `-- name: ListWizardTemplateGroups :many
-SELECT DISTINCT subject_type_code FROM notice.wizard_templates ORDER BY subject_type_code
+const listIndustryTemplates = `-- name: ListIndustryTemplates :many
+SELECT DISTINCT subject_type_code FROM notice.wizard_templates WHERE industry IS NOT NULL ORDER BY subject_type_code
 `
 
+// PNG-11's own picker: every industry code that has a seeded (or tenant-authored) starter template.
+func (q *Queries) ListIndustryTemplates(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, listIndustryTemplates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var subject_type_code string
+		if err := rows.Scan(&subject_type_code); err != nil {
+			return nil, err
+		}
+		items = append(items, subject_type_code)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listWizardTemplateGroups = `-- name: ListWizardTemplateGroups :many
+SELECT DISTINCT subject_type_code FROM notice.wizard_templates WHERE industry IS NULL ORDER BY subject_type_code
+`
+
+// PNG-11 widened this to exclude industry starter templates (industry IS NOT NULL) from the data-subject
+// group picker -- they share the same table and the same lookup-by-code mechanism (GetWizardTemplateContent
+// below), but are a separate axis the wizard offers through ListIndustryTemplates instead.
 func (q *Queries) ListWizardTemplateGroups(ctx context.Context) ([]string, error) {
 	rows, err := q.db.Query(ctx, listWizardTemplateGroups)
 	if err != nil {

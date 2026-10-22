@@ -67,6 +67,14 @@ func (h *Strict) NoticeListTemplateGroups(ctx context.Context, req NoticeListTem
 	return NoticeListTemplateGroups200JSONResponse{Data: groups}, nil
 }
 
+func (h *Strict) NoticeListIndustryTemplates(ctx context.Context, req NoticeListIndustryTemplatesRequestObject) (NoticeListIndustryTemplatesResponseObject, error) {
+	industries, err := h.svc.ListIndustryTemplates(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return NoticeListIndustryTemplates200JSONResponse{Data: industries}, nil
+}
+
 func (h *Strict) NoticeCreateNotice(ctx context.Context, req NoticeCreateNoticeRequestObject) (NoticeCreateNoticeResponseObject, error) {
 	b := *req.Body
 	in := noticeservice.WizardInput{LegalEntityID: b.LegalEntityId, SubjectTypeID: b.SubjectTypeId, NoticeType: string(b.NoticeType), Title: b.Title, Slug: b.Slug}

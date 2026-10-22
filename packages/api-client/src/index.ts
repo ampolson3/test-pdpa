@@ -252,6 +252,7 @@ export {
   useNoticeAcknowledgements,
   useRecordNoticeAcknowledgement,
   useTemplateGroups,
+  useIndustryTemplates,
   useIndirectCollections,
   useIndirectCollection,
   useIndirectCollectionMutations,

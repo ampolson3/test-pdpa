@@ -12622,6 +12622,35 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/notices/industry-templates:
+    get:
+      operationId: noticeListIndustryTemplates
+      tags: [notice]
+      summary: PNG-11's 6 industries that have a starter template (for the wizard's picker) — the same
+        notice.wizard_templates table as template-groups, keyed by industry instead of subject_type_code
+      x-permission: notice.document.read
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/notices:
     get:
       operationId: noticeListNotices
@@ -20437,7 +20466,7 @@ components:
           default: []
         template_group:
           type: string
-          description: PNG-03 starter template group (see GET /admin/v1/notices/template-groups) — its DRAFT sample content becomes the draft instead of composing from activity_ids. Mutually exclusive with activity_ids.
+          description: A PNG-03 data-subject group code (see GET /admin/v1/notices/template-groups) or a PNG-11 industry code (see GET /admin/v1/notices/industry-templates) — both are starter templates on the same underlying table, looked up by this one code; its DRAFT sample content becomes the draft instead of composing from activity_ids. Mutually exclusive with activity_ids.
       example:
         legal_entity_id: 00000000-0000-0000-0000-000000000000
         notice_type: privacy_notice

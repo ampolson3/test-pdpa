@@ -87,7 +87,7 @@ PNG-08,PNG,เผยแพร่และฝังในระบบ,Hosting & e
 PNG-14,PNG,อนุมัติก่อนเผยแพร่,Review & approval,Should,P1,กำกับ,แนวปฏิบัติตลาด,DPO,XS,S,N,1,3,0.5,0,1.4,PLT-08,BP-04,docs/modules/PNG.md#png-14,ประกาศเผยแพร่ได้หลังอนุมัติเท่านั้น,done
 PNG-09,PNG,บันทึกการรับทราบ,Acknowledgement log,Should,P3,เผยแพร่,ม.23,DS,S,S,N,3,3,0.7,0,2.1,PLT-17,BP-04,docs/modules/PNG.md#png-09,ตรวจได้ว่าบุคคลรับทราบประกาศเวอร์ชันใด,done
 PNG-10,PNG,ดึงเนื้อหาจาก RoPA,Auto-populate from RoPA,Should,P3,เนื้อหา,"ม.23, ม.39",LEGAL,M,S,N,5,3,1.0,0,2.8,"ROPA-03, PLT-11",BP-04,docs/modules/PNG.md#png-10,RoPA เปลี่ยนแล้วประกาศที่เกี่ยวข้องถูกทำเครื่องหมายให้ทบทวน,done
-PNG-11,PNG,แม่แบบตามอุตสาหกรรม,Industry templates,Should,P3,เนื้อหา,แนวปฏิบัติตลาดไทย,LEGAL,XS,S,N,1,3,0.5,0,1.4,T40,BP-04,docs/modules/PNG.md#png-11,มี template ครบ 6 อุตสาหกรรมทั้ง TH/EN,todo
+PNG-11,PNG,แม่แบบตามอุตสาหกรรม,Industry templates,Should,P3,เนื้อหา,แนวปฏิบัติตลาดไทย,LEGAL,XS,S,N,1,3,0.5,0,1.4,T40,BP-04,docs/modules/PNG.md#png-11,มี template ครบ 6 อุตสาหกรรมทั้ง TH/EN,done
 PNG-12,PNG,ประกาศแบบหลายชั้นและป้าย CCTV,Layered notice & CCTV signage,Should,P3,เนื้อหา,แนวปฏิบัติตลาด,LEGAL,S,M,Y,3,5,1.0,2.0,2.8,PNG-08,BP-04,docs/modules/PNG.md#png-12,ป้าย CCTV พิมพ์ได้และ QR เปิดฉบับเต็มได้,todo
 PNG-15,PNG,แจ้งเตือนทบทวนตามรอบ,Periodic review reminder,Should,P3,กำกับ,ม.23,SCHED DPO,S,XS,N,3,1,0.5,0,1.4,PLT-10,BP-04,docs/modules/PNG.md#png-15,เจ้าของประกาศได้รับงานทบทวนตามรอบ,done
 PNG-16,PNG,สร้างนโยบายความเป็นส่วนตัวและนโยบายคุกกี้,Privacy & cookie policy generator,Should,P3,เอกสารอื่น,ม.23,LEGAL,M,S,N,5,3,1.0,0,2.8,"PNG-01, CON-05",BP-04,docs/modules/PNG.md#png-16,นโยบายที่สร้างอ้างถึงประกาศและตารางคุกกี้เวอร์ชันล่าสุด,todo

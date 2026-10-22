@@ -1720,7 +1720,10 @@
       "templateGroup": "แม่แบบตามกลุ่มเจ้าของข้อมูล (PNG-03)",
       "templateGroupHint": "เลือกกลุ่มเพื่อสร้างร่างประกาศจากแม่แบบตัวอย่างทันที (ต้องได้รับการทบทวนโดยฝ่ายกฎหมาย/DPO)",
       "noTemplateGroup": "ไม่ใช้แม่แบบ",
-      "activitiesDisabledByTemplate": "ปิดใช้งานเนื่องจากเลือกแม่แบบตามกลุ่มแล้ว"
+      "activitiesDisabledByTemplate": "ปิดใช้งานเนื่องจากเลือกแม่แบบตามกลุ่มแล้ว",
+      "industryTemplate": "แม่แบบตามอุตสาหกรรม (PNG-11)",
+      "industryTemplateHint": "เลือกอุตสาหกรรมเพื่อสร้างร่างประกาศจากแม่แบบตัวอย่างทันที (ต้องได้รับการทบทวนโดยฝ่ายกฎหมาย/DPO)",
+      "noIndustryTemplate": "ไม่ใช้แม่แบบอุตสาหกรรม"
     },
     "checklist": {
       "title": "ครบตาม ม.23",
@@ -1798,6 +1801,14 @@
         "email": "อีเมล",
         "api": "API"
       }
+    },
+    "industryTemplates": {
+      "retail": "ค้าปลีก",
+      "hospital": "โรงพยาบาล",
+      "finance_insurance": "การเงิน/ประกัน",
+      "hotel": "โรงแรม",
+      "education": "การศึกษา",
+      "government": "ภาครัฐ"
     }
   },
   "masterData": {

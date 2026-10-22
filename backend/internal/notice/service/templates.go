@@ -25,6 +25,19 @@ func (s *Service) ListTemplateGroups(ctx context.Context) ([]string, error) {
 	return q.ListWizardTemplateGroups(ctx)
 }
 
+// IndustryTemplates are PNG-11's 6 fixed industries (module doc: ค้าปลีก โรงพยาบาล การเงิน/ประกัน โรงแรม
+// การศึกษา ภาครัฐ) -- the same "fixed Go list, display names come from UI i18n" convention TemplateGroups
+// already uses, since notice.wizard_templates has no display-name column either.
+var IndustryTemplates = []string{"retail", "hospital", "finance_insurance", "hotel", "education", "government"}
+
+// ListIndustryTemplates returns the industries that actually have a seeded (or tenant-authored) starter
+// template, for the wizard's industry filter -- the same ListTemplateGroups shape, on the other axis of the
+// same notice.wizard_templates table (industry IS NOT NULL instead of IS NULL).
+func (s *Service) ListIndustryTemplates(ctx context.Context) ([]string, error) {
+	q := noticestore.New(pdb.MustTxFromContext(ctx))
+	return q.ListIndustryTemplates(ctx)
+}
+
 // templateContent loads the DRAFT starter content for one group (PNG-03's acceptance criterion: picking a
 // group produces an immediate draft) — both languages, straight from platform.templates' stored ProseMirror
 // tree (the seed migration's shape matches compose.go's own docNode output, so it needs no conversion, only

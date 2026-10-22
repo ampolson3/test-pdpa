@@ -1720,7 +1720,10 @@
       "templateGroup": "Starter template by data-subject group (PNG-03)",
       "templateGroupHint": "Pick a group to generate a draft immediately from its sample template (must be reviewed by Legal/DPO)",
       "noTemplateGroup": "No template",
-      "activitiesDisabledByTemplate": "Disabled because a template group is selected"
+      "activitiesDisabledByTemplate": "Disabled because a template group is selected",
+      "industryTemplate": "Industry template (PNG-11)",
+      "industryTemplateHint": "Pick an industry to generate a draft from a starter template immediately (still needs Legal/DPO review)",
+      "noIndustryTemplate": "No industry template"
     },
     "checklist": {
       "title": "s.23 checklist",
@@ -1798,6 +1801,14 @@
         "email": "Email",
         "api": "API"
       }
+    },
+    "industryTemplates": {
+      "retail": "Retail",
+      "hospital": "Hospital",
+      "finance_insurance": "Finance / Insurance",
+      "hotel": "Hotel",
+      "education": "Education",
+      "government": "Government"
     }
   },
   "masterData": {

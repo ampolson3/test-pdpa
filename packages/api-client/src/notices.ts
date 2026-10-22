@@ -62,6 +62,19 @@ export function useTemplateGroups(client: ApiClient) {
   });
 }
 
+/** GET /admin/v1/notices/industry-templates (PNG-11) — the industries with a starter template; the same
+ * underlying table/lookup as useTemplateGroups, keyed by industry instead of subject_type_code. */
+export function useIndustryTemplates(client: ApiClient) {
+  return useQuery({
+    queryKey: ["notice", "industry-templates"] as const,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/notices/industry-templates", {});
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
 /** GET /admin/v1/notices/{id}/checklist (PNG-02) — the six ม.23 mandatory topics and whether each is filled in. */
 export function useNoticeChecklist(client: ApiClient, id: string | undefined) {
   return useQuery({

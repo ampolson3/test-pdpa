@@ -4321,6 +4321,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/notices/industry-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** PNG-11's 6 industries that have a starter template (for the wizard's picker) — the same notice.wizard_templates table as template-groups, keyed by industry instead of subject_type_code */
+        get: operations["noticeListIndustryTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/notices": {
         parameters: {
             query?: never;
@@ -8388,7 +8405,7 @@ export interface components {
              * @default []
              */
             activity_ids: components["schemas"]["Uuid"][];
-            /** @description PNG-03 starter template group (see GET /admin/v1/notices/template-groups) — its DRAFT sample content becomes the draft instead of composing from activity_ids. Mutually exclusive with activity_ids. */
+            /** @description A PNG-03 data-subject group code (see GET /admin/v1/notices/template-groups) or a PNG-11 industry code (see GET /admin/v1/notices/industry-templates) — both are starter templates on the same underlying table, looked up by this one code; its DRAFT sample content becomes the draft instead of composing from activity_ids. Mutually exclusive with activity_ids. */
             template_group?: string;
         };
         Notice: {
@@ -20178,6 +20195,33 @@ export interface operations {
         };
     };
     noticeListTemplateGroups: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: string[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    noticeListIndustryTemplates: {
         parameters: {
             query?: never;
             header?: {

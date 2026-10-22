@@ -8,6 +8,7 @@ import {
   createApiClient,
   useActivities,
   useCreateNoticeWizard,
+  useIndustryTemplates,
   useLegalEntities,
   useMentionSearch,
   useNotices,
@@ -296,6 +297,7 @@ export function NoticesContent({ portalUrl }: { portalUrl: string }) {
   const entities = useLegalEntities(client);
   const activities = useActivities(client, {});
   const templateGroups = useTemplateGroups(client);
+  const industryTemplates = useIndustryTemplates(client);
 
   if (!canRead) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
 
@@ -360,9 +362,18 @@ export function NoticesContent({ portalUrl }: { portalUrl: string }) {
           </label>
           <label className="sm:col-span-2"><span className="block text-slate-600">{t("form.templateGroup")}</span>
             <p className="mb-1 text-xs text-slate-500">{t("form.templateGroupHint")}</p>
-            <select className={INPUT} value={draft.template_group} onChange={(e) => set({ template_group: e.target.value })} data-testid="template-group-picker">
+            <select className={INPUT} value={templateGroups.data?.includes(draft.template_group) ? draft.template_group : ""}
+              onChange={(e) => set({ template_group: e.target.value })} data-testid="template-group-picker">
               <option value="">{t("form.noTemplateGroup")}</option>
               {(templateGroups.data ?? []).map((g) => <option key={g} value={g}>{t(`templateGroups.${g}`)}</option>)}
+            </select>
+          </label>
+          <label className="sm:col-span-2"><span className="block text-slate-600">{t("form.industryTemplate")}</span>
+            <p className="mb-1 text-xs text-slate-500">{t("form.industryTemplateHint")}</p>
+            <select className={INPUT} value={industryTemplates.data?.includes(draft.template_group) ? draft.template_group : ""}
+              onChange={(e) => set({ template_group: e.target.value })} data-testid="industry-template-picker">
+              <option value="">{t("form.noIndustryTemplate")}</option>
+              {(industryTemplates.data ?? []).map((g) => <option key={g} value={g}>{t(`industryTemplates.${g}`)}</option>)}
             </select>
           </label>
           <div className="sm:col-span-2">

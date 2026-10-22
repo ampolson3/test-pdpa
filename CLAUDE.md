@@ -3848,6 +3848,48 @@ deliberately: `ropa.activity_changed`/`activity_submitted` (the catalog's own si
 notice's own review should react to; a draft edit or a pending-approval submission isn't yet the kind of
 change ม.23/ม.39 care about a notice reflecting.
 
+### PNG-11 แม่แบบตามอุตสาหกรรม (`docs/modules/PNG.md#png-11`) — done
+The other axis of PNG-03's own wizard-template mechanism: `platform.templates.industry` and
+`notice.wizard_templates.industry` were both already in the very first baseline migrations, completely
+unused — PNG-03 only ever wrote `subject_type_code`-keyed rows with `industry IS NULL`. This feature needed
+no new column, no new table — only seed data (migration 00081, structure copied from PNG-03's own
+`00042_seed_notice_templates.sql`) and a second, parallel lookup query. Migration 00081 seeds 6 industries
+(`retail`, `hospital`, `finance_insurance`, `hotel`, `education`, `government`) × th/en into
+`platform.templates` (`template_type = 'notice_wizard'`) and `notice.wizard_templates`, each a full
+ม.23-topic-coded ProseMirror document in `compose.go`'s own `docNode` shape (so a template-sourced draft is
+PNG-02's checklist-compatible immediately, same as PNG-03) with a `[ร่าง — ...]`/`[DRAFT — ...]` opening
+paragraph — flagged for legal review per rule 8, `docs/decisions.md` Q-38 (the same "seed a draft + flag it"
+move ORG-07/ROPA-09/PNG-03/DPIA-01/RTG-01 already made for content with no official source to copy).
+
+`backend/db/queries/notice/templates.sql`'s `ListWizardTemplateGroups` (PNG-03's own groups picker) gained a
+`WHERE industry IS NULL` clause so the two axes never leak into each other, and a new sibling query,
+`ListIndustryTemplates` (`SELECT DISTINCT subject_type_code ... WHERE industry IS NOT NULL`), backs
+`notice.Service.ListIndustryTemplates` and a hardcoded `IndustryTemplates` constant (the fixed 6-code list
+the UI's i18n keys are built against, the exact same split PNG-03's own `TemplateGroups` already uses).
+Nothing about `WizardInput`/`CreateWizard`/`templateContent` changed at all: `TemplateGroup` was already a
+plain `subject_type_code` lookup against `notice.wizard_templates`, so picking an industry code through that
+exact same field immediately produces a draft the identical way a PNG-03 group does — no new wizard logic,
+no new `compose()` path.
+
+API: `GET /admin/v1/notices/industry-templates` (`noticeListIndustryTemplates`, `notice.document.read`,
+mirrors `noticeListTemplateGroups` exactly — remember to add new operationIds to
+`internal/notice/http/oapi-codegen.yaml`'s own `include-operation-ids` allowlist, the same gotcha several
+prior features already hit). UI: `/notices`' wizard form gained a second `<select>` (industry picker) next
+to the existing data-subject-group picker, both writing to the same `draft.template_group` field — picking
+either disables nothing extra, since the two lists are already guaranteed disjoint by the migration's own
+seed data. Tests: unit (`internal/notice/service/industry_templates_test.go` —
+`TestListIndustryTemplates_CoversAllSixIndustries`, `TestListTemplateGroups_ExcludesIndustries` (the two axes
+never leak into each other), `TestCreateWizard_IndustryTemplate_ImmediateDraft` (the acceptance criterion
+directly: picking `"hospital"` produces an immediate draft carrying that industry's own sample text and
+DRAFT marker in both th/en)), HTTP contract (`internal/notice/http/handler_test.go` — 401 with no principal,
+200 listing `"hospital"` through the real validator, and a full create-from-industry-template round trip
+returning a `"draft"` notice). Not verified live against a real Postgres/Redis — the same environment
+limitation this codebase's other recent passes already disclosed (neither was reachable this pass); every
+test compiles and vets clean and skips the same way the rest of this module's own suite already does here.
+`go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/notices` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

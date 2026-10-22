@@ -658,6 +658,13 @@ acceptance criterion เอง): `internal/ropa/service.ApproveActivity` (ROPA-1
 
 **Acceptance criteria:** มี template ครบ 6 อุตสาหกรรมทั้ง TH/EN
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### PNG-11`. สรุป: migration 00081
+(`docs/decisions.md` Q-38) seed แม่แบบร่าง 6 อุตสาหกรรม × th/en บนตารางเดิมของ PNG-03
+(`platform.templates`/`notice.wizard_templates`'s own `industry` column ซึ่งมีมาตั้งแต่ baseline แต่
+ไม่เคยถูกใช้) — `ListIndustryTemplates`/`GET /admin/v1/notices/industry-templates` (ตัวกรองตัวใหม่) และ
+wizard's `template_group` field ตัวเดิมใช้คัดลอก/สร้างร่างจากแม่แบบอุตสาหกรรมได้ทันที ไม่มีการเขียนโค้ด
+`compose()` ใหม่เลย.
+
 <a id="png-12"></a>
 ### PNG-12 ประกาศแบบหลายชั้นและป้าย CCTV
 

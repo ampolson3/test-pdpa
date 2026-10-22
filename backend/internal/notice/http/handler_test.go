@@ -265,6 +265,18 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 	if code, body := do("POST", "/admin/v1/notices", &admin, tplWiz); code != 201 || !strings.Contains(body, `"status":"draft"`) {
 		t.Errorf("create from template group: %d %s", code, body)
 	}
+
+	// PNG-11 industry templates — same picker/wizard shape, the other axis.
+	if code, _ := do("GET", "/admin/v1/notices/industry-templates", nil, nil); code != 401 {
+		t.Errorf("industry-templates, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", "/admin/v1/notices/industry-templates", &viewer, nil); code != 200 || !strings.Contains(body, `"hospital"`) {
+		t.Errorf("industry-templates: %d %s", code, body)
+	}
+	indWiz := map[string]any{"legal_entity_id": legalEntity, "notice_type": "privacy_notice", "title": "ประกาศโรงพยาบาล", "slug": "hospital-template", "template_group": "hospital"}
+	if code, body := do("POST", "/admin/v1/notices", &admin, indWiz); code != 201 || !strings.Contains(body, `"status":"draft"`) {
+		t.Errorf("create from industry template: %d %s", code, body)
+	}
 	if code, body := do("POST", "/admin/v1/notices", &admin, map[string]any{"legal_entity_id": legalEntity, "notice_type": "employee", "title": "x", "slug": "bad-group", "template_group": "not_a_group"}); code != 422 || !strings.Contains(body, "notice.invalid_input") {
 		t.Errorf("unknown template_group: %d %s, want 422", code, body)
 	}
