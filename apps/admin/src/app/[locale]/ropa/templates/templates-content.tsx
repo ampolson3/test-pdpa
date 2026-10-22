@@ -35,13 +35,18 @@ export function TemplatesContent() {
   const allowed = usePermission("ropa.template.read");
   const canCreateBatch = usePermission("ropa.activity.create");
   const client = useMemo(() => createApiClient("/api/bff"), []);
+  const [industry, setIndustry] = useState(""); // "" = the standard, job-category-based set (RTG-01)
   const [jobCategory, setJobCategory] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const sets = useTemplateSets(client);
   const standardSet = sets.data?.find((s) => s.set_type === "standard");
-  const all = useActivityTemplates(client, standardSet?.id);
-  const filtered = useActivityTemplates(client, standardSet?.id, jobCategory || undefined);
+  const industrySets = useMemo(() => (sets.data ?? []).filter((s) => s.set_type === "industry"), [sets.data]);
+  // RTG-02: picking an industry switches the browsed set from RTG-01's standard (job-category) one to
+  // that industry's own starter set — the job-category filter below still applies within either set.
+  const activeSet = industry ? industrySets.find((s) => s.industry === industry) : standardSet;
+  const all = useActivityTemplates(client, activeSet?.id);
+  const filtered = useActivityTemplates(client, activeSet?.id, jobCategory || undefined);
   const detail = useActivityTemplate(client, selectedId ?? undefined);
 
   if (!allowed) {
@@ -67,6 +72,23 @@ export function TemplatesContent() {
 
       <div className="grid gap-4 sm:grid-cols-[260px_1fr]">
         <div className="space-y-3">
+          <label className="text-sm">
+            <span className="block text-slate-600">{t("industryFilter")}</span>
+            <select
+              className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1"
+              data-testid="industry-picker"
+              value={industry}
+              onChange={(e) => { setIndustry(e.target.value); setJobCategory(""); setSelectedId(null); }}
+            >
+              <option value="">{t("standardSetLabel")}</option>
+              {industrySets.map((s) => (
+                <option key={s.id} value={s.industry}>
+                  {t.has(`industries.${s.industry}`) ? t(`industries.${s.industry}`) : s.industry}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <label className="text-sm">
             <span className="block text-slate-600">{t("jobCategory")}</span>
             <select

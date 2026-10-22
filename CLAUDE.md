@@ -3890,6 +3890,45 @@ test compiles and vets clean and skips the same way the rest of this module's ow
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build` (incl. the updated `/notices` route) all verified clean.
 
+### RTG-02 Template ตามอุตสาหกรรม (`docs/modules/RTG.md#rtg-02`) — done
+PNG-11's exact move, ported to RoPA's own template library: `ropa.template_sets.set_type` already had
+`'industry'` in its CHECK constraint and `industry varchar(40)` was already a column — both in the very
+first baseline migration (`00008_ropa.sql`) — completely unused by RTG-01's own seed, which only ever wrote
+`set_type='standard'` on the job-category axis. This feature needed no schema change at all, only seed data:
+migration 00082 (`docs/decisions.md` Q-39, the same "seed a draft + flag for legal review" move ORG-07/
+ROPA-09/PNG-03/DPIA-01/RTG-01/PNG-11 already made) adds 6 new `ropa.template_sets` rows
+(`set_type='industry'`, `industry` = `retail`/`hospital`/`finance_insurance`/`education`/`real_estate`/
+`government`) and 12 `ropa.activity_templates` rows (2 representative activities per industry), each in the
+exact `defaults`/`rationale` jsonb shape RTG-01's own seed already uses (purposes+lawful_basis_code,
+data+data_category_code/subject_type_code, recipients, retention, security_controls) — keyed against the
+real `org.lawful_bases`/`data_categories`/`data_subject_types` and `ropa` security-control codes migrations
+00031/00040 already seeded, not invented.
+
+`internal/ropa/templates.Service` (RTG-01's own read-only package) needed no new method at all: its existing
+`ListTemplateSets` already returns every set's `SetType`/`Industry` fields, and `ListActivityTemplates`
+already takes any `template_set_id` — so browsing an industry set is the identical call RTG-01's own
+job-category browsing already makes, just against a different set id. The only frontend change is
+`/ropa/templates`' own `TemplatesContent`: a new industry `<select>` (options built live from
+`ListTemplateSets`' own `set_type='industry'` rows, not hardcoded) switches the browsed `activeSet` from the
+RTG-01 standard set to that industry's own, while the existing job-category filter keeps working unchanged
+within whichever set is active. "Create from template" (ROPA-05) is unaffected — it already takes any
+`activity_template_id`, industry or standard alike.
+
+No OpenAPI change, no new endpoint, no new permission — `RopaTemplateSet`'s wire schema already declared
+`set_type: [standard, industry, government, processor, custom]` and `industry` as a plain string field.
+Tests: `internal/ropa/templates/rtg02_test.go` — `TestListTemplateSets_SixIndustrySetsSeeded` (the acceptance
+criterion directly: all 6 industries exist, each with at least one activity whose `defaults` carries every
+ม.39 topic this feature claims to), `TestListTemplateSets_IndustryAndStandardAreSeparateSets` (an industry
+set's activities never leak into the standard set, mirroring PNG-11's own axis-separation test). Not verified
+live against a real Postgres/Redis — the same environment limitation this codebase's other recent passes
+already disclosed; every test compiles and vets clean and skips the same way the rest of this package's own
+suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/ropa/templates` route) all verified clean. Not done, deliberately: RTG-03's own
+government-specific สพร. template structure (a separate backlog row with its own official-format acceptance
+criterion — this feature's seeded `government` industry set is a generic starter, not that structure) and
+RTG-08's tenant-authored custom templates (no create/update surface on this library yet, same as RTG-01).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

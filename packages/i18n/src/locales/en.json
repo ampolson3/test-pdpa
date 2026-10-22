@@ -3110,6 +3110,8 @@
     "loading": "Loading...",
     "loadError": "Failed to load",
     "empty": "No standard activities found",
+    "industryFilter": "Industry",
+    "standardSetLabel": "Standard library (by job category)",
     "jobCategory": "Job category",
     "allCategories": "All categories",
     "selectPrompt": "Select an activity on the left to view its defaults",
@@ -3132,6 +3134,14 @@
       "training": "Training",
       "health_safety": "Health & safety",
       "product_analytics": "Product / analytics"
+    },
+    "industries": {
+      "retail": "Retail",
+      "hospital": "Hospital",
+      "finance_insurance": "Finance & Insurance",
+      "education": "Education",
+      "real_estate": "Real Estate",
+      "government": "Government"
     },
     "section": {
       "purposes": "Purposes and lawful basis",

@@ -322,6 +322,13 @@ tests ran compile-only, consistent with every other test this session.
 
 **Acceptance criteria:** มีชุดกิจกรรมครบ 6 อุตสาหกรรม
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### RTG-02`. สรุป: migration 00082
+(`docs/decisions.md` Q-39) seed `ropa.template_sets` ใหม่ 6 ชุด (`set_type='industry'`) — ค้าปลีก
+โรงพยาบาล การเงิน/ประกัน การศึกษา อสังหาฯ ภาครัฐ — พร้อมกิจกรรมตัวแทน 2 รายการต่ออุตสาหกรรม บนตาราง
+เดิมของ RTG-01 (`ropa.template_sets`/`ropa.activity_templates`'s own `set_type`/`industry` columns ซึ่ง
+มีมาตั้งแต่ baseline แต่ RTG-01 ไม่เคยใช้) ไม่มี migration schema หรือ endpoint ใหม่เลย — `/ropa/templates`
+เดิมเพิ่มตัวกรองอุตสาหกรรมที่สลับไปดู template set ของอุตสาหกรรมนั้นแทนคลังมาตรฐานตามหมวดงาน
+
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
 
 <a id="rtg-03"></a>

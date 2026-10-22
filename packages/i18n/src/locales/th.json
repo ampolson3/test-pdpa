@@ -3110,6 +3110,8 @@
     "loading": "กำลังโหลด...",
     "loadError": "โหลดข้อมูลไม่สำเร็จ",
     "empty": "ไม่พบกิจกรรมมาตรฐาน",
+    "industryFilter": "อุตสาหกรรม",
+    "standardSetLabel": "คลังมาตรฐาน (ตามหมวดงาน)",
     "jobCategory": "หมวดงาน",
     "allCategories": "ทุกหมวดงาน",
     "selectPrompt": "เลือกกิจกรรมทางด้านซ้ายเพื่อดูค่าตั้งต้น",
@@ -3132,6 +3134,14 @@
       "training": "ฝึกอบรม",
       "health_safety": "อาชีวอนามัย",
       "product_analytics": "ผลิตภัณฑ์/วิเคราะห์ข้อมูล"
+    },
+    "industries": {
+      "retail": "ค้าปลีก",
+      "hospital": "โรงพยาบาล",
+      "finance_insurance": "การเงินและประกันภัย",
+      "education": "การศึกษา",
+      "real_estate": "อสังหาริมทรัพย์",
+      "government": "ภาครัฐ"
     },
     "section": {
       "purposes": "วัตถุประสงค์และฐานทางกฎหมาย",
