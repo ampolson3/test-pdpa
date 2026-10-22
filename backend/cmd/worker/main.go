@@ -122,7 +122,6 @@ func run() error {
 	river.AddWorker(workers, &consentservice.ExpiryChecker{Service: consentSvc})
 	ropaSvc := &ropaservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter} // ROPA-15: periodic review reminder
 	dpiaSvc := &dpiaservice.Service{Audit: auditservice.New()}                                                  // DPIA-13: breach.activity_linked marks the activity's approved round needs_review
-	wiring.Events(subscribers, ropaSvc, dpiaSvc)                                                                // ROPA-10: logs DSAR rejections against their processing activities
 	river.AddWorker(workers, &ropaservice.ReviewSweeper{Pool: pool, River: inserter})
 	river.AddWorker(workers, &ropaservice.ReviewChecker{Service: ropaSvc})
 	vendorSvc := &vendorservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter} // VEN-10: periodic re-assessment reminder
@@ -136,6 +135,7 @@ func run() error {
 	river.AddWorker(workers, &breach.TimerWorker{Service: breachSvc})
 	river.AddWorker(workers, &breach.NoticeWorker{Service: breachSvc})
 	noticeSvc := &notice.Service{Notify: notifySvc, River: inserter} // PNG-04: 30-day indirect-collection reminders
+	wiring.Events(subscribers, ropaSvc, dpiaSvc, noticeSvc)          // ROPA-10: logs DSAR rejections; PNG-10: marks notices for review when their RoPA activity changes
 	river.AddWorker(workers, &notice.DueWorker{Service: noticeSvc})
 	river.AddWorker(workers, &notice.ReviewSweeper{Pool: pool, River: inserter}) // PNG-15: periodic review reminder
 	river.AddWorker(workers, &notice.ReviewChecker{Service: noticeSvc})

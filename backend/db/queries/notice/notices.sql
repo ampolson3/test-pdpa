@@ -48,6 +48,17 @@ SELECT activity_id FROM notice.notice_activity_links WHERE notice_id = $1 ORDER 
 -- RRA-04: whether any notice (regardless of status) links this RoPA activity.
 SELECT EXISTS (SELECT 1 FROM notice.notice_activity_links WHERE activity_id = $1) AS covered;
 
+-- name: ListNoticeIDsByActivity :many
+-- PNG-10: every notice composed from this activity (RLS already scopes it to the caller's own tenant).
+SELECT notice_id FROM notice.notice_activity_links WHERE activity_id = $1 ORDER BY notice_id;
+
+-- name: MarkNoticeForReview :exec
+-- PNG-10: sets next_review_at to today so PNG-15's own daily review sweep picks this notice up on its
+-- next run — a notice that has never been published yet has no review clock to disturb, so this is a
+-- no-op for one (WHERE current_version_id IS NOT NULL).
+UPDATE notice.notices SET next_review_at = CURRENT_DATE
+WHERE id = $1 AND current_version_id IS NOT NULL AND (next_review_at IS NULL OR next_review_at > CURRENT_DATE);
+
 -- name: GetNoticeByDocumentID :one
 SELECT id, legal_entity_id, subject_type_id, notice_type, title, slug, document_id, status, current_version_id,
     owner_user_id, review_cycle_months, public_key, pending_is_material_change, pending_changes_purpose,

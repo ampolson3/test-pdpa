@@ -409,6 +409,31 @@ func (q *Queries) ListNoticeActivityLinks(ctx context.Context, noticeID uuid.UUI
 	return items, nil
 }
 
+const listNoticeIDsByActivity = `-- name: ListNoticeIDsByActivity :many
+SELECT notice_id FROM notice.notice_activity_links WHERE activity_id = $1 ORDER BY notice_id
+`
+
+// PNG-10: every notice composed from this activity (RLS already scopes it to the caller's own tenant).
+func (q *Queries) ListNoticeIDsByActivity(ctx context.Context, activityID uuid.UUID) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listNoticeIDsByActivity, activityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var notice_id uuid.UUID
+		if err := rows.Scan(&notice_id); err != nil {
+			return nil, err
+		}
+		items = append(items, notice_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listNoticeVersions = `-- name: ListNoticeVersions :many
 SELECT id, notice_id, version_no, document_version_id, languages, effective_from, is_material_change,
     changes_purpose, checklist_result, public_url, published_at, published_by
@@ -587,6 +612,19 @@ func (q *Queries) ListNoticesDueForReview(ctx context.Context, nextReviewAt pgty
 		return nil, err
 	}
 	return items, nil
+}
+
+const markNoticeForReview = `-- name: MarkNoticeForReview :exec
+UPDATE notice.notices SET next_review_at = CURRENT_DATE
+WHERE id = $1 AND current_version_id IS NOT NULL AND (next_review_at IS NULL OR next_review_at > CURRENT_DATE)
+`
+
+// PNG-10: sets next_review_at to today so PNG-15's own daily review sweep picks this notice up on its
+// next run — a notice that has never been published yet has no review clock to disturb, so this is a
+// no-op for one (WHERE current_version_id IS NOT NULL).
+func (q *Queries) MarkNoticeForReview(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, markNoticeForReview, id)
+	return err
 }
 
 const setNoticeNextReview = `-- name: SetNoticeNextReview :exec

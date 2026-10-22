@@ -24,6 +24,7 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/collab"
+	"pdpa-platform/internal/platform/events"
 	"pdpa-platform/internal/platform/notify"
 	riskservice "pdpa-platform/internal/risk/service"
 	ropastore "pdpa-platform/internal/ropa/store"
@@ -85,6 +86,9 @@ type Service struct {
 	// Notify and River drive ROPA-15's periodic review reminder; nil in contexts that don't need them.
 	Notify *notify.Service
 	River  *river.Client[pgx.Tx]
+	// Events publishes ropa.activity_approved (PNG-10) — nil in contexts that never approve an activity
+	// (there are none today, but the field follows the same nil-means-skip convention as Notify/River).
+	Events *events.Publisher
 	// Collab is PLT-07's shared comment/mention layer, reused as-is for ROPA-12's activity Q&A; nil in
 	// contexts that never read/write questions (e.g. the worker's own review-reminder jobs).
 	Collab *collab.Service

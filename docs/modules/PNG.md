@@ -626,6 +626,17 @@ acknowledgements`; อ่านย้อนกลับผ่าน `GET` คู
 
 **Acceptance criteria:** RoPA เปลี่ยนแล้วประกาศที่เกี่ยวข้องถูกทำเครื่องหมายให้ทบทวน
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### PNG-10`. สรุป: "เลือกกิจกรรม RoPA →
+ประกอบหัวข้อ...ใน wizard" ถูกสร้างไว้แล้วตั้งแต่ PNG-01/PNG-03 (`activity_ids`/`template_group` บนฟอร์ม
+wizard เดิม) — สิ่งที่ feature นี้เพิ่มจริงคือครึ่งหลัง ("event ropa.updated → แจ้งให้ทบทวนประกาศ",
+acceptance criterion เอง): `internal/ropa/service.ApproveActivity` (ROPA-13) publish `ropa.activity_approved`
+(PLT-11, มีอยู่แล้วใน `docs/architecture/events.yaml`/catalog ตั้งแต่ ROPA-13 เองแต่ยังไม่มีใคร publish จนถึง
+ตอนนี้) พร้อม `changed_fields` (ไดฟ์กับรอบก่อนหน้า, ทุก section เมื่อเป็นการอนุมัติครั้งแรก);
+`internal/wiring/events.go`'s subscriber ใหม่เรียก `noticeSvc.MarkNoticesForReviewByActivity` ซึ่งตั้ง
+`notice.notices.next_review_at` เป็นวันนี้สำหรับทุกประกาศที่ผูกกับกิจกรรมนั้น (`notice.notice_activity_links`)
+— ใช้ PNG-15's own review sweep ที่มีอยู่แล้วแจ้งเจ้าของประกาศในการรันถัดไป ไม่สร้าง mechanism แจ้งเตือนใหม่
+ซ้ำ. ropa ไม่เขียนเข้า notice schema ตรง (rule 9).
+
 <a id="png-11"></a>
 ### PNG-11 แม่แบบตามอุตสาหกรรม
 

@@ -3789,6 +3789,65 @@ for an embedded SDK/API integration reading the notice elsewhere, matching the m
 SDK / หน้า public" phrasing as three alternative channels, not a mandate for this specific page); add it once
 a real consumer needs it.
 
+### PNG-10 ดึงเนื้อหาจาก RoPA (`docs/modules/PNG.md#png-10`) — done
+PNG-01/PNG-03 already built the frontend half this feature's own description names ("เลือกกิจกรรม RoPA →
+ประกอบหัวข้อ...ใน wizard") — the `/notices` wizard already lets a DPO pick `activity_ids` (or a
+`template_group`) and composes the ม.23 sections from them. This pass's real, net-new scope is the other
+half of the same description and the feature's own literal acceptance criterion: "event ropa.updated →
+แจ้งให้ทบทวนประกาศ" / "RoPA เปลี่ยนแล้วประกาศที่เกี่ยวข้องถูกทำเครื่องหมายให้ทบทวน" — nothing published any
+RoPA-change event to anything until now, even though `docs/architecture/events.yaml`/the generated catalog
+already named `ropa.activity_approved`/`activity_changed`/`activity_submitted` (ROPA-13's own era) with
+"notice links" as a documented consumer.
+
+`internal/ropa/service.Service` gained an `Events *events.Publisher` field (nil-means-skip, the same
+convention `Notify`/`River`/`Collab` already use — every other ropa test's own `setup()` leaves it nil, so
+nothing about this feature changes any existing test's behavior). `ApproveActivity` (ROPA-13/ROPA-15) now
+also publishes `ropa.activity_approved` right after freezing the new `ropa.activity_versions` row, carrying
+`activity_id`/`version`/`changed_fields` — the catalog's own exact field set, already declared, no
+`events.yaml` or `go generate` change needed. `changed_fields` is computed by a new `changedSectionNames`
+helper: diffs the snapshot being approved against whatever was the latest approved round before it (the
+same section-by-section `reflect.DeepEqual` approach `CompareActivityVersions` already established, just
+collapsed to names), or — on a first approval, with nothing to diff against — every section the new
+snapshot carries. `ActivityAggregateType = "ropa_activity"` is the outbox envelope's own "subject" type, the
+same string PLT-07's own collab registration (ROPA-12) already uses for this record.
+
+`internal/notice/service.Service.MarkNoticesForReviewByActivity` is the consumer side and the acceptance
+criterion's own literal mechanism: a new sqlc query, `ListNoticeIDsByActivity` (reads
+`notice.notice_activity_links`, already in the baseline schema, RLS-scoped), paired with `MarkNoticeForReview`
+(`UPDATE notice.notices SET next_review_at = CURRENT_DATE WHERE id = $1 AND current_version_id IS NOT NULL
+AND (next_review_at IS NULL OR next_review_at > CURRENT_DATE)`) — deliberately not a second notification
+mechanism: bringing `next_review_at` forward to today means PNG-15's own daily `CheckDueReviews` sweep
+notifies the notice's owner (or falls back to role DPO) on its very next run, the exact "owner gets a review
+task" outcome the module doc's own backend note implies without building a duplicate reminder path. A
+never-published notice (`current_version_id IS NULL`) has no review clock to disturb and is correctly left
+alone, not given a fabricated due date. `internal/wiring/events.go` gained a new `ropa.activity_approved`
+subscriber calling this directly — `Events()`'s own signature widened to take `noticeSvc` alongside
+`ropaSvc`/`dpiaSvc` (both `cmd/worker/main.go`'s existing call site and `cmd/api/main.go`'s own `ropaSvc`
+construction, which now also sets `Events: &events.Publisher{River: riverClient}`, were updated to match —
+`cmd/worker/main.go`'s own `noticeSvc` construction had to move ahead of the `wiring.Events(...)` call it
+feeds). ropa never writes to the notice schema directly, and notice never reads the ropa schema directly
+beyond its own already-exported `Ropa` interface — the event is the only channel between them (rule 9).
+
+Tests: `internal/ropa/service/png10_test.go` (`TestApproveActivity_PublishesChangedFieldsEvent` — the
+producer-side acceptance criterion directly: a first approval's outbox row names every section as changed,
+a second approval after editing only the activity's own name names exactly `["name"]`, matching
+`CompareActivityVersions`' own diff for the identical edit; `TestApproveActivity_NoEventsPublisherIsHarmless`
+— a `Service` with no `Events` field, same as every other test in this package, approves exactly as before),
+`internal/notice/service/png10_test.go` (`TestMarkNoticesForReviewByActivity` — the consumer-side acceptance
+criterion directly: marking a linked activity brings a published notice's `next_review_at` forward to today,
+an unrelated activity id is a harmless no-op; `TestMarkNoticesForReviewByActivity_UnpublishedNoticeUntouched`
+— a draft notice gets no fabricated due date; `TestMarkNoticesForReviewByActivity_TwoTenantIsolation` — RLS
+on `notice.notice_activity_links` means marking another tenant's activity id never touches this tenant's own
+notice). `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file — confirmed two
+pre-existing, unrelated failures in this same package, `TestActivityImport_*` and
+`TestCheckDueReviews_NotifiesOwnerAndReschedules` (the latter already disclosed in `docs/known-issues.md`),
+exist identically via `git stash`, not caused by this change), `go test -count=1
+./internal/ropa/service/... ./internal/notice/...` (every test this feature touches passes). Not done,
+deliberately: `ropa.activity_changed`/`activity_submitted` (the catalog's own sibling events, also naming
+"notice links" as a consumer) stay unpublished — only an *approved* round is a real, citable version a
+notice's own review should react to; a draft edit or a pending-approval submission isn't yet the kind of
+change ม.23/ม.39 care about a notice reflecting.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

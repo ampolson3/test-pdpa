@@ -15,8 +15,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	pdb "pdpa-platform/internal/pkg/db"
+	"pdpa-platform/internal/platform/events"
 	ropastore "pdpa-platform/internal/ropa/store"
 )
+
+// ActivityAggregateType is the outbox envelope "subject" for ropa.activity_approved (PNG-10) — the same
+// string PLT-07's own collab registration (ROPA-12) already uses for this record type.
+const ActivityAggregateType = "ropa_activity"
 
 // ActivitySnapshot is what ropa.activity_versions freezes on every approval — the core record plus every
 // child row, keyed the same way this module's own completeness() and HTTP layer already read them. Kept
@@ -114,6 +119,18 @@ func (s *Service) ApproveActivity(ctx context.Context, id uuid.UUID, version int
 	out := toActivity(ropastore.GetActivityRow(r))
 	out.Completeness, out.MissingItems = before.Completeness, before.MissingItems
 
+	// PNG-10: diff against whatever was the latest approved version before this one (none on a first
+	// approval, in which case every section the new snapshot carries counts as "changed") — read before
+	// InsertActivityVersion below adds this round to the same list.
+	prevRows, err := q.ListActivityVersions(ctx, id)
+	if err != nil {
+		return Activity{}, err
+	}
+	changedFields, err := changedSectionNames(prevRows, snap)
+	if err != nil {
+		return Activity{}, err
+	}
+
 	next, err := q.MaxActivityVersionNo(ctx, id)
 	if err != nil {
 		return Activity{}, err
@@ -128,6 +145,18 @@ func (s *Service) ApproveActivity(ctx context.Context, id uuid.UUID, version int
 	}
 	if _, err := q.InsertActivityVersion(ctx, ropastore.InsertActivityVersionParams{ID: vid, ActivityID: id, VersionNo: next + 1, Snapshot: raw}); err != nil {
 		return Activity{}, err
+	}
+	// PNG-10: tells the notice module which activity changed, so any notice composed from it gets marked
+	// for review — ropa never writes to the notice schema itself (rule 9); internal/wiring/events.go's own
+	// subscriber does that by setting notice.notices.next_review_at to today, which PNG-15's own review
+	// sweep already picks up on its next run.
+	if s.Events != nil {
+		if _, err := s.Events.Publish(ctx, events.Event{
+			Type: "ropa.activity_approved", AggregateType: ActivityAggregateType, AggregateID: id,
+			Data: map[string]any{"activity_id": id.String(), "version": int(next + 1), "changed_fields": changedFields},
+		}); err != nil {
+			return Activity{}, err
+		}
 	}
 	// ROPA-15: every approval restarts the review clock from today, review_cycle_months out.
 	cycle, err := q.GetActivityReviewCycle(ctx, id)
@@ -373,6 +402,53 @@ func snapshotSections(s ActivitySnapshot) (map[string]any, error) {
 		return nil, err
 	}
 	return out, nil
+}
+
+// changedSectionNames is PNG-10's own need: which of ActivitySnapshot's named sections differ between the
+// round being approved now and whatever was the latest approved round before it (rows ordered DESC by
+// version_no, per ListActivityVersions — rows[0] is that previous round, if any). No previous round at all
+// (a first approval) counts every section the new snapshot carries as changed, since there was nothing to
+// compare against. The same reflect.DeepEqual-per-section approach CompareActivityVersions already uses,
+// just collapsed to names only.
+func changedSectionNames(prevRows []ropastore.ListActivityVersionsRow, cur ActivitySnapshot) ([]string, error) {
+	curSections, err := snapshotSections(cur)
+	if err != nil {
+		return nil, err
+	}
+	if len(prevRows) == 0 {
+		keys := make([]string, 0, len(curSections))
+		for k := range curSections {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		return keys, nil
+	}
+	var prev ActivitySnapshot
+	if err := json.Unmarshal(prevRows[0].Snapshot, &prev); err != nil {
+		return nil, err
+	}
+	prevSections, err := snapshotSections(prev)
+	if err != nil {
+		return nil, err
+	}
+	seen := make(map[string]struct{}, len(curSections)+len(prevSections))
+	for k := range curSections {
+		seen[k] = struct{}{}
+	}
+	for k := range prevSections {
+		seen[k] = struct{}{}
+	}
+	changed := make([]string, 0, len(seen))
+	for k := range seen {
+		b, hasB := prevSections[k]
+		a, hasA := curSections[k]
+		if hasB && hasA && reflect.DeepEqual(b, a) {
+			continue
+		}
+		changed = append(changed, k)
+	}
+	sort.Strings(changed)
+	return changed, nil
 }
 
 func toActivityVersion(r ropastore.GetActivityVersionRow) (ActivityVersion, error) {

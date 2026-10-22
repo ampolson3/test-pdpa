@@ -267,13 +267,14 @@ func run() error {
 	// Bulk import (PLT-14): the same registry as cmd/worker's (importTypes in imports.go).
 	importSvc := &importer.Service{Types: wiring.ImportTypes(keyring, riverClient), Files: fileSvc, River: riverClient, Audit: auditSvc}
 	orgSvc := &orgservice.Service{Audit: auditSvc, Files: fileSvc}
-	cookieSvc := &cookieservice.Service{Audit: auditSvc, Org: orgSvc, Notify: notifySvc, River: riverClient}                     // CON-01: cookie consent banner
-	riskSvc := riskservice.New()                                                                                                 // ROPA-09's ม.37(1) controls catalog
-	riskSvc.Audit = auditSvc                                                                                                     // RRA-02: risk matrix CRUD audit
-	riskSvc.Notify, riskSvc.River = notifySvc, riverClient                                                                       // RRA-08: schedule the acceptance-review reminder on write
-	ropaTemplatesSvc := templatesservice.New()                                                                                   // RTG-01: the platform's standard activity library (read-only)
-	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc, Collab: collabSvc} // ROPA-05: create an activity from one of these templates; ROPA-12: Q&A task list
-	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}                                                                   // RRA-01: score an activity from its own RoPA data
+	cookieSvc := &cookieservice.Service{Audit: auditSvc, Org: orgSvc, Notify: notifySvc, River: riverClient} // CON-01: cookie consent banner
+	riskSvc := riskservice.New()                                                                             // ROPA-09's ม.37(1) controls catalog
+	riskSvc.Audit = auditSvc                                                                                 // RRA-02: risk matrix CRUD audit
+	riskSvc.Notify, riskSvc.River = notifySvc, riverClient                                                   // RRA-08: schedule the acceptance-review reminder on write
+	ropaTemplatesSvc := templatesservice.New()                                                               // RTG-01: the platform's standard activity library (read-only)
+	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc, Collab: collabSvc,
+		Events: &events.Publisher{River: riverClient}} // ROPA-05: create an activity from one of these templates; ROPA-12: Q&A task list; PNG-10: tell notice when an approved activity changes
+	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc} // RRA-01: score an activity from its own RoPA data
 	// ROPA-12: comments, mentions and activity (PLT-07) on the processing activity itself — the Q&A tab;
 	// an unresolved top-level comment naming a user is that user's own open question (MyOpenQuestions).
 	collabSvc.Register(ropaservice.ActivityCollabEntityType, collab.Policy{

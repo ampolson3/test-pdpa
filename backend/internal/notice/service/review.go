@@ -133,6 +133,27 @@ func (s *Service) CheckDueReviews(ctx context.Context) error {
 	return nil
 }
 
+// MarkNoticesForReviewByActivity is PNG-10's own acceptance criterion ("RoPA เปลี่ยนแล้วประกาศที่เกี่ยวข้อง
+// ถูกทำเครื่องหมายให้ทบทวน"): every notice composed from activityID (notice.notice_activity_links, set at
+// wizard time by PNG-01/PNG-03) gets its next_review_at brought forward to today, so PNG-15's own daily
+// CheckDueReviews sweep notifies its owner on its very next run — no second reminder mechanism to build.
+// MarkNoticeForReview is itself a no-op for a notice never published (no review clock to disturb yet) or
+// already due sooner than today, so a redelivered event is harmless. Called from internal/wiring/events.go's
+// own ropa.activity_approved subscriber — notice never reads the ropa schema directly (rule 9).
+func (s *Service) MarkNoticesForReviewByActivity(ctx context.Context, activityID uuid.UUID) error {
+	q := noticestore.New(pdb.MustTxFromContext(ctx))
+	ids, err := q.ListNoticeIDsByActivity(ctx, activityID)
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		if err := q.MarkNoticeForReview(ctx, id); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Service) reviewRecipients(ctx context.Context, owner pgtype.UUID) ([]uuid.UUID, error) {
 	if owner.Valid {
 		return []uuid.UUID{uuid.UUID(owner.Bytes)}, nil
