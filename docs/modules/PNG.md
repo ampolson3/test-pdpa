@@ -594,6 +594,17 @@ code or test changes needed.
 
 **Acceptance criteria:** ตรวจได้ว่าบุคคลรับทราบประกาศเวอร์ชันใด
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### PNG-09`. สรุป: `notice.acknowledgements` (มีอยู่แล้ว
+ใน baseline migration, append-only — เพิ่มเข้า REVOKE list ของ `deploy/db/10-grants.sql`) บันทึกทั้งการรับทราบ
+แบบไม่ระบุตัวตนผ่าน `POST /public/v1/notices/{key}/acknowledge` (channel/เวลา/IP เท่านั้น ไม่รับ/resolve
+identifier ใดๆ — rule 3) และแบบระบุผู้ใช้ผ่าน staff ที่ `POST /admin/v1/notices/{id}/versions/{versionNo}/
+acknowledgements`; อ่านย้อนกลับผ่าน `GET` คู่กันแบบ newest-first พร้อม resolved user_name. Frontend: ส่วน
+"การรับทราบ" บน `/notices`' version-history panel (ตาราง + ฟอร์มบันทึกของ staff ด้วย @mention user picker).
+พบบั๊กเดิม 2 ตัวระหว่างทำ (แก้แล้ว): `Makefile`'s `make gen` ไม่เคย generate `internal/notice/publichttp`
+เลย (ขาดบรรทัด `oapi-codegen` — มีแต่ของ `internal/notice/http`), และ `internal/notice/service/review_test.go`
+(PNG-15's เอง) มีบั๊กนับ notification ผิด — ดู `docs/known-issues.md` สำหรับบั๊กเดียวกันที่ยังไม่แก้ใน
+`internal/ropa/service/review_test.go` (ROPA-15).
+
 <a id="png-10"></a>
 ### PNG-10 ดึงเนื้อหาจาก RoPA
 

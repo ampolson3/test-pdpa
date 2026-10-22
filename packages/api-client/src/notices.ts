@@ -8,6 +8,8 @@ export type NoticeWizardInput = components["schemas"]["NoticeWizardInput"];
 export type NoticeChecklistItem = components["schemas"]["NoticeChecklistItem"];
 export type NoticeVersion = components["schemas"]["NoticeVersion"];
 export type NoticePublishIntentInput = components["schemas"]["NoticePublishIntentInput"];
+export type NoticeAckChannel = components["schemas"]["NoticeAckChannel"];
+export type NoticeAcknowledgement = components["schemas"]["NoticeAcknowledgement"];
 export type IndirectCollection = components["schemas"]["IndirectCollection"];
 export type IndirectCollectionInput = components["schemas"]["IndirectCollectionInput"];
 export type IndirectCollectionStatus = components["schemas"]["IndirectCollectionStatus"];
@@ -185,6 +187,38 @@ export function useIndirectCollectionMutations(client: ApiClient) {
       onSuccess: refresh,
     }),
   };
+}
+
+/** GET /admin/v1/notices/{id}/versions/{versionNo}/acknowledgements (PNG-09) — who acknowledged this
+ * version, through which channel, when; newest first. */
+export function useNoticeAcknowledgements(client: ApiClient, id: string | undefined, versionNo: number | undefined) {
+  return useQuery({
+    queryKey: [...noticeKey(id ?? ""), "acknowledgements", versionNo ?? 0],
+    enabled: !!id && !!versionNo,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/notices/{id}/versions/{versionNo}/acknowledgements", {
+        params: { path: { id: id!, versionNo: versionNo! } },
+      });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST .../acknowledgements (PNG-09) — staff recording that a named user acknowledged this version. */
+export function useRecordNoticeAcknowledgement(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { noticeId: string; versionNo: number; user_id: string; channel: NoticeAckChannel }) => {
+      const { data, error } = await client.POST("/admin/v1/notices/{id}/versions/{versionNo}/acknowledgements", {
+        params: { path: { id: v.noticeId, versionNo: v.versionNo } },
+        body: { user_id: v.user_id, channel: v.channel },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...noticeKey(v.noticeId), "acknowledgements", v.versionNo] }),
+  });
 }
 
 /** GET /public/v1/notices/{key}/download (PNG-08) — through the BFF, which forwards /public/v1 paths

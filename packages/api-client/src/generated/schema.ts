@@ -2876,6 +2876,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/v1/notices/{key}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * PNG-09 — a visitor (or an embedded SDK) acknowledges reading the notice, no login
+         * @description No identity is accepted or resolved here (rule 3) — only the channel, time and IP are recorded.
+         *     `version` omitted means the current published version.
+         */
+        post: operations["noticeAcknowledgePublic"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/v1/dsar-forms/{key}": {
         parameters: {
             query?: never;
@@ -4386,6 +4407,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/notices/{id}/versions/{versionNo}/acknowledgements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * PNG-09's own acceptance criterion — who acknowledged this notice version, through which channel, when
+         * @description A live evidence read, newest first. An acknowledgement recorded through the public page/SDK carries
+         *     no user identity (rule 3 — no identifier is accepted or resolved on that path); one recorded by staff
+         *     through this same resource's own POST carries the named user.
+         */
+        get: operations["noticeListAcknowledgements"];
+        put?: never;
+        /** Staff (or a future API-client integration) recording that a named user acknowledged this version */
+        post: operations["noticeRecordAcknowledgement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/notices/{id}/publish-intent": {
         parameters: {
             query?: never;
@@ -5701,6 +5745,29 @@ export interface paths {
          *     reads as 404, same as an unknown key.
          */
         get: operations["cookieGetPublicBanner"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/cookie-banners/{key}/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The Cookie Policy table for this domain, no login (CON-05)
+         * @description A live read of every active cookie catalogued for this domain (CON-02's own manual entries plus
+         *     CON-04's own scanner-found ones), each with its category name — so the table always matches the
+         *     latest scan with no separate snapshot to go stale. Tenant is resolved from `key` the same way as
+         *     the published-banner endpoint; a domain with no published banner yet reads as 404.
+         */
+        get: operations["cookieGetPublicPolicy"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8111,6 +8178,22 @@ export interface components {
             /** @enum {string} */
             action: "block" | "allow";
         };
+        CookiePublicPolicy: {
+            domain_id: components["schemas"]["Uuid"];
+            cookies: components["schemas"]["CookiePolicyEntry"][];
+        };
+        CookiePolicyEntry: {
+            name: string;
+            provider_domain: string;
+            category_code?: string;
+            category_name_th?: string;
+            category_name_en?: string;
+            /** @enum {string} */
+            storage_type: "http_cookie" | "js_cookie" | "local_storage" | "session_storage" | "pixel";
+            duration?: string;
+            description_th?: string;
+            description_en?: string;
+        };
         CookieCookie: {
             id: components["schemas"]["Uuid"];
             domain_id: components["schemas"]["Uuid"];
@@ -8349,6 +8432,18 @@ export interface components {
             checklist: components["schemas"]["NoticeChecklistItem"][];
             public_url?: string | null;
             published_at: components["schemas"]["Timestamp"];
+        };
+        /** @enum {string} */
+        NoticeAckChannel: "web" | "sdk" | "email" | "api";
+        NoticeAcknowledgement: {
+            id: components["schemas"]["Uuid"];
+            notice_version_id: components["schemas"]["Uuid"];
+            user_id?: components["schemas"]["Uuid"] | null;
+            /** @description Resolved display name of user_id */
+            user_name?: string;
+            channel: components["schemas"]["NoticeAckChannel"];
+            occurred_at: components["schemas"]["Timestamp"];
+            ip?: string | null;
         };
         PublicNotice: {
             title: string;
@@ -16648,6 +16743,46 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    noticeAcknowledgePublic: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    channel: components["schemas"]["NoticeAckChannel"];
+                    /** @description A specific version number; omitted means the current published version */
+                    version?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        acknowledged: boolean;
+                        version_no: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
     dsarGetPublicIntakeForm: {
         parameters: {
             query?: never;
@@ -20254,6 +20389,79 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    noticeListAcknowledgements: {
+        parameters: {
+            query?: {
+                before?: components["schemas"]["Timestamp"];
+                limit?: number;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                versionNo: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["NoticeAcknowledgement"][];
+                        total: number;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    noticeRecordAcknowledgement: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                versionNo: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    user_id: components["schemas"]["Uuid"];
+                    channel: components["schemas"]["NoticeAckChannel"];
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoticeAcknowledgement"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
     noticeSetPublishIntent: {
         parameters: {
             query?: never;
@@ -23557,6 +23765,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CookiePublicBanner"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cookieGetPublicPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CookiePublicPolicy"];
                 };
             };
             404: components["responses"]["NotFound"];

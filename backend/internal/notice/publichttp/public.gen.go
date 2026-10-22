@@ -59,6 +59,30 @@ func (e FormConditionOp) Valid() bool {
 	}
 }
 
+// Defines values for NoticeAckChannel.
+const (
+	Api   NoticeAckChannel = "api"
+	Email NoticeAckChannel = "email"
+	Sdk   NoticeAckChannel = "sdk"
+	Web   NoticeAckChannel = "web"
+)
+
+// Valid indicates whether the value is a known member of the NoticeAckChannel enum.
+func (e NoticeAckChannel) Valid() bool {
+	switch e {
+	case Api:
+		return true
+	case Email:
+		return true
+	case Sdk:
+		return true
+	case Web:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for NoticeType.
 const (
 	Cctv          NoticeType = "cctv"
@@ -234,6 +258,9 @@ type FormCondition struct {
 // FormConditionOp defines model for FormCondition.Op.
 type FormConditionOp string
 
+// NoticeAckChannel defines model for NoticeAckChannel.
+type NoticeAckChannel string
+
 // NoticePublicDownloadResult defines model for NoticePublicDownloadResult.
 type NoticePublicDownloadResult struct {
 	// DownloadUrl A short-lived, pre-signed URL for the notice's own already-rendered Word/PDF file
@@ -284,8 +311,20 @@ type Timestamp = time.Time
 // AcceptLanguage defines model for AcceptLanguage.
 type AcceptLanguage string
 
+// IdempotencyKey defines model for IdempotencyKey.
+type IdempotencyKey = string
+
+// BadRequest RFC 9457 problem details with a stable machine-readable `code`
+type BadRequest = Problem
+
 // NotFound RFC 9457 problem details with a stable machine-readable `code`
 type NotFound = Problem
+
+// PreconditionRequired RFC 9457 problem details with a stable machine-readable `code`
+type PreconditionRequired = Problem
+
+// UnprocessableEntity RFC 9457 problem details with a stable machine-readable `code`
+type UnprocessableEntity = Problem
 
 // NoticeGetPublicNoticeParams defines parameters for NoticeGetPublicNotice.
 type NoticeGetPublicNoticeParams struct {
@@ -295,6 +334,20 @@ type NoticeGetPublicNoticeParams struct {
 
 // NoticeGetPublicNoticeParamsAcceptLanguage defines parameters for NoticeGetPublicNotice.
 type NoticeGetPublicNoticeParamsAcceptLanguage string
+
+// NoticeAcknowledgePublicJSONBody defines parameters for NoticeAcknowledgePublic.
+type NoticeAcknowledgePublicJSONBody struct {
+	Channel NoticeAckChannel `json:"channel"`
+
+	// Version A specific version number; omitted means the current published version
+	Version *int `json:"version,omitempty"`
+}
+
+// NoticeAcknowledgePublicParams defines parameters for NoticeAcknowledgePublic.
+type NoticeAcknowledgePublicParams struct {
+	// IdempotencyKey Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it).
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
 
 // NoticeGetPublicDownloadParams defines parameters for NoticeGetPublicDownload.
 type NoticeGetPublicDownloadParams struct {
@@ -329,11 +382,17 @@ type NoticeGetPublicVersionParams struct {
 // NoticeGetPublicVersionParamsAcceptLanguage defines parameters for NoticeGetPublicVersion.
 type NoticeGetPublicVersionParamsAcceptLanguage string
 
+// NoticeAcknowledgePublicJSONRequestBody defines body for NoticeAcknowledgePublic for application/json ContentType.
+type NoticeAcknowledgePublicJSONRequestBody NoticeAcknowledgePublicJSONBody
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// NoticeGetPublicNotice A published notice's current version (PNG-06, no login)
 	// (GET /public/v1/notices/{key})
 	NoticeGetPublicNotice(w http.ResponseWriter, r *http.Request, key string, params NoticeGetPublicNoticeParams)
+	// NoticeAcknowledgePublic PNG-09 — a visitor (or an embedded SDK) acknowledges reading the notice, no login
+	// (POST /public/v1/notices/{key}/acknowledge)
+	NoticeAcknowledgePublic(w http.ResponseWriter, r *http.Request, key string, params NoticeAcknowledgePublicParams)
 	// NoticeGetPublicDownload PNG-08 — a signed link to the notice's own already-rendered Word/PDF (for LINE OA / apps)
 	// (GET /public/v1/notices/{key}/download)
 	NoticeGetPublicDownload(w http.ResponseWriter, r *http.Request, key string, params NoticeGetPublicDownloadParams)
@@ -352,6 +411,12 @@ type Unimplemented struct{}
 // NoticeGetPublicNotice A published notice's current version (PNG-06, no login)
 // (GET /public/v1/notices/{key})
 func (_ Unimplemented) NoticeGetPublicNotice(w http.ResponseWriter, r *http.Request, key string, params NoticeGetPublicNoticeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// NoticeAcknowledgePublic PNG-09 — a visitor (or an embedded SDK) acknowledges reading the notice, no login
+// (POST /public/v1/notices/{key}/acknowledge)
+func (_ Unimplemented) NoticeAcknowledgePublic(w http.ResponseWriter, r *http.Request, key string, params NoticeAcknowledgePublicParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -423,6 +488,60 @@ func (siw *ServerInterfaceWrapper) NoticeGetPublicNotice(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.NoticeGetPublicNotice(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// NoticeAcknowledgePublic operation middleware
+func (siw *ServerInterfaceWrapper) NoticeAcknowledgePublic(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", chi.URLParam(r, "key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params NoticeAcknowledgePublicParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.NoticeAcknowledgePublic(w, r, key, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -734,11 +853,20 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/public/v1/notices/{key}/download", wrapper.NoticeGetPublicDownload)
 	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/public/v1/notices/{key}/acknowledge", wrapper.NoticeAcknowledgePublic)
+	})
 
 	return r
 }
 
+type BadRequestApplicationProblemPlusJSONResponse Problem
+
 type NotFoundApplicationProblemPlusJSONResponse Problem
+
+type PreconditionRequiredApplicationProblemPlusJSONResponse Problem
+
+type UnprocessableEntityApplicationProblemPlusJSONResponse Problem
 
 type NoticeGetPublicNoticeRequestObject struct {
 	Key    string `json:"key"`
@@ -775,6 +903,97 @@ func (response NoticeGetPublicNotice404ApplicationProblemPlusJSONResponse) Visit
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeAcknowledgePublicRequestObject struct {
+	Key    string `json:"key"`
+	Params NoticeAcknowledgePublicParams
+	Body   *NoticeAcknowledgePublicJSONRequestBody
+}
+
+type NoticeAcknowledgePublicResponseObject interface {
+	VisitNoticeAcknowledgePublicResponse(w http.ResponseWriter) error
+}
+
+type NoticeAcknowledgePublic201JSONResponse struct {
+	Acknowledged bool `json:"acknowledged"`
+	VersionNo    int  `json:"version_no"`
+}
+
+func (response NoticeAcknowledgePublic201JSONResponse) VisitNoticeAcknowledgePublicResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeAcknowledgePublic400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeAcknowledgePublic400ApplicationProblemPlusJSONResponse) VisitNoticeAcknowledgePublicResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeAcknowledgePublic404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeAcknowledgePublic404ApplicationProblemPlusJSONResponse) VisitNoticeAcknowledgePublicResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeAcknowledgePublic422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeAcknowledgePublic422ApplicationProblemPlusJSONResponse) VisitNoticeAcknowledgePublicResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeAcknowledgePublic428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeAcknowledgePublic428ApplicationProblemPlusJSONResponse) VisitNoticeAcknowledgePublicResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -904,6 +1123,9 @@ type StrictServerInterface interface {
 	// NoticeGetPublicNotice A published notice's current version (PNG-06, no login)
 	// (GET /public/v1/notices/{key})
 	NoticeGetPublicNotice(ctx context.Context, request NoticeGetPublicNoticeRequestObject) (NoticeGetPublicNoticeResponseObject, error)
+	// NoticeAcknowledgePublic PNG-09 — a visitor (or an embedded SDK) acknowledges reading the notice, no login
+	// (POST /public/v1/notices/{key}/acknowledge)
+	NoticeAcknowledgePublic(ctx context.Context, request NoticeAcknowledgePublicRequestObject) (NoticeAcknowledgePublicResponseObject, error)
 	// NoticeGetPublicDownload PNG-08 — a signed link to the notice's own already-rendered Word/PDF (for LINE OA / apps)
 	// (GET /public/v1/notices/{key}/download)
 	NoticeGetPublicDownload(ctx context.Context, request NoticeGetPublicDownloadRequestObject) (NoticeGetPublicDownloadResponseObject, error)
@@ -974,6 +1196,40 @@ func (sh *strictHandler) NoticeGetPublicNotice(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(NoticeGetPublicNoticeResponseObject); ok {
 		if err := validResponse.VisitNoticeGetPublicNoticeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// NoticeAcknowledgePublic operation middleware
+func (sh *strictHandler) NoticeAcknowledgePublic(w http.ResponseWriter, r *http.Request, key string, params NoticeAcknowledgePublicParams) {
+	var request NoticeAcknowledgePublicRequestObject
+
+	request.Key = key
+	request.Params = params
+
+	var body NoticeAcknowledgePublicJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.NoticeAcknowledgePublic(ctx, request.(NoticeAcknowledgePublicRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "NoticeAcknowledgePublic")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(NoticeAcknowledgePublicResponseObject); ok {
+		if err := validResponse.VisitNoticeAcknowledgePublicResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

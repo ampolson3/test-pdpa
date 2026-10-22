@@ -62,7 +62,7 @@ func TestCheckDueReviews_NotifiesOwnerAndReschedules(t *testing.T) {
 	e.in(t, func(ctx context.Context) error {
 		var count int
 		if err := pdb.MustTxFromContext(ctx).QueryRow(ctx,
-			`SELECT count(*) FROM platform.notifications WHERE recipient_user_id = $1 AND template_code = 'notice.review_due'`,
+			`SELECT count(*) FROM platform.notifications n JOIN platform.notification_templates t ON t.id = n.template_id WHERE n.recipient_user_id = $1 AND n.channel = 'in_app' AND t.code = 'notice.review_due'`,
 			ownerID).Scan(&count); err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ func TestCheckDueReviews_NotifiesOwnerAndReschedules(t *testing.T) {
 	e.in(t, func(ctx context.Context) error {
 		var count int
 		if err := pdb.MustTxFromContext(ctx).QueryRow(ctx,
-			`SELECT count(*) FROM platform.notifications WHERE recipient_user_id = $1 AND template_code = 'notice.review_due'`,
+			`SELECT count(*) FROM platform.notifications n JOIN platform.notification_templates t ON t.id = n.template_id WHERE n.recipient_user_id = $1 AND n.channel = 'in_app' AND t.code = 'notice.review_due'`,
 			ownerID).Scan(&count); err != nil {
 			return err
 		}
@@ -134,7 +134,7 @@ func TestCheckDueReviews_FallsBackToDPOWithNoOwner(t *testing.T) {
 	e.in(t, func(ctx context.Context) error {
 		var count int
 		if err := pdb.MustTxFromContext(ctx).QueryRow(ctx,
-			`SELECT count(*) FROM platform.notifications WHERE recipient_user_id = $1 AND template_code = 'notice.review_due'`,
+			`SELECT count(*) FROM platform.notifications n JOIN platform.notification_templates t ON t.id = n.template_id WHERE n.recipient_user_id = $1 AND n.channel = 'in_app' AND t.code = 'notice.review_due'`,
 			e.dpo).Scan(&count); err != nil {
 			return err
 		}

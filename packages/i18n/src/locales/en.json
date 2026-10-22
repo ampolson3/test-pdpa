@@ -1774,6 +1774,30 @@
       "changesPurpose": "Changes a purpose (opens a re-consent task)",
       "save": "Save",
       "saved": "Saved — applies to the next publish"
+    },
+    "ack": {
+      "title": "Acknowledgements (PNG-09)",
+      "show": "Show acknowledgements",
+      "hide": "Hide acknowledgements",
+      "none": "No acknowledgements recorded yet",
+      "total": "{count} total",
+      "occurredAt": "At",
+      "channel": "Channel",
+      "user": "User",
+      "anonymous": "Anonymous (public)",
+      "ip": "IP",
+      "recordTitle": "Record a user's acknowledgement",
+      "userSearch": "Search user",
+      "userSearchPlaceholder": "Type a user name...",
+      "channelLabel": "Channel",
+      "save": "Save",
+      "saved": "Saved",
+      "channels": {
+        "web": "Web",
+        "sdk": "SDK",
+        "email": "Email",
+        "api": "API"
+      }
     }
   },
   "masterData": {

@@ -8548,6 +8548,56 @@ paths:
                 $ref: '#/components/schemas/NoticePublicDownloadResult'
         '404':
           $ref: '#/components/responses/NotFound'
+  /public/v1/notices/{key}/acknowledge:
+    post:
+      operationId: noticeAcknowledgePublic
+      tags: [notice]
+      summary: PNG-09 — a visitor (or an embedded SDK) acknowledges reading the notice, no login
+      description: |
+        No identity is accepted or resolved here (rule 3) — only the channel, time and IP are recorded.
+        `version` omitted means the current published version.
+      x-permission: public
+      x-module: notice
+      security: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channel]
+              properties:
+                channel: {$ref: '#/components/schemas/NoticeAckChannel'}
+                version:
+                  type: integer
+                  description: A specific version number; omitted means the current published version
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [acknowledged, version_no]
+                properties:
+                  acknowledged: {type: boolean}
+                  version_no: {type: integer}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /public/v1/dsar-forms/{key}:
     get:
       operationId: dsarGetPublicIntakeForm
@@ -12795,6 +12845,98 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/notices/{id}/versions/{versionNo}/acknowledgements:
+    get:
+      operationId: noticeListAcknowledgements
+      tags: [notice]
+      summary: PNG-09's own acceptance criterion — who acknowledged this notice version, through which channel, when
+      description: |
+        A live evidence read, newest first. An acknowledgement recorded through the public page/SDK carries
+        no user identity (rule 3 — no identifier is accepted or resolved on that path); one recorded by staff
+        through this same resource's own POST carries the named user.
+      x-permission: notice.document.read
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema: {$ref: '#/components/schemas/Uuid'}
+        - name: versionNo
+          in: path
+          required: true
+          schema: {type: integer}
+        - name: before
+          in: query
+          schema: {$ref: '#/components/schemas/Timestamp'}
+        - name: limit
+          in: query
+          schema: {type: integer, minimum: 1, maximum: 200, default: 50}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, total]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/NoticeAcknowledgement'}
+                  total: {type: integer}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: noticeRecordAcknowledgement
+      tags: [notice]
+      summary: Staff (or a future API-client integration) recording that a named user acknowledged this version
+      x-permission: notice.document.update
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema: {$ref: '#/components/schemas/Uuid'}
+        - name: versionNo
+          in: path
+          required: true
+          schema: {type: integer}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, channel]
+              properties:
+                user_id: {$ref: '#/components/schemas/Uuid'}
+                channel: {$ref: '#/components/schemas/NoticeAckChannel'}
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/NoticeAcknowledgement'}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/notices/{id}/publish-intent:
     post:
       operationId: noticeSetPublishIntent
@@ -20359,6 +20501,21 @@ components:
           description: PNG-02's ม.23 checklist result as it stood at the moment this version was published (a snapshot, never recomputed later)
         public_url: {type: string, nullable: true}
         published_at: {$ref: '#/components/schemas/Timestamp'}
+    NoticeAckChannel:
+      type: string
+      enum: [web, sdk, email, api]
+    NoticeAcknowledgement:
+      type: object
+      required: [id, notice_version_id, channel, occurred_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        notice_version_id: {$ref: '#/components/schemas/Uuid'}
+        user_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        user_name: {type: string, description: Resolved display name of user_id, empty for an anonymous public acknowledgement}
+        channel: {$ref: '#/components/schemas/NoticeAckChannel'}
+        occurred_at: {$ref: '#/components/schemas/Timestamp'}
+        ip: {type: string, nullable: true}
     PublicNotice:
       type: object
       required: [title, notice_type, version_no, effective_from, languages, content]

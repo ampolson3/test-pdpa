@@ -12,6 +12,8 @@ output-options:
     - noticeGetChecklist
     - noticeGetTranslationStatus
     - noticeListVersions
+    - noticeListAcknowledgements
+    - noticeRecordAcknowledgement
     - noticeSetPublishIntent
     - noticeListIndirectCollections
     - noticeRegisterIndirectCollection

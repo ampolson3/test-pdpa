@@ -16,7 +16,7 @@ REVOKE ALL ON public.goose_db_version FROM pdpa_app, pdpa_platform;
 
 -- append-only evidence
 REVOKE UPDATE, DELETE, TRUNCATE ON platform.audit_log, consent.consent_transactions, consent.consent_receipts, breach.timeline_events,
-  ropa.activity_versions, platform.document_downloads
+  ropa.activity_versions, platform.document_downloads, notice.acknowledgements
   FROM pdpa_app, pdpa_platform;
 -- written only by platform.drop_expired_audit_partitions() (SECURITY DEFINER), read by audit Verify
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON platform.audit_chain_anchors FROM pdpa_app, pdpa_platform;

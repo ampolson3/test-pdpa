@@ -103,6 +103,41 @@
 
 ---
 
+## PNG-15/ROPA-15 — `TestCheckDueReviews_NotifiesOwnerAndReschedules`-style tests undercount notifications by half
+
+- **สถานะ:** open (แก้แล้วเฉพาะ `internal/notice/service/review_test.go` ระหว่างทำ PNG-09; ยังไม่แก้ใน
+  `internal/ropa/service/review_test.go`)
+- **พบเมื่อ:** 2026-10-22 ระหว่างทำ PNG-09 — รัน `go test -count=1 ./internal/notice/...` เต็มชุดเป็นครั้งแรก
+  กับ Postgres/Redis จริง
+- **อาการ:** `TestCheckDueReviews_NotifiesOwnerAndReschedules` ล้มเหลวด้วย "a not-yet-due notice should not
+  be notified again, got 2 notifications" แม้ `CheckDueReviews` ถูกเรียกเพียงครั้งเดียวที่ควรแจ้งเตือนจริง
+  (การเรียกครั้งที่สองเป็น no-op ตามที่ตั้งใจ) ก่อนหน้านั้นยังมีบั๊กแยกที่ซ่อนอันนี้ไว้: query ของเทสต์เอง
+  อ้างคอลัมน์ `template_code` ที่ไม่มีอยู่จริงบน `platform.notifications` (คอลัมน์จริงคือ `template_id` ซึ่ง
+  ต้อง join กับ `platform.notification_templates.code`) — แก้ query ผิดนี้ก่อนแล้วถึงเจอบั๊ก count จริง
+- **สาเหตุ:** `CheckDueReviews` (`review.go`) ส่งการแจ้งเตือนหนึ่งครั้งต่อ channel (`in_app` และ `email`) ต่อ
+  notice ที่ถึงกำหนดทบทวนหนึ่งครั้ง — ดังนั้นการแจ้งเตือนที่ถูกต้องเพียงครั้งเดียวจะสร้างแถว
+  `platform.notifications` สองแถวเสมอ (คนละ channel) แต่ query ของเทสต์นับทุกแถวโดยไม่กรอง channel จึงได้ 2
+  ทั้งที่ควรนับเป็น "1 ครั้งของการแจ้งเตือน"
+- **ทำไม test เดิมไม่จับ:** ทั้งสองโมดูล (`notice`/PNG-15 และ `ropa`/ROPA-15) ถูกสร้างตอน Postgres/Redis ไม่
+  reachable ในเซสชัน — เทสต์ถูก skip มาตลอดจนกระทั่ง Postgres/Redis กลับมา reachable ครั้งนี้ (ครั้งแรกที่
+  เทสต์เหล่านี้รันจริง) และบั๊ก `template_code` เดิมทำให้เทสต์ fail ก่อนจะไปถึงจุดที่ assertion การนับทำงาน
+  ด้วยซ้ำ
+- **สิ่งที่แก้แล้ว:** `internal/notice/service/review_test.go` — เพิ่ม `n.channel = 'in_app'` ในทั้ง 3
+  query (และแก้ `template_code` → join `platform.notification_templates` ตาม `template_id`) เพื่อนับเฉพาะ
+  signal "แจ้งแล้วหรือยัง" หนึ่งครั้งต่อ notice แทนที่จะนับทุก channel
+- **ยังไม่แก้:** `internal/ropa/service/review_test.go`'s `TestCheckDueReviews_NotifiesOwnerAndReschedules`
+  (ROPA-15) มีรูปแบบเดียวกันเป๊ะ — ยืนยันแล้วว่าล้มเหลวเหมือนกันจริง (`go test -run
+  TestCheckDueReviews_NotifiesOwnerAndReschedules ./internal/ropa/service/...` → `got 2 notifications`)
+  แต่เป็นไฟล์เทสต์ของอีกโมดูลหนึ่ง อยู่นอก scope ของ PNG-09 จึงไม่ได้แก้ในรอบนี้
+- **แนวทางแก้ที่เป็นไปได้:** แก้ `internal/ropa/service/review_test.go` ด้วยวิธีเดียวกัน — เพิ่มเงื่อนไข
+  `channel = 'in_app'` (หรือ channel อื่นที่คงที่หนึ่งค่า) ในทุก query ที่นับแถว `platform.notifications`
+  เพื่อสะท้อน "จำนวนครั้งที่ถูกแจ้งเตือนจริง" แทนจำนวนแถวดิบ
+- **ผลกระทบ:** ไม่กระทบ production code ของ PNG-15/ROPA-15 เอง (ซึ่งทำงานถูกต้องตามที่ตั้งใจ — ส่งทุก
+  channel ต่อการแจ้งเตือนหนึ่งครั้งเป็นเรื่องปกติ) เป็นเพียง assertion ของเทสต์ที่นับผิดหน่วย แต่ถ้าไม่แก้
+  `ropa`'s เวอร์ชันจะ fail ทุกครั้งที่ full suite รันกับ Postgres/Redis จริง
+
+---
+
 ## แม่แบบสำหรับบั๊กใหม่
 
 ```markdown

@@ -9,15 +9,19 @@ import {
   useActivities,
   useCreateNoticeWizard,
   useLegalEntities,
+  useMentionSearch,
   useNotices,
+  useNoticeAcknowledgements,
   useNoticeChecklist,
   useNoticeDownloadUrl,
   useNoticeTranslationStatus,
   useNoticeVersions,
+  useRecordNoticeAcknowledgement,
   useSetNoticePublishIntent,
   useTemplateGroups,
   type ApiClient,
   type Notice,
+  type NoticeAckChannel,
   type NoticeType,
 } from "@pdpa/api-client";
 import { Link, useRouter } from "@/i18n/routing";
@@ -128,11 +132,112 @@ function EmbedPanel({ client, notice, portalUrl, locale }: { client: ApiClient; 
   );
 }
 
+/** PNG-09: who acknowledged the current published version, through which channel, when — plus a form
+ * for staff to record a named user's own acknowledgement (e.g. one gathered offline, by phone or letter). */
+function AckPanel({ client, notice, versionNo }: { client: ApiClient; notice: Notice; versionNo: number | undefined }) {
+  const t = useTranslations("notices");
+  const canUpdate = usePermission("notice.document.update");
+  const acks = useNoticeAcknowledgements(client, notice.id, versionNo);
+  const record = useRecordNoticeAcknowledgement(client);
+  const [q, setQ] = useState("");
+  const [userId, setUserId] = useState("");
+  const [channel, setChannel] = useState<NoticeAckChannel>("web");
+  const search = useMentionSearch(client, q.length >= 2 ? q : null);
+  const list = acks.data?.data ?? [];
+
+  if (!versionNo) return <p className="text-slate-500">{t("versions.notPublishedYet")}</p>;
+
+  return (
+    <div className="space-y-2 rounded-md border border-slate-200 bg-white p-3" data-testid="ack-panel">
+      <h4 className="font-medium">{t("ack.title")}</h4>
+      {acks.isPending ? (
+        <p className="text-slate-500">{t("loading")}</p>
+      ) : list.length === 0 ? (
+        <p className="text-slate-500">{t("ack.none")}</p>
+      ) : (
+        <>
+          <p className="text-xs text-slate-500">{t("ack.total", { count: acks.data?.total ?? list.length })}</p>
+          <table className="w-full text-xs">
+            <thead className="text-left text-slate-500">
+              <tr>
+                <th className="py-1">{t("ack.occurredAt")}</th>
+                <th className="py-1">{t("ack.user")}</th>
+                <th className="py-1">{t("ack.channel")}</th>
+                <th className="py-1">{t("ack.ip")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {list.map((a) => (
+                <tr key={a.id}>
+                  <td className="py-1">{new Date(a.occurred_at).toLocaleString()}</td>
+                  <td className="py-1">{a.user_id ? a.user_name : t("ack.anonymous")}</td>
+                  <td className="py-1">{t(`ack.channels.${a.channel}`)}</td>
+                  <td className="py-1 font-mono">{a.ip ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+      {canUpdate && (
+        <div className="space-y-1 border-t border-slate-100 pt-2">
+          <p className="font-medium text-slate-700">{t("ack.recordTitle")}</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="relative">
+              <span className="block text-slate-600">{t("ack.userSearch")}</span>
+              <input
+                className={INPUT}
+                value={q}
+                onChange={(e) => { setQ(e.target.value); setUserId(""); }}
+                placeholder={t("ack.userSearchPlaceholder")}
+                data-testid="ack-user-search"
+              />
+              {search.data && search.data.length > 0 && !userId && (
+                <ul className="absolute z-10 mt-1 w-full rounded border border-slate-300 bg-white shadow">
+                  {search.data.map((u) => (
+                    <li key={u.id}>
+                      <button
+                        type="button"
+                        className="block w-full px-2 py-1 text-left hover:bg-slate-100"
+                        onClick={() => { setUserId(u.id); setQ(u.display_name); }}
+                      >
+                        {u.display_name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </label>
+            <label>
+              <span className="block text-slate-600">{t("ack.channelLabel")}</span>
+              <select className={INPUT} value={channel} onChange={(e) => setChannel(e.target.value as NoticeAckChannel)}>
+                {(["web", "sdk", "email", "api"] as NoticeAckChannel[]).map((c) => (
+                  <option key={c} value={c}>{t(`ack.channels.${c}`)}</option>
+                ))}
+              </select>
+            </label>
+            <Button
+              onClick={() => record.mutate({ noticeId: notice.id, versionNo, user_id: userId, channel }, { onSuccess: () => { setQ(""); setUserId(""); } })}
+              disabled={!userId || record.isPending}
+              data-testid="ack-record-save"
+            >
+              {t("ack.save")}
+            </Button>
+          </div>
+          {record.isSuccess && <p className="text-emerald-700">{t("ack.saved")}</p>}
+          {record.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(record.error) })}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** PNG-06: version history + the public page link once a notice has been published at least once. */
 function VersionsPanel({ client, notice, portalUrl, locale }: { client: ApiClient; notice: Notice; portalUrl: string; locale: string }) {
   const t = useTranslations("notices");
   const versions = useNoticeVersions(client, notice.id);
   const list = versions.data ?? [];
+  const latestVersionNo = list[0]?.version_no;
   const publicLink = notice.public_url ? `${portalUrl.replace(/\/$/, "")}/${locale}${notice.public_url}` : "";
   return (
     <div className="space-y-2" data-testid="versions-panel">
@@ -170,6 +275,7 @@ function VersionsPanel({ client, notice, portalUrl, locale }: { client: ApiClien
           </tbody>
         </table>
       )}
+      <AckPanel client={client} notice={notice} versionNo={latestVersionNo} />
     </div>
   );
 }

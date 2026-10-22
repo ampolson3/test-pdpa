@@ -7,11 +7,13 @@ package noticepublichttp
 import (
 	"context"
 	"errors"
+	"net/netip"
 	"time"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	noticeservice "pdpa-platform/internal/notice/service"
+	"pdpa-platform/internal/pkg/clientip"
 	"pdpa-platform/internal/pkg/httpx"
 	docsservice "pdpa-platform/internal/platform/docs"
 	filesservice "pdpa-platform/internal/platform/files"
@@ -125,6 +127,36 @@ func (h *Strict) NoticeGetPublicDownload(ctx context.Context, req NoticeGetPubli
 		return nil, problem(err)
 	}
 	return NoticeGetPublicDownload200JSONResponse{DownloadUrl: url}, nil
+}
+
+// NoticeAcknowledgePublic is PNG-09's own public half — a visitor (or an embedded SDK calling this same
+// endpoint) acknowledges reading the notice, no identity accepted or resolved (rule 3).
+func (h *Strict) NoticeAcknowledgePublic(ctx context.Context, req NoticeAcknowledgePublicRequestObject) (NoticeAcknowledgePublicResponseObject, error) {
+	k, err := notice(ctx)
+	if err != nil {
+		return nil, err
+	}
+	n, err := h.svc.PublicNotice(ctx, k.EntityID)
+	if err != nil {
+		return nil, problem(err)
+	}
+	if req.Body == nil {
+		return nil, httpx.RequestInvalid("channel")
+	}
+	var versionNo *int32
+	if req.Body.Version != nil {
+		v := int32(*req.Body.Version)
+		versionNo = &v
+	}
+	var ip *netip.Addr
+	if addr, ok := clientip.From(ctx); ok {
+		ip = &addr
+	}
+	_, resolvedVersionNo, err := h.svc.RecordPublicAcknowledgement(ctx, n, versionNo, string(req.Body.Channel), ip)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return NoticeAcknowledgePublic201JSONResponse{Acknowledged: true, VersionNo: int(resolvedVersionNo)}, nil
 }
 
 // toPublicNotice resolves one version (nil: the current one) and renders every language it carries.

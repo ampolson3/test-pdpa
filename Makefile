@@ -36,6 +36,7 @@ gen:
 	cd backend/internal/breach/publichttp && oapi-codegen -config oapi-codegen.yaml -o public.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/platform/docs/http && oapi-codegen -config oapi-codegen.yaml -o docs.gen.go ../../../../../api/openapi/openapi.yaml
 	cd backend/internal/notice/http && oapi-codegen -config oapi-codegen.yaml -o notice.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/notice/publichttp && oapi-codegen -config oapi-codegen.yaml -o public.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/dpo/http && oapi-codegen -config oapi-codegen.yaml -o dpo.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/dsar/http && oapi-codegen -config oapi-codegen.yaml -o dsar.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/dsar/publichttp && oapi-codegen -config oapi-codegen.yaml -o public.gen.go ../../../../api/openapi/openapi.yaml
