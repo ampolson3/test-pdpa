@@ -7343,10 +7343,10 @@ export interface components {
             disclosure_basis?: string;
             country_code?: string;
             disposal_methods?: string[];
-            /** @description DFG-04: true on a processor recipient tracked as a vendor with no agreement.agreements row of type "dpa". */
+            /** @description DFG-04: true on a processor recipient tracked as a vendor with no agreement.agreements row of type "dpa". DSA-12: true on a controller/joint_controller recipient with no row of type "dsa" naming it. */
             warning?: boolean;
             vendor_id?: components["schemas"]["Uuid"];
-            /** @description DFG-04: this recipient's own DPA agreements, to link through to from the diagram. */
+            /** @description DFG-04/DSA-12: this recipient's own DPA or DSA agreements, to link through to from the diagram. */
             agreement_ids?: components["schemas"]["Uuid"][];
         };
         /** @description One arrow on the diagram, between two DataflowNode ids. */

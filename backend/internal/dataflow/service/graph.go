@@ -28,9 +28,9 @@ type Node struct {
 	DisclosureBasis string
 	CountryCode     string
 	DisposalMethods []string
-	// Warning is DFG-04's own flag: a recipient node whose recipient_role is "processor" and who is tracked
-	// as a VEN-01 vendor (so there's something to check) but has no agreement.agreements row of type "dpa".
-	// A processor never tracked as a vendor at all isn't flagged — there's nothing to click through to.
+	// Warning is DFG-04's own flag (processor recipient tracked as a VEN-01 vendor with no "dpa" agreement —
+	// a processor never tracked as a vendor at all isn't flagged, nothing to click through to) or DSA-12's
+	// twin for a "controller"/"joint_controller" recipient with no "dsa" agreement naming it.
 	Warning      bool
 	VendorID     *uuid.UUID
 	AgreementIDs []uuid.UUID
@@ -155,6 +155,11 @@ func (s *Service) Graph(ctx context.Context, legalEntityID *uuid.UUID) (Graph, e
 						return Graph{}, err
 					}
 				}
+				if (r.RecipientRole == "controller" || r.RecipientRole == "joint_controller") && s.Agreement != nil {
+					if err := s.flagMissingDSA(ctx, r.PartyID, &node); err != nil {
+						return Graph{}, err
+					}
+				}
 				g.Nodes = append(g.Nodes, node)
 			}
 			g.Edges = append(g.Edges, Edge{
@@ -239,6 +244,25 @@ func (s *Service) flagMissingDPA(ctx context.Context, partyID uuid.UUID, node *N
 		node.AgreementIDs = append(node.AgreementIDs, a.ID)
 	}
 	node.Warning = len(agreements) == 0
+	return nil
+}
+
+// flagMissingDSA is DSA-12's own acceptance criterion: a recipient role of "controller" or
+// "joint_controller" — another controller this activity shares data with, ม.39's own cross-controller
+// sharing case — is flagged when it has no agreement.agreements row of type "dsa" naming it as the
+// counterparty. Unlike flagMissingDPA there is no vendor gate first: a receiving controller is never a
+// VEN-01 vendor (that relationship is processor-only), so the external party id itself is the only check.
+func (s *Service) flagMissingDSA(ctx context.Context, partyID uuid.UUID, node *Node) error {
+	agreements, _, err := s.Agreement.ListAgreements(ctx, agreementservice.AgreementFilter{AgreementType: "dsa", CounterpartyID: &partyID})
+	if err != nil {
+		return err
+	}
+	for _, a := range agreements {
+		node.AgreementIDs = append(node.AgreementIDs, a.ID)
+	}
+	if len(agreements) == 0 {
+		node.Warning = true
+	}
 	return nil
 }
 

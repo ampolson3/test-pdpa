@@ -529,6 +529,11 @@ agreement regardless of `agreement_type` — no `"dpa"`/`"dsa"` branch anywhere 
 
 **Acceptance criteria:** เส้นทางส่งข้อมูลให้ผู้ควบคุมรายอื่นที่ไม่มี DSA ถูกเตือน
 
+**สถานะ: done** — see `CLAUDE.md`'s own `### DSA-12` entry. Built as DFG-04's own twin inside
+`dataflow.Service.Graph`: a `controller`/`joint_controller` recipient with no `agreement.agreements` row
+of type `dsa` naming it is flagged on the diagram, reusing DFG-04's existing `warning`/`agreement_ids`
+wire fields and frontend rendering — no new endpoint or UI code.
+
 <a id="dsa-13"></a>
 ### DSA-13 ติดตามภาระผูกพันตามข้อตกลง
 

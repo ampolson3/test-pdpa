@@ -18997,12 +18997,12 @@ components:
           items: {type: string}
         warning:
           type: boolean
-          description: 'DFG-04: true on a processor recipient tracked as a vendor with no agreement.agreements row of type "dpa".'
+          description: 'DFG-04: true on a processor recipient tracked as a vendor with no agreement.agreements row of type "dpa". DSA-12: true on a controller/joint_controller recipient with no row of type "dsa" naming it.'
         vendor_id: {$ref: '#/components/schemas/Uuid'}
         agreement_ids:
           type: array
           items: {$ref: '#/components/schemas/Uuid'}
-          description: 'DFG-04: this recipient''s own DPA agreements, to link through to from the diagram.'
+          description: 'DFG-04/DSA-12: this recipient''s own DPA or DSA agreements, to link through to from the diagram.'
     DataflowEdge:
       type: object
       description: One arrow on the diagram, between two DataflowNode ids.

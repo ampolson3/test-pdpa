@@ -136,8 +136,9 @@ function toFlowNode(n: DataflowNode, pos: { x: number; y: number; width: number;
           width: pos.width,
           height: pos.height,
           borderRadius: 8,
-          // DFG-04: a processor recipient with no logged DPA is outlined and tinted the same warning red
-          // the transfer edges already use, and clickable through to its own DPA agreement(s) when any exist.
+          // DFG-04/DSA-12: a processor recipient with no DPA, or a controller/joint_controller recipient
+          // with no DSA, is outlined and tinted the same warning red the transfer edges already use, and
+          // clickable through to its own agreement(s) when any exist.
           border: n.warning ? "2px solid #dc2626" : `2px solid ${NODE_COLOR[n.type] ?? "#334155"}`,
           background: n.warning ? "#fef2f2" : "#fff",
           fontSize: 12,
@@ -321,7 +322,7 @@ function Legend() {
     { color: NODE_COLOR.recipient, label: t("legend.recipient") },
     { color: NODE_COLOR.country, label: t("legend.country") },
     { color: NODE_COLOR.disposal, label: t("legend.disposal") },
-    { color: "#dc2626", label: t("legend.missingDpa") },
+    { color: "#dc2626", label: t("legend.missingAgreement") },
   ];
   const edgeItems: { color: string; label: string; dashed?: boolean }[] = [
     { color: EDGE_COLOR.send, label: t("legend.send") },

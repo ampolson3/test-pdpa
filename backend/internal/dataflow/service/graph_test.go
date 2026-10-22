@@ -30,7 +30,8 @@ type env struct {
 
 var perms = []string{"ropa.dataflow.read", "ropa.activity.read", "ropa.activity.create", "ropa.activity.update",
 	"org.structure.read", "org.structure.create", "org.structure.update", "org.party.read", "org.party.create",
-	"vendor.vendor.read", "vendor.vendor.create", "agreement.dpa.read", "agreement.dpa.create", "agreement.dpa.update"}
+	"vendor.vendor.read", "vendor.vendor.create", "agreement.dpa.read", "agreement.dpa.create", "agreement.dpa.update",
+	"agreement.dsa.read", "agreement.dsa.create", "agreement.dsa.update"}
 
 func setup(t *testing.T, suffix string) env {
 	t.Helper()

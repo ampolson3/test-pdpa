@@ -224,10 +224,11 @@ type AgreementCursor struct {
 }
 
 type AgreementFilter struct {
-	AgreementType string
-	VendorID      *uuid.UUID
-	After         *AgreementCursor
-	Limit         int
+	AgreementType  string
+	VendorID       *uuid.UUID
+	CounterpartyID *uuid.UUID
+	After          *AgreementCursor
+	Limit          int
 }
 
 const agreementPageSize = 50
@@ -245,6 +246,7 @@ func (s *Service) ListAgreements(ctx context.Context, f AgreementFilter) ([]Agre
 		p.AgreementType = &f.AgreementType
 	}
 	p.VendorID = pgUUID(f.VendorID)
+	p.CounterpartyID = pgUUID(f.CounterpartyID)
 	if f.After != nil {
 		p.CursorAt = pgtype.Timestamptz{Time: f.After.CreatedAt, Valid: true}
 		p.CursorID = pgtype.UUID{Bytes: f.After.ID, Valid: true}

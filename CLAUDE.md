@@ -3645,6 +3645,31 @@ already proved a `"dsa"` agreement's document goes through the identical PLT-08 
 one does. Marked done as documentation only (backlog + module doc) — no migration, code or test changes
 needed, the same "done, no new code" pattern ROPA-07/PNG-14 already used.
 
+### DSA-12 ผูกข้อตกลงกับกิจกรรมและแผนผัง (`docs/modules/DSA.md#dsa-12`) — done
+DFG-04's own twin: `dataflow.Service.Graph` already flags a processor recipient tracked as a vendor with no
+"dpa" agreement; this feature adds the matching check for a `controller`/`joint_controller` recipient —
+ม.39's cross-controller sharing case — against `agreement.agreements` of type `"dsa"`. Unlike DFG-04 there is
+no vendor gate first: a receiving controller is never a VEN-01 vendor (that relationship is processor-only),
+so the external party id alone decides. `AgreementFilter` gained `CounterpartyID *uuid.UUID` (a new
+`sqlc.narg(counterparty_id)` clause on `ListAgreements`, no migration — `counterparty_id` is a real,
+always-set column on every agreement, unlike the optional `vendor_id`); `flagMissingDSA` (`graph.go`) calls
+`ListAgreements(AgreementFilter{AgreementType: "dsa", CounterpartyID: &partyID})` and sets the same
+`Warning`/`AgreementIDs` fields `flagMissingDPA` already does.
+
+No new endpoint, migration or frontend code: `DataflowNode`'s `warning`/`agreement_ids` wire fields and the
+`/data-flow` page's own warning-red node styling + click-through-to-agreement handler (DFG-04) are generic
+over *why* a node is flagged — only the OpenAPI description text and the legend's `missingDpa` → renamed
+`missingAgreement` i18n key were widened to mention both DPA and DSA. API consumers already see this for
+free since the field shapes didn't change. Tests: `internal/dataflow/service/dsa_warning_test.go`'s
+`TestGraph_ControllerWithoutDSAWarning` — the acceptance criterion directly (a controller and a
+joint_controller recipient both start flagged; drafting a DSA naming one clears only that recipient's own
+flag, proven by the sibling joint_controller recipient staying flagged with no DSA of its own), run live
+against a real Postgres/Redis in this session. `go build ./...`, `go vet ./...`, `gofmt -l` (clean), the
+full `internal/dataflow/...` and `internal/agreement/...` suites (no regressions — every pre-existing
+`agreement/service`/`agreement/http` failure is the already-documented `docs/known-issues.md#agr-01`),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the unchanged-but-reverified `/data-flow` and `/agreements/[id]` routes) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

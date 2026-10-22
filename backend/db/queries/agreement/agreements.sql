@@ -45,10 +45,12 @@ SELECT activity_id FROM agreement.agreement_activities WHERE agreement_id = $1 O
 SELECT agreement_id, activity_id FROM agreement.agreement_activities WHERE agreement_id = ANY(@agreement_ids::uuid[]) ORDER BY agreement_id, activity_id;
 
 -- name: ListAgreements :many
--- Newest first; keyset cursor on (created_at, id).
+-- Newest first; keyset cursor on (created_at, id). counterparty_id (DSA-12) filters to agreements with one
+-- specific external party as the main counterparty — every agreement always has one, unlike vendor_id.
 SELECT * FROM agreement.agreements
 WHERE (sqlc.narg(agreement_type)::text IS NULL OR agreement_type = sqlc.narg(agreement_type))
     AND (sqlc.narg(vendor_id)::uuid IS NULL OR vendor_id = sqlc.narg(vendor_id))
+    AND (sqlc.narg(counterparty_id)::uuid IS NULL OR counterparty_id = sqlc.narg(counterparty_id))
     AND (sqlc.narg(cursor_at)::timestamptz IS NULL OR (created_at, id) < (sqlc.narg(cursor_at), sqlc.narg(cursor_id)::uuid))
 ORDER BY created_at DESC, id DESC
 LIMIT @lim;

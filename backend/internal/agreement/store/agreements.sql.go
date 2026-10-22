@@ -405,24 +405,28 @@ const listAgreements = `-- name: ListAgreements :many
 SELECT id, tenant_id, agreement_type, agreement_no, title, our_role, counterparty_id, vendor_id, template_id, document_id, sharing_direction, is_government, status, effective_from, effective_to, auto_renew, renewal_notice_days, signed_at, terminated_at, termination_reason, created_at, created_by, updated_at, updated_by, row_version FROM agreement.agreements
 WHERE ($1::text IS NULL OR agreement_type = $1)
     AND ($2::uuid IS NULL OR vendor_id = $2)
-    AND ($3::timestamptz IS NULL OR (created_at, id) < ($3, $4::uuid))
+    AND ($3::uuid IS NULL OR counterparty_id = $3)
+    AND ($4::timestamptz IS NULL OR (created_at, id) < ($4, $5::uuid))
 ORDER BY created_at DESC, id DESC
-LIMIT $5
+LIMIT $6
 `
 
 type ListAgreementsParams struct {
-	AgreementType *string            `db:"agreement_type" json:"agreement_type"`
-	VendorID      pgtype.UUID        `db:"vendor_id" json:"vendor_id"`
-	CursorAt      pgtype.Timestamptz `db:"cursor_at" json:"cursor_at"`
-	CursorID      pgtype.UUID        `db:"cursor_id" json:"cursor_id"`
-	Lim           int32              `db:"lim" json:"lim"`
+	AgreementType  *string            `db:"agreement_type" json:"agreement_type"`
+	VendorID       pgtype.UUID        `db:"vendor_id" json:"vendor_id"`
+	CounterpartyID pgtype.UUID        `db:"counterparty_id" json:"counterparty_id"`
+	CursorAt       pgtype.Timestamptz `db:"cursor_at" json:"cursor_at"`
+	CursorID       pgtype.UUID        `db:"cursor_id" json:"cursor_id"`
+	Lim            int32              `db:"lim" json:"lim"`
 }
 
-// Newest first; keyset cursor on (created_at, id).
+// Newest first; keyset cursor on (created_at, id). counterparty_id (DSA-12) filters to agreements with one
+// specific external party as the main counterparty — every agreement always has one, unlike vendor_id.
 func (q *Queries) ListAgreements(ctx context.Context, arg ListAgreementsParams) ([]AgreementAgreement, error) {
 	rows, err := q.db.Query(ctx, listAgreements,
 		arg.AgreementType,
 		arg.VendorID,
+		arg.CounterpartyID,
 		arg.CursorAt,
 		arg.CursorID,
 		arg.Lim,
