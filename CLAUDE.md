@@ -4085,6 +4085,53 @@ every touched file), `go test ./...` (no regressions, full backend suite), `pnpm
 typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
 `/requests` route) all verified clean.
 
+### ROPA-19 เชื่อม RoPA กับโมดูลอื่น (`docs/modules/ROPA.md#ropa-19`) — done
+"เมื่อ RoPA เปลี่ยน แจ้งให้ทบทวนประกาศ DPIA แผนผัง และ Purpose ที่เกี่ยวข้อง" is read literally as one trigger
+with four named consumers, three of which this codebase had already half-built from earlier passes: PNG-10's
+own `ropa.activity_approved` event (PLT-11 outbox, published by `ApproveActivity` in `internal/ropa/service/
+versioning.go`) already marks every notice composed from the activity for review; DPIA-13's own
+`dpiaservice.MarkActivityAssessmentForReview` already exists, previously wired only to `breach.activity_linked`
+— `internal/wiring/events.go`'s `ropa.activity_approved` subscriber now also calls it unconditionally for
+every real RoPA change, not just a breach link (a no-op with no DPIA round in progress, DPIA-13's own
+documented behaviour). Data Flow needs no consumer at all: `dataflowservice.Graph` (DFG-01) is always
+computed live off the current RoPA/org/vendor rows, the same "nothing to go stale" reasoning DPIA-04's own
+description composition already established — an edited activity shows up there on the very next read, no
+marking required.
+
+"Purpose" (consent) is the one genuinely new consumer, `internal/ropa/service/links.go`'s
+`NotifyConsentPurposesForReview`: for every one of the activity's own purposes that cites a real
+`consent.purposes` row (ROPA-06's own `consent_purpose_id` link), it opens one `dpo.tasks` review job —
+deduped via a new `dposervice.Service.HasTaskForConsentPurpose` (mirrors `HasTaskForRisk`/
+`HasTaskForVendorAgreement`'s own dedup shape exactly), so a repeat approval of an already-flagged purpose
+opens nothing more. `ropaservice.Dpo` is a new rule-9 interface returning a bare `uuid.UUID`, not dpo's own
+`Task` type — dpo already imports dsar, which imports ropa, so ropa importing dposervice directly would
+cycle; a new `dposervice.OpenConsentReviewTask` wraps the existing `OpenConsentTask` to stay on dpo's own
+side of that boundary. `ropaservice.Notice` (another new rule-9 interface, `ListNoticesByActivity` returning
+a ropa-defined `LinkedNotice` type rather than reaching into notice's own, since notice already imports ropa
+the other way) backs the read side: a new, permission-free `GetActivityLinks` composes the activity's linked
+notices and consent purposes for the "linkage" tab — proving the activity visible under RLS first (rule 1,
+via the existing `GetActivity`), so a cross-tenant activity id is `ErrNotFound` before either cross-module
+read ever runs.
+
+API: `GET /admin/v1/ropa/activities/{id}/links` (`ropa.activity.read`, no new permission code or migration —
+every table this feature reads/writes already existed: `notice.notice_activity_links`, `ropa.activity_purposes.
+consent_purpose_id`, `dpo.tasks`). UI: a new "ความเชื่อมโยง" (Linkage) section on `/ropa/activities/{id}`,
+right after the existing versioning section — every linked notice with its own status badge, every linked
+consent purpose with its own status badge. Tests: unit (`internal/ropa/service/links_test.go` — the
+acceptance criterion's own Purpose half directly: a purpose citing a consent purpose opens exactly one task,
+a repeat notify opens no more; a nil `Dpo` is a harmless no-op, the same convention `Events`/`Collab` already
+use; `GetActivityLinks` returns the linked consent purpose and, with no `Notice` wired, a nil notices list;
+an unknown/cross-tenant activity id is `ErrNotFound` before either cross-module read runs; two-tenant
+isolation), `internal/notice/service/png10_test.go`'s new `TestListNoticesByActivity` (the read side's other
+half: every notice composed from the activity, none for an unrelated one), HTTP contract
+(`internal/ropa/http/versioning_test.go`'s existing `TestActivityApproval_Contract`, extended with
+401/200 on the new endpoint through the real validator + AuthZ). `go build ./...`, `go vet ./...`, `gofmt -l`
+(clean on every touched file), `go test ./...` (no regressions, full backend suite — every test here compiles
+and vets clean and skips the same way the rest of this codebase's own suite already does without a reachable
+Postgres/Redis in this pass), `make gen` re-run with no drift, `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
+`/ropa/activities/[id]` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

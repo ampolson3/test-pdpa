@@ -902,6 +902,16 @@ once the date arrives, then reschedules one more cycle out.
 
 **Acceptance criteria:** แก้ RoPA แล้วเจ้าของเอกสารที่เกี่ยวข้องได้รับงานทบทวน
 
+**สถานะ: done.** รายละเอียดการดำเนินการอยู่ที่ `CLAUDE.md` หัวข้อ `### ROPA-19` — ใช้ event
+`ropa.activity_approved` (ที่ PNG-10 publish ไว้แล้วตอนอนุมัติกิจกรรม) เป็นตัวตั้งต้นของทุกรายการทบทวน:
+PNG-10 ทำเครื่องหมายทบทวนให้ประกาศที่เกี่ยวข้องอยู่แล้ว, DPIA-13's `MarkActivityAssessmentForReview` ถูกเรียก
+ซ้ำแบบไม่มีเงื่อนไข (ไม่จำกัดแค่กรณีผูกกับเหตุละเมิดข้อมูล), และเพิ่ม consumer ใหม่หนึ่งตัว — Purpose (consent) —
+เปิดงานทบทวน (`dpo.tasks`, source_type `consent`) ต่อวัตถุประสงค์ความยินยอมที่กิจกรรมอ้างถึง โดย dedupe ด้วย
+`HasTaskForConsentPurpose` แบบเดียวกับ DPIA-08/DPA-12 ไม่เปิดงานซ้ำ. Data Flow ไม่ต้องมี consumer ของตัวเอง —
+กราฟของ DFG-01 คำนวณสดจากข้อมูล RoPA/org/vendor ปัจจุบันเสมอ ไม่มีอะไรที่จะ "เก่า" ให้ต้องทำเครื่องหมาย. เพิ่ม
+endpoint อ่านอย่างเดียว `GET /admin/v1/ropa/activities/{id}/links` (ประกาศที่เชื่อม + วัตถุประสงค์ความยินยอมที่เชื่อม)
+และแท็บ "ความเชื่อมโยง" บนหน้ากิจกรรม.
+
 <a id="ropa-20"></a>
 ### ROPA-20 ตรวจสิทธิ์ยกเว้นกิจการขนาดเล็ก
 

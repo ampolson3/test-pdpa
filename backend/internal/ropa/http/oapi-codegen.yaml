@@ -29,6 +29,7 @@ output-options:
     - ropaConfirmActivityNoChange
     - ropaEndActivity
     - ropaListActivityVersions
+    - ropaGetActivityLinks
     - ropaCompareActivityVersions
     - ropaListActivityPurposes
     - ropaAddActivityPurpose

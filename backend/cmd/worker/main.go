@@ -148,6 +148,7 @@ func run() error {
 	river.AddWorker(workers, &govjobs.Checker{Gov: govSvc})
 	river.AddWorker(workers, &govjobs.Sweeper{Pool: pool})
 	dpoSvc := &dposervice.Service{Audit: auditservice.New()} // DPA-12: missing-DPA task creation only — no other dpo.tasks consumer runs in this worker
+	ropaSvc.Dpo = dpoSvc                                     // ROPA-19: open a review task per linked consent purpose when the activity changes (the ropa.activity_approved subscriber above)
 	agreementSvc := &agreementservice.Service{Audit: auditservice.New(), Vendor: vendorSvc, Dpo: dpoSvc,
 		Notify: notifySvc, River: inserter} // DPA-10: expiry reminder; DPA-12: missing-DPA sweep
 	river.AddWorker(workers, &agreementservice.ReminderWorker{Service: agreementSvc})

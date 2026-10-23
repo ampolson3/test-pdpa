@@ -241,6 +241,15 @@ func TestActivityApproval_Contract(t *testing.T) {
 		t.Errorf("list versions: %d %s", code, body)
 	}
 
+	// ROPA-19: the activity's own "linkage" tab — no notice or consent purpose has ever been linked to
+	// this one, so both come back empty, 401 with no principal.
+	if code, _ := do("GET", actURL+"/links", nil, nil, nil); code != 401 {
+		t.Errorf("links, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", actURL+"/links", &dpo, nil, nil); code != 200 || !strings.Contains(body, `"notices":[]`) || !strings.Contains(body, `"consent_purposes":[]`) {
+		t.Errorf("links: %d %s", code, body)
+	}
+
 	// Editing an active activity directly is refused. ApproveActivity's own update bumps row_version once
 	// (2 -> 3) and ROPA-15's SetActivityNextReview call right after it is a second UPDATE on the same row
 	// (platform.set_updated_at() bumps row_version on every UPDATE regardless of which columns changed),

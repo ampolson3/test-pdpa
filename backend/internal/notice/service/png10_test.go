@@ -158,3 +158,49 @@ func TestMarkNoticesForReviewByActivity_TwoTenantIsolation(t *testing.T) {
 		return nil
 	})
 }
+
+// TestListNoticesByActivity is ROPA-19's own read side: every notice composed from the activity, with its
+// own title/status, for the RoPA activity page's "linkage" tab. Implements ropa/service's own Notice
+// interface structurally.
+func TestListNoticesByActivity(t *testing.T) {
+	e := setup(t, "png10links")
+	var activityID uuid.UUID
+	var notice noticeservice.Notice
+	e.in(t, func(ctx context.Context) error {
+		le, err := e.org.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ทดสอบ จำกัด", IsController: true}, 0)
+		if err != nil {
+			return err
+		}
+		unit, err := e.org.CreateOrgUnit(ctx, orgservice.OrgUnit{LegalEntityID: le.ID, Code: "HR", NameTh: "HR", UnitType: "department"})
+		if err != nil {
+			return err
+		}
+		a, err := e.ropa.SaveActivity(ctx, ropaservice.Activity{LegalEntityID: le.ID, OrgUnitID: unit.ID, Code: "LINKS-ACT", Name: "กิจกรรมทดสอบ", Role: "controller"}, 0)
+		if err != nil {
+			return err
+		}
+		activityID = a.ID
+		notice, err = e.svc.CreateWizard(ctx, noticeservice.WizardInput{LegalEntityID: le.ID, NoticeType: "privacy_notice",
+			Title: "ประกาศทดสอบ ROPA-19", Slug: "ropa19-links-test", ActivityIDs: []uuid.UUID{activityID}})
+		return err
+	})
+
+	e.in(t, func(ctx context.Context) error {
+		got, err := e.svc.ListNoticesByActivity(ctx, activityID)
+		if err != nil {
+			return err
+		}
+		if len(got) != 1 || got[0].ID != notice.ID || got[0].Title != notice.Title || got[0].Status != "draft" {
+			t.Errorf("ListNoticesByActivity = %+v, want exactly the one linked notice", got)
+		}
+		// An unrelated activity has no linked notices at all.
+		none, err := e.svc.ListNoticesByActivity(ctx, uuid.New())
+		if err != nil {
+			return err
+		}
+		if len(none) != 0 {
+			t.Errorf("ListNoticesByActivity for an unrelated activity = %+v, want none", none)
+		}
+		return nil
+	})
+}

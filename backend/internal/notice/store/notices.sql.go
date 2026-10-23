@@ -573,6 +573,42 @@ func (q *Queries) ListNotices(ctx context.Context, arg ListNoticesParams) ([]Lis
 	return items, nil
 }
 
+const listNoticesByActivity = `-- name: ListNoticesByActivity :many
+SELECT n.id, n.title, n.status
+FROM notice.notice_activity_links l
+JOIN notice.notices n ON n.id = l.notice_id
+WHERE l.activity_id = $1
+ORDER BY n.title
+`
+
+type ListNoticesByActivityRow struct {
+	ID     uuid.UUID `db:"id" json:"id"`
+	Title  string    `db:"title" json:"title"`
+	Status string    `db:"status" json:"status"`
+}
+
+// ROPA-19: the same link PNG-10 already reads, with each notice's own title/status for display on the
+// RoPA activity's own "linkage" tab.
+func (q *Queries) ListNoticesByActivity(ctx context.Context, activityID uuid.UUID) ([]ListNoticesByActivityRow, error) {
+	rows, err := q.db.Query(ctx, listNoticesByActivity, activityID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListNoticesByActivityRow
+	for rows.Next() {
+		var i ListNoticesByActivityRow
+		if err := rows.Scan(&i.ID, &i.Title, &i.Status); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listNoticesDueForReview = `-- name: ListNoticesDueForReview :many
 SELECT id, title, owner_user_id, review_cycle_months, next_review_at
 FROM notice.notices

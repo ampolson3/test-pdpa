@@ -10130,6 +10130,35 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/activities/{id}/links:
+    get:
+      operationId: ropaGetActivityLinks
+      tags: [ropa]
+      summary: ROPA-19 — every other module's record already linked back to this activity (notices, consent purposes)
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityLinks'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/ropa/activities/{id}/purposes:
     get:
       operationId: ropaListActivityPurposes
@@ -19710,6 +19739,34 @@ components:
         section: {type: string}
         before: {}
         after: {}
+    ActivityLinkedNotice:
+      type: object
+      description: ROPA-19 — a notice (PNG-01) composed from this activity.
+      required: [id, title, status]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        title: {type: string}
+        status: {type: string}
+    ActivityLinkedConsentPurpose:
+      type: object
+      description: ROPA-19 — one of the activity's own purposes that cites a real consent.purposes row (ROPA-06).
+      required: [purpose_id, consent_purpose_id, code, status]
+      properties:
+        purpose_id: {$ref: '#/components/schemas/Uuid'}
+        consent_purpose_id: {$ref: '#/components/schemas/Uuid'}
+        code: {type: string}
+        status: {type: string}
+    ActivityLinks:
+      type: object
+      description: ROPA-19 — the activity's own "linkage" tab, every other module's record that already points back at it. Data Flow (DFG) is omitted deliberately — its diagram is always computed live off the current RoPA/org/vendor rows, so there is nothing stale to list here.
+      required: [notices, consent_purposes]
+      properties:
+        notices:
+          type: array
+          items: {$ref: '#/components/schemas/ActivityLinkedNotice'}
+        consent_purposes:
+          type: array
+          items: {$ref: '#/components/schemas/ActivityLinkedConsentPurpose'}
     ActivityPurposeInput:
       type: object
       required: [purpose_text, lawful_basis_code]

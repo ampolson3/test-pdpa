@@ -195,6 +195,7 @@ export {
   useActivityRejections,
   useActivityVersions,
   useCompareActivityVersions,
+  useActivityLinks,
   useActivityMutations,
   useMyOpenQuestions,
   type ProcessingActivity,
@@ -232,6 +233,9 @@ export {
   type ActivityVersion,
   type ActivityVersionDiff,
   type RopaOpenQuestion,
+  type ActivityLinks,
+  type ActivityLinkedNotice,
+  type ActivityLinkedConsentPurpose,
 } from "./activities";
 export {
   useTemplateSets,

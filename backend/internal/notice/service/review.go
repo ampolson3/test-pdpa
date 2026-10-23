@@ -21,6 +21,7 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/platform/jobs"
 	"pdpa-platform/internal/platform/notify"
+	ropaservice "pdpa-platform/internal/ropa/service"
 )
 
 // ReviewSweepArgs is notice.review_sweep: platform-wide (jobs.GlobalKinds), no tenant transaction — it only
@@ -152,6 +153,22 @@ func (s *Service) MarkNoticesForReviewByActivity(ctx context.Context, activityID
 		}
 	}
 	return nil
+}
+
+// ListNoticesByActivity is ROPA-19's own read side: every notice composed from this activity, with its own
+// title/status, for the RoPA activity page's "linkage" tab. Implements ropa/service's own local Notice
+// interface structurally (rule 9) — notice already imports ropaservice, so the return type is defined on
+// ropa's own side (ropaservice.LinkedNotice) rather than ropo importing notice back, which would cycle.
+func (s *Service) ListNoticesByActivity(ctx context.Context, activityID uuid.UUID) ([]ropaservice.LinkedNotice, error) {
+	rows, err := noticestore.New(pdb.MustTxFromContext(ctx)).ListNoticesByActivity(ctx, activityID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ropaservice.LinkedNotice, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, ropaservice.LinkedNotice{ID: r.ID, Title: r.Title, Status: r.Status})
+	}
+	return out, nil
 }
 
 func (s *Service) reviewRecipients(ctx context.Context, owner pgtype.UUID) ([]uuid.UUID, error) {

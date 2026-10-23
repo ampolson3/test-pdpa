@@ -1677,7 +1677,15 @@
     "noRejections": "No rejections logged against this activity yet",
     "browseTemplates": "Standard activity library",
     "useWizard": "Use wizard",
-    "viewDataFlow": "Data Flow Diagram"
+    "viewDataFlow": "Data Flow Diagram",
+    "links": {
+      "title": "Linkage",
+      "hint": "Notices, consent purposes and other records linked to this activity are automatically marked for review once this activity is changed and approved.",
+      "notices": "Linked notices",
+      "noNotices": "No notice is composed from this activity.",
+      "consentPurposes": "Linked consent purposes",
+      "noConsentPurposes": "No purpose of this activity cites a consent purpose."
+    }
   },
   "notices": {
     "signInRequired": "Please sign in",

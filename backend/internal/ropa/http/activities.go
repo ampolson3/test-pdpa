@@ -257,6 +257,23 @@ func (h *Strict) RopaListActivityVersions(ctx context.Context, req RopaListActiv
 	return resp, nil
 }
 
+func (h *Strict) RopaGetActivityLinks(ctx context.Context, req RopaGetActivityLinksRequestObject) (RopaGetActivityLinksResponseObject, error) {
+	links, err := h.svc.GetActivityLinks(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := RopaGetActivityLinks200JSONResponse{Notices: make([]ActivityLinkedNotice, 0, len(links.Notices)),
+		ConsentPurposes: make([]ActivityLinkedConsentPurpose, 0, len(links.ConsentPurposes))}
+	for _, n := range links.Notices {
+		resp.Notices = append(resp.Notices, ActivityLinkedNotice{Id: n.ID, Title: n.Title, Status: n.Status})
+	}
+	for _, c := range links.ConsentPurposes {
+		resp.ConsentPurposes = append(resp.ConsentPurposes, ActivityLinkedConsentPurpose{
+			PurposeId: c.PurposeID, ConsentPurposeId: c.ConsentID, Code: c.Code, Status: c.Status})
+	}
+	return resp, nil
+}
+
 func (h *Strict) RopaCompareActivityVersions(ctx context.Context, req RopaCompareActivityVersionsRequestObject) (RopaCompareActivityVersionsResponseObject, error) {
 	diffs, err := h.svc.CompareActivityVersions(ctx, req.Params.From, req.Params.To)
 	if err != nil {

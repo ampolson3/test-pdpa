@@ -52,6 +52,15 @@ SELECT EXISTS (SELECT 1 FROM notice.notice_activity_links WHERE activity_id = $1
 -- PNG-10: every notice composed from this activity (RLS already scopes it to the caller's own tenant).
 SELECT notice_id FROM notice.notice_activity_links WHERE activity_id = $1 ORDER BY notice_id;
 
+-- name: ListNoticesByActivity :many
+-- ROPA-19: the same link PNG-10 already reads, with each notice's own title/status for display on the
+-- RoPA activity's own "linkage" tab.
+SELECT n.id, n.title, n.status
+FROM notice.notice_activity_links l
+JOIN notice.notices n ON n.id = l.notice_id
+WHERE l.activity_id = $1
+ORDER BY n.title;
+
 -- name: MarkNoticeForReview :exec
 -- PNG-10: sets next_review_at to today so PNG-15's own daily review sweep picks this notice up on its
 -- next run — a notice that has never been published yet has no review clock to disturb, so this is a

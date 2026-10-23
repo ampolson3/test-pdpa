@@ -59,6 +59,15 @@ func Events(reg *events.Registry, ropaSvc *ropaservice.Service, dpiaSvc *dpiaser
 		if err != nil {
 			return nil
 		}
-		return noticeSvc.MarkNoticesForReviewByActivity(ctx, activityID)
+		if err := noticeSvc.MarkNoticesForReviewByActivity(ctx, activityID); err != nil {
+			return err
+		}
+		// ROPA-19's own broader trigger: every real RoPA change, not just a breach link, marks the
+		// activity's own latest-approved DPIA round needs_review (a harmless no-op with none) and opens
+		// a review task per linked consent purpose (also a no-op with no Dpo wired, e.g. cmd/api).
+		if err := dpiaSvc.MarkActivityAssessmentForReview(ctx, activityID, "RoPA activity changed"); err != nil {
+			return err
+		}
+		return ropaSvc.NotifyConsentPurposesForReview(ctx, activityID, "RoPA activity changed")
 	})
 }

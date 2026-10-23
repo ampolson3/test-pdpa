@@ -36,6 +36,9 @@ export type ProcessingActivityWizardRecipientKind = components["schemas"]["Proce
 export type ActivityVersion = components["schemas"]["ActivityVersion"];
 export type ActivityVersionDiff = components["schemas"]["ActivityVersionDiff"];
 export type RopaOpenQuestion = components["schemas"]["RopaOpenQuestion"];
+export type ActivityLinks = components["schemas"]["ActivityLinks"];
+export type ActivityLinkedNotice = components["schemas"]["ActivityLinkedNotice"];
+export type ActivityLinkedConsentPurpose = components["schemas"]["ActivityLinkedConsentPurpose"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const activitiesKey = ["ropa", "activities"] as const;
@@ -197,6 +200,19 @@ export function useCompareActivityVersions(client: ApiClient, id: string | undef
       });
       if (error) throw error;
       return data.data;
+    },
+  });
+}
+
+/** ROPA-19 — every other module's record already linked back to this activity (notices, consent purposes). */
+export function useActivityLinks(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...activityKey(id ?? ""), "links"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/links", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data;
     },
   });
 }

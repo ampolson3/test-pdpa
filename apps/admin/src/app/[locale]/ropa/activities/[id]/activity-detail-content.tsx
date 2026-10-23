@@ -35,6 +35,7 @@ import { Rtg06SuggestionsSection } from "./rtg06-suggestions-section";
 import { GapAnalysisSection } from "./gap-analysis-section";
 import { TiaPanel } from "./tia-panel";
 import { ActivityVersioningSection } from "./activity-versioning-section";
+import { ActivityLinksSection } from "./activity-links-section";
 import { RecordCollaboration } from "@/components/record-collaboration";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
@@ -171,6 +172,8 @@ export function ActivityDetailContent({ id, currentUserId }: { id: string; curre
       </section>
 
       <ActivityVersioningSection client={client} activity={a} />
+
+      <ActivityLinksSection client={client} activity={a} />
 
       <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4" data-testid="qa-section">
         <h2 className="font-semibold">{t("sections.qa")}</h2>

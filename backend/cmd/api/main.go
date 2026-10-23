@@ -295,6 +295,7 @@ func run() error {
 	dpoSvc := &dposervice.Service{Audit: auditSvc, Org: orgSvc, Files: fileSvc, Risk: riskSvc}                               // RRA-07: closing a "ropa_gap" task re-checks the rule
 	fileSvc.EntityPermissions[dposervice.AppointmentEntityType] = "dpo.profile.read"                                         // DPO-01 appointment order / PDPC evidence
 	riskSvc.Dpo = dpoSvc                                                                                                     // DPIA-07/RRA-07: owner + due date on a control, or a gap finding, opens a dpo.tasks job
+	ropaSvc.Dpo = dpoSvc                                                                                                     // ROPA-19: open a review task per linked consent purpose when the activity changes
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
 	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
 	formsSvc := wiring.Forms(notifySvc, auditSvc)
@@ -342,6 +343,7 @@ func run() error {
 	docsSvc.SetValidate("notice", noticeSvc.CheckPublishable)                                // PNG-02: ม.23 checklist gates the notice's document publish
 	docsSvc.SetOnPublished("notice", noticeSvc.OnDocumentPublished)                          // PNG-06: version history + the public page's key
 	riskSvc.Notice = noticeSvc                                                               // RRA-04: "no covering notice" gap rule
+	ropaSvc.Notice = noticeSvc                                                               // ROPA-19: notices composed from an activity, shown on its own "linkage" tab
 	fileSvc.EntityPermissions[noticeservice.IndirectCollectionType] = "notice.indirect.read" // PNG-04 notice evidence
 	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                  // BRE-12 evidence
 	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read"   // BRE-10 recipient lists

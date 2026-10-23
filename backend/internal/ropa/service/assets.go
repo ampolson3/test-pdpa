@@ -74,10 +74,39 @@ type Risk interface {
 	GetControl(ctx context.Context, id uuid.UUID) (riskservice.Control, error)
 }
 
+// LinkedNotice is ROPA-19's own read of PNG-01's cross-module link (notice.notice_activity_links), defined
+// here (not in notice/service) so this interface's own concrete wiring never needs ropa to import notice —
+// notice already imports ropa the other way (its own Ropa interface), so a return type defined on this
+// side keeps that one-directional (rule 9).
+type LinkedNotice struct {
+	ID     uuid.UUID
+	Title  string
+	Status string
+}
+
+// Notice is what ropa reads from the notice module (rule 9) for ROPA-19's own "linkage" tab: every notice
+// composed from a given activity, the same link PNG-10's own review-marking consumer already reads.
+type Notice interface {
+	ListNoticesByActivity(ctx context.Context, activityID uuid.UUID) ([]LinkedNotice, error)
+}
+
+// Dpo is what ropa reads/writes in the dpo module (rule 9) for ROPA-19: opening one review task per
+// consent purpose an edited activity's own purpose cites. Deliberately returns a bare uuid.UUID, not
+// dpo's own Task type — dpo already imports dsar, which imports ropa, so ropa importing dposervice here
+// would cycle; OpenConsentReviewTask is dpo's own cycle-free wrapper around OpenConsentTask.
+type Dpo interface {
+	HasTaskForConsentPurpose(ctx context.Context, consentPurposeID uuid.UUID) (bool, error)
+	OpenConsentReviewTask(ctx context.Context, consentPurposeID uuid.UUID, title, description string) (uuid.UUID, error)
+}
+
 type Service struct {
-	Audit     *audit.Service
-	Org       Org
-	Consent   Consent
+	Audit   *audit.Service
+	Org     Org
+	Consent Consent
+	// Notice and Dpo are ROPA-19's own cross-module reads/writes — nil in contexts that never need them
+	// (e.g. a test fixture with no notice/consent-review scope).
+	Notice    Notice
+	Dpo       Dpo
 	Risk      Risk
 	Templates *templatesservice.Service
 	// Dpia runs DPX-06's own transfer impact assessments (rule 9) — nil in cmd/worker, where nothing

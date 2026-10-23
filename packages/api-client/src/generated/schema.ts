@@ -3457,6 +3457,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/activities/{id}/links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ROPA-19 — every other module's record already linked back to this activity (notices, consent purposes) */
+        get: operations["ropaGetActivityLinks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/activities/{id}/purposes": {
         parameters: {
             query?: never;
@@ -7751,6 +7768,24 @@ export interface components {
             section: string;
             before?: unknown;
             after?: unknown;
+        };
+        /** @description ROPA-19 — a notice (PNG-01) composed from this activity. */
+        ActivityLinkedNotice: {
+            id: components["schemas"]["Uuid"];
+            title: string;
+            status: string;
+        };
+        /** @description ROPA-19 — one of the activity's own purposes that cites a real consent.purposes row (ROPA-06). */
+        ActivityLinkedConsentPurpose: {
+            purpose_id: components["schemas"]["Uuid"];
+            consent_purpose_id: components["schemas"]["Uuid"];
+            code: string;
+            status: string;
+        };
+        /** @description ROPA-19 — the activity's own "linkage" tab, every other module's record that already points back at it. Data Flow (DFG) is omitted deliberately — its diagram is always computed live off the current RoPA/org/vendor rows, so there is nothing stale to list here. */
+        ActivityLinks: {
+            notices: components["schemas"]["ActivityLinkedNotice"][];
+            consent_purposes: components["schemas"]["ActivityLinkedConsentPurpose"][];
         };
         ActivityPurposeInput: {
             purpose_id?: components["schemas"]["Uuid"];
@@ -18209,6 +18244,34 @@ export interface operations {
                     "application/json": {
                         data: components["schemas"]["ActivityVersionDiff"][];
                     };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaGetActivityLinks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityLinks"];
                 };
             };
             401: components["responses"]["Unauthorized"];
