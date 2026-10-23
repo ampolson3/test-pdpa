@@ -138,6 +138,64 @@
 
 **Acceptance criteria:** ข้อมูลครบกำหนดสร้างงานทำลายอัตโนมัติและปิดได้เมื่อแนบหลักฐาน
 
+**Implementation — done.** `internal/gov` — the first feature on the `gov` schema: `gov.retention_schedules`
+and `gov.disposal_jobs` were both already fully specified in the baseline migrations (00017), and
+`dpx.retention.{read,create,update,delete,approve,execute}` was already seeded (migration 00019) — no new
+migration or permission code. `internal/ropa/service`'s `GetRetentionRule` (a new by-id query, mirroring
+`GetAsset`'s own role) and the already-exported `GetAsset` give `gov` its two FK-visibility checks (rule 1);
+a new `internal/dsar/service/legal_holds.go` (`ActiveHoldForAsset`) gives it the active-legal-hold check on
+`dsar.legal_holds` — no import cycle either direction (neither `dsar` nor `ropa` imports `gov`), so both are
+plain concrete-type fields on `Service`, not a `wiring`-adapter situation like DPX-06's own ropa↔dpia fix.
+
+Scope deliberately trimmed against BP-11's full diagram, each a plain engineering simplification rather
+than a `docs/decisions.md` question (none change the data model, a contract, or legally-relevant behaviour):
+BP-11's three human steps (data-owner confirm, DPO approve, IT execute) collapse into the one real
+`approved_by` column the schema actually has — `ApproveJob` is both confirm and approve at once, gated on
+`dpx.retention.approve`; a legal hold is matched by `asset_id` only, not also `data_category_id` (the
+broader match is DSAR-11's own exemption-check concern, not this feature's literal acceptance criterion);
+`next_due_at` is entered by a human when creating a schedule, with no automatic trigger-event-date
+computation (the system has no way to know when a real-world trigger event — "สิ้นสุดการจ้าง" — actually
+happened); and PLT-05's generic workflow/task engine is not used at all, the same reasoning PNG-04's own
+indirect-collection deadline already recorded — nothing here needs a per-record task assignee resolved from
+a Definition JSON.
+
+The acceptance criterion's first half ("ข้อมูลครบกำหนดสร้างงานทำลายอัตโนมัติ") is a daily sweep mirroring
+`internal/platform/audit/jobs/verify.go`'s own `VerifySweeper`/`Verifier` pair exactly: `gov.retention_sweep`
+(global, `jobs.GlobalKinds`, daily `river.PeriodicJob`, reusing `platform/audit/store`'s own
+`ListLiveTenants`) enqueues one `gov.retention_check` per tenant, which runs inside that tenant's own
+transaction (`TenantTxMiddleware`) and calls `Service.RunRetentionCheck` — every `active` schedule whose
+`next_due_at` has passed with **no disposal job still open** (`pending`/`approved`/`in_progress`/`on_hold`)
+gets a fresh one, using the schedule's own retention rule's `disposal_method`. This "no open job" check is
+what keeps the sweep idempotent day over day without needing to advance `next_due_at` itself. A schedule
+whose asset is under an active legal hold gets its job created `on_hold` directly (not `pending`), so it
+never shows up for approval until the hold lifts — `ApproveJob` re-checks the same hold and refuses with
+`ErrOnLegalHold` even if a hold appeared after the job was created `pending`.
+
+The second half ("ปิดได้เมื่อแนบหลักฐาน") is `CompleteJob`'s own gate: `evidence_file_id` is required
+(refused with `ErrEvidenceRequired` before ever touching the database), and the file must be the caller's
+own clean, still-unattached PLT-09 upload (`Files.Get` + `AttachSystem`, the exact rule every other module's
+evidence requirement already uses) — the sqlc query itself takes `evidence_file_id` as a non-nullable
+`sqlc.arg`, never `sqlc.narg`, so there is no code path that can write a `done` row without one.
+
+API: `GET`/`POST /admin/v1/governance/retention-schedules`, `PATCH .../retention-schedules/{id}` (pause/
+resume/retire, ETag/If-Match), `GET /admin/v1/governance/disposal-jobs` (+ `/{id}`), `POST .../approve`
+(refused on an active hold), `/start`, `/complete` (evidence required), `/release-hold` — cursor pagination,
+same shape as every other module's list endpoints. UI: a new page, `/governance` — a retention-schedule
+list + create form (asset picker from ROPA-02's own `useAssets`, retention rule entered by id since no
+cross-activity retention-rule picker exists yet) and a disposal-job list with inline approve/start/
+complete-with-evidence (`FileUploader`)/release-hold actions, i18n th/en. Tests: unit (the acceptance
+criterion directly — a due schedule gets exactly one job and re-running the sweep doesn't duplicate it; a
+not-yet-due schedule is left alone; a paused schedule is never picked up; a held asset's job is created
+`on_hold` and blocked from approval until the hold is released; completion refused without evidence, succeeds
+and attaches the file once given; two-tenant isolation), HTTP contract (401/403/201/200/428/422) through the
+real validator + AuthZ chain. `go build`/`go vet`/`gofmt` clean across the whole backend; `tsc --noEmit` and
+`pnpm --filter @pdpa/admin build` both verified clean — no Postgres/Redis reachable in this environment this
+round, so tests are compile-verified and skip-cleanly-verified only, the same caveat DPX-06/VEN-07/VEN-08
+already recorded. Not done: `ropa.activity_systems`-based asset linking beyond the direct `asset_id` FK
+(ROPA-02 never built CRUD on that table either — nothing to link to yet), and a standalone cross-activity
+retention-rule picker on the schedule-create form (entering the rule's own id is a deliberate stand-in until
+a screen actually needs one).
+
 <a id="dpx-06"></a>
 ### DPX-06 ประเมินการโอนข้อมูลไปต่างประเทศ (TIA)
 
@@ -158,6 +216,72 @@
 **Frontend (Next.js):** หน้า TIA
 
 **Acceptance criteria:** การโอนต่างประเทศทุกเส้นทางมีผล TIA อ้างอิง
+
+**Implementation — done.** The module doc's own Go package (`internal/gov`) owns training/policy/audit/
+retention/disposal/regulator-letter/AI-registry content (`gov` schema) — none of it related to this
+feature. The real table this feature writes to, `ropa.activity_transfers.tia_assessment_id` (FK →
+`assess.assessments.id`), was already fully specified in the baseline migrations as part of ROPA-08's own
+schema, unused until now — per rule 1 (a module reads/writes only its own schema), this feature's code
+lives in `internal/ropa`, not `internal/gov`, following the migration/schema reality over the module doc's
+own package assignment (CLAUDE.md's own source-priority order: migrations > docs/states > docs/modules).
+
+No new migration for the linking mechanism itself: `assess.templates.assessment_type`'s own CHECK
+constraint already listed `'tia'` since the baseline (migration 00011), unused — the exact same "reserved
+but unused" pattern VEN-04 (`docs/decisions.md` Q-31) found for `assessment_type='vendor'`. Migration 00063
+(`docs/decisions.md` Q-36) seeds one global (`tenant_id NULL`), published TIA questionnaire — `transfer_tia`,
+6 yes_no questions on destination-country adequacy, binding safeguards (BCR/SCC), certification, government
+access risk, onward-transfer risk, and enforceability of data subject rights — on the exact same PLT-06
+`"assessment"` form type DPIA-03's own generic template library (`CRUD`/`clone`/`publish`/`retire` on
+`assess.templates`) already serves without any new code, since it was never hardcoded to one
+`assessment_type`. The questionnaire's own wording is a draft pending legal review (name carries
+"(ร่าง — รอฝ่ายกฎหมายตรวจ)" directly in the data, rule 8), summarized from this feature's own description and
+ม.28-29's transfer mechanisms, not copied from an official PDPC form.
+
+`internal/ropa/service/transfers.go` gained `RecordTransferAssessment(ctx, activityID, transferID,
+templateCode, answers)` — VEN-07's own `RecordAssessment` pattern, transplanted: resolve the published
+template by code among `assessment_type='tia'` templates, run the answers through dpia's generic
+`RecordSubjectAssessment` (`subject_type='transfer'`, already in `assess.assessments`' own CHECK constraint
+alongside `'vendor'`/`'activity'`/etc., unused until now), then link the resulting assessment id back onto
+the transfer row (`SetTransferTIA`, a plain `UPDATE ... WHERE id = $1 AND activity_id = $2`) — no scoring/
+classification step like VEN-07's own `ClassifyScore`, since this feature's acceptance criterion is only
+"has a referenced TIA," not a risk-level verdict.
+
+Real import-direction constraint, not a design choice: `dpia/service` already imports `ropa/service`
+directly (for its own `Ropa` interface's return types — `ropaservice.Activity`, `ropaservice.
+ActivityTransfer`, etc.), so `ropa/service` importing `dpia/service` back would cycle — the identical
+situation `internal/wiring/risk.go`'s own `RiskRopa` adapter already documents for `risk/service` ↔
+`ropa/service`. Fixed the same way: `ropa/service` declares its own small local `Dpia` interface
+(`ListTemplates`/`RecordSubjectAssessment`) plus two mirror structs (`DpiaTemplate`, `TiaResult` — just the
+fields this feature needs, not a full copy of dpia's own types), and a new `internal/wiring.RopaDpia`
+adapter (built where both concrete packages are already safely importable) converts between them —
+`ropaSvc.Dpia = wiring.RopaDpia{Dpia: dpiaSvc}` wired once in `cmd/api/main.go`, nil in `cmd/worker` (no job
+there ever records a TIA).
+
+The acceptance criterion itself ("ทุกเส้นทางมีผล TIA อ้างอิง") is a new conditional item in ROPA-03's own
+`completeness()`, right next to ROPA-08's own `transfer_basis` item: any `ropa.activity_transfers` row with
+no `tia_assessment_id` yet flags `tia_missing` and blocks `/submit` (ROPA-03's own
+`len(a.MissingItems) > 0` guard already covers every conditional item, no new code there) — unconditional
+on whether a recipient is foreign-coded, since every *logged* transfer (by definition, to another country)
+needs its own TIA, not just the ones ROPA-08's own foreign-recipient-coverage check happens to flag.
+
+API: `POST /admin/v1/ropa/activities/{id}/transfers/{transferId}/tia` (`ropa.activity.update`, same
+permission as logging the transfer itself; 422 for an unknown/unpublished template_code, 404 for an
+unknown transfer) → the updated `ActivityTransfer` (now carrying `tia_assessment_id`). UI: `/ropa/activities/
+{id}`'s existing transfers section (`activity-detail-content.tsx`) renders a new `TiaPanel`
+(`tia-panel.tsx`, the same `FormRenderer` + `useDpiaTemplates("tia")` + `useForm` pattern VEN-07/VEN-08's
+own vendor-assessment panels already use) under each transfer row — a "TIA recorded" badge once set, an
+inline answer form otherwise. Tests: unit (the acceptance criterion directly — a logged transfer flags
+`tia_missing` until a TIA is recorded, linking clears it and `ListActivityTransfers` reports the id back;
+answers scored either direction; an unknown template_code or transfer id refused; two-tenant isolation),
+HTTP contract (401/403/200/404/422) through the real validator + AuthZ chain. `go build`/`go vet`/`gofmt`
+clean; `tsc --noEmit` and `pnpm --filter @pdpa/admin build` both verified clean — no Postgres/Redis
+reachable in this environment this round, so tests are compile-verified only, the same caveat VEN-07/VEN-08
+already recorded. Not done: a standalone "/governance" TIA registry page listing every TIA across
+activities (the module doc's own frontend note just says "หน้า TIA," read here as the inline panel on each
+transfer route it actually names in the acceptance criterion — a cross-activity register has no acceptance
+criterion of its own yet) and classifying the TIA's own score into a risk verdict (ม.28/29 doesn't define
+scoring bands the way RRA-02's matrix does, and the acceptance criterion only asks that a TIA exist, not
+that it pass a threshold).
 
 <a id="dpx-01"></a>
 ### DPX-01 อบรมและทดสอบพนักงาน

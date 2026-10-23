@@ -101,6 +101,39 @@
 
 **Acceptance criteria:** แผนผังของ 50 กิจกรรมแสดงภายใน 3 วินาทีและตรงกับข้อมูล RoPA
 
+**Implementation (DFG-01, built together with DFG-03) — done:** `internal/dataflow/service.Graph` (no new
+migration — `dataflow.layouts`/`.snapshots` already exist for the later DFG-05/DFG-07, unused here) composes
+the diagram live from RoPA on every call, the same "never a stale copy" discipline DPIA-04/12 already
+established — no caching, no stored snapshot. Node types: `org_unit` (one per department with an activity,
+rendered as a swimlane container), `activity` (nested under its org unit, carries code/status/role/purposes/
+data categories for the UI's tooltip), `recipient` (one per distinct `org.external_parties` row an
+activity's `activity_recipients` references, via `Org.GetExternalParty` — rule 9), `country` (one per
+distinct destination), `disposal` (one per unique `retention_rules.disposal_method` an activity names).
+Edge types: `send` (activity → recipient), `transfer` (recipient/activity → country, from ROPA-08's own
+`activity_transfers`, labelled with `transfer_basis`), `destroy` (activity → its disposal node). DFG-01's
+own backend note lists a fifth node type ("ระบบ" / system) sourced from a RoPA asset — `ropa.
+processing_activities` has no FK to `ropa.assets` yet (ROPA-02's own register and ROPA-03's own activities
+were never linked), so there is nothing to draw; deferred the same way ROPA-01 deferred its own
+`discovered_by_finding_id` until a real link exists. **DFG-03's own acceptance criterion is this same pass's
+`transfer` edges**: for every recipient whose country isn't Thailand, if no `activity_transfers` row
+references that recipient, the edge goes straight to the country node with `warning: true` instead of the
+usual label — the exact "implicit, never-logged transfer" check ROPA-08's own `completeness()` already uses
+for its `transfer_basis` conditional item, just drawn instead of just flagged; logging the real transfer
+clears the warning edge and adds the labelled one. `GET /admin/v1/dataflow/graph` (`ropa.dataflow.read`,
+optional `legal_entity_id` filter, no pagination — the whole tenant diagram is meant to be viewed as one
+graph) → `internal/dataflow/http`. Frontend: `@xyflow/react` (React Flow) + `elkjs` (bundled, no web worker
+needed) — `apps/admin` `/data-flow`, linked from `/ropa/activities`; ELK's own `layered` algorithm lays out
+org-unit containers and their nested activity/disposal children, React Flow renders the swimlanes as
+`type: "group"` nodes with a small non-interactive label child (React Flow's built-in group type draws no
+text of its own); a legend covers every node/edge colour plus the warning style. Tests: unit (swimlanes +
+disposal nodes/edges match what was saved; a foreign recipient with no transfer draws the warning edge and a
+domestic one never gets a country node at all; logging the transfer clears the warning and adds the real
+edge; the `legal_entity_id` filter; two-tenant isolation), HTTP contract (401/403/200). Not done (separate
+sibling features, each with its own backlog id and unmet dependency): DFG-02 (auto-refresh on an
+`ropa.updated` event — PLT-11 is done but DFG-02 wasn't in this pass's scope), DFG-04 (processor/recipient →
+DPA/DSA contract links — depends on DPA-11/DSA-11, neither built), DFG-05 (drag-to-arrange, persisted via
+the already-existing `dataflow.layouts`), DFG-08 (image/report export).
+
 <a id="dfg-02"></a>
 ### DFG-02 อัปเดตแผนผังเมื่อข้อมูลเปลี่ยน
 
@@ -121,6 +154,23 @@
 **Frontend (Next.js):** ป้ายแจ้งว่าแผนผังอัปเดตแล้ว
 
 **Acceptance criteria:** แก้ RoPA แล้วแผนผังเปลี่ยนตามโดยไม่ต้องสร้างใหม่
+
+**Implementation (DFG-02) — done, architecturally trivial given DFG-01:** `dataflowservice.Graph` was built
+in DFG-01 to never cache or persist its result — it reads `ropa.processing_activities` and its child tables
+fresh on every call (the same discipline `dpiaservice.ActivityDescription`/`Registry` already established)
+— so there is no stale copy to rebuild, and no `ropa.updated`/`masterdata.updated` event listener to write:
+an edit is visible on the very next read, full stop. The module doc's own backend note describes the
+event-driven partial-rebuild machinery a *persisted* snapshot (`dataflow.snapshots`, DFG-07) would need to
+stay in sync without recomputing the whole thing — that doesn't apply while DFG-01 never persists anything.
+Proven directly (`TestGraph_ReflectsRoPAEditsWithoutRegenerating`): renaming an activity, moving it to a
+different department, adding a new one and the previous activity count are all visible on the immediate
+next `Graph()` call, with no action in between. What *is* this feature's own real work, the FE note's "ป้าย
+แจ้งว่าแผนผังอัปเดตแล้ว" (a badge that the diagram updated) for a viewer who leaves `/data-flow` open while
+someone edits RoPA elsewhere: `useDataflowGraph` now polls every 30s (`refetchInterval`, React Query), and
+the page shows "last updated HH:MM:SS" (from the response's own `generated_at`) that swaps to "updating..."
+during a background refetch, plus a manual "refresh now" button — no WebSocket or SSE push needed for a
+30-second staleness budget. Not done: shrinking that budget with a real push channel, which nothing in this
+feature's acceptance criterion calls for.
 
 <a id="dfg-03"></a>
 ### DFG-03 แสดงการโอนไปต่างประเทศ
@@ -143,6 +193,10 @@
 
 **Acceptance criteria:** เส้นทางโอนที่ไม่มีฐานการโอนแสดงเป็นสีเตือน
 
+**Implementation (DFG-03) — done, see [DFG-01](#dfg-01)'s own implementation note:** built in the same pass
+as DFG-01 (same graph, same `transfer` edges) since both share `ROPA-08`'s data and DFG-01 «include»s DFG-03
+in the module's own use-case relations above.
+
 <a id="dfg-04"></a>
 ### DFG-04 แสดงผู้ประมวลผลและผู้รับข้อมูล
 
@@ -164,6 +218,30 @@
 
 **Acceptance criteria:** ผู้ประมวลผลที่ไม่มี DPA แสดงเตือนบนแผนผัง
 
+**Implementation (DFG-04) — done.** Reuses VEN-11's own existence check (`agreement.agreements` of type
+`dpa` for a vendor) rather than re-deriving it: dataflow's `Graph()` resolves each `recipient_role ==
+"processor"` recipient's own `org.external_parties` id to a VEN-01 vendor via a new
+`vendormgmt.Service.GetVendorByPartyID` (the sqlc query already existed, generated but unwired — this pass
+adds the one exported method; `uq_vendors_party_id` means at most one match, no new migration), then calls
+`agreement.Service.ListAgreements(AgreementFilter{AgreementType: "dpa", VendorID: ...})` directly (the same
+filter DPA-11 already built, rather than VEN-11's own `VendorContractStatus`, since the diagram also needs
+the real agreement ids to link through to, not just a bool). `dataflow.Service` gained `Vendor`/`Agreement`
+rule-9 interfaces, both nil-safe (existing DFG-01/03 tests and callers need no changes) — wired in
+`cmd/api/main.go` right after `agreementSvc` is constructed, since `dataflowSvc` itself is built earlier
+(late field assignment, the same pattern `riskSvc.Dpo = dpoSvc` already uses elsewhere in that file). A
+processor recipient with a vendor profile but no DPA gets `Node.Warning = true` plus its `VendorID`; one with
+a DPA gets `AgreementIDs` instead; a processor **never onboarded as a vendor at all** is left unflagged —
+there's nothing to check or click through to, so flagging it would be noise, not a real gap. `DataflowNode`'s
+wire schema gained `warning`/`vendor_id`/`agreement_ids` (additive, no existing consumer broke). Frontend:
+a flagged recipient node renders with a red border/tint (the same warning-red DFG-03's own transfer edges
+use) and, when `agreement_ids` is non-empty, a pointer cursor; clicking any node with an agreement id
+navigates straight to `/agreements/{id}` (the module doc's own "คลิก node เพื่อดูสัญญา") via React Flow's
+`onNodeClick`. Tests: unit (`TestGraph_ProcessorWithoutDPAWarning` — the acceptance criterion directly: a
+tracked-vendor processor with no DPA is flagged with its vendor id and no agreement ids; a processor never
+onboarded as a vendor is never flagged; drafting a real DPA via `agreement.Service.CreateWizard` clears the
+warning and the node carries the new agreement's id), full `go test ./internal/dataflow/...` suite and
+`pnpm --filter @pdpa/admin build` both verified clean.
+
 <a id="dfg-08"></a>
 ### DFG-08 ส่งออกภาพและรายงาน
 
@@ -184,6 +262,43 @@
 **Frontend (Next.js):** ตัวเลือกขนาดและรูปแบบไฟล์
 
 **Acceptance criteria:** ภาพที่ส่งออกอ่านได้ชัดในขนาด A3
+
+**Implementation (DFG-08) — done:** `internal/dataflow/service/export.go` + `report.go` (`ropa.dataflow.export`,
+already seeded — DPO `RUPE`/PRIVACY `RUE` include `E`, AUDIT `RE` — no new migration/permission). Go has no JS
+layout engine (ELK is frontend-only, DFG-01's own `elkjs`), so the export is its own deterministic left-to-right
+grid laid out server-side — org-unit lanes with their activities on the left, a shared recipients column, then
+a countries column, each activity's disposal nodes stacked beneath it — reusing exactly the same node/edge
+colours (`#0ea5e9`/`#8b5cf6`/`#f59e0b`/`#64748b`, warning `#dc2626`) `data-flow-content.tsx` already uses, so
+the exported image matches the on-screen diagram. `ExportDiagram` writes SVG directly (vector, always crisp —
+"อ่านได้ชัดในขนาด A3" needs no renderer at all for this format); PNG and PDF wrap that same SVG in a minimal
+self-contained HTML page (Sarabun embedded via a new exported `render.FontFaces()`, the same font PLT-16's own
+`render.HTML` already uses for Thai labels) and hand it to `platform/docs/render`'s shared, stateless renderers
+— two new capabilities added there for this: `render.ImageRenderer`/`Chromium.PNG`/`Gotenberg.PNG` (a plain
+headless-Chromium `--screenshot`/Gotenberg screenshot-route capture at the paper's own pixel size, 150dpi) and
+an exported `FontFaces()`. PDF reuses the existing `PDFRenderer.PDF` with `@page{size:A3|A4|Letter landscape}`
+CSS — Chromium's print-to-pdf and Gotenberg's own Chromium route (with `preferCssPageSize`) already honour a
+page's own `@page size`, the same mechanism PLT-16's `pageCSS` already relies on, so no point-size math was
+needed. The companion report (`GET /admin/v1/dataflow/report`, pdf/docx/html, th/en) is built from the *exact
+same* live `Graph()` call as the image — per org-unit, per-activity breakdown of data categories, recipients
+(flagging a processor with no DPA, DFG-04's own warning) and transfers (flagging one with no basis, DFG-03's
+own warning) and disposal methods — so the two exports can never drift apart from each other or from RoPA.
+Both `Service.PDF`/`.Image` are optional (`render.FromEnv()`/`render.ImageFromEnv()`, nil in the test harness,
+set in `cmd/api`) — SVG export and the docx/html report formats never need either; PNG/PDF fail with
+`render.ErrNoImageRenderer`/`ErrNoRenderer` (503) when neither Gotenberg nor a local Chromium is configured.
+API: `GET /admin/v1/dataflow/graph/export?format=svg|png|pdf&paper=a3|a4|letter&legal_entity_id=`,
+`GET /admin/v1/dataflow/report?format=pdf|docx|html&language=th|en&legal_entity_id=` — both plain
+`Content-Disposition: attachment` downloads, the exact pattern DPIA-15's own `dpiaGetReport` already
+established (reused handler/response-writer shape). UI: an export panel on `/data-flow` (format/paper
+selectors + a download link for the image, language/format selectors + a download link for the report),
+right under the existing legend. Tests: unit (the SVG carries both warning colours and the activity/recipient
+labels; invalid format/paper refused before any renderer check runs, so a bad paper on PDF never masquerades
+as "no renderer"; the no-renderer sentinels for PNG/PDF while SVG/docx/html still work; the report covers
+activity/recipient/transfer/disposal text in both languages, including the no-activities case), a live smoke
+test against the environment's own pre-installed headless Chromium (skipped when `CHROMIUM_PATH` is unset)
+proving the PNG/PDF bytes are real images (`PNG`/`%PDF` signatures) — **run and passing** against it. Not
+done: SSE-S3-style verification that an exported A3 image is pixel-legible (no automated way to assert visual
+legibility; the SVG is vector so it is crisp at any size by construction, and the live Chromium test proves
+the raster path actually produces a valid image at the chosen paper's pixel size).
 
 <a id="dfg-05"></a>
 ### DFG-05 แก้ไขแผนผังแบบลากวาง

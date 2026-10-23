@@ -1,0 +1,38 @@
+package: dsarhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - dsarListRequestTypes
+    - dsarListIntakeForms
+    - dsarCreateIntakeForm
+    - dsarGetIntakeForm
+    - dsarPublishIntakeForm
+    - dsarRetireIntakeForm
+    - dsarListRequests
+    - dsarCreateRequest
+    - dsarGetRequest
+    - dsarTransitionRequest
+    - dsarAssignRequest
+    - dsarListAgents
+    - dsarRecordAgent
+    - dsarVerifyAgent
+    - dsarListVerifications
+    - dsarStartOtpVerification
+    - dsarConfirmOtpVerification
+    - dsarSubmitIdDocumentVerification
+    - dsarDecideVerification
+    - dsarListSubtasks
+    - dsarCreateSubtask
+    - dsarUpdateSubtaskStatus
+    - dsarDeleteSubtask
+    - dsarListPackages
+    - dsarCreatePackage
+    - dsarGeneratePortabilityExport
+    - dsarListLegalHolds
+    - dsarCreateLegalHold
+    - dsarDeactivateLegalHold
+    - dsarListExemptionChecks
+    - dsarRunExemptionCheck

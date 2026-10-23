@@ -56,6 +56,8 @@
 | `is_drill` | `boolean` | ✓ | false |  |  |
 | `workflow_instance_id` | `uuid` |  |  | FK → [platform.workflow_instances](platform.md#platform-workflow-instances) |  |
 | `status` | `text` | ✓ | 'reported' |  | ค่า: `reported`, `triage`, `assessing`, `notifying`, `remediating`, `closed` · state machine [ST-03](../states/ST-03.md) |
+| `owner_user_id` | `uuid` |  |  | FK → [iam.users](iam.md#iam-users) | ผู้รับผิดชอบเหตุ (BRE-02, migration 00036) — ค่าเริ่มต้นคือผู้บันทึก |
+| `close_reason` | `text` |  |  |  | เหตุผลที่ปิด (ไม่ใช่เหตุละเมิด / บทเรียน) (00036) |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_incidents_updated`
 - PK: `(id)`
@@ -148,6 +150,10 @@
 | `status` | `text` | ✓ | 'draft' |  | ค่า: `draft`, `sending`, `done`, `failed` |
 | `started_at` | `timestamptz` |  |  |  |  |
 | `completed_at` | `timestamptz` |  |  |  |  |
+| `variables` | `jsonb` | ✓ | '{}' |  | เนื้อหาเฉพาะเหตุ: organization, summary, remedy, contact (00036) |
+| `template_code` | `varchar(80)` | ✓ | 'breach.subject_notice' |  | template ของ PLT-04 (00036) |
+| `approved_by` | `uuid` |  |  | FK → [iam.users](iam.md#iam-users) | ผู้อนุมัติส่ง — ต้องไม่ใช่ผู้จัดทำ (00036) |
+| `approved_at` | `timestamptz` |  |  |  | (00036) |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_subject_notifications_updated`
 - PK: `(id)`
@@ -170,6 +176,9 @@
 | `status` | `text` | ✓ | 'queued' |  | ค่า: `queued`, `sent`, `failed` |
 | `sent_at` | `timestamptz` |  |  |  |  |
 | `error` | `text` |  |  |  |  |
+| `notification_id` | `uuid` |  |  |  | ข้อความใน platform.notifications ที่ส่งต่อให้ (ติดตามผลรายคน, 00036) |
+| `language` | `varchar(5)` | ✓ | 'th' |  | ภาษาของผู้รับ (00036) |
+| `line_no` | `int` |  |  |  | บรรทัดใน CSV ต้นทาง (00036) |
 
 - PK: `(id)`
 - Index: `breach.notification_recipients (tenant_id, subject_notification_id)` · `breach.notification_recipients (tenant_id, subject_id)`

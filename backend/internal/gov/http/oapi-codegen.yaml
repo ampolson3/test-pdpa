@@ -1,0 +1,17 @@
+package: govhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - govListRetentionSchedules
+    - govCreateRetentionSchedule
+    - govGetRetentionSchedule
+    - govSetRetentionScheduleStatus
+    - govListDisposalJobs
+    - govGetDisposalJob
+    - govApproveDisposalJob
+    - govStartDisposalJob
+    - govCompleteDisposalJob
+    - govReleaseDisposalJobHold

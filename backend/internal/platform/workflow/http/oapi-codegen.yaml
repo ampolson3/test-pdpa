@@ -1,0 +1,16 @@
+package: workflowhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - platformListWorkflowDefinitions
+    - platformCreateWorkflowDefinition
+    - platformGetWorkflowDefinition
+    - platformSaveWorkflowVersion
+    - platformSearchAssignableGroups
+    - platformGetWorkflowInstance
+    - platformTransitionWorkflow
+    - platformListMyTasks
+    - platformUpdateWorkflowTask

@@ -1,7 +1,7 @@
 # schema `vendor`
 
 > คู่ค้าและผู้ประมวลผล  
-> migration: `backend/db/migrations/00014_vendor.sql` · FK: `00018_foreign_keys.sql` · Go package เจ้าของ: [VEN](../modules/VEN.md) (`backend/internal/vendor`)  
+> migration: `backend/db/migrations/00014_vendor.sql` · FK: `00018_foreign_keys.sql` · Go package เจ้าของ: [VEN](../modules/VEN.md) (`backend/internal/vendormgmt` — ไม่ใช่ `vendor`, ดูเหตุผลใน VEN.md)  
 > ERD: `design/PDPA_System_Analysis.drawio` → ERD-13
 
 กติกา: ตารางใน schema นี้อ่าน/เขียนได้เฉพาะ package เจ้าของ · module อื่นเรียกผ่าน service interface หรือรับ domain event

@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -14,7 +15,42 @@ import (
 	store "pdpa-platform/internal/iam/store"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
+	"pdpa-platform/internal/platform/crypto"
 )
+
+// AuditEntry mirrors platform/audit/service.Entry's fields (TenantID/ActorType/ActorID/EntityType/
+// EntityID/Action/Before/After) without importing that package — audit/service itself imports iam/service
+// (ORG-19's actor-name resolution), so importing it back here would be a cycle. cmd/api and cmd/worker adapt
+// the real *audit.Service to this Auditor interface (internal/wiring.IamAuditor).
+type AuditEntry struct {
+	TenantID   uuid.UUID
+	ActorType  string
+	ActorID    *uuid.UUID
+	Action     string
+	EntityType string
+	EntityID   *uuid.UUID
+	Before     any
+	After      any
+}
+
+type Auditor interface {
+	Write(ctx context.Context, e AuditEntry) error
+}
+
+// NotifyRequest mirrors the fields of platform/notify/service.Request that IAM-05 needs — notify itself
+// imports iam/service (Contact resolution for a user recipient), so it can't be imported back here either;
+// internal/wiring.IamVerification adapts the real *notify.Service to this Notifier interface.
+type NotifyRequest struct {
+	TemplateCode     string
+	Channel          string
+	RecipientAddress string
+	Vars             map[string]any
+	Urgent           bool
+}
+
+type Notifier interface {
+	Send(ctx context.Context, req NotifyRequest) (uuid.UUID, error)
+}
 
 // ErrNoGrants is returned by Me when it is called outside the AuthZ middleware (#9), which is the
 // only place authz.Grants gets attached to the context — a programmer error, not a runtime one.
@@ -40,7 +76,15 @@ type Me struct {
 	MFAEnrolled bool
 }
 
-type Service struct{}
+// Keyring, Notify and Audit are IAM-05's own dependencies (verification.go); nil in code paths (like Me)
+// that don't need them.
+type Service struct {
+	Keyring *crypto.Keyring
+	Notify  Notifier
+	Audit   Auditor
+	// Now is the clock (injectable for tests); nil means time.Now.
+	Now func() time.Time
+}
 
 func New() *Service { return &Service{} }
 

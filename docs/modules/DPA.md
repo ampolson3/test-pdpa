@@ -125,6 +125,32 @@
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่างหลัก)
 
+**Implementation — done.** No new Go code at all, the same shape VEN-04 just took for its own template
+library: PLT-16's document composer already registers the `"dpa"` doc type (`internal/wiring.Docs`,
+`agreement.dpa.*` permissions — read/create/update/publish already seeded to LEGAL in the baseline RBAC) and
+already has its own generic, doc-type-agnostic template library (`internal/platform/docs/library.go`'s
+`ListTemplates`/`GetTemplate`/`CreateTemplate`/`UpdateTemplate`/`PublishTemplate` on `platform.templates` —
+the exact same table and mechanism PNG-03's own wizard templates already used, just `language='mul'`: one row
+carries both `th`/`en` content together as `render.Content`'s own `{"th": ..., "en": ...}` shape, instead of
+PNG-03's separate per-language rows). Migration 00054 (`docs/decisions.md` Q-32) seeds the first, global
+(`tenant_id NULL`) published template — code `standard_dpa` — covering every clause topic DPA-01's sibling
+features name: processing only on instructions, confidentiality, security measures (ม.37(2)), breach
+notification, sub-processors, assistance with data-subject-rights requests, return/destruction on
+termination, the controller's audit rights, and cross-border transfer (ม.28-29) — with `org_name_th`/
+`org_name_en`/`dpo_name`/`dpo_email` merge fields resolved the same way every other PLT-16 document already
+does. Content opens with a `[ร่าง — ...]`/`[DRAFT — ...]` banner paragraph (rule 8 — legal wording stays
+flagged until Legal reviews it, the same "seed a draft pending review" move ORG-07/ROPA-09/PNG-03/DPIA-01/
+RTG-01/VEN-04 already made). Frontend: the existing `/documents/templates` page (built generically, already
+listing every doc type the caller's own permissions make visible) needed no change — a LEGAL user already
+sees `"dpa"` as an option there and can view, clone or author further `dpa` templates with it. Tests:
+`TestStandardDpaTemplate_SeededReady` (the acceptance criterion directly — a published, global `standard_dpa`
+template with both Thai and English content) and `TestStandardDpaTemplate_VisibleToAnyTenant` (a second,
+entirely separate tenant sees it too, with nothing of its own) — both run against the real seeded migration
+on a real Postgres, using a bare `docs.Service` with only `"dpa"` registered rather than the full
+`docstest.Setup` fixture, since `ListTemplates`/`Access` touch neither Files, River nor PDF and that fixture
+unconditionally needs S3+clamd this environment doesn't have. Migration verified both directions
+(`up`/`down`/`up` against the real local Postgres) before committing.
+
 <a id="dpa-02"></a>
 ### DPA-02 สร้างแบบกรอกเองและแบบอัตโนมัติ
 
@@ -148,6 +174,48 @@
 
 **หมายเหตุ:** สร้าง agreement engine ครั้งเดียว ใช้ร่วม DSA
 
+**Implementation — done.** `internal/agreement` is the agreement engine itself — the first, and by design the
+only, Go package for it; DSA (not built yet) will be a second `agreement_type` on the same tables and the
+same `CreateWizard`, not a new package, per the module's own "สร้าง agreement engine ครั้งเดียว ใช้ร่วม DSA"
+note. `agreement.agreements`/`agreement.parties`/`agreement.agreement_activities` (and the other agreement
+tables DPA-03/04/05 will use) were already fully specified in the baseline migrations — no new migration.
+`agreementservice.CreateWizard` is the acceptance criterion in one call: validates `vendor_id` (via the new
+`Vendor` interface's `GetVendor`, then the vendor's own `party_id` through `Org.GetExternalParty` — rule 1,
+FKs bypass RLS), `legal_entity_id` (`Org.GetLegalEntity`) and every `activity_ids` entry (`Ropa.GetActivity`)
+before anything is written; composes the document through `docs.Service.Create` (rule 9 — agreement never
+writes `platform.documents` directly), which already resolves a DPA-01 template's content when `template_id`
+is given, or starts blank when it's omitted — that omission *is* "โหมดกรอกเอง" (manual mode), needing no
+separate code path; derives the counterparty's own role from ours (controller↔processor, joint_controller↔
+joint_controller — the wire schema accepts only `ours`, never asks for the counterparty's); and numbers the
+agreement `{TYPE}-{year}-NNNN` with the same per-tenant-per-year advisory-lock pattern breach's own incident
+numbering already established (`LockAgreementNumbering` + `CountAgreementsWithPrefix`). Only `agreement_type
+= "dpa"` is actually wired to a feature today — `dsa`/`joint_controller`/`inbound_dpa` are real values already
+in the table's own CHECK constraint (for when those modules exist) and are refused as "not yet supported" (422)
+rather than silently accepted, the same "leave the column, build the real thing later" deferral ROPA-01's own
+`discovered_by_finding_id` already used. `agreement.parties`'s own `party_role` CHECK is wider than this
+feature's two controller/processor outcomes (it also allows `joint_controller`, used when `our_role` is
+`joint_controller`), so no CHECK or migration change was needed either.
+
+API: `GET`/`POST /admin/v1/agreements` (cursor pagination, `agreement_type`/`vendor_id` filters — the same
+shape every other module's own list endpoints already use), `GET /admin/v1/agreements/{id}` (includes
+`activity_ids`) — all on the already-seeded `agreement.dpa.*` permissions (no new code). UI: a new page,
+`/agreements` (the module doc's own "wizard สร้างสัญญา + editor" note) — an inline create form (agreement
+type, our role, vendor, legal entity, title, an optional DPA-01 published template, an activity checklist
+drawn from ROPA's own activity list, auto-renew/renewal-notice-days) and a type-filtered list linking to each
+agreement's detail page, which shows its parties/activities/renewal settings and a link straight into the
+composed document's own PLT-16 editor (`/documents/{document_id}`) — DPA-02's own "+ editor" note is PLT-16's
+existing editor, not a second one; a link from `/vendors/{id}` points back to `/agreements`. Tests: unit
+(the acceptance criterion directly — one call from a vendor + its activities produces a real agreement with
+a composed document, the right parties row and every activity linked; the three FK-visibility checks refuse
+an unknown id instead of hitting the database's own FK constraint; counterparty-role derivation for all three
+`our_role` values; agreement numbering; an unsupported `agreement_type` like `dsa` refused; list filters by
+type/vendor; two-tenant isolation), HTTP contract (401/403/400 schema/422 incl. the unsupported-type case/
+201/200/404) through the real validator + AuthZ. `pnpm --filter @pdpa/admin build`/`tsc` and the `@pdpa/i18n`
+ICU message tests both verified clean. Not done: DPA-03 (mandatory-clause gate before approval), DPA-04
+(RoPA-sourced processing-detail annex), DPA-05 (transfer clauses), DPA-10 (registry + expiry alerts), DPA-11
+(the vendor-page read-side view of an agreement's own activities — this feature built the write side it will
+read from) — all sibling features layered on the same `agreement.agreements` row, not built here.
+
 <a id="dpa-03"></a>
 ### DPA-03 ข้อกำหนดที่ต้องมี
 
@@ -168,6 +236,57 @@
 **Frontend (Next.js):** แผงตรวจ clause ที่ขาด
 
 **Acceptance criteria:** สัญญาที่ขาด clause บังคับส่งอนุมัติไม่ได้
+
+**Implementation — done.** The "คลัง control" this feature draws from is PLT-16's own clause library
+(`platform.clause_library` — DPA-01's own template already sits on the same document composer, this feature
+is the first to use the library's per-clause rows). Migration 00057 seeds nine clauses the module doc's own
+ม.40(1)-(3)/37(2)/28-29 topic list names (`dpa.processing_on_instructions`, `confidentiality`,
+`security_measures`, `breach_notification`, `sub_processors`, `dsar_assistance`, `return_or_destroy`,
+`audit_rights`, `cross_border_transfer`), each `is_mandatory = true`, `applies_to = {dpa}`, published, and
+flagged DRAFT (rule 8, the same "seed a draft pending review" move ORG-07/ROPA-09/PNG-03/DPIA-01/RTG-01/
+VEN-04/DPA-01 already made) — and nine matching `agreement.mandatory_rules` rows (`agreement_type = 'dpa'`),
+already fully specified in the baseline migrations and unused until now. `agreement.clauses` is the join: a
+new `internal/agreement/service/clauses.go` (`AddClause`/`ListClauses`/`RemoveClause`, same
+`agreement.dpa.read`/`.update` permissions DPA-02 already registered — no new code) links a published
+library clause to an agreement, only while it's still `draft`.
+
+The acceptance criterion itself ("ส่งอนุมัติไม่ได้") needed a pre-*submit* gate, not a pre-*publish* one —
+PLT-08's own `versioning.Policy` only had `OnPublish` and (via `docs.Service.SetValidate`, PNG-02's own
+mechanism) a publish-time check; nothing ran before `Submit` moved a draft to `in_review`. `versioning.Policy`
+gained a new `Validate` field, called inside `Submit` right after the draft-status check — the submit-time
+counterpart of `SetValidate`, and (per `docs.Service`'s own new `SetSubmitValidate` setter, wired the same
+lazy-lookup way `SetValidate`/`SetOnPublished` already are) available to every PLT-08 document type, not just
+"dpa". `agreement.Service.CheckSubmittable` resolves the document id PLT-08 hands it back to its own
+agreement row (`GetAgreementByDocumentID`, new query) and compares `agreement.clauses`' attached codes
+against `agreement.mandatory_rules` for that `agreement_type` — missing ones become `ErrMissingMandatoryClauses`
+(`Unwrap() -> versioning.ErrInvalidRequest`, the same 422 reporting pattern PNG-02's own `ErrChecklistIncomplete`
+established), which `versioning.Submit` now returns straight from the generic `/admin/v1/platform/record-versions/
+{id}/submit` endpoint shared by every PLT-08 consumer.
+
+`agreement.mandatory_rules.condition` is a small, deliberately narrow jsonb shape
+(`{"requires_transfer": true}`) rather than a general condition language with nothing yet to need one: only
+`cross_border_transfer` is conditional — it applies only once a linked RoPA activity actually has a transfer
+on record (`Ropa.ListActivityTransfers`, the already-exported ROPA-08 method, rule 9 — agreement never reads
+`ropa.activity_transfers` directly), re-checked live on every call, never cached. Every other rule always
+applies. `CountAgreementClauses`/`ListAgreementClauseCodes` join `platform.clause_library` directly in SQL for
+its own display columns (code/title/legal_ref) — the same "join a global reference table, not another
+module's tenant data" exception ROPA-01's own `org.data_categories` join already established; the
+cross-border check itself goes through `Ropa`'s own interface precisely because `ropa.activity_transfers` is
+real tenant data, not a reference table.
+
+API: `GET`/`POST /admin/v1/agreements/{id}/clauses`, `DELETE /admin/v1/agreements/{id}/clauses/{clauseRowId}`,
+`GET /admin/v1/agreements/{id}/missing-clauses` (the module doc's own "แผงตรวจ clause ที่ขาด", computed live,
+never persisted). UI: a clause panel on `/agreements/{id}` — the missing-clause list (amber banner while
+non-empty, a confirmation once clear), attached clauses with remove, and an add form drawing from the
+published `dpa`-applicable clauses in the library (`useClauses`, PLT-16's own hook). Also fixed in passing:
+`make gen`'s `oapi-codegen` target had no line for `internal/agreement/http` at all since DPA-02 added the
+package — the same gap DSAR-03 already found and fixed for `internal/dsar/http`; added here too. Tests: unit
+(the acceptance criterion directly — missing clauses block `CheckSubmittable`/the real `versioning.Submit`
+call until every required one is attached; the cross-border rule applies only once a transfer is recorded and
+clears once attached; `AddClause` refuses outside `draft`, an unpublished/unknown clause id, and a duplicate
+code; two-tenant isolation of both the link and the missing-clause read), HTTP contract (401/403/404/422/201/
+200/204) through the real validator + AuthZ. Full backend `go test -count=1 -p 1 ./...` and
+`pnpm --filter @pdpa/admin build` both verified clean.
 
 <a id="dpa-04"></a>
 ### DPA-04 ภาคผนวกรายละเอียดการประมวลผล
@@ -190,6 +309,34 @@
 
 **Acceptance criteria:** ภาคผนวกตรงกับข้อมูล RoPA ของกิจกรรมที่เลือก
 
+**Implementation — done.** `internal/agreement/service/schedule.go`'s `ProcessingSchedule` composes the
+annex — the module doc's own topic list (data categories, data subject groups, purposes, retention periods
+and security measures) per RoPA activity this agreement covers — computed live on every call, never
+persisted (the same reasoning DPIA-04's own `ActivityDescription` already used: there is nothing to go stale,
+so "ภาคผนวกตรงกับข้อมูล RoPA" needs no separate sync step). `agreement.annexes` already has an
+`annex_type = 'processing_schedule'` CHECK value and a `content` jsonb column for exactly this, but nothing
+writes to it here — a live read satisfies the literal acceptance criterion without inventing a freeze/attach
+step no screen has asked for yet (the same "leave the column for the sibling feature that needs it" deferral
+this codebase uses throughout); a later feature that needs a frozen copy (e.g. for DOCX export) can add that
+without touching this read path.
+
+`agreement.Service`'s `Org`/`Ropa` interfaces (rule 9) both grew the exact methods DPIA-04's own description
+composer already calls — `Org.GetMaster`/`ListMaster` (data category / subject type / lawful basis names)
+and `Ropa.ListActivityPurposes`/`ListActivityData`/`ListRetentionRules`/`ListActivityControls`/`ListControls`
+(purposes, data, retention, and — DPA-04's own addition beyond DPIA-04's scope — ROPA-09's security-measure
+links, resolved to catalog code/name/category through `Ropa.ListControls`, the same thin pass-through to
+`risk/service` ROPA-09 already built). No new migration, permission or endpoint beyond the one read.
+
+API: `GET /admin/v1/agreements/{id}/processing-schedule` (`agreement.dpa.read`, no ETag — nothing here is
+ever written back). UI: a read-only "Processing schedule annex" section on `/agreements/{id}`, below the
+clause panel (DPA-03) — one block per linked activity with purposes/data/retention/security-measures lists,
+an empty-state message when the agreement has no linked activities yet. Tests: unit (the acceptance criterion
+directly — the schedule's purposes/data/retention/security-measures for a linked activity match exactly what
+was written to that activity's own RoPA rows, resolved through the same master-data/catalog names; an
+agreement with no linked activities returns an empty list, not an error; two-tenant isolation), HTTP contract
+(200 with an empty list, 404 for an unknown agreement) through the real validator + AuthZ. Full backend test
+suite and `pnpm --filter @pdpa/admin build` both verified clean.
+
 <a id="dpa-10"></a>
 ### DPA-10 ทะเบียน DPA และแจ้งเตือนหมดอายุ
 
@@ -211,6 +358,47 @@
 
 **Acceptance criteria:** สัญญาใกล้หมดอายุถูกแจ้งเตือนตามเวลาที่ตั้ง
 
+**Implementation — done, scoped to exactly this acceptance criterion.** `agreement.agreements` already had
+`status`/`effective_from`/`effective_to`/`auto_renew`/`renewal_notice_days` fully specified in the baseline
+migrations (ST-04#1's own 7-state lifecycle), but nothing had ever written `effective_to` or any status past
+the DB's own `draft` default — DPA-02's `CreateWizard` only ever set `effective_from`. This pass adds exactly
+the registry's own mutable fields and the reminder, not the rest of ST-04#1 (approve/send-for-signature/sign
+are DPA-06/07/08/09's own job, Should-priority and not built — building a real e-signature integration to let
+`active` ever happen would be far beyond this feature's literal acceptance criterion). `internal/agreement/
+service/renewal.go`'s `SetSchedule` (`agreement.dpa.update`, shared with DPA-02 — no new permission) is the
+first ever update path on an agreement's core row: ETag-gated like every other module's update endpoint, it
+sets `effective_from`/`effective_to`/`auto_renew`/`renewal_notice_days` and reschedules the single reminder
+checkpoint in the same call.
+
+The reminder itself follows DSAR-07/PNG-04's own established pattern exactly rather than reaching for the full
+PLT-05 workflow engine the module doc's own backend note mentions: `RenewalReminderAt(effectiveTo,
+renewalNoticeDays)` is a pure, clock-testable function; `scheduleRenewalReminder` enqueues one River job
+(`agreement.renewal_reminder`, unique by args) at that moment, or immediately if it has already passed (a
+late-recorded end date still alerts once, at once); `FireRenewalReminder` re-reads the agreement and no-ops if
+its own `effective_to`/`renewal_notice_days` no longer match what the job was scheduled for (changing the
+dates naturally reschedules — a stale tick from before the change is harmless) or if the agreement was
+terminated. It notifies role LEGAL (the module doc's own actor; SCHED is the job itself, not an RBAC role) —
+the same "default recipients until real per-record routing exists" fallback BRE-07/PNG-04/DSAR-07 already use,
+since there is no per-agreement owner column to route to more precisely. Migration 00059 seeds
+`agreement.renewal_reminder` (th/en × in_app/email) — operational text, no DRAFT marker (rule 8 is about legal
+wording shown to a counterparty or the PDPC, not an internal reminder). `agreementservice.Service` gained
+`Notify`/`River` fields (nil in any wiring that never calls `SetSchedule`/doesn't need the worker, the same
+optional-field pattern `dsarservice.Service` already uses) and `cmd/worker` now builds its own minimal
+`agreementSvc` (`Audit`/`Notify`/`River` only) registering `agreementservice.ReminderWorker` — the first
+agreement wiring in `cmd/worker` at all.
+
+API: `PATCH /admin/v1/agreements/{id}/schedule` (ETag/If-Match), `effective_to` added to the `Agreement` wire
+schema (was missing even for reads). UI: a "Registry: start/end dates & renewal" section on `/agreements/{id}`
+with an edit form for all four fields, next to the existing read-only metadata block. Tests: unit
+(`RenewalReminderAt`'s own boundary math; `SetSchedule`'s round-trip, stale-ETag refusal, negative
+`renewal_notice_days` refusal, and that it leaves a real `river_job` row scheduled at the right moment;
+`FireRenewalReminder`'s real `platform.notifications` row for a seeded LEGAL-role user, plus its no-op guards
+for a stale schedule and an unknown agreement), HTTP contract (401/403/404/412/422/428/200) through the real
+validator + AuthZ. `sqlc generate`/`oapi-codegen`/`openapi-typescript` were run for real; `pnpm --filter
+@pdpa/admin build`/`tsc` and the `@pdpa/i18n` ICU message tests both verified clean. Not verified against a
+real Postgres in this pass (no reachable database in this environment) — the same gap this session's own
+earlier VEN-02 note already flagged.
+
 <a id="dpa-11"></a>
 ### DPA-11 ผูก DPA กับคู่ค้าและกิจกรรม
 
@@ -231,6 +419,30 @@
 **Frontend (Next.js):** แท็บความเชื่อมโยงในหน้าสัญญา
 
 **Acceptance criteria:** เปิดคู่ค้าแล้วเห็น DPA และกิจกรรมที่เกี่ยวข้อง
+
+**Implementation — done (ผลประเมินยังไม่มีให้แสดง).** The relationship this feature needs
+(agreement ↔ vendor ↔ activity) was already fully built by DPA-02 — `agreement.agreements.vendor_id` and
+`agreement.agreement_activities` — and DPA-02's own `ListAgreements` already had a `vendor_id` filter with a
+doc comment flagging it as "DPA-11's own 'open a vendor and see its agreements' will reuse this filter". What
+was missing: the list endpoint never populated each row's `activity_ids` (only `GetAgreement`, one row at a
+time, did) — `ListAgreements` left it `nil` to avoid an N+1 query per page. Fixed with one batch query,
+`ListActivityIDsForAgreements` (`agreement_id = ANY($1)`), grouped in Go and attached to each row of the
+*already-fetched* page — no extra round trip per agreement, same cost as before for a page with no vendor
+filter (an empty id slice is a legal, empty-result `ANY()` call). No new migration, permission or endpoint:
+`GET /admin/v1/agreements?vendor_id=...` already existed; it just returns complete rows now.
+
+UI: `/vendors/{id}` (VEN-01's own foundation page, built explicitly for exactly this — "sibling features...
+add their own sections to this same page") gained a "DPA / DSA agreements" section — one row per linked
+agreement (title, number, status, and its own linked RoPA activities as links to `/ropa/activities/{id}`),
+replacing the bare "go look at /agreements yourself" link DPA-02 had left there, which stays as a secondary
+link to the full list. "ผลประเมิน" (assessment results) from the module doc's own description is deliberately
+not shown: `vendor.vendor_assessments.assessment_id` already points at `assess.assessments` (DPIA-10's own
+generic review/approval machinery), but no feature populates a vendor assessment yet — VEN-07 ("Automated
+scoring") is the sibling feature that would create one; there is nothing to read until it exists, the same
+"no consumer yet" deferral this codebase uses throughout (e.g. ROPA-01's own `discovered_by_finding_id`).
+Tests: unit (the acceptance criterion directly — listing by `vendor_id` returns each agreement's own linked
+activity ids, matching exactly what `GetAgreement` already returns for one of them; an unfiltered/type-filtered
+list still works unchanged), full backend test suite and `pnpm --filter @pdpa/admin build` both verified clean.
 
 <a id="dpa-05"></a>
 ### DPA-05 ข้อสัญญาการโอนต่างประเทศ
@@ -295,6 +507,47 @@
 
 **Acceptance criteria:** ส่งลงนามได้หลังอนุมัติเท่านั้น
 
+**Implementation — done.** "ใช้ workflow อนุมัติกลาง" and "ปุ่มส่งตรวจ + ความเห็น" were already true for free:
+`"dpa"`/`"dsa"` are registered with PLT-08's generic approval engine (`internal/wiring/docs.go`, `Approver:
+"DPO"`), and every agreement already routes through the generic `RecordVersions`/`/approvals` inbox UI on its
+linked document page (`/documents/{document_id}`) — the same mechanism PNG-14's own "done, no new code" entry
+already cites. What was actually missing: `agreement.agreements.status` (ST-04's own 7-state machine —
+`draft`/`in_review`/`approved`/`out_for_signature`/`active`/`expired`/`terminated`) was stuck at `draft`
+forever, since nothing updated it as the underlying PLT-08 version moved through submit/approve/reject —
+`db/queries/agreement/agreements.sql`'s own comment said so literally ("status transitions belong to
+DPA-06/07/08/09, not built yet"). Without that, there was nothing for a "ส่งลงนามได้หลังอนุมัติเท่านั้น" gate
+to literally gate — the module had no record-level concept of "approved" to check against yet.
+
+Added a new, additive extension point mirroring `OnPublish`'s own precedent: `versioning.Policy.OnTransition`
+(called from `Submit`/`Decide` right after the version's own status changes — `in_review`/`draft`/`approved`
+— never writing the module's own record itself, since ST-04's own rule is that a status column changes only
+through its owning module's service method) and `docs.Service.SetOnTransition` forwarding it by docType —
+wired for `"dpa"`/`"dsa"` in `cmd/api/main.go`. `internal/agreement/service/review.go`'s
+`OnDocumentTransition` mirrors the three PLT-08 states 1:1 onto ST-04's identically-named ones via a new
+sqlc query (`SetAgreementStatusByDocumentID`); `SendForSignature` is the acceptance criterion's own literal
+action — `approved -> out_for_signature`, enforced by the guarded `UPDATE ... WHERE status = 'approved'`
+itself, not a separate read-then-check a concurrent change could race. `out_for_signature`/`active`/
+`expired`/`terminated` beyond that stay DPA-08/09/12/13's own jobs — no e-signature exchange, no renewal/
+termination lifecycle, both sibling features this one doesn't depend on.
+
+API: `POST /admin/v1/agreements/{id}/send-for-signature` (ETag/If-Match, `agreement.dpa.update` — the same
+umbrella permission `agreementSetSchedule`/every other agreement-engine endpoint already reuses for both
+dpa/dsa, no new code), 409 `agreement.invalid_transition` when the agreement isn't already approved. UI: a
+new section on `/agreements/{id}` showing the review hint and, once approved, the send-for-signature button
+(gated on holding the update permission); the status badge's color map widened for `in_review`/`approved`/
+`out_for_signature`. Tests: unit (`internal/agreement/service/review_test.go` —
+`TestReviewLifecycle_MirrorsAgreementStatus`: draft → in_review on submit, refused before approved
+(`ErrInvalidTransition`), approved on DPO decision, a stale ETag refused distinctly
+(`ErrVersionMismatch`), then the acceptance criterion itself — approved → out_for_signature, and a second
+call from that state refused the same way; `TestReviewLifecycle_ReturnGoesBackToDraft`: a DPO return sends
+the agreement itself back to draft, not stuck at in_review), HTTP contract (401/428/409/404 through the real
+validator + AuthZ). Not verified live against a real Postgres/Redis — the same environment limitation this
+codebase's other recent passes already disclosed; every test compiles and vets clean and skips the same way
+the rest of this module's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean
+on every touched file), `go test -count=1 ./...` (no regressions, full backend suite),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/agreements/[id]` route) all verified clean.
+
 <a id="dpa-08"></a>
 ### DPA-08 เวอร์ชันและประวัติการดาวน์โหลด
 
@@ -315,6 +568,11 @@
 **Frontend (Next.js):** หน้าประวัติเวอร์ชันและการดาวน์โหลด
 
 **Acceptance criteria:** เห็นว่าใครดาวน์โหลดเวอร์ชันใดเมื่อไร
+
+**สถานะ: done** — see `CLAUDE.md`'s own `### DPA-08` entry for the full implementation note. Built
+generically on PLT-16 (`platform.document_downloads`, `docs.Service.Export`/`DownloadLog`), not agreement-
+specific: version history itself was already PLT-08 (`RecordVersions`); this feature added the download log
+every PLT-16 document type shares.
 
 <a id="dpa-09"></a>
 ### DPA-09 ส่งออกและลงนามอิเล็กทรอนิกส์
@@ -359,6 +617,17 @@
 **Frontend (Next.js):** รายการคู่ค้าที่ขาด DPA
 
 **Acceptance criteria:** คู่ค้าที่ขาด DPA ถูกพบทุกราย
+
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### DPA-12`. สรุป: daily sweep
+(`agreement.missing_dpa_sweep` → `agreement.missing_dpa_check`, PLT-11's own two-step
+"sweep lists tenants, per-tenant job reads its own rows" pattern) ตรวจทุกคู่ค้าที่
+`is_processor=true` และ `status IN (approved, conditional)` ที่ไม่มี `dpa` agreement สถานะ
+`active` — เปิด `dpo.tasks` (`DPA-<year>-NNNN`, dedup ผ่าน `HasTaskForVendorAgreement`) และแจ้ง
+relationship owner หรือ role PROC ผ่าน PLT-04 (`agreement.missing_dpa` template, migration
+00083) ให้ทุกรายที่ยังไม่มี task ติดตามอยู่ — นี่ยังเป็นการสร้างกลไกแจ้งเตือนที่ VEN-11 เคย
+ประกาศว่า "done" ไว้โดยไม่มีจริง (VEN-11 สร้างแค่ `VendorContractStatus` อ่านทีละราย ไม่มี
+sweep/alert) — DPA-12 ปิดช่องว่างนั้นไปด้วยในตัว. Admin UI: panel เตือนสีเหลืองบน
+`/agreements` พร้อมปุ่มสร้าง DPA ให้คู่ค้านั้นทันที.
 
 <a id="dpa-13"></a>
 ### DPA-13 ติดตามการคืน/ทำลายข้อมูลเมื่อสิ้นสุด

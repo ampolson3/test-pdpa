@@ -1,0 +1,19 @@
+package: dpohttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - dpoListRequirementChecks
+    - dpoAssessRequirementCheck
+    - dpoListAppointments
+    - dpoCreateAppointment
+    - dpoGetAppointment
+    - dpoUpdateAppointment
+    - dpoListDeadlines
+    - dpoListAssessments
+    - dpoRecordAssessment
+    - dpoGetAssessment
+    - dpoGetTask
+    - dpoUpdateTaskStatus
