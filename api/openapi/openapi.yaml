@@ -6978,6 +6978,173 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dsar/legal-holds:
+    get:
+      operationId: dsarListLegalHolds
+      tags: [dsar]
+      summary: Every legal hold on record, newest first (DSAR-10, ม.33)
+      x-permission: dsar.request.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarLegalHold'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: dsarCreateLegalHold
+      tags: [dsar]
+      summary: Record a legal hold — data this tenant must keep despite an otherwise-valid erasure request (DSAR-10, ม.33)
+      x-permission: dsar.request.create
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarLegalHoldInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarLegalHold'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/legal-holds/{id}:
+    delete:
+      operationId: dsarDeactivateLegalHold
+      tags: [dsar]
+      summary: Deactivate a legal hold (soft — is_active=false, never deleted) (DSAR-10)
+      x-permission: dsar.request.delete
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarLegalHold'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dsar/requests/{id}/exemption-checks:
+    get:
+      operationId: dsarListExemptionChecks
+      tags: [dsar]
+      summary: Every exemption check run against this request, newest first (DSAR-10, ม.33)
+      x-permission: dsar.request.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarExemptionCheck'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dsarRunExemptionCheck
+      tags: [dsar]
+      summary: Check the given assets against every active legal hold before an erasure request can complete (DSAR-10, ม.33)
+      description: The acceptance criterion itself — data under an active hold is never marked deletable, and the result's own reason cites the law it's held under; an erasure (right type "erasure") request cannot enter completed without at least one recorded check.
+      x-permission: dsar.request.update
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarRunExemptionCheckInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarExemptionCheck'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/dsar/requests/{id}/packages:
     get:
       operationId: dsarListPackages
@@ -20015,6 +20182,57 @@ components:
         authority_file_id:
           description: The agent's own clean, still-unattached PLT-09 upload (POST /admin/v1/platform/files) of the power of attorney / guardianship document
           $ref: '#/components/schemas/Uuid'
+    DsarExemptionResult:
+      type: string
+      description: DSAR-10, ม.33 — the outcome of checking an erasure request's own assets against active legal holds.
+      enum: [can_delete, must_retain, partial]
+    DsarLegalHold:
+      type: object
+      required: [id, law_ref, is_active, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        data_category_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        asset_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        law_ref: {type: string}
+        hold_rule: {type: object, additionalProperties: true}
+        is_active: {type: boolean}
+        row_version: {type: integer}
+        created_at: {type: string, format: date-time}
+    DsarLegalHoldInput:
+      type: object
+      required: [law_ref]
+      additionalProperties: false
+      properties:
+        data_category_id:
+          description: One of the two scope fields must be set — a hold with neither would match nothing
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        asset_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        law_ref: {type: string, minLength: 1, maxLength: 300}
+        hold_rule: {type: object, additionalProperties: true, default: {}}
+    DsarExemptionCheck:
+      type: object
+      required: [id, request_id, result, reason, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        request_id: {$ref: '#/components/schemas/Uuid'}
+        legal_hold_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        result: {$ref: '#/components/schemas/DsarExemptionResult'}
+        reason: {type: string}
+        created_at: {type: string, format: date-time}
+    DsarRunExemptionCheckInput:
+      type: object
+      required: [asset_ids]
+      additionalProperties: false
+      properties:
+        asset_ids:
+          description: The RoPA assets (systems) this erasure request's own work touches — same scope DSAR-03's own asset picker already names on the request
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/Uuid'}
     DsarPackageFormat:
       type: string
       enum: [pdf, csv, json, xml, zip]

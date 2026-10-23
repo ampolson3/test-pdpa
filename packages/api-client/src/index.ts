@@ -546,6 +546,10 @@ export {
   useDsarPackages,
   useDsarPackageMutations,
   useDsarPortabilityExport,
+  useDsarLegalHolds,
+  useDsarLegalHoldMutations,
+  useDsarExemptionChecks,
+  useDsarRunExemptionCheck,
   type DsarRequestType,
   type DsarRequest,
   type DsarRequestStatus,
@@ -573,6 +577,11 @@ export {
   type DsarCreatePackageInput,
   type DsarCreatePackageResult,
   type DsarGeneratePortabilityExportInput,
+  type DsarLegalHold,
+  type DsarLegalHoldInput,
+  type DsarExemptionCheck,
+  type DsarExemptionResult,
+  type DsarRunExemptionCheckInput,
 } from "./dsar";
 export {
   useCookieDomains,

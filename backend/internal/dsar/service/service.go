@@ -59,6 +59,10 @@ type Docs interface {
 type Ropa interface {
 	GetActivity(ctx context.Context, id uuid.UUID) (ropaservice.Activity, error)
 	GetAsset(ctx context.Context, id uuid.UUID) (ropaservice.Asset, error)
+	// ListDataInventory is DSAR-10's own read: resolving which data categories an asset actually holds
+	// (ROPA-01), so an exemption check can match a legal hold recorded by data_category_id — not just one
+	// recorded directly against the asset — closing the gap DPX-05's own asset-only match deliberately left.
+	ListDataInventory(ctx context.Context, f ropaservice.InventoryFilter) ([]ropaservice.DataInventoryItem, *ropaservice.InventoryCursor, error)
 }
 
 // Consent is what DSAR-15's portability export reads from the consent module (rule 9): the one real source

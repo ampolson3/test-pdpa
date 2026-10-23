@@ -2331,6 +2331,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/legal-holds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every legal hold on record, newest first (DSAR-10, ม.33) */
+        get: operations["dsarListLegalHolds"];
+        put?: never;
+        /** Record a legal hold — data this tenant must keep despite an otherwise-valid erasure request (DSAR-10, ม.33) */
+        post: operations["dsarCreateLegalHold"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/legal-holds/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Deactivate a legal hold (soft — is_active=false, never deleted) (DSAR-10) */
+        delete: operations["dsarDeactivateLegalHold"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/requests/{id}/exemption-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every exemption check run against this request, newest first (DSAR-10, ม.33) */
+        get: operations["dsarListExemptionChecks"];
+        put?: never;
+        /**
+         * Check the given assets against every active legal hold before an erasure request can complete (DSAR-10, ม.33)
+         * @description The acceptance criterion itself — data under an active hold is never marked deletable, and the result's own reason cites the law it's held under; an erasure (right type "erasure") request cannot enter completed without at least one recorded check.
+         */
+        post: operations["dsarRunExemptionCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dsar/requests/{id}/packages": {
         parameters: {
             query?: never;
@@ -8058,6 +8114,47 @@ export interface components {
             authority_type: components["schemas"]["DsarAuthorityType"];
             /** @description The agent's own clean, still-unattached PLT-09 upload (POST /admin/v1/platform/files) of the power of attorney / guardianship document */
             authority_file_id: components["schemas"]["Uuid"];
+        };
+        /**
+         * @description DSAR-10, ม.33 — the outcome of checking an erasure request's own assets against active legal holds.
+         * @enum {string}
+         */
+        DsarExemptionResult: "can_delete" | "must_retain" | "partial";
+        DsarLegalHold: {
+            id: components["schemas"]["Uuid"];
+            data_category_id?: components["schemas"]["Uuid"] | null;
+            asset_id?: components["schemas"]["Uuid"] | null;
+            law_ref: string;
+            hold_rule?: {
+                [key: string]: unknown;
+            };
+            is_active: boolean;
+            row_version: number;
+            /** Format: date-time */
+            created_at: string;
+        };
+        DsarLegalHoldInput: {
+            /** @description One of the two scope fields must be set — a hold with neither would match nothing */
+            data_category_id?: components["schemas"]["Uuid"] | null;
+            asset_id?: components["schemas"]["Uuid"] | null;
+            law_ref: string;
+            /** @default {} */
+            hold_rule: {
+                [key: string]: unknown;
+            };
+        };
+        DsarExemptionCheck: {
+            id: components["schemas"]["Uuid"];
+            request_id: components["schemas"]["Uuid"];
+            legal_hold_id?: components["schemas"]["Uuid"] | null;
+            result: components["schemas"]["DsarExemptionResult"];
+            reason: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        DsarRunExemptionCheckInput: {
+            /** @description The RoPA assets (systems) this erasure request's own work touches — same scope DSAR-03's own asset picker already names on the request */
+            asset_ids: components["schemas"]["Uuid"][];
         };
         /** @enum {string} */
         DsarPackageFormat: "pdf" | "csv" | "json" | "xml" | "zip";
@@ -15574,6 +15671,160 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    dsarListLegalHolds: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarLegalHold"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dsarCreateLegalHold: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarLegalHoldInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarLegalHold"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarDeactivateLegalHold: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarLegalHold"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dsarListExemptionChecks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarExemptionCheck"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dsarRunExemptionCheck: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarRunExemptionCheckInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarExemptionCheck"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     dsarListPackages: {

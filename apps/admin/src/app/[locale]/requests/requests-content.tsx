@@ -21,6 +21,8 @@ import {
   useDsarPackages,
   useDsarPackageMutations,
   useDsarPortabilityExport,
+  useDsarExemptionChecks,
+  useDsarRunExemptionCheck,
   useLegalEntities,
   useMentionSearch,
   useGroupSearch,
@@ -364,6 +366,65 @@ function AgentPanel({ client, request, canUpdate }: { client: ReturnType<typeof 
   );
 }
 
+function ExemptionPanel({ client, request, canUpdate, assets }: {
+  client: ReturnType<typeof createApiClient>; request: DsarRequest; canUpdate: boolean; assets: { id: string; name: string }[];
+}) {
+  const t = useTranslations("dsarRequests");
+  const list = useDsarExemptionChecks(client, request.id);
+  const run = useDsarRunExemptionCheck(client);
+  const [assetIds, setAssetIds] = useState<string[]>([]);
+
+  const rows = list.data ?? [];
+  const toggle = (id: string) => setAssetIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+
+  return (
+    <div className="space-y-3" data-testid="exemption-panel">
+      <p className="text-xs text-slate-600">{t("exemption.hint")}</p>
+      {rows.length > 0 && (
+        <table className="w-full text-xs">
+          <thead className="text-left text-slate-500">
+            <tr><th className="py-1">{t("exemption.result")}</th><th className="py-1">{t("exemption.reason")}</th><th className="py-1">{t("exemption.checkedAt")}</th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.map((c) => (
+              <tr key={c.id} data-testid={`exemption-row-${c.id}`}>
+                <td className="py-1"><span className={`rounded px-2 py-0.5 ${EXEMPTION_STYLE[c.result]}`}>{t(`exemption.results.${c.result}`)}</span></td>
+                <td className="py-1">{c.reason}</td>
+                <td className="py-1">{new Date(c.created_at).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {canUpdate && (
+        <fieldset className="space-y-2 rounded-md border border-slate-200 p-3">
+          <legend className="px-1 text-slate-600">{t("exemption.runTitle")}</legend>
+          <div className="max-h-32 space-y-1 overflow-auto rounded-md border border-slate-200 p-2">
+            {assets.map((a) => (
+              <label key={a.id} className="flex items-center gap-2">
+                <input type="checkbox" checked={assetIds.includes(a.id)} onChange={() => toggle(a.id)} data-testid={`exemption-asset-${a.id}`} />
+                <span>{a.name}</span>
+              </label>
+            ))}
+          </div>
+          <Button
+            onClick={() => assetIds.length > 0 && run.mutate({ requestId: request.id, input: { asset_ids: assetIds } }, { onSuccess: () => setAssetIds([]) })}
+            disabled={assetIds.length === 0 || run.isPending} data-testid="run-exemption-check">
+            {t("exemption.run")}
+          </Button>
+          {run.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(run.error) })}</p>}
+        </fieldset>
+      )}
+    </div>
+  );
+}
+
+const EXEMPTION_STYLE: Record<string, string> = {
+  can_delete: "bg-emerald-100 text-emerald-800",
+  must_retain: "bg-red-100 text-red-800",
+  partial: "bg-amber-100 text-amber-800",
+};
+
 const PACKAGE_FORMATS: DsarPackageFormat[] = ["pdf", "csv", "json", "xml", "zip"];
 
 function PackagePanel({ client, request, canCreate, portalUrl, locale }: {
@@ -476,6 +537,7 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
   const [subtaskId, setSubtaskId] = useState<string | null>(null);
   const [agentId, setAgentId] = useState<string | null>(null);
   const [packageId, setPackageId] = useState<string | null>(null);
+  const [exemptionId, setExemptionId] = useState<string | null>(null);
   const list = useDsarRequests(client, {
     status: statusFilter || undefined,
     request_type_id: typeFilter || undefined,
@@ -500,6 +562,7 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
   const activityRows = activities.data?.pages.flatMap((p) => p.data) ?? [];
   const assetRows = assets.data?.pages.flatMap((p) => p.data) ?? [];
   const typeName = (id: string) => typeRows.find((rt) => rt.id === id)?.name_th ?? id;
+  const isErasure = (id: string) => typeRows.find((rt) => rt.id === id)?.code === "erasure";
   const draftTypeCode = draft ? typeRows.find((rt) => rt.id === draft.request_type_id)?.code : undefined;
 
   const create = () => {
@@ -681,6 +744,12 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
                       onClick={() => setPackageId(packageId === r.id ? null : r.id)}>
                       {packageId === r.id ? t("form.hide") : t("package.title")}
                     </button>
+                    {isErasure(r.request_type_id) && (
+                      <button type="button" className="text-sky-700 underline" data-testid={`exemption-toggle-${r.id}`}
+                        onClick={() => setExemptionId(exemptionId === r.id ? null : r.id)}>
+                        {exemptionId === r.id ? t("form.hide") : t("exemption.title")}
+                      </button>
+                    )}
                   </td>
                 </tr>
                 {verifyId === r.id && (
@@ -701,6 +770,13 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
                   <tr>
                     <td colSpan={7} className="bg-slate-50 px-3 py-3">
                       <SubtasksPanel client={client} request={r} canCreate={canSubtaskCreate} canDelete={canSubtaskDelete} />
+                    </td>
+                  </tr>
+                )}
+                {exemptionId === r.id && (
+                  <tr>
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
+                      <ExemptionPanel client={client} request={r} canUpdate={canUpdate} assets={assetRows} />
                     </td>
                   </tr>
                 )}

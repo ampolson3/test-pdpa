@@ -403,3 +403,74 @@ export function useDsarPortabilityExport(client: ApiClient) {
     onSuccess: (_d, { requestId }) => qc.invalidateQueries({ queryKey: ["dsar", "packages", requestId] }),
   });
 }
+
+// DSAR-10 (ม.33): legal holds (tenant-wide, DPO-managed) and the per-request exemption checks run against
+// them before an erasure request can close.
+export type DsarLegalHold = components["schemas"]["DsarLegalHold"];
+export type DsarLegalHoldInput = components["schemas"]["DsarLegalHoldInput"];
+export type DsarExemptionCheck = components["schemas"]["DsarExemptionCheck"];
+export type DsarExemptionResult = components["schemas"]["DsarExemptionResult"];
+export type DsarRunExemptionCheckInput = components["schemas"]["DsarRunExemptionCheckInput"];
+
+/** GET /admin/v1/dsar/legal-holds. */
+export function useDsarLegalHolds(client: ApiClient) {
+  return useQuery({
+    queryKey: ["dsar", "legal-holds"] as const,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dsar/legal-holds", {});
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** Create (POST) and deactivate (DELETE, ETag/If-Match) a legal hold. */
+export function useDsarLegalHoldMutations(client: ApiClient) {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["dsar", "legal-holds"] });
+  const create = useMutation({
+    mutationFn: async (input: DsarLegalHoldInput) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/legal-holds", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  const deactivate = useMutation({
+    mutationFn: async ({ id, rowVersion }: { id: string; rowVersion: number }) => {
+      const { data, error } = await client.DELETE("/admin/v1/dsar/legal-holds/{id}", {
+        params: { path: { id }, header: { "If-Match": `"${rowVersion}"` } },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  return { create, deactivate };
+}
+
+/** GET /admin/v1/dsar/requests/{id}/exemption-checks. */
+export function useDsarExemptionChecks(client: ApiClient, requestId: string | undefined) {
+  return useQuery({
+    queryKey: ["dsar", "exemption-checks", requestId ?? ""] as const,
+    enabled: !!requestId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dsar/requests/{id}/exemption-checks", { params: { path: { id: requestId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/dsar/requests/{id}/exemption-checks — the acceptance criterion itself (ม.33). */
+export function useDsarRunExemptionCheck(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ requestId, input }: { requestId: string; input: DsarRunExemptionCheckInput }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/exemption-checks", { params: { path: { id: requestId } }, body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, { requestId }) => qc.invalidateQueries({ queryKey: ["dsar", "exemption-checks", requestId] }),
+  });
+}

@@ -300,6 +300,18 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, rowVersion int32
 		} else if !done {
 			return Request{}, nil, fmt.Errorf("%w: subtasks are not all done", ErrInvalidTransition)
 		}
+		// DSAR-10's own acceptance criterion (ม.33): an erasure request cannot close without at least one
+		// recorded exemption check — existence over judgement, the same reading DSAR-04's own agent-document
+		// guard already uses. must_retain/partial results don't block closing (the actual deletion happens
+		// outside this tool, per system, via DSAR-08's own subtasks) — only that the check was run and its
+		// reason is on record before the request is considered done.
+		if rt.Code == "erasure" {
+			if ok, err := s.hasExemptionCheck(ctx, id); err != nil {
+				return Request{}, nil, err
+			} else if !ok {
+				return Request{}, nil, ErrExemptionCheckRequired
+			}
+		}
 		outcome = in.Outcome
 	case "rejected":
 		if in.RejectionReasonCode == nil || strings.TrimSpace(*in.RejectionReasonCode) == "" {

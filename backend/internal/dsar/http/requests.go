@@ -224,6 +224,8 @@ func problem(err error) error {
 		return httpx.UnprocessableEntity("dsar.invalid_input", err.Error())
 	case errors.Is(err, dsarservice.ErrAgentRequired):
 		return httpx.UnprocessableEntity("dsar.agent_required", err.Error())
+	case errors.Is(err, dsarservice.ErrExemptionCheckRequired):
+		return httpx.UnprocessableEntity("dsar.exemption_check_required", err.Error())
 	}
 	return err
 }

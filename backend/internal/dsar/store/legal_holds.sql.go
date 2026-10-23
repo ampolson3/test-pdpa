@@ -12,6 +12,189 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countExemptionChecksForRequest = `-- name: CountExemptionChecksForRequest :one
+SELECT count(*)::int FROM dsar.exemption_checks WHERE request_id = $1
+`
+
+func (q *Queries) CountExemptionChecksForRequest(ctx context.Context, requestID uuid.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, countExemptionChecksForRequest, requestID)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const createLegalHold = `-- name: CreateLegalHold :one
+INSERT INTO dsar.legal_holds (tenant_id, data_category_id, asset_id, law_ref, hold_rule)
+VALUES (current_setting('app.tenant_id')::uuid, $1, $2, $3, $4)
+RETURNING id, tenant_id, data_category_id, asset_id, law_ref, hold_rule, is_active, created_at, updated_at, row_version
+`
+
+type CreateLegalHoldParams struct {
+	DataCategoryID pgtype.UUID `db:"data_category_id" json:"data_category_id"`
+	AssetID        pgtype.UUID `db:"asset_id" json:"asset_id"`
+	LawRef         string      `db:"law_ref" json:"law_ref"`
+	HoldRule       []byte      `db:"hold_rule" json:"hold_rule"`
+}
+
+type CreateLegalHoldRow struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	TenantID       uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	DataCategoryID pgtype.UUID        `db:"data_category_id" json:"data_category_id"`
+	AssetID        pgtype.UUID        `db:"asset_id" json:"asset_id"`
+	LawRef         string             `db:"law_ref" json:"law_ref"`
+	HoldRule       []byte             `db:"hold_rule" json:"hold_rule"`
+	IsActive       bool               `db:"is_active" json:"is_active"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	RowVersion     int32              `db:"row_version" json:"row_version"`
+}
+
+func (q *Queries) CreateLegalHold(ctx context.Context, arg CreateLegalHoldParams) (CreateLegalHoldRow, error) {
+	row := q.db.QueryRow(ctx, createLegalHold,
+		arg.DataCategoryID,
+		arg.AssetID,
+		arg.LawRef,
+		arg.HoldRule,
+	)
+	var i CreateLegalHoldRow
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.DataCategoryID,
+		&i.AssetID,
+		&i.LawRef,
+		&i.HoldRule,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
+const deactivateLegalHold = `-- name: DeactivateLegalHold :one
+UPDATE dsar.legal_holds
+SET is_active = false
+WHERE id = $1 AND row_version = $2
+RETURNING id, tenant_id, data_category_id, asset_id, law_ref, hold_rule, is_active, created_at, updated_at, row_version
+`
+
+type DeactivateLegalHoldParams struct {
+	ID         uuid.UUID `db:"id" json:"id"`
+	RowVersion int32     `db:"row_version" json:"row_version"`
+}
+
+type DeactivateLegalHoldRow struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	TenantID       uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	DataCategoryID pgtype.UUID        `db:"data_category_id" json:"data_category_id"`
+	AssetID        pgtype.UUID        `db:"asset_id" json:"asset_id"`
+	LawRef         string             `db:"law_ref" json:"law_ref"`
+	HoldRule       []byte             `db:"hold_rule" json:"hold_rule"`
+	IsActive       bool               `db:"is_active" json:"is_active"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	RowVersion     int32              `db:"row_version" json:"row_version"`
+}
+
+func (q *Queries) DeactivateLegalHold(ctx context.Context, arg DeactivateLegalHoldParams) (DeactivateLegalHoldRow, error) {
+	row := q.db.QueryRow(ctx, deactivateLegalHold, arg.ID, arg.RowVersion)
+	var i DeactivateLegalHoldRow
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.DataCategoryID,
+		&i.AssetID,
+		&i.LawRef,
+		&i.HoldRule,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
+const getLegalHold = `-- name: GetLegalHold :one
+SELECT id, tenant_id, data_category_id, asset_id, law_ref, hold_rule, is_active, created_at, updated_at, row_version
+FROM dsar.legal_holds
+WHERE id = $1
+`
+
+type GetLegalHoldRow struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	TenantID       uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	DataCategoryID pgtype.UUID        `db:"data_category_id" json:"data_category_id"`
+	AssetID        pgtype.UUID        `db:"asset_id" json:"asset_id"`
+	LawRef         string             `db:"law_ref" json:"law_ref"`
+	HoldRule       []byte             `db:"hold_rule" json:"hold_rule"`
+	IsActive       bool               `db:"is_active" json:"is_active"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	RowVersion     int32              `db:"row_version" json:"row_version"`
+}
+
+func (q *Queries) GetLegalHold(ctx context.Context, id uuid.UUID) (GetLegalHoldRow, error) {
+	row := q.db.QueryRow(ctx, getLegalHold, id)
+	var i GetLegalHoldRow
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.DataCategoryID,
+		&i.AssetID,
+		&i.LawRef,
+		&i.HoldRule,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
+const insertExemptionCheck = `-- name: InsertExemptionCheck :one
+INSERT INTO dsar.exemption_checks (tenant_id, request_id, legal_hold_id, result, reason)
+VALUES (current_setting('app.tenant_id')::uuid, $1, $2, $3, $4)
+RETURNING id, tenant_id, request_id, legal_hold_id, result, reason, created_at
+`
+
+type InsertExemptionCheckParams struct {
+	RequestID   uuid.UUID   `db:"request_id" json:"request_id"`
+	LegalHoldID pgtype.UUID `db:"legal_hold_id" json:"legal_hold_id"`
+	Result      string      `db:"result" json:"result"`
+	Reason      string      `db:"reason" json:"reason"`
+}
+
+type InsertExemptionCheckRow struct {
+	ID          uuid.UUID          `db:"id" json:"id"`
+	TenantID    uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	RequestID   uuid.UUID          `db:"request_id" json:"request_id"`
+	LegalHoldID pgtype.UUID        `db:"legal_hold_id" json:"legal_hold_id"`
+	Result      string             `db:"result" json:"result"`
+	Reason      string             `db:"reason" json:"reason"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+func (q *Queries) InsertExemptionCheck(ctx context.Context, arg InsertExemptionCheckParams) (InsertExemptionCheckRow, error) {
+	row := q.db.QueryRow(ctx, insertExemptionCheck,
+		arg.RequestID,
+		arg.LegalHoldID,
+		arg.Result,
+		arg.Reason,
+	)
+	var i InsertExemptionCheckRow
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.RequestID,
+		&i.LegalHoldID,
+		&i.Result,
+		&i.Reason,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listActiveLegalHoldsForAsset = `-- name: ListActiveLegalHoldsForAsset :many
 SELECT id, asset_id, law_ref
 FROM dsar.legal_holds
@@ -26,8 +209,8 @@ type ListActiveLegalHoldsForAssetRow struct {
 
 // DPX-05's legal-hold check: any active hold naming this exact asset blocks that asset's disposal jobs.
 // Scoped to asset_id only (not also matching by data_category_id) — an engineering simplification, not a
-// docs/decisions.md question: a hold recorded against a data_category_id with no asset_id is DSAR-11's own
-// exemption-check concern, not this feature's literal acceptance criterion.
+// docs/decisions.md question: a hold recorded against a data_category_id with no asset_id is DSAR-10's own
+// exemption-check concern (below), not this feature's literal acceptance criterion.
 func (q *Queries) ListActiveLegalHoldsForAsset(ctx context.Context, assetID pgtype.UUID) ([]ListActiveLegalHoldsForAssetRow, error) {
 	rows, err := q.db.Query(ctx, listActiveLegalHoldsForAsset, assetID)
 	if err != nil {
@@ -38,6 +221,153 @@ func (q *Queries) ListActiveLegalHoldsForAsset(ctx context.Context, assetID pgty
 	for rows.Next() {
 		var i ListActiveLegalHoldsForAssetRow
 		if err := rows.Scan(&i.ID, &i.AssetID, &i.LawRef); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActiveLegalHoldsForAssetsOrCategories = `-- name: ListActiveLegalHoldsForAssetsOrCategories :many
+SELECT id, data_category_id, asset_id, law_ref, hold_rule
+FROM dsar.legal_holds
+WHERE is_active = true
+  AND (
+    asset_id = ANY($1::uuid[])
+    OR (asset_id IS NULL AND data_category_id = ANY($2::uuid[]))
+  )
+`
+
+type ListActiveLegalHoldsForAssetsOrCategoriesParams struct {
+	AssetIds        []uuid.UUID `db:"asset_ids" json:"asset_ids"`
+	DataCategoryIds []uuid.UUID `db:"data_category_ids" json:"data_category_ids"`
+}
+
+type ListActiveLegalHoldsForAssetsOrCategoriesRow struct {
+	ID             uuid.UUID   `db:"id" json:"id"`
+	DataCategoryID pgtype.UUID `db:"data_category_id" json:"data_category_id"`
+	AssetID        pgtype.UUID `db:"asset_id" json:"asset_id"`
+	LawRef         string      `db:"law_ref" json:"law_ref"`
+	HoldRule       []byte      `db:"hold_rule" json:"hold_rule"`
+}
+
+// DSAR-10's own exemption check: every active hold naming any of the given assets directly, OR any of the
+// given data categories (resolved by the caller from each asset's own ROPA-01 data inventory) with no
+// asset_id of its own — the broader match DPX-05's own query above deliberately left out of scope.
+func (q *Queries) ListActiveLegalHoldsForAssetsOrCategories(ctx context.Context, arg ListActiveLegalHoldsForAssetsOrCategoriesParams) ([]ListActiveLegalHoldsForAssetsOrCategoriesRow, error) {
+	rows, err := q.db.Query(ctx, listActiveLegalHoldsForAssetsOrCategories, arg.AssetIds, arg.DataCategoryIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListActiveLegalHoldsForAssetsOrCategoriesRow
+	for rows.Next() {
+		var i ListActiveLegalHoldsForAssetsOrCategoriesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DataCategoryID,
+			&i.AssetID,
+			&i.LawRef,
+			&i.HoldRule,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listExemptionChecksForRequest = `-- name: ListExemptionChecksForRequest :many
+SELECT id, tenant_id, request_id, legal_hold_id, result, reason, created_at
+FROM dsar.exemption_checks
+WHERE request_id = $1
+ORDER BY created_at DESC
+`
+
+type ListExemptionChecksForRequestRow struct {
+	ID          uuid.UUID          `db:"id" json:"id"`
+	TenantID    uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	RequestID   uuid.UUID          `db:"request_id" json:"request_id"`
+	LegalHoldID pgtype.UUID        `db:"legal_hold_id" json:"legal_hold_id"`
+	Result      string             `db:"result" json:"result"`
+	Reason      string             `db:"reason" json:"reason"`
+	CreatedAt   pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+func (q *Queries) ListExemptionChecksForRequest(ctx context.Context, requestID uuid.UUID) ([]ListExemptionChecksForRequestRow, error) {
+	rows, err := q.db.Query(ctx, listExemptionChecksForRequest, requestID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListExemptionChecksForRequestRow
+	for rows.Next() {
+		var i ListExemptionChecksForRequestRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.RequestID,
+			&i.LegalHoldID,
+			&i.Result,
+			&i.Reason,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLegalHolds = `-- name: ListLegalHolds :many
+SELECT id, tenant_id, data_category_id, asset_id, law_ref, hold_rule, is_active, created_at, updated_at, row_version
+FROM dsar.legal_holds
+ORDER BY created_at DESC
+`
+
+type ListLegalHoldsRow struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	TenantID       uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	DataCategoryID pgtype.UUID        `db:"data_category_id" json:"data_category_id"`
+	AssetID        pgtype.UUID        `db:"asset_id" json:"asset_id"`
+	LawRef         string             `db:"law_ref" json:"law_ref"`
+	HoldRule       []byte             `db:"hold_rule" json:"hold_rule"`
+	IsActive       bool               `db:"is_active" json:"is_active"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	RowVersion     int32              `db:"row_version" json:"row_version"`
+}
+
+func (q *Queries) ListLegalHolds(ctx context.Context) ([]ListLegalHoldsRow, error) {
+	rows, err := q.db.Query(ctx, listLegalHolds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListLegalHoldsRow
+	for rows.Next() {
+		var i ListLegalHoldsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.DataCategoryID,
+			&i.AssetID,
+			&i.LawRef,
+			&i.HoldRule,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.RowVersion,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

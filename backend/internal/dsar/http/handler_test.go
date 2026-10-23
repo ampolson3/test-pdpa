@@ -65,6 +65,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
 				`DELETE FROM dsar.verifications`, `DELETE FROM iam.subject_verifications`, `DELETE FROM dsar.subtasks`,
+				`DELETE FROM dsar.exemption_checks`, `DELETE FROM dsar.legal_holds`,
 				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM ropa.assets`, `DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
 				`DELETE FROM iam.users WHERE email = 'dsarhttp-assignee@dbtest.example'`,
@@ -91,7 +92,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 		legalEntity = e.ID
 		return err
 	})
-	var requestTypeID, accessTypeID, complaintTypeID uuid.UUID
+	var requestTypeID, accessTypeID, complaintTypeID, erasureTypeID uuid.UUID
 	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
 		types, err := svc.ListRequestTypes(ctx)
 		if err != nil || len(types) == 0 {
@@ -104,6 +105,9 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 			}
 			if rt.Code == "complaint" {
 				complaintTypeID = rt.ID
+			}
+			if rt.Code == "erasure" {
+				erasureTypeID = rt.ID
 			}
 		}
 		return nil
@@ -137,7 +141,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	other := uuid.New()
 	grants := map[string][]string{
 		tenant.UserID.String(): {"dsar.request.read", "dsar.request.create", "dsar.request.execute", "dsar.request.update", "dsar.request.approve",
-			"dsar.subtask.read", "dsar.subtask.create", "dsar.subtask.update", "dsar.subtask.execute", "dsar.subtask.delete"},
+			"dsar.request.delete", "dsar.subtask.read", "dsar.subtask.create", "dsar.subtask.update", "dsar.subtask.execute", "dsar.subtask.delete"},
 		other.String(): {"dsar.request.read", "dsar.subtask.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
@@ -451,6 +455,80 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", item3+"/subtasks", &viewer, nil); code != 200 || !strings.Contains(body, `"action":"search"`) || !strings.Contains(body, assetID.String()) {
 		t.Errorf("subtasks after in_progress: %d %s, want one search subtask against the asset", code, body)
+	}
+
+	// DSAR-10 (ม.33): a legal hold naming assetID, then an erasure request against it is blocked from
+	// completing until an exemption check is recorded — the acceptance criterion itself.
+	if code, _ := do("GET", "/admin/v1/dsar/legal-holds", nil, nil); code != 401 {
+		t.Errorf("legal-holds, no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", "/admin/v1/dsar/legal-holds", &viewer, map[string]any{"asset_id": assetID, "law_ref": "มาตรา 1"}); code != 403 {
+		t.Errorf("create legal hold with read only: %d, want 403", code)
+	}
+	code, body = do("POST", "/admin/v1/dsar/legal-holds", &admin, map[string]any{"asset_id": assetID, "law_ref": "มาตรา 1 (เก็บตามกฎหมายอื่น)"})
+	if code != 201 || !strings.Contains(body, `"is_active":true`) {
+		t.Fatalf("create legal hold: %d %s", code, body)
+	}
+	var hold dsarhttp.DsarLegalHold
+	_ = json.Unmarshal([]byte(body), &hold)
+	if code, body := do("GET", "/admin/v1/dsar/legal-holds", &viewer, nil); code != 200 || !strings.Contains(body, hold.Id.String()) {
+		t.Errorf("list legal holds: %d %s", code, body)
+	}
+
+	createErasure := map[string]any{"request_type_id": erasureTypeID, "legal_entity_id": legalEntity, "channel": "web",
+		"requester_name": "ลบข้อมูล ทดสอบ", "requester_contact": "erase@example.com", "contact_kind": "email"}
+	code, body = do("POST", "/admin/v1/dsar/requests", &admin, createErasure)
+	if code != 201 {
+		t.Fatalf("create erasure request: %d %s", code, body)
+	}
+	var erasureReq dsarhttp.DsarRequest
+	_ = json.Unmarshal([]byte(body), &erasureReq)
+	itemE := "/admin/v1/dsar/requests/" + erasureReq.Id.String()
+	transitionE := itemE + "/transition"
+	if code, _ := do("POST", transitionE, &admin, map[string]any{"to": "verifying"}, map[string]string{"If-Match": etagOf(int(erasureReq.RowVersion))}); code != 200 {
+		t.Errorf("erasure to verifying: %d", code)
+	}
+	if code, _ := do("POST", transitionE, &admin, map[string]any{"to": "in_review"}, map[string]string{"If-Match": etagOf(int(erasureReq.RowVersion) + 1)}); code != 200 {
+		t.Errorf("erasure to in_review: %d", code)
+	}
+	if code, body := do("POST", transitionE, &admin, map[string]any{"to": "in_progress", "asset_ids": []uuid.UUID{assetID}}, map[string]string{"If-Match": etagOf(int(erasureReq.RowVersion) + 2)}); code != 200 {
+		t.Fatalf("erasure to in_progress: %d %s", code, body)
+	}
+	code, body = do("GET", itemE+"/subtasks", &viewer, nil)
+	if code != 200 || !strings.Contains(body, `"action":"delete"`) {
+		t.Fatalf("erasure subtasks: %d %s, want one delete subtask", code, body)
+	}
+	var erasureSubsList struct {
+		Data []dsarhttp.DsarSubtask `json:"data"`
+	}
+	_ = json.Unmarshal([]byte(body), &erasureSubsList)
+	if len(erasureSubsList.Data) != 1 {
+		t.Fatalf("erasure subtasks = %d, want 1", len(erasureSubsList.Data))
+	}
+	erasureSubs := erasureSubsList.Data
+	if code, _ := do("POST", itemE+"/subtasks/"+erasureSubs[0].Id.String()+"/status", &admin, map[string]any{"status": "done"}, map[string]string{"If-Match": etagOf(int(erasureSubs[0].RowVersion))}); code != 200 {
+		t.Errorf("mark erasure subtask done: %d", code)
+	}
+
+	if code, body := do("POST", transitionE, &admin, map[string]any{"to": "completed", "outcome": "fulfilled"}, map[string]string{"If-Match": etagOf(int(erasureReq.RowVersion) + 3)}); code != 422 || !strings.Contains(body, "dsar.exemption_check_required") {
+		t.Errorf("complete erasure with no exemption check: %d %s, want 422 dsar.exemption_check_required", code, body)
+	}
+	if code, _ := do("GET", itemE+"/exemption-checks", &viewer, nil); code != 200 {
+		t.Errorf("list exemption checks (empty): %d", code)
+	}
+	code, body = do("POST", itemE+"/exemption-checks", &admin, map[string]any{"asset_ids": []uuid.UUID{assetID}})
+	if code != 201 || !strings.Contains(body, `"result":"must_retain"`) || !strings.Contains(body, "มาตรา 1") {
+		t.Fatalf("run exemption check: %d %s, want must_retain citing the hold's law_ref", code, body)
+	}
+	if code, body := do("POST", transitionE, &admin, map[string]any{"to": "completed", "outcome": "fulfilled"}, map[string]string{"If-Match": etagOf(int(erasureReq.RowVersion) + 3)}); code != 200 || !strings.Contains(body, `"status":"completed"`) {
+		t.Errorf("complete erasure after exemption check: %d %s", code, body)
+	}
+
+	if code, _ := do("DELETE", "/admin/v1/dsar/legal-holds/"+hold.Id.String(), &viewer, nil, map[string]string{"If-Match": etagOf(hold.RowVersion)}); code != 403 {
+		t.Errorf("deactivate legal hold with read only: %d, want 403", code)
+	}
+	if code, body := do("DELETE", "/admin/v1/dsar/legal-holds/"+hold.Id.String(), &admin, nil, map[string]string{"If-Match": etagOf(hold.RowVersion)}); code != 200 || !strings.Contains(body, `"is_active":false`) {
+		t.Errorf("deactivate legal hold: %d %s", code, body)
 	}
 }
 

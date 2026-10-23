@@ -4026,6 +4026,65 @@ untouched by this change), `go test ./...` (no regressions, full backend suite),
 @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the
 new `missing-dpa-panel` on `/agreements`) all verified clean.
 
+### DSAR-10 ตรวจข้อยกเว้นก่อนลบข้อมูล (`docs/modules/DSAR.md#dsar-10`) — done
+`dsar.legal_holds`/`dsar.exemption_checks` were both already fully specified in the baseline migrations —
+`legal_holds` already had a real consumer (DPX-05's own `ActiveHoldForAsset`, matching by `asset_id` only,
+for its disposal-job check) but no CRUD/UI of its own, and `exemption_checks` had nothing writing to it at
+all — no new migration for either table. `internal/dsar/service/legal_holds.go` widened the existing
+`LegalHold` struct (DPX-05's own minimal `{ID, AssetID, LawRef}` shape, now carrying `DataCategoryID`/
+`HoldRule`/`IsActive`/`RowVersion`/`CreatedAt` too) rather than defining a second type, so both features'
+code reads the same rows the same way: `CreateLegalHold`/`ListLegalHolds`/`DeactivateLegalHold` (soft —
+`is_active = false`, never a hard delete, so a past `exemption_checks.legal_hold_id` reference stays
+resolvable) are plain CRUD, gated by the already-seeded `dsar.request.*` (no new permission code — a legal
+hold is DPO-managed reference data adjacent to the request workflow, the same reasoning DSAR-13's own
+letter-generation write already used for reusing that permission family).
+
+`RunExemptionCheck` is the acceptance criterion itself (ม.33): given the assets an erasure request's own
+work touches (the same asset scope DSAR-03's own subtask-per-asset picker already uses), it matches every
+active hold naming one of those assets directly, **and** — resolved through each asset's own ROPA-01 data
+inventory via a newly widened `dsar.Ropa` interface (`ListDataInventory`, rule 9: dsar reads ropa only
+through its own exported service) — every active hold naming a data category one of those assets actually
+holds, with no `asset_id` of its own. This closes a gap DPX-05's own query deliberately left open ("a hold
+recorded against a data_category_id with no asset_id is DSAR-10's own exemption-check concern, not this
+feature's literal acceptance criterion" — DPX-05's own comment, mislabeled DSAR-11 at the time, corrected
+here). The result is `can_delete` (nothing held), `must_retain` (every given asset held) or `partial`
+(some but not all), with a `reason` string citing every matching hold's own `law_ref` — never a bare status
+with nothing to point to, the literal "มีเหตุผลอ้างอิง." Exactly one `dsar.exemption_checks` row is written
+per call, referencing the first matching hold if any — a decision about the request's own current batch of
+assets, not a per-asset ledger.
+
+The other half of the acceptance criterion ("ข้อมูลที่ติด legal hold ไม่ถูกลบ") is a new guard in
+`Transition`'s own `completed` case: entering `completed` for a request whose right type is `erasure`
+requires at least one recorded exemption check (`hasExemptionCheck`) or the transition is refused with a new
+`ErrExemptionCheckRequired` (422 `dsar.exemption_check_required`) — the same "existence over judgement"
+reading DSAR-04's own agent-document guard already established. Deliberately not gated on the check's own
+*result*: a `must_retain`/`partial` outcome never blocks closing the request, since this platform tracks the
+DSAR workflow, not the actual per-system deletion (that's DSAR-08's own subtask, done by staff outside this
+tool) — the gate only proves the exemption question was asked and answered with a reason on record before
+the request is considered done. Every other right type is unaffected.
+
+API: `GET`/`POST /admin/v1/dsar/legal-holds` (`dsar.request.{read,create}`), `DELETE
+/admin/v1/dsar/legal-holds/{id}` (ETag/If-Match, `dsar.request.delete`), `GET`/`POST
+/admin/v1/dsar/requests/{id}/exemption-checks` (`dsar.request.{read,update}`) — all on already-seeded
+permission codes. UI: `/requests` gained a "ตรวจข้อยกเว้น" toggle, shown only on erasure-type rows — a table
+of past checks (result badge + reason + timestamp) and an asset multi-select + run button (reusing the same
+asset list DSAR-03's own `in_progress` action panel already fetches). Tests: unit
+(`internal/dsar/service/legal_holds_test.go` — the acceptance criterion directly: an asset held directly and
+a different asset held only through its own data category are both found, citing both law_refs, in a
+`partial` result when mixed with a free asset, `must_retain`/`can_delete` for the single-asset cases;
+`CreateLegalHold` validation (law_ref required, at least one scope field required); deactivating a hold
+clears its match and a stale row_version is refused distinctly; the `completed` gate blocked with no check,
+cleared by running one regardless of its result, and never applied to a non-erasure request; two-tenant
+isolation of both the hold list and a cross-tenant exemption check attempt), HTTP contract
+(`internal/dsar/http/handler_test.go`'s existing `TestDsarEndpoints_Contract`, extended with the full
+create-hold → erasure-request → blocked-completion → run-check → completion chain through the real
+validator + AuthZ). Not verified live against a real Postgres/Redis — the same environment limitation this
+codebase's other recent passes already disclosed; every test compiles and vets clean and skips the same way
+the rest of this module's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on
+every touched file), `go test ./...` (no regressions, full backend suite), `pnpm --filter @pdpa/api-client
+typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
+`/requests` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

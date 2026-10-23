@@ -775,6 +775,19 @@ row) is unrelated.
 
 **Acceptance criteria:** ข้อมูลที่ติด legal hold ไม่ถูกลบและมีเหตุผลอ้างอิง
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### DSAR-10`. สรุป: `dsar.legal_holds`/
+`dsar.exemption_checks` (มีอยู่แล้วตั้งแต่ baseline migration — DPX-05 ใช้ `legal_holds` อยู่ก่อนแล้วสำหรับ
+disposal job แต่ยังไม่มี CRUD/UI ของตัวเอง และ `exemption_checks` ยังไม่มีใครใช้เลย) — DPO สร้าง legal hold
+ผูกกับ asset หรือ data category ได้ตรง ๆ, `RunExemptionCheck` ตรวจระบบที่เลือกกับทุก hold ที่ active
+(รวม hold ที่ผูกกับ data category ผ่าน ROPA-01 data inventory ของ asset นั้น — ปิดช่องว่างที่ DPX-05 เคย
+ทิ้งไว้ให้ feature นี้ทำ), บันทึกผล can_delete/must_retain/partial พร้อมเหตุผลอ้าง law_ref. คำขอประเภท
+erasure (ม.33) ปิดไม่ได้จนกว่าจะมีการตรวจข้อยกเว้นอย่างน้อยหนึ่งครั้ง (`dsar.exemption_check_required`) —
+ตรวจ "มีการตรวจ" ไม่ใช่ "ผลต้องเป็นอะไร" เพราะการลบจริงเกิดนอกระบบนี้ (staff ทำผ่าน subtask ของ DSAR-08
+เอง). API: `GET`/`POST /admin/v1/dsar/legal-holds`, `DELETE /admin/v1/dsar/legal-holds/{id}` (soft —
+is_active=false), `GET`/`POST /admin/v1/dsar/requests/{id}/exemption-checks` — ใช้ permission `dsar.request.*`
+เดิมทั้งหมด ไม่มี permission code หรือ migration ใหม่. UI: toggle "ตรวจข้อยกเว้น" บน `/requests` (แสดง
+เฉพาะคำขอประเภท erasure) — รายการผลตรวจ + ฟอร์มเลือกระบบแล้วสั่งตรวจ.
+
 <a id="dsar-12"></a>
 ### DSAR-12 แจ้งผู้รับข้อมูลให้ดำเนินการตาม
 

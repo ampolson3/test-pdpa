@@ -3081,6 +3081,20 @@
       "exportTitle": "Portability export",
       "exportHint": "Generates a JSON, CSV or XML file of the data this system holds about this request's own subject, delivered the same way as any other package.",
       "generateExport": "Generate export"
+    },
+    "exemption": {
+      "title": "Exemption check (ม.33)",
+      "hint": "Check whether data must be retained under another law or for legal claims before deletion",
+      "result": "Result",
+      "reason": "Reason",
+      "checkedAt": "Checked at",
+      "runTitle": "Run exemption check for the selected systems",
+      "run": "Run exemption check",
+      "results": {
+        "can_delete": "Can delete",
+        "must_retain": "Must retain",
+        "partial": "Partially retained"
+      }
     }
   },
   "dpoDeadlines": {

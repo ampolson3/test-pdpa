@@ -31,3 +31,8 @@ output-options:
     - dsarListPackages
     - dsarCreatePackage
     - dsarGeneratePortabilityExport
+    - dsarListLegalHolds
+    - dsarCreateLegalHold
+    - dsarDeactivateLegalHold
+    - dsarListExemptionChecks
+    - dsarRunExemptionCheck
