@@ -107,6 +107,20 @@ func (s *Service) ListVendors(ctx context.Context, f VendorFilter) ([]Vendor, *V
 	return out, nil, nil
 }
 
+// ListActiveProcessorVendors is DPA-12's own population: every approved/conditional processor vendor,
+// unpaginated (see the query's own comment).
+func (s *Service) ListActiveProcessorVendors(ctx context.Context) ([]Vendor, error) {
+	rows, err := vendorstore.New(pdb.MustTxFromContext(ctx)).ListActiveProcessorVendors(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Vendor, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toVendor(vendorstore.GetVendorRow(r)))
+	}
+	return out, nil
+}
+
 func (s *Service) GetVendor(ctx context.Context, id uuid.UUID) (Vendor, error) {
 	r, err := vendorstore.New(pdb.MustTxFromContext(ctx)).GetVendor(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {

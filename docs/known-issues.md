@@ -138,6 +138,37 @@
 
 ---
 
+## JOBS-01 — หลาย periodic sweep job ไม่ได้อยู่ใน `jobs.GlobalKinds` ทั้งที่ comment ของตัวเองบอกว่าอยู่
+
+- **สถานะ:** open
+- **พบเมื่อ:** 2026-10-23 ระหว่างทำ DPA-12 (เพิ่ม `agreement.missing_dpa_sweep` เข้า
+  `internal/platform/jobs/client.go`'s `GlobalKinds`) — ไล่ตรวจ `GlobalKinds` ทั้งไฟล์เพื่อดูว่าจะวาง
+  entry ใหม่ตรงไหน แล้วพบว่า sweep job อื่นๆ ที่ comment ของตัวเอง (ในไฟล์ของแต่ละโมดูล) ระบุชัดว่า
+  "platform-wide (jobs.GlobalKinds)" กลับไม่มี entry จริงในแมปนั้นเลย
+- **อาการ:** `vendor.reassessment_sweep` (VEN-10), `notice.review_sweep` (PNG-15), `ropa.review_sweep`
+  (ROPA-15), `consent.double_opt_in_sweep` (CON-23), `consent.expiry_sweep` (CON-20) และ
+  `gov.retention_sweep` (DPX-05) ทุกตัวเป็น struct ว่าง ไม่มี `tenant_id` — เมื่อ `TenantTxMiddleware.Work`
+  เจอ kind ที่ไม่อยู่ใน `GlobalKinds` และ parse `tenant_id` ไม่ได้ (เพราะไม่มี field นี้เลย) จะ
+  `river.JobCancel(ErrMissingTenant)` ทันที หมายความว่า sweep job เหล่านี้ถูก cancel ทุกครั้งที่รันจริง
+  ไม่เคยเดินถึง `Work` ของตัวเองเพื่อ enqueue job รายเทนแนนต์เลย
+- **สาเหตุ:** แต่ละ feature (VEN-10/PNG-15/ROPA-15/CON-20/CON-23/DPX-05) เขียน comment ไว้ถูกต้องว่าต้อง
+  อยู่ใน `GlobalKinds` แต่ไม่มีใครไปเพิ่ม entry จริงในแมปของ `internal/platform/jobs/client.go` — น่าจะ
+  เพราะทุก pass เหล่านั้นไม่มี Postgres/Redis จริงให้รัน worker จริงตรวจสอบ (ทุก entry ใน CLAUDE.md ของ
+  feature เหล่านี้ระบุว่า "not verified live against a real Postgres/Redis") จึงไม่มีใครเห็น job ถูก
+  cancel จริง
+- **ทำไม test เดิมไม่จับ:** ทุกโมดูลเทสต์ `CheckDueReviews`/`CheckDueReassessments`/ฯลฯ โดยเรียกฟังก์ชัน
+  `Service` ตรง (เช่น `s.CheckDueReassessments(ctx)`) ภายใน tx ที่ test harness เปิดให้เองอยู่แล้ว — ไม่มี
+  เทสต์ใดรัน sweep ผ่าน River worker จริงเพื่อพิสูจน์ว่า job จริงไม่ถูก cancel
+- **แนวทางแก้ที่เป็นไปได้:** เพิ่ม 6 entry ข้างบนเข้า `internal/platform/jobs/client.go`'s `GlobalKinds`
+  (รูปแบบเดียวกับที่ DPA-12 เพิ่ม `"agreement.missing_dpa_sweep": true` เข้าไปแล้ว) แล้วเพิ่มเทสต์ที่รัน
+  sweep ผ่าน `river.Client` จริงอย่างน้อยหนึ่งกรณีเพื่อกันไม่ให้เกิดซ้ำกับ sweep job ตัวใหม่ในอนาคต
+- **ผลกระทบ:** ไม่กระทบ logic ของ `CheckDueReassessments`/`CheckDueReviews`/ฯลฯ เอง (ถูกพิสูจน์ถูกต้องแล้ว
+  โดยเทสต์ที่เรียกตรง) แต่หมายความว่า **ฟีเจอร์ periodic-reminder ทั้ง 6 นี้ไม่เคยทำงานจริงบน worker ที่รัน
+  อยู่จริงเลย** จนกว่าจะเพิ่ม entry เข้า `GlobalKinds` — เป็นช่องว่างใหญ่กว่าที่ CLAUDE.md ของแต่ละฟีเจอร์
+  เคยเปิดเผยไว้ ("not verified live" หมายถึงยิ่งกว่านั้นจริง)
+
+---
+
 ## แม่แบบสำหรับบั๊กใหม่
 
 ```markdown

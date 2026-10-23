@@ -12,6 +12,26 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countActiveAgreementsForVendorByType = `-- name: CountActiveAgreementsForVendorByType :one
+SELECT count(*)::int FROM agreement.agreements
+WHERE vendor_id = $1 AND agreement_type = $2 AND status = 'active'
+`
+
+type CountActiveAgreementsForVendorByTypeParams struct {
+	VendorID      pgtype.UUID `db:"vendor_id" json:"vendor_id"`
+	AgreementType string      `db:"agreement_type" json:"agreement_type"`
+}
+
+// DPA-12: whether a vendor has an agreement "ที่มีผลบังคับ" — ม.40 means one that has actually taken
+// effect (ST-04's own 'active' status), not merely drafted — the stricter sibling of
+// CountAgreementsForVendorByType's own "any status" count.
+func (q *Queries) CountActiveAgreementsForVendorByType(ctx context.Context, arg CountActiveAgreementsForVendorByTypeParams) (int32, error) {
+	row := q.db.QueryRow(ctx, countActiveAgreementsForVendorByType, arg.VendorID, arg.AgreementType)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const countAgreementsForVendorByType = `-- name: CountAgreementsForVendorByType :one
 SELECT count(*)::int FROM agreement.agreements WHERE vendor_id = $1 AND agreement_type = $2
 `

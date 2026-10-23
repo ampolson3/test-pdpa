@@ -88,6 +88,10 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 		if err != nil {
 			return err
 		}
+		// DPA-12: approved so it shows up as a real business relationship for the missing-DPA endpoint.
+		if _, err := pdb.MustTxFromContext(ctx).Exec(ctx, `UPDATE vendor.vendors SET status = 'approved' WHERE id = $1`, vendorID); err != nil {
+			return err
+		}
 		third, err := orgSvc.SaveExternalParty(ctx, orgservice.ExternalParty{PartyType: "controller", NameTh: "ผู้ควบคุมอีกราย", CountryCode: "TH"}, 0)
 		thirdPartyID = third.ID
 		return err
@@ -203,6 +207,14 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("GET", "/admin/v1/agreements/vendor-contract-status?vendor_id="+uuid.New().String(), &admin, nil, nil); code != 422 {
 		t.Errorf("vendor-contract-status unknown vendor: %d, want 422", code)
+	}
+
+	// DPA-12: before any DPA exists, the approved processor vendor shows up on the missing-DPA list.
+	if code, _ := do("GET", "/admin/v1/agreements/missing-dpa", nil, nil, nil); code != 401 {
+		t.Errorf("missing-dpa, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", "/admin/v1/agreements/missing-dpa", &reader, nil, nil); code != 200 || !strings.Contains(body, vendorID.String()) {
+		t.Errorf("missing-dpa before any DPA: %d %s, want vendor %s listed", code, body, vendorID)
 	}
 
 	newAgreement := map[string]any{

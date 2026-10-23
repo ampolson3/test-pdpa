@@ -4813,6 +4813,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/agreements/missing-dpa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPA-12: every processor vendor with no DPA agreement currently in effect */
+        get: operations["agreementListMissingDpa"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/agreements/type-check": {
         parameters: {
             query?: never;
@@ -6854,6 +6871,12 @@ export interface components {
             is_processor: boolean;
             /** @description Whether this vendor has at least one DPA (any status) on record */
             has_dpa: boolean;
+        };
+        /** @description DPA-12 — a processor vendor with no DPA agreement in effect */
+        MissingDpaVendor: {
+            vendor_id: components["schemas"]["Uuid"];
+            service_description: string;
+            relationship_owner_id?: components["schemas"]["Uuid"] | null;
         };
         AgreementTypeRecommendation: {
             /**
@@ -21496,6 +21519,33 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    agreementListMissingDpa: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["MissingDpaVendor"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     agreementTypeCheck: {

@@ -70,6 +70,13 @@ RETURNING *;
 -- in progress counts as "has one").
 SELECT count(*)::int FROM agreement.agreements WHERE vendor_id = @vendor_id AND agreement_type = @agreement_type;
 
+-- name: CountActiveAgreementsForVendorByType :one
+-- DPA-12: whether a vendor has an agreement "ที่มีผลบังคับ" — ม.40 means one that has actually taken
+-- effect (ST-04's own 'active' status), not merely drafted — the stricter sibling of
+-- CountAgreementsForVendorByType's own "any status" count.
+SELECT count(*)::int FROM agreement.agreements
+WHERE vendor_id = @vendor_id AND agreement_type = @agreement_type AND status = 'active';
+
 -- name: InsertAgreementPartyFull :one
 -- DSA-02: add any party beyond the first counterparty InsertAgreementParty already wrote — an external
 -- party (@party_id) or one of our own legal entities (@legal_entity_id, for a joint-controller arrangement

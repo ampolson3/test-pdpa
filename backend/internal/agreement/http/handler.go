@@ -127,6 +127,18 @@ func (h *Strict) AgreementVendorContractStatus(ctx context.Context, req Agreemen
 	return AgreementVendorContractStatus200JSONResponse{VendorId: st.VendorID, IsProcessor: st.IsProcessor, HasDpa: st.HasDPA}, nil
 }
 
+func (h *Strict) AgreementListMissingDpa(ctx context.Context, req AgreementListMissingDpaRequestObject) (AgreementListMissingDpaResponseObject, error) {
+	list, err := h.svc.ListVendorsMissingDPA(ctx)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := AgreementListMissingDpa200JSONResponse{Data: make([]MissingDpaVendor, 0, len(list))}
+	for _, v := range list {
+		resp.Data = append(resp.Data, MissingDpaVendor{VendorId: v.VendorID, ServiceDescription: v.ServiceDescription, RelationshipOwnerId: v.RelationshipOwnerID})
+	}
+	return resp, nil
+}
+
 func toPartyWire(p agreementservice.Party) AgreementParty {
 	return AgreementParty{
 		Id: p.ID, AgreementId: p.AgreementID, PartyId: p.PartyID, LegalEntityId: p.LegalEntityID,

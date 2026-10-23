@@ -48,9 +48,11 @@ type Org interface {
 }
 
 // Vendor is what agreement reads from the vendormgmt module (rule 9) — a DPA always starts from a VEN-01
-// vendor record, whose own party_id names the real counterparty.
+// vendor record, whose own party_id names the real counterparty. ListActiveProcessorVendors backs DPA-12's
+// own missing-DPA sweep (the cross-vendor population GetVendor alone can't give it).
 type Vendor interface {
 	GetVendor(ctx context.Context, id uuid.UUID) (vendorservice.Vendor, error)
+	ListActiveProcessorVendors(ctx context.Context) ([]vendorservice.Vendor, error)
 }
 
 // Ropa is what agreement reads from the ropa module (rule 9) — every linked activity must be the caller's
@@ -80,8 +82,11 @@ type Service struct {
 	Vendor Vendor
 	Ropa   Ropa
 	Audit  *audit.Service
-	// Notify/River back DPA-10's own renewal reminder (agreement.renewal_reminder) — nil in any wiring
-	// that never calls SetSchedule/needs the worker (mirrors dsarservice.Service's own optional fields).
+	// Dpo backs DPA-12's own missing-DPA sweep (rule 9) — nil in any wiring that never runs the sweep.
+	Dpo Dpo
+	// Notify/River back DPA-10's own renewal reminder (agreement.renewal_reminder) and DPA-12's own
+	// missing-DPA alert — nil in any wiring that never calls SetSchedule/needs the worker (mirrors
+	// dsarservice.Service's own optional fields).
 	Notify *notify.Service
 	River  *river.Client[pgx.Tx]
 }

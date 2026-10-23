@@ -131,6 +131,7 @@ export {
   useAgreementParties,
   useAddAgreementParty,
   useRemoveAgreementParty,
+  useMissingDpaVendors,
   type Agreement,
   type AgreementCreateInput,
   type AgreementType,
@@ -144,6 +145,7 @@ export {
   type AgreementCounterpartyRole,
   type AgreementParty,
   type AgreementPartyInput,
+  type MissingDpaVendor,
 } from "./agreements";
 export {
   useRiskMatrices,

@@ -10,6 +10,7 @@ export type AgreementMissingClause = components["schemas"]["AgreementMissingClau
 export type AgreementProcessingSchedule = components["schemas"]["AgreementProcessingSchedule"];
 export type AgreementScheduleInput = components["schemas"]["AgreementScheduleInput"];
 export type VendorContractStatus = components["schemas"]["VendorContractStatus"];
+export type MissingDpaVendor = components["schemas"]["MissingDpaVendor"];
 export type AgreementTypeRecommendation = components["schemas"]["AgreementTypeRecommendation"];
 export type AgreementParty = components["schemas"]["AgreementParty"];
 export type AgreementPartyInput = components["schemas"]["AgreementPartyInput"];
@@ -217,6 +218,19 @@ export function useVendorContractStatus(client: ApiClient, vendorId: string | un
       });
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+/** GET /admin/v1/agreements/missing-dpa — DPA-12: every processor vendor with no DPA agreement in effect,
+ * computed live (never persisted, so it can never go stale). */
+export function useMissingDpaVendors(client: ApiClient) {
+  return useQuery({
+    queryKey: [...agreementsKey, "missing-dpa"],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/agreements/missing-dpa", {});
+      if (error) throw error;
+      return data.data;
     },
   });
 }

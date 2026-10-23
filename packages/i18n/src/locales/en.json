@@ -1174,6 +1174,10 @@
     "more": "Load more",
     "open": "Open",
     "backToList": "← Back to agreements",
+    "missingDpa": {
+      "title": "{count, plural, =1{1 vendor} other{# vendors}} are processors with no DPA currently in effect (s.40)",
+      "create": "Create DPA"
+    },
     "types": {
       "dpa": "DPA (processing agreement)",
       "dsa": "DSA (data sharing agreement)",

@@ -149,6 +149,13 @@ function ActivityDetail({ activity }: { activity: RopaActivityTemplate }) {
   const t = useTranslations("ropaTemplates");
   const d = activity.defaults as Record<string, unknown>;
   const r = activity.rationale as Record<string, unknown>;
+  // RTG-09: every template's core content (name/description/purpose) is seeded in both th/en — this
+  // toggle is the literal "สลับภาษาในหน้า template" the module doc asks for, switching which language
+  // of that already-bilingual content is shown; data/recipient/retention items stay code/Thai-only
+  // internal RoPA record text, the same scope ROPA-05's own rights_and_access text already drew.
+  const [lang, setLang] = useState<"th" | "en">("th");
+  const name = lang === "en" && activity.name_en ? activity.name_en : activity.name_th;
+  const description = lang === "en" ? str(d.description_en) : str(d.description_th);
   const canCreate = usePermission("ropa.activity.create");
   const client = useMemo(() => createApiClient("/api/bff"), []);
   const router = useRouter();
@@ -172,9 +179,26 @@ function ActivityDetail({ activity }: { activity: RopaActivityTemplate }) {
     <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4 text-sm" data-testid="template-detail">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="font-semibold">{activity.name_th}</h2>
-          {activity.name_en && <p className="text-slate-500">{activity.name_en}</p>}
-          {str(d.description_th) && <p className="mt-1 text-slate-600">{str(d.description_th)}</p>}
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold">{name}</h2>
+            <div className="flex overflow-hidden rounded border border-slate-300 text-xs" data-testid="template-lang-switch">
+              <button
+                type="button"
+                className={`px-2 py-0.5 ${lang === "th" ? "bg-sky-100 font-medium" : "bg-white"}`}
+                onClick={() => setLang("th")}
+              >
+                TH
+              </button>
+              <button
+                type="button"
+                className={`px-2 py-0.5 ${lang === "en" ? "bg-sky-100 font-medium" : "bg-white"}`}
+                onClick={() => setLang("en")}
+              >
+                EN
+              </button>
+            </div>
+          </div>
+          {description && <p className="mt-1 text-slate-600">{description}</p>}
         </div>
         {canCreate && !creating && (
           <Button onClick={() => { createFromTemplate.reset(); setCreating(true); }}>{t("createFromTemplate")}</Button>
@@ -225,7 +249,7 @@ function ActivityDetail({ activity }: { activity: RopaActivityTemplate }) {
         <ul className="list-inside list-disc">
           {arr<Purpose>(d.purposes).map((p, i) => (
             <li key={i}>
-              {p.purpose_text_th} ({p.lawful_basis_code})
+              {(lang === "en" && p.purpose_text_en ? p.purpose_text_en : p.purpose_text_th)} ({p.lawful_basis_code})
             </li>
           ))}
         </ul>

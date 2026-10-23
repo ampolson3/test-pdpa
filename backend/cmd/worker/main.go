@@ -22,6 +22,7 @@ import (
 	cookiescan "pdpa-platform/internal/cookie/scan"
 	cookieservice "pdpa-platform/internal/cookie/service"
 	dpiaservice "pdpa-platform/internal/dpia/service"
+	dposervice "pdpa-platform/internal/dpo/service"
 	dsarservice "pdpa-platform/internal/dsar/service"
 	govjobs "pdpa-platform/internal/gov/jobs"
 	govservice "pdpa-platform/internal/gov/service"
@@ -146,8 +147,12 @@ func run() error {
 	govSvc := &govservice.Service{Audit: auditservice.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fileStore(store, inserter), River: inserter}
 	river.AddWorker(workers, &govjobs.Checker{Gov: govSvc})
 	river.AddWorker(workers, &govjobs.Sweeper{Pool: pool})
-	agreementSvc := &agreementservice.Service{Audit: auditservice.New(), Notify: notifySvc, River: inserter} // DPA-10: expiry reminder
+	dpoSvc := &dposervice.Service{Audit: auditservice.New()} // DPA-12: missing-DPA task creation only — no other dpo.tasks consumer runs in this worker
+	agreementSvc := &agreementservice.Service{Audit: auditservice.New(), Vendor: vendorSvc, Dpo: dpoSvc,
+		Notify: notifySvc, River: inserter} // DPA-10: expiry reminder; DPA-12: missing-DPA sweep
 	river.AddWorker(workers, &agreementservice.ReminderWorker{Service: agreementSvc})
+	river.AddWorker(workers, &agreementservice.MissingDPASweeper{Pool: pool, River: inserter})
+	river.AddWorker(workers, &agreementservice.MissingDPAChecker{Service: agreementSvc})
 	// PLT-16: PDF / Word of published documents (Gotenberg via GOTENBERG_URL, or a local Chromium via CHROMIUM_PATH).
 	river.AddWorker(workers, &docs.Renderer{Service: wiring.Docs(nil, fileStore(store, inserter), inserter, auditservice.New(), render.FromEnv()), Logger: slog.Default()})
 
@@ -164,7 +169,7 @@ func run() error {
 		PeriodicJobs: []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob(),
 			auditjobs.RetentionPeriodicJob(retentionMonths), govjobs.SweepPeriodicJob(), cookieservice.SweepPeriodicJob(),
 			notice.ReviewSweepPeriodicJob(), ropaservice.ReviewSweepPeriodicJob(), vendorservice.ReassessmentSweepPeriodicJob(),
-			consentservice.DoubleOptInSweepPeriodicJob(), consentservice.ExpirySweepPeriodicJob()},
+			consentservice.DoubleOptInSweepPeriodicJob(), consentservice.ExpirySweepPeriodicJob(), agreementservice.MissingDPASweepPeriodicJob()},
 		SoftStopTimeout: softStop,
 	})
 	if err != nil {

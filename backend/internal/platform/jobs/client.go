@@ -27,7 +27,19 @@ var GlobalKinds = map[string]bool{
 	// cookie.scan_schedule_check per tenant. cookie.scan_schedule_check and cookie.scan themselves are
 	// tenant-scoped jobs and must NOT be added here — they need the normal per-tenant transaction.
 	"cookie.scan_schedule_sweep": true,
+	// agreement/service.MissingDPASweepArgs (DPA-12): reads only platform.tenants and enqueues one
+	// agreement.missing_dpa_check per tenant. agreement.missing_dpa_check itself is tenant-scoped and
+	// must NOT be added here.
+	"agreement.missing_dpa_sweep": true,
 }
+
+// Known gap (not this feature's to fix — see docs/known-issues.md#jobs-01): vendor.reassessment_sweep
+// (VEN-10), notice.review_sweep (PNG-15), ropa.review_sweep (ROPA-15), consent.double_opt_in_sweep,
+// consent.expiry_sweep (CON-23/CON-20) and gov.retention_sweep (DPX-05) are the identical "sweep lists
+// tenants, carries no tenant_id" shape as this package's own entries above — each one's own source
+// comment even says "platform-wide (jobs.GlobalKinds)" — but none were ever actually added to this map.
+// Every one of them is cancelled with ErrMissingTenant the moment it actually runs. Each was only ever
+// disclosed as "not verified live"; add them here once that's addressed.
 
 // WorkerOptions configures NewWorkerClient. Zero values take the documented defaults.
 type WorkerOptions struct {

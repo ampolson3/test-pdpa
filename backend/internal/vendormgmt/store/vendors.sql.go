@@ -176,6 +176,72 @@ func (q *Queries) InsertVendor(ctx context.Context, arg InsertVendorParams) (Ins
 	return i, err
 }
 
+const listActiveProcessorVendors = `-- name: ListActiveProcessorVendors :many
+SELECT id, party_id, service_description, relationship_owner_id, is_processor, tier, data_access,
+    processing_countries, status, next_assessment_at, approved_at, offboarded_at, row_version, created_at, updated_at
+FROM vendor.vendors
+WHERE is_processor = true AND status IN ('approved', 'conditional')
+ORDER BY created_at
+`
+
+type ListActiveProcessorVendorsRow struct {
+	ID                  uuid.UUID          `db:"id" json:"id"`
+	PartyID             uuid.UUID          `db:"party_id" json:"party_id"`
+	ServiceDescription  string             `db:"service_description" json:"service_description"`
+	RelationshipOwnerID pgtype.UUID        `db:"relationship_owner_id" json:"relationship_owner_id"`
+	IsProcessor         bool               `db:"is_processor" json:"is_processor"`
+	Tier                *string            `db:"tier" json:"tier"`
+	DataAccess          []byte             `db:"data_access" json:"data_access"`
+	ProcessingCountries []string           `db:"processing_countries" json:"processing_countries"`
+	Status              string             `db:"status" json:"status"`
+	NextAssessmentAt    pgtype.Date        `db:"next_assessment_at" json:"next_assessment_at"`
+	ApprovedAt          pgtype.Timestamptz `db:"approved_at" json:"approved_at"`
+	OffboardedAt        pgtype.Timestamptz `db:"offboarded_at" json:"offboarded_at"`
+	RowVersion          int32              `db:"row_version" json:"row_version"`
+	CreatedAt           pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// DPA-12: every vendor still in an active business relationship (approved/conditional, ST-06) marked as a
+// processor (ม.40) — the population the missing-DPA sweep checks. No pagination: a tenant's own active
+// vendor roster is bounded, the same "platform-wide/tenant-wide list, no cursor" reasoning DPO-05/RRA-09
+// already used for their own cross-record aggregations.
+func (q *Queries) ListActiveProcessorVendors(ctx context.Context) ([]ListActiveProcessorVendorsRow, error) {
+	rows, err := q.db.Query(ctx, listActiveProcessorVendors)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListActiveProcessorVendorsRow
+	for rows.Next() {
+		var i ListActiveProcessorVendorsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.PartyID,
+			&i.ServiceDescription,
+			&i.RelationshipOwnerID,
+			&i.IsProcessor,
+			&i.Tier,
+			&i.DataAccess,
+			&i.ProcessingCountries,
+			&i.Status,
+			&i.NextAssessmentAt,
+			&i.ApprovedAt,
+			&i.OffboardedAt,
+			&i.RowVersion,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listVendors = `-- name: ListVendors :many
 
 SELECT id, party_id, service_description, relationship_owner_id, is_processor, tier, data_access,

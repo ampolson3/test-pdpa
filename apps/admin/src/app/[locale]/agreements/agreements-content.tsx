@@ -14,6 +14,7 @@ import {
   useDocumentTemplates,
   useAgreementTypeCheck,
   useExternalParties,
+  useMissingDpaVendors,
   type AgreementType,
   type AgreementCounterpartyRole,
   type AgreementPartyInput,
@@ -66,6 +67,7 @@ export function AgreementsContent() {
   const [checkRole, setCheckRole] = useState<AgreementCounterpartyRole>("processor");
   const [typeFilter, setTypeFilter] = useState<AgreementType | "">("");
   const list = useAgreements(client, { agreementType: typeFilter || undefined });
+  const missingDpa = useMissingDpaVendors(client); // DPA-12: processor vendors with no DPA in effect
   const vendors = useVendors(client, {});
   const externalParties = useExternalParties(client, {});
   const entities = useLegalEntities(client);
@@ -125,6 +127,25 @@ export function AgreementsContent() {
         </div>
         {canCreate && <Button onClick={() => { create.reset(); setDraft({ ...blank, activity_ids: new Set() }); }} data-testid="new-agreement">{t("newAgreement")}</Button>}
       </header>
+
+      {canCreate && missingDpa.data && missingDpa.data.length > 0 && (
+        <section className="rounded-md border border-amber-200 bg-amber-50 p-4" data-testid="missing-dpa-panel">
+          <h2 className="font-semibold text-amber-900">{t("missingDpa.title", { count: missingDpa.data.length })}</h2>
+          <ul className="mt-2 divide-y divide-amber-100">
+            {missingDpa.data.map((v) => (
+              <li key={v.vendor_id} className="flex items-center justify-between gap-2 py-1.5">
+                <span>{v.service_description}</span>
+                <Button
+                  variant="secondary"
+                  onClick={() => { create.reset(); setDraft({ ...blank, agreement_type: "dpa", vendor_id: v.vendor_id, activity_ids: new Set() }); }}
+                >
+                  {t("missingDpa.create")}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {canCheckType && (
         <fieldset className="flex flex-wrap items-end gap-3 rounded-md border border-slate-200 bg-white p-4" data-testid="agreement-type-check">

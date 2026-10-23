@@ -10,6 +10,17 @@ WHERE (sqlc.narg(status)::text IS NULL OR status = sqlc.narg(status))
 ORDER BY created_at DESC, id DESC
 LIMIT @lim;
 
+-- name: ListActiveProcessorVendors :many
+-- DPA-12: every vendor still in an active business relationship (approved/conditional, ST-06) marked as a
+-- processor (ม.40) — the population the missing-DPA sweep checks. No pagination: a tenant's own active
+-- vendor roster is bounded, the same "platform-wide/tenant-wide list, no cursor" reasoning DPO-05/RRA-09
+-- already used for their own cross-record aggregations.
+SELECT id, party_id, service_description, relationship_owner_id, is_processor, tier, data_access,
+    processing_countries, status, next_assessment_at, approved_at, offboarded_at, row_version, created_at, updated_at
+FROM vendor.vendors
+WHERE is_processor = true AND status IN ('approved', 'conditional')
+ORDER BY created_at;
+
 -- name: GetVendor :one
 SELECT id, party_id, service_description, relationship_owner_id, is_processor, tier, data_access,
     processing_countries, status, next_assessment_at, approved_at, offboarded_at, row_version, created_at, updated_at

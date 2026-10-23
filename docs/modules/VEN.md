@@ -529,6 +529,13 @@ can't even resolve tenant A's vendor id), HTTP contract (`handler_test.go` — 2
 tab — VEN-05/07/08 (vendor risk assessment) aren't built yet, so there's nothing to show; add that section
 once one of those features exists, the same "no consumer yet" deferral this codebase uses elsewhere.
 
+**Update (DPA-12):** this feature's own "แจ้งเตือนคู่ค้าที่ไม่มีสัญญา" (notify vendors without a contract)
+backend note was marked done above but never actually built a proactive alert — only the on-demand,
+per-vendor `VendorContractStatus` read, which requires someone to already be looking at that one vendor's
+own page. DPA-12 (`CLAUDE.md` `### DPA-12`) retroactively closes that gap with a real daily sweep across
+every processor vendor, opening a `dpo.tasks` job and notifying the relationship owner/role PROC the moment
+one is found missing a DPA — no change needed here, cited for anyone tracing this acceptance criterion.
+
 <a id="ven-03"></a>
 ### VEN-03 ผู้ประมวลผลช่วง
 

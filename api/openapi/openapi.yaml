@@ -14143,6 +14143,33 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/agreements/missing-dpa:
+    get:
+      operationId: agreementListMissingDpa
+      tags: [agreement]
+      summary: 'DPA-12: every processor vendor with no DPA agreement currently in effect'
+      x-permission: agreement.dpa.read
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/MissingDpaVendor'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/agreements/type-check:
     get:
       operationId: agreementTypeCheck
@@ -18464,6 +18491,16 @@ components:
         has_dpa:
           description: Whether this vendor has at least one DPA (any status) on record
           type: boolean
+    MissingDpaVendor:
+      description: DPA-12 — a processor vendor with no DPA agreement in effect
+      type: object
+      required: [vendor_id, service_description]
+      properties:
+        vendor_id: {$ref: '#/components/schemas/Uuid'}
+        service_description: {type: string}
+        relationship_owner_id:
+          allOf: [{$ref: '#/components/schemas/Uuid'}]
+          nullable: true
     AgreementTypeRecommendation:
       type: object
       required: [agreement_type, legal_ref, reason_code]

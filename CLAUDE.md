@@ -3929,6 +3929,103 @@ government-specific สพร. template structure (a separate backlog row with i
 criterion — this feature's seeded `government` industry set is a generic starter, not that structure) and
 RTG-08's tenant-authored custom templates (no create/update surface on this library yet, same as RTG-01).
 
+### RTG-09 Template สองภาษา (`docs/modules/RTG.md#rtg-09`) — done, frontend only
+Checked the literal acceptance criterion ("ทุก template มีทั้ง TH และ EN") against every template this
+codebase has already seeded — RTG-01's 51 (migration 00049) and RTG-02's 12 (migration 00082), 63 in total —
+by walking each one's `name`/`name_en`, `defaults.description`/`description_en`, and every purpose's
+`purpose_text`/`purpose_text_en` field. Every single one already carries complete bilingual content: both
+earlier migrations' own seed data was already written th/en together, so there was no backend gap at all —
+no new migration, no new column, no new seed data. The feature's real, narrow scope is therefore exactly
+what its own frontend note says ("สลับภาษาในหน้า template") and nothing else.
+
+`apps/admin/src/app/[locale]/ropa/templates/templates-content.tsx`'s `ActivityDetail` component gained a
+local `lang` state (`"th" | "en"`, defaulting to `"th"`) and a TH/EN toggle button pair
+(`data-testid="template-lang-switch"`); the activity's own `name`/`description` and every purpose's text
+switch to their `_en` field when `lang === "en"` and that field is non-empty, falling back to the Thai text
+otherwise (a template missing one language's text — none exist today, but the fallback is cheap insurance)
+rather than showing a blank. No new endpoint, migration or permission — purely a read-side rendering choice
+on data every backend read already returned.
+
+To keep the acceptance criterion true going forward, not just true today, `internal/ropa/templates/
+rtg09_test.go`'s `TestListActivityTemplates_EveryTemplateIsBilingual` walks every `template_set`/
+`activity_template` the service returns (via the real `ListTemplateSets`/`ListActivityTemplates` calls, the
+same ones RTG-01/RTG-02's own tests already use) and fails the moment any future template seed — RTG-03's
+government structure, RTG-08's tenant-authored templates, or any other — ships with an empty `name_en`,
+`description_en`, or a purpose missing `purpose_text_en`. This is a regression guard, not new backend
+behavior: the content it checks was already complete before this feature touched anything.
+
+Tests: `TestListActivityTemplates_EveryTemplateIsBilingual` (the acceptance criterion directly — all 63
+seeded templates across every set pass; would fail on any future bilingual gap). Not verified live against a
+real Postgres/Redis — the same environment limitation this codebase's other recent passes already disclosed;
+the test compiles and vets clean and skips the same way the rest of this package's own suite already does
+here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean), `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated `/ropa/templates`
+route with the new language switcher) all verified clean.
+
+### DPA-12 แจ้งเตือนผู้ประมวลผลที่ยังไม่มี DPA (`docs/modules/DPA.md#dpa-12`) — done
+Builds on VEN-11's own per-vendor `VendorContractStatus` read (`internal/agreement/service/vendor_status.go`)
+but, read literally against this feature's own acceptance criterion ("คู่ค้าที่ขาด DPA ถูกพบทุกราย" — every
+one is found, not "found when someone checks"), needed a real proactive sweep rather than another on-demand
+endpoint — closing a gap VEN-11's own module-doc backend note already claimed done ("แจ้งเตือนคู่ค้าที่ไม่มี
+สัญญา") but never actually built (see the note added to `docs/modules/VEN.md#ven-11` above).
+
+`backend/db/queries/vendor/vendors.sql`'s new `ListActiveProcessorVendors` (`is_processor = true AND status
+IN ('approved', 'conditional')`, no pagination — the same "tenant-wide list" reasoning DPO-05/RRA-09 already
+use) backs a new `vendorservice.Service.ListActiveProcessorVendors`; `backend/db/queries/agreement/
+agreements.sql`'s new `CountActiveAgreementsForVendorByType` is VendorContractStatus's own count query
+narrowed to `status = 'active'` (an approved-but-not-yet-signed DPA shouldn't silence the alert).
+`internal/agreement/service/missing_dpa.go`'s `ListVendorsMissingDPA` loops every active processor vendor
+and flags the ones with zero active DPAs — the acceptance criterion's own read side, two-tenant isolated the
+same way every other RLS-scoped list in this codebase is.
+
+The write side follows PLT-11's own "sweep lists tenants, per-tenant job reads its own rows" pattern exactly
+(VEN-10/PNG-15/ROPA-15/CON-20/CON-23's own precedent): `agreement.missing_dpa_sweep` (global, daily, added to
+`jobs.GlobalKinds` — this entry is correct and present, unlike several pre-existing sweep jobs discovered to
+be *missing* from that map while placing this one, disclosed below) reads `platform.tenants` and enqueues
+one `agreement.missing_dpa_check` per trial/active tenant; `CheckMissingDPA` (`Service.Dpo`/`Service.Notify`
+fields, new — nil-means-skip, the same convention `Events`/`Collab` already use) opens exactly one
+`dpo.tasks` job per newly-missing vendor via a new `agreement.Dpo` interface (rule 9 — backed directly by
+`*dposervice.Service` in both `cmd/api`/`cmd/worker`, no import cycle since `dpo` never imports `agreement`):
+`internal/dpo/service/missing_dpa_task.go`'s `HasTaskForVendorAgreement`/`OpenMissingDPATask` mirror
+DPIA-08/RRA-08's own `HasTaskForRisk`/`OpenRiskControlTask` dedup pattern precisely — a vendor already
+tracked by an open task is a harmless no-op on the next sweep, not a duplicate. A real task numbered
+`DPA-<year>-NNNN` (the `dpo.tasks.source_type` CHECK already allowed `'agreement'`, no migration needed for
+that column) cites ม.40 in its description. When a task is newly opened, `s.Notify` (when wired) sends
+`agreement.missing_dpa` (migration 00083: th/en × in_app/email, operational text, no DRAFT marker — rule 8
+is about legal/notice wording, not an internal ops alert) to the vendor's own `relationship_owner_id`,
+falling back to role PROC via `iamservice.UsersWithRole` — the same "default recipients until real per-record
+routing exists" fallback BRE-07/PNG-04/VEN-06/VEN-10 already use.
+
+Real, pre-existing, cross-feature gap found while deciding where to add this feature's own `GlobalKinds`
+entry (not fixed here — logged in `docs/known-issues.md#jobs-01` and disclosed in `internal/platform/jobs/
+client.go` itself): `vendor.reassessment_sweep` (VEN-10), `notice.review_sweep` (PNG-15), `ropa.review_sweep`
+(ROPA-15), `consent.double_opt_in_sweep` (CON-23), `consent.expiry_sweep` (CON-20), and `gov.retention_sweep`
+(DPX-05) each have their own source comment claiming to be "platform-wide (jobs.GlobalKinds)" but none of
+them are actually listed in the map — meaning every one of those sweeps is silently cancelled with
+`ErrMissingTenant` the moment it tries to run, since `TenantTxMiddleware` has no tenant to resolve for a
+global job not in that list. This is out of scope for DPA-12 to fix (none of those modules' own features are
+being touched here), but it means every one of those six features' own "daily/periodic reminder" acceptance
+criteria has likely never actually fired in a real deployment — a real production-readiness risk worth a
+dedicated follow-up pass.
+
+API: `GET /admin/v1/agreements/missing-dpa` (`agreement.dpa.read`, no new permission code) → `{data:
+[MissingDpaVendor]}`. UI: an amber warning panel on `/agreements` (`data-testid="missing-dpa-panel"`),
+shown only to a caller holding create rights, listing each flagged vendor's own service description with a
+"Create DPA" button that pre-fills the existing wizard's vendor/type fields. Tests:
+`internal/agreement/service/missing_dpa_test.go` — the acceptance criterion directly
+(`TestListVendorsMissingDPA_FindsEveryOne`: an approved processor vendor with no DPA is found, one with a
+real `active` DPA via the full ST-04 lifecycle is not, a never-approved prospect vendor is not either;
+`TestCheckMissingDPA_OpensOneTaskPerVendorAndDedupes`: exactly one task per vendor, a repeat sweep against
+the same still-missing vendor opens nothing more), `TestListVendorsMissingDPA_TwoTenantIsolation`. HTTP
+contract (`internal/agreement/http/handler_test.go` — 401 with no principal, 200 with the flagged vendor's
+id present in the response body). Not verified live against a real Postgres/Redis — the same environment
+limitation this codebase's other recent passes already disclosed; every test compiles and vets clean and
+skips the same way the rest of this module's own suite already does here. `go build ./...`, `go vet ./...`,
+`gofmt -l` (clean on every touched file — a few pre-existing gofmt violations elsewhere in the tree are
+untouched by this change), `go test ./...` (no regressions, full backend suite), `pnpm --filter
+@pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the
+new `missing-dpa-panel` on `/agreements`) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

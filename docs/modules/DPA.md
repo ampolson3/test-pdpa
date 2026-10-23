@@ -618,6 +618,17 @@ every PLT-16 document type shares.
 
 **Acceptance criteria:** คู่ค้าที่ขาด DPA ถูกพบทุกราย
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### DPA-12`. สรุป: daily sweep
+(`agreement.missing_dpa_sweep` → `agreement.missing_dpa_check`, PLT-11's own two-step
+"sweep lists tenants, per-tenant job reads its own rows" pattern) ตรวจทุกคู่ค้าที่
+`is_processor=true` และ `status IN (approved, conditional)` ที่ไม่มี `dpa` agreement สถานะ
+`active` — เปิด `dpo.tasks` (`DPA-<year>-NNNN`, dedup ผ่าน `HasTaskForVendorAgreement`) และแจ้ง
+relationship owner หรือ role PROC ผ่าน PLT-04 (`agreement.missing_dpa` template, migration
+00083) ให้ทุกรายที่ยังไม่มี task ติดตามอยู่ — นี่ยังเป็นการสร้างกลไกแจ้งเตือนที่ VEN-11 เคย
+ประกาศว่า "done" ไว้โดยไม่มีจริง (VEN-11 สร้างแค่ `VendorContractStatus` อ่านทีละราย ไม่มี
+sweep/alert) — DPA-12 ปิดช่องว่างนั้นไปด้วยในตัว. Admin UI: panel เตือนสีเหลืองบน
+`/agreements` พร้อมปุ่มสร้าง DPA ให้คู่ค้านั้นทันที.
+
 <a id="dpa-13"></a>
 ### DPA-13 ติดตามการคืน/ทำลายข้อมูลเมื่อสิ้นสุด
 

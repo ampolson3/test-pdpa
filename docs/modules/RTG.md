@@ -417,6 +417,12 @@ tests ran compile-only, consistent with every other test this session.
 
 **Acceptance criteria:** ทุก template มีทั้ง TH และ EN
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### RTG-09`. สรุป: backend content ของทั้ง 63
+template ที่ seed ไว้ (RTG-01's 51 + RTG-02's 12) มี TH/EN ครบอยู่แล้วตั้งแต่ migration เดิม — ไม่ต้อง
+migration หรือ seed เพิ่ม — จึงเหลือเฉพาะตัวสลับภาษา TH/EN บนหน้า `/ropa/templates`'s `ActivityDetail`
+panel และ regression test (`internal/ropa/templates/rtg09_test.go`) ที่ยืนยันทุก template ยังมี
+`name_en`/`description_en`/purpose `purpose_text_en` ครบ ป้องกัน template ใหม่ในอนาคตที่ลืมใส่ EN.
+
 <a id="rtg-10"></a>
 ### RTG-10 เวอร์ชัน template และแจ้งเมื่อกฎหมายเปลี่ยน
 
