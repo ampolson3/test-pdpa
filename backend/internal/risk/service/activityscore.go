@@ -186,6 +186,23 @@ func (s *Service) LatestScore(ctx context.Context, activityID uuid.UUID) (Activi
 	return toActivityScore(row, factors), nil
 }
 
+// RescoreOnActivityChange is RRA-12's own "คำนวณใหม่เมื่อ RoPA เปลี่ยน": called from the
+// ropa.activity_approved subscriber (internal/wiring/events.go) for every real RoPA change — the acceptance
+// criterion itself ("คะแนนอัปเดตภายใน 1 นาทีหลังแก้ RoPA") is satisfied trivially, since Score runs
+// synchronously in the same transaction the subscriber's own caller commits in, well under a minute.
+// A tenant with no default risk matrix configured yet (RRA-02) or an activity Score itself can no longer
+// find (deleted between the event firing and this call) is a harmless no-op, not a failure that would
+// otherwise abort every other consumer of the same event — RRA-12's own periodic review reminder is
+// deliberately not a second mechanism: ROPA-15's existing review cycle on the activity itself already
+// covers "เตือนทบทวนตามรอบ" for this same record.
+func (s *Service) RescoreOnActivityChange(ctx context.Context, activityID uuid.UUID) error {
+	_, err := s.Score(ctx, activityID)
+	if errors.Is(err, ErrInvalid) || errors.Is(err, ErrNotFound) {
+		return nil
+	}
+	return err
+}
+
 func toActivityScore(r riskstore.RiskActivityScore, factors []Factor) ActivityScore {
 	f, _ := r.InherentScore.Float64Value()
 	a := ActivityScore{ID: r.ID, ActivityID: r.ActivityID, MatrixID: r.MatrixID, Likelihood: int(r.Likelihood),

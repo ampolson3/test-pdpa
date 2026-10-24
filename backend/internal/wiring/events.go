@@ -9,6 +9,7 @@ import (
 	dpiaservice "pdpa-platform/internal/dpia/service"
 	noticeservice "pdpa-platform/internal/notice/service"
 	"pdpa-platform/internal/platform/events"
+	riskservice "pdpa-platform/internal/risk/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
 )
 
@@ -21,7 +22,7 @@ import (
 // the assess schema directly either. PNG-10 marks every notice composed from an activity for review once
 // that activity is (re-)approved (ropa.activity_approved, published by ropa's own ApproveActivity) — ropa
 // never writes to the notice schema directly either.
-func Events(reg *events.Registry, ropaSvc *ropaservice.Service, dpiaSvc *dpiaservice.Service, noticeSvc *noticeservice.Service) {
+func Events(reg *events.Registry, ropaSvc *ropaservice.Service, dpiaSvc *dpiaservice.Service, noticeSvc *noticeservice.Service, riskSvc *riskservice.Service) {
 	reg.Subscribe("dsar.rejected", func(ctx context.Context, e events.Event) error {
 		requestID := e.AggregateID // the dsar.requests row itself (rule 3: request_ref in Data is the human-facing number, not the id)
 		reasonCode, _ := e.Data["reason_code"].(string)
@@ -68,6 +69,12 @@ func Events(reg *events.Registry, ropaSvc *ropaservice.Service, dpiaSvc *dpiaser
 		if err := dpiaSvc.MarkActivityAssessmentForReview(ctx, activityID, "RoPA activity changed"); err != nil {
 			return err
 		}
-		return ropaSvc.NotifyConsentPurposesForReview(ctx, activityID, "RoPA activity changed")
+		if err := ropaSvc.NotifyConsentPurposesForReview(ctx, activityID, "RoPA activity changed"); err != nil {
+			return err
+		}
+		// RRA-12: recompute the activity's own risk score from its current RoPA data (its own acceptance
+		// criterion — within 1 minute of a RoPA change — is satisfied trivially, since this runs
+		// synchronously in the same event-dispatch call the approval itself commits in).
+		return riskSvc.RescoreOnActivityChange(ctx, activityID)
 	})
 }

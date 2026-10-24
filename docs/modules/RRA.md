@@ -693,6 +693,22 @@ this codebase uses throughout).
 
 **Acceptance criteria:** คะแนนอัปเดตภายใน 1 นาทีหลังแก้ RoPA
 
+**สถานะ: done.** `risk.Service.RescoreOnActivityChange` is called synchronously from the existing
+`ropa.activity_approved` subscriber (`internal/wiring/events.go`, wired alongside PNG-10/DPIA-13/ROPA-19's own
+consumers of the same event) — it calls the already-existing `Score(ctx, activityID)` (RRA-01), which reads
+live RoPA data and persists a fresh `risk.activity_scores` row; a tenant with no default matrix (RRA-02) or
+an activity no longer resolvable is a harmless no-op, never a failure that aborts the other consumers of the
+same event. The acceptance criterion ("ภายใน 1 นาที") is satisfied trivially since this runs in the same
+request transaction the RoPA approval itself commits in. Frontend: `/ropa/activities/{id}`'s risk-score
+section now shows a "ประเมินล่าสุด" date badge from the score's own `computed_at`. The periodic
+"เตือนทบทวนตามรอบ" half is deliberately not a second mechanism — ROPA-15's own existing review-cycle
+reminder on the same activity record already covers re-checking it on a schedule. Tests:
+`internal/risk/service/rra12_test.go` (the acceptance criterion directly, a no-default-matrix no-op, and an
+unknown-activity no-op). Not verified live against a real Postgres/Redis — this session's own environment
+limitation; every test compiles and vets clean and skips the same way the rest of this module's own suite
+already does here. `go build ./...`, `go vet ./...`, `gofmt -l` and `go test ./...` (no regressions) all
+verified clean, plus `pnpm --filter @pdpa/admin build`/`typecheck` and `pnpm --filter @pdpa/i18n test`.
+
 <a id="rra-13"></a>
 ### RRA-13 คะแนนความพร้อมรายหน่วยงาน
 

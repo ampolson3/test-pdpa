@@ -4132,6 +4132,75 @@ Postgres/Redis in this pass), `make gen` re-run with no drift, `pnpm --filter @p
 `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
 `/ropa/activities/[id]` route) all verified clean.
 
+### RRA-12 ประเมินซ้ำเมื่อกิจกรรมเปลี่ยนหรือครบรอบ (`docs/modules/RRA.md#rra-12`) — done
+Builds directly on RRA-01's own `Score(ctx, activityID)` (already computes live from the activity's current
+RoPA data against the tenant's default matrix, RRA-02, and persists a fresh `risk.activity_scores` row) and
+the `ropa.activity_approved` event (PLT-11 outbox) PNG-10/DPIA-13/ROPA-19 already subscribe to in
+`internal/wiring/events.go` — no new migration, endpoint, or job. `internal/risk/service/activityscore.go`'s
+new `RescoreOnActivityChange(ctx, activityID)` just calls the existing `Score` and swallows `ErrInvalid`
+(no default matrix configured yet) and `ErrNotFound` (activity deleted/unresolvable between the event firing
+and this call) as harmless no-ops, rather than letting either abort the other consumers chained in the same
+subscriber. `internal/wiring/events.go`'s `Events()` widened to take `riskSvc` and calls
+`riskSvc.RescoreOnActivityChange(ctx, activityID)` right after `ropaSvc.NotifyConsentPurposesForReview`
+(ROPA-19) in the `ropa.activity_approved` handler; `cmd/worker/main.go` wires `riskSvc.Ropa`/
+`riskSvc.DpiaTrigger` ahead of the `wiring.Events(...)` call (worker-side — `cmd/api` never dispatches
+events, only publishes them, so no change there beyond its own pre-existing RRA-01 wiring).
+
+The acceptance criterion itself ("คะแนนอัปเดตภายใน 1 นาทีหลังแก้ RoPA") is satisfied trivially: this call
+runs synchronously inside the same transaction the RoPA approval itself commits in, not on any delay.
+Deliberately not building a second "เตือนทบทวนตามรอบ" (periodic review reminder) mechanism — ROPA-15's own
+existing daily review-cycle sweep on the very same `ropa.processing_activities` record already notifies its
+owner on a schedule; a second, risk-specific reminder on the identical record would just duplicate it for no
+benefit. Frontend: `apps/admin/src/app/[locale]/ropa/activities/[id]/risk-score-section.tsx` gained a small
+"ประเมินล่าสุด: {date}" badge (`data-testid="risk-score-last-computed"`) reading the current score's own
+`computed_at` through `@pdpa/i18n`'s `formatDate` (Buddhist-era th / Gregorian en, per rule 11) — the
+literal "ป้ายวันที่ประเมินล่าสุด" frontend note. New i18n key `activities.riskScore.lastComputed` (th/en).
+
+Tests: `internal/risk/service/rra12_test.go` — `TestRescoreOnActivityChange` (the acceptance criterion
+directly: no score exists before the call, one exists immediately after), `TestRescoreOnActivityChange_
+NoMatrixIsHarmless` (no default matrix configured never fails the event chain),
+`TestRescoreOnActivityChange_UnknownActivityIsHarmless` (a stale/redelivered event naming a now-gone
+activity is also a harmless no-op). Reused existing test helpers from `activityscore_test.go`
+(`scoreSetup`/`seedActivity`/`defaultMatrix3x3`). Not verified live against a real Postgres/Redis — this
+session's own environment limitation, consistent with this codebase's other recent passes; every test
+compiles and vets clean and skips the same way the rest of this module's own suite already does here.
+`go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions,
+full backend suite), `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the
+updated `/ropa/activities/[id]` route) all verified clean.
+
+### DPA-05 ข้อสัญญาการโอนต่างประเทศ (`docs/modules/DPA.md#dpa-05`) — done
+DPA-03/DSA-05 had already built the generic clause-completeness gate — `agreement.mandatory_rules`' own
+`requires_transfer` condition (migrations 00057 "dpa" / 00061 "dsa") already refuses to submit a cross-border
+agreement missing its transfer clause — but that gate only checks what's already attached; nothing ever
+attached it automatically. This feature is the other half of the module doc's own backend note ("clause
+มาตรฐานตามประกาศ ม.29 พ.ศ. 2566 แทรกเมื่อมีการโอน" — insert the standard clause the moment a transfer is on
+record), closing the gap rather than re-implementing the already-built gate. No new migration, permission or
+endpoint.
+
+`internal/agreement/service/cross_border.go`'s `autoAttachCrossBorderClause(ctx, a Agreement)`: for an
+agreement type with a known standard code (`crossBorderClauseCode`, `dpa`/`dsa`), calls the already-existing
+`s.agreementHasTransfer` (reads ROPA-08 transfer rows on the agreement's own linked activities) — a
+false/no-transfer result is a harmless no-op. If true, it looks up the tenant's own published clause library
+(`s.Docs.ListClauses`, `ClauseFilter{AppliesTo, PublishedOnly: true}`) for that standard code and, if found,
+attaches it via the existing `s.AddClause` — also a harmless no-op if the tenant's library hasn't published
+that code yet (DPA-03's own gate still gives LEGAL the itemized "missing" list either way, so nothing is
+silently lost). Wired into `internal/agreement/service/agreements.go`'s `CreateWizard`, right after the
+agreement row and its audit entry are written — the one point `ActivityIDs` are linked, confirmed via grep
+that no separate "link/unlink activities after creation" endpoint exists, so no second call site was needed.
+No frontend change — the existing clauses panel on `/agreements/{id}` already renders whatever is attached,
+whether added by LEGAL by hand or by this feature automatically.
+
+Tests: `internal/agreement/service/dpa05_test.go` —
+`TestCreateWizard_AutoAttachesCrossBorderClauseWhenTransferAlreadyOnRecord` (the acceptance criterion
+directly: an agreement whose linked activity already carries a cross-border transfer gets
+`dpa.cross_border_transfer` attached at creation and it no longer appears in `MissingMandatoryClauses`),
+`TestCreateWizard_NoTransferNoAutoAttach` (an agreement with no transfer on record gets nothing attached —
+the existing DPA-03 test already proves the manual path still works once a transfer is added afterward).
+Not verified live against a real Postgres/Redis — this session's own environment limitation, consistent with
+this codebase's other recent passes; every test compiles and vets clean and skips the same way the rest of
+this module's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every
+touched file), `go test ./...` (no regressions, full backend suite) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

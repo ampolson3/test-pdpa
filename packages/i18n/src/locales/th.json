@@ -1588,7 +1588,8 @@
         "cross_border_transfer": "มีการโอนข้อมูลไปต่างประเทศ",
         "external_recipients": "มีผู้รับข้อมูลภายนอก",
         "no_controls": "ยังไม่มีมาตรการความปลอดภัย"
-      }
+      },
+      "lastComputed": "ประเมินล่าสุด: {date}"
     },
     "missingItems": {
       "data": "ยังไม่ระบุข้อมูลที่เก็บ",

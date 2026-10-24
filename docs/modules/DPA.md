@@ -465,6 +465,24 @@ list still works unchanged), full backend test suite and `pnpm --filter @pdpa/ad
 
 **Acceptance criteria:** สัญญาที่มีการโอนต่างประเทศมี clause ครบ
 
+**สถานะ: done.** DPA-03/DSA-05 had already built the generic completeness gate (`agreement.mandatory_rules`'
+`requires_transfer` condition, migrations 00057/00061) that refuses to submit a cross-border agreement
+missing its transfer clause — but nothing ever attached that clause automatically. This feature closes that
+gap: `internal/agreement/service/cross_border.go`'s `autoAttachCrossBorderClause`, called from `CreateWizard`
+right after an agreement's linked activities are set, checks via the already-existing
+`agreementHasTransfer` (ROPA-08 transfer rows on the linked activities) and, if a transfer is on record,
+looks up the tenant's own published clause library for the type's standard code
+(`dpa.cross_border_transfer` / `dsa.cross_border_transfer`) and attaches it via the existing `AddClause` —
+a harmless no-op for an agreement type with no such code, no transfer on record, or a clause library that
+hasn't published that code yet (DPA-03's own gate still itemizes it as missing either way). No new
+migration, endpoint or frontend code — the existing clauses panel on `/agreements/{id}` already shows
+whatever is attached. Tests: `internal/agreement/service/dpa05_test.go` (the acceptance criterion directly —
+an agreement created with a transfer already on record gets the clause attached and it no longer shows as
+missing; an agreement with no transfer gets nothing auto-attached). Not verified live against a real
+Postgres/Redis — this session's own environment limitation; every test compiles and vets clean and skips
+the same way the rest of this module's own suite already does here. `go build ./...`, `go vet ./...`,
+`gofmt -l` and `go test ./...` (no regressions) all verified clean.
+
 <a id="dpa-06"></a>
 ### DPA-06 แก้ไขเอกสารในระบบ
 

@@ -1588,7 +1588,8 @@
         "cross_border_transfer": "Cross-border transfer",
         "external_recipients": "External recipients",
         "no_controls": "No security measures yet"
-      }
+      },
+      "lastComputed": "Last assessed: {date}"
     },
     "missingItems": {
       "data": "No data categories yet",

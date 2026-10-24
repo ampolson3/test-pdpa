@@ -1,8 +1,9 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
+import { formatDate, type Locale } from "@pdpa/i18n";
 import { createApiClient, useActivityRiskScore, useScoreActivity } from "@pdpa/api-client";
 
 const LEVEL_STYLE: Record<string, string> = {
@@ -21,6 +22,7 @@ function detail(e: unknown): string {
  *  for explainability (the acceptance criterion's own "อธิบายปัจจัยที่ทำให้สูงได้"). */
 export function RiskScoreSection({ client, activityId }: { client: ReturnType<typeof createApiClient>; activityId: string }) {
   const t = useTranslations("activities");
+  const locale = useLocale() as Locale;
   const canRead = usePermission("ropa.risk.read");
   const canScore = usePermission("ropa.risk.create");
   const latest = useActivityRiskScore(client, activityId);
@@ -49,6 +51,13 @@ export function RiskScoreSection({ client, activityId }: { client: ReturnType<ty
             </span>
             <span className="text-slate-600">{t("riskScore.score", { score: current.score, likelihood: current.likelihood, impact: current.impact })}</span>
           </div>
+          {current.computed_at && (
+            // RRA-12: "ป้ายวันที่ประเมินล่าสุด" — when this score (recomputed automatically on every
+            // RoPA change, RRA-12's own acceptance criterion) was actually computed.
+            <p className="text-xs text-slate-500" data-testid="risk-score-last-computed">
+              {t("riskScore.lastComputed", { date: formatDate(current.computed_at, locale, { day: "numeric", month: "short", year: "numeric" }) })}
+            </p>
+          )}
           {(current.level === "high" || current.level === "very_high") && (
             <p className="rounded bg-orange-50 px-3 py-2 text-sm text-orange-900" role="status">
               {t("riskScore.dpiaTriggered")}

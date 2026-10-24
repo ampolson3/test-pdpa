@@ -130,13 +130,15 @@ func run() error {
 	river.AddWorker(workers, &vendorservice.ReassessmentChecker{Service: vendorSvc})
 	river.AddWorker(workers, &vendorservice.CertificateReminderWorker{Service: vendorSvc})         // VEN-06: certificate expiry reminder
 	riskSvc := &riskservice.Service{Audit: auditservice.New(), Notify: notifySvc, River: inserter} // RRA-08: acceptance-review reminder at expires_at
+	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}                                     // RRA-12: rescore an activity when its own ropa.activity_approved event fires
+	riskSvc.DpiaTrigger = dpiaSvc                                                                  // RRA-03: a high/very_high rescore opens a DPIA round here too
 	river.AddWorker(workers, &riskservice.AcceptanceReviewWorker{Service: riskSvc})
 	river.AddWorker(workers, &workflow.Ticker{Service: wiring.Workflow(notifySvc, inserter, auditservice.New())})
 	breachSvc := wiring.Breach(notifySvc, fileStore(store, inserter), inserter, auditservice.New(), notifySvc.Keyring, nil, ropaSvc) // BRE-09 recording is admin-only
 	river.AddWorker(workers, &breach.TimerWorker{Service: breachSvc})
 	river.AddWorker(workers, &breach.NoticeWorker{Service: breachSvc})
 	noticeSvc := &notice.Service{Notify: notifySvc, River: inserter} // PNG-04: 30-day indirect-collection reminders
-	wiring.Events(subscribers, ropaSvc, dpiaSvc, noticeSvc)          // ROPA-10: logs DSAR rejections; PNG-10: marks notices for review when their RoPA activity changes
+	wiring.Events(subscribers, ropaSvc, dpiaSvc, noticeSvc, riskSvc) // ROPA-10: logs DSAR rejections; PNG-10: marks notices for review; RRA-12: rescores the activity when it changes
 	river.AddWorker(workers, &notice.DueWorker{Service: noticeSvc})
 	river.AddWorker(workers, &notice.ReviewSweeper{Pool: pool, River: inserter}) // PNG-15: periodic review reminder
 	river.AddWorker(workers, &notice.ReviewChecker{Service: noticeSvc})

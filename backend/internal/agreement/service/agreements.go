@@ -198,6 +198,11 @@ func (s *Service) CreateWizard(ctx context.Context, in CreateInput) (Agreement, 
 	}); err != nil {
 		return Agreement{}, err
 	}
+	// DPA-05: insert the standard cross-border transfer clause right away if any linked activity already
+	// shows one — rather than waiting for the agreement to be submitted and refused for missing it.
+	if err := s.autoAttachCrossBorderClause(ctx, Agreement{ID: id, AgreementType: in.AgreementType, ActivityIDs: in.ActivityIDs}); err != nil {
+		return Agreement{}, err
+	}
 	return s.GetAgreement(ctx, id)
 }
 
