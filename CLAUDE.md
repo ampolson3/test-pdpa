@@ -4267,6 +4267,41 @@ touched file), `go test ./...` (no regressions, full backend suite), `pnpm --fil
 typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
 `/settings/dpo` route) all verified clean.
 
+### ORG-03 ผู้แทนในประเทศไทย (`docs/modules/ORG.md#org-03`) — done
+`org.legal_entities.representative` (jsonb, already in the baseline migration since ORG-01, unused until
+now — no new migration): `orgservice.Representative{NameTh, NameEn, Address, Email, Phone}`, validated the
+same way the entity's own contact fields already are (`SaveLegalEntity`'s `normalize()` — name required,
+e-mail/phone format checked when set), NULL = no representative on record. `MergeFields` adds
+`representative_name_th`/`_name_en`/`_address`/`_email`/`_phone` only when one is set — an entity with none
+carries no such keys at all, so a template referencing them would show an unresolved placeholder rather than
+empty text, the same "missing, not blank" discipline every other optional merge field in this codebase
+already follows (DPO-01's own `dpo_name` etc.).
+
+The acceptance criterion itself ("ประกาศแสดงข้อมูลผู้แทนเมื่อกำหนดไว้") is answered inside PNG-01's composer:
+`internal/notice/service/compose.go#contactSection` now appends one extra paragraph per language to the
+existing ม.23 DPO-contact section — built from the representative's own merge fields — only when the legal
+entity passed to `compose()` has one, so a notice composed from RoPA activities names the representative the
+moment it's recorded and never otherwise. PNG-03's template-sourced wizard path is unaffected (it starts
+from fixed seeded content, not this composer) — add the same paragraph there only if a future pass finds a
+real need, since no acceptance criterion asks for it today.
+
+API: `representative` added to `LegalEntityInput`/`LegalEntity` (new `Representative` schema: `name_th`
+required, `name_en`/`address`/`email`/`phone` optional) — no new permission code, reusing `org.structure.*`.
+UI: `/settings/organization`'s entity form gained a "Local representative" fieldset (name th/en, address,
+e-mail, phone) — leaving the Thai name blank on save clears the representative entirely, the same
+full-replace semantics every other field on this form already has (the PATCH body is always rebuilt whole
+from the form, not merged). Tests: unit (`internal/org/service/org03_test.go` — validation incl. a missing
+name/bad e-mail/bad phone, a full round trip, merge fields present only when set and gone once cleared,
+two-tenant isolation; `internal/notice/service/org03_compose_test.go` — `contactSection` carries the
+representative paragraph only when one is on record, exactly one extra paragraph per language when it is),
+HTTP contract (`internal/org/http/handler_test.go` — set via `PATCH`, read back via `GET`). Not verified
+live against a real Postgres/Redis — this session's own environment limitation, consistent with this
+codebase's other recent passes; every test compiles and vets clean and skips the same way the rest of this
+module's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched
+file), `go test ./...` (no regressions, full backend suite), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/settings/organization` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

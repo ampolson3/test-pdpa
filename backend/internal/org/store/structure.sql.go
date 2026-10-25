@@ -74,7 +74,7 @@ func (q *Queries) CountActiveChildren(ctx context.Context, parentID pgtype.UUID)
 
 const getLegalEntity = `-- name: GetLegalEntity :one
 SELECT id, parent_id, name_th, name_en, registration_no, tax_id, address, contact_email, contact_phone, logo_file_id,
-       is_controller, is_processor, status, row_version, updated_at
+       is_controller, is_processor, representative, status, row_version, updated_at
 FROM org.legal_entities WHERE id = $1
 `
 
@@ -91,6 +91,7 @@ type GetLegalEntityRow struct {
 	LogoFileID     pgtype.UUID        `db:"logo_file_id" json:"logo_file_id"`
 	IsController   bool               `db:"is_controller" json:"is_controller"`
 	IsProcessor    bool               `db:"is_processor" json:"is_processor"`
+	Representative []byte             `db:"representative" json:"representative"`
 	Status         string             `db:"status" json:"status"`
 	RowVersion     int32              `db:"row_version" json:"row_version"`
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -112,6 +113,7 @@ func (q *Queries) GetLegalEntity(ctx context.Context, id uuid.UUID) (GetLegalEnt
 		&i.LogoFileID,
 		&i.IsController,
 		&i.IsProcessor,
+		&i.Representative,
 		&i.Status,
 		&i.RowVersion,
 		&i.UpdatedAt,
@@ -163,11 +165,11 @@ func (q *Queries) GetOrgUnit(ctx context.Context, id uuid.UUID) (GetOrgUnitRow, 
 
 const insertLegalEntity = `-- name: InsertLegalEntity :one
 INSERT INTO org.legal_entities (id, tenant_id, parent_id, name_th, name_en, registration_no, tax_id, address, contact_email, contact_phone,
-                                logo_file_id, is_controller, is_processor, status, created_by, updated_by)
-VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+                                logo_file_id, is_controller, is_processor, representative, status, created_by, updated_by)
+VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
         NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
 RETURNING id, parent_id, name_th, name_en, registration_no, tax_id, address, contact_email, contact_phone, logo_file_id,
-          is_controller, is_processor, status, row_version, updated_at
+          is_controller, is_processor, representative, status, row_version, updated_at
 `
 
 type InsertLegalEntityParams struct {
@@ -183,6 +185,7 @@ type InsertLegalEntityParams struct {
 	LogoFileID     pgtype.UUID `db:"logo_file_id" json:"logo_file_id"`
 	IsController   bool        `db:"is_controller" json:"is_controller"`
 	IsProcessor    bool        `db:"is_processor" json:"is_processor"`
+	Representative []byte      `db:"representative" json:"representative"`
 	Status         string      `db:"status" json:"status"`
 }
 
@@ -199,6 +202,7 @@ type InsertLegalEntityRow struct {
 	LogoFileID     pgtype.UUID        `db:"logo_file_id" json:"logo_file_id"`
 	IsController   bool               `db:"is_controller" json:"is_controller"`
 	IsProcessor    bool               `db:"is_processor" json:"is_processor"`
+	Representative []byte             `db:"representative" json:"representative"`
 	Status         string             `db:"status" json:"status"`
 	RowVersion     int32              `db:"row_version" json:"row_version"`
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -218,6 +222,7 @@ func (q *Queries) InsertLegalEntity(ctx context.Context, arg InsertLegalEntityPa
 		arg.LogoFileID,
 		arg.IsController,
 		arg.IsProcessor,
+		arg.Representative,
 		arg.Status,
 	)
 	var i InsertLegalEntityRow
@@ -234,6 +239,7 @@ func (q *Queries) InsertLegalEntity(ctx context.Context, arg InsertLegalEntityPa
 		&i.LogoFileID,
 		&i.IsController,
 		&i.IsProcessor,
+		&i.Representative,
 		&i.Status,
 		&i.RowVersion,
 		&i.UpdatedAt,
@@ -338,7 +344,7 @@ func (q *Queries) LegalEntityAncestors(ctx context.Context, id uuid.UUID) ([]uui
 const listLegalEntities = `-- name: ListLegalEntities :many
 
 SELECT id, parent_id, name_th, name_en, registration_no, tax_id, address, contact_email, contact_phone, logo_file_id,
-       is_controller, is_processor, status, row_version, updated_at
+       is_controller, is_processor, representative, status, row_version, updated_at
 FROM org.legal_entities ORDER BY status, name_th
 `
 
@@ -355,6 +361,7 @@ type ListLegalEntitiesRow struct {
 	LogoFileID     pgtype.UUID        `db:"logo_file_id" json:"logo_file_id"`
 	IsController   bool               `db:"is_controller" json:"is_controller"`
 	IsProcessor    bool               `db:"is_processor" json:"is_processor"`
+	Representative []byte             `db:"representative" json:"representative"`
 	Status         string             `db:"status" json:"status"`
 	RowVersion     int32              `db:"row_version" json:"row_version"`
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -383,6 +390,7 @@ func (q *Queries) ListLegalEntities(ctx context.Context) ([]ListLegalEntitiesRow
 			&i.LogoFileID,
 			&i.IsController,
 			&i.IsProcessor,
+			&i.Representative,
 			&i.Status,
 			&i.RowVersion,
 			&i.UpdatedAt,
@@ -563,11 +571,11 @@ func (q *Queries) UnitWithin(ctx context.Context, arg UnitWithinParams) (bool, e
 const updateLegalEntity = `-- name: UpdateLegalEntity :one
 UPDATE org.legal_entities
 SET parent_id = $3, name_th = $4, name_en = $5, registration_no = $6, tax_id = $7, address = $8, contact_email = $9, contact_phone = $10,
-    logo_file_id = $11, is_controller = $12, is_processor = $13, status = $14, row_version = row_version + 1,
+    logo_file_id = $11, is_controller = $12, is_processor = $13, representative = $14, status = $15, row_version = row_version + 1,
     updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
 WHERE id = $1 AND row_version = $2
 RETURNING id, parent_id, name_th, name_en, registration_no, tax_id, address, contact_email, contact_phone, logo_file_id,
-          is_controller, is_processor, status, row_version, updated_at
+          is_controller, is_processor, representative, status, row_version, updated_at
 `
 
 type UpdateLegalEntityParams struct {
@@ -584,6 +592,7 @@ type UpdateLegalEntityParams struct {
 	LogoFileID     pgtype.UUID `db:"logo_file_id" json:"logo_file_id"`
 	IsController   bool        `db:"is_controller" json:"is_controller"`
 	IsProcessor    bool        `db:"is_processor" json:"is_processor"`
+	Representative []byte      `db:"representative" json:"representative"`
 	Status         string      `db:"status" json:"status"`
 }
 
@@ -600,6 +609,7 @@ type UpdateLegalEntityRow struct {
 	LogoFileID     pgtype.UUID        `db:"logo_file_id" json:"logo_file_id"`
 	IsController   bool               `db:"is_controller" json:"is_controller"`
 	IsProcessor    bool               `db:"is_processor" json:"is_processor"`
+	Representative []byte             `db:"representative" json:"representative"`
 	Status         string             `db:"status" json:"status"`
 	RowVersion     int32              `db:"row_version" json:"row_version"`
 	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
@@ -620,6 +630,7 @@ func (q *Queries) UpdateLegalEntity(ctx context.Context, arg UpdateLegalEntityPa
 		arg.LogoFileID,
 		arg.IsController,
 		arg.IsProcessor,
+		arg.Representative,
 		arg.Status,
 	)
 	var i UpdateLegalEntityRow
@@ -636,6 +647,7 @@ func (q *Queries) UpdateLegalEntity(ctx context.Context, arg UpdateLegalEntityPa
 		&i.LogoFileID,
 		&i.IsController,
 		&i.IsProcessor,
+		&i.Representative,
 		&i.Status,
 		&i.RowVersion,
 		&i.UpdatedAt,

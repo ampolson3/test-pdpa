@@ -18223,6 +18223,10 @@ components:
             - $ref: '#/components/schemas/Uuid'
         is_controller: {type: boolean}
         is_processor: {type: boolean}
+        representative:
+          description: Local representative in Thailand (ม.37(5)), required when the controller is based abroad. Omit/null to clear.
+          allOf:
+            - $ref: '#/components/schemas/Representative'
         status:
           type: string
           enum: [active, inactive]
@@ -18249,9 +18253,20 @@ components:
         logo_file_id: {$ref: '#/components/schemas/Uuid'}
         is_controller: {type: boolean}
         is_processor: {type: boolean}
+        representative: {$ref: '#/components/schemas/Representative'}
         status: {type: string, enum: [active, inactive]}
         row_version: {type: integer}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
+    Representative:
+      description: Local representative in Thailand (ม.37(5)).
+      type: object
+      required: [name_th]
+      properties:
+        name_th: {type: string, minLength: 1, maxLength: 300}
+        name_en: {type: string, maxLength: 300}
+        address: {type: string, maxLength: 500}
+        email: {type: string, maxLength: 254}
+        phone: {type: string, maxLength: 30}
     OrgUnitType:
       type: string
       enum: [group, company, division, department, branch, team]

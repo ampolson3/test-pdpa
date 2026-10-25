@@ -43,7 +43,7 @@
 | `logo_file_id` | `uuid` |  |  | FK → [platform.files](platform.md#platform-files) |  |
 | `is_controller` | `boolean` | ✓ | true |  |  |
 | `is_processor` | `boolean` | ✓ | false |  |  |
-| `representative` | `jsonb` |  |  |  |  |
+| `representative` | `jsonb` |  |  |  | ผู้แทนในประเทศไทย (ม.37(5)) — `{"name_th", "name_en", "address", "email", "phone"}`, NULL = ไม่มี (ORG-03) |
 | `status` | `text` | ✓ | 'active' |  | ค่า: `active`, `inactive` |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_legal_entities_updated`

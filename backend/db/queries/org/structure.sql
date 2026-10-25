@@ -2,30 +2,30 @@
 
 -- name: ListLegalEntities :many
 SELECT id, parent_id, name_th, name_en, registration_no, tax_id, address, contact_email, contact_phone, logo_file_id,
-       is_controller, is_processor, status, row_version, updated_at
+       is_controller, is_processor, representative, status, row_version, updated_at
 FROM org.legal_entities ORDER BY status, name_th;
 
 -- name: GetLegalEntity :one
 SELECT id, parent_id, name_th, name_en, registration_no, tax_id, address, contact_email, contact_phone, logo_file_id,
-       is_controller, is_processor, status, row_version, updated_at
+       is_controller, is_processor, representative, status, row_version, updated_at
 FROM org.legal_entities WHERE id = $1;
 
 -- name: InsertLegalEntity :one
 INSERT INTO org.legal_entities (id, tenant_id, parent_id, name_th, name_en, registration_no, tax_id, address, contact_email, contact_phone,
-                                logo_file_id, is_controller, is_processor, status, created_by, updated_by)
-VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
+                                logo_file_id, is_controller, is_processor, representative, status, created_by, updated_by)
+VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
         NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
 RETURNING id, parent_id, name_th, name_en, registration_no, tax_id, address, contact_email, contact_phone, logo_file_id,
-          is_controller, is_processor, status, row_version, updated_at;
+          is_controller, is_processor, representative, status, row_version, updated_at;
 
 -- name: UpdateLegalEntity :one
 UPDATE org.legal_entities
 SET parent_id = $3, name_th = $4, name_en = $5, registration_no = $6, tax_id = $7, address = $8, contact_email = $9, contact_phone = $10,
-    logo_file_id = $11, is_controller = $12, is_processor = $13, status = $14, row_version = row_version + 1,
+    logo_file_id = $11, is_controller = $12, is_processor = $13, representative = $14, status = $15, row_version = row_version + 1,
     updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid
 WHERE id = $1 AND row_version = $2
 RETURNING id, parent_id, name_th, name_en, registration_no, tax_id, address, contact_email, contact_phone, logo_file_id,
-          is_controller, is_processor, status, row_version, updated_at;
+          is_controller, is_processor, representative, status, row_version, updated_at;
 
 -- name: LegalEntityAncestors :many
 -- The chain of parents of a legal entity (to refuse cycles).

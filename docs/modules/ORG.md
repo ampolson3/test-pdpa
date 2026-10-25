@@ -106,7 +106,7 @@
 
 **Acceptance criteria:** ข้อมูลองค์กรแสดงถูกต้องในประกาศและเอกสารที่สร้าง
 
-**Implementation (ORG-01):** `backend/internal/org/service/structure.go` — CRUD นิติบุคคล (`org.structure.*`): ชื่อ TH/EN, เลขทะเบียน/ผู้เสียภาษี 13 หลักตรวจ check digit (ตัด - และช่องว่าง, ซ้ำในองค์กรไม่ได้ — migration 00030), ที่อยู่ (jsonb: line1, subdistrict, district, province, postal_code 5 หลักเมื่อเป็น TH, country_code), อีเมล/โทรศัพท์ติดต่อ, บริษัทแม่ (กันวน), ผู้ควบคุม/ผู้ประมวลผล, สถานะ · โลโก้ = ไฟล์ PNG/JPEG ของผู้ใช้ที่ผ่านการสแกน ผูกผ่าน PLT-09 (`files` entity `legal_entity`, ดาวน์โหลดด้วย `org.structure.read`) · `MergeFields` ให้ค่าตัวแปรเอกสาร (`org_name_th`, `org_name_en`, `org_registration_no`, `org_tax_id`, `org_address`, `org_email`, `org_phone`) สำหรับ composer ในอนาคต · API `/admin/v1/org/legal-entities` · หน้าจอ `/settings/organization` · ยังไม่ทำ: ผู้แทนในไทย (`representative`, ORG-03)
+**Implementation (ORG-01):** `backend/internal/org/service/structure.go` — CRUD นิติบุคคล (`org.structure.*`): ชื่อ TH/EN, เลขทะเบียน/ผู้เสียภาษี 13 หลักตรวจ check digit (ตัด - และช่องว่าง, ซ้ำในองค์กรไม่ได้ — migration 00030), ที่อยู่ (jsonb: line1, subdistrict, district, province, postal_code 5 หลักเมื่อเป็น TH, country_code), อีเมล/โทรศัพท์ติดต่อ, บริษัทแม่ (กันวน), ผู้ควบคุม/ผู้ประมวลผล, สถานะ · โลโก้ = ไฟล์ PNG/JPEG ของผู้ใช้ที่ผ่านการสแกน ผูกผ่าน PLT-09 (`files` entity `legal_entity`, ดาวน์โหลดด้วย `org.structure.read`) · `MergeFields` ให้ค่าตัวแปรเอกสาร (`org_name_th`, `org_name_en`, `org_registration_no`, `org_tax_id`, `org_address`, `org_email`, `org_phone`, และ `representative_*` เมื่อมีผู้แทนตามที่บันทึกไว้ — ดู ORG-03) สำหรับ composer ในอนาคต · API `/admin/v1/org/legal-entities` · หน้าจอ `/settings/organization`
 
 <a id="org-02"></a>
 ### ORG-02 หลายนิติบุคคลและบริษัทในเครือ
@@ -360,3 +360,25 @@ suite), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n te
 **Frontend (Next.js):** ส่วนผู้แทนในหน้าข้อมูลองค์กร
 
 **Acceptance criteria:** ประกาศแสดงข้อมูลผู้แทนเมื่อกำหนดไว้
+
+**Implementation:** `org.legal_entities.representative` (jsonb, already in the baseline migration, unused until
+now — no new migration): `{name_th, name_en, address, email, phone}`, validated the same way the entity's own
+contact fields are (`orgservice.Representative`, `SaveLegalEntity`'s `normalize()`), NULL = none on record.
+`orgservice.Service.MergeFields` adds `representative_name_th`/`_name_en`/`_address`/`_email`/`_phone` only
+when a representative is set, so an unresolved placeholder never shows for an entity with none. PNG-01's
+`compose.go#contactSection` appends one extra paragraph per language, in both the ม.23 DPO-contact section,
+built from those exact merge fields — present only when the legal entity has a representative, satisfying
+the acceptance criterion literally for every notice composed from RoPA activities going forward (PNG-03's
+template-sourced path is unaffected, since it starts from fixed seeded content, not this composer).
+API: `representative` added to `LegalEntityInput`/`LegalEntity` (new `Representative` schema). UI:
+`/settings/organization`'s entity form gained a "Local representative" fieldset (name th/en, address, email,
+phone) — leaving the name blank clears it. Tests: unit (`internal/org/service/org03_test.go` — validation,
+round trip, merge fields appear only when set, two-tenant isolation; `internal/notice/service/
+org03_compose_test.go` — `contactSection` includes the representative paragraph only when one is on record),
+HTTP contract (`internal/org/http/handler_test.go` — set via PATCH, read back via GET). Not verified live
+against a real Postgres/Redis — this session's own environment limitation, consistent with this codebase's
+other recent passes; every test compiles and vets clean and skips the same way the rest of this module's own
+suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file),
+`go test ./...` (no regressions, full backend suite), `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
+`/settings/organization` route) all verified clean.

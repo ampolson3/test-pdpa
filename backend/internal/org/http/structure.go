@@ -129,6 +129,10 @@ func legalEntityInput(b LegalEntityInput) orgservice.LegalEntity {
 	if b.IsProcessor != nil {
 		e.IsProcessor = *b.IsProcessor
 	}
+	if b.Representative != nil {
+		e.Representative = &orgservice.Representative{NameTh: b.Representative.NameTh, NameEn: str(b.Representative.NameEn),
+			Address: str(b.Representative.Address), Email: str(b.Representative.Email), Phone: str(b.Representative.Phone)}
+	}
 	if b.Status != nil {
 		e.Status = string(*b.Status)
 	}
@@ -139,9 +143,14 @@ func legalEntityWire(e orgservice.LegalEntity) LegalEntity {
 	var a Address
 	raw, _ := json.Marshal(e.Address)
 	_ = json.Unmarshal(raw, &a)
-	return LegalEntity{Id: e.ID, ParentId: e.ParentID, NameTh: e.NameTh, NameEn: ptr(e.NameEn), RegistrationNo: ptr(e.RegistrationNo), TaxId: ptr(e.TaxID),
+	w := LegalEntity{Id: e.ID, ParentId: e.ParentID, NameTh: e.NameTh, NameEn: ptr(e.NameEn), RegistrationNo: ptr(e.RegistrationNo), TaxId: ptr(e.TaxID),
 		Address: a, ContactEmail: ptr(e.ContactEmail), ContactPhone: ptr(e.ContactPhone), LogoFileId: e.LogoFileID, IsController: e.IsController,
 		IsProcessor: e.IsProcessor, Status: LegalEntityStatus(e.Status), RowVersion: int(e.RowVersion), UpdatedAt: e.UpdatedAt.UTC()}
+	if e.Representative != nil {
+		r := e.Representative
+		w.Representative = &Representative{NameTh: r.NameTh, NameEn: ptr(r.NameEn), Address: ptr(r.Address), Email: ptr(r.Email), Phone: ptr(r.Phone)}
+	}
+	return w
 }
 
 func unitWire(u orgservice.OrgUnit) OrgUnit {

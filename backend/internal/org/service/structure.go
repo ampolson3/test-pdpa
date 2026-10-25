@@ -83,6 +83,16 @@ type Address struct {
 	CountryCode string `json:"country_code,omitempty"`
 }
 
+// Representative is the local representative required of a controller based outside Thailand
+// (ม.37(5) — org.legal_entities.representative). nil means no representative is on record.
+type Representative struct {
+	NameTh  string `json:"name_th,omitempty"`
+	NameEn  string `json:"name_en,omitempty"`
+	Address string `json:"address,omitempty"`
+	Email   string `json:"email,omitempty"`
+	Phone   string `json:"phone,omitempty"`
+}
+
 // LegalEntity is a company of the tenant (ORG-01).
 type LegalEntity struct {
 	ID             uuid.UUID
@@ -97,6 +107,7 @@ type LegalEntity struct {
 	LogoFileID     *uuid.UUID
 	IsController   bool
 	IsProcessor    bool
+	Representative *Representative
 	Status         string
 	RowVersion     int32
 	UpdatedAt      time.Time
@@ -152,6 +163,25 @@ func (e *LegalEntity) normalize() error {
 	}
 	if e.Status != "active" && e.Status != "inactive" {
 		return fmt.Errorf("%w: status", ErrInvalid)
+	}
+	if e.Representative != nil {
+		r := e.Representative
+		r.NameTh, r.NameEn, r.Address = strings.TrimSpace(r.NameTh), strings.TrimSpace(r.NameEn), strings.TrimSpace(r.Address)
+		r.Email, r.Phone = strings.TrimSpace(r.Email), strings.TrimSpace(r.Phone)
+		if r.NameTh == "" {
+			return fmt.Errorf("%w: representative name", ErrInvalid)
+		}
+		if len([]rune(r.NameTh)) > 300 || len([]rune(r.NameEn)) > 300 || len([]rune(r.Address)) > 500 {
+			return fmt.Errorf("%w: representative", ErrInvalid)
+		}
+		if r.Email != "" {
+			if addr, err := mail.ParseAddress(r.Email); err != nil || addr.Address != r.Email {
+				return fmt.Errorf("%w: representative email", ErrInvalid)
+			}
+		}
+		if r.Phone != "" && !phoneRE.MatchString(r.Phone) {
+			return fmt.Errorf("%w: representative phone", ErrInvalid)
+		}
 	}
 	return nil
 }
@@ -225,19 +255,23 @@ func (s *Service) SaveLegalEntity(ctx context.Context, e LegalEntity, version in
 		}
 	}
 	addr, _ := json.Marshal(e.Address)
+	rep, err := representativeJSON(e.Representative)
+	if err != nil {
+		return LegalEntity{}, err
+	}
 	var row orgstore.GetLegalEntityRow
-	err := pdb.Savepoint(ctx, func(ctx context.Context) error {
+	err = pdb.Savepoint(ctx, func(ctx context.Context) error {
 		q := orgstore.New(pdb.MustTxFromContext(ctx))
 		if isNew {
 			r, err := q.InsertLegalEntity(ctx, orgstore.InsertLegalEntityParams{ID: e.ID, ParentID: pgUUID(e.ParentID), NameTh: e.NameTh, NameEn: opt(e.NameEn),
 				RegistrationNo: opt(e.RegistrationNo), TaxID: opt(e.TaxID), Address: addr, ContactEmail: opt(e.ContactEmail), ContactPhone: opt(e.ContactPhone),
-				LogoFileID: pgUUID(e.LogoFileID), IsController: e.IsController, IsProcessor: e.IsProcessor, Status: e.Status})
+				LogoFileID: pgUUID(e.LogoFileID), IsController: e.IsController, IsProcessor: e.IsProcessor, Representative: rep, Status: e.Status})
 			row = orgstore.GetLegalEntityRow(r)
 			return err
 		}
 		r, err := q.UpdateLegalEntity(ctx, orgstore.UpdateLegalEntityParams{ID: e.ID, RowVersion: version, ParentID: pgUUID(e.ParentID), NameTh: e.NameTh, NameEn: opt(e.NameEn),
 			RegistrationNo: opt(e.RegistrationNo), TaxID: opt(e.TaxID), Address: addr, ContactEmail: opt(e.ContactEmail), ContactPhone: opt(e.ContactPhone),
-			LogoFileID: pgUUID(e.LogoFileID), IsController: e.IsController, IsProcessor: e.IsProcessor, Status: e.Status})
+			LogoFileID: pgUUID(e.LogoFileID), IsController: e.IsController, IsProcessor: e.IsProcessor, Representative: rep, Status: e.Status})
 		row = orgstore.GetLegalEntityRow(r)
 		return err
 	})
@@ -282,10 +316,19 @@ func (s *Service) MergeFields(ctx context.Context, id uuid.UUID) (map[string]str
 			parts = append(parts, p)
 		}
 	}
-	return map[string]string{
+	out := map[string]string{
 		"org_name_th": e.NameTh, "org_name_en": e.NameEn, "org_registration_no": e.RegistrationNo, "org_tax_id": e.TaxID,
 		"org_address": strings.Join(parts, " "), "org_email": e.ContactEmail, "org_phone": e.ContactPhone,
-	}, nil
+	}
+	if e.Representative != nil { // ม.37(5): only set when a local representative is on record
+		r := e.Representative
+		out["representative_name_th"] = r.NameTh
+		out["representative_name_en"] = r.NameEn
+		out["representative_address"] = r.Address
+		out["representative_email"] = r.Email
+		out["representative_phone"] = r.Phone
+	}
+	return out, nil
 }
 
 // OrgUnit is a node of the organization tree (ORG-04).
@@ -498,7 +541,21 @@ func toLegalEntity(r orgstore.GetLegalEntityRow) LegalEntity {
 		TaxID: strings.TrimSpace(deref(r.TaxID)), ContactEmail: deref(r.ContactEmail), ContactPhone: deref(r.ContactPhone), LogoFileID: uuidPtr(r.LogoFileID),
 		IsController: r.IsController, IsProcessor: r.IsProcessor, Status: r.Status, RowVersion: r.RowVersion, UpdatedAt: r.UpdatedAt.Time}
 	_ = json.Unmarshal(r.Address, &e.Address)
+	if len(r.Representative) > 0 {
+		var rep Representative
+		if err := json.Unmarshal(r.Representative, &rep); err == nil {
+			e.Representative = &rep
+		}
+	}
 	return e
+}
+
+// representativeJSON marshals a legal entity's local representative (nil writes SQL NULL).
+func representativeJSON(r *Representative) ([]byte, error) {
+	if r == nil {
+		return nil, nil
+	}
+	return json.Marshal(r)
 }
 
 func toOrgUnit(r orgstore.GetOrgUnitRow) OrgUnit {
@@ -514,7 +571,7 @@ func toOrgUnit(r orgstore.GetOrgUnitRow) OrgUnit {
 func legalEntityAudit(e LegalEntity) map[string]any {
 	return map[string]any{"name_th": e.NameTh, "name_en": e.NameEn, "registration_no": e.RegistrationNo, "tax_id": e.TaxID, "address": e.Address,
 		"contact_email": e.ContactEmail, "contact_phone": e.ContactPhone, "logo_file_id": e.LogoFileID, "parent_id": e.ParentID,
-		"is_controller": e.IsController, "is_processor": e.IsProcessor, "status": e.Status}
+		"is_controller": e.IsController, "is_processor": e.IsProcessor, "representative": e.Representative, "status": e.Status}
 }
 
 func unitAudit(u OrgUnit) map[string]any {

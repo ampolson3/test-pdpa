@@ -6442,6 +6442,8 @@ export interface components {
             logo_file_id?: components["schemas"]["Uuid"];
             is_controller?: boolean;
             is_processor?: boolean;
+            /** @description Local representative in Thailand (ม.37(5)), required when the controller is based abroad. Omit/null to clear. */
+            representative?: components["schemas"]["Representative"];
             /** @enum {string} */
             status?: "active" | "inactive";
         };
@@ -6458,10 +6460,19 @@ export interface components {
             logo_file_id?: components["schemas"]["Uuid"];
             is_controller: boolean;
             is_processor: boolean;
+            representative?: components["schemas"]["Representative"];
             /** @enum {string} */
             status: "active" | "inactive";
             row_version: number;
             updated_at: components["schemas"]["Timestamp"];
+        };
+        /** @description Local representative in Thailand (ม.37(5)). */
+        Representative: {
+            name_th: string;
+            name_en?: string;
+            address?: string;
+            email?: string;
+            phone?: string;
         };
         /** @enum {string} */
         OrgUnitType: "group" | "company" | "division" | "department" | "branch" | "team";

@@ -141,13 +141,20 @@ func (s *Service) compose(ctx context.Context, legalEntity orgservice.LegalEntit
 }
 
 func contactSection(e orgservice.LegalEntity) section {
-	return section{
+	sec := section{
 		topic:     TopicContact,
 		headingTh: "ข้อมูลติดต่อผู้ควบคุมข้อมูลส่วนบุคคลและเจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล (DPO)",
 		headingEn: "Contact details of the data controller and Data Protection Officer (DPO)",
 		bodyTh:    []string{mergeFieldPlaceholder("org_name_th") + " อีเมล " + mergeFieldPlaceholder("org_email") + " โทร " + mergeFieldPlaceholder("org_phone") + " ที่อยู่ " + mergeFieldPlaceholder("org_address")},
 		bodyEn:    []string{mergeFieldPlaceholder("org_name_en") + " e-mail " + mergeFieldPlaceholder("org_email") + " phone " + mergeFieldPlaceholder("org_phone") + " address " + mergeFieldPlaceholder("org_address")},
 	}
+	if e.Representative != nil { // ORG-03 / ม.37(5): a local representative, shown only when the entity has one on record
+		sec.bodyTh = append(sec.bodyTh, "ผู้แทนในประเทศไทย: "+mergeFieldPlaceholder("representative_name_th")+" อีเมล "+mergeFieldPlaceholder("representative_email")+
+			" โทร "+mergeFieldPlaceholder("representative_phone")+" ที่อยู่ "+mergeFieldPlaceholder("representative_address"))
+		sec.bodyEn = append(sec.bodyEn, "Local representative in Thailand: "+mergeFieldPlaceholder("representative_name_en")+" e-mail "+mergeFieldPlaceholder("representative_email")+
+			" phone "+mergeFieldPlaceholder("representative_phone")+" address "+mergeFieldPlaceholder("representative_address"))
+	}
+	return sec
 }
 
 // mergeFieldPlaceholder is inlined as plain text and later split out by docNode into a real mergeField node —

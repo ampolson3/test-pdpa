@@ -256,6 +256,19 @@ func TestCalendarEndpoints_Contract(t *testing.T) {
 	if code, _ := do("PATCH", "/admin/v1/org/legal-entities/"+le.Id.String(), &admin, map[string]any{"name_th": "บริษัท ก จำกัด"}, nil); code != 428 {
 		t.Errorf("update entity without If-Match: %d, want 428", code)
 	}
+
+	// ORG-03: a local representative round-trips (ม.37(5)), shown only when set.
+	etag := `"` + "0" + `"`
+	ifMatch := map[string]string{"If-Match": etag}
+	code, body = do("PATCH", "/admin/v1/org/legal-entities/"+le.Id.String(), &admin,
+		map[string]any{"name_th": "บริษัท ก", "representative": map[string]any{"name_th": "ผู้แทน ก", "email": "rep@a.example"}}, ifMatch)
+	if code != 200 || !strings.Contains(body, `"representative":{"name_th":"ผู้แทน ก"`) {
+		t.Errorf("set representative: %d %s", code, body)
+	}
+	code, body = do("GET", "/admin/v1/org/legal-entities/"+le.Id.String(), &admin, nil, nil)
+	if code != 200 || !strings.Contains(body, `"rep@a.example"`) {
+		t.Errorf("get entity shows representative: %d %s", code, body)
+	}
 	unit := func(code string, parent *string) orghttp.OrgUnit {
 		body := map[string]any{"legal_entity_id": le.Id, "code": code, "name_th": code, "unit_type": "department"}
 		if parent != nil {

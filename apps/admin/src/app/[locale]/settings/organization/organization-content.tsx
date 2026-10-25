@@ -18,16 +18,20 @@ type Draft = {
   id?: string; rowVersion?: number; name_th: string; name_en: string; registration_no: string; tax_id: string; parent_id: string;
   line1: string; subdistrict: string; district: string; province: string; postal_code: string; contact_email: string; contact_phone: string;
   is_controller: boolean; is_processor: boolean; status: "active" | "inactive"; logo_file_id?: string;
+  repNameTh: string; repNameEn: string; repAddress: string; repEmail: string; repPhone: string;
 };
 
 const blank: Draft = { name_th: "", name_en: "", registration_no: "", tax_id: "", parent_id: "", line1: "", subdistrict: "", district: "", province: "", postal_code: "",
-  contact_email: "", contact_phone: "", is_controller: true, is_processor: false, status: "active" };
+  contact_email: "", contact_phone: "", is_controller: true, is_processor: false, status: "active",
+  repNameTh: "", repNameEn: "", repAddress: "", repEmail: "", repPhone: "" };
 
 function fromEntity(e: LegalEntity): Draft {
   const a = e.address;
+  const r = e.representative;
   return { id: e.id, rowVersion: e.row_version, name_th: e.name_th, name_en: e.name_en ?? "", registration_no: e.registration_no ?? "", tax_id: e.tax_id ?? "",
     parent_id: e.parent_id ?? "", line1: a.line1 ?? "", subdistrict: a.subdistrict ?? "", district: a.district ?? "", province: a.province ?? "", postal_code: a.postal_code ?? "",
-    contact_email: e.contact_email ?? "", contact_phone: e.contact_phone ?? "", is_controller: e.is_controller, is_processor: e.is_processor, status: e.status, logo_file_id: e.logo_file_id };
+    contact_email: e.contact_email ?? "", contact_phone: e.contact_phone ?? "", is_controller: e.is_controller, is_processor: e.is_processor, status: e.status, logo_file_id: e.logo_file_id,
+    repNameTh: r?.name_th ?? "", repNameEn: r?.name_en ?? "", repAddress: r?.address ?? "", repEmail: r?.email ?? "", repPhone: r?.phone ?? "" };
 }
 
 export function OrganizationContent() {
@@ -56,7 +60,9 @@ export function OrganizationContent() {
       input: { name_th: form.name_th, name_en: form.name_en || undefined, registration_no: form.registration_no || undefined, tax_id: form.tax_id || undefined,
         parent_id: form.parent_id || undefined, contact_email: form.contact_email || undefined, contact_phone: form.contact_phone || undefined,
         address: { line1: form.line1 || undefined, subdistrict: form.subdistrict || undefined, district: form.district || undefined, province: form.province || undefined, postal_code: form.postal_code || undefined },
-        is_controller: form.is_controller, is_processor: form.is_processor, status: form.status, logo_file_id: form.logo_file_id },
+        is_controller: form.is_controller, is_processor: form.is_processor, status: form.status, logo_file_id: form.logo_file_id,
+        representative: form.repNameTh.trim() ? { name_th: form.repNameTh, name_en: form.repNameEn || undefined, address: form.repAddress || undefined,
+          email: form.repEmail || undefined, phone: form.repPhone || undefined } : undefined },
     }, { onSuccess: (e) => { setSelected(e.id); setDraft(null); setSaved(true); } });
   };
   const field = (key: keyof Draft, label: string, extra?: string) => (
@@ -117,6 +123,19 @@ export function OrganizationContent() {
               <span className="block text-slate-600">{t("form.logo")}{form.logo_file_id && <span className="ml-2 text-emerald-700">· {t("form.logoSet")}</span>}</span>
               {editable && <FileUploader accept=".png,.jpg,.jpeg" hint={t("form.logoLimits")} onUploaded={(f) => set({ logo_file_id: f.id })} />}
             </div>
+            <fieldset className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+              <legend className="px-1 font-medium text-slate-600">{t("form.representative")}</legend>
+              <label><span className="block text-slate-600">{t("form.repNameTh")}</span>
+                <input className={INPUT} value={form.repNameTh} onChange={(e) => set({ repNameTh: e.target.value })} /></label>
+              <label><span className="block text-slate-600">{t("form.repNameEn")}</span>
+                <input className={INPUT} value={form.repNameEn} onChange={(e) => set({ repNameEn: e.target.value })} /></label>
+              <label className="sm:col-span-2"><span className="block text-slate-600">{t("form.repAddress")}</span>
+                <input className={INPUT} value={form.repAddress} onChange={(e) => set({ repAddress: e.target.value })} /></label>
+              <label><span className="block text-slate-600">{t("form.repEmail")}</span>
+                <input className={INPUT} value={form.repEmail} onChange={(e) => set({ repEmail: e.target.value })} /></label>
+              <label><span className="block text-slate-600">{t("form.repPhone")}</span>
+                <input className={INPUT} value={form.repPhone} onChange={(e) => set({ repPhone: e.target.value })} /></label>
+            </fieldset>
             {save.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("form.saveError", { detail: detail(save.error) })}</p>}
             {saved && <p className="text-emerald-800 sm:col-span-2" role="status">{t("form.saved")}</p>}
             {editable && (
