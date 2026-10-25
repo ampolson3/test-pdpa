@@ -438,3 +438,32 @@ and `pnpm --filter @pdpa/admin build`.
 **Frontend (Next.js):** หน้าคำรับรอง
 
 **Acceptance criteria:** มีคำรับรองที่ลงนามทุกปี
+
+**สถานะ: done.** `dpo.independence_declarations` was already fully specified in the baseline migrations
+(00016_dpo.sql, FKs in 00018) — a thin, one-row-per-appointment-per-year record (`year`, `other_duties`,
+`has_conflict`, `signed_at`, an optional evidence `file_id`) — no new migration.
+`internal/dpo/service/independence.go`: `RecordDeclaration` creates or edits the still-unsigned draft for
+one appointment+year (resolved by looking the pair up first, not a unique index, since an edit must never
+silently overwrite an already-signed year — refused with `ErrInvalid` instead); `SignDeclaration` is the
+acceptance criterion itself — stamps `signed_at` once, optionally attaching the caller's own clean,
+still-unattached PLT-09 upload as the signed evidence (the same pattern DPO-01's own appointment order
+already uses) — a re-sign attempt on an already-signed row is refused, never silently moving the
+attestation date. Permissions reuse the already-seeded `dpo.profile.{read,create,update}` (DPO-01's own
+family — no new permission code, since this is DPO-managed register data adjacent to the appointment
+record it belongs to).
+
+API: `GET`/`POST /admin/v1/dpo/appointments/{id}/independence-declarations`,
+`POST /admin/v1/dpo/independence-declarations/{id}/sign` (ETag/If-Match). UI: `/settings/dpo` gained a
+"คำรับรองประจำปี" toggle per appointment row — a record form (year/other-duties/conflict checkbox) and a
+list of past years each showing signed/unsigned, with a sign button on an unsigned row. Tests: unit
+(`internal/dpo/service/independence_test.go` — the acceptance criterion directly: a recorded declaration
+starts unsigned, signing it stamps `signed_at`, re-signing or editing an already-signed year is refused, a
+new year starts its own fresh unsigned draft; an unknown appointment is refused before any write;
+two-tenant isolation), HTTP contract (`internal/dpo/http/handler_test.go`'s existing
+`TestAppointmentEndpoints_Contract`, extended with the full record → sign → re-sign-refused chain through
+the real validator + AuthZ). Not verified live against a real Postgres/Redis — this session's own
+environment limitation, consistent with this codebase's other recent passes; every test compiles and vets
+clean and skips the same way the rest of this module's own suite already does here. `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions, full backend
+suite), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/settings/dpo` route) all verified clean.

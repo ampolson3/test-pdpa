@@ -42,9 +42,15 @@ export function TemplatesContent() {
   const sets = useTemplateSets(client);
   const standardSet = sets.data?.find((s) => s.set_type === "standard");
   const industrySets = useMemo(() => (sets.data ?? []).filter((s) => s.set_type === "industry"), [sets.data]);
+  // RTG-03: the official DGA/สพร. government-controller template is its own set_type ("government"),
+  // a different axis from RTG-02's own generic industry='government' starter set — picked via a
+  // sentinel value so it shares the same <select> as the industry picker rather than needing a
+  // second control.
+  const governmentSet = useMemo(() => (sets.data ?? []).find((s) => s.set_type === "government"), [sets.data]);
+  const GOVERNMENT_SENTINEL = "__government__";
   // RTG-02: picking an industry switches the browsed set from RTG-01's standard (job-category) one to
   // that industry's own starter set — the job-category filter below still applies within either set.
-  const activeSet = industry ? industrySets.find((s) => s.industry === industry) : standardSet;
+  const activeSet = industry === GOVERNMENT_SENTINEL ? governmentSet : industry ? industrySets.find((s) => s.industry === industry) : standardSet;
   const all = useActivityTemplates(client, activeSet?.id);
   const filtered = useActivityTemplates(client, activeSet?.id, jobCategory || undefined);
   const detail = useActivityTemplate(client, selectedId ?? undefined);
@@ -86,6 +92,11 @@ export function TemplatesContent() {
                   {t.has(`industries.${s.industry}`) ? t(`industries.${s.industry}`) : s.industry}
                 </option>
               ))}
+              {governmentSet && (
+                <option value={GOVERNMENT_SENTINEL} data-testid="government-set-option">
+                  {t("governmentSetLabel")}
+                </option>
+              )}
             </select>
           </label>
 

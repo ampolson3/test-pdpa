@@ -352,6 +352,27 @@ tests ran compile-only, consistent with every other test this session.
 
 **Acceptance criteria:** RoPA ที่สร้างมีหัวข้อตามแม่แบบ สพร.
 
+**สถานะ: done.** `ropa.template_sets.set_type` already had `'government'` in its baseline CHECK
+constraint — a distinct axis from RTG-02's own `set_type='industry', industry='government'` generic
+starter set — unused until now. Migration 00084 (`docs/decisions.md` Q-40, the same "seed a draft +
+flag for legal review" move RTG-01/RTG-02 already made) seeds one `set_type='government'` template
+set with 3 representative government-agency activities (procurement, personnel records, FOIA/
+complaint handling), each covering every ม.39 topic in the exact `defaults`/`rationale` shape RTG-01/02
+already use. No service code changes: `internal/ropa/templates.Service.ListTemplateSets` already
+returns `SetType`, so browsing the government set is the identical call RTG-01/02's own browsing
+already makes, just against this set's own id. Frontend: `/ropa/templates` gained a government option
+in the existing set picker (`<option value="__government__">`, distinct from the industry axis),
+switching the browsed set the same way picking an industry already does — "ตัวกรองภาครัฐ" literally.
+ROPA-05's existing `CreateActivityFromTemplate` needs no change either: it already copies any
+`activity_template_id`'s `defaults` into a real activity regardless of which set it came from. Tests:
+`internal/ropa/templates/rtg03_test.go` — the acceptance criterion directly (the government set exists,
+is distinct from the industry axis, every activity covers every ม.39 topic and is role=`controller`).
+Not verified live against a real Postgres/Redis — this session's own environment limitation, consistent
+with this codebase's other recent passes; every test compiles and vets clean and skips the same way the
+rest of this package's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean
+on every touched file), `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the
+updated `/ropa/templates` route) all verified clean.
+
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
 
 <a id="rtg-07"></a>

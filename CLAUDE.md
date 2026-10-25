@@ -4201,6 +4201,72 @@ this codebase's other recent passes; every test compiles and vets clean and skip
 this module's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every
 touched file), `go test ./...` (no regressions, full backend suite) all verified clean.
 
+### RTG-03 Template ภาครัฐตามแม่แบบ สพร. (`docs/modules/RTG.md#rtg-03`) — done
+`ropa.template_sets.set_type` already had `'government'` in its baseline CHECK constraint — a distinct
+axis from RTG-02's own `set_type='industry', industry='government'` generic starter set — unused until
+now. Migration 00084 (`docs/decisions.md` Q-40, the same "seed a draft + flag for legal review" move
+RTG-01/RTG-02 already made, since the real สพร. v1.0 (2564) template document wasn't available here)
+seeds one `set_type='government'` template set with 3 representative government-agency activities
+(procurement, personnel records, FOIA/complaint handling), each covering every ม.39 topic in the exact
+`defaults`/`rationale` jsonb shape RTG-01/02 already use, keyed by code against the real
+`org.lawful_bases`/`data_categories`/`data_subject_types` and `ropa` security-control codes already
+seeded (migrations 00031/00040). No service code changes needed:
+`internal/ropa/templates.Service.ListTemplateSets` already returns every set's own `SetType`, so
+browsing the government set is the identical call RTG-01/02's own job-category/industry browsing
+already makes, just against this set's own id — and ROPA-05's existing `CreateActivityFromTemplate`
+needs no change either, since it already copies any `activity_template_id`'s `defaults` into a real
+activity regardless of which set it came from.
+
+`apps/admin/.../ropa/templates/templates-content.tsx`'s existing industry `<select>` gained a
+government option (a `__government__` sentinel value distinct from any industry code, since the two
+axes are genuinely different `set_type` rows) — picking it switches the browsed set the same way
+picking an industry already does, the literal "ตัวกรองภาครัฐ" frontend note. No new endpoint, migration
+beyond the seed, or permission code. Tests: `internal/ropa/templates/rtg03_test.go` — the acceptance
+criterion directly (`TestListTemplateSets_GovernmentSetSeeded`: the government set exists with
+`industry` empty, every activity is role=`controller` and covers every ม.39 topic;
+`TestListTemplateSets_GovernmentAndIndustryAreSeparateSets`: the two axes never collide, mirroring
+RTG-02's own axis-separation test). Not verified live against a real Postgres/Redis — this session's
+own environment limitation, consistent with this codebase's other recent passes; every test compiles
+and vets clean and skips the same way the rest of this package's own suite already does here.
+`go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no
+regressions, full backend suite), `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build`
+(incl. the updated `/ropa/templates` route) all verified clean.
+
+### DPO-03 ความเป็นอิสระและผลประโยชน์ทับซ้อน (`docs/modules/DPO.md#dpo-03`) — done
+`dpo.independence_declarations` was already fully specified in the baseline migrations (00016_dpo.sql,
+FKs in 00018) — a thin, one-row-per-appointment-per-year record (`year`, `other_duties`,
+`has_conflict`, `signed_at`, an optional evidence `file_id`) — no new migration.
+`internal/dpo/service/independence.go`: `RecordDeclaration` creates or edits the still-unsigned draft
+for one appointment+year (resolved by looking the pair up first rather than a unique index, since an
+edit must never silently overwrite an already-signed year — refused with `ErrInvalid` instead);
+`SignDeclaration` is the acceptance criterion itself ("มีคำรับรองที่ลงนามทุกปี") — stamps `signed_at`
+once, optionally attaching the caller's own clean, still-unattached PLT-09 upload as the signed
+evidence (the same "caller's own clean upload" pattern DPO-01's own appointment order already uses) —
+a re-sign attempt on an already-signed row is refused, never silently moving the attestation date, the
+same discipline a redelivered "complete" call elsewhere in this codebase (e.g. BRE-15's corrective
+actions) already follows for an irreversible write. Permissions reuse the already-seeded
+`dpo.profile.{read,create,update}` (DPO-01's own family — no new permission code, since an
+independence declaration is DPO-managed register data adjacent to the appointment record it belongs
+to, the same reasoning DPO-02's own requirement-check reused that family for).
+
+API: `GET`/`POST /admin/v1/dpo/appointments/{id}/independence-declarations`,
+`POST /admin/v1/dpo/independence-declarations/{id}/sign` (ETag/If-Match) — both added to
+`internal/dpo/http/oapi-codegen.yaml`'s own `include-operation-ids` allowlist, the usual gotcha. UI:
+`/settings/dpo` gained a "คำรับรองประจำปี" toggle per appointment row — a record form
+(year/other-duties/conflict checkbox) and a list of past years each showing signed/unsigned with a sign
+button on an unsigned row. Tests: unit (`internal/dpo/service/independence_test.go` — the acceptance
+criterion directly: a recorded declaration starts unsigned, signing it stamps `signed_at`, re-signing or
+editing an already-signed year is refused, a new year starts its own fresh unsigned draft; an unknown
+appointment is refused before any write; two-tenant isolation), HTTP contract
+(`internal/dpo/http/handler_test.go`'s existing `TestAppointmentEndpoints_Contract`, extended with the
+full record → sign → re-sign-refused chain through the real validator + AuthZ). Not verified live
+against a real Postgres/Redis — this session's own environment limitation, consistent with this
+codebase's other recent passes; every test compiles and vets clean and skips the same way the rest of
+this module's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every
+touched file), `go test ./...` (no regressions, full backend suite), `pnpm --filter @pdpa/api-client
+typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
+`/settings/dpo` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

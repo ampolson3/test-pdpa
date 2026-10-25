@@ -9,12 +9,15 @@ export type DpoRemediationTask = components["schemas"]["DpoRemediationTask"];
 export type DpoDeadlineItem = components["schemas"]["DpoDeadlineItem"];
 export type DpoRequirementCheck = components["schemas"]["DpoRequirementCheck"];
 export type DpoRequirementCheckInput = components["schemas"]["DpoRequirementCheckInput"];
+export type DpoIndependenceDeclaration = components["schemas"]["DpoIndependenceDeclaration"];
+export type DpoIndependenceDeclarationInput = components["schemas"]["DpoIndependenceDeclarationInput"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const appointmentsKey = ["dpo", "appointments"] as const;
 const assessmentsKey = ["dpo", "security-assessments"] as const;
 const deadlinesKey = ["dpo", "deadlines"] as const;
 const requirementChecksKey = ["dpo", "requirement-checks"] as const;
+const independenceDeclarationsKey = ["dpo", "independence-declarations"] as const;
 
 /** GET /admin/v1/dpo/requirement-checks (DPO-02), newest first, for one legal entity. */
 export function useRequirementChecks(client: ApiClient, legalEntityId: string | undefined) {
@@ -102,6 +105,50 @@ export function useAppointmentMutations(client: ApiClient) {
         return data;
       },
       onSuccess: () => qc.invalidateQueries({ queryKey: appointmentsKey }),
+    }),
+  };
+}
+
+/** GET /admin/v1/dpo/appointments/{id}/independence-declarations (DPO-03), newest year first. */
+export function useIndependenceDeclarations(client: ApiClient, appointmentId: string | undefined) {
+  return useQuery({
+    queryKey: [...independenceDeclarationsKey, appointmentId ?? ""],
+    enabled: !!appointmentId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpo/appointments/{id}/independence-declarations", {
+        params: { path: { id: appointmentId! } },
+      });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+export function useIndependenceDeclarationMutations(client: ApiClient, appointmentId: string) {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: [...independenceDeclarationsKey, appointmentId] });
+  return {
+    record: useMutation({
+      mutationFn: async (input: DpoIndependenceDeclarationInput) => {
+        const { data, error } = await client.POST("/admin/v1/dpo/appointments/{id}/independence-declarations", {
+          params: { path: { id: appointmentId } },
+          body: input,
+        });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: invalidate,
+    }),
+    sign: useMutation({
+      mutationFn: async (v: { declaration: DpoIndependenceDeclaration; file_id?: string }) => {
+        const { data, error } = await client.POST("/admin/v1/dpo/independence-declarations/{id}/sign", {
+          params: { path: { id: v.declaration.id }, header: ifMatch(v.declaration.row_version) },
+          body: { file_id: v.file_id },
+        });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: invalidate,
     }),
   };
 }

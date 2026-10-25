@@ -448,6 +448,8 @@ export {
   useDeadlines,
   useRequirementChecks,
   useAssessRequirementCheck,
+  useIndependenceDeclarations,
+  useIndependenceDeclarationMutations,
   type DpoAppointment,
   type DpoAppointmentInput,
   type DpoType,
@@ -456,6 +458,8 @@ export {
   type DpoDeadlineItem,
   type DpoRequirementCheck,
   type DpoRequirementCheckInput,
+  type DpoIndependenceDeclaration,
+  type DpoIndependenceDeclarationInput,
 } from "./dpo";
 export {
   useTenants,

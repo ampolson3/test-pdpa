@@ -11274,6 +11274,128 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dpo/appointments/{id}/independence-declarations:
+    get:
+      operationId: dpoListIndependenceDeclarations
+      tags: [dpo]
+      summary: 'DPO-03: one appointment''s own yearly independence/conflict-of-interest declarations, newest year first'
+      x-permission: dpo.profile.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpoIndependenceDeclaration'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dpoRecordIndependenceDeclaration
+      tags: [dpo]
+      summary: 'DPO-03: record or edit the still-unsigned declaration for one year (ม.42) — refused once that year is already signed'
+      x-permission: dpo.profile.create
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DpoIndependenceDeclarationInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoIndependenceDeclaration'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpo/independence-declarations/{id}/sign:
+    post:
+      operationId: dpoSignIndependenceDeclaration
+      tags: [dpo]
+      summary: 'DPO-03''s own acceptance criterion: sign a year''s declaration once, optionally attaching the caller''s own clean signed-evidence upload'
+      x-permission: dpo.profile.update
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                file_id: {$ref: '#/components/schemas/Uuid'}
+      responses:
+        '200':
+          description: Signed
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoIndependenceDeclaration'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/dpo/deadlines:
     get:
       operationId: dpoListDeadlines
@@ -19007,6 +19129,31 @@ components:
         pdpc_evidence_file_id: {$ref: '#/components/schemas/Uuid'}
         ended_at: {type: [string, 'null'], format: date}
         row_version: {type: integer}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
+    DpoIndependenceDeclarationInput:
+      type: object
+      required: [year]
+      properties:
+        year: {type: integer, minimum: 2000, maximum: 9999}
+        other_duties: {type: string}
+        has_conflict: {type: boolean}
+      example:
+        year: 2026
+        other_duties: ผู้จัดการฝ่ายกฎหมาย
+        has_conflict: false
+    DpoIndependenceDeclaration:
+      type: object
+      required: [id, appointment_id, year, has_conflict, row_version, created_at, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        appointment_id: {$ref: '#/components/schemas/Uuid'}
+        year: {type: integer}
+        other_duties: {type: string}
+        has_conflict: {type: boolean}
+        signed_at: {type: [string, 'null'], format: date-time}
+        file_id: {$ref: '#/components/schemas/Uuid'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
         updated_at: {$ref: '#/components/schemas/Timestamp'}
     DpoRequirementCheckInput:
       type: object

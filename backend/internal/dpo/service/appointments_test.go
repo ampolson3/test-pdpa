@@ -53,6 +53,7 @@ func setup(t *testing.T, suffix string) env {
 			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_submissions`)
 			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_versions`)
 			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_definitions`)
+			_, _ = tx.Exec(ctx, `DELETE FROM dpo.independence_declarations`)
 			_, _ = tx.Exec(ctx, `DELETE FROM dpo.appointments`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
 			_, _ = tx.Exec(ctx, `DELETE FROM iam.users WHERE id = $1`, user)

@@ -676,6 +676,20 @@
       "edit": "Edit",
       "saveError": "Couldn't save: {detail}"
     },
+    "independence": {
+      "toggle": "Annual declaration",
+      "title": "Independence & conflict-of-interest declaration",
+      "year": "Year",
+      "otherDuties": "Other duties at the organization",
+      "hasConflict": "Conflicts with the DPO role",
+      "save": "Save",
+      "sign": "Sign",
+      "empty": "No declarations yet for this appointment.",
+      "conflict": "Has a conflict",
+      "noConflict": "No conflict",
+      "signedAt": "Signed on {date}",
+      "unsigned": "Not yet signed"
+    },
     "assessments": {
       "title": "Security-measures assessment",
       "intro": "Per the PDPC's notice on security measures for data controllers (พ.ศ. 2565) — every failed item automatically opens a remediation task",
@@ -3139,6 +3153,7 @@
     "empty": "No standard activities found",
     "industryFilter": "Industry",
     "standardSetLabel": "Standard library (by job category)",
+    "governmentSetLabel": "Government (DGA template v1.0)",
     "jobCategory": "Job category",
     "allCategories": "All categories",
     "selectPrompt": "Select an activity on the left to view its defaults",

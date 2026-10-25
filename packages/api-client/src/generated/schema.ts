@@ -3874,6 +3874,41 @@ export interface paths {
         patch: operations["dpoUpdateAppointment"];
         trace?: never;
     };
+    "/admin/v1/dpo/appointments/{id}/independence-declarations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPO-03: one appointment's own yearly independence/conflict-of-interest declarations, newest year first */
+        get: operations["dpoListIndependenceDeclarations"];
+        put?: never;
+        /** DPO-03: record or edit the still-unsigned declaration for one year (ม.42) — refused once that year is already signed */
+        post: operations["dpoRecordIndependenceDeclaration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpo/independence-declarations/{id}/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** DPO-03's own acceptance criterion: sign a year's declaration once, optionally attaching the caller's own clean signed-evidence upload */
+        post: operations["dpoSignIndependenceDeclaration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpo/deadlines": {
         parameters: {
             query?: never;
@@ -7190,6 +7225,31 @@ export interface components {
             /** Format: date */
             ended_at?: string | null;
             row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * @example {
+         *       "year": 2026,
+         *       "other_duties": "ผู้จัดการฝ่ายกฎหมาย",
+         *       "has_conflict": false
+         *     }
+         */
+        DpoIndependenceDeclarationInput: {
+            year: number;
+            other_duties?: string;
+            has_conflict?: boolean;
+        };
+        DpoIndependenceDeclaration: {
+            id: components["schemas"]["Uuid"];
+            appointment_id: components["schemas"]["Uuid"];
+            year: number;
+            other_duties?: string;
+            has_conflict: boolean;
+            /** Format: date-time */
+            signed_at?: string | null;
+            file_id?: components["schemas"]["Uuid"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
             updated_at: components["schemas"]["Timestamp"];
         };
         /**
@@ -19250,6 +19310,111 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dpoListIndependenceDeclarations: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpoIndependenceDeclaration"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpoRecordIndependenceDeclaration: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpoIndependenceDeclarationInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoIndependenceDeclaration"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpoSignIndependenceDeclaration: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    file_id?: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description Signed */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoIndependenceDeclaration"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

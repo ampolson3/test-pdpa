@@ -56,6 +56,7 @@ func TestAppointmentEndpoints_Contract(t *testing.T) {
 			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_submissions`)
 			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_versions`)
 			_, _ = tx.Exec(ctx, `DELETE FROM platform.form_definitions`)
+			_, _ = tx.Exec(ctx, `DELETE FROM dpo.independence_declarations`)
 			_, _ = tx.Exec(ctx, `DELETE FROM dpo.appointments`)
 			_, _ = tx.Exec(ctx, `DELETE FROM org.legal_entities`)
 			_, err := tx.Exec(ctx, `DELETE FROM platform.audit_log`)
@@ -223,6 +224,41 @@ func TestAppointmentEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", "/admin/v1/dpo/appointments?legal_entity_id="+legalEntity.String(), &viewer, nil, nil); code != 200 || !strings.Contains(body, created.Id.String()) {
 		t.Errorf("list: %d %s", code, body)
+	}
+
+	// DPO-03 independence/conflict-of-interest declarations.
+	declPath := item + "/independence-declarations"
+	if code, _ := do("GET", declPath, nil, nil, nil); code != 401 {
+		t.Errorf("declarations, no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", declPath, &viewer, map[string]any{"year": 2026}, nil); code != 403 {
+		t.Errorf("record with read permission only: %d, want 403", code)
+	}
+	code, body = do("POST", declPath, &admin, map[string]any{"year": 2026, "other_duties": "ผู้จัดการฝ่ายกฎหมาย", "has_conflict": false}, nil)
+	if code != 201 || !strings.Contains(body, `"year":2026`) || strings.Contains(body, `"signed_at":"`) {
+		t.Fatalf("record declaration: %d %s", code, body)
+	}
+	var decl dpohttp.DpoIndependenceDeclaration
+	_ = json.Unmarshal([]byte(body), &decl)
+	if code, body := do("GET", declPath, &viewer, nil, nil); code != 200 || !strings.Contains(body, decl.Id.String()) {
+		t.Errorf("list declarations: %d %s", code, body)
+	}
+	signPath := "/admin/v1/dpo/independence-declarations/" + decl.Id.String() + "/sign"
+	if code, _ := do("POST", signPath, &admin, nil, nil); code != 428 {
+		t.Errorf("sign without If-Match: %d, want 428", code)
+	}
+	if code, _ := do("POST", signPath, &admin, nil, map[string]string{"If-Match": `"9"`}); code != 412 {
+		t.Errorf("sign with stale If-Match: %d, want 412", code)
+	}
+	code, body = do("POST", signPath, &admin, nil, map[string]string{"If-Match": `"` + "1" + `"`})
+	if code != 200 || !strings.Contains(body, `"signed_at":"`) {
+		t.Fatalf("sign: %d %s", code, body)
+	}
+	var signed dpohttp.DpoIndependenceDeclaration
+	_ = json.Unmarshal([]byte(body), &signed)
+	if code, _ := do("POST", "/admin/v1/dpo/independence-declarations/"+decl.Id.String()+"/sign", &admin, nil,
+		map[string]string{"If-Match": `"` + "2" + `"`}); code != 422 {
+		t.Errorf("re-sign an already-signed declaration: %d, want 422", code)
 	}
 
 	// DPO-09 security assessments.

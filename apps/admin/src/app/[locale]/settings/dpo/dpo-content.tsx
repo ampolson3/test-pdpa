@@ -18,7 +18,10 @@ import {
   useRecordAssessment,
   useAssessRequirementCheck,
   useRequirementChecks,
+  useIndependenceDeclarationMutations,
+  useIndependenceDeclarations,
   type DpoAppointment,
+  type DpoIndependenceDeclaration,
   type DpoSecurityAssessment,
   type DpoType,
 } from "@pdpa/api-client";
@@ -66,6 +69,7 @@ export function DpoContent() {
 
   const list = useAppointments(client, { legal_entity_id: legalEntityId });
   const { save } = useAppointmentMutations(client);
+  const [declarationsFor, setDeclarationsFor] = useState<DpoAppointment | null>(null);
 
   if (!canRead) return <main className="mx-auto max-w-4xl p-8 text-slate-600">{t("forbidden")}</main>;
 
@@ -187,7 +191,10 @@ export function DpoContent() {
                   </span>
                 </td>
                 <td className="px-3 py-2 text-right">
-                  {canUpdate && <button className="text-sky-700 underline" onClick={() => startEdit(a)}>{t("form.edit")}</button>}
+                  {canUpdate && <button className="text-sky-700 underline" onClick={() => startEdit(a)}>{t("form.edit")}</button>}{" "}
+                  <button className="text-sky-700 underline" onClick={() => setDeclarationsFor(declarationsFor?.id === a.id ? null : a)} data-testid="declarations-toggle">
+                    {t("independence.toggle")}
+                  </button>
                 </td>
               </tr>
             ))}
@@ -195,6 +202,8 @@ export function DpoContent() {
         </table>
       ))}
       {legalEntityId && list.hasNextPage && <Button variant="secondary" onClick={() => list.fetchNextPage()}>{t("more")}</Button>}
+
+      {declarationsFor && <IndependenceDeclarationsPanel appointment={declarationsFor} />}
 
       {legalEntityId && <RequirementCheckPanel legalEntityId={legalEntityId} />}
       {legalEntityId && <SecurityAssessments legalEntityId={legalEntityId} />}
@@ -270,6 +279,83 @@ function RequirementCheckPanel({ legalEntityId }: { legalEntityId: string }) {
         </ul>
       )}
       {latest && <p className="sr-only" data-testid="requirement-check-latest-result">{latest.result}</p>}
+    </section>
+  );
+}
+
+const CURRENT_YEAR = new Date().getFullYear();
+
+/** DPO-03 (ม.42): a yearly independence/conflict-of-interest declaration per appointment — record the
+ *  still-unsigned draft, then sign it once. The acceptance criterion ("มีคำรับรองที่ลงนามทุกปี") is this
+ *  panel's own list: every year on record, signed or not. */
+function IndependenceDeclarationsPanel({ appointment }: { appointment: DpoAppointment }) {
+  const t = useTranslations("dpo");
+  const locale = useLocale() as Locale;
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const canCreate = usePermission("dpo.profile.create");
+  const canUpdate = usePermission("dpo.profile.update");
+  const list = useIndependenceDeclarations(client, appointment.id);
+  const { record, sign } = useIndependenceDeclarationMutations(client, appointment.id);
+  const [year, setYear] = useState(CURRENT_YEAR);
+  const [otherDuties, setOtherDuties] = useState("");
+  const [hasConflict, setHasConflict] = useState(false);
+
+  const rows = list.data ?? [];
+
+  const submit = () => {
+    record.mutate({ year, other_duties: otherDuties || undefined, has_conflict: hasConflict }, {
+      onSuccess: () => { setOtherDuties(""); setHasConflict(false); },
+    });
+  };
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="independence-declarations-panel">
+      <h3 className="font-semibold">{t("independence.title")}</h3>
+
+      {canCreate && (
+        <div className="grid gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[100px_1fr_auto_auto]" data-testid="independence-form">
+          <label><span className="block text-slate-600">{t("independence.year")}</span>
+            <input type="number" className={INPUT} value={year} onChange={(e) => setYear(Number(e.target.value))} /></label>
+          <label><span className="block text-slate-600">{t("independence.otherDuties")}</span>
+            <input className={INPUT} value={otherDuties} onChange={(e) => setOtherDuties(e.target.value)} /></label>
+          <label className="flex items-end gap-2 pb-1">
+            <input type="checkbox" checked={hasConflict} onChange={(e) => setHasConflict(e.target.checked)} />
+            <span className="text-slate-600">{t("independence.hasConflict")}</span>
+          </label>
+          <Button onClick={submit} disabled={record.isPending}>{t("independence.save")}</Button>
+          {record.isError && <p className="text-red-700 sm:col-span-4" role="alert">{problemText(record.error)}</p>}
+        </div>
+      )}
+
+      {list.isPending ? <p className="text-slate-500">{t("loading")}</p> : rows.length === 0 ? (
+        <p className="rounded-md bg-amber-50 p-3 text-amber-800">{t("independence.empty")}</p>
+      ) : (
+        <ul className="space-y-2" data-testid="independence-list">
+          {rows.map((d) => (
+            <li key={d.id} className="flex items-center justify-between rounded-md border border-slate-200 p-3">
+              <span>
+                <span className="font-medium">{d.year}</span>{" "}
+                <span className={d.has_conflict ? "rounded bg-amber-100 px-2 py-0.5 text-amber-800" : "rounded bg-slate-100 px-2 py-0.5 text-slate-600"}>
+                  {t(d.has_conflict ? "independence.conflict" : "independence.noConflict")}
+                </span>{" "}
+                {d.signed_at ? (
+                  <span className="rounded bg-emerald-100 px-2 py-0.5 text-emerald-800">
+                    {t("independence.signedAt", { date: formatDate(d.signed_at, locale, { day: "numeric", month: "short", year: "numeric" }) })}
+                  </span>
+                ) : (
+                  <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-600">{t("independence.unsigned")}</span>
+                )}
+              </span>
+              {canUpdate && !d.signed_at && (
+                <Button variant="secondary" onClick={() => sign.mutate({ declaration: d as DpoIndependenceDeclaration })} disabled={sign.isPending} data-testid="independence-sign">
+                  {t("independence.sign")}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {sign.isError && <p className="text-red-700" role="alert">{problemText(sign.error)}</p>}
     </section>
   );
 }
