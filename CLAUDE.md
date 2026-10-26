@@ -4302,6 +4302,50 @@ file), `go test ./...` (no regressions, full backend suite), `make gen` re-run w
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build` (incl. the updated `/settings/organization` route) all verified clean.
 
+### RRA-05 Checklist ตรวจสอบกิจกรรม (`docs/modules/RRA.md#rra-05`) — done
+Migration 00085 widens `platform.form_definitions.form_type` to accept `'checklist'` and adds
+`risk.activity_checklists` (tenant-scoped, RLS `tenant_isolation`, FKs to `platform.form_submissions`
+and the completing `iam.users` row). No new form-schema machinery: the checklist's own questions are an
+ordinary PLT-06 form the DPO designs and publishes (rule 8 — never hard-code legal/business wording),
+registered in `internal/wiring/forms.go` as type `"checklist"` with policy `Read`/`Create`/`Approve` =
+`ropa.risk.{read,create,approve}` (DPO-only in the seeded RBAC) and `Respond` = `ropa.risk.update` (held
+by both OWNER and DPO).
+
+`internal/risk/service/checklist.go`'s `AnswerChecklist(ctx, activityID, formID, answers)` is a thin
+wrapper over `forms.Service.Record`: checks `Ropa.ActivityVisible` (the FK-visibility guard, same
+pattern as RRA-09's vendor link), resolves the form's current published version and rejects anything
+not of type `"checklist"` (`ErrBadChecklistForm`), records the answers against entity type
+`"ropa_activity"` + the activity's own id — already a registered PLT-07 collaboration-record type from
+ROPA-12, so any question the checklist leaves open for a consultant or the DPO is a comment on that
+same activity, not a second channel, which is the acceptance criterion itself
+("คำถามและคำตอบถูกเก็บในกิจกรรม") taken literally — then stores a thin `risk.activity_checklists` row
+(score, result band, `forms.Contribution` factors as jsonb) for fast listing without re-reading the
+form submission every time. `ListActivityChecklists`/`GetActivityChecklist` read past runs; `Service`
+gained a `Forms *forms.Service` field (nil until `cmd/api/main.go` wires it, same "nil until a caller
+needs one" convention as `Ropa`/`DpiaTrigger`/etc. on this same struct).
+
+API: `GET/POST /admin/v1/ropa/activities/{id}/checklists` (`riskListActivityChecklists` x-permission
+`ropa.risk.read`, `riskAnswerActivityChecklist` x-permission `ropa.risk.update`, 422 for an unknown
+activity or a non-checklist/unpublished form) and `GET /admin/v1/risk/activity-checklists/{id}`
+(`riskGetActivityChecklist` x-permission `ropa.risk.read`, 404 if not found) — new schemas
+`RiskActivityChecklistInput`/`RiskActivityChecklist`. Frontend: `ActivityChecklistSection` mounted on
+the activity detail page, right after `GapAnalysisSection` — a published-checklist-form picker feeding
+`@pdpa/form-renderer`'s `FormRenderer` (`useForms(client, "checklist")`/`useForm`), `answerChecklist`
+mutation, and a list of past runs (result band, score, formatted completion date) via the new
+`useActivityChecklists` hook; gated by `ropa.risk.read`/`ropa.risk.update` through `usePermission`; i18n
+keys under `activities.sections.checklist` and a new `activities.checklist.*` block, th/en.
+
+Tests: `internal/risk/service/checklist_test.go` (answers stored against the activity and scored;
+rejects a non-checklist or unpublished form; rejects an unknown/invisible activity; two-tenant isolation
+— all run live against this session's local Postgres 16+pgvector/Redis) and
+`internal/risk/http/checklist_test.go` (full HTTP contract behind the real OpenAPI validator and AuthZ:
+401 with no principal, 403 for read-only, 201 on answer, 200 list/get, 404 unknown id, 422 unknown
+activity). `go build ./...`, `go vet ./...`, `gofmt -l` all clean on every touched file; the pre-existing
+unrelated failures in `internal/risk/service`/`internal/risk/http` (no default risk matrix / vendor FK /
+acceptance-expiry edge cases) were confirmed present before this change via isolated `-run` re-runs and
+are untouched by it. `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

@@ -15023,6 +15023,101 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/activities/{id}/checklists:
+    get:
+      operationId: riskListActivityChecklists
+      tags: [risk]
+      summary: Every checklist run recorded against this activity, newest first (RRA-05)
+      x-permission: ropa.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/RiskActivityChecklist'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: riskAnswerActivityChecklist
+      tags: [risk]
+      summary: Answer a published checklist against this activity and record the run (RRA-05)
+      x-permission: ropa.risk.update
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RiskActivityChecklistInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskActivityChecklist'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/risk/activity-checklists/{id}:
+    get:
+      operationId: riskGetActivityChecklist
+      tags: [risk]
+      summary: One checklist run by id (RRA-05)
+      x-permission: ropa.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskActivityChecklist'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/risk/gap-rules:
     get:
       operationId: riskListGapRules
@@ -19044,6 +19139,43 @@ components:
           items: {$ref: '#/components/schemas/RiskFactorContribution'}
           description: Every RoPA signal that raised likelihood or impact — RRA-01's own "explain the factors" acceptance criterion
         computed_at: {$ref: '#/components/schemas/Timestamp'}
+    RiskActivityChecklistInput:
+      type: object
+      required: [form_id, answers]
+      properties:
+        form_id: {$ref: '#/components/schemas/Uuid'}
+        answers:
+          type: object
+          additionalProperties: {}
+    RiskActivityChecklist:
+      type: object
+      required: [id, activity_id, form_submission_id, score, result, factors, completed_at, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        form_submission_id: {$ref: '#/components/schemas/Uuid'}
+        score: {type: number}
+        result: {type: string}
+        factors:
+          type: array
+          items:
+            type: object
+            required: [question, label, points]
+            properties:
+              question: {type: string}
+              label:
+                type: object
+                additionalProperties: {type: string}
+              answer: {}
+              answer_labels:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: {type: string}
+              points: {type: number}
+        completed_by: {$ref: '#/components/schemas/Uuid'}
+        completed_at: {$ref: '#/components/schemas/Timestamp'}
+        row_version: {type: integer}
     RiskGapRule:
       type: object
       required: [id, code, name, severity, legal_ref]

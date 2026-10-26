@@ -33,6 +33,7 @@ import { DpiaScreeningSection } from "./dpia-screening-section";
 import { RiskScoreSection } from "./risk-score-section";
 import { Rtg06SuggestionsSection } from "./rtg06-suggestions-section";
 import { GapAnalysisSection } from "./gap-analysis-section";
+import { ActivityChecklistSection } from "./activity-checklist-section";
 import { TiaPanel } from "./tia-panel";
 import { ActivityVersioningSection } from "./activity-versioning-section";
 import { ActivityLinksSection } from "./activity-links-section";
@@ -409,6 +410,8 @@ export function ActivityDetailContent({ id, currentUserId }: { id: string; curre
       <RiskScoreSection client={client} activityId={id} />
 
       <GapAnalysisSection client={client} activityId={id} />
+
+      <ActivityChecklistSection client={client} activityId={id} />
 
       <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4" data-testid="rejections-section">
         <h2 className="font-semibold">{t("sections.rejections")}</h2>

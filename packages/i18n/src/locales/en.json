@@ -1540,7 +1540,14 @@
       "riskScore": "Risk score (RRA-01)",
       "suggestions": "Suggested defaults from a standard activity (RTG-06)",
       "gaps": "Legal gaps (RRA-04)",
-      "qa": "Q&A with the DPO or an advisor"
+      "qa": "Q&A with the DPO or an advisor",
+      "checklist": "Activity checklist (RRA-05)"
+    },
+    "checklist": {
+      "noForm": "No published checklist form yet — ask the DPO to publish one.",
+      "submit": "Submit checklist",
+      "empty": "No checklist has been run for this activity yet",
+      "score": "Score: {score}"
     },
     "gaps": {
       "analyze": "Check for gaps",

@@ -23,3 +23,6 @@ output-options:
     - riskUpdateRiskEntry
     - riskListAcceptances
     - riskRecordAcceptance
+    - riskListActivityChecklists
+    - riskAnswerActivityChecklist
+    - riskGetActivityChecklist

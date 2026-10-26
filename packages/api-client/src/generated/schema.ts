@@ -5114,6 +5114,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/activities/{id}/checklists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every checklist run recorded against this activity, newest first (RRA-05) */
+        get: operations["riskListActivityChecklists"];
+        put?: never;
+        /** Answer a published checklist against this activity and record the run (RRA-05) */
+        post: operations["riskAnswerActivityChecklist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/risk/activity-checklists/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One checklist run by id (RRA-05) */
+        get: operations["riskGetActivityChecklist"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/risk/gap-rules": {
         parameters: {
             query?: never;
@@ -7140,6 +7175,33 @@ export interface components {
             /** @description Every RoPA signal that raised likelihood or impact — RRA-01's own "explain the factors" acceptance criterion */
             factors: components["schemas"]["RiskFactorContribution"][];
             computed_at: components["schemas"]["Timestamp"];
+        };
+        RiskActivityChecklistInput: {
+            form_id: components["schemas"]["Uuid"];
+            answers: {
+                [key: string]: unknown;
+            };
+        };
+        RiskActivityChecklist: {
+            id: components["schemas"]["Uuid"];
+            activity_id: components["schemas"]["Uuid"];
+            form_submission_id: components["schemas"]["Uuid"];
+            score: number;
+            result: string;
+            factors: {
+                question: string;
+                label: {
+                    [key: string]: string;
+                };
+                answer?: unknown;
+                answer_labels?: {
+                    [key: string]: string;
+                }[];
+                points: number;
+            }[];
+            completed_by?: components["schemas"]["Uuid"];
+            completed_at: components["schemas"]["Timestamp"];
+            row_version: number;
         };
         RiskGapRule: {
             id: components["schemas"]["Uuid"];
@@ -22528,6 +22590,95 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    riskListActivityChecklists: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RiskActivityChecklist"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    riskAnswerActivityChecklist: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RiskActivityChecklistInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskActivityChecklist"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    riskGetActivityChecklist: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskActivityChecklist"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     riskListGapRules: {

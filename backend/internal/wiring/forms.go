@@ -33,5 +33,10 @@ func Forms(n *notify.Service, a *audit.Service) *forms.Service {
 	// low/medium/high/critical.
 	s.Register("intake", forms.Policy{Read: "vendor.vendor.read", Create: "vendor.vendor.approve",
 		Update: "vendor.vendor.approve", Publish: "vendor.vendor.approve", Respond: "vendor.vendor.update"})
+	// Per-activity checklist (RRA-05): DPO designs/publishes (ropa.risk.approve/create, DPO-only in the
+	// seeded RBAC); OWNER answers it (ropa.risk.update, held by both OWNER and DPO) through the risk
+	// module (forms.Service.Record) against the activity itself.
+	s.Register("checklist", forms.Policy{Read: "ropa.risk.read", Create: "ropa.risk.create",
+		Update: "ropa.risk.approve", Publish: "ropa.risk.approve", Respond: "ropa.risk.update"})
 	return s
 }

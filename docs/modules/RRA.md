@@ -493,6 +493,27 @@ here, so the Go tests were verified by `go build`/`go vet`/`gofmt -l` (compile-c
 
 **Acceptance criteria:** คำถามและคำตอบถูกเก็บในกิจกรรม
 
+**Implementation:** Migration 00085 widens `platform.form_definitions.form_type` to accept `'checklist'`
+and adds `risk.activity_checklists` (tenant-scoped, RLS, FK to `platform.form_submissions` and the
+completing user). `internal/risk/service/checklist.go`'s `AnswerChecklist` is a thin wrapper over
+PLT-06's own form engine (`forms.Service.Record`): the DPO designs/publishes an ordinary `"checklist"`-
+type form (`internal/wiring/forms.go`, policy `ropa.risk.{read,create,approve}`/`ropa.risk.update`),
+and `AnswerChecklist` validates+scores the answers against the activity (`Ropa.ActivityVisible` for the
+FK-visibility check), stores the submission against entity type `"ropa_activity"` — already a
+registered PLT-07 collaboration-record type from ROPA-12, so any follow-up question for a consultant or
+the DPO is a comment on that same activity, literally satisfying "คำถามและคำตอบถูกเก็บในกิจกรรม" — and
+records a thin `risk.activity_checklists` row (score, result band, per-question `forms.Contribution`
+factors) for fast listing. `ListActivityChecklists`/`GetActivityChecklist` read past runs.
+API: `GET/POST /admin/v1/ropa/activities/{id}/checklists` (`riskListActivityChecklists` `ropa.risk.read`,
+`riskAnswerActivityChecklist` `ropa.risk.update`) and `GET /admin/v1/risk/activity-checklists/{id}`
+(`riskGetActivityChecklist` `ropa.risk.read`). Frontend: `ActivityChecklistSection` on the activity
+detail page — the published-form picker + `@pdpa/form-renderer` form, past runs list, i18n th/en.
+Tests: `internal/risk/service/checklist_test.go` (answer/validate/unknown-activity/two-tenant isolation,
+all against a real local Postgres) and `internal/risk/http/checklist_test.go` (401/403/404/422 contract
+test behind the real OpenAPI validator and AuthZ). `go build`/`go vet`/`gofmt` and
+`pnpm --filter @pdpa/api-client typecheck`/`pnpm --filter @pdpa/i18n test`/`pnpm --filter @pdpa/admin build`
+all clean.
+
 <a id="rra-08"></a>
 ### RRA-08 ยอมรับความเสี่ยงพร้อมผู้อนุมัติ
 

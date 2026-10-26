@@ -39,6 +39,8 @@ export type RopaOpenQuestion = components["schemas"]["RopaOpenQuestion"];
 export type ActivityLinks = components["schemas"]["ActivityLinks"];
 export type ActivityLinkedNotice = components["schemas"]["ActivityLinkedNotice"];
 export type ActivityLinkedConsentPurpose = components["schemas"]["ActivityLinkedConsentPurpose"];
+export type RiskActivityChecklist = components["schemas"]["RiskActivityChecklist"];
+export type RiskActivityChecklistInput = components["schemas"]["RiskActivityChecklistInput"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const activitiesKey = ["ropa", "activities"] as const;
@@ -211,6 +213,19 @@ export function useActivityLinks(client: ApiClient, id: string | undefined) {
     enabled: !!id,
     queryFn: async () => {
       const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/links", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** RRA-05 — every checklist run already recorded against this activity, newest first. */
+export function useActivityChecklists(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...activityKey(id ?? ""), "checklists"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/checklists", { params: { path: { id: id! } } });
       if (error) throw error;
       return data;
     },
@@ -449,6 +464,14 @@ export function useActivityMutations(client: ApiClient, id?: string) {
       mutationFn: async (controlId: string) => {
         const { error } = await client.DELETE("/admin/v1/ropa/activities/{id}/controls/{controlId}", { params: { path: { id: id!, controlId } } });
         if (error) throw error;
+      },
+      onSuccess: refresh,
+    }),
+    answerChecklist: useMutation({
+      mutationFn: async (body: RiskActivityChecklistInput) => {
+        const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/checklists", { params: { path: { id: id! } }, body });
+        if (error) throw error;
+        return data;
       },
       onSuccess: refresh,
     }),

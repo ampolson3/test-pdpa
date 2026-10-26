@@ -196,6 +196,7 @@ export {
   useActivityVersions,
   useCompareActivityVersions,
   useActivityLinks,
+  useActivityChecklists,
   useActivityMutations,
   useMyOpenQuestions,
   type ProcessingActivity,
@@ -236,6 +237,8 @@ export {
   type ActivityLinks,
   type ActivityLinkedNotice,
   type ActivityLinkedConsentPurpose,
+  type RiskActivityChecklist,
+  type RiskActivityChecklistInput,
 } from "./activities";
 export {
   useTemplateSets,
