@@ -4394,6 +4394,38 @@ duplicated `store/models.go` copies, left stale by an earlier pass's own narrowe
 invocation). `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter
 @pdpa/admin build` (incl. the updated `/ropa/activities/[id]` route) all verified clean.
 
+### RTG-07 สร้าง RoPA ผู้ประมวลผลจาก template (`docs/modules/RTG.md#rtg-07`) — done
+`ropa.template_sets.set_type` already reserved `'processor'` in its baseline CHECK constraint (ERD-09),
+unused until now — migration 00087 (`docs/decisions.md` Q-42) seeds one `set_type='processor'` template
+set with 3 representative processor activities (payroll outsourcing, outsourced customer support, cloud
+hosting), each `role='processor'` and in the exact `defaults`/`rationale` jsonb shape RTG-01/02/03
+already use. `lawful_basis_code` is `CONTRACT` throughout — a processor's own purpose is always
+performing the data processing agreement with the controller, never the controller's own basis for the
+underlying processing (the same reason ROPA-04's own processor-RoPA export excludes that column from its
+CSV). No service code change at all: `internal/ropa/templates.Service`'s existing
+`ListTemplateSets`/`ListActivityTemplates` already return any set regardless of `set_type`, and
+ROPA-05's own `CreateActivityFromTemplate` already copies any template's `defaults` into a real activity
+regardless of `role` — the literal acceptance criterion ("สร้าง RoPA ผู้ประมวลผลจาก template ได้") was
+already reachable through that exact path the instant a processor-role template existed to point it at.
+
+Frontend: `/ropa/templates`'s existing industry/government `<select>` gained a third sentinel option
+(`__processor__`, mirroring RTG-03's own `__government__` sentinel exactly) switching the browsed set to
+this one — no new control needed. `controller_party_id` (the hiring party) is left for the OWNER to fill
+in by hand after creation, the same gap RTG-01's own 3 embedded processor-role examples already
+document — a global template can't know which of this tenant's own `org.external_parties` rows is the
+real controller. Tests: `internal/ropa/templates/rtg07_test.go` (the set exists, every activity is
+role=processor and covers every ม.39 topic with `lawful_basis_code=CONTRACT`, the axis stays distinct
+from RTG-01's own standard set), `internal/ropa/service/rtg07_test.go` (the acceptance criterion
+directly: creating an activity from one of these templates via `CreateActivityFromTemplate` yields a
+real role=processor RoPA activity with its purposes/data/retention/security-controls copied in) — all
+run live against a real Postgres 16 + Redis in this session. `go build ./...`, `go vet ./...`, `gofmt -l`
+(clean on every touched Go file), the full `internal/ropa/...` suite (no regressions — every
+pre-existing failure, confirmed identical both before and after this change via isolated reruns, is
+unrelated: the ROPA-18 import suite's own `lawful_basis`/`subject_type` fixture gap, the
+`consent_purpose_id` template-purpose gap, and ROPA-15's own notification-count test). `pnpm --filter
+@pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated `/ropa/templates` route) all
+verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

@@ -3187,6 +3187,7 @@
     "industryFilter": "Industry",
     "standardSetLabel": "Standard library (by job category)",
     "governmentSetLabel": "Government (DGA template v1.0)",
+    "processorSetLabel": "Processor (processor RoPA notice 2022)",
     "jobCategory": "Job category",
     "allCategories": "All categories",
     "selectPrompt": "Select an activity on the left to view its defaults",

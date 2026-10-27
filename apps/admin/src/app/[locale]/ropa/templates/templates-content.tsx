@@ -48,9 +48,17 @@ export function TemplatesContent() {
   // second control.
   const governmentSet = useMemo(() => (sets.data ?? []).find((s) => s.set_type === "government"), [sets.data]);
   const GOVERNMENT_SENTINEL = "__government__";
+  // RTG-07: the processor RoPA template (ประกาศ RoPA ผู้ประมวลผล พ.ศ. 2565) is its own set_type
+  // ("processor") — a third axis alongside the industry and government ones, picked the same way via
+  // a sentinel value in the same <select>.
+  const processorSet = useMemo(() => (sets.data ?? []).find((s) => s.set_type === "processor"), [sets.data]);
+  const PROCESSOR_SENTINEL = "__processor__";
   // RTG-02: picking an industry switches the browsed set from RTG-01's standard (job-category) one to
   // that industry's own starter set — the job-category filter below still applies within either set.
-  const activeSet = industry === GOVERNMENT_SENTINEL ? governmentSet : industry ? industrySets.find((s) => s.industry === industry) : standardSet;
+  const activeSet =
+    industry === GOVERNMENT_SENTINEL ? governmentSet :
+    industry === PROCESSOR_SENTINEL ? processorSet :
+    industry ? industrySets.find((s) => s.industry === industry) : standardSet;
   const all = useActivityTemplates(client, activeSet?.id);
   const filtered = useActivityTemplates(client, activeSet?.id, jobCategory || undefined);
   const detail = useActivityTemplate(client, selectedId ?? undefined);
@@ -95,6 +103,11 @@ export function TemplatesContent() {
               {governmentSet && (
                 <option value={GOVERNMENT_SENTINEL} data-testid="government-set-option">
                   {t("governmentSetLabel")}
+                </option>
+              )}
+              {processorSet && (
+                <option value={PROCESSOR_SENTINEL} data-testid="processor-set-option">
+                  {t("processorSetLabel")}
                 </option>
               )}
             </select>

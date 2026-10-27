@@ -3187,6 +3187,7 @@
     "industryFilter": "อุตสาหกรรม",
     "standardSetLabel": "คลังมาตรฐาน (ตามหมวดงาน)",
     "governmentSetLabel": "ภาครัฐตามแม่แบบ สพร. v1.0",
+    "processorSetLabel": "ผู้ประมวลผล (ตามประกาศ RoPA ผู้ประมวลผล พ.ศ. 2565)",
     "jobCategory": "หมวดงาน",
     "allCategories": "ทุกหมวดงาน",
     "selectPrompt": "เลือกกิจกรรมทางด้านซ้ายเพื่อดูค่าตั้งต้น",
