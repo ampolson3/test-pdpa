@@ -30,6 +30,7 @@ import {
   type ActivityTransferBasis,
 } from "@pdpa/api-client";
 import { DpiaScreeningSection } from "./dpia-screening-section";
+import { ActivityLiaSection } from "./activity-lia-section";
 import { RiskScoreSection } from "./risk-score-section";
 import { Rtg06SuggestionsSection } from "./rtg06-suggestions-section";
 import { GapAnalysisSection } from "./gap-analysis-section";
@@ -431,6 +432,8 @@ export function ActivityDetailContent({ id, currentUserId }: { id: string; curre
       </section>
 
       <DpiaScreeningSection client={client} activityId={id} currentUserId={currentUserId} />
+
+      <ActivityLiaSection client={client} activityId={id} />
     </main>
   );
 }

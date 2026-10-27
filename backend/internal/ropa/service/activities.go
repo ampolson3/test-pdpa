@@ -453,6 +453,29 @@ func (s *Service) completeness(ctx context.Context, a Activity) (int, []string, 
 		}
 	}
 
+	// DPIA-16 (ม.24(5)): a purpose relying on legitimate interest needs an approved LIA on file — "กิจกรรม
+	// ที่ใช้ฐาน ม.24(5) ต้องมี LIA ที่อนุมัติ" literally. s.Dpia is nil in contexts that never run one (e.g.
+	// cmd/worker's own review sweeps), the same nil-means-skip convention this struct's other optional
+	// cross-module fields already follow — skipping the check there, not failing it.
+	if s.Dpia != nil {
+		usesLegitimateInterest := false
+		for _, p := range purposes {
+			if p.LawfulBasisCode == "LEGITIMATE_INTEREST" {
+				usesLegitimateInterest = true
+				break
+			}
+		}
+		if usesLegitimateInterest {
+			approved, err := s.Dpia.HasApprovedLIA(ctx, a.ID)
+			if err != nil {
+				return 0, nil, err
+			}
+			if !approved {
+				missing = append(missing, "lia_approved")
+			}
+		}
+	}
+
 	score := int(math.Round(100 * float64(satisfied) / float64(checks)))
 	return score, missing, nil
 }

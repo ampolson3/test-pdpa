@@ -52,9 +52,12 @@ type TiaResult struct {
 
 // Dpia is what ropa reads from the dpia module (rule 9) to run a transfer impact assessment (DPX-06)
 // against one of VEN-04/DPIA-03's own assessment_type='tia' templates without ever touching assess.* itself.
+// HasApprovedLIA is DPIA-16's own completeness check (ม.24(5)): whether an activity already has an approved
+// legitimate-interest assessment on record.
 type Dpia interface {
 	ListTemplates(ctx context.Context, assessmentType string) ([]DpiaTemplate, error)
 	RecordSubjectAssessment(ctx context.Context, templateID uuid.UUID, subjectType string, subjectID uuid.UUID, title string, answers forms.Answers) (TiaResult, error)
+	HasApprovedLIA(ctx context.Context, activityID uuid.UUID) (bool, error)
 }
 
 func (tr *ActivityTransfer) normalize() error {

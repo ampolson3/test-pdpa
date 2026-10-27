@@ -513,6 +513,9 @@ export {
   useAddRiskControl,
   useUpdateRiskControlStatus,
   useRemoveRiskControl,
+  useLiaForActivity,
+  useAssessLia,
+  useDecideLia,
   dpiaReportHref,
   type DpiaScreeningRule,
   type DpiaAssessment,
@@ -532,6 +535,7 @@ export {
   type DpiaRiskControl,
   type DpiaRiskControlInput,
   type DpiaRiskControlStatus,
+  type DpiaLiaAssessment,
 } from "./dpia";
 export {
   useDataflowGraph,

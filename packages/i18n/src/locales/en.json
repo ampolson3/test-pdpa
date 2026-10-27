@@ -864,6 +864,26 @@
         "less_invasive_considered": "A less invasive alternative was considered before choosing this approach"
       }
     },
+    "lia": {
+      "title": "Legitimate interest assessment (LIA, s.24(5))",
+      "empty": "No LIA round has been run for this activity yet",
+      "submit": "Submit for approval",
+      "approve": "Approve",
+      "reject": "Reject",
+      "round": "Round {round}",
+      "reasonPlaceholder": "Reason (required to reject)",
+      "statuses": {
+        "in_progress": "Pending approval",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "questions": {
+        "purpose_legitimate": "A specific, identifiable legitimate interest of the controller or a third party exists (s.24(5))",
+        "necessary_for_purpose": "The processing is necessary to achieve that interest, with no less intrusive alternative",
+        "not_overridden_by_rights": "The interest is not overridden by the data subject's own rights and freedoms, considering their reasonable expectations",
+        "safeguards_in_place": "Additional safeguards (e.g. data minimization, pseudonymization) are in place to reduce the impact on the data subject"
+      }
+    },
     "consultations": {
       "title": "Stakeholder consultation log",
       "none": "No consultation recorded yet",

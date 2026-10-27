@@ -11975,6 +11975,137 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/activities/{id}/lia:
+    get:
+      operationId: dpiaListLiaForActivity
+      tags: [dpia]
+      summary: 'DPIA-16: every legitimate-interest assessment (LIA) round recorded against this activity, newest first'
+      x-permission: assessment.dpia.read
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/DpiaLiaAssessment'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dpiaAssessLia
+      tags: [dpia]
+      summary: 'DPIA-16: answer the published LIA test (purpose / necessity / balancing, ม.24(5)) against this activity, opening a new round pending DPO approval'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answers]
+              additionalProperties: false
+              properties:
+                answers:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaLiaAssessment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpia/lia/{id}/decide:
+    post:
+      operationId: dpiaDecideLia
+      tags: [dpia]
+      summary: 'DPIA-16: the DPO''s own approve/reject decision on an answered LIA round (If-Match) — needs assessment.dpia.approve'
+      x-permission: assessment.dpia.update
+      x-module: dpia
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [to]
+              additionalProperties: false
+              properties:
+                to:
+                  type: string
+                  enum: [approved, rejected]
+                reason: {type: string}
+      responses:
+        '200':
+          description: Decided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpiaLiaAssessment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/dpia/assessments/{id}/report:
     get:
       operationId: dpiaGetReport
@@ -19532,6 +19663,31 @@ components:
           description: 'Set when this round was opened by RRA-03''s risk-score trigger (high | very_high); null for a manually-screened round.'
           enum: [low, medium, high, very_high, null]
         owner_user_id: {$ref: '#/components/schemas/Uuid'}
+        factors:
+          type: array
+          items:
+            type: object
+            required: [question, answer, points]
+            properties:
+              question: {type: string}
+              answer: {}
+              points: {type: number}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    DpiaLiaAssessment:
+      type: object
+      description: 'DPIA-16 (ม.24(5)): one legitimate-interest-assessment round — a distinct schema from DpiaAssessment since this one never carries a screening_result/screening_reason (there is nothing to screen; a round is simply answered then decided).'
+      required: [id, activity_id, round_no, status, score, factors, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        round_no: {type: integer}
+        previous_id: {$ref: '#/components/schemas/Uuid'}
+        title: {type: string}
+        status:
+          type: string
+          enum: [in_progress, approved, rejected]
+        score: {type: number}
         factors:
           type: array
           items:

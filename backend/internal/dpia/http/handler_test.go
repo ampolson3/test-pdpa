@@ -317,6 +317,41 @@ func TestDpiaEndpoints_Contract(t *testing.T) {
 		t.Errorf("re-assess necessity: %d %s", code, body)
 	}
 
+	// DPIA-16: legitimate-interest assessment (LIA), keyed by activity rather than by assessment round.
+	liaPath := "/admin/v1/ropa/activities/" + activityID.String() + "/lia"
+	liaAnswers := map[string]any{"purpose_legitimate": "yes", "necessary_for_purpose": "yes", "not_overridden_by_rights": "yes", "safeguards_in_place": "yes"}
+	if code, body := do("GET", liaPath, &reader2, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list lia (none yet): %d %s", code, body)
+	}
+	if code, _ := do("POST", liaPath, &reader2, map[string]any{"answers": liaAnswers}, nil); code != 403 {
+		t.Errorf("assess lia with read-only permission: %d, want 403", code)
+	}
+	code, body = do("POST", liaPath, &admin, map[string]any{"answers": liaAnswers}, nil)
+	if code != 201 || !strings.Contains(body, `"status":"in_progress"`) {
+		t.Fatalf("assess lia: %d %s", code, body)
+	}
+	var liaRound struct {
+		Id         uuid.UUID `json:"id"`
+		RowVersion int       `json:"row_version"`
+	}
+	_ = json.Unmarshal([]byte(body), &liaRound)
+	if code, body := do("GET", liaPath, &reader2, nil, nil); code != 200 || !strings.Contains(body, liaRound.Id.String()) {
+		t.Errorf("list lia after answering: %d %s", code, body)
+	}
+	decidePath := "/admin/v1/dpia/lia/" + liaRound.Id.String() + "/decide"
+	if code, _ := do("POST", decidePath, &admin, map[string]any{"to": "approved"}, nil); code != 428 {
+		t.Errorf("decide without If-Match: %d, want 428", code)
+	}
+	if code, _ := do("POST", decidePath, &limited, map[string]any{"to": "approved"}, map[string]string{"If-Match": `"1"`}); code != 403 {
+		t.Errorf("decide without assessment.dpia.approve: %d, want 403", code)
+	}
+	if code, body := do("POST", decidePath, &admin, map[string]any{"to": "approved"}, map[string]string{"If-Match": `"1"`}); code != 200 || !strings.Contains(body, `"status":"approved"`) {
+		t.Errorf("decide approve: %d %s", code, body)
+	}
+	if code, _ := do("POST", decidePath, &admin, map[string]any{"to": "rejected"}, map[string]string{"If-Match": `"2"`}); code != 409 {
+		t.Errorf("decide an already-decided round: %d, want 409", code)
+	}
+
 	// DPIA-11: stakeholder consultation log.
 	consultPath := item + "/consultations"
 	if code, body := do("GET", consultPath, &reader2, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {

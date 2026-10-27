@@ -38,3 +38,6 @@ output-options:
     - dpiaCloneTemplate
     - dpiaPublishTemplate
     - dpiaRetireTemplate
+    - dpiaListLiaForActivity
+    - dpiaAssessLia
+    - dpiaDecideLia

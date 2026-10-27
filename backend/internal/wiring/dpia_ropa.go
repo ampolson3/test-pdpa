@@ -37,3 +37,8 @@ func (a RopaDpia) RecordSubjectAssessment(ctx context.Context, templateID uuid.U
 	}
 	return ropaservice.TiaResult{ID: res.ID, Score: res.Score}, nil
 }
+
+// HasApprovedLIA forwards DPIA-16's own completeness check.
+func (a RopaDpia) HasApprovedLIA(ctx context.Context, activityID uuid.UUID) (bool, error) {
+	return a.Dpia.HasApprovedLIA(ctx, activityID)
+}

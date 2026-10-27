@@ -20,6 +20,7 @@ export type DpiaRiskCatalogItem = components["schemas"]["DpiaRiskCatalogItem"];
 export type DpiaRiskControl = components["schemas"]["DpiaRiskControl"];
 export type DpiaRiskControlInput = components["schemas"]["DpiaRiskControlInput"];
 export type DpiaRiskControlStatus = components["schemas"]["DpiaRiskControlStatus"];
+export type DpiaLiaAssessment = components["schemas"]["DpiaLiaAssessment"];
 
 /** GET /admin/v1/dpia/assessments/{id}/report (DPIA-15) — a plain href, not a query/mutation: the browser
  *  downloads the PDF/Word file through this link directly, the same pattern documentExportHref uses. */
@@ -153,6 +154,51 @@ export function useAssessNecessity(client: ApiClient) {
       return data;
     },
     onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...assessmentsKey, v.assessmentId, "necessity"] }),
+  });
+}
+
+/** GET /admin/v1/ropa/activities/{id}/lia (DPIA-16) — every LIA round recorded against this activity. */
+export function useLiaForActivity(client: ApiClient, activityId: string | undefined) {
+  return useQuery({
+    queryKey: ["dpia", "lia", activityId ?? ""],
+    enabled: !!activityId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/lia", { params: { path: { id: activityId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/ropa/activities/{id}/lia (DPIA-16) — answer the published LIA test, opening a new round. */
+export function useAssessLia(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { activityId: string; answers: Record<string, unknown> }) => {
+      const { data, error } = await client.POST("/admin/v1/ropa/activities/{id}/lia", {
+        params: { path: { id: v.activityId } },
+        body: { answers: v.answers },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: ["dpia", "lia", v.activityId] }),
+  });
+}
+
+/** POST /admin/v1/dpia/lia/{id}/decide (DPIA-16) — the DPO's own approve/reject decision on a round. */
+export function useDecideLia(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { activityId: string; liaId: string; ifMatch: string; to: "approved" | "rejected"; reason?: string }) => {
+      const { data, error } = await client.POST("/admin/v1/dpia/lia/{id}/decide", {
+        params: { path: { id: v.liaId }, header: { "If-Match": v.ifMatch } },
+        body: { to: v.to, reason: v.reason },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: ["dpia", "lia", v.activityId] }),
   });
 }
 

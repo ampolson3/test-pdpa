@@ -784,6 +784,52 @@ reachable, the same environment limitation this codebase's other breach tests al
 
 **Acceptance criteria:** กิจกรรมที่ใช้ฐาน ม.24(5) ต้องมี LIA ที่อนุมัติ
 
+**Implementation:** `assess.templates`'s own `assessment_type` CHECK already listed `'lia'` (migration 00011,
+unused until now) — migration 00086 (`docs/decisions.md` Q-41) seeds a global 3-part LIA test (purpose /
+necessity / balancing, 4 yes/no questions) as a DRAFT pending legal review, the same move DPIA-01/02/05's own
+seeded templates already used. `internal/dpia/service/lia.go`'s `AssessLIA(activityID, answers)` answers the
+published test against a RoPA activity directly (not against a DPIA assessment round — a legitimate-interest
+purpose may exist with no DPIA ever run), opening a new round (`assess.assessments`, `assessment_type='lia'`,
+`status='in_progress'`, round-chained via `previous_id` the same way DPIA-01's own `Screen` chains rounds);
+`DecideLIA` is the DPO's own approve/reject sign-off (needs `assessment.dpia.approve` beyond the endpoint's
+own `.update`, the same approver-only gate DPIA-10's `Transition` already uses) — a small, dedicated
+`in_progress -> approved | rejected` machine, deliberately not DPIA-10's own fuller ST-05#2 graph, since an
+LIA round has no review/needs_review cycle of its own. `HasApprovedLIA(activityID)` reads whether the
+activity's *latest* round is approved.
+
+The acceptance criterion itself is wired into ROPA-03's own `completeness()` as a new conditional item,
+`lia_approved` (the same shape ROPA-08's `transfer_basis`/DPX-06's `tia_missing` already use): any purpose on
+the activity citing `LEGITIMATE_INTEREST` flags it until `HasApprovedLIA` reads true. `ropaservice.Dpia`
+(already built for DPX-06's own TIA) gained this one extra method; `wiring.RopaDpia` forwards it — no new
+cross-module wiring, since `ropaSvc.Dpia` was already set in `cmd/api/main.go`. `s.Dpia` stays nil-means-skip
+in contexts that never need it (e.g. `cmd/worker`'s own review sweeps), the same convention every other
+optional cross-module field on `ropaservice.Service` already follows.
+
+API: `GET`/`POST /admin/v1/ropa/activities/{id}/lia` (`dpiaListLiaForActivity` `assessment.dpia.read`,
+`dpiaAssessLia` `assessment.dpia.update`) and `POST /admin/v1/dpia/lia/{id}/decide` (ETag/If-Match, 409 for
+a round already decided, 422 for a rejection with no reason) — a new `DpiaLiaAssessment` schema (not the
+existing `DpiaAssessment`, which carries a required `screening_result` enum an LIA round has no equivalent
+for). Frontend: `ActivityLiaSection` mounted on `/ropa/activities/{id}`, right after the DPIA screening
+section — a 4-checkbox form, a list of past rounds with a status badge, and approve/reject actions for a
+caller holding `assessment.dpia.approve`; i18n keys under `dpia.lia.*`, th/en.
+
+Tests: `internal/dpia/service/lia_test.go` (answers open a fresh in_progress round; re-answering opens a new
+round chained via previous_id, never edits the prior one; approve/reject and the resulting `HasApprovedLIA`
+read; a rejection needs a reason; the approve-permission gate; an already-decided round can't be decided
+again; two-tenant isolation — all run live against a real Postgres), `internal/ropa/service/dpia16_lia_test.go`
+(the completeness check itself: an ordinary-basis purpose never flags `lia_approved`; a legitimate-interest
+purpose does until approved; a `Service` with no `Dpia` wired skips the check entirely), HTTP contract
+(`internal/dpia/http/handler_test.go`'s existing `TestDpiaEndpoints_Contract`, extended with the full
+answer → list → decide (missing If-Match 428, no-permission 403, approve 200, re-decide 409) chain through
+the real validator + AuthZ). `go build ./...`, `go vet ./...`, `gofmt -l` all clean on every touched file;
+the full `go test -count=1 ./...` suite run live against a real Postgres 16 + Redis confirmed no regressions
+— every pre-existing failure elsewhere (vendormgmt, gov, the ropa import suite, modulegate, validate, forms,
+risk) was independently reproduced via `git stash` and is unrelated to this change. `make gen` re-run with no
+drift (also caught and fixed real pre-existing drift in several other modules' own duplicated `store/models.go`
+copies, left stale by an earlier pass's own narrower `sqlc generate` invocation).
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/ropa/activities/[id]` route) all verified clean.
+
 <a id="dpia-17"></a>
 ### DPIA-17 ประเมินผลกระทบของระบบ AI
 
