@@ -3249,7 +3249,38 @@
     "batchBack": "ย้อนกลับ",
     "batchCreate": "สร้างร่าง RoPA",
     "batchSelectedCount": "{count, plural, =0{ยังไม่ได้เลือก} other{เลือกแล้ว # รายการ}}",
-    "batchSummaryIntro": "จะสร้างร่างกิจกรรม {count} รายการสำหรับแผนกที่เลือก"
+    "batchSummaryIntro": "จะสร้างร่างกิจกรรม {count} รายการสำหรับแผนกที่เลือก",
+    "custom": {
+      "sectionTitle": "Template ขององค์กร (มาตรฐานของกลุ่มบริษัท)",
+      "manageToggle": "จัดการ template ขององค์กร",
+      "ownSets": "ชุด template ขององค์กรของคุณ",
+      "noOwnSets": "ยังไม่มีชุด template ขององค์กร",
+      "createSet": "สร้างชุดใหม่",
+      "cloneSet": "คัดลอกชุดที่กำลังดูอยู่",
+      "setNamePlaceholder": "ชื่อชุด เช่น กิจกรรมมาตรฐานของกลุ่มบริษัท",
+      "create": "สร้าง",
+      "clone": "คัดลอก",
+      "publish": "เผยแพร่",
+      "retire": "ยุติการใช้งาน",
+      "status": {
+        "draft": "ร่าง",
+        "published": "เผยแพร่แล้ว",
+        "retired": "ยุติแล้ว"
+      },
+      "addActivity": "เพิ่มกิจกรรม",
+      "activityCode": "รหัส",
+      "activityNameTh": "ชื่อ (ไทย)",
+      "activityNameEn": "ชื่อ (อังกฤษ)",
+      "activityRole": "บทบาท",
+      "defaultsJson": "ค่าตั้งต้น (JSON)",
+      "rationaleJson": "เหตุผล (JSON)",
+      "save": "บันทึก",
+      "cancel": "ยกเลิก",
+      "remove": "ลบ",
+      "invalidJson": "ค่าตั้งต้น/เหตุผลต้องเป็น JSON ที่ถูกต้อง",
+      "saveError": "บันทึกไม่สำเร็จ",
+      "publishedHint": "เผยแพร่แล้ว — ทุกบริษัทในเครือภายใต้องค์กรนี้สามารถสร้างกิจกรรมจาก template นี้ได้แล้ว"
+    }
   },
   "governance": {
     "signInRequired": "กรุณาเข้าสู่ระบบ",

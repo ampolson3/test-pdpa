@@ -4426,6 +4426,65 @@ unrelated: the ROPA-18 import suite's own `lawful_basis`/`subject_type` fixture 
 @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated `/ropa/templates` route) all
 verified clean.
 
+### RTG-08 แก้ไขและสร้าง template ขององค์กร (`docs/modules/RTG.md#rtg-08`) — done
+`ropa.template_sets.set_type` already reserved `'custom'` in its baseline CHECK constraint, unused until
+now — no new migration, since every column this feature needs already existed and the schema's own
+`tenant_write` RLS policy already lets a tenant insert/update/delete its own `tenant_id = current tenant`
+rows. `internal/ropa/templates/write.go` (new, alongside RTG-01's own read-only `service.go`) adds
+`CreateTemplateSet`/`CloneTemplateSet`/`PublishTemplateSet`/`RetireTemplateSet`/`AddActivityTemplate`/
+`UpdateActivityTemplate`/`DeleteActivityTemplate`/`ListOwnTemplateSets`. `CloneTemplateSet` is the
+acceptance criterion's own first half ("คัดลอก template กลางมาปรับ") — copies a source set's own
+activities (global or another custom set) verbatim into a brand-new, independent custom set; editing the
+clone afterward never touches the source, since each cloned activity is a fresh row from the start.
+`PublishTemplateSet` is the second half ("กำหนด template มาตรฐานของกลุ่มบริษัท") — once published, the set
+appears on the exact same published browse list `ListTemplateSets` (RTG-01) already returns, and ROPA-05's
+own `CreateActivityFromTemplate` is already set-type/role-agnostic, so a published custom set is
+immediately and fully usable by every legal entity/org unit under this tenant ("บริษัทในเครือ") with zero
+further wiring — proven directly by `internal/ropa/service/rtg08_test.go`, a cross-package test that
+creates a custom set, adds an activity, publishes it, then drives a real `CreateActivityFromTemplate` call
+against it.
+
+A new `ownSet` guard (`GetOwnTemplateSet`, a new sqlc query filtering `tenant_id = current tenant`) proves
+a write targets one of this tenant's own custom sets before touching it — writing to a global
+standard/industry/government/processor set is refused with a clear `templatesservice.ErrInvalid`, not a
+confusing "0 rows affected" the RLS policy alone would otherwise produce silently; `ErrVersionMismatch` is
+the matching ETag sentinel, both mapped at the HTTP layer (`templatesProblem`, `internal/ropa/http/
+templates.go`) the same way every other module's own write-path sentinels already are.
+`templatesservice.Service` gained an `Audit *auditservice.Service` field (nil-means-skip, the same
+convention every other optional cross-cutting field on a module Service already uses) — wired in
+`cmd/api/main.go` right after `ropaTemplatesSvc` is constructed.
+
+API: `GET`/`POST /admin/v1/ropa/templates/custom` (the management list + create, distinct from RTG-01's own
+published-only `GET /admin/v1/ropa/templates`), `POST /admin/v1/ropa/templates/{id}/clone`, `POST
+.../publish` / `.../retire` (ETag/If-Match), `POST /admin/v1/ropa/templates/{id}/activities` (add),
+`PUT`/`DELETE /admin/v1/ropa/templates/activities/{activityTemplateId}` (ETag/If-Match) — all on the
+already-seeded `ropa.template.{read,create,update,publish,delete}` permissions (DPO full, LEGAL
+create/read/update — matching this feature's own actor line — no new permission code or migration). UI:
+`/ropa/templates` gained a "Manage custom templates" toggle — create a blank set or clone the currently
+browsed one, a list of the tenant's own sets with publish/retire actions and a status badge, and an inline
+add-activity form (code/name/job category/role + defaults/rationale as JSON, the same opaque-JSON
+convention every seeded template's own defaults already use) with a per-row remove button.
+
+Tests: unit (`internal/ropa/templates/write_test.go` — the acceptance criterion's own two halves directly:
+a draft set never appears in the published browse list and a published one does, retiring removes it
+again; cloning copies every activity independently, editing the clone never touches the source; writing to
+the global standard set is refused with `ErrInvalid`; a stale row_version is refused on update/publish;
+two-tenant isolation of both the management list and a cross-tenant write attempt),
+`internal/ropa/service/rtg08_test.go` (the full cross-package proof above), HTTP contract
+(`internal/ropa/http/rtg08_test.go`, a separate fixture from `TestAssetEndpoints_Contract` — whose own
+batch-create assertion is pre-existing, unrelated, and already failing before this feature touched the
+package, so appending there would never actually run — 401/403/201/200/412/428/422 through the real
+validator + AuthZ). Verified live against this session's own real Postgres 16 + Redis: `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file), the full `internal/ropa/...` suite (no
+regressions; every pre-existing failure confirmed identical before and after this change via `git stash
+-u`), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter
+@pdpa/admin build` (incl. the updated `/ropa/templates` route) all verified clean. Not done, deliberately:
+a separate approval step before publish (the acceptance criterion only asks that a published set be
+usable, not that it go through PLT-08's generic review engine — a custom template set is DPO/LEGAL's own
+internal reference content, not a document issued to a data subject or regulator); versioning a custom
+activity across edits (RTG-01's own global templates have no version history either — `version_no` stays
+at 1, the same as every seeded template).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

@@ -37,6 +37,8 @@ func setup(t *testing.T, suffix string) env {
 	t.Cleanup(func() {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_templates WHERE tenant_id IS NOT NULL`) // RTG-08: this tenant's own custom activities, never the global seeded ones
+			_, _ = tx.Exec(ctx, `DELETE FROM ropa.template_sets WHERE tenant_id IS NOT NULL`)      // RTG-08: this tenant's own custom sets
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_rejections`)
 			_, _ = tx.Exec(ctx, `DELETE FROM dsar.requests`)
 			_, _ = tx.Exec(ctx, `DELETE FROM ropa.activity_controls`)

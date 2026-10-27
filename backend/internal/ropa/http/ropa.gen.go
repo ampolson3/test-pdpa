@@ -483,6 +483,24 @@ func (e RopaActivityTemplateRole) Valid() bool {
 	}
 }
 
+// Defines values for RopaActivityTemplateInputRole.
+const (
+	RopaActivityTemplateInputRoleController RopaActivityTemplateInputRole = "controller"
+	RopaActivityTemplateInputRoleProcessor  RopaActivityTemplateInputRole = "processor"
+)
+
+// Valid indicates whether the value is a known member of the RopaActivityTemplateInputRole enum.
+func (e RopaActivityTemplateInputRole) Valid() bool {
+	switch e {
+	case RopaActivityTemplateInputRoleController:
+		return true
+	case RopaActivityTemplateInputRoleProcessor:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RopaSuggestedDataSource.
 const (
 	RopaSuggestedDataSourceDirect   RopaSuggestedDataSource = "direct"
@@ -522,6 +540,27 @@ func (e RopaTemplateSetSetType) Valid() bool {
 	case RopaTemplateSetSetTypeProcessor:
 		return true
 	case RopaTemplateSetSetTypeStandard:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaTemplateSetStatus.
+const (
+	RopaTemplateSetStatusDraft     RopaTemplateSetStatus = "draft"
+	RopaTemplateSetStatusPublished RopaTemplateSetStatus = "published"
+	RopaTemplateSetStatusRetired   RopaTemplateSetStatus = "retired"
+)
+
+// Valid indicates whether the value is a known member of the RopaTemplateSetStatus enum.
+func (e RopaTemplateSetStatus) Valid() bool {
+	switch e {
+	case RopaTemplateSetStatusDraft:
+		return true
+	case RopaTemplateSetStatusPublished:
+		return true
+	case RopaTemplateSetStatusRetired:
 		return true
 	default:
 		return false
@@ -1473,6 +1512,24 @@ func (e RopaListTemplateSetsParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for RopaDeleteActivityTemplateParamsAcceptLanguage.
+const (
+	RopaDeleteActivityTemplateParamsAcceptLanguageEn RopaDeleteActivityTemplateParamsAcceptLanguage = "en"
+	RopaDeleteActivityTemplateParamsAcceptLanguageTh RopaDeleteActivityTemplateParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaDeleteActivityTemplateParamsAcceptLanguage enum.
+func (e RopaDeleteActivityTemplateParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaDeleteActivityTemplateParamsAcceptLanguageEn:
+		return true
+	case RopaDeleteActivityTemplateParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RopaGetActivityTemplateParamsAcceptLanguage.
 const (
 	RopaGetActivityTemplateParamsAcceptLanguageEn RopaGetActivityTemplateParamsAcceptLanguage = "en"
@@ -1485,6 +1542,24 @@ func (e RopaGetActivityTemplateParamsAcceptLanguage) Valid() bool {
 	case RopaGetActivityTemplateParamsAcceptLanguageEn:
 		return true
 	case RopaGetActivityTemplateParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaUpdateActivityTemplateParamsAcceptLanguage.
+const (
+	RopaUpdateActivityTemplateParamsAcceptLanguageEn RopaUpdateActivityTemplateParamsAcceptLanguage = "en"
+	RopaUpdateActivityTemplateParamsAcceptLanguageTh RopaUpdateActivityTemplateParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaUpdateActivityTemplateParamsAcceptLanguage enum.
+func (e RopaUpdateActivityTemplateParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaUpdateActivityTemplateParamsAcceptLanguageEn:
+		return true
+	case RopaUpdateActivityTemplateParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -1509,6 +1584,42 @@ func (e RopaSuggestTemplateItemsParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for RopaListOwnTemplateSetsParamsAcceptLanguage.
+const (
+	RopaListOwnTemplateSetsParamsAcceptLanguageEn RopaListOwnTemplateSetsParamsAcceptLanguage = "en"
+	RopaListOwnTemplateSetsParamsAcceptLanguageTh RopaListOwnTemplateSetsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaListOwnTemplateSetsParamsAcceptLanguage enum.
+func (e RopaListOwnTemplateSetsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaListOwnTemplateSetsParamsAcceptLanguageEn:
+		return true
+	case RopaListOwnTemplateSetsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaCreateTemplateSetParamsAcceptLanguage.
+const (
+	RopaCreateTemplateSetParamsAcceptLanguageEn RopaCreateTemplateSetParamsAcceptLanguage = "en"
+	RopaCreateTemplateSetParamsAcceptLanguageTh RopaCreateTemplateSetParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaCreateTemplateSetParamsAcceptLanguage enum.
+func (e RopaCreateTemplateSetParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaCreateTemplateSetParamsAcceptLanguageEn:
+		return true
+	case RopaCreateTemplateSetParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RopaListActivityTemplatesParamsAcceptLanguage.
 const (
 	RopaListActivityTemplatesParamsAcceptLanguageEn RopaListActivityTemplatesParamsAcceptLanguage = "en"
@@ -1521,6 +1632,78 @@ func (e RopaListActivityTemplatesParamsAcceptLanguage) Valid() bool {
 	case RopaListActivityTemplatesParamsAcceptLanguageEn:
 		return true
 	case RopaListActivityTemplatesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaAddActivityTemplateParamsAcceptLanguage.
+const (
+	RopaAddActivityTemplateParamsAcceptLanguageEn RopaAddActivityTemplateParamsAcceptLanguage = "en"
+	RopaAddActivityTemplateParamsAcceptLanguageTh RopaAddActivityTemplateParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaAddActivityTemplateParamsAcceptLanguage enum.
+func (e RopaAddActivityTemplateParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaAddActivityTemplateParamsAcceptLanguageEn:
+		return true
+	case RopaAddActivityTemplateParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaCloneTemplateSetParamsAcceptLanguage.
+const (
+	RopaCloneTemplateSetParamsAcceptLanguageEn RopaCloneTemplateSetParamsAcceptLanguage = "en"
+	RopaCloneTemplateSetParamsAcceptLanguageTh RopaCloneTemplateSetParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaCloneTemplateSetParamsAcceptLanguage enum.
+func (e RopaCloneTemplateSetParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaCloneTemplateSetParamsAcceptLanguageEn:
+		return true
+	case RopaCloneTemplateSetParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaPublishTemplateSetParamsAcceptLanguage.
+const (
+	RopaPublishTemplateSetParamsAcceptLanguageEn RopaPublishTemplateSetParamsAcceptLanguage = "en"
+	RopaPublishTemplateSetParamsAcceptLanguageTh RopaPublishTemplateSetParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaPublishTemplateSetParamsAcceptLanguage enum.
+func (e RopaPublishTemplateSetParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaPublishTemplateSetParamsAcceptLanguageEn:
+		return true
+	case RopaPublishTemplateSetParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaRetireTemplateSetParamsAcceptLanguage.
+const (
+	RopaRetireTemplateSetParamsAcceptLanguageEn RopaRetireTemplateSetParamsAcceptLanguage = "en"
+	RopaRetireTemplateSetParamsAcceptLanguageTh RopaRetireTemplateSetParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaRetireTemplateSetParamsAcceptLanguage enum.
+func (e RopaRetireTemplateSetParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaRetireTemplateSetParamsAcceptLanguageEn:
+		return true
+	case RopaRetireTemplateSetParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -2097,6 +2280,9 @@ type RopaActivityTemplate struct {
 	Rationale   map[string]interface{}   `json:"rationale"`
 	Role        RopaActivityTemplateRole `json:"role"`
 
+	// RowVersion RTG-08: the activity template's own ETag, for update/delete (If-Match) — only meaningful on a tenant's own custom activity.
+	RowVersion *int `json:"row_version,omitempty"`
+
 	// TemplateSetId UUIDv7 generated by the API
 	TemplateSetId Uuid `json:"template_set_id"`
 	VersionNo     int  `json:"version_no"`
@@ -2105,6 +2291,21 @@ type RopaActivityTemplate struct {
 // RopaActivityTemplateRole defines model for RopaActivityTemplate.Role.
 type RopaActivityTemplateRole string
 
+// RopaActivityTemplateInput RTG-08: adds (or edits) one activity in the caller's own custom template set — defaults/rationale follow RopaActivityTemplate's own ม.39-topic-keyed shape.
+type RopaActivityTemplateInput struct {
+	Code        string                        `json:"code"`
+	Defaults    map[string]interface{}        `json:"defaults"`
+	JobCategory string                        `json:"job_category"`
+	LegalRefs   *[]string                     `json:"legal_refs,omitempty"`
+	NameEn      *string                       `json:"name_en,omitempty"`
+	NameTh      string                        `json:"name_th"`
+	Rationale   map[string]interface{}        `json:"rationale"`
+	Role        RopaActivityTemplateInputRole `json:"role"`
+}
+
+// RopaActivityTemplateInputRole defines model for RopaActivityTemplateInput.Role.
+type RopaActivityTemplateInputRole string
+
 // RopaApplySuggestedItemsInput RTG-06: indices into the matching RopaTemplateSuggestions arrays — anything left out is never written.
 type RopaApplySuggestedItemsInput struct {
 	// ActivityTemplateId UUIDv7 generated by the API
@@ -2112,6 +2313,11 @@ type RopaApplySuggestedItemsInput struct {
 	Data               *[]int `json:"data,omitempty"`
 	Purposes           *[]int `json:"purposes,omitempty"`
 	Retention          *[]int `json:"retention,omitempty"`
+}
+
+// RopaCloneTemplateSetInput RTG-08: clones a template set's current activities into a brand-new, tenant-owned custom set (draft) — editing the clone afterward never touches the source.
+type RopaCloneTemplateSetInput struct {
+	Name string `json:"name"`
 }
 
 // RopaOpenQuestion defines model for RopaOpenQuestion.
@@ -2180,15 +2386,29 @@ type RopaSuggestedRetention struct {
 // RopaTemplateSet defines model for RopaTemplateSet.
 type RopaTemplateSet struct {
 	// Id UUIDv7 generated by the API
-	Id        Uuid                   `json:"id"`
-	Industry  *string                `json:"industry,omitempty"`
-	Name      string                 `json:"name"`
-	SetType   RopaTemplateSetSetType `json:"set_type"`
+	Id       Uuid    `json:"id"`
+	Industry *string `json:"industry,omitempty"`
+	Name     string  `json:"name"`
+
+	// RowVersion RTG-08: the set's own ETag, for publish/retire (If-Match).
+	RowVersion *int                   `json:"row_version,omitempty"`
+	SetType    RopaTemplateSetSetType `json:"set_type"`
+
+	// Status RTG-08: draft/published/retired — only present on a tenant's own custom set; the global standard/industry/government/processor sets are always published.
+	Status    *RopaTemplateSetStatus `json:"status,omitempty"`
 	VersionNo int                    `json:"version_no"`
 }
 
 // RopaTemplateSetSetType defines model for RopaTemplateSet.SetType.
 type RopaTemplateSetSetType string
+
+// RopaTemplateSetStatus RTG-08: draft/published/retired — only present on a tenant's own custom set; the global standard/industry/government/processor sets are always published.
+type RopaTemplateSetStatus string
+
+// RopaTemplateSetInput RTG-08: creates a new, tenant-owned custom template set (draft, empty — add activities to it, or clone an existing set's activities into it instead).
+type RopaTemplateSetInput struct {
+	Name string `json:"name"`
+}
 
 // RopaTemplateSuggestions RTG-06: one template's purposes/data/retention, each decorated with a rationale citing a real legal article (ม.24/26/39) — read-only; nothing is saved until RopaApplySuggestedItemsInput confirms specific items.
 type RopaTemplateSuggestions struct {
@@ -2763,6 +2983,18 @@ type RopaListTemplateSetsParams struct {
 // RopaListTemplateSetsParamsAcceptLanguage defines parameters for RopaListTemplateSets.
 type RopaListTemplateSetsParamsAcceptLanguage string
 
+// RopaDeleteActivityTemplateParams defines parameters for RopaDeleteActivityTemplate.
+type RopaDeleteActivityTemplateParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaDeleteActivityTemplateParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// RopaDeleteActivityTemplateParamsAcceptLanguage defines parameters for RopaDeleteActivityTemplate.
+type RopaDeleteActivityTemplateParamsAcceptLanguage string
+
 // RopaGetActivityTemplateParams defines parameters for RopaGetActivityTemplate.
 type RopaGetActivityTemplateParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -2772,6 +3004,18 @@ type RopaGetActivityTemplateParams struct {
 // RopaGetActivityTemplateParamsAcceptLanguage defines parameters for RopaGetActivityTemplate.
 type RopaGetActivityTemplateParamsAcceptLanguage string
 
+// RopaUpdateActivityTemplateParams defines parameters for RopaUpdateActivityTemplate.
+type RopaUpdateActivityTemplateParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaUpdateActivityTemplateParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// RopaUpdateActivityTemplateParamsAcceptLanguage defines parameters for RopaUpdateActivityTemplate.
+type RopaUpdateActivityTemplateParamsAcceptLanguage string
+
 // RopaSuggestTemplateItemsParams defines parameters for RopaSuggestTemplateItems.
 type RopaSuggestTemplateItemsParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -2780,6 +3024,24 @@ type RopaSuggestTemplateItemsParams struct {
 
 // RopaSuggestTemplateItemsParamsAcceptLanguage defines parameters for RopaSuggestTemplateItems.
 type RopaSuggestTemplateItemsParamsAcceptLanguage string
+
+// RopaListOwnTemplateSetsParams defines parameters for RopaListOwnTemplateSets.
+type RopaListOwnTemplateSetsParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaListOwnTemplateSetsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RopaListOwnTemplateSetsParamsAcceptLanguage defines parameters for RopaListOwnTemplateSets.
+type RopaListOwnTemplateSetsParamsAcceptLanguage string
+
+// RopaCreateTemplateSetParams defines parameters for RopaCreateTemplateSet.
+type RopaCreateTemplateSetParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaCreateTemplateSetParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RopaCreateTemplateSetParamsAcceptLanguage defines parameters for RopaCreateTemplateSet.
+type RopaCreateTemplateSetParamsAcceptLanguage string
 
 // RopaListActivityTemplatesParams defines parameters for RopaListActivityTemplates.
 type RopaListActivityTemplatesParams struct {
@@ -2791,6 +3053,48 @@ type RopaListActivityTemplatesParams struct {
 
 // RopaListActivityTemplatesParamsAcceptLanguage defines parameters for RopaListActivityTemplates.
 type RopaListActivityTemplatesParamsAcceptLanguage string
+
+// RopaAddActivityTemplateParams defines parameters for RopaAddActivityTemplate.
+type RopaAddActivityTemplateParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaAddActivityTemplateParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RopaAddActivityTemplateParamsAcceptLanguage defines parameters for RopaAddActivityTemplate.
+type RopaAddActivityTemplateParamsAcceptLanguage string
+
+// RopaCloneTemplateSetParams defines parameters for RopaCloneTemplateSet.
+type RopaCloneTemplateSetParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaCloneTemplateSetParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RopaCloneTemplateSetParamsAcceptLanguage defines parameters for RopaCloneTemplateSet.
+type RopaCloneTemplateSetParamsAcceptLanguage string
+
+// RopaPublishTemplateSetParams defines parameters for RopaPublishTemplateSet.
+type RopaPublishTemplateSetParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaPublishTemplateSetParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// RopaPublishTemplateSetParamsAcceptLanguage defines parameters for RopaPublishTemplateSet.
+type RopaPublishTemplateSetParamsAcceptLanguage string
+
+// RopaRetireTemplateSetParams defines parameters for RopaRetireTemplateSet.
+type RopaRetireTemplateSetParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaRetireTemplateSetParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// RopaRetireTemplateSetParamsAcceptLanguage defines parameters for RopaRetireTemplateSet.
+type RopaRetireTemplateSetParamsAcceptLanguage string
 
 // RopaCreateActivityJSONRequestBody defines body for RopaCreateActivity for application/json ContentType.
 type RopaCreateActivityJSONRequestBody = ProcessingActivityInput
@@ -2848,6 +3152,18 @@ type RopaCreateDataInventoryItemJSONRequestBody = DataInventoryItemInput
 
 // RopaUpdateDataInventoryItemJSONRequestBody defines body for RopaUpdateDataInventoryItem for application/json ContentType.
 type RopaUpdateDataInventoryItemJSONRequestBody = DataInventoryItemInput
+
+// RopaUpdateActivityTemplateJSONRequestBody defines body for RopaUpdateActivityTemplate for application/json ContentType.
+type RopaUpdateActivityTemplateJSONRequestBody = RopaActivityTemplateInput
+
+// RopaCreateTemplateSetJSONRequestBody defines body for RopaCreateTemplateSet for application/json ContentType.
+type RopaCreateTemplateSetJSONRequestBody = RopaTemplateSetInput
+
+// RopaAddActivityTemplateJSONRequestBody defines body for RopaAddActivityTemplate for application/json ContentType.
+type RopaAddActivityTemplateJSONRequestBody = RopaActivityTemplateInput
+
+// RopaCloneTemplateSetJSONRequestBody defines body for RopaCloneTemplateSet for application/json ContentType.
+type RopaCloneTemplateSetJSONRequestBody = RopaCloneTemplateSetInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -2998,15 +3314,39 @@ type ServerInterface interface {
 	// RopaListTemplateSets Published standard-activity template sets (RTG-01, ม.39)
 	// (GET /admin/v1/ropa/templates)
 	RopaListTemplateSets(w http.ResponseWriter, r *http.Request, params RopaListTemplateSetsParams)
+	// RopaDeleteActivityTemplate Remove one of this tenant's own custom activity templates (RTG-08, If-Match)
+	// (DELETE /admin/v1/ropa/templates/activities/{activityTemplateId})
+	RopaDeleteActivityTemplate(w http.ResponseWriter, r *http.Request, activityTemplateId Uuid, params RopaDeleteActivityTemplateParams)
 	// RopaGetActivityTemplate One standard activity template, with its full ม.39 defaults and rationale (RTG-01)
 	// (GET /admin/v1/ropa/templates/activities/{activityTemplateId})
 	RopaGetActivityTemplate(w http.ResponseWriter, r *http.Request, activityTemplateId Uuid, params RopaGetActivityTemplateParams)
+	// RopaUpdateActivityTemplate Edit one of this tenant's own custom activity templates (RTG-08, If-Match)
+	// (PUT /admin/v1/ropa/templates/activities/{activityTemplateId})
+	RopaUpdateActivityTemplate(w http.ResponseWriter, r *http.Request, activityTemplateId Uuid, params RopaUpdateActivityTemplateParams)
 	// RopaSuggestTemplateItems RTG-06 — the template's own purposes/data/retention, each decorated with a rationale citing a real legal article (ม.24/26/39) — read-only, nothing is written here
 	// (GET /admin/v1/ropa/templates/activities/{activityTemplateId}/suggest)
 	RopaSuggestTemplateItems(w http.ResponseWriter, r *http.Request, activityTemplateId Uuid, params RopaSuggestTemplateItemsParams)
+	// RopaListOwnTemplateSets This tenant's own custom template sets, any status (RTG-08) — the management list
+	// (GET /admin/v1/ropa/templates/custom)
+	RopaListOwnTemplateSets(w http.ResponseWriter, r *http.Request, params RopaListOwnTemplateSetsParams)
+	// RopaCreateTemplateSet Create a new, tenant-owned custom template set (RTG-08)
+	// (POST /admin/v1/ropa/templates/custom)
+	RopaCreateTemplateSet(w http.ResponseWriter, r *http.Request, params RopaCreateTemplateSetParams)
 	// RopaListActivityTemplates Standard activities in one template set, optionally filtered by job category (RTG-01)
 	// (GET /admin/v1/ropa/templates/{id}/activities)
 	RopaListActivityTemplates(w http.ResponseWriter, r *http.Request, id Uuid, params RopaListActivityTemplatesParams)
+	// RopaAddActivityTemplate Add a new activity to one of this tenant's own custom template sets (RTG-08)
+	// (POST /admin/v1/ropa/templates/{id}/activities)
+	RopaAddActivityTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params RopaAddActivityTemplateParams)
+	// RopaCloneTemplateSet Copy a template set's own activities into a brand-new custom set (RTG-08): "คัดลอก template กลางมาปรับ"
+	// (POST /admin/v1/ropa/templates/{id}/clone)
+	RopaCloneTemplateSet(w http.ResponseWriter, r *http.Request, id Uuid, params RopaCloneTemplateSetParams)
+	// RopaPublishTemplateSet Publish a custom template set (RTG-08) — the acceptance criterion itself: once published, every subsidiary company under this tenant can browse and create activities from it, the same ROPA-05 from-template path RTG-01's own standard set already uses
+	// (POST /admin/v1/ropa/templates/{id}/publish)
+	RopaPublishTemplateSet(w http.ResponseWriter, r *http.Request, id Uuid, params RopaPublishTemplateSetParams)
+	// RopaRetireTemplateSet Withdraw a custom template set from use (RTG-08, If-Match = the set's own ETag)
+	// (POST /admin/v1/ropa/templates/{id}/retire)
+	RopaRetireTemplateSet(w http.ResponseWriter, r *http.Request, id Uuid, params RopaRetireTemplateSetParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -3307,9 +3647,21 @@ func (_ Unimplemented) RopaListTemplateSets(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// RopaDeleteActivityTemplate Remove one of this tenant's own custom activity templates (RTG-08, If-Match)
+// (DELETE /admin/v1/ropa/templates/activities/{activityTemplateId})
+func (_ Unimplemented) RopaDeleteActivityTemplate(w http.ResponseWriter, r *http.Request, activityTemplateId Uuid, params RopaDeleteActivityTemplateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // RopaGetActivityTemplate One standard activity template, with its full ม.39 defaults and rationale (RTG-01)
 // (GET /admin/v1/ropa/templates/activities/{activityTemplateId})
 func (_ Unimplemented) RopaGetActivityTemplate(w http.ResponseWriter, r *http.Request, activityTemplateId Uuid, params RopaGetActivityTemplateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaUpdateActivityTemplate Edit one of this tenant's own custom activity templates (RTG-08, If-Match)
+// (PUT /admin/v1/ropa/templates/activities/{activityTemplateId})
+func (_ Unimplemented) RopaUpdateActivityTemplate(w http.ResponseWriter, r *http.Request, activityTemplateId Uuid, params RopaUpdateActivityTemplateParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3319,9 +3671,45 @@ func (_ Unimplemented) RopaSuggestTemplateItems(w http.ResponseWriter, r *http.R
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// RopaListOwnTemplateSets This tenant's own custom template sets, any status (RTG-08) — the management list
+// (GET /admin/v1/ropa/templates/custom)
+func (_ Unimplemented) RopaListOwnTemplateSets(w http.ResponseWriter, r *http.Request, params RopaListOwnTemplateSetsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaCreateTemplateSet Create a new, tenant-owned custom template set (RTG-08)
+// (POST /admin/v1/ropa/templates/custom)
+func (_ Unimplemented) RopaCreateTemplateSet(w http.ResponseWriter, r *http.Request, params RopaCreateTemplateSetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // RopaListActivityTemplates Standard activities in one template set, optionally filtered by job category (RTG-01)
 // (GET /admin/v1/ropa/templates/{id}/activities)
 func (_ Unimplemented) RopaListActivityTemplates(w http.ResponseWriter, r *http.Request, id Uuid, params RopaListActivityTemplatesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaAddActivityTemplate Add a new activity to one of this tenant's own custom template sets (RTG-08)
+// (POST /admin/v1/ropa/templates/{id}/activities)
+func (_ Unimplemented) RopaAddActivityTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params RopaAddActivityTemplateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaCloneTemplateSet Copy a template set's own activities into a brand-new custom set (RTG-08): "คัดลอก template กลางมาปรับ"
+// (POST /admin/v1/ropa/templates/{id}/clone)
+func (_ Unimplemented) RopaCloneTemplateSet(w http.ResponseWriter, r *http.Request, id Uuid, params RopaCloneTemplateSetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaPublishTemplateSet Publish a custom template set (RTG-08) — the acceptance criterion itself: once published, every subsidiary company under this tenant can browse and create activities from it, the same ROPA-05 from-template path RTG-01's own standard set already uses
+// (POST /admin/v1/ropa/templates/{id}/publish)
+func (_ Unimplemented) RopaPublishTemplateSet(w http.ResponseWriter, r *http.Request, id Uuid, params RopaPublishTemplateSetParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaRetireTemplateSet Withdraw a custom template set from use (RTG-08, If-Match = the set's own ETag)
+// (POST /admin/v1/ropa/templates/{id}/retire)
+func (_ Unimplemented) RopaRetireTemplateSet(w http.ResponseWriter, r *http.Request, id Uuid, params RopaRetireTemplateSetParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -6184,6 +6572,79 @@ func (siw *ServerInterfaceWrapper) RopaListTemplateSets(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// RopaDeleteActivityTemplate operation middleware
+func (siw *ServerInterfaceWrapper) RopaDeleteActivityTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "activityTemplateId" -------------
+	var activityTemplateId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "activityTemplateId", chi.URLParam(r, "activityTemplateId"), &activityTemplateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "activityTemplateId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaDeleteActivityTemplateParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaDeleteActivityTemplateParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaDeleteActivityTemplate(w, r, activityTemplateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RopaGetActivityTemplate operation middleware
 func (siw *ServerInterfaceWrapper) RopaGetActivityTemplate(w http.ResponseWriter, r *http.Request) {
 
@@ -6234,6 +6695,79 @@ func (siw *ServerInterfaceWrapper) RopaGetActivityTemplate(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
+// RopaUpdateActivityTemplate operation middleware
+func (siw *ServerInterfaceWrapper) RopaUpdateActivityTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "activityTemplateId" -------------
+	var activityTemplateId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "activityTemplateId", chi.URLParam(r, "activityTemplateId"), &activityTemplateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "activityTemplateId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaUpdateActivityTemplateParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaUpdateActivityTemplateParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaUpdateActivityTemplate(w, r, activityTemplateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RopaSuggestTemplateItems operation middleware
 func (siw *ServerInterfaceWrapper) RopaSuggestTemplateItems(w http.ResponseWriter, r *http.Request) {
 
@@ -6275,6 +6809,88 @@ func (siw *ServerInterfaceWrapper) RopaSuggestTemplateItems(w http.ResponseWrite
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RopaSuggestTemplateItems(w, r, activityTemplateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaListOwnTemplateSets operation middleware
+func (siw *ServerInterfaceWrapper) RopaListOwnTemplateSets(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaListOwnTemplateSetsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaListOwnTemplateSetsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaListOwnTemplateSets(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaCreateTemplateSet operation middleware
+func (siw *ServerInterfaceWrapper) RopaCreateTemplateSet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaCreateTemplateSetParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaCreateTemplateSetParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaCreateTemplateSet(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6338,6 +6954,252 @@ func (siw *ServerInterfaceWrapper) RopaListActivityTemplates(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RopaListActivityTemplates(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaAddActivityTemplate operation middleware
+func (siw *ServerInterfaceWrapper) RopaAddActivityTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaAddActivityTemplateParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaAddActivityTemplateParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaAddActivityTemplate(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaCloneTemplateSet operation middleware
+func (siw *ServerInterfaceWrapper) RopaCloneTemplateSet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaCloneTemplateSetParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaCloneTemplateSetParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaCloneTemplateSet(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaPublishTemplateSet operation middleware
+func (siw *ServerInterfaceWrapper) RopaPublishTemplateSet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaPublishTemplateSetParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaPublishTemplateSetParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaPublishTemplateSet(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaRetireTemplateSet operation middleware
+func (siw *ServerInterfaceWrapper) RopaRetireTemplateSet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaRetireTemplateSetParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaRetireTemplateSetParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaRetireTemplateSet(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6608,10 +7470,34 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/admin/v1/ropa/templates", wrapper.RopaListTemplateSets)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/ropa/templates/custom", wrapper.RopaListOwnTemplateSets)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/templates/custom", wrapper.RopaCreateTemplateSet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/templates/{id}/clone", wrapper.RopaCloneTemplateSet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/templates/{id}/publish", wrapper.RopaPublishTemplateSet)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/templates/{id}/retire", wrapper.RopaRetireTemplateSet)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/ropa/templates/{id}/activities", wrapper.RopaListActivityTemplates)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/templates/{id}/activities", wrapper.RopaAddActivityTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/admin/v1/ropa/templates/activities/{activityTemplateId}", wrapper.RopaDeleteActivityTemplate)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/ropa/templates/activities/{activityTemplateId}", wrapper.RopaGetActivityTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/v1/ropa/templates/activities/{activityTemplateId}", wrapper.RopaUpdateActivityTemplate)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/ropa/templates/activities/{activityTemplateId}/suggest", wrapper.RopaSuggestTemplateItems)
@@ -11061,6 +11947,103 @@ func (response RopaListTemplateSets403ApplicationProblemPlusJSONResponse) VisitR
 	return err
 }
 
+type RopaDeleteActivityTemplateRequestObject struct {
+	ActivityTemplateId Uuid `json:"activityTemplateId"`
+	Params             RopaDeleteActivityTemplateParams
+}
+
+type RopaDeleteActivityTemplateResponseObject interface {
+	VisitRopaDeleteActivityTemplateResponse(w http.ResponseWriter) error
+}
+
+type RopaDeleteActivityTemplate204Response struct {
+}
+
+func (response RopaDeleteActivityTemplate204Response) VisitRopaDeleteActivityTemplateResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RopaDeleteActivityTemplate401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaDeleteActivityTemplate401ApplicationProblemPlusJSONResponse) VisitRopaDeleteActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaDeleteActivityTemplate403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaDeleteActivityTemplate403ApplicationProblemPlusJSONResponse) VisitRopaDeleteActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaDeleteActivityTemplate404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaDeleteActivityTemplate404ApplicationProblemPlusJSONResponse) VisitRopaDeleteActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaDeleteActivityTemplate412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaDeleteActivityTemplate412ApplicationProblemPlusJSONResponse) VisitRopaDeleteActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaDeleteActivityTemplate428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response RopaDeleteActivityTemplate428ApplicationProblemPlusJSONResponse) VisitRopaDeleteActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type RopaGetActivityTemplateRequestObject struct {
 	ActivityTemplateId Uuid `json:"activityTemplateId"`
 	Params             RopaGetActivityTemplateParams
@@ -11128,6 +12111,152 @@ func (response RopaGetActivityTemplate404ApplicationProblemPlusJSONResponse) Vis
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaUpdateActivityTemplateRequestObject struct {
+	ActivityTemplateId Uuid `json:"activityTemplateId"`
+	Params             RopaUpdateActivityTemplateParams
+	Body               *RopaUpdateActivityTemplateJSONRequestBody
+}
+
+type RopaUpdateActivityTemplateResponseObject interface {
+	VisitRopaUpdateActivityTemplateResponse(w http.ResponseWriter) error
+}
+
+type RopaUpdateActivityTemplate200ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaUpdateActivityTemplate200JSONResponse struct {
+	Body    RopaActivityTemplate
+	Headers RopaUpdateActivityTemplate200ResponseHeaders
+}
+
+func (response RopaUpdateActivityTemplate200JSONResponse) VisitRopaUpdateActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaUpdateActivityTemplate400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response RopaUpdateActivityTemplate400ApplicationProblemPlusJSONResponse) VisitRopaUpdateActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaUpdateActivityTemplate401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaUpdateActivityTemplate401ApplicationProblemPlusJSONResponse) VisitRopaUpdateActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaUpdateActivityTemplate403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaUpdateActivityTemplate403ApplicationProblemPlusJSONResponse) VisitRopaUpdateActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaUpdateActivityTemplate404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaUpdateActivityTemplate404ApplicationProblemPlusJSONResponse) VisitRopaUpdateActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaUpdateActivityTemplate412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaUpdateActivityTemplate412ApplicationProblemPlusJSONResponse) VisitRopaUpdateActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaUpdateActivityTemplate422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response RopaUpdateActivityTemplate422ApplicationProblemPlusJSONResponse) VisitRopaUpdateActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaUpdateActivityTemplate428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response RopaUpdateActivityTemplate428ApplicationProblemPlusJSONResponse) VisitRopaUpdateActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -11203,6 +12332,143 @@ func (response RopaSuggestTemplateItems404ApplicationProblemPlusJSONResponse) Vi
 	return err
 }
 
+type RopaListOwnTemplateSetsRequestObject struct {
+	Params RopaListOwnTemplateSetsParams
+}
+
+type RopaListOwnTemplateSetsResponseObject interface {
+	VisitRopaListOwnTemplateSetsResponse(w http.ResponseWriter) error
+}
+
+type RopaListOwnTemplateSets200JSONResponse struct {
+	Data []RopaTemplateSet `json:"data"`
+}
+
+func (response RopaListOwnTemplateSets200JSONResponse) VisitRopaListOwnTemplateSetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaListOwnTemplateSets401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaListOwnTemplateSets401ApplicationProblemPlusJSONResponse) VisitRopaListOwnTemplateSetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaListOwnTemplateSets403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaListOwnTemplateSets403ApplicationProblemPlusJSONResponse) VisitRopaListOwnTemplateSetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCreateTemplateSetRequestObject struct {
+	Params RopaCreateTemplateSetParams
+	Body   *RopaCreateTemplateSetJSONRequestBody
+}
+
+type RopaCreateTemplateSetResponseObject interface {
+	VisitRopaCreateTemplateSetResponse(w http.ResponseWriter) error
+}
+
+type RopaCreateTemplateSet201ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaCreateTemplateSet201JSONResponse struct {
+	Body    RopaTemplateSet
+	Headers RopaCreateTemplateSet201ResponseHeaders
+}
+
+func (response RopaCreateTemplateSet201JSONResponse) VisitRopaCreateTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCreateTemplateSet400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCreateTemplateSet400ApplicationProblemPlusJSONResponse) VisitRopaCreateTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCreateTemplateSet401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCreateTemplateSet401ApplicationProblemPlusJSONResponse) VisitRopaCreateTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCreateTemplateSet403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCreateTemplateSet403ApplicationProblemPlusJSONResponse) VisitRopaCreateTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type RopaListActivityTemplatesRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params RopaListActivityTemplatesParams
@@ -11256,6 +12522,460 @@ func (response RopaListActivityTemplates403ApplicationProblemPlusJSONResponse) V
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAddActivityTemplateRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaAddActivityTemplateParams
+	Body   *RopaAddActivityTemplateJSONRequestBody
+}
+
+type RopaAddActivityTemplateResponseObject interface {
+	VisitRopaAddActivityTemplateResponse(w http.ResponseWriter) error
+}
+
+type RopaAddActivityTemplate201ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaAddActivityTemplate201JSONResponse struct {
+	Body    RopaActivityTemplate
+	Headers RopaAddActivityTemplate201ResponseHeaders
+}
+
+func (response RopaAddActivityTemplate201JSONResponse) VisitRopaAddActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAddActivityTemplate400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response RopaAddActivityTemplate400ApplicationProblemPlusJSONResponse) VisitRopaAddActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAddActivityTemplate401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaAddActivityTemplate401ApplicationProblemPlusJSONResponse) VisitRopaAddActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAddActivityTemplate403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaAddActivityTemplate403ApplicationProblemPlusJSONResponse) VisitRopaAddActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAddActivityTemplate404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaAddActivityTemplate404ApplicationProblemPlusJSONResponse) VisitRopaAddActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAddActivityTemplate422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response RopaAddActivityTemplate422ApplicationProblemPlusJSONResponse) VisitRopaAddActivityTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCloneTemplateSetRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaCloneTemplateSetParams
+	Body   *RopaCloneTemplateSetJSONRequestBody
+}
+
+type RopaCloneTemplateSetResponseObject interface {
+	VisitRopaCloneTemplateSetResponse(w http.ResponseWriter) error
+}
+
+type RopaCloneTemplateSet201ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaCloneTemplateSet201JSONResponse struct {
+	Body    RopaTemplateSet
+	Headers RopaCloneTemplateSet201ResponseHeaders
+}
+
+func (response RopaCloneTemplateSet201JSONResponse) VisitRopaCloneTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCloneTemplateSet400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCloneTemplateSet400ApplicationProblemPlusJSONResponse) VisitRopaCloneTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCloneTemplateSet401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCloneTemplateSet401ApplicationProblemPlusJSONResponse) VisitRopaCloneTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCloneTemplateSet403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCloneTemplateSet403ApplicationProblemPlusJSONResponse) VisitRopaCloneTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaCloneTemplateSet404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaCloneTemplateSet404ApplicationProblemPlusJSONResponse) VisitRopaCloneTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaPublishTemplateSetRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaPublishTemplateSetParams
+}
+
+type RopaPublishTemplateSetResponseObject interface {
+	VisitRopaPublishTemplateSetResponse(w http.ResponseWriter) error
+}
+
+type RopaPublishTemplateSet200ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaPublishTemplateSet200JSONResponse struct {
+	Body    RopaTemplateSet
+	Headers RopaPublishTemplateSet200ResponseHeaders
+}
+
+func (response RopaPublishTemplateSet200JSONResponse) VisitRopaPublishTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaPublishTemplateSet401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaPublishTemplateSet401ApplicationProblemPlusJSONResponse) VisitRopaPublishTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaPublishTemplateSet403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaPublishTemplateSet403ApplicationProblemPlusJSONResponse) VisitRopaPublishTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaPublishTemplateSet404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaPublishTemplateSet404ApplicationProblemPlusJSONResponse) VisitRopaPublishTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaPublishTemplateSet412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaPublishTemplateSet412ApplicationProblemPlusJSONResponse) VisitRopaPublishTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaPublishTemplateSet422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response RopaPublishTemplateSet422ApplicationProblemPlusJSONResponse) VisitRopaPublishTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaPublishTemplateSet428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response RopaPublishTemplateSet428ApplicationProblemPlusJSONResponse) VisitRopaPublishTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRetireTemplateSetRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaRetireTemplateSetParams
+}
+
+type RopaRetireTemplateSetResponseObject interface {
+	VisitRopaRetireTemplateSetResponse(w http.ResponseWriter) error
+}
+
+type RopaRetireTemplateSet200ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaRetireTemplateSet200JSONResponse struct {
+	Body    RopaTemplateSet
+	Headers RopaRetireTemplateSet200ResponseHeaders
+}
+
+func (response RopaRetireTemplateSet200JSONResponse) VisitRopaRetireTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRetireTemplateSet401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRetireTemplateSet401ApplicationProblemPlusJSONResponse) VisitRopaRetireTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRetireTemplateSet403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRetireTemplateSet403ApplicationProblemPlusJSONResponse) VisitRopaRetireTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRetireTemplateSet404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRetireTemplateSet404ApplicationProblemPlusJSONResponse) VisitRopaRetireTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRetireTemplateSet412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRetireTemplateSet412ApplicationProblemPlusJSONResponse) VisitRopaRetireTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRetireTemplateSet428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRetireTemplateSet428ApplicationProblemPlusJSONResponse) VisitRopaRetireTemplateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -11409,15 +13129,39 @@ type StrictServerInterface interface {
 	// RopaListTemplateSets Published standard-activity template sets (RTG-01, ม.39)
 	// (GET /admin/v1/ropa/templates)
 	RopaListTemplateSets(ctx context.Context, request RopaListTemplateSetsRequestObject) (RopaListTemplateSetsResponseObject, error)
+	// RopaDeleteActivityTemplate Remove one of this tenant's own custom activity templates (RTG-08, If-Match)
+	// (DELETE /admin/v1/ropa/templates/activities/{activityTemplateId})
+	RopaDeleteActivityTemplate(ctx context.Context, request RopaDeleteActivityTemplateRequestObject) (RopaDeleteActivityTemplateResponseObject, error)
 	// RopaGetActivityTemplate One standard activity template, with its full ม.39 defaults and rationale (RTG-01)
 	// (GET /admin/v1/ropa/templates/activities/{activityTemplateId})
 	RopaGetActivityTemplate(ctx context.Context, request RopaGetActivityTemplateRequestObject) (RopaGetActivityTemplateResponseObject, error)
+	// RopaUpdateActivityTemplate Edit one of this tenant's own custom activity templates (RTG-08, If-Match)
+	// (PUT /admin/v1/ropa/templates/activities/{activityTemplateId})
+	RopaUpdateActivityTemplate(ctx context.Context, request RopaUpdateActivityTemplateRequestObject) (RopaUpdateActivityTemplateResponseObject, error)
 	// RopaSuggestTemplateItems RTG-06 — the template's own purposes/data/retention, each decorated with a rationale citing a real legal article (ม.24/26/39) — read-only, nothing is written here
 	// (GET /admin/v1/ropa/templates/activities/{activityTemplateId}/suggest)
 	RopaSuggestTemplateItems(ctx context.Context, request RopaSuggestTemplateItemsRequestObject) (RopaSuggestTemplateItemsResponseObject, error)
+	// RopaListOwnTemplateSets This tenant's own custom template sets, any status (RTG-08) — the management list
+	// (GET /admin/v1/ropa/templates/custom)
+	RopaListOwnTemplateSets(ctx context.Context, request RopaListOwnTemplateSetsRequestObject) (RopaListOwnTemplateSetsResponseObject, error)
+	// RopaCreateTemplateSet Create a new, tenant-owned custom template set (RTG-08)
+	// (POST /admin/v1/ropa/templates/custom)
+	RopaCreateTemplateSet(ctx context.Context, request RopaCreateTemplateSetRequestObject) (RopaCreateTemplateSetResponseObject, error)
 	// RopaListActivityTemplates Standard activities in one template set, optionally filtered by job category (RTG-01)
 	// (GET /admin/v1/ropa/templates/{id}/activities)
 	RopaListActivityTemplates(ctx context.Context, request RopaListActivityTemplatesRequestObject) (RopaListActivityTemplatesResponseObject, error)
+	// RopaAddActivityTemplate Add a new activity to one of this tenant's own custom template sets (RTG-08)
+	// (POST /admin/v1/ropa/templates/{id}/activities)
+	RopaAddActivityTemplate(ctx context.Context, request RopaAddActivityTemplateRequestObject) (RopaAddActivityTemplateResponseObject, error)
+	// RopaCloneTemplateSet Copy a template set's own activities into a brand-new custom set (RTG-08): "คัดลอก template กลางมาปรับ"
+	// (POST /admin/v1/ropa/templates/{id}/clone)
+	RopaCloneTemplateSet(ctx context.Context, request RopaCloneTemplateSetRequestObject) (RopaCloneTemplateSetResponseObject, error)
+	// RopaPublishTemplateSet Publish a custom template set (RTG-08) — the acceptance criterion itself: once published, every subsidiary company under this tenant can browse and create activities from it, the same ROPA-05 from-template path RTG-01's own standard set already uses
+	// (POST /admin/v1/ropa/templates/{id}/publish)
+	RopaPublishTemplateSet(ctx context.Context, request RopaPublishTemplateSetRequestObject) (RopaPublishTemplateSetResponseObject, error)
+	// RopaRetireTemplateSet Withdraw a custom template set from use (RTG-08, If-Match = the set's own ETag)
+	// (POST /admin/v1/ropa/templates/{id}/retire)
+	RopaRetireTemplateSet(ctx context.Context, request RopaRetireTemplateSetRequestObject) (RopaRetireTemplateSetResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -12912,6 +14656,33 @@ func (sh *strictHandler) RopaListTemplateSets(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// RopaDeleteActivityTemplate operation middleware
+func (sh *strictHandler) RopaDeleteActivityTemplate(w http.ResponseWriter, r *http.Request, activityTemplateId Uuid, params RopaDeleteActivityTemplateParams) {
+	var request RopaDeleteActivityTemplateRequestObject
+
+	request.ActivityTemplateId = activityTemplateId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaDeleteActivityTemplate(ctx, request.(RopaDeleteActivityTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaDeleteActivityTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaDeleteActivityTemplateResponseObject); ok {
+		if err := validResponse.VisitRopaDeleteActivityTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // RopaGetActivityTemplate operation middleware
 func (sh *strictHandler) RopaGetActivityTemplate(w http.ResponseWriter, r *http.Request, activityTemplateId Uuid, params RopaGetActivityTemplateParams) {
 	var request RopaGetActivityTemplateRequestObject
@@ -12932,6 +14703,40 @@ func (sh *strictHandler) RopaGetActivityTemplate(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RopaGetActivityTemplateResponseObject); ok {
 		if err := validResponse.VisitRopaGetActivityTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaUpdateActivityTemplate operation middleware
+func (sh *strictHandler) RopaUpdateActivityTemplate(w http.ResponseWriter, r *http.Request, activityTemplateId Uuid, params RopaUpdateActivityTemplateParams) {
+	var request RopaUpdateActivityTemplateRequestObject
+
+	request.ActivityTemplateId = activityTemplateId
+	request.Params = params
+
+	var body RopaUpdateActivityTemplateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaUpdateActivityTemplate(ctx, request.(RopaUpdateActivityTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaUpdateActivityTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaUpdateActivityTemplateResponseObject); ok {
+		if err := validResponse.VisitRopaUpdateActivityTemplateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -12966,6 +14771,65 @@ func (sh *strictHandler) RopaSuggestTemplateItems(w http.ResponseWriter, r *http
 	}
 }
 
+// RopaListOwnTemplateSets operation middleware
+func (sh *strictHandler) RopaListOwnTemplateSets(w http.ResponseWriter, r *http.Request, params RopaListOwnTemplateSetsParams) {
+	var request RopaListOwnTemplateSetsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaListOwnTemplateSets(ctx, request.(RopaListOwnTemplateSetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaListOwnTemplateSets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaListOwnTemplateSetsResponseObject); ok {
+		if err := validResponse.VisitRopaListOwnTemplateSetsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaCreateTemplateSet operation middleware
+func (sh *strictHandler) RopaCreateTemplateSet(w http.ResponseWriter, r *http.Request, params RopaCreateTemplateSetParams) {
+	var request RopaCreateTemplateSetRequestObject
+
+	request.Params = params
+
+	var body RopaCreateTemplateSetJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaCreateTemplateSet(ctx, request.(RopaCreateTemplateSetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaCreateTemplateSet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaCreateTemplateSetResponseObject); ok {
+		if err := validResponse.VisitRopaCreateTemplateSetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // RopaListActivityTemplates operation middleware
 func (sh *strictHandler) RopaListActivityTemplates(w http.ResponseWriter, r *http.Request, id Uuid, params RopaListActivityTemplatesParams) {
 	var request RopaListActivityTemplatesRequestObject
@@ -12986,6 +14850,128 @@ func (sh *strictHandler) RopaListActivityTemplates(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RopaListActivityTemplatesResponseObject); ok {
 		if err := validResponse.VisitRopaListActivityTemplatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaAddActivityTemplate operation middleware
+func (sh *strictHandler) RopaAddActivityTemplate(w http.ResponseWriter, r *http.Request, id Uuid, params RopaAddActivityTemplateParams) {
+	var request RopaAddActivityTemplateRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body RopaAddActivityTemplateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaAddActivityTemplate(ctx, request.(RopaAddActivityTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaAddActivityTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaAddActivityTemplateResponseObject); ok {
+		if err := validResponse.VisitRopaAddActivityTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaCloneTemplateSet operation middleware
+func (sh *strictHandler) RopaCloneTemplateSet(w http.ResponseWriter, r *http.Request, id Uuid, params RopaCloneTemplateSetParams) {
+	var request RopaCloneTemplateSetRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body RopaCloneTemplateSetJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaCloneTemplateSet(ctx, request.(RopaCloneTemplateSetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaCloneTemplateSet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaCloneTemplateSetResponseObject); ok {
+		if err := validResponse.VisitRopaCloneTemplateSetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaPublishTemplateSet operation middleware
+func (sh *strictHandler) RopaPublishTemplateSet(w http.ResponseWriter, r *http.Request, id Uuid, params RopaPublishTemplateSetParams) {
+	var request RopaPublishTemplateSetRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaPublishTemplateSet(ctx, request.(RopaPublishTemplateSetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaPublishTemplateSet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaPublishTemplateSetResponseObject); ok {
+		if err := validResponse.VisitRopaPublishTemplateSetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaRetireTemplateSet operation middleware
+func (sh *strictHandler) RopaRetireTemplateSet(w http.ResponseWriter, r *http.Request, id Uuid, params RopaRetireTemplateSetParams) {
+	var request RopaRetireTemplateSetRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaRetireTemplateSet(ctx, request.(RopaRetireTemplateSetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaRetireTemplateSet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaRetireTemplateSetResponseObject); ok {
+		if err := validResponse.VisitRopaRetireTemplateSetResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

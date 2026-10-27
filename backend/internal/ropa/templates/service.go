@@ -1,11 +1,13 @@
-// Package templates is RTG-01's standard activity library: a plain read over the platform's shared catalog
-// of ready-made RoPA activities (ropa.template_sets / ropa.activity_templates, already fully specified in
-// the baseline migrations — ERD-09). Content is seeded data (migration 00049, decisions.md Q-28), not
-// something a tenant authors here — no create/update surface yet; that's RTG-08's job (P3, "แก้ไขและสร้าง
-// template ขององค์กร"), not built. Defaults and rationale are kept as opaque jsonb, matching ROPA-03/06/08/09's
-// own activity_purposes/activity_data/activity_recipients/retention_rules/activity_controls shapes, keyed by
-// code (lawful_basis_code, data_category_code, subject_type_code, control code) rather than id, since a
-// global template can't reference a tenant's own org.* rows.
+// Package templates is RTG-01's standard activity library: a read over the platform's shared catalog of
+// ready-made RoPA activities (ropa.template_sets / ropa.activity_templates, already fully specified in the
+// baseline migrations — ERD-09), seeded content for the global standard/industry/government/processor sets
+// (migrations 00049/00082/00084/00087, decisions.md Q-28/39/40/42). RTG-08 (this file plus write.go) adds the
+// one thing those seeds never needed: a tenant's own custom sets, cloned from a global one or authored from
+// scratch, with full CRUD on their activities. Defaults and rationale are kept as opaque jsonb, matching
+// ROPA-03/06/08/09's own activity_purposes/activity_data/activity_recipients/retention_rules/activity_controls
+// shapes, keyed by code (lawful_basis_code, data_category_code, subject_type_code, control code) rather than
+// id, since a global template can't reference a tenant's own org.* rows — RTG-08's own custom activities keep
+// that same convention, so ROPA-05's existing from-template create path needs no change to consume them.
 package templates
 
 import (
@@ -17,20 +19,25 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	pdb "pdpa-platform/internal/pkg/db"
+	auditservice "pdpa-platform/internal/platform/audit/service"
 	ropastore "pdpa-platform/internal/ropa/store"
 )
 
 // ErrNotFound is returned when an activity template id doesn't exist or isn't visible under the caller's RLS.
 var ErrNotFound = errors.New("ropa/templates: not found")
 
-// TemplateSet is one collection of standard activities (ropa.template_sets) — today only the platform's own
-// "standard" set (migration 00049); industry/government/processor/custom sets are later RTG features.
+// TemplateSet is one collection of standard activities (ropa.template_sets) — the platform's own global
+// standard/industry/government/processor sets (RTG-01/02/03/07) plus, as of RTG-08, a tenant's own custom
+// sets. Status/RowVersion are only meaningful on a tenant's own custom set — every global set is always
+// "published" with no ETag a tenant could ever hold (it isn't theirs to publish/retire).
 type TemplateSet struct {
-	ID        uuid.UUID
-	Name      string
-	SetType   string // standard | industry | government | processor | custom
-	Industry  string
-	VersionNo int
+	ID         uuid.UUID
+	Name       string
+	SetType    string // standard | industry | government | processor | custom
+	Industry   string
+	VersionNo  int
+	Status     string // draft | published | retired
+	RowVersion int32
 }
 
 // ActivityTemplate is one ready-made RoPA activity (ropa.activity_templates): its ม.39 defaults and the
@@ -48,9 +55,14 @@ type ActivityTemplate struct {
 	Rationale     json.RawMessage
 	LegalRefs     []string
 	VersionNo     int
+	RowVersion    int32 // only meaningful on a tenant's own custom activity (RTG-08); 0 on a global one.
 }
 
-type Service struct{}
+type Service struct {
+	// Audit is nil-means-skip (the convention every other optional cross-cutting field on a module Service
+	// uses) — read-only callers like RTG-01/02/03/07's own browsing never need it; RTG-08's writes do.
+	Audit *auditservice.Service
+}
 
 func New() *Service { return &Service{} }
 
@@ -63,7 +75,10 @@ func (s *Service) ListTemplateSets(ctx context.Context) ([]TemplateSet, error) {
 	}
 	out := make([]TemplateSet, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, TemplateSet{ID: r.ID, Name: r.Name, SetType: r.SetType, Industry: derefStr(r.Industry), VersionNo: int(r.VersionNo)})
+		out = append(out, TemplateSet{
+			ID: r.ID, Name: r.Name, SetType: r.SetType, Industry: derefStr(r.Industry), VersionNo: int(r.VersionNo),
+			Status: r.Status, RowVersion: r.RowVersion,
+		})
 	}
 	return out, nil
 }
@@ -100,7 +115,7 @@ func toActivityTemplate(r ropastore.GetActivityTemplateRow) ActivityTemplate {
 	return ActivityTemplate{
 		ID: r.ID, TemplateSetID: r.TemplateSetID, Code: r.Code, NameTh: r.NameTh, NameEn: derefStr(r.NameEn),
 		JobCategory: r.JobCategory, Role: r.Role, Defaults: json.RawMessage(r.Defaults), Rationale: json.RawMessage(r.Rationale),
-		LegalRefs: r.LegalRefs, VersionNo: int(r.VersionNo),
+		LegalRefs: r.LegalRefs, VersionNo: int(r.VersionNo), RowVersion: r.RowVersion,
 	}
 }
 

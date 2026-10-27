@@ -245,8 +245,13 @@ export {
   useActivityTemplates,
   useActivityTemplate,
   useTemplateSuggestions,
+  useOwnTemplateSets,
+  useTemplateSetManagement,
   type RopaTemplateSet,
+  type RopaTemplateSetInput,
+  type RopaCloneTemplateSetInput,
   type RopaActivityTemplate,
+  type RopaActivityTemplateInput,
   type RopaTemplateSuggestions,
 } from "./activity-templates";
 export {

@@ -271,7 +271,8 @@ func run() error {
 	riskSvc := riskservice.New()                                                                             // ROPA-09's ม.37(1) controls catalog
 	riskSvc.Audit = auditSvc                                                                                 // RRA-02: risk matrix CRUD audit
 	riskSvc.Notify, riskSvc.River = notifySvc, riverClient                                                   // RRA-08: schedule the acceptance-review reminder on write
-	ropaTemplatesSvc := templatesservice.New()                                                               // RTG-01: the platform's standard activity library (read-only)
+	ropaTemplatesSvc := templatesservice.New()                                                               // RTG-01: the platform's standard activity library
+	ropaTemplatesSvc.Audit = auditSvc                                                                        // RTG-08: audit a tenant's own custom template set/activity writes
 	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc, Collab: collabSvc,
 		Events: &events.Publisher{River: riverClient}} // ROPA-05: create an activity from one of these templates; ROPA-12: Q&A task list; PNG-10: tell notice when an approved activity changes
 	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc} // RRA-01: score an activity from its own RoPA data

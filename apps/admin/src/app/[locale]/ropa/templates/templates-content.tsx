@@ -12,7 +12,10 @@ import {
   useActivityMutations,
   useLegalEntities,
   useOrgUnits,
+  useOwnTemplateSets,
+  useTemplateSetManagement,
   type RopaActivityTemplate,
+  type RopaTemplateSet,
 } from "@pdpa/api-client";
 import { Link, useRouter } from "@/i18n/routing";
 
@@ -165,7 +168,219 @@ export function TemplatesContent() {
           )}
         </div>
       </div>
+
+      <CustomTemplatesSection client={client} cloneSourceSetId={activeSet?.id} />
     </main>
+  );
+}
+
+/** RTG-08: "คัดลอก template กลางมาปรับ และกำหนด template มาตรฐานของกลุ่มบริษัท" — a tenant's own custom
+ * template sets, cloned from whichever set is currently browsed or authored from scratch, with full
+ * create/publish/retire + add/remove-activity CRUD. Once published, the set shows up on the same
+ * published browse list above (ListTemplateSets is set-type-agnostic), so every legal entity under this
+ * tenant can immediately create activities from it — no further wiring needed.
+ */
+function CustomTemplatesSection({ client, cloneSourceSetId }: { client: ReturnType<typeof createApiClient>; cloneSourceSetId?: string }) {
+  const t = useTranslations("ropaTemplates.custom");
+  const canManage = usePermission("ropa.template.create");
+  const canPublish = usePermission("ropa.template.publish");
+  const canDelete = usePermission("ropa.template.delete");
+  const [open, setOpen] = useState(false);
+  const [newSetName, setNewSetName] = useState("");
+  const [cloneName, setCloneName] = useState("");
+  const [selectedOwnSetId, setSelectedOwnSetId] = useState<string | null>(null);
+
+  const ownSets = useOwnTemplateSets(client);
+  const mgmt = useTemplateSetManagement(client);
+  const ownActivities = useActivityTemplates(client, selectedOwnSetId ?? undefined);
+
+  if (!canManage) return null;
+
+  const selectedOwnSet = ownSets.data?.find((s) => s.id === selectedOwnSetId);
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="custom-templates-section">
+      <button type="button" className="text-left text-sm font-medium text-sky-700" onClick={() => setOpen((v) => !v)} data-testid="custom-templates-toggle">
+        {open ? "▾ " : "▸ "}{t("manageToggle")}
+      </button>
+      {open && (
+        <div className="space-y-4 text-sm">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <fieldset className="space-y-2 rounded-md border border-slate-200 p-3">
+              <legend className="px-1 text-xs font-medium text-slate-600">{t("createSet")}</legend>
+              <input
+                className="w-full rounded-md border border-slate-300 px-2 py-1"
+                placeholder={t("setNamePlaceholder")}
+                value={newSetName}
+                onChange={(e) => setNewSetName(e.target.value)}
+              />
+              <Button
+                disabled={!newSetName || mgmt.create.isPending}
+                onClick={() => mgmt.create.mutate({ name: newSetName }, { onSuccess: () => setNewSetName("") })}
+              >
+                {t("create")}
+              </Button>
+            </fieldset>
+
+            <fieldset className="space-y-2 rounded-md border border-slate-200 p-3">
+              <legend className="px-1 text-xs font-medium text-slate-600">{t("cloneSet")}</legend>
+              <input
+                className="w-full rounded-md border border-slate-300 px-2 py-1"
+                placeholder={t("setNamePlaceholder")}
+                value={cloneName}
+                onChange={(e) => setCloneName(e.target.value)}
+              />
+              <Button
+                disabled={!cloneName || !cloneSourceSetId || mgmt.clone.isPending}
+                onClick={() =>
+                  cloneSourceSetId &&
+                  mgmt.clone.mutate({ sourceSetId: cloneSourceSetId, body: { name: cloneName } }, { onSuccess: () => setCloneName("") })
+                }
+              >
+                {t("clone")}
+              </Button>
+            </fieldset>
+          </div>
+
+          {(mgmt.create.isError || mgmt.clone.isError) && <p className="text-red-700">{t("saveError")}</p>}
+
+          <div>
+            <h3 className="font-medium">{t("ownSets")}</h3>
+            {(ownSets.data ?? []).length === 0 ? (
+              <p className="text-slate-500">{t("noOwnSets")}</p>
+            ) : (
+              <ul className="divide-y divide-slate-100 rounded-md border border-slate-200" data-testid="own-template-sets">
+                {ownSets.data!.map((s) => (
+                  <li key={s.id} className="flex items-center justify-between gap-2 px-3 py-2">
+                    <button type="button" className="text-left hover:underline" onClick={() => setSelectedOwnSetId(s.id)}>
+                      {s.name} <span className="text-xs text-slate-500">({t(`status.${s.status}`)})</span>
+                    </button>
+                    <div className="flex gap-2">
+                      {canPublish && s.status === "draft" && (
+                        <Button variant="secondary" onClick={() => mgmt.publish.mutate(s)}>{t("publish")}</Button>
+                      )}
+                      {canDelete && s.status !== "retired" && (
+                        <Button variant="secondary" onClick={() => mgmt.retire.mutate(s)}>{t("retire")}</Button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {ownSets.data?.find((s) => s.id === selectedOwnSetId)?.status === "published" && (
+              <p className="mt-2 rounded bg-emerald-50 px-2 py-1 text-xs text-emerald-800">{t("publishedHint")}</p>
+            )}
+          </div>
+
+          {selectedOwnSet && (
+            <CustomSetActivities
+              client={client}
+              set={selectedOwnSet}
+              activities={ownActivities.data ?? []}
+              addActivity={mgmt.addActivity}
+              deleteActivity={mgmt.deleteActivity}
+              canDelete={!!canDelete}
+            />
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CustomSetActivities({
+  set,
+  activities,
+  addActivity,
+  deleteActivity,
+  canDelete,
+}: {
+  client: ReturnType<typeof createApiClient>;
+  set: RopaTemplateSet;
+  activities: RopaActivityTemplate[];
+  addActivity: ReturnType<typeof useTemplateSetManagement>["addActivity"];
+  deleteActivity: ReturnType<typeof useTemplateSetManagement>["deleteActivity"];
+  canDelete: boolean;
+}) {
+  const t = useTranslations("ropaTemplates.custom");
+  const [code, setCode] = useState("");
+  const [nameTh, setNameTh] = useState("");
+  const [nameEn, setNameEn] = useState("");
+  const [jobCategory, setJobCategory] = useState("");
+  const [role, setRole] = useState<"controller" | "processor">("controller");
+  const [defaultsJson, setDefaultsJson] = useState('{"purposes": [], "data": [], "recipients": [], "retention": [], "security_controls": []}');
+  const [rationaleJson, setRationaleJson] = useState("{}");
+  const [jsonError, setJsonError] = useState(false);
+
+  const submit = () => {
+    let defaults: Record<string, unknown>, rationale: Record<string, unknown>;
+    try {
+      defaults = JSON.parse(defaultsJson);
+      rationale = JSON.parse(rationaleJson);
+    } catch {
+      setJsonError(true);
+      return;
+    }
+    setJsonError(false);
+    addActivity.mutate(
+      { setId: set.id, body: { code, name_th: nameTh, name_en: nameEn || undefined, job_category: jobCategory, role, defaults, rationale } },
+      { onSuccess: () => { setCode(""); setNameTh(""); setNameEn(""); setJobCategory(""); } },
+    );
+  };
+
+  return (
+    <div className="space-y-3 rounded-md border border-slate-200 p-3" data-testid="custom-set-activities">
+      <h4 className="font-medium">{set.name}</h4>
+      <ul className="divide-y divide-slate-100">
+        {activities.map((a) => (
+          <li key={a.id} className="flex items-center justify-between gap-2 py-1 text-xs">
+            <span>{a.name_th} ({a.code})</span>
+            {canDelete && <Button variant="secondary" onClick={() => deleteActivity.mutate(a)}>{t("remove")}</Button>}
+          </li>
+        ))}
+      </ul>
+
+      <fieldset className="grid gap-2 rounded-md border border-slate-200 p-3 sm:grid-cols-2">
+        <legend className="px-1 text-xs font-medium text-slate-600">{t("addActivity")}</legend>
+        <label className="text-xs">
+          <span className="block text-slate-600">{t("activityCode")}</span>
+          <input className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1" value={code} onChange={(e) => setCode(e.target.value)} maxLength={60} />
+        </label>
+        <label className="text-xs">
+          <span className="block text-slate-600">{t("activityNameTh")}</span>
+          <input className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1" value={nameTh} onChange={(e) => setNameTh(e.target.value)} />
+        </label>
+        <label className="text-xs">
+          <span className="block text-slate-600">{t("activityNameEn")}</span>
+          <input className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1" value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
+        </label>
+        <label className="text-xs">
+          <span className="block text-slate-600">{t("activityRole")}</span>
+          <select className="mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1" value={role} onChange={(e) => setRole(e.target.value as "controller" | "processor")}>
+            <option value="controller">controller</option>
+            <option value="processor">processor</option>
+          </select>
+        </label>
+        <label className="text-xs sm:col-span-2">
+          <span className="block text-slate-600">{t("jobCategory")}</span>
+          <input className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1" value={jobCategory} onChange={(e) => setJobCategory(e.target.value)} maxLength={40} />
+        </label>
+        <label className="text-xs sm:col-span-2">
+          <span className="block text-slate-600">{t("defaultsJson")}</span>
+          <textarea className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 font-mono" rows={3} value={defaultsJson} onChange={(e) => setDefaultsJson(e.target.value)} />
+        </label>
+        <label className="text-xs sm:col-span-2">
+          <span className="block text-slate-600">{t("rationaleJson")}</span>
+          <textarea className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 font-mono" rows={2} value={rationaleJson} onChange={(e) => setRationaleJson(e.target.value)} />
+        </label>
+        {(jsonError || addActivity.isError) && (
+          <p className="text-red-700 sm:col-span-2" role="alert">{jsonError ? t("invalidJson") : t("saveError")}</p>
+        )}
+        <div className="sm:col-span-2">
+          <Button disabled={!code || !nameTh || !jobCategory || addActivity.isPending} onClick={submit}>{t("save")}</Button>
+        </div>
+      </fieldset>
+    </div>
   );
 }
 

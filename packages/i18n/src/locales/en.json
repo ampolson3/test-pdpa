@@ -3249,7 +3249,38 @@
     "batchBack": "Back",
     "batchCreate": "Create RoPA drafts",
     "batchSelectedCount": "{count, plural, =0{Nothing selected yet} other{# selected}}",
-    "batchSummaryIntro": "This will create {count} draft activities for the chosen department."
+    "batchSummaryIntro": "This will create {count} draft activities for the chosen department.",
+    "custom": {
+      "sectionTitle": "Custom templates (your own group's standard)",
+      "manageToggle": "Manage custom templates",
+      "ownSets": "Your custom template sets",
+      "noOwnSets": "No custom template sets yet",
+      "createSet": "Create a new set",
+      "cloneSet": "Clone the currently browsed set",
+      "setNamePlaceholder": "Set name, e.g. Group standard activities",
+      "create": "Create",
+      "clone": "Clone",
+      "publish": "Publish",
+      "retire": "Retire",
+      "status": {
+        "draft": "Draft",
+        "published": "Published",
+        "retired": "Retired"
+      },
+      "addActivity": "Add activity",
+      "activityCode": "Code",
+      "activityNameTh": "Name (Thai)",
+      "activityNameEn": "Name (English)",
+      "activityRole": "Role",
+      "defaultsJson": "Defaults (JSON)",
+      "rationaleJson": "Rationale (JSON)",
+      "save": "Save",
+      "cancel": "Cancel",
+      "remove": "Remove",
+      "invalidJson": "Defaults/rationale must be valid JSON",
+      "saveError": "Could not save",
+      "publishedHint": "Published — every legal entity under this tenant can now create activities from it."
+    }
   },
   "governance": {
     "signInRequired": "Please sign in.",

@@ -3769,6 +3769,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/templates/custom": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** This tenant's own custom template sets, any status (RTG-08) — the management list */
+        get: operations["ropaListOwnTemplateSets"];
+        put?: never;
+        /** Create a new, tenant-owned custom template set (RTG-08) */
+        post: operations["ropaCreateTemplateSet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/templates/{id}/clone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Copy a template set's own activities into a brand-new custom set (RTG-08): "คัดลอก template กลางมาปรับ" */
+        post: operations["ropaCloneTemplateSet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/templates/{id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish a custom template set (RTG-08) — the acceptance criterion itself: once published, every subsidiary company under this tenant can browse and create activities from it, the same ROPA-05 from-template path RTG-01's own standard set already uses */
+        post: operations["ropaPublishTemplateSet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/templates/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw a custom template set from use (RTG-08, If-Match = the set's own ETag) */
+        post: operations["ropaRetireTemplateSet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/templates/{id}/activities": {
         parameters: {
             query?: never;
@@ -3779,7 +3848,8 @@ export interface paths {
         /** Standard activities in one template set, optionally filtered by job category (RTG-01) */
         get: operations["ropaListActivityTemplates"];
         put?: never;
-        post?: never;
+        /** Add a new activity to one of this tenant's own custom template sets (RTG-08) */
+        post: operations["ropaAddActivityTemplate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3795,9 +3865,11 @@ export interface paths {
         };
         /** One standard activity template, with its full ม.39 defaults and rationale (RTG-01) */
         get: operations["ropaGetActivityTemplate"];
-        put?: never;
+        /** Edit one of this tenant's own custom activity templates (RTG-08, If-Match) */
+        put: operations["ropaUpdateActivityTemplate"];
         post?: never;
-        delete?: never;
+        /** Remove one of this tenant's own custom activity templates (RTG-08, If-Match) */
+        delete: operations["ropaDeleteActivityTemplate"];
         options?: never;
         head?: never;
         patch?: never;
@@ -8105,6 +8177,21 @@ export interface components {
             set_type: "standard" | "industry" | "government" | "processor" | "custom";
             industry?: string;
             version_no: number;
+            /**
+             * @description RTG-08: draft/published/retired — only present on a tenant's own custom set; the global standard/industry/government/processor sets are always published.
+             * @enum {string}
+             */
+            status?: "draft" | "published" | "retired";
+            /** @description RTG-08: the set's own ETag, for publish/retire (If-Match). */
+            row_version?: number;
+        };
+        /** @description RTG-08: creates a new, tenant-owned custom template set (draft, empty — add activities to it, or clone an existing set's activities into it instead). */
+        RopaTemplateSetInput: {
+            name: string;
+        };
+        /** @description RTG-08: clones a template set's current activities into a brand-new, tenant-owned custom set (draft) — editing the clone afterward never touches the source. */
+        RopaCloneTemplateSetInput: {
+            name: string;
         };
         /** @description RTG-01: a ready-made RoPA activity. defaults/rationale are the raw seeded JSON (no fixed shape here — every ม.39 topic keyed by code, not id, since a global template can't reference a tenant's own org.* rows), displayed as-is by the admin UI. */
         RopaActivityTemplate: {
@@ -8124,6 +8211,24 @@ export interface components {
             };
             legal_refs: string[];
             version_no: number;
+            /** @description RTG-08: the activity template's own ETag, for update/delete (If-Match) — only meaningful on a tenant's own custom activity. */
+            row_version?: number;
+        };
+        /** @description RTG-08: adds (or edits) one activity in the caller's own custom template set — defaults/rationale follow RopaActivityTemplate's own ม.39-topic-keyed shape. */
+        RopaActivityTemplateInput: {
+            code: string;
+            name_th: string;
+            name_en?: string;
+            job_category: string;
+            /** @enum {string} */
+            role: "controller" | "processor";
+            defaults: {
+                [key: string]: unknown;
+            };
+            rationale: {
+                [key: string]: unknown;
+            };
+            legal_refs?: string[];
         };
         /** @description RTG-06: index is this item's position — echo it back in RopaApplySuggestedItemsInput.purposes to confirm it. */
         RopaSuggestedPurpose: {
@@ -19164,6 +19269,165 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    ropaListOwnTemplateSets: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RopaTemplateSet"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaCreateTemplateSet: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RopaTemplateSetInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaTemplateSet"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaCloneTemplateSet: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RopaCloneTemplateSetInput"];
+            };
+        };
+        responses: {
+            /** @description The clone */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaTemplateSet"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaPublishTemplateSet: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaTemplateSet"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaRetireTemplateSet: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaTemplateSet"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
     ropaListActivityTemplates: {
         parameters: {
             query?: {
@@ -19195,6 +19459,41 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    ropaAddActivityTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RopaActivityTemplateInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaActivityTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
     ropaGetActivityTemplate: {
         parameters: {
             query?: never;
@@ -19221,6 +19520,75 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    ropaUpdateActivityTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                activityTemplateId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RopaActivityTemplateInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaActivityTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaDeleteActivityTemplate: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                activityTemplateId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     ropaSuggestTemplateItems: {
