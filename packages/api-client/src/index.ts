@@ -58,10 +58,22 @@ export {
   useRecordAcceptance,
   riskReportHref,
   type RiskRegisterEntry,
+
   type RiskRegisterInput,
   type RiskAcceptance,
   type RiskAcceptanceInput,
 } from "./riskRegister";
+export {
+  useQuestionnaires,
+  useSendQuestionnaire,
+  useAnswerQuestionnaire,
+  useApproveQuestionnaire,
+  useRejectQuestionnaire,
+  type RopaQuestionnaire,
+  type RopaQuestionnaireInput,
+  type RopaQuestionnaireAnswerInput,
+  type RopaQuestionnaireApproveInput,
+} from "./questionnaires";
 export {
   useVendors,
   useVendor,

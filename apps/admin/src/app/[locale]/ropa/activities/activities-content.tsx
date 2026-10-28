@@ -102,6 +102,11 @@ export function ActivitiesContent() {
               {t("viewDataFlow")}
             </Link>
           )}
+          {canRead && (
+            <Link className="rounded-md border border-slate-300 bg-white px-3 py-2 hover:bg-slate-50" href="/ropa/questionnaires">
+              {t("questionnaires")}
+            </Link>
+          )}
           {canCreate && <Button variant="secondary" onClick={() => setImporting(!importing)}>{importing ? t("closeImport") : t("importExcel")}</Button>}
           {canCreate && <Button onClick={() => { save.reset(); setDraft({ ...blank }); }}>{t("newActivity")}</Button>}
         </div>

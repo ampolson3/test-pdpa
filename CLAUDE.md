@@ -4693,6 +4693,71 @@ is the same already-disclosed risk-matrix/acceptance-expiry/vendor-FK gaps RRA-1
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build` (incl. the updated `/settings/risk-register` route) all verified clean.
 
+### ROPA-11 แบบสอบถามเก็บข้อมูลจากหน่วยงาน (`docs/modules/ROPA.md#ropa-11`) — done
+`ropa.questionnaires` was already fully specified in the baseline migrations (00008_ropa.sql, `status`
+CHECK `sent`/`answered`/`approved`/`rejected`, real FKs to `org.org_units`/`ropa.processing_activities`/
+`platform.form_submissions`/`iam.users`) — no new migration, only new sqlc queries
+(`backend/db/queries/ropa/questionnaires.sql`) and a new `internal/ropa/service/questionnaires.go`. The
+questionnaire's own questions are an ordinary PLT-06 form of the already-registered `"questionnaire"`
+form type — `internal/wiring/forms.go` reserves it with `Respond: "ropa.activity.update"` well ahead of
+this feature, unused until now (rule 8: never hard-code the questions here). `ropaservice.Service` gained
+a `Forms *forms.Service` field (nil-means-skip, the same convention every other optional cross-cutting
+field on this struct already follows — `cmd/api/main.go` wires `ropaSvc.Forms = formsSvc` right after
+`formsSvc` is built, `cmd/worker` doesn't need it since nothing there sends/answers/approves a round).
+
+`SendQuestionnaire` checks the org unit visible under RLS (rule 1, `Org.GetOrgUnit`) and the respondent a
+real active user (`iamservice.Names`, the same FK-visibility check ROPA-02/DPO-01 already use), inserts
+one fresh `"sent"` round, and best-effort notifies the respondent (PLT-04, migration 00089's
+`ropa.questionnaire_sent` template — operational text, no DRAFT marker, rule 8). `AnswerQuestionnaire` is
+the respondent's own one-shot submission — `forms.Service.Record`, the same one-step-record path
+DPO-09/BRE-05/RRA-05's own checklist already use, not PLT-06's draft/section-assignment flow — against a
+`form_version_id` the respondent already has; a round still `sent` or `rejected` (a redo after DPO
+feedback) may be answered, any other status refused with `ErrInvalidTransition`.
+
+`ApproveQuestionnaire` is the acceptance criterion itself ("คำตอบที่อนุมัติแล้วเข้า RoPA อัตโนมัติ"): the
+submitted answers — read back through `forms.Service.GetResponse` (a DPO caller already holds the form
+type's own Respond permission, `ropa.activity.update`, which `GetResponse`'s own access check already
+accepts, no special-casing needed) — are mapped onto a brand-new processing activity the exact way
+ROPA-05's own `CreateActivityFromTemplate` builds one from a template's `defaults`: a purpose only when
+both `purpose_text` and `lawful_basis_code` were answered, a data row only when both
+`data_category_code` and `subject_type_code` were answered (resolved to this tenant's own master data via
+the existing `masterIDByCode` helper), a retention rule only when `retention_months`, `retention_basis`,
+`trigger_event` and `disposal_method` were all answered — each missing topic is simply left for the
+OWNER to fill in by hand afterward, never an error, the same "existence, not a forced guess" reasoning
+RTG-01's own template defaults already use. The DPO who designs the questionnaire form in PLT-06's
+builder must name its questions with these exact keys — documented in `docs/modules/ROPA.md#ropa-11`.
+`RejectQuestionnaire` sends an answered round back to the respondent (who can then re-answer, proven by a
+dedicated test); the reason is a comment on the assignment's own new PLT-07 collaboration record
+(`ropa_questionnaire`, `collabSvc.Register` in `cmd/api/main.go`, ROPA-12's own reuse pattern exactly) —
+the table has no reason column of its own to add one for.
+
+API: `GET`/`POST /admin/v1/ropa/questionnaires`, `GET /admin/v1/ropa/questionnaires/{id}`,
+`POST .../answer`, `POST .../approve` (ETag/If-Match), `POST .../reject` (ETag/If-Match) — all on the
+already-seeded `ropa.activity.{read,create,update,approve}` codes (no new permission code). A real
+gotcha hit again here (already known from prior passes): `internal/ropa/http/oapi-codegen.yaml`'s own
+`include-operation-ids` allowlist silently drops any operationId not explicitly listed — all 5 new
+operations needed adding before `make gen` produced any code for them. UI: a new page,
+`/ropa/questionnaires` (linked from `/ropa/activities`'s own header) — a send form (legal entity →
+department → respondent picker, reusing the exact `useMentionSearch`-based picker VEN-01's own vendor
+owner field already uses), a status-filtered list, and an approve/reject panel per answered row linking
+straight to the newly created activity. No department-facing "answer" screen yet — deliberately, the
+same "no consumer yet" deferral this codebase uses throughout (the generic
+`POST /admin/v1/ropa/questionnaires/{id}/answer` endpoint is ready for one once a real screen needs it).
+
+Tests: unit (`internal/ropa/service/questionnaires_test.go` — the acceptance criterion directly: send →
+answer → approve lands a real activity with the mapped purpose/data/retention rows and no further edits;
+a rejected round can be re-answered; approving a still-`sent` round and a stale row_version are both
+refused distinctly; two-tenant isolation of the list), HTTP contract
+(`internal/ropa/http/questionnaires_test.go` — 401/403/200/201/428 through the real validator + AuthZ,
+the full send → answer → approve chain carrying `activity_id` on the final response). `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file), the full `internal/ropa/service`/
+`internal/ropa/http` suites run live against this session's own real Postgres 16 + Redis (no
+regressions — every pre-existing failure, confirmed identical both before and after this change via
+`git stash -u`, is unrelated: the ROPA-18 import suite's own fixture gap, the `consent_purpose_id`
+template-purpose gap, and ROPA-15's own notification-count bug), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the new `/ropa/questionnaires` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

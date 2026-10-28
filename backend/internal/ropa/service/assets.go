@@ -25,6 +25,7 @@ import (
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/collab"
 	"pdpa-platform/internal/platform/events"
+	"pdpa-platform/internal/platform/forms"
 	"pdpa-platform/internal/platform/notify"
 	riskservice "pdpa-platform/internal/risk/service"
 	ropastore "pdpa-platform/internal/ropa/store"
@@ -125,6 +126,10 @@ type Service struct {
 	// Collab is PLT-07's shared comment/mention layer, reused as-is for ROPA-12's activity Q&A; nil in
 	// contexts that never read/write questions (e.g. the worker's own review-reminder jobs).
 	Collab *collab.Service
+	// Forms is PLT-06's engine, reused as-is for ROPA-11's own one-shot questionnaire answers
+	// (forms.Service.Record/GetResponse against the already-registered "questionnaire" form type); nil
+	// in contexts that never send/answer/approve one.
+	Forms *forms.Service
 	// Now is the clock (injectable for deadline tests); nil means time.Now.
 	Now func() time.Time
 }

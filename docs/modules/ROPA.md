@@ -735,6 +735,55 @@ test suite already does when neither is reachable. `go build ./...`, `go vet ./.
 
 **Acceptance criteria:** คำตอบที่อนุมัติแล้วเข้า RoPA อัตโนมัติ
 
+**Status (done):** `ropa.questionnaires` was already fully specified in the baseline migrations
+(00008_ropa.sql, `status` CHECK sent/answered/approved/rejected) — no new migration, only new sqlc
+queries and a new `internal/ropa/service/questionnaires.go`. The questionnaire's own questions are an
+ordinary PLT-06 form of the already-registered `"questionnaire"` type (`internal/wiring/forms.go`
+reserves it with `Respond: "ropa.activity.update"` — this feature is that reservation's first real
+consumer, rule 8: never hard-code the questions here). `SendQuestionnaire` checks the org unit visible
+under RLS (rule 1) and the respondent a real active user, then inserts one `"sent"` round and
+best-effort notifies the respondent. `AnswerQuestionnaire` is the respondent's own one-shot submission
+(`forms.Service.Record`, the same one-step-record path DPO-09/BRE-05/RRA-05's own checklist already use,
+not PLT-06's draft/section-assignment flow) against a `form_version_id` the respondent already has.
+
+`ApproveQuestionnaire` is the acceptance criterion itself: the submitted answers (read back through
+`forms.Service.GetResponse`, since a DPO caller already holds the form type's own Respond permission,
+`ropa.activity.update`) are mapped onto a brand-new processing activity the same way ROPA-05's own
+`CreateActivityFromTemplate` builds one from a template's defaults — a purpose only when both
+`purpose_text` and `lawful_basis_code` were answered, a data row only when both `data_category_code` and
+`subject_type_code` were answered, a retention rule only when `retention_months`, `retention_basis`,
+`trigger_event` and `disposal_method` were all answered. The DPO who designs the questionnaire form in
+PLT-06's builder must name its questions with these exact keys (`activity_name`, `activity_description`,
+`purpose_text`, `lawful_basis_code`, `data_category_code`, `subject_type_code`, `retention_months`,
+`retention_basis`, `trigger_event`, `disposal_method`) — a topic the DPO's form doesn't ask about is
+simply left for the OWNER to fill in by hand afterward, never an error, the same "existence, not a forced
+guess" reasoning RTG-01's own template defaults already use. `RejectQuestionnaire` sends an answered
+round back to the respondent (who can then re-answer); the reason is a comment on the assignment's own
+new PLT-07 collaboration record (`ropa_questionnaire`, ROPA-12's own reuse pattern) — the table has no
+reason column of its own to add one for.
+
+API: `GET`/`POST /admin/v1/ropa/questionnaires`, `GET /admin/v1/ropa/questionnaires/{id}`,
+`POST .../answer`, `POST .../approve` (ETag/If-Match), `POST .../reject` (ETag/If-Match) — all on the
+already-seeded `ropa.activity.*` codes (no new permission). UI: a new page, `/ropa/questionnaires`
+(linked from `/ropa/activities`'s own header) — a send form (legal entity → department → respondent
+picker, reusing the same `useMentionSearch` component VEN-01's own owner picker already uses), a
+status-filtered list, and an approve/reject panel per answered row, linking straight to the newly created
+activity. No department-facing "answer" screen yet — deliberately, the same "no consumer yet" deferral
+this codebase uses throughout (the generic `/admin/v1/ropa/questionnaires/{id}/answer` endpoint is ready
+for one). Tests: unit (`internal/ropa/service/questionnaires_test.go` — the acceptance criterion
+directly: send → answer → approve lands a real activity with the mapped purpose/data/retention rows; a
+rejected round can be re-answered; approving before answered or with a stale row_version is refused
+distinctly; two-tenant isolation), HTTP contract
+(`internal/ropa/http/questionnaires_test.go` — 401/403/200/201/428 through the real validator + AuthZ,
+the full send → answer → approve chain). `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every
+touched file), the full `internal/ropa/service`/`internal/ropa/http` suites run live against this
+session's own real Postgres 16 + Redis (no regressions — every pre-existing failure, confirmed identical
+both before and after this change via `git stash -u`, is unrelated: the ROPA-18 import suite's own
+fixture gap, the `consent_purpose_id` template-purpose gap, and ROPA-15's own notification-count bug),
+`make gen` re-run with no drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n
+test` and `pnpm --filter @pdpa/admin build` (incl. the new `/ropa/questionnaires` route) all verified
+clean.
+
 <a id="ropa-12"></a>
 ### ROPA-12 ถาม-ตอบกับ DPO หรือที่ปรึกษา
 

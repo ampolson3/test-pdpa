@@ -320,40 +320,40 @@ func (e DataInventorySource) Valid() bool {
 
 // Defines values for FormConditionOp.
 const (
-	Answered    FormConditionOp = "answered"
-	Eq          FormConditionOp = "eq"
-	Gt          FormConditionOp = "gt"
-	Gte         FormConditionOp = "gte"
-	In          FormConditionOp = "in"
-	Lt          FormConditionOp = "lt"
-	Lte         FormConditionOp = "lte"
-	Neq         FormConditionOp = "neq"
-	NotAnswered FormConditionOp = "not_answered"
-	NotIn       FormConditionOp = "not_in"
+	FormConditionOpAnswered    FormConditionOp = "answered"
+	FormConditionOpEq          FormConditionOp = "eq"
+	FormConditionOpGt          FormConditionOp = "gt"
+	FormConditionOpGte         FormConditionOp = "gte"
+	FormConditionOpIn          FormConditionOp = "in"
+	FormConditionOpLt          FormConditionOp = "lt"
+	FormConditionOpLte         FormConditionOp = "lte"
+	FormConditionOpNeq         FormConditionOp = "neq"
+	FormConditionOpNotAnswered FormConditionOp = "not_answered"
+	FormConditionOpNotIn       FormConditionOp = "not_in"
 )
 
 // Valid indicates whether the value is a known member of the FormConditionOp enum.
 func (e FormConditionOp) Valid() bool {
 	switch e {
-	case Answered:
+	case FormConditionOpAnswered:
 		return true
-	case Eq:
+	case FormConditionOpEq:
 		return true
-	case Gt:
+	case FormConditionOpGt:
 		return true
-	case Gte:
+	case FormConditionOpGte:
 		return true
-	case In:
+	case FormConditionOpIn:
 		return true
-	case Lt:
+	case FormConditionOpLt:
 		return true
-	case Lte:
+	case FormConditionOpLte:
 		return true
-	case Neq:
+	case FormConditionOpNeq:
 		return true
-	case NotAnswered:
+	case FormConditionOpNotAnswered:
 		return true
-	case NotIn:
+	case FormConditionOpNotIn:
 		return true
 	default:
 		return false
@@ -495,6 +495,30 @@ func (e RopaActivityTemplateInputRole) Valid() bool {
 	case RopaActivityTemplateInputRoleController:
 		return true
 	case RopaActivityTemplateInputRoleProcessor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaQuestionnaireStatus.
+const (
+	RopaQuestionnaireStatusAnswered RopaQuestionnaireStatus = "answered"
+	RopaQuestionnaireStatusApproved RopaQuestionnaireStatus = "approved"
+	RopaQuestionnaireStatusRejected RopaQuestionnaireStatus = "rejected"
+	RopaQuestionnaireStatusSent     RopaQuestionnaireStatus = "sent"
+)
+
+// Valid indicates whether the value is a known member of the RopaQuestionnaireStatus enum.
+func (e RopaQuestionnaireStatus) Valid() bool {
+	switch e {
+	case RopaQuestionnaireStatusAnswered:
+		return true
+	case RopaQuestionnaireStatusApproved:
+		return true
+	case RopaQuestionnaireStatusRejected:
+		return true
+	case RopaQuestionnaireStatusSent:
 		return true
 	default:
 		return false
@@ -1494,6 +1518,138 @@ func (e RopaUpdateDataInventoryItemParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for RopaListQuestionnairesParamsStatus.
+const (
+	RopaListQuestionnairesParamsStatusAnswered RopaListQuestionnairesParamsStatus = "answered"
+	RopaListQuestionnairesParamsStatusApproved RopaListQuestionnairesParamsStatus = "approved"
+	RopaListQuestionnairesParamsStatusRejected RopaListQuestionnairesParamsStatus = "rejected"
+	RopaListQuestionnairesParamsStatusSent     RopaListQuestionnairesParamsStatus = "sent"
+)
+
+// Valid indicates whether the value is a known member of the RopaListQuestionnairesParamsStatus enum.
+func (e RopaListQuestionnairesParamsStatus) Valid() bool {
+	switch e {
+	case RopaListQuestionnairesParamsStatusAnswered:
+		return true
+	case RopaListQuestionnairesParamsStatusApproved:
+		return true
+	case RopaListQuestionnairesParamsStatusRejected:
+		return true
+	case RopaListQuestionnairesParamsStatusSent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaListQuestionnairesParamsAcceptLanguage.
+const (
+	RopaListQuestionnairesParamsAcceptLanguageEn RopaListQuestionnairesParamsAcceptLanguage = "en"
+	RopaListQuestionnairesParamsAcceptLanguageTh RopaListQuestionnairesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaListQuestionnairesParamsAcceptLanguage enum.
+func (e RopaListQuestionnairesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaListQuestionnairesParamsAcceptLanguageEn:
+		return true
+	case RopaListQuestionnairesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaSendQuestionnaireParamsAcceptLanguage.
+const (
+	RopaSendQuestionnaireParamsAcceptLanguageEn RopaSendQuestionnaireParamsAcceptLanguage = "en"
+	RopaSendQuestionnaireParamsAcceptLanguageTh RopaSendQuestionnaireParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaSendQuestionnaireParamsAcceptLanguage enum.
+func (e RopaSendQuestionnaireParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaSendQuestionnaireParamsAcceptLanguageEn:
+		return true
+	case RopaSendQuestionnaireParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaGetQuestionnaireParamsAcceptLanguage.
+const (
+	RopaGetQuestionnaireParamsAcceptLanguageEn RopaGetQuestionnaireParamsAcceptLanguage = "en"
+	RopaGetQuestionnaireParamsAcceptLanguageTh RopaGetQuestionnaireParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaGetQuestionnaireParamsAcceptLanguage enum.
+func (e RopaGetQuestionnaireParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaGetQuestionnaireParamsAcceptLanguageEn:
+		return true
+	case RopaGetQuestionnaireParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaAnswerQuestionnaireParamsAcceptLanguage.
+const (
+	RopaAnswerQuestionnaireParamsAcceptLanguageEn RopaAnswerQuestionnaireParamsAcceptLanguage = "en"
+	RopaAnswerQuestionnaireParamsAcceptLanguageTh RopaAnswerQuestionnaireParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaAnswerQuestionnaireParamsAcceptLanguage enum.
+func (e RopaAnswerQuestionnaireParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaAnswerQuestionnaireParamsAcceptLanguageEn:
+		return true
+	case RopaAnswerQuestionnaireParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaApproveQuestionnaireParamsAcceptLanguage.
+const (
+	RopaApproveQuestionnaireParamsAcceptLanguageEn RopaApproveQuestionnaireParamsAcceptLanguage = "en"
+	RopaApproveQuestionnaireParamsAcceptLanguageTh RopaApproveQuestionnaireParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaApproveQuestionnaireParamsAcceptLanguage enum.
+func (e RopaApproveQuestionnaireParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaApproveQuestionnaireParamsAcceptLanguageEn:
+		return true
+	case RopaApproveQuestionnaireParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RopaRejectQuestionnaireParamsAcceptLanguage.
+const (
+	RopaRejectQuestionnaireParamsAcceptLanguageEn RopaRejectQuestionnaireParamsAcceptLanguage = "en"
+	RopaRejectQuestionnaireParamsAcceptLanguageTh RopaRejectQuestionnaireParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RopaRejectQuestionnaireParamsAcceptLanguage enum.
+func (e RopaRejectQuestionnaireParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case RopaRejectQuestionnaireParamsAcceptLanguageEn:
+		return true
+	case RopaRejectQuestionnaireParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RopaListSecurityControlsParamsAcceptLanguage.
 const (
 	RopaListSecurityControlsParamsAcceptLanguageEn RopaListSecurityControlsParamsAcceptLanguage = "en"
@@ -2388,6 +2544,63 @@ type RopaOutdatedTemplateActivity struct {
 	TemplateCode   string `json:"template_code"`
 }
 
+// RopaQuestionnaire defines model for RopaQuestionnaire.
+type RopaQuestionnaire struct {
+	// ActivityId UUIDv7 generated by the API
+	ActivityId *Uuid      `json:"activity_id,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	DueAt      *time.Time `json:"due_at,omitempty"`
+
+	// FormSubmissionId UUIDv7 generated by the API
+	FormSubmissionId *Uuid `json:"form_submission_id,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id Uuid `json:"id"`
+
+	// OrgUnitId UUIDv7 generated by the API
+	OrgUnitId      Uuid    `json:"org_unit_id"`
+	RespondentName *string `json:"respondent_name,omitempty"`
+
+	// RespondentUserId UUIDv7 generated by the API
+	RespondentUserId Uuid                    `json:"respondent_user_id"`
+	RowVersion       int                     `json:"row_version"`
+	Status           RopaQuestionnaireStatus `json:"status"`
+	UpdatedAt        time.Time               `json:"updated_at"`
+}
+
+// RopaQuestionnaireStatus defines model for RopaQuestionnaire.Status.
+type RopaQuestionnaireStatus string
+
+// RopaQuestionnaireAnswerInput defines model for RopaQuestionnaireAnswerInput.
+type RopaQuestionnaireAnswerInput struct {
+	Answers map[string]interface{} `json:"answers"`
+
+	// FormVersionId UUIDv7 generated by the API
+	FormVersionId Uuid `json:"form_version_id"`
+}
+
+// RopaQuestionnaireApproveInput defines model for RopaQuestionnaireApproveInput.
+type RopaQuestionnaireApproveInput struct {
+	Code string `json:"code"`
+
+	// LegalEntityId UUIDv7 generated by the API
+	LegalEntityId Uuid `json:"legal_entity_id"`
+
+	// OwnerUserId UUIDv7 generated by the API
+	OwnerUserId *Uuid `json:"owner_user_id,omitempty"`
+}
+
+// RopaQuestionnaireInput defines model for RopaQuestionnaireInput.
+type RopaQuestionnaireInput struct {
+	DueAt *time.Time `json:"due_at,omitempty"`
+
+	// OrgUnitId UUIDv7 generated by the API
+	OrgUnitId Uuid `json:"org_unit_id"`
+
+	// RespondentUserId UUIDv7 generated by the API
+	RespondentUserId Uuid `json:"respondent_user_id"`
+}
+
 // RopaRecordTransferTiaInput defines model for RopaRecordTransferTiaInput.
 type RopaRecordTransferTiaInput struct {
 	// Answers Answers to that template's published form questions
@@ -3022,6 +3235,72 @@ type RopaUpdateDataInventoryItemParams struct {
 // RopaUpdateDataInventoryItemParamsAcceptLanguage defines parameters for RopaUpdateDataInventoryItem.
 type RopaUpdateDataInventoryItemParamsAcceptLanguage string
 
+// RopaListQuestionnairesParams defines parameters for RopaListQuestionnaires.
+type RopaListQuestionnairesParams struct {
+	OrgUnitId *Uuid                               `form:"org_unit_id,omitempty" json:"org_unit_id,omitempty"`
+	Status    *RopaListQuestionnairesParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaListQuestionnairesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RopaListQuestionnairesParamsStatus defines parameters for RopaListQuestionnaires.
+type RopaListQuestionnairesParamsStatus string
+
+// RopaListQuestionnairesParamsAcceptLanguage defines parameters for RopaListQuestionnaires.
+type RopaListQuestionnairesParamsAcceptLanguage string
+
+// RopaSendQuestionnaireParams defines parameters for RopaSendQuestionnaire.
+type RopaSendQuestionnaireParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaSendQuestionnaireParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RopaSendQuestionnaireParamsAcceptLanguage defines parameters for RopaSendQuestionnaire.
+type RopaSendQuestionnaireParamsAcceptLanguage string
+
+// RopaGetQuestionnaireParams defines parameters for RopaGetQuestionnaire.
+type RopaGetQuestionnaireParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaGetQuestionnaireParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RopaGetQuestionnaireParamsAcceptLanguage defines parameters for RopaGetQuestionnaire.
+type RopaGetQuestionnaireParamsAcceptLanguage string
+
+// RopaAnswerQuestionnaireParams defines parameters for RopaAnswerQuestionnaire.
+type RopaAnswerQuestionnaireParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaAnswerQuestionnaireParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// RopaAnswerQuestionnaireParamsAcceptLanguage defines parameters for RopaAnswerQuestionnaire.
+type RopaAnswerQuestionnaireParamsAcceptLanguage string
+
+// RopaApproveQuestionnaireParams defines parameters for RopaApproveQuestionnaire.
+type RopaApproveQuestionnaireParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaApproveQuestionnaireParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// RopaApproveQuestionnaireParamsAcceptLanguage defines parameters for RopaApproveQuestionnaire.
+type RopaApproveQuestionnaireParamsAcceptLanguage string
+
+// RopaRejectQuestionnaireParams defines parameters for RopaRejectQuestionnaire.
+type RopaRejectQuestionnaireParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *RopaRejectQuestionnaireParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// RopaRejectQuestionnaireParamsAcceptLanguage defines parameters for RopaRejectQuestionnaire.
+type RopaRejectQuestionnaireParamsAcceptLanguage string
+
 // RopaListSecurityControlsParams defines parameters for RopaListSecurityControls.
 type RopaListSecurityControlsParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -3219,6 +3498,15 @@ type RopaCreateDataInventoryItemJSONRequestBody = DataInventoryItemInput
 // RopaUpdateDataInventoryItemJSONRequestBody defines body for RopaUpdateDataInventoryItem for application/json ContentType.
 type RopaUpdateDataInventoryItemJSONRequestBody = DataInventoryItemInput
 
+// RopaSendQuestionnaireJSONRequestBody defines body for RopaSendQuestionnaire for application/json ContentType.
+type RopaSendQuestionnaireJSONRequestBody = RopaQuestionnaireInput
+
+// RopaAnswerQuestionnaireJSONRequestBody defines body for RopaAnswerQuestionnaire for application/json ContentType.
+type RopaAnswerQuestionnaireJSONRequestBody = RopaQuestionnaireAnswerInput
+
+// RopaApproveQuestionnaireJSONRequestBody defines body for RopaApproveQuestionnaire for application/json ContentType.
+type RopaApproveQuestionnaireJSONRequestBody = RopaQuestionnaireApproveInput
+
 // RopaUpdateActivityTemplateJSONRequestBody defines body for RopaUpdateActivityTemplate for application/json ContentType.
 type RopaUpdateActivityTemplateJSONRequestBody = RopaActivityTemplateInput
 
@@ -3377,6 +3665,24 @@ type ServerInterface interface {
 	// RopaUpdateDataInventoryItem Change a data inventory entry
 	// (PATCH /admin/v1/ropa/data-inventory/{id})
 	RopaUpdateDataInventoryItem(w http.ResponseWriter, r *http.Request, id Uuid, params RopaUpdateDataInventoryItemParams)
+	// RopaListQuestionnaires ROPA-11 — the department data mapping questionnaire's own rounds (sent/answered/approved/rejected)
+	// (GET /admin/v1/ropa/questionnaires)
+	RopaListQuestionnaires(w http.ResponseWriter, r *http.Request, params RopaListQuestionnairesParams)
+	// RopaSendQuestionnaire ROPA-11 — send the data mapping questionnaire to a department's own respondent
+	// (POST /admin/v1/ropa/questionnaires)
+	RopaSendQuestionnaire(w http.ResponseWriter, r *http.Request, params RopaSendQuestionnaireParams)
+	// RopaGetQuestionnaire ROPA-11 — one questionnaire round
+	// (GET /admin/v1/ropa/questionnaires/{id})
+	RopaGetQuestionnaire(w http.ResponseWriter, r *http.Request, id Uuid, params RopaGetQuestionnaireParams)
+	// RopaAnswerQuestionnaire ROPA-11 — the respondent's own one-shot submission (sent|rejected -> answered)
+	// (POST /admin/v1/ropa/questionnaires/{id}/answer)
+	RopaAnswerQuestionnaire(w http.ResponseWriter, r *http.Request, id Uuid, params RopaAnswerQuestionnaireParams)
+	// RopaApproveQuestionnaire ROPA-11's own acceptance criterion — approved answers enter RoPA automatically as a new processing activity (answered -> approved)
+	// (POST /admin/v1/ropa/questionnaires/{id}/approve)
+	RopaApproveQuestionnaire(w http.ResponseWriter, r *http.Request, id Uuid, params RopaApproveQuestionnaireParams)
+	// RopaRejectQuestionnaire ROPA-11 — send an answered round back to the respondent (answered -> rejected); the reason is a comment on the record
+	// (POST /admin/v1/ropa/questionnaires/{id}/reject)
+	RopaRejectQuestionnaire(w http.ResponseWriter, r *http.Request, id Uuid, params RopaRejectQuestionnaireParams)
 	// RopaListSecurityControls The ม.37(1) security-measures catalog (ROPA-09)
 	// (GET /admin/v1/ropa/security-controls)
 	RopaListSecurityControls(w http.ResponseWriter, r *http.Request, params RopaListSecurityControlsParams)
@@ -3710,6 +4016,42 @@ func (_ Unimplemented) RopaGetDataInventoryItem(w http.ResponseWriter, r *http.R
 // RopaUpdateDataInventoryItem Change a data inventory entry
 // (PATCH /admin/v1/ropa/data-inventory/{id})
 func (_ Unimplemented) RopaUpdateDataInventoryItem(w http.ResponseWriter, r *http.Request, id Uuid, params RopaUpdateDataInventoryItemParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaListQuestionnaires ROPA-11 — the department data mapping questionnaire's own rounds (sent/answered/approved/rejected)
+// (GET /admin/v1/ropa/questionnaires)
+func (_ Unimplemented) RopaListQuestionnaires(w http.ResponseWriter, r *http.Request, params RopaListQuestionnairesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaSendQuestionnaire ROPA-11 — send the data mapping questionnaire to a department's own respondent
+// (POST /admin/v1/ropa/questionnaires)
+func (_ Unimplemented) RopaSendQuestionnaire(w http.ResponseWriter, r *http.Request, params RopaSendQuestionnaireParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaGetQuestionnaire ROPA-11 — one questionnaire round
+// (GET /admin/v1/ropa/questionnaires/{id})
+func (_ Unimplemented) RopaGetQuestionnaire(w http.ResponseWriter, r *http.Request, id Uuid, params RopaGetQuestionnaireParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaAnswerQuestionnaire ROPA-11 — the respondent's own one-shot submission (sent|rejected -> answered)
+// (POST /admin/v1/ropa/questionnaires/{id}/answer)
+func (_ Unimplemented) RopaAnswerQuestionnaire(w http.ResponseWriter, r *http.Request, id Uuid, params RopaAnswerQuestionnaireParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaApproveQuestionnaire ROPA-11's own acceptance criterion — approved answers enter RoPA automatically as a new processing activity (answered -> approved)
+// (POST /admin/v1/ropa/questionnaires/{id}/approve)
+func (_ Unimplemented) RopaApproveQuestionnaire(w http.ResponseWriter, r *http.Request, id Uuid, params RopaApproveQuestionnaireParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RopaRejectQuestionnaire ROPA-11 — send an answered round back to the respondent (answered -> rejected); the reason is a comment on the record
+// (POST /admin/v1/ropa/questionnaires/{id}/reject)
+func (_ Unimplemented) RopaRejectQuestionnaire(w http.ResponseWriter, r *http.Request, id Uuid, params RopaRejectQuestionnaireParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -6615,6 +6957,360 @@ func (siw *ServerInterfaceWrapper) RopaUpdateDataInventoryItem(w http.ResponseWr
 	handler.ServeHTTP(w, r)
 }
 
+// RopaListQuestionnaires operation middleware
+func (siw *ServerInterfaceWrapper) RopaListQuestionnaires(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaListQuestionnairesParams
+
+	// ------------- Optional query parameter "org_unit_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "org_unit_id", r.URL.Query(), &params.OrgUnitId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "org_unit_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "org_unit_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaListQuestionnairesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaListQuestionnaires(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaSendQuestionnaire operation middleware
+func (siw *ServerInterfaceWrapper) RopaSendQuestionnaire(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaSendQuestionnaireParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaSendQuestionnaireParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaSendQuestionnaire(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaGetQuestionnaire operation middleware
+func (siw *ServerInterfaceWrapper) RopaGetQuestionnaire(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaGetQuestionnaireParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaGetQuestionnaireParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaGetQuestionnaire(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaAnswerQuestionnaire operation middleware
+func (siw *ServerInterfaceWrapper) RopaAnswerQuestionnaire(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaAnswerQuestionnaireParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaAnswerQuestionnaireParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaAnswerQuestionnaire(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaApproveQuestionnaire operation middleware
+func (siw *ServerInterfaceWrapper) RopaApproveQuestionnaire(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaApproveQuestionnaireParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaApproveQuestionnaireParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaApproveQuestionnaire(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RopaRejectQuestionnaire operation middleware
+func (siw *ServerInterfaceWrapper) RopaRejectQuestionnaire(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RopaRejectQuestionnaireParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage RopaRejectQuestionnaireParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RopaRejectQuestionnaire(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RopaListSecurityControls operation middleware
 func (siw *ServerInterfaceWrapper) RopaListSecurityControls(w http.ResponseWriter, r *http.Request) {
 
@@ -7640,6 +8336,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/admin/v1/ropa/activities/{id}/controls/{controlId}", wrapper.RopaDeleteActivityControl)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/ropa/questionnaires", wrapper.RopaListQuestionnaires)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/questionnaires", wrapper.RopaSendQuestionnaire)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/ropa/questionnaires/{id}", wrapper.RopaGetQuestionnaire)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/questionnaires/{id}/answer", wrapper.RopaAnswerQuestionnaire)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/questionnaires/{id}/approve", wrapper.RopaApproveQuestionnaire)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/ropa/questionnaires/{id}/reject", wrapper.RopaRejectQuestionnaire)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/ropa/templates", wrapper.RopaListTemplateSets)
@@ -12072,6 +12786,631 @@ func (response RopaUpdateDataInventoryItem428ApplicationProblemPlusJSONResponse)
 	return err
 }
 
+type RopaListQuestionnairesRequestObject struct {
+	Params RopaListQuestionnairesParams
+}
+
+type RopaListQuestionnairesResponseObject interface {
+	VisitRopaListQuestionnairesResponse(w http.ResponseWriter) error
+}
+
+type RopaListQuestionnaires200JSONResponse struct {
+	Data []RopaQuestionnaire `json:"data"`
+}
+
+func (response RopaListQuestionnaires200JSONResponse) VisitRopaListQuestionnairesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaListQuestionnaires401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaListQuestionnaires401ApplicationProblemPlusJSONResponse) VisitRopaListQuestionnairesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaListQuestionnaires403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaListQuestionnaires403ApplicationProblemPlusJSONResponse) VisitRopaListQuestionnairesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaSendQuestionnaireRequestObject struct {
+	Params RopaSendQuestionnaireParams
+	Body   *RopaSendQuestionnaireJSONRequestBody
+}
+
+type RopaSendQuestionnaireResponseObject interface {
+	VisitRopaSendQuestionnaireResponse(w http.ResponseWriter) error
+}
+
+type RopaSendQuestionnaire201JSONResponse RopaQuestionnaire
+
+func (response RopaSendQuestionnaire201JSONResponse) VisitRopaSendQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaSendQuestionnaire400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response RopaSendQuestionnaire400ApplicationProblemPlusJSONResponse) VisitRopaSendQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaSendQuestionnaire401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaSendQuestionnaire401ApplicationProblemPlusJSONResponse) VisitRopaSendQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaSendQuestionnaire403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaSendQuestionnaire403ApplicationProblemPlusJSONResponse) VisitRopaSendQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaSendQuestionnaire422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response RopaSendQuestionnaire422ApplicationProblemPlusJSONResponse) VisitRopaSendQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaGetQuestionnaireRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaGetQuestionnaireParams
+}
+
+type RopaGetQuestionnaireResponseObject interface {
+	VisitRopaGetQuestionnaireResponse(w http.ResponseWriter) error
+}
+
+type RopaGetQuestionnaire200JSONResponse RopaQuestionnaire
+
+func (response RopaGetQuestionnaire200JSONResponse) VisitRopaGetQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaGetQuestionnaire401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaGetQuestionnaire401ApplicationProblemPlusJSONResponse) VisitRopaGetQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaGetQuestionnaire403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaGetQuestionnaire403ApplicationProblemPlusJSONResponse) VisitRopaGetQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaGetQuestionnaire404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaGetQuestionnaire404ApplicationProblemPlusJSONResponse) VisitRopaGetQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAnswerQuestionnaireRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaAnswerQuestionnaireParams
+	Body   *RopaAnswerQuestionnaireJSONRequestBody
+}
+
+type RopaAnswerQuestionnaireResponseObject interface {
+	VisitRopaAnswerQuestionnaireResponse(w http.ResponseWriter) error
+}
+
+type RopaAnswerQuestionnaire200JSONResponse RopaQuestionnaire
+
+func (response RopaAnswerQuestionnaire200JSONResponse) VisitRopaAnswerQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAnswerQuestionnaire400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response RopaAnswerQuestionnaire400ApplicationProblemPlusJSONResponse) VisitRopaAnswerQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAnswerQuestionnaire401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaAnswerQuestionnaire401ApplicationProblemPlusJSONResponse) VisitRopaAnswerQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAnswerQuestionnaire403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaAnswerQuestionnaire403ApplicationProblemPlusJSONResponse) VisitRopaAnswerQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAnswerQuestionnaire404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaAnswerQuestionnaire404ApplicationProblemPlusJSONResponse) VisitRopaAnswerQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAnswerQuestionnaire409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response RopaAnswerQuestionnaire409ApplicationProblemPlusJSONResponse) VisitRopaAnswerQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaAnswerQuestionnaire422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response RopaAnswerQuestionnaire422ApplicationProblemPlusJSONResponse) VisitRopaAnswerQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveQuestionnaireRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaApproveQuestionnaireParams
+	Body   *RopaApproveQuestionnaireJSONRequestBody
+}
+
+type RopaApproveQuestionnaireResponseObject interface {
+	VisitRopaApproveQuestionnaireResponse(w http.ResponseWriter) error
+}
+
+type RopaApproveQuestionnaire200ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaApproveQuestionnaire200JSONResponse struct {
+	Body    RopaQuestionnaire
+	Headers RopaApproveQuestionnaire200ResponseHeaders
+}
+
+func (response RopaApproveQuestionnaire200JSONResponse) VisitRopaApproveQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveQuestionnaire400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveQuestionnaire400ApplicationProblemPlusJSONResponse) VisitRopaApproveQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveQuestionnaire401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveQuestionnaire401ApplicationProblemPlusJSONResponse) VisitRopaApproveQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveQuestionnaire403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveQuestionnaire403ApplicationProblemPlusJSONResponse) VisitRopaApproveQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveQuestionnaire404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveQuestionnaire404ApplicationProblemPlusJSONResponse) VisitRopaApproveQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveQuestionnaire409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveQuestionnaire409ApplicationProblemPlusJSONResponse) VisitRopaApproveQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveQuestionnaire412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveQuestionnaire412ApplicationProblemPlusJSONResponse) VisitRopaApproveQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveQuestionnaire422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveQuestionnaire422ApplicationProblemPlusJSONResponse) VisitRopaApproveQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaApproveQuestionnaire428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response RopaApproveQuestionnaire428ApplicationProblemPlusJSONResponse) VisitRopaApproveQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRejectQuestionnaireRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params RopaRejectQuestionnaireParams
+}
+
+type RopaRejectQuestionnaireResponseObject interface {
+	VisitRopaRejectQuestionnaireResponse(w http.ResponseWriter) error
+}
+
+type RopaRejectQuestionnaire200ResponseHeaders struct {
+	ETag *string
+}
+
+type RopaRejectQuestionnaire200JSONResponse struct {
+	Body    RopaQuestionnaire
+	Headers RopaRejectQuestionnaire200ResponseHeaders
+}
+
+func (response RopaRejectQuestionnaire200JSONResponse) VisitRopaRejectQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRejectQuestionnaire401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRejectQuestionnaire401ApplicationProblemPlusJSONResponse) VisitRopaRejectQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRejectQuestionnaire403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRejectQuestionnaire403ApplicationProblemPlusJSONResponse) VisitRopaRejectQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRejectQuestionnaire404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRejectQuestionnaire404ApplicationProblemPlusJSONResponse) VisitRopaRejectQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRejectQuestionnaire409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRejectQuestionnaire409ApplicationProblemPlusJSONResponse) VisitRopaRejectQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRejectQuestionnaire412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRejectQuestionnaire412ApplicationProblemPlusJSONResponse) VisitRopaRejectQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RopaRejectQuestionnaire428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response RopaRejectQuestionnaire428ApplicationProblemPlusJSONResponse) VisitRopaRejectQuestionnaireResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type RopaListSecurityControlsRequestObject struct {
 	Params RopaListSecurityControlsParams
 }
@@ -13436,6 +14775,24 @@ type StrictServerInterface interface {
 	// RopaUpdateDataInventoryItem Change a data inventory entry
 	// (PATCH /admin/v1/ropa/data-inventory/{id})
 	RopaUpdateDataInventoryItem(ctx context.Context, request RopaUpdateDataInventoryItemRequestObject) (RopaUpdateDataInventoryItemResponseObject, error)
+	// RopaListQuestionnaires ROPA-11 — the department data mapping questionnaire's own rounds (sent/answered/approved/rejected)
+	// (GET /admin/v1/ropa/questionnaires)
+	RopaListQuestionnaires(ctx context.Context, request RopaListQuestionnairesRequestObject) (RopaListQuestionnairesResponseObject, error)
+	// RopaSendQuestionnaire ROPA-11 — send the data mapping questionnaire to a department's own respondent
+	// (POST /admin/v1/ropa/questionnaires)
+	RopaSendQuestionnaire(ctx context.Context, request RopaSendQuestionnaireRequestObject) (RopaSendQuestionnaireResponseObject, error)
+	// RopaGetQuestionnaire ROPA-11 — one questionnaire round
+	// (GET /admin/v1/ropa/questionnaires/{id})
+	RopaGetQuestionnaire(ctx context.Context, request RopaGetQuestionnaireRequestObject) (RopaGetQuestionnaireResponseObject, error)
+	// RopaAnswerQuestionnaire ROPA-11 — the respondent's own one-shot submission (sent|rejected -> answered)
+	// (POST /admin/v1/ropa/questionnaires/{id}/answer)
+	RopaAnswerQuestionnaire(ctx context.Context, request RopaAnswerQuestionnaireRequestObject) (RopaAnswerQuestionnaireResponseObject, error)
+	// RopaApproveQuestionnaire ROPA-11's own acceptance criterion — approved answers enter RoPA automatically as a new processing activity (answered -> approved)
+	// (POST /admin/v1/ropa/questionnaires/{id}/approve)
+	RopaApproveQuestionnaire(ctx context.Context, request RopaApproveQuestionnaireRequestObject) (RopaApproveQuestionnaireResponseObject, error)
+	// RopaRejectQuestionnaire ROPA-11 — send an answered round back to the respondent (answered -> rejected); the reason is a comment on the record
+	// (POST /admin/v1/ropa/questionnaires/{id}/reject)
+	RopaRejectQuestionnaire(ctx context.Context, request RopaRejectQuestionnaireRequestObject) (RopaRejectQuestionnaireResponseObject, error)
 	// RopaListSecurityControls The ม.37(1) security-measures catalog (ROPA-09)
 	// (GET /admin/v1/ropa/security-controls)
 	RopaListSecurityControls(ctx context.Context, request RopaListSecurityControlsRequestObject) (RopaListSecurityControlsResponseObject, error)
@@ -14939,6 +16296,187 @@ func (sh *strictHandler) RopaUpdateDataInventoryItem(w http.ResponseWriter, r *h
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RopaUpdateDataInventoryItemResponseObject); ok {
 		if err := validResponse.VisitRopaUpdateDataInventoryItemResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaListQuestionnaires operation middleware
+func (sh *strictHandler) RopaListQuestionnaires(w http.ResponseWriter, r *http.Request, params RopaListQuestionnairesParams) {
+	var request RopaListQuestionnairesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaListQuestionnaires(ctx, request.(RopaListQuestionnairesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaListQuestionnaires")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaListQuestionnairesResponseObject); ok {
+		if err := validResponse.VisitRopaListQuestionnairesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaSendQuestionnaire operation middleware
+func (sh *strictHandler) RopaSendQuestionnaire(w http.ResponseWriter, r *http.Request, params RopaSendQuestionnaireParams) {
+	var request RopaSendQuestionnaireRequestObject
+
+	request.Params = params
+
+	var body RopaSendQuestionnaireJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaSendQuestionnaire(ctx, request.(RopaSendQuestionnaireRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaSendQuestionnaire")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaSendQuestionnaireResponseObject); ok {
+		if err := validResponse.VisitRopaSendQuestionnaireResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaGetQuestionnaire operation middleware
+func (sh *strictHandler) RopaGetQuestionnaire(w http.ResponseWriter, r *http.Request, id Uuid, params RopaGetQuestionnaireParams) {
+	var request RopaGetQuestionnaireRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaGetQuestionnaire(ctx, request.(RopaGetQuestionnaireRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaGetQuestionnaire")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaGetQuestionnaireResponseObject); ok {
+		if err := validResponse.VisitRopaGetQuestionnaireResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaAnswerQuestionnaire operation middleware
+func (sh *strictHandler) RopaAnswerQuestionnaire(w http.ResponseWriter, r *http.Request, id Uuid, params RopaAnswerQuestionnaireParams) {
+	var request RopaAnswerQuestionnaireRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body RopaAnswerQuestionnaireJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaAnswerQuestionnaire(ctx, request.(RopaAnswerQuestionnaireRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaAnswerQuestionnaire")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaAnswerQuestionnaireResponseObject); ok {
+		if err := validResponse.VisitRopaAnswerQuestionnaireResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaApproveQuestionnaire operation middleware
+func (sh *strictHandler) RopaApproveQuestionnaire(w http.ResponseWriter, r *http.Request, id Uuid, params RopaApproveQuestionnaireParams) {
+	var request RopaApproveQuestionnaireRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body RopaApproveQuestionnaireJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaApproveQuestionnaire(ctx, request.(RopaApproveQuestionnaireRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaApproveQuestionnaire")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaApproveQuestionnaireResponseObject); ok {
+		if err := validResponse.VisitRopaApproveQuestionnaireResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RopaRejectQuestionnaire operation middleware
+func (sh *strictHandler) RopaRejectQuestionnaire(w http.ResponseWriter, r *http.Request, id Uuid, params RopaRejectQuestionnaireParams) {
+	var request RopaRejectQuestionnaireRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RopaRejectQuestionnaire(ctx, request.(RopaRejectQuestionnaireRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RopaRejectQuestionnaire")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RopaRejectQuestionnaireResponseObject); ok {
+		if err := validResponse.VisitRopaRejectQuestionnaireResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

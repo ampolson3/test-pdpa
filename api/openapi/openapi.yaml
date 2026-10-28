@@ -10923,6 +10923,232 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/questionnaires:
+    get:
+      operationId: ropaListQuestionnaires
+      tags: [ropa]
+      summary: ROPA-11 — the department data mapping questionnaire's own rounds (sent/answered/approved/rejected)
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: org_unit_id
+          in: query
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [sent, answered, approved, rejected]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RopaQuestionnaire'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: ropaSendQuestionnaire
+      tags: [ropa]
+      summary: ROPA-11 — send the data mapping questionnaire to a department's own respondent
+      x-permission: ropa.activity.create
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RopaQuestionnaireInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RopaQuestionnaire'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/questionnaires/{id}:
+    get:
+      operationId: ropaGetQuestionnaire
+      tags: [ropa]
+      summary: ROPA-11 — one questionnaire round
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RopaQuestionnaire'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/questionnaires/{id}/answer:
+    post:
+      operationId: ropaAnswerQuestionnaire
+      tags: [ropa]
+      summary: ROPA-11 — the respondent's own one-shot submission (sent|rejected -> answered)
+      x-permission: ropa.activity.update
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RopaQuestionnaireAnswerInput'
+      responses:
+        '200':
+          description: Now answered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RopaQuestionnaire'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/ropa/questionnaires/{id}/approve:
+    post:
+      operationId: ropaApproveQuestionnaire
+      tags: [ropa]
+      summary: ROPA-11's own acceptance criterion — approved answers enter RoPA automatically as a new processing activity (answered -> approved)
+      x-permission: ropa.activity.approve
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RopaQuestionnaireApproveInput'
+      responses:
+        '200':
+          description: Now approved — activity_id names the newly created RoPA activity
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RopaQuestionnaire'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/questionnaires/{id}/reject:
+    post:
+      operationId: ropaRejectQuestionnaire
+      tags: [ropa]
+      summary: ROPA-11 — send an answered round back to the respondent (answered -> rejected); the reason is a comment on the record
+      x-permission: ropa.activity.approve
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Now rejected
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RopaQuestionnaire'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/ropa/templates:
     get:
       operationId: ropaListTemplateSets
@@ -20912,6 +21138,43 @@ components:
         activity_id: {$ref: '#/components/schemas/Uuid'}
         control_id: {$ref: '#/components/schemas/Uuid'}
         description: {type: string}
+    RopaQuestionnaireInput:
+      type: object
+      required: [org_unit_id, respondent_user_id]
+      properties:
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        respondent_user_id: {$ref: '#/components/schemas/Uuid'}
+        due_at: {type: string, format: date-time}
+    RopaQuestionnaireAnswerInput:
+      type: object
+      required: [form_version_id, answers]
+      properties:
+        form_version_id: {$ref: '#/components/schemas/Uuid'}
+        answers:
+          type: object
+          additionalProperties: true
+    RopaQuestionnaireApproveInput:
+      type: object
+      required: [legal_entity_id, code]
+      properties:
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        code: {type: string}
+        owner_user_id: {$ref: '#/components/schemas/Uuid'}
+    RopaQuestionnaire:
+      type: object
+      required: [id, org_unit_id, respondent_user_id, status, row_version, created_at, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        respondent_user_id: {$ref: '#/components/schemas/Uuid'}
+        respondent_name: {type: string}
+        due_at: {type: string, format: date-time, nullable: true}
+        status: {type: string, enum: [sent, answered, approved, rejected]}
+        activity_id: {$ref: '#/components/schemas/Uuid', nullable: true}
+        form_submission_id: {$ref: '#/components/schemas/Uuid', nullable: true}
+        row_version: {type: integer}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
     RopaTemplateSet:
       type: object
       required: [id, name, set_type, version_no]

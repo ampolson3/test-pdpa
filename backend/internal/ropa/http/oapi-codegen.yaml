@@ -52,6 +52,12 @@ output-options:
     - ropaListActivityControls
     - ropaAddActivityControl
     - ropaDeleteActivityControl
+    - ropaListQuestionnaires
+    - ropaSendQuestionnaire
+    - ropaGetQuestionnaire
+    - ropaAnswerQuestionnaire
+    - ropaApproveQuestionnaire
+    - ropaRejectQuestionnaire
     - ropaListTemplateSets
     - ropaListOwnTemplateSets
     - ropaCreateTemplateSet

@@ -1726,6 +1726,7 @@
     "browseTemplates": "Standard activity library",
     "useWizard": "Use wizard",
     "viewDataFlow": "Data Flow Diagram",
+    "questionnaires": "Data mapping questionnaire",
     "links": {
       "title": "Linkage",
       "hint": "Notices, consent purposes and other records linked to this activity are automatically marked for review once this activity is changed and approved.",
@@ -3293,6 +3294,33 @@
       "loadError": "Could not load version history.",
       "versionLabel": "Version {n}",
       "current": "current"
+    }
+  },
+  "ropaQuestionnaires": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view questionnaires.",
+    "title": "Data mapping questionnaire",
+    "intro": "Send a department the data mapping questionnaire — approved answers become a new RoPA activity automatically.",
+    "send": "Send questionnaire",
+    "approve": "Approve",
+    "reject": "Reject",
+    "loading": "Loading…",
+    "empty": "No questionnaires sent yet.",
+    "filters": { "status": "Status", "all": "All" },
+    "statuses": { "sent": "Sent", "answered": "Answered", "approved": "Approved", "rejected": "Rejected" },
+    "table": { "respondent": "Respondent", "status": "Status", "sentAt": "Sent", "activity": "RoPA activity", "viewActivity": "View activity" },
+    "form": {
+      "sendTitle": "Send questionnaire",
+      "approveTitle": "Approve — create the RoPA activity",
+      "legalEntity": "Legal entity",
+      "orgUnit": "Department",
+      "respondent": "Respondent",
+      "respondentSearch": "Search by name…",
+      "change": "Change",
+      "code": "Activity code",
+      "pick": "Choose…",
+      "submit": "Submit",
+      "cancel": "Cancel"
     }
   },
   "governance": {

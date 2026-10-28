@@ -301,7 +301,18 @@ func run() error {
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
 	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
 	formsSvc := wiring.Forms(notifySvc, auditSvc)
-	riskSvc.Forms = formsSvc // RRA-05: the per-activity checklist's own "checklist" form type
+	riskSvc.Forms = formsSvc                                               // RRA-05: the per-activity checklist's own "checklist" form type
+	ropaSvc.Forms = formsSvc                                               // ROPA-11: the data mapping questionnaire's own "questionnaire" form type
+	collabSvc.Register(ropaservice.QuestionnaireEntityType, collab.Policy{ // ROPA-11: a DPO's rejection reason lives here (the table has no column for one)
+		ReadPermission: "ropa.activity.read", WritePermission: "ropa.activity.update",
+		Exists: func(ctx context.Context, id uuid.UUID) (bool, error) {
+			_, err := ropaSvc.GetQuestionnaire(ctx, id)
+			if errors.Is(err, ropaservice.ErrNotFound) {
+				return false, nil
+			}
+			return err == nil, err
+		},
+	})
 	consentSvc := &consentservice.Service{Versioning: versioningSvc, Events: &events.Publisher{River: riverClient},
 		Notify: notifySvc, Keyring: keyring, Audit: auditSvc, Org: orgSvc, Verification: iamSvc, // CON-11: guardian OTP (IAM-05)
 		PortalBaseURL: os.Getenv("PORTAL_PUBLIC_URL")} // CON-23: double opt-in confirmation link base

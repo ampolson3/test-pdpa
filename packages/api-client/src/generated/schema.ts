@@ -3752,6 +3752,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/questionnaires": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ROPA-11 — the department data mapping questionnaire's own rounds (sent/answered/approved/rejected) */
+        get: operations["ropaListQuestionnaires"];
+        put?: never;
+        /** ROPA-11 — send the data mapping questionnaire to a department's own respondent */
+        post: operations["ropaSendQuestionnaire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/questionnaires/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** ROPA-11 — one questionnaire round */
+        get: operations["ropaGetQuestionnaire"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/questionnaires/{id}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ROPA-11 — the respondent's own one-shot submission (sent|rejected -> answered) */
+        post: operations["ropaAnswerQuestionnaire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/questionnaires/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ROPA-11's own acceptance criterion — approved answers enter RoPA automatically as a new processing activity (answered -> approved) */
+        post: operations["ropaApproveQuestionnaire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/questionnaires/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** ROPA-11 — send an answered round back to the respondent (answered -> rejected); the reason is a comment on the record */
+        post: operations["ropaRejectQuestionnaire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/templates": {
         parameters: {
             query?: never;
@@ -5264,6 +5350,23 @@ export interface paths {
         };
         /** RRA-11: every activity whose own latest score is high/very_high right now — "กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง", for highlighting on both the RoPA list and the data flow diagram */
         get: operations["riskListHighRiskActivityScores"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/risk/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RRA-14: a one-click executive summary of every still-open high/very-high risk from the risk register (RRA-09) — its owner and its own remediation task's current progress */
+        get: operations["riskGetExecutiveReport"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8272,6 +8375,40 @@ export interface components {
             activity_id: components["schemas"]["Uuid"];
             control_id: components["schemas"]["Uuid"];
             description?: string;
+        };
+        RopaQuestionnaireInput: {
+            org_unit_id: components["schemas"]["Uuid"];
+            respondent_user_id: components["schemas"]["Uuid"];
+            /** Format: date-time */
+            due_at?: string;
+        };
+        RopaQuestionnaireAnswerInput: {
+            form_version_id: components["schemas"]["Uuid"];
+            answers: {
+                [key: string]: unknown;
+            };
+        };
+        RopaQuestionnaireApproveInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            code: string;
+            owner_user_id?: components["schemas"]["Uuid"];
+        };
+        RopaQuestionnaire: {
+            id: components["schemas"]["Uuid"];
+            org_unit_id: components["schemas"]["Uuid"];
+            respondent_user_id: components["schemas"]["Uuid"];
+            respondent_name?: string;
+            /** Format: date-time */
+            due_at?: string | null;
+            /** @enum {string} */
+            status: "sent" | "answered" | "approved" | "rejected";
+            activity_id?: components["schemas"]["Uuid"];
+            form_submission_id?: components["schemas"]["Uuid"];
+            row_version: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
         };
         RopaTemplateSet: {
             id: components["schemas"]["Uuid"];
@@ -19354,6 +19491,204 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    ropaListQuestionnaires: {
+        parameters: {
+            query?: {
+                org_unit_id?: components["schemas"]["Uuid"];
+                status?: "sent" | "answered" | "approved" | "rejected";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RopaQuestionnaire"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaSendQuestionnaire: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RopaQuestionnaireInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaQuestionnaire"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaGetQuestionnaire: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaQuestionnaire"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaAnswerQuestionnaire: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RopaQuestionnaireAnswerInput"];
+            };
+        };
+        responses: {
+            /** @description Now answered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaQuestionnaire"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    ropaApproveQuestionnaire: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RopaQuestionnaireApproveInput"];
+            };
+        };
+        responses: {
+            /** @description Now approved — activity_id names the newly created RoPA activity */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaQuestionnaire"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaRejectQuestionnaire: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Now rejected */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaQuestionnaire"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
     ropaListTemplateSets: {
         parameters: {
             query?: never;
@@ -23315,6 +23650,42 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    riskGetExecutiveReport: {
+        parameters: {
+            query: {
+                language: "th" | "en";
+                format: "pdf" | "docx" | "html";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The report file */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+            /** @description PDF rendering is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     riskListActivityChecklists: {
