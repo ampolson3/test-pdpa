@@ -5022,6 +5022,46 @@ regressions, full backend suite — only the pre-existing, unrelated `internal/p
 gen` re-run with no drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
 `pnpm --filter @pdpa/admin build` (incl. the updated `/settings/organization` route) all verified clean.
 
+### RTG-11 มอบหมายร่าง RoPA ให้หน่วยงานยืนยัน (`docs/modules/RTG.md#rtg-11`) — done
+Deliberately **not** built on PLT-05, despite the backlog's own `ขึ้นกับ: PLT-05` — the same reasoning
+BRE-11 (this same session) already used: the generic engine bakes a task's assignee into its Definition
+JSON at the *type* level, while a RoPA activity already carries its own per-record `owner_user_id`. Instead
+`internal/ropa/service/draft_confirm_reminder.go` follows VEN-06's own "schedule once at creation, check
+live status at fire time" pattern exactly — no migration for `ropa.processing_activities` itself, since
+nothing new needs to be persisted (the reminder re-reads the activity's own current `status` at fire time,
+the same way VEN-06's own reminder re-reads a certificate's `valid_to`).
+
+`CreateActivityFromTemplate` (ROPA-05, shared by RTG-04/RTG-07/RTG-08) now schedules both checkpoints at
+creation — a reminder at `DraftConfirmReminderDays` (3) and an escalation at `DraftConfirmOverdueDays` (7),
+both plain tunable defaults per CLAUDE.md's own "implement the listed default as config" (not a
+`docs/decisions.md` question). Either fire is a harmless no-op the moment the activity has left `draft`
+(confirmed via the plain, already-existing `SubmitActivity` — ROPA-13's own `draft -> pending_approval`
+transition, which OWNER can already call with the `ropa.activity.update` permission they already hold; no
+new "confirm" action was needed). Recipients: the activity's own `owner_user_id`, falling back to role
+OWNER (the module doc's own second actor) — the same "default recipients until real per-record routing
+exists" fallback BRE-07/PNG-04/VEN-06/VEN-10 already use. Migration 00091 seeds the
+`ropa.draft_confirm_reminder`/`ropa.draft_confirm_overdue` templates (th/en × in_app/email, operational
+text, no DRAFT marker — rule 8 is about legal/notice wording, not this).
+
+No new endpoint, migration touching an existing table, or permission code. The frontend note's own "กล่อง
+งานยืนยันร่างของแผนก" needed no new screen: `/ropa/activities`'s existing status filter (already supports
+`status=draft`) already is that box, the submit button already lives on `/ropa/activities/{id}` (ROPA-13),
+and `/settings/notifications` already shows every notification a user received — the same "no UI screen,
+the notification itself is the acceptance criterion" pattern PNG-15/ROPA-15/VEN-10 already established.
+`cmd/api`'s own `ropaSvc` gained a plain `River: riverClient` field (scheduling happens at write time,
+through the request's own transaction); `cmd/worker` registers `ropaservice.DraftConfirmCheckWorker` (its
+own `ropaSvc` already had `Notify`/`River` wired from ROPA-15/RTG-10).
+
+Tests: unit (`internal/ropa/service/rtg11_test.go` — the acceptance criterion directly: creating an
+activity from a template schedules exactly 2 checkpoints; firing the reminder while still draft notifies
+the real owner; submitting the activity then firing the overdue checkpoint is a harmless no-op — no second
+notification). Not verified live against a real Postgres/Redis in this pass — neither was reachable in
+this environment for this feature; every test compiles and vets clean and skips the same way the rest of
+this codebase's own suite already does without one. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on
+every touched file), `go test ./...` (no regressions, full backend suite — only the pre-existing, unrelated
+`internal/pkg/validate` failure), `make gen` re-run with no drift (no OpenAPI/sqlc change this feature
+needed at all).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

@@ -606,6 +606,29 @@ notification-count bug — ยืนยันด้วย `git stash` ว่า�
 
 **Acceptance criteria:** ร่างที่ยังไม่ยืนยันถูกเตือนตาม SLA
 
+**สถานะ:** done — จงใจไม่ใช้ PLT-05 (workflow engine ทั่วไป) ตามที่ backlog ระบุ `ขึ้นกับ`, เหตุผลเดียวกับที่
+BRE-11 เพิ่งเลือกไม่ใช้: engine นั้นผูก assignee ไว้ใน Definition JSON ระดับ type ขณะที่กิจกรรม RoPA แต่ละ
+รายการมี `owner_user_id` ของตัวเองอยู่แล้ว. ใช้รูปแบบ "schedule ครั้งเดียวตอนสร้าง แล้วเช็กสถานะจริงตอนยิง
+จริง" แบบเดียวกับที่ VEN-06's certificate-expiry reminder วางไว้ — ไม่ต้อง migration ใหม่สำหรับ schema เดิม
+เลย (`internal/ropa/service/draft_confirm_reminder.go`): `CreateActivityFromTemplate` (ROPA-05, ใช้ร่วมกับ
+RTG-04/RTG-07/RTG-08) schedule สองจุดตรวจพร้อมกันตอนสร้าง — เตือนที่ 3 วัน, เกินกำหนดที่ 7 วัน (ค่าเริ่มต้นที่
+ปรับได้ตาม CLAUDE.md's "implement the listed default as config" ไม่ใช่คำถาม decisions.md) — ยิงจริงแล้วเช็ก
+สถานะกิจกรรมปัจจุบัน ถ้าไม่ใช่ `draft` แล้ว (ยืนยันแล้วด้วยการ submit ปกติ หรือแก้เป็น under_review) เป็น no-op
+ทันที. "ยืนยันร่าง" คือการกด submit ที่มีอยู่แล้ว (ROPA-13's `SubmitActivity`, OWNER ถือ `ropa.activity.update`
+อยู่แล้วพอสำหรับการนี้) ไม่ต้องสร้าง action ใหม่. ผู้รับการแจ้งเตือนคือ `owner_user_id` ของกิจกรรมเอง หรือ
+fallback role OWNER (รูปแบบ "default recipients until real per-record routing exists" เดียวกับ BRE-07/PNG-04/
+VEN-06/VEN-10). migration 00091 seed แม่แบบแจ้งเตือน `ropa.draft_confirm_reminder`/`ropa.draft_confirm_overdue`
+(th/en × in_app/email, ข้อความปฏิบัติงาน ไม่ใช่ถ้อยคำกฎหมาย ไม่ต้องมี DRAFT marker ตาม rule 8).
+
+"กล่องงานยืนยันร่างของแผนก" (frontend note) ไม่ต้องสร้างหน้าใหม่ — `/ropa/activities` เดิมมีตัวกรองสถานะ
+(`status=draft`) และคอลัมน์สถานะอยู่แล้ว ทำหน้าที่เป็น "กล่อง" นั้นได้ทันที, ปุ่ม submit อยู่บนหน้า
+`/ropa/activities/{id}` อยู่แล้ว (ROPA-13), และ `/settings/notifications` แสดงการแจ้งเตือนที่ผู้ใช้ได้รับอยู่
+แล้ว — รูปแบบเดียวกับที่ PNG-15/ROPA-15/VEN-10 ใช้ ("no UI screen — the notification itself is the
+acceptance criterion"). ทดสอบ: unit (`internal/ropa/service/rtg11_test.go` — เกณฑ์การรับรู้ผลลัพธ์ตรง:
+สร้างกิจกรรมจาก template แล้ว schedule ครบ 2 จุดตรวจ, ยิงเตือนตอนยังเป็น draft แจ้งเจ้าของจริง, submit แล้ว
+ยิงซ้ำเป็น no-op ไม่แจ้งซ้ำ). ไม่ได้ยืนยันแบบ live กับ Postgres/Redis จริงในรอบนี้ (ไม่ reachable ใน
+สภาพแวดล้อมนี้) — คอมไพล์/vet ผ่านและ skip อย่างสุภาพเหมือน feature อื่นที่เพิ่งผ่านมาในช่วงนี้.
+
 <a id="rtg-13"></a>
 ### RTG-13 AI แนะนำกิจกรรมจากคำอธิบายงาน
 

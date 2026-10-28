@@ -116,6 +116,12 @@ func (s *Service) CreateActivityFromTemplate(ctx context.Context, templateID, le
 		}
 	}
 
+	// RTG-11: an activity built from a template needs its own department to confirm the draft is
+	// accurate — schedule both SLA checkpoints now, at creation.
+	if err := s.scheduleDraftConfirmReminder(ctx, out.ID); err != nil {
+		return Activity{}, err
+	}
+
 	final, err := s.GetActivity(ctx, out.ID)
 	if err != nil {
 		return Activity{}, err

@@ -275,7 +275,7 @@ func run() error {
 	ropaTemplatesSvc := templatesservice.New()                                                               // RTG-01: the platform's standard activity library
 	ropaTemplatesSvc.Audit = auditSvc                                                                        // RTG-08: audit a tenant's own custom template set/activity writes
 	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc, Collab: collabSvc,
-		Events: &events.Publisher{River: riverClient}} // ROPA-05: create an activity from one of these templates; ROPA-12: Q&A task list; PNG-10: tell notice when an approved activity changes
+		Events: &events.Publisher{River: riverClient}, River: riverClient} // ROPA-05: create an activity from one of these templates; ROPA-12: Q&A task list; PNG-10: tell notice when an approved activity changes; RTG-11: schedule the draft-confirm SLA checkpoints on write
 	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc} // RRA-01: score an activity from its own RoPA data
 	// ROPA-12: comments, mentions and activity (PLT-07) on the processing activity itself — the Q&A tab;
 	// an unresolved top-level comment naming a user is that user's own open question (MyOpenQuestions).

@@ -128,6 +128,7 @@ func run() error {
 	river.AddWorker(workers, &ropaservice.ReviewChecker{Service: ropaSvc})
 	river.AddWorker(workers, &ropaservice.TemplateReviewSweeper{Pool: pool, River: inserter}) // RTG-10: daily sweep for activities whose own template was reissued at a newer version
 	river.AddWorker(workers, &ropaservice.TemplateReviewChecker{Service: ropaSvc})
+	river.AddWorker(workers, &ropaservice.DraftConfirmCheckWorker{Service: ropaSvc})                                // RTG-11: reminder/overdue checkpoints for an unconfirmed template-sourced draft
 	vendorSvc := &vendorservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter} // VEN-10: periodic re-assessment reminder
 	river.AddWorker(workers, &vendorservice.ReassessmentSweeper{Pool: pool, River: inserter})
 	river.AddWorker(workers, &vendorservice.ReassessmentChecker{Service: vendorSvc})
