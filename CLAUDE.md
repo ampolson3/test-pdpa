@@ -4811,6 +4811,49 @@ session's own real Postgres 16 + Redis (no regressions), `make gen` re-run with 
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build` (incl. the new `/dpo/advisories` route) all verified clean.
 
+### BRE-16 ซ้อมรับมือเหตุละเมิด (`docs/modules/BRE.md#bre-16`) — done
+`breach.incidents.is_drill` was already fully specified in the baseline migrations (00013_breach.sql) and
+already round-tripped through create/update/read — the "flag แยก" half of this feature's own backend
+note was already done, unused by anything else until now. `internal/breach/service/incidents.go`'s
+`create()` now skips `scheduleTimers`/`alert` entirely when `IsDrill` is set — a drill never carries the
+real 72-hour PDPC timers or sends a real notification ("ไม่ส่งแจ้งจริง"); `UpdateFacts`'s own
+timer-reschedule on a moved `aware_at` is skipped the same way, so a drill stays free of real timers
+through its whole lifecycle, not just at creation. `Filter` gained `IncludeDrills` (default false):
+`List`'s own SQL (`backend/db/queries/breach/incidents.sql`) now excludes `is_drill` rows unless the
+caller explicitly asks — the acceptance criterion itself, "เหตุซ้อมไม่ปนกับเหตุจริงในรายงาน" — and since
+DPO-05's own cross-module deadline center already calls `breachservice.List` with a plain
+`Filter{OpenOnly: true}` (no `IncludeDrills`), a drill is excluded from "สถิติ" (stats) too, with zero
+change needed in `internal/dpo/service/center.go`. "บันทึกบทเรียน" (record lessons learned) needed no new
+code at all: BRE-15's own root-cause/corrective-action panel is already generic over any incident, drill
+or real, and is reused as-is — a drill gets the identical post-mortem tooling a real incident does.
+
+API: `GET /admin/v1/breach/incidents` gained `include_drills` (boolean query param, no new permission —
+reuses the endpoint's own `authenticated` + internal reporter/read-permission check). `POST
+/admin/v1/breach/incidents`'s existing `is_drill` field satisfies "ปุ่มสร้างเหตุซ้อม" as a checkbox on the
+one existing create form rather than a second button — the module doc's own literal wording is satisfied
+either way, and this avoids duplicating the whole create flow for one boolean. UI: `/incidents`'s create
+form gained an "is a drill" checkbox with an explanatory hint (shown only when checked), and the list's
+own filter bar gained an "include drills" checkbox (`packages/api-client/src/breach.ts`'s `BreachFilter`
+widened with `include_drills`) — the existing drill badge on each row (`({t("drill")})`) was already
+built by an earlier pass and needed no change.
+
+Tests: unit (`internal/breach/service/bre16_test.go` — the acceptance criterion directly: a drill
+schedules zero real SLA timer jobs and sends zero real notifications, while a real incident created in
+the very same test still gets its full 4 timers + 3 alerted people (owner + 2 DPOs); the drill is absent
+from `List` by default and present once `IncludeDrills: true` is passed), HTTP contract
+(`internal/breach/http/handler_test.go`'s existing `TestBreachEndpoints_Contract`, extended with the same
+default-excluded / `include_drills=true`-included round trip through the real validator). Not verified
+live against a real Postgres/Redis in this specific package — this session's Postgres/Redis were
+reachable for most other features, but this module's own `breachtest.Fixture` additionally needs a real
+S3 + clamd, neither reachable here (the same limitation this module's own prior passes already
+disclosed); every test compiles and vets clean and skips the same way the rest of this package's own
+suite already does. Confirmed via `git stash -u` that the pre-existing, unrelated
+`TestBreachPublicEndpoints_Contract` failure (`breach: forbidden`) exists identically without this
+change — not something this feature introduced. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on
+every touched file), `make gen` re-run with no drift, `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated `/incidents`
+route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

@@ -11,7 +11,7 @@ export type BreachNotice = components["schemas"]["BreachNotice"];
 export type BreachNoticeVars = components["schemas"]["BreachNoticeVars"];
 export type BreachRecipient = components["schemas"]["BreachRecipient"];
 export type BreachPDPCNotification = components["schemas"]["BreachPDPCNotification"];
-export type BreachFilter = { status?: BreachIncident["status"]; risk?: "none" | "low" | "high"; q?: string; open_only?: boolean };
+export type BreachFilter = { status?: BreachIncident["status"]; risk?: "none" | "low" | "high"; q?: string; open_only?: boolean; include_drills?: boolean };
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const incidentKey = (id: string) => ["breach", "incident", id];

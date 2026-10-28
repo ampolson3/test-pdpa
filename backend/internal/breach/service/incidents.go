@@ -237,11 +237,17 @@ func (s *Service) create(ctx context.Context, in Input, reporterContactEnc []byt
 	if err := s.audit(ctx, "breach.incident.create", IncidentType, id, nil, auditView(inc)); err != nil {
 		return Incident{}, err
 	}
-	if err := s.scheduleTimers(ctx, inc); err != nil {
-		return Incident{}, err
-	}
-	if err := s.alert(ctx, inc, "breach.reported", map[string]any{"incident_no": inc.No, "title": inc.Title, "deadline": bangkok(inc.DueAt)}, false); err != nil {
-		return Incident{}, err
+	// BRE-16: a drill incident (IsDrill) is practice, not a real breach — it never schedules the real
+	// 72-hour PDPC timers and never sends a real notification ("ไม่ส่งแจ้งจริง"). The row, timeline and
+	// audit entry are still written in full, so a drill can still be reviewed afterward and have its
+	// own root-cause/corrective-action lessons recorded (BRE-15's own panel, reused as-is).
+	if !inc.IsDrill {
+		if err := s.scheduleTimers(ctx, inc); err != nil {
+			return Incident{}, err
+		}
+		if err := s.alert(ctx, inc, "breach.reported", map[string]any{"incident_no": inc.No, "title": inc.Title, "deadline": bangkok(inc.DueAt)}, false); err != nil {
+			return Incident{}, err
+		}
 	}
 	return s.Get(ctx, id)
 }
@@ -319,14 +325,19 @@ type Filter struct {
 	Query    string
 	From, To *time.Time
 	OpenOnly bool
-	Cursor   string // "<aware_at RFC3339Nano>|<id>"
-	Limit    int
+	// IncludeDrills is BRE-16's own acceptance criterion default: a drill incident (IsDrill) is excluded
+	// from the register unless the caller explicitly asks for it — "เหตุซ้อมไม่ปนกับเหตุจริงในรายงาน".
+	// DPO-05's own cross-module deadline center calls List with a plain Filter{OpenOnly: true}, so a
+	// drill is excluded from "stats" (ไม่นับในสถิติ) with no change needed there.
+	IncludeDrills bool
+	Cursor        string // "<aware_at RFC3339Nano>|<id>"
+	Limit         int
 }
 
 // List searches the register, newest awareness first. People who may only report see their own incidents.
 func (s *Service) List(ctx context.Context, f Filter) ([]Incident, string, error) {
 	p := breachstore.ListIncidentsParams{Status: optText(f.Status), Risk: optText(f.Risk), Owner: pgUUID(f.Owner), Q: optText(escapeLike(f.Query)),
-		FromAt: tsPtr(f.From), ToAt: tsPtr(f.To), OpenOnly: f.OpenOnly}
+		FromAt: tsPtr(f.From), ToAt: tsPtr(f.To), OpenOnly: f.OpenOnly, IncludeDrills: f.IncludeDrills}
 	switch {
 	case has(ctx, PermRead):
 	case has(ctx, PermCreate) && currentUser(ctx) != nil:
@@ -427,8 +438,10 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, version int32, in In
 		if err := s.timeline(ctx, id, "decision", "aware_at:"+cur.AwareAt.Format(time.RFC3339)+":"+aware.Format(time.RFC3339), in.AwareAtReason, true); err != nil {
 			return Incident{}, err
 		}
-		if err := s.scheduleTimers(ctx, after); err != nil {
-			return Incident{}, err
+		if !after.IsDrill { // BRE-16: a drill never carries real SLA timers to reschedule
+			if err := s.scheduleTimers(ctx, after); err != nil {
+				return Incident{}, err
+			}
 		}
 	}
 	if !samePtr(cur.OwnerID, after.OwnerID) {

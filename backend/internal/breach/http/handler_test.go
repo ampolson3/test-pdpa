@@ -175,6 +175,23 @@ func TestBreachEndpoints_Contract(t *testing.T) {
 	if res := do("GET", "/admin/v1/breach/incidents?q=ลูกค้า&status=reported", &exec, nil, nil); res.code != 200 || len(res.body["data"].([]any)) != 1 {
 		t.Errorf("search: %d %v", res.code, res.body)
 	}
+
+	// BRE-16: a drill incident never appears in the default register, but does when asked for.
+	drill := map[string]any{}
+	for k, v := range incident {
+		drill[k] = v
+	}
+	drill["title"], drill["is_drill"] = "ซ้อมรับมือเหตุละเมิดประจำปี", true
+	createdDrill := do("POST", "/admin/v1/breach/incidents", &sec, drill, nil)
+	if createdDrill.code != 201 || createdDrill.body["is_drill"] != true {
+		t.Fatalf("create drill: %d %v", createdDrill.code, createdDrill.body)
+	}
+	if res := do("GET", "/admin/v1/breach/incidents?q=ซ้อมรับมือ", &exec, nil, nil); res.code != 200 || len(res.body["data"].([]any)) != 0 {
+		t.Errorf("drill in default register: %d %v, want empty", res.code, res.body)
+	}
+	if res := do("GET", "/admin/v1/breach/incidents?q=ซ้อมรับมือ&include_drills=true", &exec, nil, nil); res.code != 200 || len(res.body["data"].([]any)) != 1 {
+		t.Errorf("drill with include_drills=true: %d %v, want 1", res.code, res.body)
+	}
 	if res := do("POST", path+"/transitions", &sec, map[string]any{"to": "triage"}, nil); res.code != 428 {
 		t.Errorf("no If-Match: %d, want 428", res.code)
 	}

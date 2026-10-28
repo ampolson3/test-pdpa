@@ -46,6 +46,7 @@ WHERE (sqlc.narg(status)::text IS NULL OR status = sqlc.narg(status))
   AND (sqlc.narg(from_at)::timestamptz IS NULL OR aware_at >= sqlc.narg(from_at))
   AND (sqlc.narg(to_at)::timestamptz IS NULL OR aware_at < sqlc.narg(to_at))
   AND (NOT @open_only::bool OR status <> 'closed')
+  AND (@include_drills::bool OR NOT is_drill)
   AND (sqlc.narg(cursor_at)::timestamptz IS NULL OR (aware_at, id) < (sqlc.narg(cursor_at), sqlc.narg(cursor_id)::uuid))
 ORDER BY aware_at DESC, id DESC
 LIMIT @lim;

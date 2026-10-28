@@ -44,6 +44,9 @@ func (h *Strict) BreachListIncidents(ctx context.Context, req BreachListIncident
 	if p.OpenOnly != nil {
 		f.OpenOnly = *p.OpenOnly
 	}
+	if p.IncludeDrills != nil {
+		f.IncludeDrills = *p.IncludeDrills
+	}
 	if p.Cursor != nil {
 		f.Cursor = *p.Cursor
 	}

@@ -339,23 +339,25 @@ WHERE ($1::text IS NULL OR status = $1)
   AND ($6::timestamptz IS NULL OR aware_at >= $6)
   AND ($7::timestamptz IS NULL OR aware_at < $7)
   AND (NOT $8::bool OR status <> 'closed')
-  AND ($9::timestamptz IS NULL OR (aware_at, id) < ($9, $10::uuid))
+  AND ($9::bool OR NOT is_drill)
+  AND ($10::timestamptz IS NULL OR (aware_at, id) < ($10, $11::uuid))
 ORDER BY aware_at DESC, id DESC
-LIMIT $11
+LIMIT $12
 `
 
 type ListIncidentsParams struct {
-	Status   *string            `db:"status" json:"status"`
-	Reporter pgtype.UUID        `db:"reporter" json:"reporter"`
-	Owner    pgtype.UUID        `db:"owner" json:"owner"`
-	Risk     *string            `db:"risk" json:"risk"`
-	Q        *string            `db:"q" json:"q"`
-	FromAt   pgtype.Timestamptz `db:"from_at" json:"from_at"`
-	ToAt     pgtype.Timestamptz `db:"to_at" json:"to_at"`
-	OpenOnly bool               `db:"open_only" json:"open_only"`
-	CursorAt pgtype.Timestamptz `db:"cursor_at" json:"cursor_at"`
-	CursorID pgtype.UUID        `db:"cursor_id" json:"cursor_id"`
-	Lim      int32              `db:"lim" json:"lim"`
+	Status        *string            `db:"status" json:"status"`
+	Reporter      pgtype.UUID        `db:"reporter" json:"reporter"`
+	Owner         pgtype.UUID        `db:"owner" json:"owner"`
+	Risk          *string            `db:"risk" json:"risk"`
+	Q             *string            `db:"q" json:"q"`
+	FromAt        pgtype.Timestamptz `db:"from_at" json:"from_at"`
+	ToAt          pgtype.Timestamptz `db:"to_at" json:"to_at"`
+	OpenOnly      bool               `db:"open_only" json:"open_only"`
+	IncludeDrills bool               `db:"include_drills" json:"include_drills"`
+	CursorAt      pgtype.Timestamptz `db:"cursor_at" json:"cursor_at"`
+	CursorID      pgtype.UUID        `db:"cursor_id" json:"cursor_id"`
+	Lim           int32              `db:"lim" json:"lim"`
 }
 
 type ListIncidentsRow struct {
@@ -401,6 +403,7 @@ func (q *Queries) ListIncidents(ctx context.Context, arg ListIncidentsParams) ([
 		arg.FromAt,
 		arg.ToAt,
 		arg.OpenOnly,
+		arg.IncludeDrills,
 		arg.CursorAt,
 		arg.CursorID,
 		arg.Lim,

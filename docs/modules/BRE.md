@@ -509,6 +509,42 @@ table (no new migration) — see `CLAUDE.md`'s `### BRE-15` entry for the full n
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
 
+**Status (done):** `breach.incidents.is_drill` was already fully specified in the baseline migrations
+(00013_breach.sql) and already round-tripped through create/update/read (the "flag แยก" half of this
+feature's own backend note) — unused by anything else until now. `internal/breach/service/incidents.go`'s
+`create()` now skips `scheduleTimers`/`alert` entirely when `IsDrill` is set ("ไม่ส่งแจ้งจริง" — a drill
+never carries the real 72-hour PDPC timers or a real notification), and `UpdateFacts`'s own
+timer-reschedule on a moved `aware_at` is skipped the same way. `Filter` gained `IncludeDrills` (default
+false): `List`'s own SQL now excludes `is_drill` rows unless the caller explicitly asks — the acceptance
+criterion itself, "เหตุซ้อมไม่ปนกับเหตุจริงในรายงาน" — and since DPO-05's own cross-module deadline center
+already calls `breachservice.List` with a plain `Filter{OpenOnly: true}`, a drill is excluded from
+"สถิติ" (stats) too, with no change needed in `dpo/service/center.go`. "บันทึกบทเรียน" (record lessons
+learned) needed no new code: BRE-15's own root-cause/corrective-action panel is already generic over any
+incident, drill or real, and is reused as-is.
+
+API: `GET /admin/v1/breach/incidents` gained `include_drills` (boolean query param, no new permission —
+reuses the endpoint's own `authenticated`); `POST /admin/v1/breach/incidents`'s existing `is_drill` field
+on `BreachIncidentInput` is this feature's own "ปุ่มสร้างเหตุซ้อม" (a checkbox on the existing create
+form, not a second button — the module doc's own literal wording is satisfied by one form that can
+produce either kind). UI: `/incidents`'s create form gained an "is a drill" checkbox with an explanatory
+hint, and the list's own filter bar gained an "include drills" checkbox (the existing drill badge on each
+row was already built). Tests: unit
+(`internal/breach/service/bre16_test.go` — the acceptance criterion directly: a drill schedules zero
+real SLA timer jobs and sends zero real notifications while a real incident created in the same test
+still gets its full 4 timers + 3 alerted people; the drill is absent from `List` by default and present
+with `IncludeDrills: true`), HTTP contract (`internal/breach/http/handler_test.go`'s existing
+`TestBreachEndpoints_Contract`, extended with the same default-excluded / `include_drills=true`-included
+round trip through the real validator). Not verified live against a real Postgres/Redis — both were
+reachable for most of this session but this specific package's own fixture (`breachtest.Fixture`) also
+needs a real S3 + clamd, neither reachable in this environment (the same limitation this module's own
+prior passes already disclosed); every test compiles and vets clean and skips the same way the rest of
+this package's own suite already does here — confirmed the pre-existing `TestBreachPublicEndpoints_
+Contract` failure (unrelated: a `breach: forbidden` error, present identically before this change via
+`git stash -u`) is not something this feature introduced. `go build ./...`, `go vet ./...`, `gofmt -l`
+(clean on every touched file), `make gen` re-run with no drift, `pnpm --filter @pdpa/api-client
+typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
+`/incidents` route) all verified clean.
+
 <a id="bre-17"></a>
 ### BRE-17 AI ช่วยประเมินเหตุและร่างรายงาน
 

@@ -41,6 +41,10 @@ export function IncidentsContent() {
           <input type="checkbox" checked={!!filter.open_only} onChange={(e) => setFilter({ ...filter, open_only: e.target.checked })} />
           {t("openOnly")}
         </label>
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={!!filter.include_drills} onChange={(e) => setFilter({ ...filter, include_drills: e.target.checked })} data-testid="include-drills" />
+          {t("includeDrills")}
+        </label>
         <Button type="submit" variant="secondary">{t("searchButton")}</Button>
       </form>
       {list.isError && <p className="text-red-700">{problemText(list.error)}</p>}
@@ -83,12 +87,12 @@ function NewIncident({ onCancel }: { onCancel: () => void }) {
   const entities = useLegalEntities(client);
   const m = useIncidentMutations(client);
   const router = useRouter();
-  const [v, setV] = useState({ title: "", description: "", types: ["confidentiality"] as string[], via: "email", aware: localInput(new Date()), subjects: "", entity: "" });
+  const [v, setV] = useState({ title: "", description: "", types: ["confidentiality"] as string[], via: "email", aware: localInput(new Date()), subjects: "", entity: "", isDrill: false });
   const entity = v.entity || entities.data?.[0]?.id || "";
   const submit = () => {
     const body: BreachIncidentInput = {
       legal_entity_id: entity, reported_via: v.via as BreachIncidentInput["reported_via"], title: v.title, description: v.description,
-      breach_types: v.types as BreachIncidentInput["breach_types"], aware_at: new Date(v.aware).toISOString(),
+      breach_types: v.types as BreachIncidentInput["breach_types"], aware_at: new Date(v.aware).toISOString(), is_drill: v.isDrill,
       ...(v.subjects ? { affected_subjects: Number(v.subjects) } : {}),
     };
     m.create.mutate(body, { onSuccess: (i) => router.push(`/incidents/${i.id}`) });
@@ -136,6 +140,11 @@ function NewIncident({ onCancel }: { onCancel: () => void }) {
           </label>
         ))}
       </fieldset>
+      <label className="flex items-center gap-1">
+        <input type="checkbox" checked={v.isDrill} onChange={(e) => setV({ ...v, isDrill: e.target.checked })} data-testid="incident-is-drill" />
+        {t("isDrill")}
+      </label>
+      {v.isDrill && <p className="rounded-md bg-slate-50 p-2 text-slate-600">{t("isDrillHint")}</p>}
       {m.create.isError && <p className="text-red-700" role="alert">{problemText(m.create.error)}</p>}
       <div className="flex gap-2">
         <Button onClick={submit} disabled={m.create.isPending || !v.title || !v.description || !entity || v.types.length === 0} data-testid="create-incident">{t("create")}</Button>

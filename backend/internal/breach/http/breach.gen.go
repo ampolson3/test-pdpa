@@ -1764,8 +1764,11 @@ type BreachListIncidentsParams struct {
 	// To Aware before
 	To       *Timestamp `form:"to,omitempty" json:"to,omitempty"`
 	OpenOnly *bool      `form:"open_only,omitempty" json:"open_only,omitempty"`
-	Cursor   *string    `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit    *int       `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// IncludeDrills BRE-16: a drill incident is excluded by default so it never mixes with real ones in the register — pass true to include it
+	IncludeDrills *bool   `form:"include_drills,omitempty" json:"include_drills,omitempty"`
+	Cursor        *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit         *int    `form:"limit,omitempty" json:"limit,omitempty"`
 
 	// AcceptLanguage Language of messages and localized fields (default th)
 	AcceptLanguage *BreachListIncidentsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
@@ -2679,6 +2682,19 @@ func (siw *ServerInterfaceWrapper) BreachListIncidents(w http.ResponseWriter, r 
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "open_only"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "open_only", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "include_drills" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include_drills", r.URL.Query(), &params.IncludeDrills, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "include_drills"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "include_drills", Err: err})
 		}
 		return
 	}

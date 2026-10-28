@@ -14719,6 +14719,8 @@ export interface operations {
                 /** @description Aware before */
                 to?: components["schemas"]["Timestamp"];
                 open_only?: boolean;
+                /** @description BRE-16: a drill incident is excluded by default so it never mixes with real ones in the register — pass true to include it */
+                include_drills?: boolean;
                 cursor?: string;
                 limit?: number;
             };
