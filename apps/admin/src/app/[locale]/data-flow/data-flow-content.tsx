@@ -9,9 +9,12 @@ import {
   useLegalEntities,
   dataflowExportHref,
   dataflowReportHref,
+  useDataflowSnapshots,
+  useDataflowPublishSnapshot,
   type DataflowEdge,
   type DataflowNode,
 } from "@pdpa/api-client";
+import { Button } from "@pdpa/ui";
 import {
   ReactFlow,
   Background,
@@ -285,6 +288,8 @@ export function DataFlowContent() {
 
       <ExportPanel legalEntityId={legalEntityId} />
 
+      <SnapshotsPanel legalEntityId={legalEntityId} />
+
       {graph.isPending || !laidOut ? (
         <p className="text-slate-500">{t("loading")}</p>
       ) : graph.isError ? (
@@ -345,6 +350,56 @@ function Legend() {
           {it.label}
         </span>
       ))}
+    </div>
+  );
+}
+
+/** DFG-07: publish the current live diagram as a new, immutable version, and browse past published
+ *  versions — "ปุ่ม publish + ดูเวอร์ชันเก่า". The publish button is shown only to a caller holding
+ *  ropa.dataflow.publish (DPO, the module's own actor); the version list itself is visible to any reader. */
+function SnapshotsPanel({ legalEntityId }: { legalEntityId?: string }) {
+  const t = useTranslations("dataflow.snapshots");
+  const canPublish = usePermission("ropa.dataflow.publish");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const [open, setOpen] = useState(false);
+  const snapshots = useDataflowSnapshots(client, { legal_entity_id: legalEntityId });
+  const publish = useDataflowPublishSnapshot(client);
+
+  return (
+    <div className="rounded-md border border-slate-200 bg-white p-3 text-xs" data-testid="dataflow-snapshots-panel">
+      <div className="flex items-center justify-between gap-2">
+        <button type="button" className="text-left font-medium text-sky-700" onClick={() => setOpen((v) => !v)} data-testid="dataflow-snapshots-toggle">
+          {open ? "▾ " : "▸ "}{t("toggle")}
+        </button>
+        {canPublish && (
+          <Button
+            disabled={publish.isPending}
+            onClick={() => publish.mutate({ legal_entity_id: legalEntityId })}
+            data-testid="dataflow-publish-button"
+          >
+            {t("publish")}
+          </Button>
+        )}
+      </div>
+      {publish.isError && <p className="mt-1 text-red-700">{t("publishError")}</p>}
+      {open && (
+        snapshots.isPending ? (
+          <p className="mt-2 text-slate-500">{t("loading")}</p>
+        ) : snapshots.isError ? (
+          <p className="mt-2 text-red-700">{t("loadError")}</p>
+        ) : (snapshots.data ?? []).length === 0 ? (
+          <p className="mt-2 text-slate-500">{t("empty")}</p>
+        ) : (
+          <ul className="mt-2 divide-y divide-slate-100" data-testid="dataflow-snapshots-list">
+            {snapshots.data!.map((s) => (
+              <li key={s.id} className="flex items-center justify-between gap-2 py-1">
+                <span>{t("versionLabel", { n: s.version_no })}</span>
+                <span className="text-slate-500">{new Date(s.published_at).toLocaleString()}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      )}
     </div>
   );
 }

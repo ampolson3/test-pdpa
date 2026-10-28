@@ -363,6 +363,14 @@ the raster path actually produces a valid image at the chosen paper's pixel size
 
 **Acceptance criteria:** ดูแผนผังที่ publish ย้อนหลังได้
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### DFG-07`. สรุป: `dataflow.snapshots` (มีครบตั้งแต่
+baseline migration 00009 — `view_type`/`scope_id`/`version_no`/`graph` jsonb — ไม่ต้อง migration ใหม่) เก็บ
+Graph ปัจจุบัน (DFG-01/03/04) เป็นเวอร์ชันถาวรทุกครั้งที่กด publish; version_no คำนวณอัตโนมัติต่อ
+(view_type, scope_id) และ `ropa.dataflow.publish` (seed ไว้แล้วแต่ไม่เคยใช้) เป็นสิทธิ์ของ DPO เท่านั้น
+Endpoint ใหม่: `POST`/`GET /admin/v1/dataflow/snapshots`, `GET /admin/v1/dataflow/snapshots/{id}`. UI:
+panel "ประวัติเวอร์ชันที่เผยแพร่" บน `/data-flow` พร้อมปุ่ม publish (เฉพาะผู้มีสิทธิ์) และรายการเวอร์ชัน
+ย้อนหลัง.
+
 <a id="dfg-09"></a>
 ### DFG-09 ค้นหาข้อมูลส่วนบุคคลอัตโนมัติ (Data Discovery)
 

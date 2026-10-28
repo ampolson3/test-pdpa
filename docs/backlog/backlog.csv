@@ -132,7 +132,7 @@ DFG-04,DFG,แสดงผู้ประมวลผลและผู้รั
 DFG-08,DFG,ส่งออกภาพและรายงาน,Export image & report,Must,P2,ส่งออก,ม.39,DPO AUDIT,M,M,N,5,5,1.2,0,3.5,PLT-16,,docs/modules/DFG.md#dfg-08,ภาพที่ส่งออกอ่านได้ชัดในขนาด A3,done
 DFG-05,DFG,แก้ไขแผนผังแบบลากวาง,Drag & drop editor,Should,P3,แก้ไข,แนวปฏิบัติตลาด,DPO,S,L,Y,3,10,1.6,4.0,4.5,DFG-01,,docs/modules/DFG.md#dfg-05,ตำแหน่งที่จัดเองยังอยู่หลังข้อมูลอัปเดต,todo
 DFG-06,DFG,มุมมองหลายระดับ,Multi-view,Should,P3,แก้ไข,แนวปฏิบัติตลาด,OWNER DPO,M,M,N,5,5,1.2,0,3.5,DFG-01,,docs/modules/DFG.md#dfg-06,สลับมุมมองได้โดยข้อมูลตรงกัน,todo
-DFG-07,DFG,เผยแพร่และประวัติเวอร์ชันแผนผัง,Publish & history,Should,P3,แก้ไข,แนวปฏิบัติตลาด,DPO,S,S,N,3,3,0.7,0,2.1,PLT-08,,docs/modules/DFG.md#dfg-07,ดูแผนผังที่ publish ย้อนหลังได้,todo
+DFG-07,DFG,เผยแพร่และประวัติเวอร์ชันแผนผัง,Publish & history,Should,P3,แก้ไข,แนวปฏิบัติตลาด,DPO,S,S,N,3,3,0.7,0,2.1,PLT-08,,docs/modules/DFG.md#dfg-07,ดูแผนผังที่ publish ย้อนหลังได้,done
 DFG-09,DFG,ค้นหาข้อมูลส่วนบุคคลอัตโนมัติ (Data Discovery),Data discovery,Should,P3,อัตโนมัติ,ม.37(1),IT DATASRC,XL,M,Y,20,5,3.0,2.0,8.8,PLT-20,,docs/modules/DFG.md#dfg-09,ตรวจจับเลขบัตรประชาชนในชุดทดสอบได้อย่างน้อย 95% และไม่มีค่าจริงถูกเก็บในระบบ,todo
 DFG-10,DFG,แผนผังระดับระบบ (Data lineage),System-level lineage,Nice,P4,อัตโนมัติ,แนวโน้มตลาด,IT,M,M,N,5,5,1.2,0,3.5,ROPA-02,,docs/modules/DFG.md#dfg-10,แสดงการไหลระหว่างระบบตรงกับทะเบียน asset,todo
 DFG-11,DFG,แผนที่โลกของการโอนข้อมูล,Transfer world map,Nice,P4,อัตโนมัติ,แนวโน้มตลาด,DPO,S,M,N,3,5,1.0,0,2.8,DFG-03,,docs/modules/DFG.md#dfg-11,คลิกประเทศแล้วเห็นกิจกรรมที่โอนไปประเทศนั้น,todo

@@ -1,9 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ApiClient, components } from "./client";
 
 export type DataflowGraph = components["schemas"]["DataflowGraph"];
 export type DataflowNode = components["schemas"]["DataflowNode"];
 export type DataflowEdge = components["schemas"]["DataflowEdge"];
+export type DataflowSnapshot = components["schemas"]["DataflowSnapshot"];
+export type DataflowSnapshotSummary = components["schemas"]["DataflowSnapshotSummary"];
 
 /** GET /admin/v1/dataflow/graph (DFG-01/DFG-03) — the data flow diagram, composed live from RoPA on every
  *  read; no pagination (the whole tenant diagram is meant to be viewed as one graph). DFG-02's "update
@@ -48,4 +50,43 @@ export function dataflowReportHref(
   const q = new URLSearchParams({ language, format });
   if (legalEntityId) q.set("legal_entity_id", legalEntityId);
   return `${bffBaseUrl}/admin/v1/dataflow/report?${q}`;
+}
+
+/** GET /admin/v1/dataflow/snapshots (DFG-07): every published version of the diagram, newest first —
+ *  "ดูแผนผังที่ publish ย้อนหลังได้". */
+export function useDataflowSnapshots(client: ApiClient, filter: { legal_entity_id?: string } = {}) {
+  return useQuery({
+    queryKey: ["dataflow", "snapshots", filter],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dataflow/snapshots", { params: { query: filter } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** GET /admin/v1/dataflow/snapshots/{id} (DFG-07): one past published version's full diagram. */
+export function useDataflowSnapshot(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: ["dataflow", "snapshots", "detail", id ?? ""],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dataflow/snapshots/{id}", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/dataflow/snapshots (DFG-07): freeze the current live diagram as a new published version. */
+export function useDataflowPublishSnapshot(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (filter: { legal_entity_id?: string } = {}) => {
+      const { data, error } = await client.POST("/admin/v1/dataflow/snapshots", { params: { query: filter } });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["dataflow", "snapshots"] }),
+  });
 }

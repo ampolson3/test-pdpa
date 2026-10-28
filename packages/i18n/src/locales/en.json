@@ -3460,6 +3460,15 @@
       "language": "Report language",
       "reportFormat": "Report format",
       "downloadReport": "Download companion report"
+    },
+    "snapshots": {
+      "toggle": "Published version history",
+      "publish": "Publish current diagram",
+      "publishError": "Could not publish the diagram.",
+      "loading": "Loading...",
+      "loadError": "Could not load version history.",
+      "empty": "No published versions yet.",
+      "versionLabel": "Version {n}"
     }
   },
   "cookieBanners": {

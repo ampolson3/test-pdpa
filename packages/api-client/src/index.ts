@@ -549,9 +549,14 @@ export {
   useDataflowGraph,
   dataflowExportHref,
   dataflowReportHref,
+  useDataflowSnapshots,
+  useDataflowSnapshot,
+  useDataflowPublishSnapshot,
   type DataflowGraph,
   type DataflowNode,
   type DataflowEdge,
+  type DataflowSnapshot,
+  type DataflowSnapshotSummary,
 } from "./dataflow";
 export {
   useDsarRequestTypes,

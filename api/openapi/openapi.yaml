@@ -16539,6 +16539,90 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+  /admin/v1/dataflow/snapshots:
+    get:
+      operationId: dataflowListSnapshots
+      tags: [dataflow]
+      summary: 'DFG-07: every published version of the diagram, newest first ("ดูแผนผังที่ publish ย้อนหลังได้")'
+      x-permission: ropa.dataflow.read
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      parameters:
+        - name: legal_entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/DataflowSnapshotSummary'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: dataflowPublishSnapshot
+      tags: [dataflow]
+      summary: 'DFG-07: freeze the current live diagram (DFG-01/03/04) as a new, immutable published version'
+      x-permission: ropa.dataflow.publish
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      parameters:
+        - name: legal_entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataflowSnapshot'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/dataflow/snapshots/{id}:
+    get:
+      operationId: dataflowGetSnapshot
+      tags: [dataflow]
+      summary: 'DFG-07: one past published version''s full diagram, by id'
+      x-permission: ropa.dataflow.read
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataflowSnapshot'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /provider/v1/tenants:
     get:
       operationId: providerListTenants
@@ -20270,6 +20354,27 @@ components:
           items: {$ref: '#/components/schemas/DataflowEdge'}
         activity_count: {type: integer}
         generated_at: {$ref: '#/components/schemas/Timestamp'}
+    DataflowSnapshotSummary:
+      type: object
+      description: 'DFG-07: one published version of the diagram, graph omitted — the version history list ("ดูแผนผังที่ publish ย้อนหลังได้").'
+      required: [id, version_no, published_at, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        version_no: {type: integer}
+        published_by: {$ref: '#/components/schemas/Uuid'}
+        published_at: {$ref: '#/components/schemas/Timestamp'}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    DataflowSnapshot:
+      type: object
+      description: 'DFG-07: one published version, graph included — exactly the same shape DataflowGraph already uses, frozen at publish time.'
+      required: [id, version_no, published_at, created_at, graph]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        version_no: {type: integer}
+        published_by: {$ref: '#/components/schemas/Uuid'}
+        published_at: {$ref: '#/components/schemas/Timestamp'}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+        graph: {$ref: '#/components/schemas/DataflowGraph'}
     DpiaNecessity:
       type: object
       description: 'DPIA-05: "necessary" only once every question is answered "yes"; otherwise "needs_review" names the flagged questions.'

@@ -5,8 +5,10 @@ package dataflowhttp
 
 import (
 	"context"
+	"errors"
 
 	dataflowservice "pdpa-platform/internal/dataflow/service"
+	"pdpa-platform/internal/pkg/httpx"
 )
 
 type Strict struct {
@@ -23,6 +25,59 @@ func (h *Strict) DataflowGetGraph(ctx context.Context, req DataflowGetGraphReque
 		return nil, err
 	}
 	return DataflowGetGraph200JSONResponse(toGraphWire(g)), nil
+}
+
+// DFG-07: publish/version-history endpoints.
+
+func (h *Strict) DataflowListSnapshots(ctx context.Context, req DataflowListSnapshotsRequestObject) (DataflowListSnapshotsResponseObject, error) {
+	list, err := h.svc.ListSnapshots(ctx, req.Params.LegalEntityId)
+	if err != nil {
+		return nil, err
+	}
+	resp := DataflowListSnapshots200JSONResponse{Data: make([]DataflowSnapshotSummary, 0, len(list))}
+	for _, s := range list {
+		resp.Data = append(resp.Data, toSnapshotSummaryWire(s))
+	}
+	return resp, nil
+}
+
+func (h *Strict) DataflowPublishSnapshot(ctx context.Context, req DataflowPublishSnapshotRequestObject) (DataflowPublishSnapshotResponseObject, error) {
+	s, err := h.svc.PublishSnapshot(ctx, req.Params.LegalEntityId)
+	if err != nil {
+		return nil, snapshotProblem(err)
+	}
+	return DataflowPublishSnapshot201JSONResponse(toSnapshotWire(s)), nil
+}
+
+func (h *Strict) DataflowGetSnapshot(ctx context.Context, req DataflowGetSnapshotRequestObject) (DataflowGetSnapshotResponseObject, error) {
+	s, err := h.svc.GetSnapshot(ctx, req.Id)
+	if err != nil {
+		return nil, snapshotProblem(err)
+	}
+	return DataflowGetSnapshot200JSONResponse(toSnapshotWire(s)), nil
+}
+
+// snapshotProblem maps DFG-07's own sentinels to the same problem+json shapes export.go's exportProblem
+// already establishes for this module.
+func snapshotProblem(err error) error {
+	switch {
+	case errors.Is(err, dataflowservice.ErrSnapshotNotFound):
+		return httpx.NotFound()
+	case errors.Is(err, dataflowservice.ErrInvalid):
+		return httpx.UnprocessableEntity("dataflow.invalid_input", err.Error())
+	}
+	return err
+}
+
+func toSnapshotSummaryWire(s dataflowservice.SnapshotSummary) DataflowSnapshotSummary {
+	return DataflowSnapshotSummary{Id: s.ID, VersionNo: int(s.VersionNo), PublishedBy: s.PublishedBy, PublishedAt: s.PublishedAt, CreatedAt: s.CreatedAt}
+}
+
+func toSnapshotWire(s dataflowservice.Snapshot) DataflowSnapshot {
+	return DataflowSnapshot{
+		Id: s.ID, VersionNo: int(s.VersionNo), PublishedBy: s.PublishedBy, PublishedAt: s.PublishedAt, CreatedAt: s.CreatedAt,
+		Graph: toGraphWire(s.Graph),
+	}
 }
 
 func toGraphWire(g dataflowservice.Graph) DataflowGraph {

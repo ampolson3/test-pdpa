@@ -4549,6 +4549,55 @@ SUPER-facing `/provider/v1` "issue new version" action (no consumer/authorizatio
 exists — see above); RTG-11's own "assign to department to confirm" auto-task (a separate backlog row,
 not this feature's own acceptance criterion).
 
+### DFG-07 เผยแพร่และประวัติเวอร์ชันแผนผัง (`docs/modules/DFG.md#dfg-07`) — done
+`dataflow.snapshots` was already fully specified in the baseline migration (00009_dataflow.sql —
+`view_type`/`scope_id`/`version_no`/`graph` jsonb/`image_file_id`/`published_by`/`published_at`, its own
+unique constraint `uq_snapshots_view_type_scope_id_version_no`) and `ropa.dataflow.publish` was already
+seeded in the baseline permission migration (DPO only) — both completely unused until now, exactly as
+`dataflow/service.go`'s own package doc already disclosed ("dataflow.layouts/snapshots exist for the later
+DFG-05/DFG-07 features, which this pass doesn't build"). No new migration or permission code.
+
+`internal/dataflow/service/snapshots.go`: `PublishSnapshot` is the acceptance criterion's own write half —
+calls the exact same live `Graph()` every other read of this module already uses (DFG-01/03/04), JSON-
+marshals it, and inserts one new, immutable `dataflow.snapshots` row via a new sqlc query,
+`InsertSnapshot`, whose `version_no` is this (view_type, scope_id)'s own next number — computed from the
+rows already committed at statement start, wrapped in `pdb.Savepoint` (the established pattern for a write
+that can hit a real unique-constraint race) so two concurrent publishes never abort the whole request
+transaction. `ViewTypeOrgUnit = "org_unit"` is the only view DFG-01/03/04 build (dataflow.snapshots' own
+`view_type` column has no CHECK constraint, unlike `dataflow.layouts`, so nothing blocks DFG-06's own later
+multi-view feature from adding others); `scope_id` is the caller's own `legal_entity_id` filter, nullable
+for "every legal entity together". `ListSnapshots` is the read half — the acceptance criterion itself,
+"ดูแผนผังที่ publish ย้อนหลังได้" — newest first, graph omitted (can be large, read on demand); `GetSnapshot`
+reads one past version's full frozen graph by id, RLS already scoping an unknown or cross-tenant id to
+`ErrSnapshotNotFound`.
+
+A new `backend/db/queries/dataflow` sqlc package (`dataflowstore`, a new `sqlc.yaml` block — `dataflow` had
+no store package at all before this, since every prior feature on this module computes its graph live with
+no table of its own) needed explicit `sqlc.arg`/`::type` casts on `InsertSnapshot`/`ListSnapshots` — a bare
+untyped parameter reused across a `SELECT`'s projection list and its own `WHERE` clause hit Postgres'
+"inconsistent types deduced for parameter" error (42P08) at prepare time; named + cast params fixed both
+the error and sqlc's own generated field names.
+
+API: `GET`/`POST /admin/v1/dataflow/snapshots` (`ropa.dataflow.read`/`.publish`), `GET
+/admin/v1/dataflow/snapshots/{id}` (`ropa.dataflow.read`, 404 for an unknown id) — new
+`DataflowSnapshot`/`DataflowSnapshotSummary` schemas, reusing the existing `DataflowGraph` shape for the
+frozen graph itself. UI: `/data-flow` gained a "ประวัติเวอร์ชันที่เผยแพร่" panel (`SnapshotsPanel`) — a
+publish button shown only to a caller holding `ropa.dataflow.publish`, and a toggleable version list
+(number + published-at timestamp) visible to any reader. Tests: unit
+(`internal/dataflow/service/snapshots_test.go` — the acceptance criterion directly: a first publish takes
+version 1, a real RoPA change then a second publish takes version 2, `ListSnapshots` returns both newest
+first, and `GetSnapshot` reads back each version's own frozen graph exactly, not the current live one;
+unknown id is not-found; two-tenant isolation of both the list and a cross-tenant `GetSnapshot` call), HTTP
+contract (`internal/dataflow/http/handler_test.go`'s new `TestDataflowSnapshots_Contract` — 401/403/201 on
+publish, 200 list/get, 404 unknown id, through the real validator + AuthZ). Verified live against this
+session's own real Postgres 16 + Redis: `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched
+file), the full `internal/dataflow/...` suite (no regressions), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/data-flow` route) all verified clean. Not done, deliberately: `image_file_id`
+(the schema's own column for an attached rendered image per version — no acceptance criterion asks for one,
+and DFG-08's own `ExportDiagram` already renders on demand from the live graph); DFG-06's own multi-view
+`view_type` values (no consumer yet, same "no consumer yet" deferral this codebase uses throughout).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

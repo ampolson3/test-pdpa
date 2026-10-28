@@ -28,7 +28,7 @@ type env struct {
 	agreement *agreementservice.Service
 }
 
-var perms = []string{"ropa.dataflow.read", "ropa.activity.read", "ropa.activity.create", "ropa.activity.update",
+var perms = []string{"ropa.dataflow.read", "ropa.dataflow.publish", "ropa.activity.read", "ropa.activity.create", "ropa.activity.update",
 	"org.structure.read", "org.structure.create", "org.structure.update", "org.party.read", "org.party.create",
 	"vendor.vendor.read", "vendor.vendor.create", "agreement.dpa.read", "agreement.dpa.create", "agreement.dpa.update",
 	"agreement.dsa.read", "agreement.dsa.create", "agreement.dsa.update"}
@@ -42,6 +42,7 @@ func setup(t *testing.T, suffix string) env {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
+				`DELETE FROM dataflow.snapshots`,
 				`DELETE FROM agreement.clauses`, `DELETE FROM agreement.agreement_activities`, `DELETE FROM agreement.parties`,
 				`DELETE FROM agreement.agreements`, `DELETE FROM platform.approvals`, `DELETE FROM platform.record_versions`,
 				`DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,

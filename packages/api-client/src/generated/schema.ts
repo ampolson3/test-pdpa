@@ -5618,6 +5618,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dataflow/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DFG-07: every published version of the diagram, newest first ("ดูแผนผังที่ publish ย้อนหลังได้") */
+        get: operations["dataflowListSnapshots"];
+        put?: never;
+        /** DFG-07: freeze the current live diagram (DFG-01/03/04) as a new, immutable published version */
+        post: operations["dataflowPublishSnapshot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dataflow/snapshots/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DFG-07: one past published version's full diagram, by id */
+        get: operations["dataflowGetSnapshot"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/provider/v1/tenants": {
         parameters: {
             query?: never;
@@ -7838,6 +7873,23 @@ export interface components {
             edges: components["schemas"]["DataflowEdge"][];
             activity_count: number;
             generated_at: components["schemas"]["Timestamp"];
+        };
+        /** @description DFG-07: one published version of the diagram, graph omitted — the version history list ("ดูแผนผังที่ publish ย้อนหลังได้"). */
+        DataflowSnapshotSummary: {
+            id: components["schemas"]["Uuid"];
+            version_no: number;
+            published_by?: components["schemas"]["Uuid"];
+            published_at: components["schemas"]["Timestamp"];
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @description DFG-07: one published version, graph included — exactly the same shape DataflowGraph already uses, frozen at publish time. */
+        DataflowSnapshot: {
+            id: components["schemas"]["Uuid"];
+            version_no: number;
+            published_by?: components["schemas"]["Uuid"];
+            published_at: components["schemas"]["Timestamp"];
+            created_at: components["schemas"]["Timestamp"];
+            graph: components["schemas"]["DataflowGraph"];
         };
         /** @description DPIA-05: "necessary" only once every question is answered "yes"; otherwise "needs_review" names the flagged questions. */
         DpiaNecessity: {
@@ -24107,6 +24159,81 @@ export interface operations {
                     "application/problem+json": components["schemas"]["Problem"];
                 };
             };
+        };
+    };
+    dataflowListSnapshots: {
+        parameters: {
+            query?: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DataflowSnapshotSummary"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dataflowPublishSnapshot: {
+        parameters: {
+            query?: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataflowSnapshot"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dataflowGetSnapshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataflowSnapshot"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     providerListTenants: {

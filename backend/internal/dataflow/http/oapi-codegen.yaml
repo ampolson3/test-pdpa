@@ -8,3 +8,6 @@ output-options:
     - dataflowGetGraph
     - dataflowExportGraph
     - dataflowGetReport
+    - dataflowListSnapshots
+    - dataflowPublishSnapshot
+    - dataflowGetSnapshot
