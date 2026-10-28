@@ -11944,6 +11944,72 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/ropa/sme-exemption-checks:
+    get:
+      operationId: ropaListSmeExemptionChecks
+      tags: [ropa]
+      summary: SME exemption screening rounds for a legal entity, newest first (ROPA-20)
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: legal_entity_id
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RopaSmeExemptionCheck'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: ropaAssessSmeExemption
+      tags: [ropa]
+      summary: Answer the seeded screening form for one legal entity — the acceptance criterion itself
+      x-permission: ropa.activity.create
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RopaSmeExemptionCheckInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RopaSmeExemptionCheck'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/ropa/templates/activities/{activityTemplateId}/suggest:
     get:
       operationId: ropaSuggestTemplateItems
@@ -22037,6 +22103,54 @@ components:
         template_code: {type: string}
         current_version: {type: integer}
         latest_version: {type: integer}
+    RopaSmeExemptionResult:
+      type: string
+      enum: [exempt, not_exempt, partial]
+    RopaSmeExemptionCheckInput:
+      type: object
+      required: [legal_entity_id, is_processor, answers]
+      additionalProperties: false
+      properties:
+        legal_entity_id:
+          $ref: '#/components/schemas/Uuid'
+        is_processor:
+          type: boolean
+          description: Whether this legal entity also acts as a processor — the 2567 processor-exemption section only applies when true.
+        answers:
+          type: object
+          description: 'Question key → "yes" | "no", for every question in the seeded sme_exemption screening form.'
+          additionalProperties:
+            type: string
+            enum: [yes, no]
+      example:
+        legal_entity_id: 00000000-0000-0000-0000-000000000000
+        is_processor: false
+        answers:
+          is_sme_or_community: 'yes'
+          not_large_scale: 'yes'
+          no_sensitive_data: 'yes'
+          no_high_risk_profiling: 'yes'
+    RopaSmeExemptionCheck:
+      type: object
+      required: [id, legal_entity_id, form_submission_id, result, basis, assessed_at, row_version, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        legal_entity_id:
+          $ref: '#/components/schemas/Uuid'
+        form_submission_id:
+          $ref: '#/components/schemas/Uuid'
+        result:
+          $ref: '#/components/schemas/RopaSmeExemptionResult'
+        basis:
+          type: string
+          description: The acceptance criterion's own reason, citing the relevant notice(s).
+        assessed_at:
+          $ref: '#/components/schemas/Timestamp'
+        row_version:
+          type: integer
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
     RopaSuggestedPurpose:
       type: object
       description: 'RTG-06: index is this item''s position — echo it back in RopaApplySuggestedItemsInput.purposes to confirm it.'

@@ -4,7 +4,11 @@ import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
-import { createApiClient, useLegalEntities, useOrgUnitMutations, useOrgUnits, useSaveLegalEntity, type LegalEntity, type OrgUnit, type OrgUnitType } from "@pdpa/api-client";
+import {
+  createApiClient, useLegalEntities, useOrgUnitMutations, useOrgUnits, useSaveLegalEntity,
+  useSmeExemptionChecks, useAssessSmeExemption,
+  type LegalEntity, type OrgUnit, type OrgUnitType,
+} from "@pdpa/api-client";
 import { FileUploader } from "@/components/file-uploader";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
@@ -147,8 +151,75 @@ export function OrganizationContent() {
           </fieldset>
         )}
         {current && !draft && <OrgTree key={current.id} entity={current} canCreate={canCreate} canUpdate={canUpdate} canClose={canClose} />}
+        {current && !draft && <SmeExemptionPanel key={`sme-${current.id}`} entity={current} />}
       </section>
     </main>
+  );
+}
+
+const SME_CONTROLLER_KEYS = ["is_sme_or_community", "not_large_scale", "no_sensitive_data", "no_high_risk_profiling"] as const;
+const SME_PROCESSOR_KEYS = ["acts_only_as_processor", "no_subcontracted_high_risk"] as const;
+const SME_RESULT_STYLE: Record<string, string> = {
+  exempt: "bg-emerald-100 text-emerald-800",
+  partial: "bg-amber-100 text-amber-900",
+  not_exempt: "bg-rose-100 text-rose-800",
+};
+
+/** ROPA-20: screen one legal entity against the seeded SME exemption form (ประกาศ สคส. พ.ศ. 2565/2567) and
+ *  show the result + basis, and the entity's past screening rounds. */
+function SmeExemptionPanel({ entity }: { entity: LegalEntity }) {
+  const t = useTranslations("organization.smeExemption");
+  const canRead = usePermission("ropa.activity.read");
+  const canCreate = usePermission("ropa.activity.create");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const checks = useSmeExemptionChecks(client, entity.id);
+  const assess = useAssessSmeExemption(client, entity.id);
+  const [isProcessor, setIsProcessor] = useState(false);
+  const [answers, setAnswers] = useState<Record<string, "yes" | "no">>({});
+
+  if (!canRead) return null;
+  const keys = isProcessor ? [...SME_CONTROLLER_KEYS, ...SME_PROCESSOR_KEYS] : SME_CONTROLLER_KEYS;
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="sme-exemption-panel">
+      <h2 className="text-lg font-semibold">{t("title")}</h2>
+      <p className="text-slate-600">{t("intro")}</p>
+      {canCreate && (
+        <div className="space-y-2">
+          <label className="flex items-center gap-1">
+            <input type="checkbox" checked={isProcessor} onChange={(e) => setIsProcessor(e.target.checked)} />
+            {t("isProcessor")}
+          </label>
+          {keys.map((k) => (
+            <label key={k} className="flex items-center gap-2">
+              <span className="w-80 text-slate-700">{t(`questions.${k}`)}</span>
+              <select className={INPUT + " w-auto"} value={answers[k] ?? ""} onChange={(e) => setAnswers({ ...answers, [k]: e.target.value as "yes" | "no" })}>
+                <option value="">{t("choose")}</option>
+                <option value="yes">{t("yes")}</option>
+                <option value="no">{t("no")}</option>
+              </select>
+            </label>
+          ))}
+          {assess.isError && <p className="text-red-700" role="alert">{detail(assess.error)}</p>}
+          <Button
+            disabled={assess.isPending || keys.some((k) => !answers[k])}
+            onClick={() => assess.mutate({ legal_entity_id: entity.id, is_processor: isProcessor, answers }, { onSuccess: () => setAnswers({}) })}
+            data-testid="sme-exemption-submit"
+          >
+            {t("assess")}
+          </Button>
+        </div>
+      )}
+      <ul className="space-y-1 text-xs">
+        {checks.data?.map((c) => (
+          <li key={c.id} className="flex items-center gap-2" data-testid="sme-exemption-row">
+            <span className={`rounded-full px-2 py-0.5 ${SME_RESULT_STYLE[c.result]}`}>{t(`results.${c.result}`)}</span>
+            <span className="text-slate-700">{c.basis}</span>
+          </li>
+        ))}
+        {(checks.data ?? []).length === 0 && <li className="text-slate-500">{t("empty")}</li>}
+      </ul>
+    </section>
   );
 }
 

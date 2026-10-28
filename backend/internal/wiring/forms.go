@@ -38,5 +38,10 @@ func Forms(n *notify.Service, a *audit.Service) *forms.Service {
 	// module (forms.Service.Record) against the activity itself.
 	s.Register("checklist", forms.Policy{Read: "ropa.risk.read", Create: "ropa.risk.create",
 		Update: "ropa.risk.approve", Publish: "ropa.risk.approve", Respond: "ropa.risk.update"})
+	// SME exemption screening (ROPA-20): a single global, DPO-only screening form — ropa.activity.* since
+	// it decides whether the legal entity needs a RoPA at all, the module's own permission family (no
+	// screen edits this global content, so Create/Update/Publish are never exercised in practice).
+	s.Register("sme_exemption", forms.Policy{Read: "ropa.activity.read", Create: "ropa.activity.create",
+		Update: "ropa.activity.update", Publish: "ropa.activity.approve", Respond: "ropa.activity.create"})
 	return s
 }

@@ -681,3 +681,10 @@ export {
   type CookieScan,
   type CookieScanFinding,
 } from "./cookie";
+export {
+  useSmeExemptionChecks,
+  useAssessSmeExemption,
+  type RopaSmeExemptionCheck,
+  type RopaSmeExemptionCheckInput,
+  type RopaSmeExemptionResult,
+} from "./smeExemption";

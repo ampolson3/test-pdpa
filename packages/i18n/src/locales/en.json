@@ -592,6 +592,29 @@
       "actionError": "Couldn't do that: {detail}",
       "empty": "No units yet.",
       "save": "Save"
+    },
+    "smeExemption": {
+      "title": "SME exemption screening (RoPA)",
+      "intro": "Screen this legal entity against the small-business exemption notices (2022 controller / 2024 processor).",
+      "isProcessor": "This entity also acts as a processor",
+      "assess": "Assess",
+      "choose": "Choose...",
+      "yes": "Yes",
+      "no": "No",
+      "empty": "No screening rounds yet.",
+      "questions": {
+        "is_sme_or_community": "Qualifies as an SME or community enterprise as legally defined",
+        "not_large_scale": "No systematic, large-scale processing of personal data",
+        "no_sensitive_data": "No significant processing of sensitive personal data under s.26",
+        "no_high_risk_profiling": "No profiling, behavioral analysis or high-risk automated decision-making",
+        "acts_only_as_processor": "Acts only as a processor under a controller's instructions",
+        "no_subcontracted_high_risk": "No high-risk processing subcontracted to a sub-processor"
+      },
+      "results": {
+        "exempt": "Exempt",
+        "not_exempt": "Not exempt",
+        "partial": "Partially exempt"
+      }
     }
   },
   "externalParties": {

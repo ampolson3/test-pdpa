@@ -73,3 +73,5 @@ output-options:
     - ropaListOutdatedTemplateActivities
     - ropaSuggestTemplateItems
     - ropaApplySuggestedItems
+    - ropaListSmeExemptionChecks
+    - ropaAssessSmeExemption

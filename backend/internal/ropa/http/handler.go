@@ -200,6 +200,8 @@ func problem(err error) error {
 		return httpx.InvalidTransition("ropa")
 	case errors.Is(err, ropaservice.ErrInvalid):
 		return httpx.UnprocessableEntity("ropa.invalid_input", err.Error())
+	case errors.Is(err, ropaservice.ErrBadSmeExemptionForm):
+		return httpx.UnprocessableEntity("ropa.bad_form", "No published sme_exemption screening form")
 	}
 	return err
 }

@@ -4099,6 +4099,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/sme-exemption-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** SME exemption screening rounds for a legal entity, newest first (ROPA-20) */
+        get: operations["ropaListSmeExemptionChecks"];
+        put?: never;
+        /** Answer the seeded screening form for one legal entity — the acceptance criterion itself */
+        post: operations["ropaAssessSmeExemption"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/templates/activities/{activityTemplateId}/suggest": {
         parameters: {
             query?: never;
@@ -8776,6 +8794,40 @@ export interface components {
             template_code: string;
             current_version: number;
             latest_version: number;
+        };
+        /** @enum {string} */
+        RopaSmeExemptionResult: "exempt" | "not_exempt" | "partial";
+        /**
+         * @example {
+         *       "legal_entity_id": "00000000-0000-0000-0000-000000000000",
+         *       "is_processor": false,
+         *       "answers": {
+         *         "is_sme_or_community": "yes",
+         *         "not_large_scale": "yes",
+         *         "no_sensitive_data": "yes",
+         *         "no_high_risk_profiling": "yes"
+         *       }
+         *     }
+         */
+        RopaSmeExemptionCheckInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            /** @description Whether this legal entity also acts as a processor — the 2567 processor-exemption section only applies when true. */
+            is_processor: boolean;
+            /** @description Question key → "yes" | "no", for every question in the seeded sme_exemption screening form. */
+            answers: {
+                [key: string]: "yes" | "no";
+            };
+        };
+        RopaSmeExemptionCheck: {
+            id: components["schemas"]["Uuid"];
+            legal_entity_id: components["schemas"]["Uuid"];
+            form_submission_id: components["schemas"]["Uuid"];
+            result: components["schemas"]["RopaSmeExemptionResult"];
+            /** @description The acceptance criterion's own reason, citing the relevant notice(s). */
+            basis: string;
+            assessed_at: components["schemas"]["Timestamp"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
         };
         /** @description RTG-06: index is this item's position — echo it back in RopaApplySuggestedItemsInput.purposes to confirm it. */
         RopaSuggestedPurpose: {
@@ -20772,6 +20824,67 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaListSmeExemptionChecks: {
+        parameters: {
+            query: {
+                legal_entity_id: components["schemas"]["Uuid"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RopaSmeExemptionCheck"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    ropaAssessSmeExemption: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RopaSmeExemptionCheckInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RopaSmeExemptionCheck"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     ropaSuggestTemplateItems: {

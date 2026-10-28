@@ -4977,6 +4977,51 @@ unrelated `internal/pkg/validate` failure, confirmed via `git stash -u`), `make 
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build` (incl. the updated `/incidents/[id]` route) all verified clean.
 
+### ROPA-20 ตรวจสิทธิ์ยกเว้นกิจการขนาดเล็ก (`docs/modules/ROPA.md#ropa-20`) — done
+`ropa.sme_exemption_checks` was already fully specified in the baseline migrations (migration 00008, FK'd
+in 00018: `legal_entity_id`/`form_submission_id` → `org.legal_entities`/`platform.form_submissions`) — no
+new migration for the table itself. Migration 00090 (`docs/decisions.md` Q-44 — no real notice text to
+copy, only the feature description's own notice names) widens `platform.form_definitions.form_type`'s
+CHECK to add `'sme_exemption'` (the same "widen the CHECK for a new, clearly-fitting source" move DPO-09/
+RRA-05 already made) and seeds a global, DRAFT-pending-legal-review screening form: a controller-exemption
+section (4 yes_no questions per the 2565 notice) and a processor-exemption section (2 yes_no questions per
+the 2567 notice).
+
+`AssessSmeExemption` (`internal/ropa/service/sme_exemption.go`) answers the screening form in one shot via
+`forms.Service.Record` (the same one-step-record pattern DPO-09/BRE-05/RRA-05's own checklists already
+use — `wiring.Forms` gained a `"sme_exemption"` registration, `ropa.activity.*` throughout since no other
+screen ever edits this global content). `SmeExemptionResult` (exported, pure, directly unit-tested without
+a database) is the acceptance criterion's own business rule: every controller-section answer "yes"
+qualifies for the 2565 exemption; when the entity also acts as a processor, every processor-section answer
+"yes" additionally qualifies for the 2567 exemption — qualifying for both (or the only one in scope) is
+`exempt`, qualifying for only one of the two notices is `partial` (citing which notice's own exemption
+applies and which doesn't), qualifying for neither is `not_exempt`. Each round writes one
+`ropa.sme_exemption_checks` row citing the `platform.form_submissions` row it was computed from, and the
+basis text names the specific notice(s) — the acceptance criterion's own literal "พร้อมเหตุผลอ้างประกาศ".
+
+Permissions reuse the already-seeded `ropa.activity.{read,create,update,approve}` (DPO holds every one of
+them, matching this feature's own DPO-only actor line) — no new permission code. API: `GET`/
+`POST /admin/v1/ropa/sme-exemption-checks` (list takes `legal_entity_id` as a required query parameter).
+UI: a new "SME exemption screening" section on the existing `/settings/organization` page (no new page
+needed — the wizard is inherently scoped to a legal entity the page already lets the DPO pick) — a
+processor checkbox, a yes/no question per section, an assess button, and a list of past rounds each showing
+a colored result badge and its basis text.
+
+Tests: unit (`internal/ropa/service/ropa20_test.go` — `SmeExemptionResult` directly covers every
+combination the acceptance criterion names (controller-only exempt/not_exempt, processor `partial` both
+ways, neither qualifying), `AssessSmeExemption` end to end through the real `forms.Service.Record` path
+(exempt, not_exempt, partial, two rounds both recorded and listed), an unknown legal entity refused as
+`ErrInvalid`, no published form refused distinctly as `ErrBadSmeExemptionForm`), HTTP contract
+(`internal/ropa/http/ropa20_handler_test.go` — a separate, self-contained fixture, the same move RTG-08's
+own test already made rather than extending `TestAssetEndpoints_Contract`'s own pre-existing, unrelated
+failure — 401/403/201/200/422 through the real validator + AuthZ). Not verified live against a real
+Postgres/Redis in this pass — neither was reachable in this environment for this feature; every test
+compiles and vets clean and skips the same way the rest of this codebase's own suite already does without
+one. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no
+regressions, full backend suite — only the pre-existing, unrelated `internal/pkg/validate` failure), `make
+gen` re-run with no drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/settings/organization` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 
