@@ -18,6 +18,27 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for DpoAdvisoryStatus.
+const (
+	DpoAdvisoryStatusAnswered DpoAdvisoryStatus = "answered"
+	DpoAdvisoryStatusClosed   DpoAdvisoryStatus = "closed"
+	DpoAdvisoryStatusOpen     DpoAdvisoryStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the DpoAdvisoryStatus enum.
+func (e DpoAdvisoryStatus) Valid() bool {
+	switch e {
+	case DpoAdvisoryStatusAnswered:
+		return true
+	case DpoAdvisoryStatusClosed:
+		return true
+	case DpoAdvisoryStatusOpen:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DpoDeadlineItemSource.
 const (
 	BreachIncident DpoDeadlineItemSource = "breach_incident"
@@ -48,6 +69,33 @@ func (e DpoDeadlineItemStatus) Valid() bool {
 	case AtRisk:
 		return true
 	case Overdue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpoKbArticleSource.
+const (
+	DpoKbArticleSourceFaq      DpoKbArticleSource = "faq"
+	DpoKbArticleSourceInternal DpoKbArticleSource = "internal"
+	DpoKbArticleSourceLaw      DpoKbArticleSource = "law"
+	DpoKbArticleSourcePdpc     DpoKbArticleSource = "pdpc"
+	DpoKbArticleSourcePolicy   DpoKbArticleSource = "policy"
+)
+
+// Valid indicates whether the value is a known member of the DpoKbArticleSource enum.
+func (e DpoKbArticleSource) Valid() bool {
+	switch e {
+	case DpoKbArticleSourceFaq:
+		return true
+	case DpoKbArticleSourceInternal:
+		return true
+	case DpoKbArticleSourceLaw:
+		return true
+	case DpoKbArticleSourcePdpc:
+		return true
+	case DpoKbArticleSourcePolicy:
 		return true
 	default:
 		return false
@@ -191,19 +239,19 @@ func (e DpoTaskStatusInputStatus) Valid() bool {
 
 // Defines values for DpoType.
 const (
-	External DpoType = "external"
-	Group    DpoType = "group"
-	Internal DpoType = "internal"
+	DpoTypeExternal DpoType = "external"
+	DpoTypeGroup    DpoType = "group"
+	DpoTypeInternal DpoType = "internal"
 )
 
 // Valid indicates whether the value is a known member of the DpoType enum.
 func (e DpoType) Valid() bool {
 	switch e {
-	case External:
+	case DpoTypeExternal:
 		return true
-	case Group:
+	case DpoTypeGroup:
 		return true
-	case Internal:
+	case DpoTypeInternal:
 		return true
 	default:
 		return false
@@ -212,40 +260,40 @@ func (e DpoType) Valid() bool {
 
 // Defines values for FormConditionOp.
 const (
-	Answered    FormConditionOp = "answered"
-	Eq          FormConditionOp = "eq"
-	Gt          FormConditionOp = "gt"
-	Gte         FormConditionOp = "gte"
-	In          FormConditionOp = "in"
-	Lt          FormConditionOp = "lt"
-	Lte         FormConditionOp = "lte"
-	Neq         FormConditionOp = "neq"
-	NotAnswered FormConditionOp = "not_answered"
-	NotIn       FormConditionOp = "not_in"
+	FormConditionOpAnswered    FormConditionOp = "answered"
+	FormConditionOpEq          FormConditionOp = "eq"
+	FormConditionOpGt          FormConditionOp = "gt"
+	FormConditionOpGte         FormConditionOp = "gte"
+	FormConditionOpIn          FormConditionOp = "in"
+	FormConditionOpLt          FormConditionOp = "lt"
+	FormConditionOpLte         FormConditionOp = "lte"
+	FormConditionOpNeq         FormConditionOp = "neq"
+	FormConditionOpNotAnswered FormConditionOp = "not_answered"
+	FormConditionOpNotIn       FormConditionOp = "not_in"
 )
 
 // Valid indicates whether the value is a known member of the FormConditionOp enum.
 func (e FormConditionOp) Valid() bool {
 	switch e {
-	case Answered:
+	case FormConditionOpAnswered:
 		return true
-	case Eq:
+	case FormConditionOpEq:
 		return true
-	case Gt:
+	case FormConditionOpGt:
 		return true
-	case Gte:
+	case FormConditionOpGte:
 		return true
-	case In:
+	case FormConditionOpIn:
 		return true
-	case Lt:
+	case FormConditionOpLt:
 		return true
-	case Lte:
+	case FormConditionOpLte:
 		return true
-	case Neq:
+	case FormConditionOpNeq:
 		return true
-	case NotAnswered:
+	case FormConditionOpNotAnswered:
 		return true
-	case NotIn:
+	case FormConditionOpNotIn:
 		return true
 	default:
 		return false
@@ -264,6 +312,99 @@ func (e AcceptLanguage) Valid() bool {
 	case AcceptLanguageEn:
 		return true
 	case AcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpoListAdvisoriesParamsStatus.
+const (
+	DpoListAdvisoriesParamsStatusAnswered DpoListAdvisoriesParamsStatus = "answered"
+	DpoListAdvisoriesParamsStatusClosed   DpoListAdvisoriesParamsStatus = "closed"
+	DpoListAdvisoriesParamsStatusOpen     DpoListAdvisoriesParamsStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the DpoListAdvisoriesParamsStatus enum.
+func (e DpoListAdvisoriesParamsStatus) Valid() bool {
+	switch e {
+	case DpoListAdvisoriesParamsStatusAnswered:
+		return true
+	case DpoListAdvisoriesParamsStatusClosed:
+		return true
+	case DpoListAdvisoriesParamsStatusOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpoListAdvisoriesParamsAcceptLanguage.
+const (
+	DpoListAdvisoriesParamsAcceptLanguageEn DpoListAdvisoriesParamsAcceptLanguage = "en"
+	DpoListAdvisoriesParamsAcceptLanguageTh DpoListAdvisoriesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpoListAdvisoriesParamsAcceptLanguage enum.
+func (e DpoListAdvisoriesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpoListAdvisoriesParamsAcceptLanguageEn:
+		return true
+	case DpoListAdvisoriesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpoSubmitAdvisoryParamsAcceptLanguage.
+const (
+	DpoSubmitAdvisoryParamsAcceptLanguageEn DpoSubmitAdvisoryParamsAcceptLanguage = "en"
+	DpoSubmitAdvisoryParamsAcceptLanguageTh DpoSubmitAdvisoryParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpoSubmitAdvisoryParamsAcceptLanguage enum.
+func (e DpoSubmitAdvisoryParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpoSubmitAdvisoryParamsAcceptLanguageEn:
+		return true
+	case DpoSubmitAdvisoryParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpoGetAdvisoryParamsAcceptLanguage.
+const (
+	DpoGetAdvisoryParamsAcceptLanguageEn DpoGetAdvisoryParamsAcceptLanguage = "en"
+	DpoGetAdvisoryParamsAcceptLanguageTh DpoGetAdvisoryParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpoGetAdvisoryParamsAcceptLanguage enum.
+func (e DpoGetAdvisoryParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpoGetAdvisoryParamsAcceptLanguageEn:
+		return true
+	case DpoGetAdvisoryParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpoAnswerAdvisoryParamsAcceptLanguage.
+const (
+	DpoAnswerAdvisoryParamsAcceptLanguageEn DpoAnswerAdvisoryParamsAcceptLanguage = "en"
+	DpoAnswerAdvisoryParamsAcceptLanguageTh DpoAnswerAdvisoryParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpoAnswerAdvisoryParamsAcceptLanguage enum.
+func (e DpoAnswerAdvisoryParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpoAnswerAdvisoryParamsAcceptLanguageEn:
+		return true
+	case DpoAnswerAdvisoryParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -414,6 +555,24 @@ func (e DpoSignIndependenceDeclarationParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for DpoSearchKbArticlesParamsAcceptLanguage.
+const (
+	DpoSearchKbArticlesParamsAcceptLanguageEn DpoSearchKbArticlesParamsAcceptLanguage = "en"
+	DpoSearchKbArticlesParamsAcceptLanguageTh DpoSearchKbArticlesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpoSearchKbArticlesParamsAcceptLanguage enum.
+func (e DpoSearchKbArticlesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpoSearchKbArticlesParamsAcceptLanguageEn:
+		return true
+	case DpoSearchKbArticlesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DpoListRequirementChecksParamsAcceptLanguage.
 const (
 	DpoListRequirementChecksParamsAcceptLanguageEn DpoListRequirementChecksParamsAcceptLanguage = "en"
@@ -540,6 +699,45 @@ func (e DpoUpdateTaskStatusParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// DpoAdvisory defines model for DpoAdvisory.
+type DpoAdvisory struct {
+	AdvisoryNo string     `json:"advisory_no"`
+	Answer     *string    `json:"answer,omitempty"`
+	AnsweredAt *time.Time `json:"answered_at,omitempty"`
+
+	// AnsweredBy UUIDv7 generated by the API
+	AnsweredBy *Uuid     `json:"answered_by,omitempty"`
+	CreatedAt  time.Time `json:"created_at"`
+
+	// Id UUIDv7 generated by the API
+	Id Uuid `json:"id"`
+
+	// KbArticleId UUIDv7 generated by the API
+	KbArticleId *Uuid `json:"kb_article_id,omitempty"`
+
+	// OrgUnitId UUIDv7 generated by the API
+	OrgUnitId     *Uuid   `json:"org_unit_id,omitempty"`
+	Question      string  `json:"question"`
+	RequesterName *string `json:"requester_name,omitempty"`
+
+	// RequesterUserId UUIDv7 generated by the API
+	RequesterUserId Uuid              `json:"requester_user_id"`
+	RowVersion      int               `json:"row_version"`
+	Status          DpoAdvisoryStatus `json:"status"`
+	Subject         string            `json:"subject"`
+}
+
+// DpoAdvisoryStatus defines model for DpoAdvisory.Status.
+type DpoAdvisoryStatus string
+
+// DpoAdvisoryInput defines model for DpoAdvisoryInput.
+type DpoAdvisoryInput struct {
+	// OrgUnitId UUIDv7 generated by the API
+	OrgUnitId *Uuid  `json:"org_unit_id,omitempty"`
+	Question  string `json:"question"`
+	Subject   string `json:"subject"`
+}
+
 // DpoAppointment defines model for DpoAppointment.
 type DpoAppointment struct {
 	AppointedAt openapi_types.Date `json:"appointed_at"`
@@ -646,6 +844,24 @@ type DpoIndependenceDeclarationInput struct {
 	OtherDuties *string `json:"other_duties,omitempty"`
 	Year        int     `json:"year"`
 }
+
+// DpoKbArticle defines model for DpoKbArticle.
+type DpoKbArticle struct {
+	Body     *map[string]interface{} `json:"body,omitempty"`
+	Category string                  `json:"category"`
+
+	// Id UUIDv7 generated by the API
+	Id          Uuid               `json:"id"`
+	Language    string             `json:"language"`
+	PublishedAt *time.Time         `json:"published_at,omitempty"`
+	RowVersion  int                `json:"row_version"`
+	Source      DpoKbArticleSource `json:"source"`
+	Tags        []string           `json:"tags"`
+	Title       string             `json:"title"`
+}
+
+// DpoKbArticleSource defines model for DpoKbArticle.Source.
+type DpoKbArticleSource string
 
 // DpoRemediationTask defines model for DpoRemediationTask.
 type DpoRemediationTask struct {
@@ -820,6 +1036,56 @@ type Unauthorized = Problem
 // UnprocessableEntity RFC 9457 problem details with a stable machine-readable `code`
 type UnprocessableEntity = Problem
 
+// DpoListAdvisoriesParams defines parameters for DpoListAdvisories.
+type DpoListAdvisoriesParams struct {
+	OrgUnitId *Uuid                          `form:"org_unit_id,omitempty" json:"org_unit_id,omitempty"`
+	Status    *DpoListAdvisoriesParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpoListAdvisoriesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpoListAdvisoriesParamsStatus defines parameters for DpoListAdvisories.
+type DpoListAdvisoriesParamsStatus string
+
+// DpoListAdvisoriesParamsAcceptLanguage defines parameters for DpoListAdvisories.
+type DpoListAdvisoriesParamsAcceptLanguage string
+
+// DpoSubmitAdvisoryParams defines parameters for DpoSubmitAdvisory.
+type DpoSubmitAdvisoryParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpoSubmitAdvisoryParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpoSubmitAdvisoryParamsAcceptLanguage defines parameters for DpoSubmitAdvisory.
+type DpoSubmitAdvisoryParamsAcceptLanguage string
+
+// DpoGetAdvisoryParams defines parameters for DpoGetAdvisory.
+type DpoGetAdvisoryParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpoGetAdvisoryParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpoGetAdvisoryParamsAcceptLanguage defines parameters for DpoGetAdvisory.
+type DpoGetAdvisoryParamsAcceptLanguage string
+
+// DpoAnswerAdvisoryJSONBody defines parameters for DpoAnswerAdvisory.
+type DpoAnswerAdvisoryJSONBody struct {
+	Answer string `json:"answer"`
+}
+
+// DpoAnswerAdvisoryParams defines parameters for DpoAnswerAdvisory.
+type DpoAnswerAdvisoryParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpoAnswerAdvisoryParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// DpoAnswerAdvisoryParamsAcceptLanguage defines parameters for DpoAnswerAdvisory.
+type DpoAnswerAdvisoryParamsAcceptLanguage string
+
 // DpoListAppointmentsParams defines parameters for DpoListAppointments.
 type DpoListAppointmentsParams struct {
 	LegalEntityId *Uuid   `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
@@ -908,6 +1174,18 @@ type DpoSignIndependenceDeclarationParams struct {
 // DpoSignIndependenceDeclarationParamsAcceptLanguage defines parameters for DpoSignIndependenceDeclaration.
 type DpoSignIndependenceDeclarationParamsAcceptLanguage string
 
+// DpoSearchKbArticlesParams defines parameters for DpoSearchKbArticles.
+type DpoSearchKbArticlesParams struct {
+	Category *string `form:"category,omitempty" json:"category,omitempty"`
+	Q        *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpoSearchKbArticlesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpoSearchKbArticlesParamsAcceptLanguage defines parameters for DpoSearchKbArticles.
+type DpoSearchKbArticlesParamsAcceptLanguage string
+
 // DpoListRequirementChecksParams defines parameters for DpoListRequirementChecks.
 type DpoListRequirementChecksParams struct {
 	LegalEntityId Uuid `form:"legal_entity_id" json:"legal_entity_id"`
@@ -991,6 +1269,12 @@ type DpoUpdateTaskStatusParams struct {
 // DpoUpdateTaskStatusParamsAcceptLanguage defines parameters for DpoUpdateTaskStatus.
 type DpoUpdateTaskStatusParamsAcceptLanguage string
 
+// DpoSubmitAdvisoryJSONRequestBody defines body for DpoSubmitAdvisory for application/json ContentType.
+type DpoSubmitAdvisoryJSONRequestBody = DpoAdvisoryInput
+
+// DpoAnswerAdvisoryJSONRequestBody defines body for DpoAnswerAdvisory for application/json ContentType.
+type DpoAnswerAdvisoryJSONRequestBody DpoAnswerAdvisoryJSONBody
+
 // DpoCreateAppointmentJSONRequestBody defines body for DpoCreateAppointment for application/json ContentType.
 type DpoCreateAppointmentJSONRequestBody = DpoAppointmentInput
 
@@ -1014,6 +1298,18 @@ type DpoUpdateTaskStatusJSONRequestBody = DpoTaskStatusInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// DpoListAdvisories DPO-07 — advisory questions to the DPO, optionally filtered by department or status
+	// (GET /admin/v1/dpo/advisories)
+	DpoListAdvisories(w http.ResponseWriter, r *http.Request, params DpoListAdvisoriesParams)
+	// DpoSubmitAdvisory DPO-07 — a department sends a question to the DPO (ม.42(1))
+	// (POST /admin/v1/dpo/advisories)
+	DpoSubmitAdvisory(w http.ResponseWriter, r *http.Request, params DpoSubmitAdvisoryParams)
+	// DpoGetAdvisory DPO-07 — one advisory question
+	// (GET /admin/v1/dpo/advisories/{id})
+	DpoGetAdvisory(w http.ResponseWriter, r *http.Request, id Uuid, params DpoGetAdvisoryParams)
+	// DpoAnswerAdvisory DPO-07's own acceptance criterion — answer the question and promote it into the searchable knowledge base in the same step (open -> answered)
+	// (POST /admin/v1/dpo/advisories/{id}/answer)
+	DpoAnswerAdvisory(w http.ResponseWriter, r *http.Request, id Uuid, params DpoAnswerAdvisoryParams)
 	// DpoListAppointments The tenant's DPO appointment register (DPO-01, ม.41)
 	// (GET /admin/v1/dpo/appointments)
 	DpoListAppointments(w http.ResponseWriter, r *http.Request, params DpoListAppointmentsParams)
@@ -1038,6 +1334,9 @@ type ServerInterface interface {
 	// DpoSignIndependenceDeclaration DPO-03's own acceptance criterion: sign a year's declaration once, optionally attaching the caller's own clean signed-evidence upload
 	// (POST /admin/v1/dpo/independence-declarations/{id}/sign)
 	DpoSignIndependenceDeclaration(w http.ResponseWriter, r *http.Request, id Uuid, params DpoSignIndependenceDeclarationParams)
+	// DpoSearchKbArticles DPO-07 — the searchable knowledge base (every published article, incl. ones promoted from an answered advisory)
+	// (GET /admin/v1/dpo/kb-articles)
+	DpoSearchKbArticles(w http.ResponseWriter, r *http.Request, params DpoSearchKbArticlesParams)
 	// DpoListRequirementChecks Every ม.41(2) DPO-requirement screening round for a legal entity, newest first (DPO-02)
 	// (GET /admin/v1/dpo/requirement-checks)
 	DpoListRequirementChecks(w http.ResponseWriter, r *http.Request, params DpoListRequirementChecksParams)
@@ -1064,6 +1363,30 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// DpoListAdvisories DPO-07 — advisory questions to the DPO, optionally filtered by department or status
+// (GET /admin/v1/dpo/advisories)
+func (_ Unimplemented) DpoListAdvisories(w http.ResponseWriter, r *http.Request, params DpoListAdvisoriesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpoSubmitAdvisory DPO-07 — a department sends a question to the DPO (ม.42(1))
+// (POST /admin/v1/dpo/advisories)
+func (_ Unimplemented) DpoSubmitAdvisory(w http.ResponseWriter, r *http.Request, params DpoSubmitAdvisoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpoGetAdvisory DPO-07 — one advisory question
+// (GET /admin/v1/dpo/advisories/{id})
+func (_ Unimplemented) DpoGetAdvisory(w http.ResponseWriter, r *http.Request, id Uuid, params DpoGetAdvisoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpoAnswerAdvisory DPO-07's own acceptance criterion — answer the question and promote it into the searchable knowledge base in the same step (open -> answered)
+// (POST /admin/v1/dpo/advisories/{id}/answer)
+func (_ Unimplemented) DpoAnswerAdvisory(w http.ResponseWriter, r *http.Request, id Uuid, params DpoAnswerAdvisoryParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // DpoListAppointments The tenant's DPO appointment register (DPO-01, ม.41)
 // (GET /admin/v1/dpo/appointments)
@@ -1110,6 +1433,12 @@ func (_ Unimplemented) DpoListDeadlines(w http.ResponseWriter, r *http.Request, 
 // DpoSignIndependenceDeclaration DPO-03's own acceptance criterion: sign a year's declaration once, optionally attaching the caller's own clean signed-evidence upload
 // (POST /admin/v1/dpo/independence-declarations/{id}/sign)
 func (_ Unimplemented) DpoSignIndependenceDeclaration(w http.ResponseWriter, r *http.Request, id Uuid, params DpoSignIndependenceDeclarationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpoSearchKbArticles DPO-07 — the searchable knowledge base (every published article, incl. ones promoted from an answered advisory)
+// (GET /admin/v1/dpo/kb-articles)
+func (_ Unimplemented) DpoSearchKbArticles(w http.ResponseWriter, r *http.Request, params DpoSearchKbArticlesParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1163,6 +1492,237 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// DpoListAdvisories operation middleware
+func (siw *ServerInterfaceWrapper) DpoListAdvisories(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpoListAdvisoriesParams
+
+	// ------------- Optional query parameter "org_unit_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "org_unit_id", r.URL.Query(), &params.OrgUnitId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "org_unit_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "org_unit_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpoListAdvisoriesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpoListAdvisories(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpoSubmitAdvisory operation middleware
+func (siw *ServerInterfaceWrapper) DpoSubmitAdvisory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpoSubmitAdvisoryParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpoSubmitAdvisoryParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpoSubmitAdvisory(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpoGetAdvisory operation middleware
+func (siw *ServerInterfaceWrapper) DpoGetAdvisory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpoGetAdvisoryParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpoGetAdvisoryParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpoGetAdvisory(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpoAnswerAdvisory operation middleware
+func (siw *ServerInterfaceWrapper) DpoAnswerAdvisory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpoAnswerAdvisoryParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpoAnswerAdvisoryParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpoAnswerAdvisory(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // DpoListAppointments operation middleware
 func (siw *ServerInterfaceWrapper) DpoListAppointments(w http.ResponseWriter, r *http.Request) {
@@ -1613,6 +2173,73 @@ func (siw *ServerInterfaceWrapper) DpoSignIndependenceDeclaration(w http.Respons
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DpoSignIndependenceDeclaration(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpoSearchKbArticles operation middleware
+func (siw *ServerInterfaceWrapper) DpoSearchKbArticles(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpoSearchKbArticlesParams
+
+	// ------------- Optional query parameter "category" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "category", r.URL.Query(), &params.Category, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "category"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "category", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpoSearchKbArticlesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpoSearchKbArticles(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2125,6 +2752,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dpo/advisories", wrapper.DpoListAdvisories)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dpo/advisories", wrapper.DpoSubmitAdvisory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dpo/advisories/{id}", wrapper.DpoGetAdvisory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dpo/advisories/{id}/answer", wrapper.DpoAnswerAdvisory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dpo/kb-articles", wrapper.DpoSearchKbArticles)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/dpo/requirement-checks", wrapper.DpoListRequirementChecks)
 	})
 	r.Group(func(r chi.Router) {
@@ -2186,6 +2828,366 @@ type PreconditionRequiredApplicationProblemPlusJSONResponse Problem
 type UnauthorizedApplicationProblemPlusJSONResponse Problem
 
 type UnprocessableEntityApplicationProblemPlusJSONResponse Problem
+
+type DpoListAdvisoriesRequestObject struct {
+	Params DpoListAdvisoriesParams
+}
+
+type DpoListAdvisoriesResponseObject interface {
+	VisitDpoListAdvisoriesResponse(w http.ResponseWriter) error
+}
+
+type DpoListAdvisories200JSONResponse struct {
+	Data []DpoAdvisory `json:"data"`
+}
+
+func (response DpoListAdvisories200JSONResponse) VisitDpoListAdvisoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoListAdvisories401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpoListAdvisories401ApplicationProblemPlusJSONResponse) VisitDpoListAdvisoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoListAdvisories403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpoListAdvisories403ApplicationProblemPlusJSONResponse) VisitDpoListAdvisoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoSubmitAdvisoryRequestObject struct {
+	Params DpoSubmitAdvisoryParams
+	Body   *DpoSubmitAdvisoryJSONRequestBody
+}
+
+type DpoSubmitAdvisoryResponseObject interface {
+	VisitDpoSubmitAdvisoryResponse(w http.ResponseWriter) error
+}
+
+type DpoSubmitAdvisory201JSONResponse DpoAdvisory
+
+func (response DpoSubmitAdvisory201JSONResponse) VisitDpoSubmitAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoSubmitAdvisory400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DpoSubmitAdvisory400ApplicationProblemPlusJSONResponse) VisitDpoSubmitAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoSubmitAdvisory401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpoSubmitAdvisory401ApplicationProblemPlusJSONResponse) VisitDpoSubmitAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoSubmitAdvisory403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpoSubmitAdvisory403ApplicationProblemPlusJSONResponse) VisitDpoSubmitAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoSubmitAdvisory422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DpoSubmitAdvisory422ApplicationProblemPlusJSONResponse) VisitDpoSubmitAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoGetAdvisoryRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DpoGetAdvisoryParams
+}
+
+type DpoGetAdvisoryResponseObject interface {
+	VisitDpoGetAdvisoryResponse(w http.ResponseWriter) error
+}
+
+type DpoGetAdvisory200JSONResponse DpoAdvisory
+
+func (response DpoGetAdvisory200JSONResponse) VisitDpoGetAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoGetAdvisory401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpoGetAdvisory401ApplicationProblemPlusJSONResponse) VisitDpoGetAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoGetAdvisory403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpoGetAdvisory403ApplicationProblemPlusJSONResponse) VisitDpoGetAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoGetAdvisory404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpoGetAdvisory404ApplicationProblemPlusJSONResponse) VisitDpoGetAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAnswerAdvisoryRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DpoAnswerAdvisoryParams
+	Body   *DpoAnswerAdvisoryJSONRequestBody
+}
+
+type DpoAnswerAdvisoryResponseObject interface {
+	VisitDpoAnswerAdvisoryResponse(w http.ResponseWriter) error
+}
+
+type DpoAnswerAdvisory200ResponseHeaders struct {
+	ETag *string
+}
+
+type DpoAnswerAdvisory200JSONResponse struct {
+	Body    DpoAdvisory
+	Headers DpoAnswerAdvisory200ResponseHeaders
+}
+
+func (response DpoAnswerAdvisory200JSONResponse) VisitDpoAnswerAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAnswerAdvisory400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAnswerAdvisory400ApplicationProblemPlusJSONResponse) VisitDpoAnswerAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAnswerAdvisory401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAnswerAdvisory401ApplicationProblemPlusJSONResponse) VisitDpoAnswerAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAnswerAdvisory403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAnswerAdvisory403ApplicationProblemPlusJSONResponse) VisitDpoAnswerAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAnswerAdvisory404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAnswerAdvisory404ApplicationProblemPlusJSONResponse) VisitDpoAnswerAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAnswerAdvisory412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAnswerAdvisory412ApplicationProblemPlusJSONResponse) VisitDpoAnswerAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAnswerAdvisory422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAnswerAdvisory422ApplicationProblemPlusJSONResponse) VisitDpoAnswerAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAnswerAdvisory428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAnswerAdvisory428ApplicationProblemPlusJSONResponse) VisitDpoAnswerAdvisoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type DpoListAppointmentsRequestObject struct {
 	Params DpoListAppointmentsParams
@@ -2941,6 +3943,62 @@ func (response DpoSignIndependenceDeclaration428ApplicationProblemPlusJSONRespon
 	return err
 }
 
+type DpoSearchKbArticlesRequestObject struct {
+	Params DpoSearchKbArticlesParams
+}
+
+type DpoSearchKbArticlesResponseObject interface {
+	VisitDpoSearchKbArticlesResponse(w http.ResponseWriter) error
+}
+
+type DpoSearchKbArticles200JSONResponse struct {
+	Data []DpoKbArticle `json:"data"`
+}
+
+func (response DpoSearchKbArticles200JSONResponse) VisitDpoSearchKbArticlesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoSearchKbArticles401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpoSearchKbArticles401ApplicationProblemPlusJSONResponse) VisitDpoSearchKbArticlesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoSearchKbArticles403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpoSearchKbArticles403ApplicationProblemPlusJSONResponse) VisitDpoSearchKbArticlesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DpoListRequirementChecksRequestObject struct {
 	Params DpoListRequirementChecksParams
 }
@@ -3534,6 +4592,18 @@ func (response DpoUpdateTaskStatus428ApplicationProblemPlusJSONResponse) VisitDp
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// DpoListAdvisories DPO-07 — advisory questions to the DPO, optionally filtered by department or status
+	// (GET /admin/v1/dpo/advisories)
+	DpoListAdvisories(ctx context.Context, request DpoListAdvisoriesRequestObject) (DpoListAdvisoriesResponseObject, error)
+	// DpoSubmitAdvisory DPO-07 — a department sends a question to the DPO (ม.42(1))
+	// (POST /admin/v1/dpo/advisories)
+	DpoSubmitAdvisory(ctx context.Context, request DpoSubmitAdvisoryRequestObject) (DpoSubmitAdvisoryResponseObject, error)
+	// DpoGetAdvisory DPO-07 — one advisory question
+	// (GET /admin/v1/dpo/advisories/{id})
+	DpoGetAdvisory(ctx context.Context, request DpoGetAdvisoryRequestObject) (DpoGetAdvisoryResponseObject, error)
+	// DpoAnswerAdvisory DPO-07's own acceptance criterion — answer the question and promote it into the searchable knowledge base in the same step (open -> answered)
+	// (POST /admin/v1/dpo/advisories/{id}/answer)
+	DpoAnswerAdvisory(ctx context.Context, request DpoAnswerAdvisoryRequestObject) (DpoAnswerAdvisoryResponseObject, error)
 	// DpoListAppointments The tenant's DPO appointment register (DPO-01, ม.41)
 	// (GET /admin/v1/dpo/appointments)
 	DpoListAppointments(ctx context.Context, request DpoListAppointmentsRequestObject) (DpoListAppointmentsResponseObject, error)
@@ -3558,6 +4628,9 @@ type StrictServerInterface interface {
 	// DpoSignIndependenceDeclaration DPO-03's own acceptance criterion: sign a year's declaration once, optionally attaching the caller's own clean signed-evidence upload
 	// (POST /admin/v1/dpo/independence-declarations/{id}/sign)
 	DpoSignIndependenceDeclaration(ctx context.Context, request DpoSignIndependenceDeclarationRequestObject) (DpoSignIndependenceDeclarationResponseObject, error)
+	// DpoSearchKbArticles DPO-07 — the searchable knowledge base (every published article, incl. ones promoted from an answered advisory)
+	// (GET /admin/v1/dpo/kb-articles)
+	DpoSearchKbArticles(ctx context.Context, request DpoSearchKbArticlesRequestObject) (DpoSearchKbArticlesResponseObject, error)
 	// DpoListRequirementChecks Every ม.41(2) DPO-requirement screening round for a legal entity, newest first (DPO-02)
 	// (GET /admin/v1/dpo/requirement-checks)
 	DpoListRequirementChecks(ctx context.Context, request DpoListRequirementChecksRequestObject) (DpoListRequirementChecksResponseObject, error)
@@ -3618,6 +4691,126 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// DpoListAdvisories operation middleware
+func (sh *strictHandler) DpoListAdvisories(w http.ResponseWriter, r *http.Request, params DpoListAdvisoriesParams) {
+	var request DpoListAdvisoriesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpoListAdvisories(ctx, request.(DpoListAdvisoriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpoListAdvisories")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpoListAdvisoriesResponseObject); ok {
+		if err := validResponse.VisitDpoListAdvisoriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpoSubmitAdvisory operation middleware
+func (sh *strictHandler) DpoSubmitAdvisory(w http.ResponseWriter, r *http.Request, params DpoSubmitAdvisoryParams) {
+	var request DpoSubmitAdvisoryRequestObject
+
+	request.Params = params
+
+	var body DpoSubmitAdvisoryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpoSubmitAdvisory(ctx, request.(DpoSubmitAdvisoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpoSubmitAdvisory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpoSubmitAdvisoryResponseObject); ok {
+		if err := validResponse.VisitDpoSubmitAdvisoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpoGetAdvisory operation middleware
+func (sh *strictHandler) DpoGetAdvisory(w http.ResponseWriter, r *http.Request, id Uuid, params DpoGetAdvisoryParams) {
+	var request DpoGetAdvisoryRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpoGetAdvisory(ctx, request.(DpoGetAdvisoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpoGetAdvisory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpoGetAdvisoryResponseObject); ok {
+		if err := validResponse.VisitDpoGetAdvisoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpoAnswerAdvisory operation middleware
+func (sh *strictHandler) DpoAnswerAdvisory(w http.ResponseWriter, r *http.Request, id Uuid, params DpoAnswerAdvisoryParams) {
+	var request DpoAnswerAdvisoryRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body DpoAnswerAdvisoryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpoAnswerAdvisory(ctx, request.(DpoAnswerAdvisoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpoAnswerAdvisory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpoAnswerAdvisoryResponseObject); ok {
+		if err := validResponse.VisitDpoAnswerAdvisoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // DpoListAppointments operation middleware
@@ -3857,6 +5050,32 @@ func (sh *strictHandler) DpoSignIndependenceDeclaration(w http.ResponseWriter, r
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DpoSignIndependenceDeclarationResponseObject); ok {
 		if err := validResponse.VisitDpoSignIndependenceDeclarationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpoSearchKbArticles operation middleware
+func (sh *strictHandler) DpoSearchKbArticles(w http.ResponseWriter, r *http.Request, params DpoSearchKbArticlesParams) {
+	var request DpoSearchKbArticlesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpoSearchKbArticles(ctx, request.(DpoSearchKbArticlesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpoSearchKbArticles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpoSearchKbArticlesResponseObject); ok {
+		if err := validResponse.VisitDpoSearchKbArticlesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

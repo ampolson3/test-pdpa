@@ -11629,6 +11629,189 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dpo/advisories:
+    get:
+      operationId: dpoListAdvisories
+      tags: [dpo]
+      summary: DPO-07 — advisory questions to the DPO, optionally filtered by department or status
+      x-permission: dpo.advisory.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: org_unit_id
+          in: query
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, answered, closed]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpoAdvisory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: dpoSubmitAdvisory
+      tags: [dpo]
+      summary: DPO-07 — a department sends a question to the DPO (ม.42(1))
+      x-permission: dpo.advisory.create
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DpoAdvisoryInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoAdvisory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpo/advisories/{id}:
+    get:
+      operationId: dpoGetAdvisory
+      tags: [dpo]
+      summary: DPO-07 — one advisory question
+      x-permission: dpo.advisory.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoAdvisory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/dpo/advisories/{id}/answer:
+    post:
+      operationId: dpoAnswerAdvisory
+      tags: [dpo]
+      summary: DPO-07's own acceptance criterion — answer the question and promote it into the searchable knowledge base in the same step (open -> answered)
+      x-permission: dpo.advisory.update
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answer]
+              properties:
+                answer: {type: string}
+      responses:
+        '200':
+          description: Now answered
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoAdvisory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dpo/kb-articles:
+    get:
+      operationId: dpoSearchKbArticles
+      tags: [dpo]
+      summary: DPO-07 — the searchable knowledge base (every published article, incl. ones promoted from an answered advisory)
+      x-permission: dpo.kb.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpoKbArticle'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/dpo/requirement-checks:
     get:
       operationId: dpoListRequirementChecks
@@ -20185,6 +20368,48 @@ components:
           large_scale_processing: 'no'
           regular_monitoring: 'no'
           sensitive_or_criminal_core: 'no'
+    DpoAdvisoryInput:
+      type: object
+      required: [subject, question]
+      properties:
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        subject: {type: string}
+        question: {type: string}
+    DpoAdvisory:
+      type: object
+      required: [id, advisory_no, requester_user_id, subject, question, status, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        advisory_no: {type: string}
+        org_unit_id: {$ref: '#/components/schemas/Uuid', nullable: true}
+        requester_user_id: {$ref: '#/components/schemas/Uuid'}
+        requester_name: {type: string}
+        subject: {type: string}
+        question: {type: string}
+        status: {type: string, enum: [open, answered, closed]}
+        answer: {type: string, nullable: true}
+        answered_by: {$ref: '#/components/schemas/Uuid', nullable: true}
+        answered_at: {type: string, format: date-time, nullable: true}
+        kb_article_id: {$ref: '#/components/schemas/Uuid', nullable: true}
+        row_version: {type: integer}
+        created_at: {type: string, format: date-time}
+    DpoKbArticle:
+      type: object
+      required: [id, category, title, language, tags, source, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        category: {type: string}
+        title: {type: string}
+        body:
+          type: object
+          additionalProperties: true
+        language: {type: string}
+        tags:
+          type: array
+          items: {type: string}
+        source: {type: string, enum: [law, pdpc, policy, faq, internal]}
+        published_at: {type: string, format: date-time, nullable: true}
+        row_version: {type: integer}
     DpoRequirementCheck:
       type: object
       required: [id, legal_entity_id, assessment_id, result, basis, assessed_at, row_version, created_at]

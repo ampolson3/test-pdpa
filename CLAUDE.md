@@ -4758,6 +4758,59 @@ template-purpose gap, and ROPA-15's own notification-count bug), `make gen` re-r
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build` (incl. the new `/ropa/questionnaires` route) all verified clean.
 
+### DPO-07 รับคำปรึกษาจากหน่วยงาน (`docs/modules/DPO.md#dpo-07`) — done
+`dpo.advisories`/`dpo.kb_articles` were already fully specified in the baseline migrations
+(00016_dpo.sql) — a department's own question to the DPO, tracked until answered, with every answer
+promoted into the same searchable knowledge base this feature's own acceptance criterion names ("คำถามที่
+ตอบแล้วค้นได้ในคลังคำตอบ"). `dpo.advisory.{create,read,update,execute}`/`dpo.kb.{create,read,update,
+publish,delete}` were already seeded too (EMP/OWNER/IT/MKT hold `.create`/`.read`; DPO/LEGAL/PRIVACY hold
+`.update`/`dpo.kb.create` — exactly the pairing this feature needs) — no new migration, only new sqlc
+queries (`backend/db/queries/dpo/advisories.sql`) and a new `internal/dpo/service/advisories.go`.
+Deliberately not built on PLT-05's generic workflow engine, the same reasoning ROPA-12 already used for
+its own activity Q&A: a numbered advisory with a promotion into a knowledge base fits a small local
+status machine (`open → answered → closed`) better than PLT-05's per-type task-assignee model.
+
+`SubmitAdvisory` is "หน่วยงานส่งคำถาม": any employee may ask (`dpo.advisory.create`), optionally against
+their own department (checked visible under RLS, rule 1, via a widened `Org` interface's new
+`GetOrgUnit` — `dposervice.Service`'s existing `Org` field, already satisfied by the real `orgservice.
+Service` wired in `cmd/api/main.go`, previously only used for `GetLegalEntity`) — numbered
+`ADV-<year>-NNNN` via a new `LockAdvisoryNumbering`/`CountAdvisoriesInYear` query pair, the exact
+per-tenant-per-year advisory-lock pattern this package's own task numbering (`LockTaskNumbering`) already
+established, just under its own distinct lock key (`'dpo.advisory_no:'`) so the two numbering sequences
+never collide.
+
+`AnswerAdvisory` is the acceptance criterion itself: a still-`open` advisory (`dpo.advisory.update`,
+`ErrVersionMismatch` on a stale row_version — proven directly by a test answering the same advisory
+twice) is answered and, in the exact same call, promotes it into one new, already-published
+`dpo.kb_articles` row (category `"advisory"`, source `"faq"`, `body = {question, answer}` jsonb, both
+tables' own `tenant_id` set explicitly from `current_setting('app.tenant_id')` since neither column has
+an insert default and `dpo.kb_articles`' own `tenant_write` RLS policy's `WITH CHECK` requires it) —
+linked back via `kb_article_id`. Every answered question is searchable the moment it's answered, with
+nothing left for a separate "publish" step — proven directly by a test confirming an unanswered
+advisory's own question text is *not* yet findable, then is, the instant it's answered.
+`SearchKbArticles` (`dpo.kb.read`) is a plain `ILIKE` substring match on title/body, optionally narrowed
+by category.
+
+API: `GET`/`POST /admin/v1/dpo/advisories`, `GET /admin/v1/dpo/advisories/{id}`, `POST .../answer`
+(ETag/If-Match), `GET /admin/v1/dpo/kb-articles` — all on the already-seeded permission codes (no new
+code or migration beyond the sqlc queries). A real gotcha hit again here (already known from prior
+passes): `internal/dpo/http/oapi-codegen.yaml`'s own `include-operation-ids` allowlist needed all 5 new
+operationIds added before `make gen` produced any code for them. UI: a new page, `/dpo/advisories`
+(linked from `/dpo`'s own deadline-notification-center header) — an "ask the DPO" form, a status-filtered
+list, an answer panel, and a knowledge-base search box right on the same page (the acceptance criterion's
+own "ค้นได้" shown live, not a separate screen). Tests: unit
+(`internal/dpo/service/advisories_test.go` — the acceptance criterion directly: an unanswered advisory
+absent from search, present with the real answer text the instant it's answered; an already-answered
+advisory and a stale row_version both refused; validation of an empty subject/question and an unknown
+org_unit_id; a real org unit round-trips correctly; two-tenant isolation of the list), HTTP contract
+(`internal/dpo/http/advisories_test.go` — 401/403/200/201/428 through the real validator + AuthZ, the
+full submit → answer → kb-search chain, including a real `iam.users` row for the submitting employee
+since `requester_user_id` carries a real FK). `go build ./...`, `go vet ./...`, `gofmt -l` (clean on
+every touched file), the full `internal/dpo/service`/`internal/dpo/http` suites run live against this
+session's own real Postgres 16 + Redis (no regressions), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the new `/dpo/advisories` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

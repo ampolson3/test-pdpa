@@ -11,6 +11,9 @@ export type DpoRequirementCheck = components["schemas"]["DpoRequirementCheck"];
 export type DpoRequirementCheckInput = components["schemas"]["DpoRequirementCheckInput"];
 export type DpoIndependenceDeclaration = components["schemas"]["DpoIndependenceDeclaration"];
 export type DpoIndependenceDeclarationInput = components["schemas"]["DpoIndependenceDeclarationInput"];
+export type DpoAdvisory = components["schemas"]["DpoAdvisory"];
+export type DpoAdvisoryInput = components["schemas"]["DpoAdvisoryInput"];
+export type DpoKbArticle = components["schemas"]["DpoKbArticle"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const appointmentsKey = ["dpo", "appointments"] as const;
@@ -18,6 +21,67 @@ const assessmentsKey = ["dpo", "security-assessments"] as const;
 const deadlinesKey = ["dpo", "deadlines"] as const;
 const requirementChecksKey = ["dpo", "requirement-checks"] as const;
 const independenceDeclarationsKey = ["dpo", "independence-declarations"] as const;
+const advisoriesKey = ["dpo", "advisories"] as const;
+const kbArticlesKey = ["dpo", "kb-articles"] as const;
+
+/** GET /admin/v1/dpo/advisories (DPO-07) — advisory questions to the DPO, optionally filtered. */
+export function useAdvisories(client: ApiClient, filter: { org_unit_id?: string; status?: string } = {}) {
+  return useQuery({
+    queryKey: [...advisoriesKey, filter],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpo/advisories", {
+        params: { query: { org_unit_id: filter.org_unit_id, status: filter.status as never } },
+      });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/dpo/advisories — a department sends a question to the DPO. */
+export function useSubmitAdvisory(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: DpoAdvisoryInput) => {
+      const { data, error } = await client.POST("/admin/v1/dpo/advisories", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: advisoriesKey }),
+  });
+}
+
+/** POST /admin/v1/dpo/advisories/{id}/answer (DPO-07's own acceptance criterion) — answers the question
+ *  and promotes it into the searchable knowledge base in the same step. */
+export function useAnswerAdvisory(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { advisory: DpoAdvisory; answer: string }) => {
+      const { data, error } = await client.POST("/admin/v1/dpo/advisories/{id}/answer", {
+        params: { path: { id: v.advisory.id }, header: ifMatch(v.advisory.row_version) },
+        body: { answer: v.answer },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: advisoriesKey });
+      qc.invalidateQueries({ queryKey: kbArticlesKey });
+    },
+  });
+}
+
+/** GET /admin/v1/dpo/kb-articles (DPO-07) — the searchable knowledge base. */
+export function useKbArticles(client: ApiClient, filter: { category?: string; q?: string } = {}) {
+  return useQuery({
+    queryKey: [...kbArticlesKey, filter],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpo/kb-articles", { params: { query: filter } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
 
 /** GET /admin/v1/dpo/requirement-checks (DPO-02), newest first, for one legal entity. */
 export function useRequirementChecks(client: ApiClient, legalEntityId: string | undefined) {

@@ -3158,6 +3158,7 @@
   "dpoDeadlines": {
     "title": "Deadline notification center",
     "description": "Near-deadline and overdue work from every module that already tracks a legal deadline",
+    "advisories": "Advisory requests",
     "signInRequired": "Please sign in",
     "forbidden": "You don't have access to this page",
     "loading": "Loading...",
@@ -3176,6 +3177,33 @@
     "status": {
       "at_risk": "At risk",
       "overdue": "Overdue"
+    }
+  },
+  "dpoAdvisories": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view advisory requests.",
+    "title": "Advisory requests",
+    "intro": "Ask the DPO a question — answered questions become part of the searchable knowledge base automatically.",
+    "ask": "Ask the DPO",
+    "answer": "Answer",
+    "loading": "Loading…",
+    "empty": "No advisory requests yet.",
+    "filters": { "status": "Status", "all": "All" },
+    "statuses": { "open": "Open", "answered": "Answered", "closed": "Closed" },
+    "table": { "subject": "Subject", "requester": "Requested by", "status": "Status" },
+    "kb": {
+      "title": "Knowledge base",
+      "searchPlaceholder": "Search past questions and answers…",
+      "empty": "No matches."
+    },
+    "form": {
+      "askTitle": "Ask the DPO",
+      "subject": "Subject",
+      "question": "Question",
+      "answerTitle": "Answer",
+      "answer": "Answer",
+      "submit": "Submit",
+      "cancel": "Cancel"
     }
   },
   "ropaTemplates": {

@@ -475,6 +475,10 @@ export {
   useAssessRequirementCheck,
   useIndependenceDeclarations,
   useIndependenceDeclarationMutations,
+  useAdvisories,
+  useSubmitAdvisory,
+  useAnswerAdvisory,
+  useKbArticles,
   type DpoAppointment,
   type DpoAppointmentInput,
   type DpoType,
@@ -485,6 +489,9 @@ export {
   type DpoRequirementCheckInput,
   type DpoIndependenceDeclaration,
   type DpoIndependenceDeclarationInput,
+  type DpoAdvisory,
+  type DpoAdvisoryInput,
+  type DpoKbArticle,
 } from "./dpo";
 export {
   useTenants,

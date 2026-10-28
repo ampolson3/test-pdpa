@@ -4012,6 +4012,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpo/advisories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPO-07 — advisory questions to the DPO, optionally filtered by department or status */
+        get: operations["dpoListAdvisories"];
+        put?: never;
+        /** DPO-07 — a department sends a question to the DPO (ม.42(1)) */
+        post: operations["dpoSubmitAdvisory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpo/advisories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPO-07 — one advisory question */
+        get: operations["dpoGetAdvisory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpo/advisories/{id}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** DPO-07's own acceptance criterion — answer the question and promote it into the searchable knowledge base in the same step (open -> answered) */
+        post: operations["dpoAnswerAdvisory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpo/kb-articles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPO-07 — the searchable knowledge base (every published article, incl. ones promoted from an answered advisory) */
+        get: operations["dpoSearchKbArticles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpo/requirement-checks": {
         parameters: {
             query?: never;
@@ -7638,6 +7707,45 @@ export interface components {
             answers: {
                 [key: string]: unknown;
             };
+        };
+        DpoAdvisoryInput: {
+            org_unit_id?: components["schemas"]["Uuid"];
+            subject: string;
+            question: string;
+        };
+        DpoAdvisory: {
+            id: components["schemas"]["Uuid"];
+            advisory_no: string;
+            org_unit_id?: components["schemas"]["Uuid"];
+            requester_user_id: components["schemas"]["Uuid"];
+            requester_name?: string;
+            subject: string;
+            question: string;
+            /** @enum {string} */
+            status: "open" | "answered" | "closed";
+            answer?: string | null;
+            answered_by?: components["schemas"]["Uuid"];
+            /** Format: date-time */
+            answered_at?: string | null;
+            kb_article_id?: components["schemas"]["Uuid"];
+            row_version: number;
+            /** Format: date-time */
+            created_at: string;
+        };
+        DpoKbArticle: {
+            id: components["schemas"]["Uuid"];
+            category: string;
+            title: string;
+            body?: {
+                [key: string]: unknown;
+            };
+            language: string;
+            tags: string[];
+            /** @enum {string} */
+            source: "law" | "pdpc" | "policy" | "faq" | "internal";
+            /** Format: date-time */
+            published_at?: string | null;
+            row_version: number;
         };
         DpoRequirementCheck: {
             id: components["schemas"]["Uuid"];
@@ -20121,6 +20229,166 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    dpoListAdvisories: {
+        parameters: {
+            query?: {
+                org_unit_id?: components["schemas"]["Uuid"];
+                status?: "open" | "answered" | "closed";
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpoAdvisory"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dpoSubmitAdvisory: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpoAdvisoryInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoAdvisory"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpoGetAdvisory: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoAdvisory"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpoAnswerAdvisory: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    answer: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Now answered */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoAdvisory"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dpoSearchKbArticles: {
+        parameters: {
+            query?: {
+                category?: string;
+                q?: string;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpoKbArticle"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     dpoListRequirementChecks: {

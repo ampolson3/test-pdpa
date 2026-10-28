@@ -5,6 +5,11 @@ generate:
   models: true
 output-options:
   include-operation-ids:
+    - dpoListAdvisories
+    - dpoSubmitAdvisory
+    - dpoGetAdvisory
+    - dpoAnswerAdvisory
+    - dpoSearchKbArticles
     - dpoListRequirementChecks
     - dpoAssessRequirementCheck
     - dpoListAppointments

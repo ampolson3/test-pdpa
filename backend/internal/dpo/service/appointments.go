@@ -48,6 +48,8 @@ var dpoTypes = []string{"internal", "external", "group"}
 // Org is what dpo reads from the organization module (rule 9): the legal entity an appointment belongs to.
 type Org interface {
 	GetLegalEntity(ctx context.Context, id uuid.UUID) (orgservice.LegalEntity, error)
+	// GetOrgUnit is DPO-07's own FK-visibility check for an advisory's optional org_unit_id.
+	GetOrgUnit(ctx context.Context, id uuid.UUID) (orgservice.OrgUnit, error)
 }
 
 // Files is what dpo reads/writes in the file store (PLT-09): the caller's own clean upload for the

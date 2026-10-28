@@ -334,6 +334,38 @@ and `pnpm --filter @pdpa/admin build`.
 
 **Acceptance criteria:** คำถามที่ตอบแล้วค้นได้ในคลังคำตอบ
 
+**Status (done):** `dpo.advisories`/`dpo.kb_articles` were already fully specified in the baseline
+migrations (00016_dpo.sql, `dpo.advisory.*`/`dpo.kb.*` already seeded — EMP/OWNER/IT/MKT hold
+`.create`/`.read`, DPO/LEGAL/PRIVACY hold `.update`/`dpo.kb.create`) — no new migration, only new sqlc
+queries and `internal/dpo/service/advisories.go`. Deliberately not built on PLT-05's generic workflow
+engine (the same reasoning ROPA-12 already used): a question/answer with a numbered advisory_no and a
+promotion into the knowledge base fits this feature's own small local status machine
+(open → answered → closed) better than PLT-05's per-type task-assignee model.
+
+`SubmitAdvisory` is "หน่วยงานส่งคำถาม": any employee may ask, optionally against their own department
+(checked visible under RLS, rule 1, when given) — numbered `ADV-<year>-NNNN` via the same per-tenant-
+per-year advisory-lock pattern this codebase's task numbering already uses. `AnswerAdvisory` is the
+acceptance criterion itself ("ตอบ → เก็บเป็นคลังคำตอบ"): answering a still-open advisory
+(`dpo.advisory.update`) also creates one new, already-published `dpo.kb_articles` row (category
+`"advisory"`, source `"faq"`, body `{question, answer}`) in the same call and links it back
+(`kb_article_id`) — every answered question is searchable the moment it's answered, nothing left for a
+separate "publish" step. `SearchKbArticles` (`dpo.kb.read`) is a plain title/body substring match.
+
+API: `GET`/`POST /admin/v1/dpo/advisories`, `GET /admin/v1/dpo/advisories/{id}`,
+`POST .../answer` (ETag/If-Match), `GET /admin/v1/dpo/kb-articles` — all on the already-seeded
+`dpo.advisory.*`/`dpo.kb.*` codes (no new permission). UI: a new page, `/dpo/advisories` (linked from
+`/dpo`'s own deadline-center header) — an "ask the DPO" form, a status-filtered list, an answer panel,
+and a knowledge-base search box right on the same page. Tests: unit
+(`internal/dpo/service/advisories_test.go` — the acceptance criterion directly: an unanswered advisory
+is not yet in the knowledge base, answering it makes it findable immediately with the real answer text;
+answering an already-answered advisory is refused distinctly; validation; two-tenant isolation), HTTP
+contract (`internal/dpo/http/advisories_test.go` — 401/403/200/201/428 through the real validator +
+AuthZ, the full submit → answer → search chain). `go build ./...`, `go vet ./...`, `gofmt -l` (clean on
+every touched file), the full `internal/dpo/service`/`internal/dpo/http` suites run live against this
+session's own real Postgres 16 + Redis (no regressions), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the new `/dpo/advisories` route) all verified clean.
+
 <a id="dpo-08"></a>
 ### DPO-08 ปฏิทินงาน compliance
 
