@@ -56,6 +56,7 @@ export {
   useSaveRiskRegisterEntry,
   useAcceptances,
   useRecordAcceptance,
+  riskReportHref,
   type RiskRegisterEntry,
   type RiskRegisterInput,
   type RiskAcceptance,

@@ -558,6 +558,45 @@ func (e RiskUpdateMatrixParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for RiskGetExecutiveReportParamsLanguage.
+const (
+	RiskGetExecutiveReportParamsLanguageEn RiskGetExecutiveReportParamsLanguage = "en"
+	RiskGetExecutiveReportParamsLanguageTh RiskGetExecutiveReportParamsLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the RiskGetExecutiveReportParamsLanguage enum.
+func (e RiskGetExecutiveReportParamsLanguage) Valid() bool {
+	switch e {
+	case RiskGetExecutiveReportParamsLanguageEn:
+		return true
+	case RiskGetExecutiveReportParamsLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskGetExecutiveReportParamsFormat.
+const (
+	Docx RiskGetExecutiveReportParamsFormat = "docx"
+	Html RiskGetExecutiveReportParamsFormat = "html"
+	Pdf  RiskGetExecutiveReportParamsFormat = "pdf"
+)
+
+// Valid indicates whether the value is a known member of the RiskGetExecutiveReportParamsFormat enum.
+func (e RiskGetExecutiveReportParamsFormat) Valid() bool {
+	switch e {
+	case Docx:
+		return true
+	case Html:
+		return true
+	case Pdf:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RiskListRisksParamsStatus.
 const (
 	RiskListRisksParamsStatusAccepted    RiskListRisksParamsStatus = "accepted"
@@ -1251,6 +1290,18 @@ type RiskUpdateMatrixParams struct {
 // RiskUpdateMatrixParamsAcceptLanguage defines parameters for RiskUpdateMatrix.
 type RiskUpdateMatrixParamsAcceptLanguage string
 
+// RiskGetExecutiveReportParams defines parameters for RiskGetExecutiveReport.
+type RiskGetExecutiveReportParams struct {
+	Language RiskGetExecutiveReportParamsLanguage `form:"language" json:"language"`
+	Format   RiskGetExecutiveReportParamsFormat   `form:"format" json:"format"`
+}
+
+// RiskGetExecutiveReportParamsLanguage defines parameters for RiskGetExecutiveReport.
+type RiskGetExecutiveReportParamsLanguage string
+
+// RiskGetExecutiveReportParamsFormat defines parameters for RiskGetExecutiveReport.
+type RiskGetExecutiveReportParamsFormat string
+
 // RiskListRisksParams defines parameters for RiskListRisks.
 type RiskListRisksParams struct {
 	// Cursor Opaque cursor from `next_cursor` of the previous page
@@ -1428,6 +1479,9 @@ type ServerInterface interface {
 	// RiskUpdateMatrix Change a risk matrix's own levels, thresholds or default flag — the acceptance criterion itself (RRA-02), since Classify always reads the current row live, never a cached score
 	// (PUT /admin/v1/risk/matrices/{id})
 	RiskUpdateMatrix(w http.ResponseWriter, r *http.Request, id Uuid, params RiskUpdateMatrixParams)
+	// RiskGetExecutiveReport RRA-14: a one-click executive summary of every still-open high/very-high risk from the risk register (RRA-09) — its owner and its own remediation task's current progress
+	// (GET /admin/v1/risk/report)
+	RiskGetExecutiveReport(w http.ResponseWriter, r *http.Request, params RiskGetExecutiveReportParams)
 	// RiskListRisks RRA-09: the shared privacy risk register — every risk.risks row regardless of source (DPIA / RoPA activity / vendor / breach / audit / manual), newest first
 	// (GET /admin/v1/risk/risks)
 	RiskListRisks(w http.ResponseWriter, r *http.Request, params RiskListRisksParams)
@@ -1527,6 +1581,12 @@ func (_ Unimplemented) RiskGetMatrix(w http.ResponseWriter, r *http.Request, id 
 // RiskUpdateMatrix Change a risk matrix's own levels, thresholds or default flag — the acceptance criterion itself (RRA-02), since Classify always reads the current row live, never a cached score
 // (PUT /admin/v1/risk/matrices/{id})
 func (_ Unimplemented) RiskUpdateMatrix(w http.ResponseWriter, r *http.Request, id Uuid, params RiskUpdateMatrixParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RiskGetExecutiveReport RRA-14: a one-click executive summary of every still-open high/very-high risk from the risk register (RRA-09) — its owner and its own remediation task's current progress
+// (GET /admin/v1/risk/report)
+func (_ Unimplemented) RiskGetExecutiveReport(w http.ResponseWriter, r *http.Request, params RiskGetExecutiveReportParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2076,6 +2136,52 @@ func (siw *ServerInterfaceWrapper) RiskUpdateMatrix(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RiskUpdateMatrix(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RiskGetExecutiveReport operation middleware
+func (siw *ServerInterfaceWrapper) RiskGetExecutiveReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RiskGetExecutiveReportParams
+
+	// ------------- Required query parameter "language" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "language", r.URL.Query(), &params.Language, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "language"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "language", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "format" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "format", r.URL.Query(), &params.Format, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "format"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "format", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RiskGetExecutiveReport(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2891,6 +2997,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/risk/activity-scores/high-risk", wrapper.RiskListHighRiskActivityScores)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/risk/report", wrapper.RiskGetExecutiveReport)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/ropa/activities/{id}/checklists", wrapper.RiskListActivityChecklists)
@@ -3753,6 +3862,104 @@ func (response RiskUpdateMatrix428ApplicationProblemPlusJSONResponse) VisitRiskU
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskGetExecutiveReportRequestObject struct {
+	Params RiskGetExecutiveReportParams
+}
+
+type RiskGetExecutiveReportResponseObject interface {
+	VisitRiskGetExecutiveReportResponse(w http.ResponseWriter) error
+}
+
+type RiskGetExecutiveReport200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type RiskGetExecutiveReport200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       RiskGetExecutiveReport200ResponseHeaders
+	ContentLength int64
+}
+
+func (response RiskGetExecutiveReport200ApplicationoctetStreamResponse) VisitRiskGetExecutiveReportResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type RiskGetExecutiveReport401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RiskGetExecutiveReport401ApplicationProblemPlusJSONResponse) VisitRiskGetExecutiveReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskGetExecutiveReport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RiskGetExecutiveReport403ApplicationProblemPlusJSONResponse) VisitRiskGetExecutiveReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskGetExecutiveReport422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response RiskGetExecutiveReport422ApplicationProblemPlusJSONResponse) VisitRiskGetExecutiveReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskGetExecutiveReport503ApplicationProblemPlusJSONResponse Problem
+
+func (response RiskGetExecutiveReport503ApplicationProblemPlusJSONResponse) VisitRiskGetExecutiveReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4800,6 +5007,9 @@ type StrictServerInterface interface {
 	// RiskUpdateMatrix Change a risk matrix's own levels, thresholds or default flag — the acceptance criterion itself (RRA-02), since Classify always reads the current row live, never a cached score
 	// (PUT /admin/v1/risk/matrices/{id})
 	RiskUpdateMatrix(ctx context.Context, request RiskUpdateMatrixRequestObject) (RiskUpdateMatrixResponseObject, error)
+	// RiskGetExecutiveReport RRA-14: a one-click executive summary of every still-open high/very-high risk from the risk register (RRA-09) — its owner and its own remediation task's current progress
+	// (GET /admin/v1/risk/report)
+	RiskGetExecutiveReport(ctx context.Context, request RiskGetExecutiveReportRequestObject) (RiskGetExecutiveReportResponseObject, error)
 	// RiskListRisks RRA-09: the shared privacy risk register — every risk.risks row regardless of source (DPIA / RoPA activity / vendor / breach / audit / manual), newest first
 	// (GET /admin/v1/risk/risks)
 	RiskListRisks(ctx context.Context, request RiskListRisksRequestObject) (RiskListRisksResponseObject, error)
@@ -5157,6 +5367,32 @@ func (sh *strictHandler) RiskUpdateMatrix(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RiskUpdateMatrixResponseObject); ok {
 		if err := validResponse.VisitRiskUpdateMatrixResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RiskGetExecutiveReport operation middleware
+func (sh *strictHandler) RiskGetExecutiveReport(w http.ResponseWriter, r *http.Request, params RiskGetExecutiveReportParams) {
+	var request RiskGetExecutiveReportRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RiskGetExecutiveReport(ctx, request.(RiskGetExecutiveReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RiskGetExecutiveReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RiskGetExecutiveReportResponseObject); ok {
+		if err := validResponse.VisitRiskGetExecutiveReportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -6,6 +6,13 @@ export type RiskRegisterInput = components["schemas"]["RiskRegisterInput"];
 export type RiskAcceptance = components["schemas"]["RiskAcceptance"];
 export type RiskAcceptanceInput = components["schemas"]["RiskAcceptanceInput"];
 
+/** GET /admin/v1/risk/report (RRA-14) — a plain href, not a query/mutation: the browser downloads the
+ *  PDF/Word/HTML file through this link directly, the same pattern dpiaReportHref/dataflowReportHref use. */
+export function riskReportHref(bffBaseUrl: string, language: "th" | "en", format: "pdf" | "docx" | "html"): string {
+  const q = new URLSearchParams({ language, format });
+  return `${bffBaseUrl}/admin/v1/risk/report?${q}`;
+}
+
 const riskRegisterKey = ["risk", "register"] as const;
 const riskKey = (id: string) => [...riskRegisterKey, id] as const;
 const acceptancesKey = (riskId: string) => [...riskRegisterKey, riskId, "acceptances"] as const;

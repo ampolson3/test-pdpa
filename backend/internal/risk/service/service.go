@@ -16,6 +16,7 @@ import (
 
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/docs/render"
 	"pdpa-platform/internal/platform/forms"
 	"pdpa-platform/internal/platform/notify"
 	riskstore "pdpa-platform/internal/risk/store"
@@ -33,12 +34,13 @@ type Control struct {
 
 type Service struct {
 	Audit       *audit.Service
-	Ropa        Ropa           // RRA-01/04: scoring and gap-analyzing an activity (nil until a caller needs one)
-	DpiaTrigger DpiaTrigger    // RRA-03: open a DPIA when an activity scores high/very_high (nil until dpia registers itself)
-	Dpo         DpoTasks       // DPIA-07: open a remediation task when a control gets an owner/due date (nil until dpo registers itself)
-	Notice      Notice         // RRA-04: whether a notice already covers an activity (nil until notice registers itself)
-	Vendor      Vendor         // RRA-09: FK-visibility check for a risk's own vendor link (nil until vendormgmt registers itself)
-	Forms       *forms.Service // RRA-05: the per-activity checklist's own form engine (nil until a caller needs one)
+	Ropa        Ropa               // RRA-01/04: scoring and gap-analyzing an activity (nil until a caller needs one)
+	DpiaTrigger DpiaTrigger        // RRA-03: open a DPIA when an activity scores high/very_high (nil until dpia registers itself)
+	Dpo         DpoTasks           // DPIA-07: open a remediation task when a control gets an owner/due date (nil until dpo registers itself)
+	Notice      Notice             // RRA-04: whether a notice already covers an activity (nil until notice registers itself)
+	Vendor      Vendor             // RRA-09: FK-visibility check for a risk's own vendor link (nil until vendormgmt registers itself)
+	Forms       *forms.Service     // RRA-05: the per-activity checklist's own form engine (nil until a caller needs one)
+	PDF         render.PDFRenderer // RRA-14: the executive report's own PDF export (nil means PDF format fails, html/docx still work)
 	// Notify and River drive RRA-08's own acceptance-review reminder; nil in contexts that don't need them.
 	Notify *notify.Service
 	River  *river.Client[pgx.Tx]

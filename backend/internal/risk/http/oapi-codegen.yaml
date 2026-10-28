@@ -13,6 +13,7 @@ output-options:
     - riskGetLatestActivityScore
     - riskScoreActivity
     - riskListHighRiskActivityScores
+    - riskGetExecutiveReport
     - riskListGapRules
     - riskListOpenGapFindings
     - riskListActivityGapFindings

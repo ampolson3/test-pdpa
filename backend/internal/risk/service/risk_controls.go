@@ -47,6 +47,9 @@ type DpoTasks interface {
 	// already names this risk as its own source, from any caller (an earlier DPIA-07 control or an earlier
 	// EnsureRemediationTask call), so a risk is never given a second remediation task.
 	HasTaskForRisk(ctx context.Context, riskID uuid.UUID) (bool, error)
+	// TaskStatusForRisk is RRA-14's own executive report: this risk's own remediation task status, if one
+	// exists (found=false otherwise) — the report's "ความคืบหน้า" (progress) column.
+	TaskStatusForRisk(ctx context.Context, riskID uuid.UUID) (status string, found bool, err error)
 }
 
 // AddRiskControl links a control from the catalog to a risk, optionally with an owner and due date — giving

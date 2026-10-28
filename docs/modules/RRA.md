@@ -779,3 +779,15 @@ verified clean, plus `pnpm --filter @pdpa/admin build`/`typecheck` and `pnpm --f
 **Frontend (Next.js):** ปุ่มสร้างรายงานผู้บริหาร
 
 **Acceptance criteria:** รายงานสร้างได้ในคลิกเดียวและตรงกับทะเบียน
+
+**Status (done):** `internal/risk/service/report.go`'s `ExecutiveReport(ctx, lang, format)` composes directly
+from RRA-09's own shared register (`ListRisks`) — never a separate snapshot, so it's always "ตรงกับทะเบียน"
+by construction: every still-open `high`/`very_high` risk (closed and low/medium risks excluded), each
+section's remediation status resolved live through `DpoTasks.TaskStatusForRisk` (RRA-09/RRA-08's own
+`dpo.tasks` dedup linkage — "open" when a task is in flight, "none" when a risk has no task at all, "done"
+once closed), rendered via the same `platform/docs/render` package DFG-07/DPIA-15's own report generation
+already uses (`render.HTML`/`render.PDFRenderer`, `html`/`pdf`/`docx`, th/en). `GET /admin/v1/risk/report`
+(`dpo.risk.read`, no ETag — a report is generated fresh on every call, nothing to version) is "คลิกเดียว"
+itself: `/settings/risk-register` gained a plain download-link panel (`riskReportHref`, the same
+href-not-hook pattern `dpiaReportHref`/`dataflowReportHref` already use) at the top of the page. No
+migration or new table — the report reads only already-existing rows.

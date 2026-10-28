@@ -15534,6 +15534,52 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/risk/report:
+    get:
+      operationId: riskGetExecutiveReport
+      tags: [risk]
+      summary: 'RRA-14: a one-click executive summary of every still-open high/very-high risk from the risk register (RRA-09) — its owner and its own remediation task''s current progress'
+      x-permission: dpo.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - name: language
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [th, en]
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [pdf, docx, html]
+      responses:
+        '200':
+          description: The report file
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          description: PDF rendering is not configured
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /admin/v1/ropa/activities/{id}/checklists:
     get:
       operationId: riskListActivityChecklists

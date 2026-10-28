@@ -4649,6 +4649,50 @@ Makefile gap above), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter 
 `pnpm --filter @pdpa/admin build` (incl. the updated `/ropa/activities` and `/data-flow` routes) all verified
 clean.
 
+### RRA-14 รายงานความเสี่ยงสำหรับผู้บริหาร (`docs/modules/RRA.md#rra-14`) — done
+Builds directly on RRA-09's own shared register (`risk.risks`) and RRA-08's own `dpo.tasks` dedup linkage —
+no new migration or table. `internal/risk/service/report.go`'s `ExecutiveReport(ctx, lang, format)` composes
+from `s.ListRisks` live every call, never a persisted snapshot — so "ตรงกับทะเบียน" is true by construction,
+not by keeping two copies in sync: every still-open (`status != "closed"`) `high`/`very_high` risk, excluding
+low/medium and closed ones (`TestExecutiveReport_IncludesOnlyOpenHighRisksAndMatchesRegister` proves all
+three exclusions directly), each with its own remediation status resolved through a new
+`DpoTasks.TaskStatusForRisk(ctx, riskID) (status string, found bool, err error)` — RRA-08/RRA-09's own task
+dedup machinery read back rather than duplicated (rule 9: risk never reads `dpo.tasks` directly, only through
+this interface; `internal/dpo/service/risk_controls.go` implements it). Rendered via the exact
+`platform/docs/render` package DFG-07/DPIA-15's own report generation already uses (`render.Node`/`render.HTML`,
+`riskSvc.PDF render.PDFRenderer` for pdf/docx, wired from `render.FromEnv()` in `cmd/api/main.go` the same way
+dataflow's own `PDF` field already is) — `html`/`pdf`/`docx`, th/en via a small bilingual `riskReportLabels`
+map, following the module's established "seed/compose bilingual, validate both languages explicitly" pattern
+rather than a generic translation layer. An unsupported language or format is refused with `ErrInvalid`
+before any rendering starts (`TestExecutiveReport_InvalidLanguageAndFormatRefused`); an empty register (no
+open high/very_high risk at all) renders a plain "nothing to report" message in the requested language
+instead of an empty, confusing document (`TestExecutiveReport_EnglishAndEmptyRegister`).
+
+API: `GET /admin/v1/risk/report` (`dpo.risk.read`, `riskGetExecutiveReport`, params `language`/`format`,
+`application/octet-stream` response so one operation covers all three output types, `Content-Disposition:
+attachment`, 503 `risk.no_renderer` when no PDF renderer is configured and pdf/docx was asked for, 422
+`risk.invalid_input` for a bad language/format) — no ETag, since nothing here is a stored, editable resource
+to version; a report is generated fresh on every call, the literal "สร้างได้ในคลิกเดียว." Also found and
+fixed while wiring this: `internal/risk/http`'s own `oapi-codegen.yaml`/Makefile line (already fixed for
+RRA-11, same pass) needed the new `riskGetExecutiveReport` operationId added to its `include-operation-ids`
+allowlist — the recurring gotcha several prior features have already hit.
+
+UI: `/settings/risk-register` gained a small download-link panel at the top of the page (`riskReportHref`,
+the exact href-not-hook pattern `dpiaReportHref`/`dataflowReportHref` already use — a plain `<a href>`
+through the BFF, not a query/mutation) offering th/en × html/pdf/docx — the acceptance criterion's own
+"ปุ่มสร้างรายงานผู้บริหาร" taken literally as a one-click link rather than a wizard. Tests: unit
+(`internal/risk/service/rra14_test.go` — the acceptance criterion directly: an open high risk's own title
+appears, a low risk and a closed high risk are both excluded; the English/empty-register path; invalid
+language and format both refused — all three run live against this session's own real Postgres 16 + Redis),
+HTTP contract (`internal/risk/http/handler_test.go`'s existing `TestActivityRiskScoreEndpoints_Contract`,
+extended with 401/403/200 on the new endpoint through the real validator + AuthZ, confirming the rendered
+HTML carries the report's own heading). `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched
+file), the full `internal/risk/...`/`internal/dpo/...` suites (no regressions — every pre-existing failure
+in `internal/risk/{service,http}`, confirmed identical both before and after this change via `git stash -u`,
+is the same already-disclosed risk-matrix/acceptance-expiry/vendor-FK gaps RRA-11 already found),
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/settings/risk-register` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

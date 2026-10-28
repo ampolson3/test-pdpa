@@ -3656,6 +3656,11 @@
     "loadError": "Failed to load. Please try again.",
     "empty": "No risks recorded yet.",
     "edit": "Edit",
+    "report": {
+      "title": "Executive risk report",
+      "download": "Download {format} ({lang})",
+      "lang": { "th": "Thai", "en": "English" }
+    },
     "filters": {
       "status": "Status",
       "sourceType": "Source",

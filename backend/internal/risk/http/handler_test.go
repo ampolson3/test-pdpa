@@ -306,7 +306,7 @@ func TestActivityRiskScoreEndpoints_Contract(t *testing.T) {
 	}
 	reader := uuid.New()
 	grants := map[string][]string{
-		tenant.UserID.String(): {"ropa.risk.read", "ropa.risk.create"},
+		tenant.UserID.String(): {"ropa.risk.read", "ropa.risk.create", "dpo.risk.read"},
 		reader.String():        {"ropa.risk.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
@@ -415,6 +415,19 @@ func TestActivityRiskScoreEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", highRiskPath, &reader, nil, nil); code != 200 || !strings.Contains(body, `"data"`) {
 		t.Errorf("high-risk list: %d %s", code, body)
+	}
+
+	// RRA-14: the executive report itself (html format — no PDF renderer wired in this test fixture).
+	// Content correctness is already proven at the unit level (rra14_test.go).
+	reportPath := "/admin/v1/risk/report?language=en&format=html"
+	if code, _ := do("GET", reportPath, nil, nil, nil); code != 401 {
+		t.Errorf("report, no principal: %d, want 401", code)
+	}
+	if code, _ := do("GET", reportPath, &reader, nil, nil); code != 403 {
+		t.Errorf("report, no dpo.risk.read: %d, want 403", code)
+	}
+	if code, body := do("GET", reportPath, &admin, nil, nil); code != 200 || !strings.Contains(body, "Executive Risk Report") {
+		t.Errorf("report: %d %s", code, body)
 	}
 }
 

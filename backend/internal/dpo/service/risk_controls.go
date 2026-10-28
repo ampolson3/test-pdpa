@@ -26,6 +26,22 @@ func (s *Service) HasTaskForRisk(ctx context.Context, riskID uuid.UUID) (bool, e
 	return len(rows) > 0, nil
 }
 
+// TaskStatusForRisk is RRA-14's own "แผนแก้ไข และความคืบหน้า" (remediation plan and progress): the current
+// status of this risk's own remediation task, if one exists — HasTaskForRisk's dedup already guarantees at
+// most one in practice, but the most recently created row is returned if that invariant were ever broken.
+// Implements risk/service's own local DpoTasks interface structurally (rule 9).
+func (s *Service) TaskStatusForRisk(ctx context.Context, riskID uuid.UUID) (string, bool, error) {
+	q := dpostore.New(pdb.MustTxFromContext(ctx))
+	rows, err := q.ListTasksBySource(ctx, dpostore.ListTasksBySourceParams{SourceType: "risk", SourceID: pgUUID(&riskID)})
+	if err != nil {
+		return "", false, err
+	}
+	if len(rows) == 0 {
+		return "", false, nil
+	}
+	return rows[len(rows)-1].Status, true, nil
+}
+
 // OpenRiskControlTask opens one dpo.tasks job ("SEC-<year>-NNNN", source_type "risk", the same bucket
 // DPO-09's own openRemediationTask already uses for security findings) for DPIA-07's own "ผู้รับผิดชอบและ
 // วันเสร็จ → task": a mitigation measure given both an owner and a due date gets a real tracked task, not

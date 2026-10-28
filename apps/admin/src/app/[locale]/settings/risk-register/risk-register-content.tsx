@@ -11,6 +11,7 @@ import {
   useSaveRiskRegisterEntry,
   useAcceptances,
   useRecordAcceptance,
+  riskReportHref,
   type RiskRegisterEntry,
   type ApiClient,
 } from "@pdpa/api-client";
@@ -97,6 +98,18 @@ export function RiskRegisterContent() {
         </div>
         {canCreate && <Button onClick={() => { save.reset(); setDraft({ ...blank }); }} data-testid="new-risk">{t("newRisk")}</Button>}
       </header>
+
+      <div className="flex flex-wrap items-center gap-3 rounded-md border border-slate-200 bg-white p-3" data-testid="risk-report-panel">
+        <span className="font-medium">{t("report.title")}</span>
+        {(["th", "en"] as const).flatMap((l) =>
+          (["html", "pdf", "docx"] as const).map((f) => (
+            <a key={`${l}${f}`} className="text-sky-700 underline" data-testid={`risk-report-${l}-${f}`}
+              href={riskReportHref("/api/bff", l, f)} target={f !== "html" ? "_blank" : undefined} rel="noreferrer">
+              {t("report.download", { format: f === "pdf" ? "PDF" : f === "docx" ? "Word" : "HTML", lang: t(`report.lang.${l}`) })}
+            </a>
+          )),
+        )}
+      </div>
 
       <div className="flex flex-wrap gap-4" data-testid="risk-filters">
         <label><span className="block text-slate-600">{t("filters.status")}</span>
