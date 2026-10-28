@@ -6239,6 +6239,344 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/breach/playbooks:
+    get:
+      operationId: breachListPlaybooks
+      tags: [breach]
+      summary: Response playbooks visible to this tenant (global defaults + its own), optionally by incident_type (BRE-11)
+      x-permission: breach.incident.read
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: incident_type
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 40
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BreachPlaybook'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: breachCreatePlaybook
+      tags: [breach]
+      summary: Author a playbook for the tenant — a set of response steps for one incident_type
+      x-permission: breach.incident.create
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BreachPlaybookInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachPlaybook'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/breach/playbooks/{id}:
+    get:
+      operationId: breachGetPlaybook
+      tags: [breach]
+      summary: One playbook
+      x-permission: breach.incident.read
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachPlaybook'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: breachUpdatePlaybook
+      tags: [breach]
+      summary: Edit the tenant's own playbook's name and steps (If-Match) — a global default can't be edited this way
+      x-permission: breach.incident.update
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BreachPlaybookEditInput'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachPlaybook'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/breach/incidents/{id}/response-tasks:
+    get:
+      operationId: breachListResponseTasks
+      tags: [breach]
+      summary: Response tasks against this incident, oldest first (BRE-11)
+      x-permission: breach.incident.read
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BreachResponseTask'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/breach/incidents/{id}/apply-playbook:
+    post:
+      operationId: breachApplyPlaybook
+      tags: [breach]
+      summary: The acceptance criterion itself — turn a playbook's steps into real response tasks for this incident; re-applying the same playbook is a harmless no-op
+      x-permission: breach.incident.execute
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                playbook_id:
+                  oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+                  description: Explicit choice; omitted resolves by the incident's own incident_type.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BreachResponseTask'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/breach/response-tasks/{id}/status:
+    post:
+      operationId: breachSetResponseTaskStatus
+      tags: [breach]
+      summary: Move a task open -> in_progress -> done | cancelled (If-Match)
+      x-permission: breach.incident.execute
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/BreachResponseTaskStatus'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachResponseTask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/breach/response-tasks/{id}/assign:
+    post:
+      operationId: breachAssignResponseTask
+      tags: [breach]
+      summary: Set (or clear) a task's assignee — a user, a group, or neither (If-Match)
+      x-permission: breach.incident.execute
+      x-module: breach
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                assignee_user_id:
+                  oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+                assignee_group_id:
+                  oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BreachResponseTask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/breach/report-forms:
     get:
       operationId: breachListReportForms
@@ -25169,6 +25507,108 @@ components:
           $ref: '#/components/schemas/Uuid'
         activity_id:
           $ref: '#/components/schemas/Uuid'
+    BreachPlaybookStep:
+      type: object
+      required: [code, title]
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          maxLength: 40
+        title:
+          type: string
+    BreachPlaybookInput:
+      type: object
+      required: [incident_type, name, steps]
+      additionalProperties: false
+      properties:
+        incident_type:
+          type: string
+          maxLength: 40
+        name:
+          type: string
+        steps:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/BreachPlaybookStep'
+      example:
+        incident_type: ransomware
+        name: 'Ransomware response'
+        steps:
+          - {code: isolate, title: 'แยกระบบที่ติดออกจากเครือข่าย'}
+          - {code: notify_dpo, title: 'แจ้ง DPO'}
+    BreachPlaybookEditInput:
+      type: object
+      required: [name, steps]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        steps:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/BreachPlaybookStep'
+    BreachPlaybook:
+      type: object
+      required: [id, incident_type, name, steps, version_no, row_version, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        incident_type:
+          type: string
+        name:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/BreachPlaybookStep'
+        version_no:
+          type: integer
+        row_version:
+          type: integer
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+    BreachResponseTaskStatus:
+      type: string
+      enum: [open, in_progress, done, cancelled]
+    BreachResponseTask:
+      type: object
+      required: [id, incident_id, title, status, row_version, created_at, updated_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        incident_id:
+          $ref: '#/components/schemas/Uuid'
+        playbook_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        step_code:
+          type: string
+        title:
+          type: string
+        assignee_user_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        assignee_name:
+          type: string
+        assignee_group_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        status:
+          $ref: '#/components/schemas/BreachResponseTaskStatus'
+        due_at:
+          type: [string, 'null']
+          format: date-time
+        completed_at:
+          type: [string, 'null']
+          format: date-time
+        row_version:
+          type: integer
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
     ConsentSubmission:
       type: object
       required: [collection_point_code, subject, decisions]

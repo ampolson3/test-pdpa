@@ -2622,7 +2622,8 @@
       "notices": "แจ้งเจ้าของข้อมูล",
       "pdpc": "แจ้ง สคส.",
       "rootcause": "วิเคราะห์สาเหตุ",
-      "activities": "กิจกรรม RoPA"
+      "activities": "กิจกรรม RoPA",
+      "playbook": "Playbook"
     },
     "actions": {
       "takeUp": "รับเรื่อง (ฉันเป็นผู้รับผิดชอบ)",
@@ -2778,6 +2779,22 @@
       "activityIdPlaceholder": "รหัสกิจกรรม (UUID)",
       "link": "เชื่อมโยง",
       "empty": "ยังไม่มีกิจกรรมที่เชื่อมโยง"
+    },
+    "playbook": {
+      "intro": "เลือก playbook เพื่อสร้างงานตอบสนองจริงสำหรับเหตุนี้",
+      "choosePlaybook": "Playbook",
+      "resolveByIncidentType": "ใช้ตามประเภทเหตุของรายการนี้",
+      "apply": "ใช้ playbook",
+      "empty": "ยังไม่มีงานตอบสนอง",
+      "assignedTo": "มอบหมายให้",
+      "start": "เริ่มดำเนินการ",
+      "markDone": "ทำเสร็จแล้ว",
+      "status": {
+        "open": "รอดำเนินการ",
+        "in_progress": "กำลังดำเนินการ",
+        "done": "เสร็จแล้ว",
+        "cancelled": "ยกเลิก"
+      }
     }
   },
   "docs": {

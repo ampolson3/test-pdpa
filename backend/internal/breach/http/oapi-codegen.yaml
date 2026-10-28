@@ -39,3 +39,11 @@ output-options:
     - breachCompleteCorrectiveAction
     - breachListIncidentActivities
     - breachLinkIncidentActivity
+    - breachListPlaybooks
+    - breachCreatePlaybook
+    - breachGetPlaybook
+    - breachUpdatePlaybook
+    - breachListResponseTasks
+    - breachApplyPlaybook
+    - breachSetResponseTaskStatus
+    - breachAssignResponseTask

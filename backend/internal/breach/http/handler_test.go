@@ -350,4 +350,64 @@ func TestBreachEndpoints_Contract(t *testing.T) {
 	if res := do("GET", rcPath, &sec, nil, nil); res.code != 200 || len(res.body["data"].([]any)) != 0 {
 		t.Errorf("list after delete: %d %v", res.code, res.body)
 	}
+
+	// Response playbooks & tasks (BRE-11): create a playbook, create a second incident of that
+	// incident_type, apply the playbook and drive its one task through assignment and status.
+	pbPath := "/admin/v1/breach/playbooks"
+	if res := do("GET", pbPath, nil, nil, nil); res.code != 401 {
+		t.Errorf("list playbooks no principal: %d", res.code)
+	}
+	createPB := do("POST", pbPath, &sec, map[string]any{
+		"incident_type": "contract_test_type", "name": "Contract test playbook",
+		"steps": []map[string]any{{"code": "step1", "title": "ขั้นที่หนึ่ง"}},
+	}, nil)
+	if createPB.code != 201 || createPB.hdr.Get("ETag") == "" {
+		t.Fatalf("create playbook: %d %v", createPB.code, createPB.body)
+	}
+	pbID := createPB.body["id"].(string)
+
+	createdType := do("POST", "/admin/v1/breach/incidents", &sec, map[string]any{
+		"legal_entity_id": f.EntityA, "reported_via": "email", "title": "เหตุสำหรับ playbook", "description": "x",
+		"breach_types": []string{"confidentiality"}, "incident_type": "contract_test_type",
+		"aware_at": time.Now().UTC().Add(-time.Hour).Format(time.RFC3339), "affected_subjects": 5,
+	}, nil)
+	if createdType.code != 201 {
+		t.Fatalf("create incident with incident_type: %d %v", createdType.code, createdType.body)
+	}
+	typeIncidentID := createdType.body["id"].(string)
+
+	apply := do("POST", "/admin/v1/breach/incidents/"+typeIncidentID+"/apply-playbook", &sec, map[string]any{}, nil)
+	if apply.code != 200 {
+		t.Fatalf("apply playbook: %d %v", apply.code, apply.body)
+	}
+	tasksData := apply.body["data"].([]any)
+	if len(tasksData) != 1 {
+		t.Fatalf("expected 1 task from the playbook, got %d", len(tasksData))
+	}
+	task := tasksData[0].(map[string]any)
+	taskID := task["id"].(string)
+	if task["playbook_id"] != pbID {
+		t.Errorf("task playbook_id = %v, want %v", task["playbook_id"], pbID)
+	}
+
+	listTasks := do("GET", "/admin/v1/breach/incidents/"+typeIncidentID+"/response-tasks", &sec, nil, nil)
+	if listTasks.code != 200 || len(listTasks.body["data"].([]any)) != 1 {
+		t.Fatalf("list response tasks: %d %v", listTasks.code, listTasks.body)
+	}
+
+	if res := do("POST", "/admin/v1/breach/response-tasks/"+taskID+"/assign", &exec, map[string]any{"assignee_user_id": dpo}, nil); res.code != 428 {
+		t.Errorf("assign without If-Match: %d, want 428", res.code)
+	}
+	assign := do("POST", "/admin/v1/breach/response-tasks/"+taskID+"/assign", &sec, map[string]any{"assignee_user_id": dpo},
+		map[string]string{"If-Match": `"1"`})
+	if assign.code != 200 || assign.body["assignee_user_id"] != dpo.String() {
+		t.Fatalf("assign task: %d %v", assign.code, assign.body)
+	}
+	assignEtag := assign.hdr.Get("ETag")
+
+	status := do("POST", "/admin/v1/breach/response-tasks/"+taskID+"/status", &sec, map[string]any{"status": "done"},
+		map[string]string{"If-Match": assignEtag})
+	if status.code != 200 || status.body["status"] != "done" || status.body["completed_at"] == nil {
+		t.Fatalf("set task status done: %d %v", status.code, status.body)
+	}
 }

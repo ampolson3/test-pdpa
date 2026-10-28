@@ -422,3 +422,103 @@ export function useLinkIncidentActivity(client: ApiClient, incidentId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: incidentActivitiesKey(incidentId) }),
   });
 }
+
+// BRE-11: response playbooks & tasks. A playbook names a set of response steps for one incident_type;
+// applying it to a real incident turns every step into a trackable breach.response_tasks row.
+export type BreachPlaybook = components["schemas"]["BreachPlaybook"];
+export type BreachPlaybookInput = components["schemas"]["BreachPlaybookInput"];
+export type BreachPlaybookEditInput = components["schemas"]["BreachPlaybookEditInput"];
+export type BreachPlaybookStep = components["schemas"]["BreachPlaybookStep"];
+export type BreachResponseTask = components["schemas"]["BreachResponseTask"];
+export type BreachResponseTaskStatus = components["schemas"]["BreachResponseTaskStatus"];
+
+const playbooksKey = (incidentType?: string) => ["breach", "playbooks", incidentType ?? ""];
+const responseTasksKey = (incidentId: string) => [...incidentKey(incidentId), "response-tasks"];
+
+/** GET /admin/v1/breach/playbooks, optionally narrowed to one incident_type — the picker driving BRE-11's
+ *  own acceptance criterion. */
+export function usePlaybooks(client: ApiClient, incidentType?: string) {
+  return useQuery({
+    queryKey: playbooksKey(incidentType),
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/breach/playbooks", { params: { query: { incident_type: incidentType } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** Author / edit a tenant's own playbook. */
+export function usePlaybookMutations(client: ApiClient) {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["breach", "playbooks"] });
+  const create = useMutation({
+    mutationFn: async (input: BreachPlaybookInput) => {
+      const { data, error } = await client.POST("/admin/v1/breach/playbooks", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  const update = useMutation({
+    mutationFn: async (v: { playbook: BreachPlaybook; input: BreachPlaybookEditInput }) => {
+      const { data, error } = await client.PUT("/admin/v1/breach/playbooks/{id}", {
+        params: { path: { id: v.playbook.id }, header: ifMatch(v.playbook.row_version) }, body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  return { create, update };
+}
+
+/** GET /admin/v1/breach/incidents/{id}/response-tasks — tasks against this incident, oldest first. */
+export function useResponseTasks(client: ApiClient, incidentId: string) {
+  return useQuery({
+    queryKey: responseTasksKey(incidentId),
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/breach/incidents/{id}/response-tasks", { params: { path: { id: incidentId } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** Apply a playbook (the acceptance criterion itself), and manage a task's status/assignee. */
+export function useResponseTaskMutations(client: ApiClient, incidentId: string) {
+  const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: responseTasksKey(incidentId) });
+  const apply = useMutation({
+    mutationFn: async (playbookId?: string) => {
+      const { data, error } = await client.POST("/admin/v1/breach/incidents/{id}/apply-playbook", {
+        params: { path: { id: incidentId } }, body: { playbook_id: playbookId },
+      });
+      if (error) throw error;
+      return data.data;
+    },
+    onSuccess: invalidate,
+  });
+  const setStatus = useMutation({
+    mutationFn: async (v: { task: BreachResponseTask; status: BreachResponseTaskStatus }) => {
+      const { data, error } = await client.POST("/admin/v1/breach/response-tasks/{id}/status", {
+        params: { path: { id: v.task.id }, header: ifMatch(v.task.row_version) }, body: { status: v.status },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  const assign = useMutation({
+    mutationFn: async (v: { task: BreachResponseTask; userId?: string; groupId?: string }) => {
+      const { data, error } = await client.POST("/admin/v1/breach/response-tasks/{id}/assign", {
+        params: { path: { id: v.task.id }, header: ifMatch(v.task.row_version) },
+        body: { assignee_user_id: v.userId, assignee_group_id: v.groupId },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: invalidate,
+  });
+  return { apply, setStatus, assign };
+}

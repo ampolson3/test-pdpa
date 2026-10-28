@@ -24,13 +24,17 @@ import {
   useNoticeMutations,
   useNoticeRecipients,
   usePDPCNotificationMutations,
+  usePlaybooks,
   usePublishedDocumentVersions,
+  useResponseTaskMutations,
+  useResponseTasks,
   useRootCauses,
   useRootCauseMutations,
   type BreachIncident,
   type BreachNotice,
   type BreachNoticeVars,
   type BreachPDPCNotification,
+  type BreachResponseTask,
   type BreachRootCause,
   type BreachTimelineItem,
 } from "@pdpa/api-client";
@@ -40,7 +44,7 @@ import type { ErrorCode, FieldError } from "@pdpa/form-renderer";
 import { Link } from "@/i18n/routing";
 import { Clock, RiskBadge, StatusBadge, field, input, problemText, useWhen } from "../shared";
 
-type Tab = "assessment" | "timeline" | "evidence" | "notices" | "pdpc" | "rootcause" | "activities";
+type Tab = "assessment" | "timeline" | "evidence" | "notices" | "pdpc" | "rootcause" | "activities" | "playbook";
 
 /** Answer errors of a 422 breach.invalid problem (fields "answers.<question>"), as the renderer takes them. */
 function answerErrors(e: unknown): FieldError[] | undefined {
@@ -85,7 +89,7 @@ export function IncidentContent({ id, meId }: { id: string; meId: string }) {
       </header>
       <Actions incident={inc} meId={meId} />
       <nav className="flex flex-wrap gap-2" role="tablist">
-        {(["timeline", "assessment", "evidence", "notices", "pdpc", "rootcause", "activities"] as Tab[]).map((k) => (
+        {(["timeline", "assessment", "evidence", "notices", "pdpc", "rootcause", "activities", "playbook"] as Tab[]).map((k) => (
           <button key={k} role="tab" aria-selected={tab === k} className={`rounded-md px-3 py-1.5 ${tab === k ? "bg-slate-900 text-white" : "bg-white ring-1 ring-slate-200"}`} onClick={() => setTab(k)} data-testid={`tab-${k}`}>
             {t(`tabs.${k}`)}
           </button>
@@ -98,6 +102,7 @@ export function IncidentContent({ id, meId }: { id: string; meId: string }) {
       {tab === "pdpc" && <PDPCPanel incident={inc} />}
       {tab === "rootcause" && <RootCausePanel incident={inc} />}
       {tab === "activities" && <ActivitiesPanel incident={inc} />}
+      {tab === "playbook" && <PlaybookPanel incident={inc} />}
     </main>
   );
 }
@@ -650,6 +655,76 @@ function RootCausePanel({ incident }: { incident: BreachIncident }) {
       </ul>
       {(list.data ?? []).length === 0 && <p className="text-slate-500">{t("empty")}</p>}
     </section>
+  );
+}
+
+/** BRE-11: pick a playbook (resolved by the incident's own incident_type when none is chosen explicitly),
+ *  apply it to turn its steps into real response tasks, then assign/track each task. */
+function PlaybookPanel({ incident }: { incident: BreachIncident }) {
+  const t = useTranslations("breach.playbook");
+  const tb = useTranslations("breach");
+  const canExecute = usePermission("breach.incident.execute");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const playbooks = usePlaybooks(client, incident.incident_type || undefined);
+  const tasks = useResponseTasks(client, incident.id);
+  const m = useResponseTaskMutations(client, incident.id);
+  const [chosenPlaybookId, setChosenPlaybookId] = useState("");
+
+  if (!canExecute && (tasks.data ?? []).length === 0) return <p className="text-slate-600">{tb("forbidden")}</p>;
+
+  return (
+    <section className="space-y-3">
+      <p className="text-slate-600">{t("intro")}</p>
+      {canExecute && (
+        <div className="flex flex-wrap items-end gap-2 rounded-md border border-slate-200 bg-white p-4" data-testid="playbook-apply-form">
+          <label className="block space-y-1">
+            <span>{t("choosePlaybook")}</span>
+            <select className={input} value={chosenPlaybookId} onChange={(e) => setChosenPlaybookId(e.target.value)}>
+              <option value="">{t("resolveByIncidentType")}</option>
+              {playbooks.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </label>
+          {m.apply.isError && <p className="text-red-700" role="alert">{problemText(m.apply.error)}</p>}
+          <Button onClick={() => m.apply.mutate(chosenPlaybookId || undefined)} disabled={m.apply.isPending} data-testid="playbook-apply">
+            {t("apply")}
+          </Button>
+        </div>
+      )}
+      <ul className="space-y-2">
+        {tasks.data?.map((task) => <ResponseTaskRow key={task.id} task={task} canExecute={canExecute} mutations={m} />)}
+      </ul>
+      {(tasks.data ?? []).length === 0 && <p className="text-slate-500">{t("empty")}</p>}
+    </section>
+  );
+}
+
+const TASK_STATUS_STYLE: Record<string, string> = {
+  open: "bg-slate-100 text-slate-700",
+  in_progress: "bg-amber-100 text-amber-800",
+  done: "bg-emerald-100 text-emerald-800",
+  cancelled: "bg-rose-100 text-rose-800",
+};
+
+function ResponseTaskRow({ task, canExecute, mutations }: {
+  task: BreachResponseTask;
+  canExecute: boolean;
+  mutations: ReturnType<typeof useResponseTaskMutations>;
+}) {
+  const t = useTranslations("breach.playbook");
+  return (
+    <li className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white p-3" data-testid="response-task-row">
+      <span className={`rounded-full px-2 py-0.5 text-xs ${TASK_STATUS_STYLE[task.status]}`} data-testid="response-task-status">{t(`status.${task.status}`)}</span>
+      <span className="flex-1 text-slate-700">{task.title}</span>
+      {task.assignee_name && <span className="text-xs text-slate-500">{t("assignedTo")}: {task.assignee_name}</span>}
+      {canExecute && task.status !== "done" && task.status !== "cancelled" && (
+        <>
+          {task.status === "open" && (
+            <Button variant="secondary" onClick={() => mutations.setStatus.mutate({ task, status: "in_progress" })} data-testid="task-start">{t("start")}</Button>
+          )}
+          <Button variant="secondary" onClick={() => mutations.setStatus.mutate({ task, status: "done" })} data-testid="task-complete">{t("markDone")}</Button>
+        </>
+      )}
+    </li>
   );
 }
 

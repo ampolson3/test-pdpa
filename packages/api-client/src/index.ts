@@ -424,6 +424,10 @@ export {
   useRootCauseMutations,
   useIncidentActivities,
   useLinkIncidentActivity,
+  usePlaybooks,
+  usePlaybookMutations,
+  useResponseTasks,
+  useResponseTaskMutations,
   type BreachIncident,
   type BreachIncidentInput,
   type BreachIncidentUpdate,
@@ -443,6 +447,12 @@ export {
   type BreachCorrectiveAction,
   type BreachCorrectiveActionInput,
   type BreachIncidentActivity,
+  type BreachPlaybook,
+  type BreachPlaybookInput,
+  type BreachPlaybookEditInput,
+  type BreachPlaybookStep,
+  type BreachResponseTask,
+  type BreachResponseTaskStatus,
 } from "./breach";
 export {
   useDocumentTypes,

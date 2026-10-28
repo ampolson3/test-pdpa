@@ -4913,6 +4913,70 @@ one. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file),
 drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
 `pnpm --filter @pdpa/admin build` (incl. the updated `/governance` route) all verified clean.
 
+### BRE-11 แผนตอบสนองและงานควบคุมเหตุ (`docs/modules/BRE.md#bre-11`) — done
+`breach.playbooks`/`breach.response_tasks` were already fully specified in the baseline migrations
+(00013_breach.sql, both FK'd in 00018: `response_tasks.{incident_id,playbook_id,assignee_user_id,
+assignee_group_id}` → `breach.incidents`/`breach.playbooks`/`iam.users`/`iam.groups`) and
+`breach.incident.{read,create,update,execute}` was already seeded (`.execute` — "ดำเนินการ / มอบหมาย /
+ทำรายการ" — held by SEC/DPO/IT/PRIVACY but unused by any feature before this one) — no new migration or
+permission code, only `internal/breach/service/playbooks.go` (+ `breach/http`) against both.
+
+Deliberately **not** built on PLT-05, despite the backlog's own `ขึ้นกับ: PLT-05` — the same reasoning
+DSAR-08 already used for its own subtask list: PLT-05's generic engine bakes a task's assignee into its
+Definition JSON at the *type* level, which doesn't fit a response task whose assignee is chosen per
+incident, per step. Instead `breach.response_tasks.status` is its own small local machine (`open ->
+in_progress -> done | cancelled`), stamping `completed_at` on either terminal state. `breach.playbooks`
+reuses the exact ORG-07-style `tenant_read`/`tenant_write` RLS split (global `tenant_id IS NULL` defaults +
+tenant-owned overrides, writes always tenant-scoped) — no default playbooks seeded this pass, deliberately:
+unlike ORG-07/ROPA-09/PNG-03's own seeded reference content, a response playbook's real steps are
+organization-specific (who does what, in what order) with no generic "ร่างที่ถูกต้อง" to paraphrase, so this
+leaves the tenant's own SEC/DPO to author theirs from scratch.
+
+`ApplyPlaybook` is the acceptance criterion itself ("เลือกประเภทเหตุแล้วได้ชุดงานตาม playbook"): given an
+incident, it resolves the playbook to use — explicitly by id, or (when none is given) by the incident's own
+`incident_type` (already a plain, already-wired column on `breach.incidents` since BRE-02, previously unused
+by anything downstream) — and turns every one of its `steps` jsonb entries into a real `breach.response_tasks`
+row. A `CountResponseTasksByIncidentAndPlaybook` check makes re-applying the same playbook to the same
+incident a harmless no-op (returns the tasks already created), never a duplicate set — the same idempotency
+discipline ROPA-10/DPIA-13's own event consumers already established, just for a direct call instead of an
+outbox event. `AssignTask` FK-checks a given user/group via the existing `iamservice.Names`/`GroupNames`
+(the same FK-visibility pattern breach's own `OwnerID` validation already uses) before writing either
+column.
+
+API: `GET`/`POST /admin/v1/breach/playbooks`, `GET`/`PUT /admin/v1/breach/playbooks/{id}` (ETag/If-Match on
+the tenant's own playbook — RLS's own `tenant_write` policy already refuses editing a global default this
+way, not a second application-level check), `GET /admin/v1/breach/incidents/{id}/response-tasks`,
+`POST .../apply-playbook` (`playbook_id` optional in the body), `POST /admin/v1/breach/response-tasks/{id}/
+status`, `POST .../assign` — both added to `internal/breach/http/oapi-codegen.yaml`'s own
+`include-operation-ids` allowlist (the recurring gotcha several prior features already hit). UI: a new
+"Playbook" tab on `/incidents/{id}` — a playbook picker (or "resolve by the incident's own type") + apply
+button, and a response-task list with per-row start/done actions and the assignee's name when set.
+`packages/api-client/src/breach.ts` gained `usePlaybooks`/`usePlaybookMutations`/`useResponseTasks`/
+`useResponseTaskMutations`.
+
+A real test-fixture gap found and fixed while writing this: `breachtest.Fixture`'s own tenant-teardown
+cleanup list deleted `breach.incidents` before anything that might reference it — harmless until this
+feature's own `breach.response_tasks` carries a real FK to `breach.incidents`, which would have silently
+broken every future test in this package's own teardown; fixed by adding `DELETE FROM breach.response_tasks`
+and `DELETE FROM breach.playbooks` immediately before `DELETE FROM breach.incidents` in that same list — the
+same kind of fix DPA-08 already made for `platform.document_downloads` referencing `platform.documents`.
+
+Tests: unit (`internal/breach/service/bre11_test.go` — the acceptance criterion directly: applying with no
+explicit playbook resolves by the incident's own `incident_type` and creates one task per step; re-applying
+is a no-op, still exactly the same tasks; an incident_type with no matching playbook is refused as a
+`ValidationError`; assigning a task resolves the assignee's own name and a status move to `done` stamps
+`completed_at`; a stale row_version on `SetTaskStatus` is `ErrVersionMismatch`; two-tenant isolation of
+`GetPlaybook`), HTTP contract (`internal/breach/http/handler_test.go`'s existing `TestBreachEndpoints_
+Contract`, extended with the create-playbook → create-incident-with-incident_type → apply → list-tasks →
+assign (428 without If-Match) → set-status chain through the real validator + AuthZ). Not verified live
+against a real Postgres/Redis/S3/clamd in this pass — the same environment limitation this module's own
+prior passes (BRE-15, BRE-16) already disclosed; every test compiles and vets clean and skips the same way
+the rest of this module's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean
+on every touched file), `go test ./...` (no regressions, full backend suite — only the pre-existing,
+unrelated `internal/pkg/validate` failure, confirmed via `git stash -u`), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/incidents/[id]` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

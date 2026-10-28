@@ -2622,7 +2622,8 @@
       "notices": "Data subject notices",
       "pdpc": "PDPC",
       "rootcause": "Root cause",
-      "activities": "RoPA activities"
+      "activities": "RoPA activities",
+      "playbook": "Response playbook"
     },
     "actions": {
       "takeUp": "Take it up (I'm the owner)",
@@ -2778,6 +2779,22 @@
       "activityIdPlaceholder": "Activity ID (UUID)",
       "link": "Link",
       "empty": "No linked activities yet"
+    },
+    "playbook": {
+      "intro": "Pick a playbook to turn its steps into real response tasks for this incident.",
+      "choosePlaybook": "Playbook",
+      "resolveByIncidentType": "Resolve by the incident's own type",
+      "apply": "Apply playbook",
+      "empty": "No response tasks yet.",
+      "assignedTo": "Assigned to",
+      "start": "Start",
+      "markDone": "Mark done",
+      "status": {
+        "open": "Open",
+        "in_progress": "In progress",
+        "done": "Done",
+        "cancelled": "Cancelled"
+      }
     }
   },
   "docs": {

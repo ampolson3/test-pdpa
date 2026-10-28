@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -341,6 +342,30 @@ func (e BreachReportFormStatus) Valid() bool {
 	}
 }
 
+// Defines values for BreachResponseTaskStatus.
+const (
+	BreachResponseTaskStatusCancelled  BreachResponseTaskStatus = "cancelled"
+	BreachResponseTaskStatusDone       BreachResponseTaskStatus = "done"
+	BreachResponseTaskStatusInProgress BreachResponseTaskStatus = "in_progress"
+	BreachResponseTaskStatusOpen       BreachResponseTaskStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the BreachResponseTaskStatus enum.
+func (e BreachResponseTaskStatus) Valid() bool {
+	switch e {
+	case BreachResponseTaskStatusCancelled:
+		return true
+	case BreachResponseTaskStatusDone:
+		return true
+	case BreachResponseTaskStatusInProgress:
+		return true
+	case BreachResponseTaskStatusOpen:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BreachRootCauseInputCauseCategory.
 const (
 	HumanError       BreachRootCauseInputCauseCategory = "human_error"
@@ -614,6 +639,24 @@ func (e BreachLinkIncidentActivityParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for BreachApplyPlaybookParamsAcceptLanguage.
+const (
+	BreachApplyPlaybookParamsAcceptLanguageEn BreachApplyPlaybookParamsAcceptLanguage = "en"
+	BreachApplyPlaybookParamsAcceptLanguageTh BreachApplyPlaybookParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachApplyPlaybookParamsAcceptLanguage enum.
+func (e BreachApplyPlaybookParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachApplyPlaybookParamsAcceptLanguageEn:
+		return true
+	case BreachApplyPlaybookParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BreachListAssessmentsParamsAcceptLanguage.
 const (
 	BreachListAssessmentsParamsAcceptLanguageEn BreachListAssessmentsParamsAcceptLanguage = "en"
@@ -830,6 +873,24 @@ func (e BreachRecordPDPCNotificationJSONBodyNotificationType) Valid() bool {
 	case BreachRecordPDPCNotificationJSONBodyNotificationTypeInitial:
 		return true
 	case BreachRecordPDPCNotificationJSONBodyNotificationTypeSupplementary:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachListResponseTasksParamsAcceptLanguage.
+const (
+	BreachListResponseTasksParamsAcceptLanguageEn BreachListResponseTasksParamsAcceptLanguage = "en"
+	BreachListResponseTasksParamsAcceptLanguageTh BreachListResponseTasksParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachListResponseTasksParamsAcceptLanguage enum.
+func (e BreachListResponseTasksParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachListResponseTasksParamsAcceptLanguageEn:
+		return true
+	case BreachListResponseTasksParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -1082,6 +1143,78 @@ func (e BreachConfirmPDPCNotificationParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for BreachListPlaybooksParamsAcceptLanguage.
+const (
+	BreachListPlaybooksParamsAcceptLanguageEn BreachListPlaybooksParamsAcceptLanguage = "en"
+	BreachListPlaybooksParamsAcceptLanguageTh BreachListPlaybooksParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachListPlaybooksParamsAcceptLanguage enum.
+func (e BreachListPlaybooksParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachListPlaybooksParamsAcceptLanguageEn:
+		return true
+	case BreachListPlaybooksParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachCreatePlaybookParamsAcceptLanguage.
+const (
+	BreachCreatePlaybookParamsAcceptLanguageEn BreachCreatePlaybookParamsAcceptLanguage = "en"
+	BreachCreatePlaybookParamsAcceptLanguageTh BreachCreatePlaybookParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachCreatePlaybookParamsAcceptLanguage enum.
+func (e BreachCreatePlaybookParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachCreatePlaybookParamsAcceptLanguageEn:
+		return true
+	case BreachCreatePlaybookParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachGetPlaybookParamsAcceptLanguage.
+const (
+	BreachGetPlaybookParamsAcceptLanguageEn BreachGetPlaybookParamsAcceptLanguage = "en"
+	BreachGetPlaybookParamsAcceptLanguageTh BreachGetPlaybookParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachGetPlaybookParamsAcceptLanguage enum.
+func (e BreachGetPlaybookParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachGetPlaybookParamsAcceptLanguageEn:
+		return true
+	case BreachGetPlaybookParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachUpdatePlaybookParamsAcceptLanguage.
+const (
+	BreachUpdatePlaybookParamsAcceptLanguageEn BreachUpdatePlaybookParamsAcceptLanguage = "en"
+	BreachUpdatePlaybookParamsAcceptLanguageTh BreachUpdatePlaybookParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachUpdatePlaybookParamsAcceptLanguage enum.
+func (e BreachUpdatePlaybookParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachUpdatePlaybookParamsAcceptLanguageEn:
+		return true
+	case BreachUpdatePlaybookParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BreachListReportFormsParamsStatus.
 const (
 	BreachListReportFormsParamsStatusActive  BreachListReportFormsParamsStatus = "active"
@@ -1187,6 +1320,42 @@ func (e BreachRetireReportFormParamsAcceptLanguage) Valid() bool {
 	case BreachRetireReportFormParamsAcceptLanguageEn:
 		return true
 	case BreachRetireReportFormParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachAssignResponseTaskParamsAcceptLanguage.
+const (
+	BreachAssignResponseTaskParamsAcceptLanguageEn BreachAssignResponseTaskParamsAcceptLanguage = "en"
+	BreachAssignResponseTaskParamsAcceptLanguageTh BreachAssignResponseTaskParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachAssignResponseTaskParamsAcceptLanguage enum.
+func (e BreachAssignResponseTaskParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachAssignResponseTaskParamsAcceptLanguageEn:
+		return true
+	case BreachAssignResponseTaskParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BreachSetResponseTaskStatusParamsAcceptLanguage.
+const (
+	BreachSetResponseTaskStatusParamsAcceptLanguageEn BreachSetResponseTaskStatusParamsAcceptLanguage = "en"
+	BreachSetResponseTaskStatusParamsAcceptLanguageTh BreachSetResponseTaskStatusParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the BreachSetResponseTaskStatusParamsAcceptLanguage enum.
+func (e BreachSetResponseTaskStatusParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case BreachSetResponseTaskStatusParamsAcceptLanguageEn:
+		return true
+	case BreachSetResponseTaskStatusParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -1574,6 +1743,42 @@ type BreachPDPCNotification struct {
 // BreachPDPCNotificationNotificationType defines model for BreachPDPCNotification.NotificationType.
 type BreachPDPCNotificationNotificationType string
 
+// BreachPlaybook defines model for BreachPlaybook.
+type BreachPlaybook struct {
+	// CreatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	CreatedAt Timestamp `json:"created_at"`
+
+	// Id UUIDv7 generated by the API
+	Id           Uuid                 `json:"id"`
+	IncidentType string               `json:"incident_type"`
+	Name         string               `json:"name"`
+	RowVersion   int                  `json:"row_version"`
+	Steps        []BreachPlaybookStep `json:"steps"`
+
+	// UpdatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	UpdatedAt Timestamp `json:"updated_at"`
+	VersionNo int       `json:"version_no"`
+}
+
+// BreachPlaybookEditInput defines model for BreachPlaybookEditInput.
+type BreachPlaybookEditInput struct {
+	Name  string               `json:"name"`
+	Steps []BreachPlaybookStep `json:"steps"`
+}
+
+// BreachPlaybookInput defines model for BreachPlaybookInput.
+type BreachPlaybookInput struct {
+	IncidentType string               `json:"incident_type"`
+	Name         string               `json:"name"`
+	Steps        []BreachPlaybookStep `json:"steps"`
+}
+
+// BreachPlaybookStep defines model for BreachPlaybookStep.
+type BreachPlaybookStep struct {
+	Code  string `json:"code"`
+	Title string `json:"title"`
+}
+
 // BreachRecipient defines model for BreachRecipient.
 type BreachRecipient struct {
 	Attempts *int    `json:"attempts,omitempty"`
@@ -1619,6 +1824,35 @@ type BreachReportFormInput struct {
 
 // BreachReportFormStatus defines model for BreachReportFormStatus.
 type BreachReportFormStatus string
+
+// BreachResponseTask defines model for BreachResponseTask.
+type BreachResponseTask struct {
+	AssigneeGroupId *Uuid      `json:"assignee_group_id,omitempty"`
+	AssigneeName    *string    `json:"assignee_name,omitempty"`
+	AssigneeUserId  *Uuid      `json:"assignee_user_id,omitempty"`
+	CompletedAt     *time.Time `json:"completed_at,omitempty"`
+
+	// CreatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	CreatedAt Timestamp  `json:"created_at"`
+	DueAt     *time.Time `json:"due_at,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id Uuid `json:"id"`
+
+	// IncidentId UUIDv7 generated by the API
+	IncidentId Uuid                     `json:"incident_id"`
+	PlaybookId *Uuid                    `json:"playbook_id,omitempty"`
+	RowVersion int                      `json:"row_version"`
+	Status     BreachResponseTaskStatus `json:"status"`
+	StepCode   *string                  `json:"step_code,omitempty"`
+	Title      string                   `json:"title"`
+
+	// UpdatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	UpdatedAt Timestamp `json:"updated_at"`
+}
+
+// BreachResponseTaskStatus defines model for BreachResponseTaskStatus.
+type BreachResponseTaskStatus string
 
 // BreachRootCause defines model for BreachRootCause.
 type BreachRootCause struct {
@@ -1837,6 +2071,21 @@ type BreachLinkIncidentActivityParams struct {
 // BreachLinkIncidentActivityParamsAcceptLanguage defines parameters for BreachLinkIncidentActivity.
 type BreachLinkIncidentActivityParamsAcceptLanguage string
 
+// BreachApplyPlaybookJSONBody defines parameters for BreachApplyPlaybook.
+type BreachApplyPlaybookJSONBody struct {
+	// PlaybookId Explicit choice; omitted resolves by the incident's own incident_type.
+	PlaybookId *Uuid `json:"playbook_id,omitempty"`
+}
+
+// BreachApplyPlaybookParams defines parameters for BreachApplyPlaybook.
+type BreachApplyPlaybookParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachApplyPlaybookParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// BreachApplyPlaybookParamsAcceptLanguage defines parameters for BreachApplyPlaybook.
+type BreachApplyPlaybookParamsAcceptLanguage string
+
 // BreachListAssessmentsParams defines parameters for BreachListAssessments.
 type BreachListAssessmentsParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -1974,6 +2223,15 @@ type BreachRecordPDPCNotificationParamsAcceptLanguage string
 
 // BreachRecordPDPCNotificationJSONBodyNotificationType defines parameters for BreachRecordPDPCNotification.
 type BreachRecordPDPCNotificationJSONBodyNotificationType string
+
+// BreachListResponseTasksParams defines parameters for BreachListResponseTasks.
+type BreachListResponseTasksParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachListResponseTasksParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// BreachListResponseTasksParamsAcceptLanguage defines parameters for BreachListResponseTasks.
+type BreachListResponseTasksParamsAcceptLanguage string
 
 // BreachListRootCausesParams defines parameters for BreachListRootCauses.
 type BreachListRootCausesParams struct {
@@ -2125,6 +2383,47 @@ type BreachConfirmPDPCNotificationParams struct {
 // BreachConfirmPDPCNotificationParamsAcceptLanguage defines parameters for BreachConfirmPDPCNotification.
 type BreachConfirmPDPCNotificationParamsAcceptLanguage string
 
+// BreachListPlaybooksParams defines parameters for BreachListPlaybooks.
+type BreachListPlaybooksParams struct {
+	IncidentType *string `form:"incident_type,omitempty" json:"incident_type,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachListPlaybooksParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// BreachListPlaybooksParamsAcceptLanguage defines parameters for BreachListPlaybooks.
+type BreachListPlaybooksParamsAcceptLanguage string
+
+// BreachCreatePlaybookParams defines parameters for BreachCreatePlaybook.
+type BreachCreatePlaybookParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachCreatePlaybookParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// BreachCreatePlaybookParamsAcceptLanguage defines parameters for BreachCreatePlaybook.
+type BreachCreatePlaybookParamsAcceptLanguage string
+
+// BreachGetPlaybookParams defines parameters for BreachGetPlaybook.
+type BreachGetPlaybookParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachGetPlaybookParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// BreachGetPlaybookParamsAcceptLanguage defines parameters for BreachGetPlaybook.
+type BreachGetPlaybookParamsAcceptLanguage string
+
+// BreachUpdatePlaybookParams defines parameters for BreachUpdatePlaybook.
+type BreachUpdatePlaybookParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachUpdatePlaybookParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// BreachUpdatePlaybookParamsAcceptLanguage defines parameters for BreachUpdatePlaybook.
+type BreachUpdatePlaybookParamsAcceptLanguage string
+
 // BreachListReportFormsParams defines parameters for BreachListReportForms.
 type BreachListReportFormsParams struct {
 	Status *BreachListReportFormsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
@@ -2183,6 +2482,41 @@ type BreachRetireReportFormParams struct {
 // BreachRetireReportFormParamsAcceptLanguage defines parameters for BreachRetireReportForm.
 type BreachRetireReportFormParamsAcceptLanguage string
 
+// BreachAssignResponseTaskJSONBody defines parameters for BreachAssignResponseTask.
+type BreachAssignResponseTaskJSONBody struct {
+	AssigneeGroupId *Uuid `json:"assignee_group_id,omitempty"`
+	AssigneeUserId  *Uuid `json:"assignee_user_id,omitempty"`
+}
+
+// BreachAssignResponseTaskParams defines parameters for BreachAssignResponseTask.
+type BreachAssignResponseTaskParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachAssignResponseTaskParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// BreachAssignResponseTaskParamsAcceptLanguage defines parameters for BreachAssignResponseTask.
+type BreachAssignResponseTaskParamsAcceptLanguage string
+
+// BreachSetResponseTaskStatusJSONBody defines parameters for BreachSetResponseTaskStatus.
+type BreachSetResponseTaskStatusJSONBody struct {
+	Status BreachResponseTaskStatus `json:"status"`
+}
+
+// BreachSetResponseTaskStatusParams defines parameters for BreachSetResponseTaskStatus.
+type BreachSetResponseTaskStatusParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *BreachSetResponseTaskStatusParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// BreachSetResponseTaskStatusParamsAcceptLanguage defines parameters for BreachSetResponseTaskStatus.
+type BreachSetResponseTaskStatusParamsAcceptLanguage string
+
 // BreachDeleteRootCauseParams defines parameters for BreachDeleteRootCause.
 type BreachDeleteRootCauseParams struct {
 	IncidentId Uuid `form:"incident_id" json:"incident_id"`
@@ -2227,6 +2561,9 @@ type BreachUpdateIncidentJSONRequestBody = BreachIncidentUpdate
 // BreachLinkIncidentActivityJSONRequestBody defines body for BreachLinkIncidentActivity for application/json ContentType.
 type BreachLinkIncidentActivityJSONRequestBody BreachLinkIncidentActivityJSONBody
 
+// BreachApplyPlaybookJSONRequestBody defines body for BreachApplyPlaybook for application/json ContentType.
+type BreachApplyPlaybookJSONRequestBody BreachApplyPlaybookJSONBody
+
 // BreachAssessIncidentJSONRequestBody defines body for BreachAssessIncident for application/json ContentType.
 type BreachAssessIncidentJSONRequestBody BreachAssessIncidentJSONBody
 
@@ -2257,8 +2594,20 @@ type BreachUpdateNoticeJSONRequestBody BreachUpdateNoticeJSONBody
 // BreachLoadRecipientsJSONRequestBody defines body for BreachLoadRecipients for application/json ContentType.
 type BreachLoadRecipientsJSONRequestBody BreachLoadRecipientsJSONBody
 
+// BreachCreatePlaybookJSONRequestBody defines body for BreachCreatePlaybook for application/json ContentType.
+type BreachCreatePlaybookJSONRequestBody = BreachPlaybookInput
+
+// BreachUpdatePlaybookJSONRequestBody defines body for BreachUpdatePlaybook for application/json ContentType.
+type BreachUpdatePlaybookJSONRequestBody = BreachPlaybookEditInput
+
 // BreachCreateReportFormJSONRequestBody defines body for BreachCreateReportForm for application/json ContentType.
 type BreachCreateReportFormJSONRequestBody = BreachReportFormInput
+
+// BreachAssignResponseTaskJSONRequestBody defines body for BreachAssignResponseTask for application/json ContentType.
+type BreachAssignResponseTaskJSONRequestBody BreachAssignResponseTaskJSONBody
+
+// BreachSetResponseTaskStatusJSONRequestBody defines body for BreachSetResponseTaskStatus for application/json ContentType.
+type BreachSetResponseTaskStatusJSONRequestBody BreachSetResponseTaskStatusJSONBody
 
 // BreachUpdateRootCauseJSONRequestBody defines body for BreachUpdateRootCause for application/json ContentType.
 type BreachUpdateRootCauseJSONRequestBody = BreachRootCauseInput
@@ -2283,6 +2632,9 @@ type ServerInterface interface {
 	// BreachLinkIncidentActivity Link this incident to a RoPA processing activity it affected (DPIA-13) — marks the activity's latest approved DPIA round needs_review
 	// (POST /admin/v1/breach/incidents/{id}/activities)
 	BreachLinkIncidentActivity(w http.ResponseWriter, r *http.Request, id Uuid, params BreachLinkIncidentActivityParams)
+	// BreachApplyPlaybook The acceptance criterion itself — turn a playbook's steps into real response tasks for this incident; re-applying the same playbook is a harmless no-op
+	// (POST /admin/v1/breach/incidents/{id}/apply-playbook)
+	BreachApplyPlaybook(w http.ResponseWriter, r *http.Request, id Uuid, params BreachApplyPlaybookParams)
 	// BreachListAssessments Risk assessments of an incident, newest first
 	// (GET /admin/v1/breach/incidents/{id}/assessments)
 	BreachListAssessments(w http.ResponseWriter, r *http.Request, id Uuid, params BreachListAssessmentsParams)
@@ -2310,6 +2662,9 @@ type ServerInterface interface {
 	// BreachRecordPDPCNotification Record a round of filing the PDPC notice (BRE-08/09): the system prepares the document (PLT-16 pdpc_form), the person files it through the PDPC’s own channel, then records the result here
 	// (POST /admin/v1/breach/incidents/{id}/pdpc-notifications)
 	BreachRecordPDPCNotification(w http.ResponseWriter, r *http.Request, id Uuid, params BreachRecordPDPCNotificationParams)
+	// BreachListResponseTasks Response tasks against this incident, oldest first (BRE-11)
+	// (GET /admin/v1/breach/incidents/{id}/response-tasks)
+	BreachListResponseTasks(w http.ResponseWriter, r *http.Request, id Uuid, params BreachListResponseTasksParams)
 	// BreachListRootCauses Root causes recorded against an incident, oldest first (BRE-15)
 	// (GET /admin/v1/breach/incidents/{id}/root-causes)
 	BreachListRootCauses(w http.ResponseWriter, r *http.Request, id Uuid, params BreachListRootCausesParams)
@@ -2343,6 +2698,18 @@ type ServerInterface interface {
 	// BreachConfirmPDPCNotification Confirm a filing round was recorded correctly (If-Match); whoever recorded it can’t confirm it
 	// (POST /admin/v1/breach/pdpc-notifications/{id}/confirm)
 	BreachConfirmPDPCNotification(w http.ResponseWriter, r *http.Request, id Uuid, params BreachConfirmPDPCNotificationParams)
+	// BreachListPlaybooks Response playbooks visible to this tenant (global defaults + its own), optionally by incident_type (BRE-11)
+	// (GET /admin/v1/breach/playbooks)
+	BreachListPlaybooks(w http.ResponseWriter, r *http.Request, params BreachListPlaybooksParams)
+	// BreachCreatePlaybook Author a playbook for the tenant — a set of response steps for one incident_type
+	// (POST /admin/v1/breach/playbooks)
+	BreachCreatePlaybook(w http.ResponseWriter, r *http.Request, params BreachCreatePlaybookParams)
+	// BreachGetPlaybook One playbook
+	// (GET /admin/v1/breach/playbooks/{id})
+	BreachGetPlaybook(w http.ResponseWriter, r *http.Request, id Uuid, params BreachGetPlaybookParams)
+	// BreachUpdatePlaybook Edit the tenant's own playbook's name and steps (If-Match) — a global default can't be edited this way
+	// (PUT /admin/v1/breach/playbooks/{id})
+	BreachUpdatePlaybook(w http.ResponseWriter, r *http.Request, id Uuid, params BreachUpdatePlaybookParams)
 	// BreachListReportForms Public incident-report forms (BRE-01)
 	// (GET /admin/v1/breach/report-forms)
 	BreachListReportForms(w http.ResponseWriter, r *http.Request, params BreachListReportFormsParams)
@@ -2358,6 +2725,12 @@ type ServerInterface interface {
 	// BreachRetireReportForm Retire a report form for good (BRE-01) — its key stops resolving, past incidents are untouched
 	// (POST /admin/v1/breach/report-forms/{id}/retire)
 	BreachRetireReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachRetireReportFormParams)
+	// BreachAssignResponseTask Set (or clear) a task's assignee — a user, a group, or neither (If-Match)
+	// (POST /admin/v1/breach/response-tasks/{id}/assign)
+	BreachAssignResponseTask(w http.ResponseWriter, r *http.Request, id Uuid, params BreachAssignResponseTaskParams)
+	// BreachSetResponseTaskStatus Move a task open -> in_progress -> done | cancelled (If-Match)
+	// (POST /admin/v1/breach/response-tasks/{id}/status)
+	BreachSetResponseTaskStatus(w http.ResponseWriter, r *http.Request, id Uuid, params BreachSetResponseTaskStatusParams)
 	// BreachDeleteRootCause Remove a root-cause record
 	// (DELETE /admin/v1/breach/root-causes/{id})
 	BreachDeleteRootCause(w http.ResponseWriter, r *http.Request, id Uuid, params BreachDeleteRootCauseParams)
@@ -2406,6 +2779,12 @@ func (_ Unimplemented) BreachListIncidentActivities(w http.ResponseWriter, r *ht
 // BreachLinkIncidentActivity Link this incident to a RoPA processing activity it affected (DPIA-13) — marks the activity's latest approved DPIA round needs_review
 // (POST /admin/v1/breach/incidents/{id}/activities)
 func (_ Unimplemented) BreachLinkIncidentActivity(w http.ResponseWriter, r *http.Request, id Uuid, params BreachLinkIncidentActivityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachApplyPlaybook The acceptance criterion itself — turn a playbook's steps into real response tasks for this incident; re-applying the same playbook is a harmless no-op
+// (POST /admin/v1/breach/incidents/{id}/apply-playbook)
+func (_ Unimplemented) BreachApplyPlaybook(w http.ResponseWriter, r *http.Request, id Uuid, params BreachApplyPlaybookParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2460,6 +2839,12 @@ func (_ Unimplemented) BreachListPDPCNotifications(w http.ResponseWriter, r *htt
 // BreachRecordPDPCNotification Record a round of filing the PDPC notice (BRE-08/09): the system prepares the document (PLT-16 pdpc_form), the person files it through the PDPC’s own channel, then records the result here
 // (POST /admin/v1/breach/incidents/{id}/pdpc-notifications)
 func (_ Unimplemented) BreachRecordPDPCNotification(w http.ResponseWriter, r *http.Request, id Uuid, params BreachRecordPDPCNotificationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachListResponseTasks Response tasks against this incident, oldest first (BRE-11)
+// (GET /admin/v1/breach/incidents/{id}/response-tasks)
+func (_ Unimplemented) BreachListResponseTasks(w http.ResponseWriter, r *http.Request, id Uuid, params BreachListResponseTasksParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2529,6 +2914,30 @@ func (_ Unimplemented) BreachConfirmPDPCNotification(w http.ResponseWriter, r *h
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// BreachListPlaybooks Response playbooks visible to this tenant (global defaults + its own), optionally by incident_type (BRE-11)
+// (GET /admin/v1/breach/playbooks)
+func (_ Unimplemented) BreachListPlaybooks(w http.ResponseWriter, r *http.Request, params BreachListPlaybooksParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachCreatePlaybook Author a playbook for the tenant — a set of response steps for one incident_type
+// (POST /admin/v1/breach/playbooks)
+func (_ Unimplemented) BreachCreatePlaybook(w http.ResponseWriter, r *http.Request, params BreachCreatePlaybookParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachGetPlaybook One playbook
+// (GET /admin/v1/breach/playbooks/{id})
+func (_ Unimplemented) BreachGetPlaybook(w http.ResponseWriter, r *http.Request, id Uuid, params BreachGetPlaybookParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachUpdatePlaybook Edit the tenant's own playbook's name and steps (If-Match) — a global default can't be edited this way
+// (PUT /admin/v1/breach/playbooks/{id})
+func (_ Unimplemented) BreachUpdatePlaybook(w http.ResponseWriter, r *http.Request, id Uuid, params BreachUpdatePlaybookParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // BreachListReportForms Public incident-report forms (BRE-01)
 // (GET /admin/v1/breach/report-forms)
 func (_ Unimplemented) BreachListReportForms(w http.ResponseWriter, r *http.Request, params BreachListReportFormsParams) {
@@ -2556,6 +2965,18 @@ func (_ Unimplemented) BreachPublishReportForm(w http.ResponseWriter, r *http.Re
 // BreachRetireReportForm Retire a report form for good (BRE-01) — its key stops resolving, past incidents are untouched
 // (POST /admin/v1/breach/report-forms/{id}/retire)
 func (_ Unimplemented) BreachRetireReportForm(w http.ResponseWriter, r *http.Request, id Uuid, params BreachRetireReportFormParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachAssignResponseTask Set (or clear) a task's assignee — a user, a group, or neither (If-Match)
+// (POST /admin/v1/breach/response-tasks/{id}/assign)
+func (_ Unimplemented) BreachAssignResponseTask(w http.ResponseWriter, r *http.Request, id Uuid, params BreachAssignResponseTaskParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// BreachSetResponseTaskStatus Move a task open -> in_progress -> done | cancelled (If-Match)
+// (POST /admin/v1/breach/response-tasks/{id}/status)
+func (_ Unimplemented) BreachSetResponseTaskStatus(w http.ResponseWriter, r *http.Request, id Uuid, params BreachSetResponseTaskStatusParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -3012,6 +3433,56 @@ func (siw *ServerInterfaceWrapper) BreachLinkIncidentActivity(w http.ResponseWri
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.BreachLinkIncidentActivity(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachApplyPlaybook operation middleware
+func (siw *ServerInterfaceWrapper) BreachApplyPlaybook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachApplyPlaybookParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachApplyPlaybookParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachApplyPlaybook(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3485,6 +3956,56 @@ func (siw *ServerInterfaceWrapper) BreachRecordPDPCNotification(w http.ResponseW
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.BreachRecordPDPCNotification(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachListResponseTasks operation middleware
+func (siw *ServerInterfaceWrapper) BreachListResponseTasks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachListResponseTasksParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachListResponseTasksParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachListResponseTasks(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4198,6 +4719,224 @@ func (siw *ServerInterfaceWrapper) BreachConfirmPDPCNotification(w http.Response
 	handler.ServeHTTP(w, r)
 }
 
+// BreachListPlaybooks operation middleware
+func (siw *ServerInterfaceWrapper) BreachListPlaybooks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachListPlaybooksParams
+
+	// ------------- Optional query parameter "incident_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "incident_type", r.URL.Query(), &params.IncidentType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "incident_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_type", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachListPlaybooksParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachListPlaybooks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachCreatePlaybook operation middleware
+func (siw *ServerInterfaceWrapper) BreachCreatePlaybook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachCreatePlaybookParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachCreatePlaybookParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachCreatePlaybook(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachGetPlaybook operation middleware
+func (siw *ServerInterfaceWrapper) BreachGetPlaybook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachGetPlaybookParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachGetPlaybookParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachGetPlaybook(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachUpdatePlaybook operation middleware
+func (siw *ServerInterfaceWrapper) BreachUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachUpdatePlaybookParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachUpdatePlaybookParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachUpdatePlaybook(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // BreachListReportForms operation middleware
 func (siw *ServerInterfaceWrapper) BreachListReportForms(w http.ResponseWriter, r *http.Request) {
 
@@ -4506,6 +5245,152 @@ func (siw *ServerInterfaceWrapper) BreachRetireReportForm(w http.ResponseWriter,
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.BreachRetireReportForm(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachAssignResponseTask operation middleware
+func (siw *ServerInterfaceWrapper) BreachAssignResponseTask(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachAssignResponseTaskParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachAssignResponseTaskParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachAssignResponseTask(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BreachSetResponseTaskStatus operation middleware
+func (siw *ServerInterfaceWrapper) BreachSetResponseTaskStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BreachSetResponseTaskStatusParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage BreachSetResponseTaskStatusParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BreachSetResponseTaskStatus(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4932,6 +5817,30 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/breach/incidents/{id}/activities", wrapper.BreachLinkIncidentActivity)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/breach/playbooks", wrapper.BreachListPlaybooks)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/breach/playbooks", wrapper.BreachCreatePlaybook)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/breach/playbooks/{id}", wrapper.BreachGetPlaybook)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/v1/breach/playbooks/{id}", wrapper.BreachUpdatePlaybook)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/breach/incidents/{id}/response-tasks", wrapper.BreachListResponseTasks)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/breach/incidents/{id}/apply-playbook", wrapper.BreachApplyPlaybook)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/breach/response-tasks/{id}/status", wrapper.BreachSetResponseTaskStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/breach/response-tasks/{id}/assign", wrapper.BreachAssignResponseTask)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/breach/report-forms", wrapper.BreachListReportForms)
@@ -5547,6 +6456,96 @@ type BreachLinkIncidentActivity422ApplicationProblemPlusJSONResponse struct {
 }
 
 func (response BreachLinkIncidentActivity422ApplicationProblemPlusJSONResponse) VisitBreachLinkIncidentActivityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachApplyPlaybookRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachApplyPlaybookParams
+	Body   *BreachApplyPlaybookJSONRequestBody
+}
+
+type BreachApplyPlaybookResponseObject interface {
+	VisitBreachApplyPlaybookResponse(w http.ResponseWriter) error
+}
+
+type BreachApplyPlaybook200JSONResponse struct {
+	Data []BreachResponseTask `json:"data"`
+}
+
+func (response BreachApplyPlaybook200JSONResponse) VisitBreachApplyPlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachApplyPlaybook401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachApplyPlaybook401ApplicationProblemPlusJSONResponse) VisitBreachApplyPlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachApplyPlaybook403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachApplyPlaybook403ApplicationProblemPlusJSONResponse) VisitBreachApplyPlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachApplyPlaybook404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachApplyPlaybook404ApplicationProblemPlusJSONResponse) VisitBreachApplyPlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachApplyPlaybook422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response BreachApplyPlaybook422ApplicationProblemPlusJSONResponse) VisitBreachApplyPlaybookResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -6508,6 +7507,79 @@ func (response BreachRecordPDPCNotification422ApplicationProblemPlusJSONResponse
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachListResponseTasksRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachListResponseTasksParams
+}
+
+type BreachListResponseTasksResponseObject interface {
+	VisitBreachListResponseTasksResponse(w http.ResponseWriter) error
+}
+
+type BreachListResponseTasks200JSONResponse struct {
+	Data []BreachResponseTask `json:"data"`
+}
+
+func (response BreachListResponseTasks200JSONResponse) VisitBreachListResponseTasksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachListResponseTasks401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachListResponseTasks401ApplicationProblemPlusJSONResponse) VisitBreachListResponseTasksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachListResponseTasks403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachListResponseTasks403ApplicationProblemPlusJSONResponse) VisitBreachListResponseTasksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachListResponseTasks404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachListResponseTasks404ApplicationProblemPlusJSONResponse) VisitBreachListResponseTasksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -7800,6 +8872,402 @@ func (response BreachConfirmPDPCNotification428ApplicationProblemPlusJSONRespons
 	return err
 }
 
+type BreachListPlaybooksRequestObject struct {
+	Params BreachListPlaybooksParams
+}
+
+type BreachListPlaybooksResponseObject interface {
+	VisitBreachListPlaybooksResponse(w http.ResponseWriter) error
+}
+
+type BreachListPlaybooks200JSONResponse struct {
+	Data []BreachPlaybook `json:"data"`
+}
+
+func (response BreachListPlaybooks200JSONResponse) VisitBreachListPlaybooksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachListPlaybooks401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachListPlaybooks401ApplicationProblemPlusJSONResponse) VisitBreachListPlaybooksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachListPlaybooks403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachListPlaybooks403ApplicationProblemPlusJSONResponse) VisitBreachListPlaybooksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCreatePlaybookRequestObject struct {
+	Params BreachCreatePlaybookParams
+	Body   *BreachCreatePlaybookJSONRequestBody
+}
+
+type BreachCreatePlaybookResponseObject interface {
+	VisitBreachCreatePlaybookResponse(w http.ResponseWriter) error
+}
+
+type BreachCreatePlaybook201ResponseHeaders struct {
+	ETag *string
+}
+
+type BreachCreatePlaybook201JSONResponse struct {
+	Body    BreachPlaybook
+	Headers BreachCreatePlaybook201ResponseHeaders
+}
+
+func (response BreachCreatePlaybook201JSONResponse) VisitBreachCreatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCreatePlaybook400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCreatePlaybook400ApplicationProblemPlusJSONResponse) VisitBreachCreatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCreatePlaybook401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCreatePlaybook401ApplicationProblemPlusJSONResponse) VisitBreachCreatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCreatePlaybook403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCreatePlaybook403ApplicationProblemPlusJSONResponse) VisitBreachCreatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachCreatePlaybook422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response BreachCreatePlaybook422ApplicationProblemPlusJSONResponse) VisitBreachCreatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachGetPlaybookRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachGetPlaybookParams
+}
+
+type BreachGetPlaybookResponseObject interface {
+	VisitBreachGetPlaybookResponse(w http.ResponseWriter) error
+}
+
+type BreachGetPlaybook200ResponseHeaders struct {
+	ETag *string
+}
+
+type BreachGetPlaybook200JSONResponse struct {
+	Body    BreachPlaybook
+	Headers BreachGetPlaybook200ResponseHeaders
+}
+
+func (response BreachGetPlaybook200JSONResponse) VisitBreachGetPlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachGetPlaybook401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachGetPlaybook401ApplicationProblemPlusJSONResponse) VisitBreachGetPlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachGetPlaybook403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachGetPlaybook403ApplicationProblemPlusJSONResponse) VisitBreachGetPlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachGetPlaybook404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachGetPlaybook404ApplicationProblemPlusJSONResponse) VisitBreachGetPlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdatePlaybookRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachUpdatePlaybookParams
+	Body   *BreachUpdatePlaybookJSONRequestBody
+}
+
+type BreachUpdatePlaybookResponseObject interface {
+	VisitBreachUpdatePlaybookResponse(w http.ResponseWriter) error
+}
+
+type BreachUpdatePlaybook200ResponseHeaders struct {
+	ETag *string
+}
+
+type BreachUpdatePlaybook200JSONResponse struct {
+	Body    BreachPlaybook
+	Headers BreachUpdatePlaybook200ResponseHeaders
+}
+
+func (response BreachUpdatePlaybook200JSONResponse) VisitBreachUpdatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdatePlaybook400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdatePlaybook400ApplicationProblemPlusJSONResponse) VisitBreachUpdatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdatePlaybook401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdatePlaybook401ApplicationProblemPlusJSONResponse) VisitBreachUpdatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdatePlaybook403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdatePlaybook403ApplicationProblemPlusJSONResponse) VisitBreachUpdatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdatePlaybook404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdatePlaybook404ApplicationProblemPlusJSONResponse) VisitBreachUpdatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdatePlaybook409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdatePlaybook409ApplicationProblemPlusJSONResponse) VisitBreachUpdatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdatePlaybook412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdatePlaybook412ApplicationProblemPlusJSONResponse) VisitBreachUpdatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdatePlaybook422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdatePlaybook422ApplicationProblemPlusJSONResponse) VisitBreachUpdatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachUpdatePlaybook428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response BreachUpdatePlaybook428ApplicationProblemPlusJSONResponse) VisitBreachUpdatePlaybookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type BreachListReportFormsRequestObject struct {
 	Params BreachListReportFormsParams
 }
@@ -8293,6 +9761,330 @@ func (response BreachRetireReportForm428ApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type BreachAssignResponseTaskRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachAssignResponseTaskParams
+	Body   *BreachAssignResponseTaskJSONRequestBody
+}
+
+type BreachAssignResponseTaskResponseObject interface {
+	VisitBreachAssignResponseTaskResponse(w http.ResponseWriter) error
+}
+
+type BreachAssignResponseTask200ResponseHeaders struct {
+	ETag *string
+}
+
+type BreachAssignResponseTask200JSONResponse struct {
+	Body    BreachResponseTask
+	Headers BreachAssignResponseTask200ResponseHeaders
+}
+
+func (response BreachAssignResponseTask200JSONResponse) VisitBreachAssignResponseTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAssignResponseTask400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAssignResponseTask400ApplicationProblemPlusJSONResponse) VisitBreachAssignResponseTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAssignResponseTask401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAssignResponseTask401ApplicationProblemPlusJSONResponse) VisitBreachAssignResponseTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAssignResponseTask403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAssignResponseTask403ApplicationProblemPlusJSONResponse) VisitBreachAssignResponseTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAssignResponseTask404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAssignResponseTask404ApplicationProblemPlusJSONResponse) VisitBreachAssignResponseTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAssignResponseTask409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAssignResponseTask409ApplicationProblemPlusJSONResponse) VisitBreachAssignResponseTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAssignResponseTask412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAssignResponseTask412ApplicationProblemPlusJSONResponse) VisitBreachAssignResponseTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAssignResponseTask422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAssignResponseTask422ApplicationProblemPlusJSONResponse) VisitBreachAssignResponseTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachAssignResponseTask428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response BreachAssignResponseTask428ApplicationProblemPlusJSONResponse) VisitBreachAssignResponseTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachSetResponseTaskStatusRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params BreachSetResponseTaskStatusParams
+	Body   *BreachSetResponseTaskStatusJSONRequestBody
+}
+
+type BreachSetResponseTaskStatusResponseObject interface {
+	VisitBreachSetResponseTaskStatusResponse(w http.ResponseWriter) error
+}
+
+type BreachSetResponseTaskStatus200ResponseHeaders struct {
+	ETag *string
+}
+
+type BreachSetResponseTaskStatus200JSONResponse struct {
+	Body    BreachResponseTask
+	Headers BreachSetResponseTaskStatus200ResponseHeaders
+}
+
+func (response BreachSetResponseTaskStatus200JSONResponse) VisitBreachSetResponseTaskStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachSetResponseTaskStatus400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response BreachSetResponseTaskStatus400ApplicationProblemPlusJSONResponse) VisitBreachSetResponseTaskStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachSetResponseTaskStatus401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachSetResponseTaskStatus401ApplicationProblemPlusJSONResponse) VisitBreachSetResponseTaskStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachSetResponseTaskStatus403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response BreachSetResponseTaskStatus403ApplicationProblemPlusJSONResponse) VisitBreachSetResponseTaskStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachSetResponseTaskStatus404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response BreachSetResponseTaskStatus404ApplicationProblemPlusJSONResponse) VisitBreachSetResponseTaskStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachSetResponseTaskStatus409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response BreachSetResponseTaskStatus409ApplicationProblemPlusJSONResponse) VisitBreachSetResponseTaskStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachSetResponseTaskStatus412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response BreachSetResponseTaskStatus412ApplicationProblemPlusJSONResponse) VisitBreachSetResponseTaskStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachSetResponseTaskStatus422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response BreachSetResponseTaskStatus422ApplicationProblemPlusJSONResponse) VisitBreachSetResponseTaskStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type BreachSetResponseTaskStatus428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response BreachSetResponseTaskStatus428ApplicationProblemPlusJSONResponse) VisitBreachSetResponseTaskStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type BreachDeleteRootCauseRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params BreachDeleteRootCauseParams
@@ -8686,6 +10478,9 @@ type StrictServerInterface interface {
 	// BreachLinkIncidentActivity Link this incident to a RoPA processing activity it affected (DPIA-13) — marks the activity's latest approved DPIA round needs_review
 	// (POST /admin/v1/breach/incidents/{id}/activities)
 	BreachLinkIncidentActivity(ctx context.Context, request BreachLinkIncidentActivityRequestObject) (BreachLinkIncidentActivityResponseObject, error)
+	// BreachApplyPlaybook The acceptance criterion itself — turn a playbook's steps into real response tasks for this incident; re-applying the same playbook is a harmless no-op
+	// (POST /admin/v1/breach/incidents/{id}/apply-playbook)
+	BreachApplyPlaybook(ctx context.Context, request BreachApplyPlaybookRequestObject) (BreachApplyPlaybookResponseObject, error)
 	// BreachListAssessments Risk assessments of an incident, newest first
 	// (GET /admin/v1/breach/incidents/{id}/assessments)
 	BreachListAssessments(ctx context.Context, request BreachListAssessmentsRequestObject) (BreachListAssessmentsResponseObject, error)
@@ -8713,6 +10508,9 @@ type StrictServerInterface interface {
 	// BreachRecordPDPCNotification Record a round of filing the PDPC notice (BRE-08/09): the system prepares the document (PLT-16 pdpc_form), the person files it through the PDPC’s own channel, then records the result here
 	// (POST /admin/v1/breach/incidents/{id}/pdpc-notifications)
 	BreachRecordPDPCNotification(ctx context.Context, request BreachRecordPDPCNotificationRequestObject) (BreachRecordPDPCNotificationResponseObject, error)
+	// BreachListResponseTasks Response tasks against this incident, oldest first (BRE-11)
+	// (GET /admin/v1/breach/incidents/{id}/response-tasks)
+	BreachListResponseTasks(ctx context.Context, request BreachListResponseTasksRequestObject) (BreachListResponseTasksResponseObject, error)
 	// BreachListRootCauses Root causes recorded against an incident, oldest first (BRE-15)
 	// (GET /admin/v1/breach/incidents/{id}/root-causes)
 	BreachListRootCauses(ctx context.Context, request BreachListRootCausesRequestObject) (BreachListRootCausesResponseObject, error)
@@ -8746,6 +10544,18 @@ type StrictServerInterface interface {
 	// BreachConfirmPDPCNotification Confirm a filing round was recorded correctly (If-Match); whoever recorded it can’t confirm it
 	// (POST /admin/v1/breach/pdpc-notifications/{id}/confirm)
 	BreachConfirmPDPCNotification(ctx context.Context, request BreachConfirmPDPCNotificationRequestObject) (BreachConfirmPDPCNotificationResponseObject, error)
+	// BreachListPlaybooks Response playbooks visible to this tenant (global defaults + its own), optionally by incident_type (BRE-11)
+	// (GET /admin/v1/breach/playbooks)
+	BreachListPlaybooks(ctx context.Context, request BreachListPlaybooksRequestObject) (BreachListPlaybooksResponseObject, error)
+	// BreachCreatePlaybook Author a playbook for the tenant — a set of response steps for one incident_type
+	// (POST /admin/v1/breach/playbooks)
+	BreachCreatePlaybook(ctx context.Context, request BreachCreatePlaybookRequestObject) (BreachCreatePlaybookResponseObject, error)
+	// BreachGetPlaybook One playbook
+	// (GET /admin/v1/breach/playbooks/{id})
+	BreachGetPlaybook(ctx context.Context, request BreachGetPlaybookRequestObject) (BreachGetPlaybookResponseObject, error)
+	// BreachUpdatePlaybook Edit the tenant's own playbook's name and steps (If-Match) — a global default can't be edited this way
+	// (PUT /admin/v1/breach/playbooks/{id})
+	BreachUpdatePlaybook(ctx context.Context, request BreachUpdatePlaybookRequestObject) (BreachUpdatePlaybookResponseObject, error)
 	// BreachListReportForms Public incident-report forms (BRE-01)
 	// (GET /admin/v1/breach/report-forms)
 	BreachListReportForms(ctx context.Context, request BreachListReportFormsRequestObject) (BreachListReportFormsResponseObject, error)
@@ -8761,6 +10571,12 @@ type StrictServerInterface interface {
 	// BreachRetireReportForm Retire a report form for good (BRE-01) — its key stops resolving, past incidents are untouched
 	// (POST /admin/v1/breach/report-forms/{id}/retire)
 	BreachRetireReportForm(ctx context.Context, request BreachRetireReportFormRequestObject) (BreachRetireReportFormResponseObject, error)
+	// BreachAssignResponseTask Set (or clear) a task's assignee — a user, a group, or neither (If-Match)
+	// (POST /admin/v1/breach/response-tasks/{id}/assign)
+	BreachAssignResponseTask(ctx context.Context, request BreachAssignResponseTaskRequestObject) (BreachAssignResponseTaskResponseObject, error)
+	// BreachSetResponseTaskStatus Move a task open -> in_progress -> done | cancelled (If-Match)
+	// (POST /admin/v1/breach/response-tasks/{id}/status)
+	BreachSetResponseTaskStatus(ctx context.Context, request BreachSetResponseTaskStatusRequestObject) (BreachSetResponseTaskStatusResponseObject, error)
 	// BreachDeleteRootCause Remove a root-cause record
 	// (DELETE /admin/v1/breach/root-causes/{id})
 	BreachDeleteRootCause(ctx context.Context, request BreachDeleteRootCauseRequestObject) (BreachDeleteRootCauseResponseObject, error)
@@ -8985,6 +10801,43 @@ func (sh *strictHandler) BreachLinkIncidentActivity(w http.ResponseWriter, r *ht
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(BreachLinkIncidentActivityResponseObject); ok {
 		if err := validResponse.VisitBreachLinkIncidentActivityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachApplyPlaybook operation middleware
+func (sh *strictHandler) BreachApplyPlaybook(w http.ResponseWriter, r *http.Request, id Uuid, params BreachApplyPlaybookParams) {
+	var request BreachApplyPlaybookRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body BreachApplyPlaybookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachApplyPlaybook(ctx, request.(BreachApplyPlaybookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachApplyPlaybook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachApplyPlaybookResponseObject); ok {
+		if err := validResponse.VisitBreachApplyPlaybookResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -9263,6 +11116,33 @@ func (sh *strictHandler) BreachRecordPDPCNotification(w http.ResponseWriter, r *
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(BreachRecordPDPCNotificationResponseObject); ok {
 		if err := validResponse.VisitBreachRecordPDPCNotificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachListResponseTasks operation middleware
+func (sh *strictHandler) BreachListResponseTasks(w http.ResponseWriter, r *http.Request, id Uuid, params BreachListResponseTasksParams) {
+	var request BreachListResponseTasksRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachListResponseTasks(ctx, request.(BreachListResponseTasksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachListResponseTasks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachListResponseTasksResponseObject); ok {
+		if err := validResponse.VisitBreachListResponseTasksResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -9602,6 +11482,126 @@ func (sh *strictHandler) BreachConfirmPDPCNotification(w http.ResponseWriter, r 
 	}
 }
 
+// BreachListPlaybooks operation middleware
+func (sh *strictHandler) BreachListPlaybooks(w http.ResponseWriter, r *http.Request, params BreachListPlaybooksParams) {
+	var request BreachListPlaybooksRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachListPlaybooks(ctx, request.(BreachListPlaybooksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachListPlaybooks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachListPlaybooksResponseObject); ok {
+		if err := validResponse.VisitBreachListPlaybooksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachCreatePlaybook operation middleware
+func (sh *strictHandler) BreachCreatePlaybook(w http.ResponseWriter, r *http.Request, params BreachCreatePlaybookParams) {
+	var request BreachCreatePlaybookRequestObject
+
+	request.Params = params
+
+	var body BreachCreatePlaybookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachCreatePlaybook(ctx, request.(BreachCreatePlaybookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachCreatePlaybook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachCreatePlaybookResponseObject); ok {
+		if err := validResponse.VisitBreachCreatePlaybookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachGetPlaybook operation middleware
+func (sh *strictHandler) BreachGetPlaybook(w http.ResponseWriter, r *http.Request, id Uuid, params BreachGetPlaybookParams) {
+	var request BreachGetPlaybookRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachGetPlaybook(ctx, request.(BreachGetPlaybookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachGetPlaybook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachGetPlaybookResponseObject); ok {
+		if err := validResponse.VisitBreachGetPlaybookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachUpdatePlaybook operation middleware
+func (sh *strictHandler) BreachUpdatePlaybook(w http.ResponseWriter, r *http.Request, id Uuid, params BreachUpdatePlaybookParams) {
+	var request BreachUpdatePlaybookRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body BreachUpdatePlaybookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachUpdatePlaybook(ctx, request.(BreachUpdatePlaybookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachUpdatePlaybook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachUpdatePlaybookResponseObject); ok {
+		if err := validResponse.VisitBreachUpdatePlaybookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // BreachListReportForms operation middleware
 func (sh *strictHandler) BreachListReportForms(w http.ResponseWriter, r *http.Request, params BreachListReportFormsParams) {
 	var request BreachListReportFormsRequestObject
@@ -9735,6 +11735,74 @@ func (sh *strictHandler) BreachRetireReportForm(w http.ResponseWriter, r *http.R
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(BreachRetireReportFormResponseObject); ok {
 		if err := validResponse.VisitBreachRetireReportFormResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachAssignResponseTask operation middleware
+func (sh *strictHandler) BreachAssignResponseTask(w http.ResponseWriter, r *http.Request, id Uuid, params BreachAssignResponseTaskParams) {
+	var request BreachAssignResponseTaskRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body BreachAssignResponseTaskJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachAssignResponseTask(ctx, request.(BreachAssignResponseTaskRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachAssignResponseTask")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachAssignResponseTaskResponseObject); ok {
+		if err := validResponse.VisitBreachAssignResponseTaskResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BreachSetResponseTaskStatus operation middleware
+func (sh *strictHandler) BreachSetResponseTaskStatus(w http.ResponseWriter, r *http.Request, id Uuid, params BreachSetResponseTaskStatusParams) {
+	var request BreachSetResponseTaskStatusRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body BreachSetResponseTaskStatusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BreachSetResponseTaskStatus(ctx, request.(BreachSetResponseTaskStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BreachSetResponseTaskStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BreachSetResponseTaskStatusResponseObject); ok {
+		if err := validResponse.VisitBreachSetResponseTaskStatusResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

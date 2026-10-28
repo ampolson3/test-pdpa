@@ -36,14 +36,20 @@ const (
 	SubjectNotificationType = "breach_subject_notification"
 	// FormType is the PLT-06 form type of breach risk assessments; its scoring bands must be none / low / high.
 	FormType = "breach"
+	// PlaybookType / ResponseTaskType (BRE-11): audit entity types for the playbook library and its tasks.
+	PlaybookType     = "breach_playbook"
+	ResponseTaskType = "breach_response_task"
 )
 
 // Permission codes (docs/security/permissions.yaml).
 const (
-	PermRead         = "breach.incident.read"
-	PermCreate       = "breach.incident.create"
-	PermUpdate       = "breach.incident.update"
-	PermApprove      = "breach.incident.approve"
+	PermRead    = "breach.incident.read"
+	PermCreate  = "breach.incident.create"
+	PermUpdate  = "breach.incident.update"
+	PermApprove = "breach.incident.approve"
+	// PermExecute (BRE-11): applying a playbook and working its response tasks — "ดำเนินการ / มอบหมาย / ทำรายการ",
+	// already seeded (SEC/DPO/IT/PRIVACY hold it) but unused by any feature before this one.
+	PermExecute      = "breach.incident.execute"
 	PermNoticeRead   = "breach.notification.read"
 	PermNoticeCreate = "breach.notification.create"
 	PermNoticeUpdate = "breach.notification.update"

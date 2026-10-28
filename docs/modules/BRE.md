@@ -441,6 +441,27 @@ already does here.
 
 **Acceptance criteria:** เลือกประเภทเหตุแล้วได้ชุดงานตาม playbook
 
+**สถานะ:** done — `breach.playbooks`/`breach.response_tasks` ถูกระบุไว้ในฐานข้อมูลตั้งต้นแล้ว (00013_breach.sql,
+FK ครบใน 00018) ไม่ต้อง migration ใหม่ มีเพียง service (`internal/breach/service/playbooks.go`) + HTTP ใหม่.
+จงใจไม่ใช้ PLT-05 (workflow engine ทั่วไป) ตามที่ backlog ระบุ `ขึ้นกับ` — `breach.response_tasks` ไม่มีคอลัมน์
+เจ้าของงานให้ resolve ต่อ record แบบที่ engine นั้นออกแบบไว้ (ผูก assignee ไว้ใน Definition JSON ระดับ type) จึง
+ใช้ state machine เล็กในโมดูลเอง (`open -> in_progress -> done | cancelled`) แบบเดียวกับที่ DSAR-08 เคยเลือกไม่ใช้
+PLT-05 ด้วยเหตุผลเดียวกัน. `ApplyPlaybook` คือเกณฑ์การรับรู้ผลลัพธ์โดยตรง: resolve playbook จาก `incident_type`
+ของ incident เอง (หรือระบุ playbook_id ตรงก็ได้) แล้วแปลงทุก step เป็นแถว `breach.response_tasks` จริง — เรียกซ้ำ
+กับ playbook เดียวกันเป็น no-op ไม่สร้างซ้ำ. `breach.playbooks.tenant_id` เป็น nullable แบบเดียวกับ master data
+ของ ORG-07 (global default + tenant เขียนทับได้เฉพาะของตัวเอง) แต่รอบนี้ไม่ seed playbook ตัวอย่างใด ๆ — ปล่อยให้
+DPO/SEC สร้างเองตามบริบทจริงขององค์กร. สิทธิ์ใช้โค้ดที่ seed ไว้แล้วทั้งหมด `breach.incident.{read,create,update,
+execute}` (`execute` ถูก seed ไว้ตั้งแต่ baseline แต่ไม่มี feature ใดใช้มาก่อนรอบนี้) — ไม่มีโค้ดสิทธิ์ใหม่. API:
+`GET`/`POST /admin/v1/breach/playbooks`, `GET`/`PUT /admin/v1/breach/playbooks/{id}`,
+`GET /admin/v1/breach/incidents/{id}/response-tasks`, `POST .../apply-playbook`,
+`POST /admin/v1/breach/response-tasks/{id}/status`, `POST .../assign`. UI: แท็บ "Playbook" ใหม่บนหน้า
+`/incidents/{id}` (เลือก playbook หรือปล่อยให้ resolve ตาม incident_type แล้วกดใช้, รายการงานพร้อมสถานะ/
+ผู้รับผิดชอบ, ปุ่มเริ่ม/ทำเสร็จ). ทดสอบ: unit (เกณฑ์การรับรู้ผลลัพธ์ตรง — เลือกประเภทเหตุแล้วได้ชุดงานตาม
+playbook, เรียกซ้ำเป็น no-op, ไม่มี playbook ที่ตรงถูกปฏิเสธ, มอบหมาย+เปลี่ยนสถานะ+stale ETag, two-tenant
+isolation), HTTP contract ผ่าน validator/AuthZ จริง. ไม่ได้ยืนยันแบบ live กับ Postgres/Redis/S3/clamd จริงในรอบ
+นี้ (environment limitation ที่โมดูลนี้เปิดเผยไว้แล้วในรอบก่อน ๆ) — คอมไพล์/vet ผ่านและ skip อย่างสุภาพเหมือน
+feature อื่นของโมดูลนี้.
+
 <a id="bre-14"></a>
 ### BRE-14 รายงานและสถิติเหตุละเมิด
 
