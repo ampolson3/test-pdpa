@@ -20,6 +20,19 @@ export function useActivityRiskScore(client: ApiClient, activityId: string | und
   });
 }
 
+/** GET /admin/v1/risk/activity-scores/high-risk (RRA-11): every activity whose own latest score currently
+ *  reads high/very_high — "กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง". */
+export function useHighRiskActivityScores(client: ApiClient) {
+  return useQuery({
+    queryKey: ["risk", "activity-scores", "high-risk"],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/risk/activity-scores/high-risk", {});
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
 /** POST /admin/v1/ropa/activities/{id}/risk-score (RRA-01) — computes a fresh score from the activity's
  *  current RoPA data and records it. */
 export function useScoreActivity(client: ApiClient) {

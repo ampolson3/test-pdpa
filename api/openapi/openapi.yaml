@@ -15509,6 +15509,31 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/risk/activity-scores/high-risk:
+    get:
+      operationId: riskListHighRiskActivityScores
+      tags: [risk]
+      summary: 'RRA-11: every activity whose own latest score is high/very_high right now — "กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง", for highlighting on both the RoPA list and the data flow diagram'
+      x-permission: ropa.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/ActivityRiskScore'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/ropa/activities/{id}/checklists:
     get:
       operationId: riskListActivityChecklists

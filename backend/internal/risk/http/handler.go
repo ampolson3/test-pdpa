@@ -93,6 +93,20 @@ func (h *Strict) RiskScoreActivity(ctx context.Context, req RiskScoreActivityReq
 	return RiskScoreActivity201JSONResponse(toScoreWire(s)), nil
 }
 
+// RRA-11: every activity whose own latest score currently reads high/very_high — for highlighting on both
+// the RoPA list and the data flow diagram.
+func (h *Strict) RiskListHighRiskActivityScores(ctx context.Context, req RiskListHighRiskActivityScoresRequestObject) (RiskListHighRiskActivityScoresResponseObject, error) {
+	list, err := h.svc.ListHighRiskActivityScores(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp := RiskListHighRiskActivityScores200JSONResponse{Data: make([]ActivityRiskScore, 0, len(list))}
+	for _, s := range list {
+		resp.Data = append(resp.Data, toScoreWire(s))
+	}
+	return resp, nil
+}
+
 func (h *Strict) RiskListGapRules(ctx context.Context, req RiskListGapRulesRequestObject) (RiskListGapRulesResponseObject, error) {
 	list, err := h.svc.ListGapRules(ctx)
 	if err != nil {

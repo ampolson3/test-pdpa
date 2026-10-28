@@ -80,3 +80,47 @@ func (q *Queries) InsertActivityScore(ctx context.Context, arg InsertActivitySco
 	)
 	return i, err
 }
+
+const listLatestHighRiskScores = `-- name: ListLatestHighRiskScores :many
+SELECT id, tenant_id, activity_id, matrix_id, likelihood, impact, inherent_score, residual_score, level, factor_breakdown, computed_at FROM (
+    SELECT DISTINCT ON (activity_id) id, tenant_id, activity_id, matrix_id, likelihood, impact, inherent_score, residual_score, level, factor_breakdown, computed_at
+    FROM risk.activity_scores
+    ORDER BY activity_id, computed_at DESC
+) latest
+WHERE level IN ('high', 'very_high')
+ORDER BY inherent_score DESC
+`
+
+// RRA-11: every activity's own *current* score (latest computation, not any stale earlier one) that reads
+// high/very_high right now — "กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง".
+func (q *Queries) ListLatestHighRiskScores(ctx context.Context) ([]RiskActivityScore, error) {
+	rows, err := q.db.Query(ctx, listLatestHighRiskScores)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []RiskActivityScore
+	for rows.Next() {
+		var i RiskActivityScore
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.ActivityID,
+			&i.MatrixID,
+			&i.Likelihood,
+			&i.Impact,
+			&i.InherentScore,
+			&i.ResidualScore,
+			&i.Level,
+			&i.FactorBreakdown,
+			&i.ComputedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

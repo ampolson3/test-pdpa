@@ -693,6 +693,14 @@ this codebase uses throughout).
 
 **Acceptance criteria:** กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### RRA-11`. สรุป: endpoint ใหม่
+`GET /admin/v1/risk/activity-scores/high-risk` (`ropa.risk.read`, no migration) คืนทุกกิจกรรมที่เวอร์ชัน
+ล่าสุดของ risk.activity_scores อ่านว่า high/very_high ขณะนี้ (ไม่ใช่เวอร์ชันเก่าที่เคยสูงแล้วลดลง) —
+frontend ดึงรายการนี้แยกจาก Graph/ListActivities ของ ropa/dataflow (รักษา module boundary, rule 9) แล้ว
+join ด้วย activity_id เอง: `/ropa/activities` เพิ่มคอลัมน์ "ความเสี่ยง" (ลิงก์ + เหตุผลใน tooltip) และ
+`/data-flow` ไฮไลต์ node กิจกรรมเป็นสีแดงเหมือน DFG-04/DSA-12's own missing-agreement flag พร้อมคลิกไปหน้า
+กิจกรรม.
+
 <a id="rra-12"></a>
 ### RRA-12 ประเมินซ้ำเมื่อกิจกรรมเปลี่ยนหรือครบรอบ
 

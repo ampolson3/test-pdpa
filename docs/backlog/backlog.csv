@@ -214,7 +214,7 @@ RRA-05,RRA,Checklist ตรวจสอบกิจกรรม,Activity checkli
 RRA-08,RRA,ยอมรับความเสี่ยงพร้อมผู้อนุมัติ,Risk acceptance,Should,P3,จัดการ,แนวปฏิบัติตลาด,EXEC DPO,S,S,N,3,3,0.7,0,2.1,PLT-08,,docs/modules/RRA.md#rra-08,การยอมรับหมดอายุและเตือนทบทวนตามวันที่ตั้ง,done
 RRA-09,RRA,ทะเบียนความเสี่ยงด้านข้อมูลส่วนบุคคล,Privacy risk register,Should,P3,ติดตาม,ม.37(1),DPO SEC,M,M,Y,5,5,1.2,2.0,3.5,RRA-02,,docs/modules/RRA.md#rra-09,ความเสี่ยงจาก DPIA / RoPA / คู่ค้ารวมอยู่ในทะเบียนเดียว,done
 RRA-10,RRA,Heatmap และแดชบอร์ดความเสี่ยง,Risk heatmap & dashboard,Should,P3,ติดตาม,แนวปฏิบัติตลาด,DPO EXEC,S,M,Y,3,5,1.0,2.0,2.8,PLT-18,,docs/modules/RRA.md#rra-10,คลิกช่อง heatmap แล้วเห็นรายการความเสี่ยงของช่องนั้น,todo
-RRA-11,RRA,แสดงจุดเสี่ยงบนรายการและแผนผัง,Risk flags on RoPA / data flow,Should,P3,ติดตาม,ม.37(1),OWNER DPO,S,S,N,3,3,0.7,0,2.1,DFG-01,,docs/modules/RRA.md#rra-11,กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง,todo
+RRA-11,RRA,แสดงจุดเสี่ยงบนรายการและแผนผัง,Risk flags on RoPA / data flow,Should,P3,ติดตาม,ม.37(1),OWNER DPO,S,S,N,3,3,0.7,0,2.1,DFG-01,,docs/modules/RRA.md#rra-11,กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง,done
 RRA-12,RRA,ประเมินซ้ำเมื่อกิจกรรมเปลี่ยนหรือครบรอบ,Re-assessment,Should,P3,ติดตาม,ม.37(1),SCHED,S,XS,N,3,1,0.5,0,1.4,PLT-11,,docs/modules/RRA.md#rra-12,คะแนนอัปเดตภายใน 1 นาทีหลังแก้ RoPA,done
 RRA-13,RRA,คะแนนความพร้อมรายหน่วยงาน,Compliance score,Should,P3,ติดตาม,แนวปฏิบัติตลาด,DPO EXEC,M,S,N,5,3,1.0,0,2.8,RRA-04,,docs/modules/RRA.md#rra-13,คะแนนอธิบายได้ว่าหักจากช่องว่างใด,todo
 RRA-14,RRA,รายงานความเสี่ยงสำหรับผู้บริหาร,Executive risk report,Should,P3,รายงาน,แนวปฏิบัติตลาด,EXEC,S,S,N,3,3,0.7,0,2.1,PLT-16,,docs/modules/RRA.md#rra-14,รายงานสร้างได้ในคลิกเดียวและตรงกับทะเบียน,todo

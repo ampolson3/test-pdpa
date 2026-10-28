@@ -186,6 +186,24 @@ func (s *Service) LatestScore(ctx context.Context, activityID uuid.UUID) (Activi
 	return toActivityScore(row, factors), nil
 }
 
+// ListHighRiskActivityScores is RRA-11's own acceptance criterion directly: every activity whose own
+// latest computation (not a stale earlier one a later recompute superseded) currently reads high/
+// very_high — for highlighting on both the RoPA activity list and the data flow diagram. RLS already
+// scopes this to the caller's tenant.
+func (s *Service) ListHighRiskActivityScores(ctx context.Context) ([]ActivityScore, error) {
+	rows, err := riskstore.New(pdb.MustTxFromContext(ctx)).ListLatestHighRiskScores(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ActivityScore, 0, len(rows))
+	for _, r := range rows {
+		var factors []Factor
+		_ = json.Unmarshal(r.FactorBreakdown, &factors)
+		out = append(out, toActivityScore(r, factors))
+	}
+	return out, nil
+}
+
 // RescoreOnActivityChange is RRA-12's own "คำนวณใหม่เมื่อ RoPA เปลี่ยน": called from the
 // ropa.activity_approved subscriber (internal/wiring/events.go) for every real RoPA change — the acceptance
 // criterion itself ("คะแนนอัปเดตภายใน 1 นาทีหลังแก้ RoPA") is satisfied trivially, since Score runs

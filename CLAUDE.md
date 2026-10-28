@@ -4598,6 +4598,57 @@ build` (incl. the updated `/data-flow` route) all verified clean. Not done, deli
 and DFG-08's own `ExportDiagram` already renders on demand from the live graph); DFG-06's own multi-view
 `view_type` values (no consumer yet, same "no consumer yet" deferral this codebase uses throughout).
 
+### RRA-11 แสดงจุดเสี่ยงบนรายการและแผนผัง (`docs/modules/RRA.md#rra-11`) — done
+RRA-01's own frontend note scoped its risk score display to "คะแนนความเสี่ยงในหน้ากิจกรรม" (the activity's
+own detail page) — this feature's real, narrow gap against its own acceptance criterion
+("กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง") is surfacing that same score on the `/ropa/activities`
+list and the `/data-flow` diagram, neither of which read it before now. No migration or new permission
+code: `risk.activity_scores` and `ropa.risk.read` (already granted to both OWNER and DPO, this feature's
+own actor line) were both already in place from RRA-01.
+
+`backend/db/queries/risk/activity_scores.sql`'s new `ListLatestHighRiskScores` is the acceptance criterion's
+own "current, not stale" requirement: a `DISTINCT ON (activity_id) ... ORDER BY activity_id, computed_at
+DESC` subquery (each activity's own latest computation, never an earlier one a later re-score superseded)
+filtered to `level IN ('high', 'very_high')` — proven directly by a test that scores an activity high, then
+adds a security control (removing the `no_controls` likelihood factor) and re-scores it lower, confirming
+it drops out of the list on the very next read. `riskservice.Service.ListHighRiskActivityScores` wraps it,
+reusing the existing `toActivityScore`/`Factor` types RRA-01 already built — no new Go type.
+
+Deliberately **not** joined into either `ropaservice.ListActivities` or `dataflowservice.Graph` — embedding
+risk data into either response would mean a caller holding `ropa.activity.read`/`ropa.dataflow.read` but
+not `ropa.risk.read` sees risk information through a permission check that was never meant to gate it, the
+exact kind of cross-module permission leak DPO-05's own fix (an internal `authz` check before calling into
+another module) already identified and avoided; keeping it a separate, independently-permissioned endpoint
+the frontend joins by `activity_id` on its own (the same pattern `/ropa/activities`'s own `useMyOpenQuestions`
+already established for ROPA-12's cross-cutting data) avoids the leak entirely, at the cost of one extra
+client-side fetch — a trade this codebase already makes elsewhere for the identical reason. `dataflow` and
+`risk` still never import one another (rule 9): the data-flow page matches a `DataflowNode`'s own id back to
+an activity via its existing `"activity:<uuid>"` scheme (`dataflowservice.activityNodeID`'s own format,
+read, not written, by the frontend), entirely client-side.
+
+Found and fixed while wiring this: `internal/risk/http` had no line in the Makefile's own `gen` target at
+all (unlike every other module's `http` package) — `make gen` silently never regenerated `risk.gen.go`,
+even though its own `oapi-codegen.yaml` was otherwise correctly configured; added the missing line.
+
+API: `GET /admin/v1/risk/activity-scores/high-risk` (`ropa.risk.read`) → `{data:
+[ActivityRiskScore]}` (reusing the existing schema RRA-01's own per-activity endpoint already returns, now
+also carrying `activity_id` for matching). UI: `/ropa/activities` gained a "ความเสี่ยง" column — a red badge
+linking to the activity, its `title` attribute listing the contributing factor codes; `/data-flow` highlights
+a high-risk activity's own node the same warning-red DFG-04/DSA-12's own missing-agreement flag already uses,
+clickable through to `/ropa/activities/{id}`. Tests: unit (`internal/risk/service/rra11_test.go` — the
+acceptance criterion directly: a low-scoring activity never appears, a high-scoring one does, and adding a
+control to lower it below the threshold removes it again on the next read; two-tenant isolation), HTTP
+contract (`internal/risk/http/handler_test.go`'s existing `TestActivityRiskScoreEndpoints_Contract`, extended
+with 401/200 on the new endpoint through the real validator + AuthZ). Verified live against this session's
+own real Postgres 16 + Redis: `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), the
+full `internal/risk/...`/`internal/dataflow/...` suites (no regressions — every pre-existing failure in
+`internal/risk/{service,http}` and `internal/ropa/{service,http}`, confirmed identical both before and after
+this change via `git stash -u`, is unrelated: the already-disclosed risk-matrix/acceptance-expiry/vendor-FK
+gaps and the ROPA-18 import suite's own fixture gap), `make gen` re-run with no drift (also fixing the
+Makefile gap above), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/ropa/activities` and `/data-flow` routes) all verified
+clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

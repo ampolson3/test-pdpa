@@ -45,6 +45,7 @@ gen:
 	cd backend/internal/agreement/http && oapi-codegen -config oapi-codegen.yaml -o agreement.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/gov/http && oapi-codegen -config oapi-codegen.yaml -o gov.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/dataflow/http && oapi-codegen -config oapi-codegen.yaml -o dataflow.gen.go ../../../../api/openapi/openapi.yaml
+	cd backend/internal/risk/http && oapi-codegen -config oapi-codegen.yaml -o risk.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/platform/provider/http && oapi-codegen -config oapi-codegen.yaml -o provider.gen.go ../../../../../api/openapi/openapi.yaml
 	cd backend/internal/cookie/http && oapi-codegen -config oapi-codegen.yaml -o cookie.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/cookie/publichttp && oapi-codegen -config oapi-codegen.yaml -o public.gen.go ../../../../api/openapi/openapi.yaml

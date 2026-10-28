@@ -8,3 +8,14 @@ RETURNING *;
 
 -- name: GetLatestActivityScore :one
 SELECT * FROM risk.activity_scores WHERE activity_id = $1 ORDER BY computed_at DESC LIMIT 1;
+
+-- name: ListLatestHighRiskScores :many
+-- RRA-11: every activity's own *current* score (latest computation, not any stale earlier one) that reads
+-- high/very_high right now — "กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง".
+SELECT * FROM (
+    SELECT DISTINCT ON (activity_id) *
+    FROM risk.activity_scores
+    ORDER BY activity_id, computed_at DESC
+) latest
+WHERE level IN ('high', 'very_high')
+ORDER BY inherent_score DESC;

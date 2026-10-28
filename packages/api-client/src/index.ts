@@ -160,6 +160,7 @@ export {
 export {
   useActivityRiskScore,
   useScoreActivity,
+  useHighRiskActivityScores,
   type ActivityRiskScore,
   type RiskFactorContribution,
 } from "./activityRiskScores";

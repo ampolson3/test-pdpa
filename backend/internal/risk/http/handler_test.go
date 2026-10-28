@@ -405,6 +405,17 @@ func TestActivityRiskScoreEndpoints_Contract(t *testing.T) {
 	if code, _ := do("POST", "/admin/v1/ropa/activities/"+uuid.New().String()+"/risk-score", &admin, nil, nil); code != 404 {
 		t.Errorf("score unknown activity: %d, want 404", code)
 	}
+
+	// RRA-11: the high-risk list itself, behind the real validator + AuthZ chain. Content correctness
+	// (which activities actually appear) is already proven at the unit level (rra11_test.go) — this just
+	// proves the endpoint's own auth/shape through the real HTTP stack.
+	highRiskPath := "/admin/v1/risk/activity-scores/high-risk"
+	if code, _ := do("GET", highRiskPath, nil, nil, nil); code != 401 {
+		t.Errorf("high-risk list, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", highRiskPath, &reader, nil, nil); code != 200 || !strings.Contains(body, `"data"`) {
+		t.Errorf("high-risk list: %d %s", code, body)
+	}
 }
 
 // Contract test for the gap-analysis endpoints (RRA-04) behind the real OpenAPI validator and AuthZ.

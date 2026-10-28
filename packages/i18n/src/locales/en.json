@@ -1733,7 +1733,8 @@
       "noNotices": "No notice is composed from this activity.",
       "consentPurposes": "Linked consent purposes",
       "noConsentPurposes": "No purpose of this activity cites a consent purpose."
-    }
+    },
+    "riskColumn": "Risk"
   },
   "notices": {
     "signInRequired": "Please sign in",
@@ -3448,7 +3449,7 @@
       "transfer": "Cross-border transfer",
       "destroy": "Destroy / dispose",
       "warning": "Cross-border transfer with no logged legal basis",
-      "missingAgreement": "Processor / other controller with no DPA/DSA (click to open the agreement)"
+      "missingAgreement": "Processor / other controller with no DPA/DSA, or a high-risk activity (RRA-11) — click to open"
     },
     "updating": "Updating...",
     "lastUpdated": "Last updated {time} (auto-refreshes every 30s)",

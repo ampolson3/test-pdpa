@@ -1401,6 +1401,9 @@ type ServerInterface interface {
 	// RiskGetActivityChecklist One checklist run by id (RRA-05)
 	// (GET /admin/v1/risk/activity-checklists/{id})
 	RiskGetActivityChecklist(w http.ResponseWriter, r *http.Request, id Uuid, params RiskGetActivityChecklistParams)
+	// RiskListHighRiskActivityScores RRA-11: every activity whose own latest score is high/very_high right now — "กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง", for highlighting on both the RoPA list and the data flow diagram
+	// (GET /admin/v1/risk/activity-scores/high-risk)
+	RiskListHighRiskActivityScores(w http.ResponseWriter, r *http.Request)
 	// RiskListOpenGapFindings The tenant-wide gap register (RRA-04) — every open finding across every activity, newest first
 	// (GET /admin/v1/risk/gap-findings)
 	RiskListOpenGapFindings(w http.ResponseWriter, r *http.Request, params RiskListOpenGapFindingsParams)
@@ -1470,6 +1473,12 @@ type Unimplemented struct{}
 // RiskGetActivityChecklist One checklist run by id (RRA-05)
 // (GET /admin/v1/risk/activity-checklists/{id})
 func (_ Unimplemented) RiskGetActivityChecklist(w http.ResponseWriter, r *http.Request, id Uuid, params RiskGetActivityChecklistParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RiskListHighRiskActivityScores RRA-11: every activity whose own latest score is high/very_high right now — "กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง", for highlighting on both the RoPA list and the data flow diagram
+// (GET /admin/v1/risk/activity-scores/high-risk)
+func (_ Unimplemented) RiskListHighRiskActivityScores(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1643,6 +1652,20 @@ func (siw *ServerInterfaceWrapper) RiskGetActivityChecklist(w http.ResponseWrite
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RiskGetActivityChecklist(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RiskListHighRiskActivityScores operation middleware
+func (siw *ServerInterfaceWrapper) RiskListHighRiskActivityScores(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RiskListHighRiskActivityScores(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2867,6 +2890,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/admin/v1/ropa/activities/{id}/risk-score", wrapper.RiskScoreActivity)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/risk/activity-scores/high-risk", wrapper.RiskListHighRiskActivityScores)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/ropa/activities/{id}/checklists", wrapper.RiskListActivityChecklists)
 	})
 	r.Group(func(r chi.Router) {
@@ -2995,6 +3021,61 @@ func (response RiskGetActivityChecklist404ApplicationProblemPlusJSONResponse) Vi
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListHighRiskActivityScoresRequestObject struct {
+}
+
+type RiskListHighRiskActivityScoresResponseObject interface {
+	VisitRiskListHighRiskActivityScoresResponse(w http.ResponseWriter) error
+}
+
+type RiskListHighRiskActivityScores200JSONResponse struct {
+	Data []ActivityRiskScore `json:"data"`
+}
+
+func (response RiskListHighRiskActivityScores200JSONResponse) VisitRiskListHighRiskActivityScoresResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListHighRiskActivityScores401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response RiskListHighRiskActivityScores401ApplicationProblemPlusJSONResponse) VisitRiskListHighRiskActivityScoresResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RiskListHighRiskActivityScores403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response RiskListHighRiskActivityScores403ApplicationProblemPlusJSONResponse) VisitRiskListHighRiskActivityScoresResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4692,6 +4773,9 @@ type StrictServerInterface interface {
 	// RiskGetActivityChecklist One checklist run by id (RRA-05)
 	// (GET /admin/v1/risk/activity-checklists/{id})
 	RiskGetActivityChecklist(ctx context.Context, request RiskGetActivityChecklistRequestObject) (RiskGetActivityChecklistResponseObject, error)
+	// RiskListHighRiskActivityScores RRA-11: every activity whose own latest score is high/very_high right now — "กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง", for highlighting on both the RoPA list and the data flow diagram
+	// (GET /admin/v1/risk/activity-scores/high-risk)
+	RiskListHighRiskActivityScores(ctx context.Context, request RiskListHighRiskActivityScoresRequestObject) (RiskListHighRiskActivityScoresResponseObject, error)
 	// RiskListOpenGapFindings The tenant-wide gap register (RRA-04) — every open finding across every activity, newest first
 	// (GET /admin/v1/risk/gap-findings)
 	RiskListOpenGapFindings(ctx context.Context, request RiskListOpenGapFindingsRequestObject) (RiskListOpenGapFindingsResponseObject, error)
@@ -4813,6 +4897,30 @@ func (sh *strictHandler) RiskGetActivityChecklist(w http.ResponseWriter, r *http
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RiskGetActivityChecklistResponseObject); ok {
 		if err := validResponse.VisitRiskGetActivityChecklistResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RiskListHighRiskActivityScores operation middleware
+func (sh *strictHandler) RiskListHighRiskActivityScores(w http.ResponseWriter, r *http.Request) {
+	var request RiskListHighRiskActivityScoresRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RiskListHighRiskActivityScores(ctx, request.(RiskListHighRiskActivityScoresRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RiskListHighRiskActivityScores")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RiskListHighRiskActivityScoresResponseObject); ok {
+		if err := validResponse.VisitRiskListHighRiskActivityScoresResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -5255,6 +5255,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/risk/activity-scores/high-risk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RRA-11: every activity whose own latest score is high/very_high right now — "กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง", for highlighting on both the RoPA list and the data flow diagram */
+        get: operations["riskListHighRiskActivityScores"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/activities/{id}/checklists": {
         parameters: {
             query?: never;
@@ -23274,6 +23291,30 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    riskListHighRiskActivityScores: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ActivityRiskScore"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     riskListActivityChecklists: {

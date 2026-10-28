@@ -11,6 +11,7 @@ import {
   dataflowReportHref,
   useDataflowSnapshots,
   useDataflowPublishSnapshot,
+  useHighRiskActivityScores,
   type DataflowEdge,
   type DataflowNode,
 } from "@pdpa/api-client";
@@ -123,13 +124,24 @@ async function layout(gNodes: DataflowNode[], gEdges: DataflowEdge[]) {
   return positions;
 }
 
-function toFlowNode(n: DataflowNode, pos: { x: number; y: number; width: number; height: number }): Node {
+// activityIdOf extracts the uuid from an activity node's own id scheme ("activity:<uuid>", see
+// dataflowservice.activityNodeID) — the only way to match a Graph node back to a risk.activity_scores row,
+// since the backend never joins the two modules together (rule 9).
+function activityIdOf(nodeId: string): string | undefined {
+  return nodeId.startsWith("activity:") ? nodeId.slice("activity:".length) : undefined;
+}
+
+function toFlowNode(n: DataflowNode, pos: { x: number; y: number; width: number; height: number }, isHighRisk: boolean): Node {
   // org_unit nodes are rendered as a React Flow "group" background; every other node type is a styled box.
   const isGroup = n.type === "org_unit";
+  // RRA-11: a high-risk activity is highlighted the same warning-red DFG-04/DSA-12's own missing-agreement
+  // flag already uses — "ไฮไลต์กิจกรรม...พร้อมเหตุผลและลิงก์ไปแก้ไข" (reason via the tooltip, link via
+  // onNodeClick below).
+  const warn = n.warning || isHighRisk;
   return {
     id: n.id,
     type: isGroup ? "group" : undefined,
-    data: { label: n.label, node: n },
+    data: { label: n.label, node: n, isHighRisk },
     position: { x: pos.x, y: pos.y },
     parentId: n.parent_id ?? undefined,
     extent: n.parent_id ? "parent" : undefined,
@@ -142,15 +154,15 @@ function toFlowNode(n: DataflowNode, pos: { x: number; y: number; width: number;
           // DFG-04/DSA-12: a processor recipient with no DPA, or a controller/joint_controller recipient
           // with no DSA, is outlined and tinted the same warning red the transfer edges already use, and
           // clickable through to its own agreement(s) when any exist.
-          border: n.warning ? "2px solid #dc2626" : `2px solid ${NODE_COLOR[n.type] ?? "#334155"}`,
-          background: n.warning ? "#fef2f2" : "#fff",
+          border: warn ? "2px solid #dc2626" : `2px solid ${NODE_COLOR[n.type] ?? "#334155"}`,
+          background: warn ? "#fef2f2" : "#fff",
           fontSize: 12,
           padding: 6,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           textAlign: "center",
-          cursor: n.agreement_ids?.length ? "pointer" : undefined,
+          cursor: n.agreement_ids?.length || isHighRisk ? "pointer" : undefined,
         },
     draggable: false,
     selectable: !isGroup,
@@ -184,6 +196,10 @@ export function DataFlowContent() {
 
   const entities = useLegalEntities(client);
   const graph = useDataflowGraph(client, { legal_entity_id: legalEntityId });
+  // RRA-11: the same tenant-wide high-risk set the RoPA activity list highlights, matched here against
+  // each activity node's own id ("activity:<uuid>") — "ไฮไลต์...ทั้งในรายการและแผนผัง".
+  const highRisk = useHighRiskActivityScores(client);
+  const highRiskIds = useMemo(() => new Set((highRisk.data ?? []).map((s) => s.activity_id)), [highRisk.data]);
 
   const [flowNodes, setFlowNodes] = useState<Node[]>([]);
   const [flowEdges, setFlowEdges] = useState<Edge[]>([]);
@@ -220,7 +236,8 @@ export function DataFlowContent() {
       for (const [id, pos] of ordered) {
         const n = byId.get(id);
         if (!n) continue;
-        nodes.push(toFlowNode(n, pos));
+        const activityId = activityIdOf(n.id);
+        nodes.push(toFlowNode(n, pos, !!activityId && highRiskIds.has(activityId)));
         if (n.type === "org_unit") {
           // React Flow's built-in "group" node renders no text of its own — a small non-interactive
           // label node, parented to the group, carries the swimlane's name instead.
@@ -244,7 +261,7 @@ export function DataFlowContent() {
     return () => {
       cancelled = true;
     };
-  }, [gNodes, gEdges]);
+  }, [gNodes, gEdges, highRiskIds]);
 
   if (!canRead) return <main className="mx-auto max-w-6xl p-8 text-slate-600">{t("forbidden")}</main>;
 
@@ -306,9 +323,15 @@ export function DataFlowContent() {
             nodesConnectable={false}
             edgesFocusable={false}
             onNodeClick={(_, node) => {
-              const dn = (node.data as { node?: DataflowNode }).node;
-              const agreementId = dn?.agreement_ids?.[0];
-              if (agreementId) router.push(`/agreements/${agreementId}`);
+              const data = node.data as { node?: DataflowNode; isHighRisk?: boolean };
+              const agreementId = data.node?.agreement_ids?.[0];
+              if (agreementId) {
+                router.push(`/agreements/${agreementId}`);
+                return;
+              }
+              // RRA-11: "ลิงก์ไปแก้ไข" — a high-risk activity node clicks through to its own detail page.
+              const activityId = data.isHighRisk ? activityIdOf(node.id) : undefined;
+              if (activityId) router.push(`/ropa/activities/${activityId}`);
             }}
           >
             <Background />

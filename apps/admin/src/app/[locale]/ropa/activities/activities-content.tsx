@@ -12,6 +12,7 @@ import {
   useLegalEntities,
   useMyOpenQuestions,
   useOrgUnits,
+  useHighRiskActivityScores,
   type ActivityRole,
   type ActivityStatus,
 } from "@pdpa/api-client";
@@ -48,6 +49,14 @@ export function ActivitiesContent() {
 
   const list = useActivities(client, { status: statusFilter || undefined, org_unit_id: orgUnitFilter || undefined, q: q || undefined });
   const myQuestions = useMyOpenQuestions(client);
+  // RRA-11: "กิจกรรมเสี่ยงสูงแสดงเด่นทั้งในรายการและแผนผัง" — a plain map keyed by activity id, so the
+  // list highlights a row the instant its own latest score reads high/very_high, with no row-by-row call.
+  const highRisk = useHighRiskActivityScores(client);
+  const highRiskByActivity = useMemo(() => {
+    const m = new Map<string, { level: string; factors: { code: string }[] }>();
+    for (const s of highRisk.data ?? []) m.set(s.activity_id, { level: s.level, factors: s.factors });
+    return m;
+  }, [highRisk.data]);
   const { save } = useActivityMutations(client);
   const entities = useLegalEntities(client);
   const units = useOrgUnits(client, legalEntityId);
@@ -183,22 +192,37 @@ export function ActivitiesContent() {
         <table className="w-full rounded-md border border-slate-200 bg-white" data-testid="activities-list">
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr><th className="px-3 py-2">{t("form.code")}</th><th className="px-3 py-2">{t("form.name")}</th><th className="px-3 py-2">{t("form.role")}</th>
-              <th className="px-3 py-2">{t("statusLabel")}</th><th className="px-3 py-2">{t("completeness")}</th></tr>
+              <th className="px-3 py-2">{t("statusLabel")}</th><th className="px-3 py-2">{t("completeness")}</th><th className="px-3 py-2">{t("riskColumn")}</th></tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.map((a) => (
-              <tr key={a.id}>
-                <td className="px-3 py-2 font-mono text-xs"><Link className="text-sky-700 underline" href={`/ropa/activities/${a.id}`}>{a.code}</Link></td>
-                <td className="px-3 py-2">{a.name}</td>
-                <td className="px-3 py-2">{t(`roles.${a.role}`)}</td>
-                <td className="px-3 py-2">{t(`statuses.${a.status}`)}</td>
-                <td className="px-3 py-2">
-                  <span className={a.completeness < 100 ? "rounded bg-amber-100 px-2 py-0.5 text-amber-800" : "rounded bg-emerald-100 px-2 py-0.5 text-emerald-800"} data-testid="completeness-badge">
-                    {a.completeness < 100 ? t("incomplete", { pct: a.completeness }) : t("complete")}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {rows.map((a) => {
+              const risk = highRiskByActivity.get(a.id);
+              return (
+                <tr key={a.id}>
+                  <td className="px-3 py-2 font-mono text-xs"><Link className="text-sky-700 underline" href={`/ropa/activities/${a.id}`}>{a.code}</Link></td>
+                  <td className="px-3 py-2">{a.name}</td>
+                  <td className="px-3 py-2">{t(`roles.${a.role}`)}</td>
+                  <td className="px-3 py-2">{t(`statuses.${a.status}`)}</td>
+                  <td className="px-3 py-2">
+                    <span className={a.completeness < 100 ? "rounded bg-amber-100 px-2 py-0.5 text-amber-800" : "rounded bg-emerald-100 px-2 py-0.5 text-emerald-800"} data-testid="completeness-badge">
+                      {a.completeness < 100 ? t("incomplete", { pct: a.completeness }) : t("complete")}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2">
+                    {risk && (
+                      <Link
+                        href={`/ropa/activities/${a.id}`}
+                        className="rounded bg-red-100 px-2 py-0.5 text-red-800 hover:underline"
+                        title={risk.factors.map((f) => f.code).join(", ")}
+                        data-testid="risk-badge"
+                      >
+                        {t(`riskScore.levels.${risk.level}`)}
+                      </Link>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
