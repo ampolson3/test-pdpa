@@ -42,6 +42,7 @@ import (
 	"pdpa-platform/internal/platform/workflow"
 	riskservice "pdpa-platform/internal/risk/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
+	templatesservice "pdpa-platform/internal/ropa/templates"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
 	"pdpa-platform/internal/wiring"
 )
@@ -121,10 +122,12 @@ func run() error {
 	// CON-20: daily expiry sweep (ACTIVE consents past their own expires_at move to EXPIRED)
 	river.AddWorker(workers, &consentservice.ExpirySweeper{Pool: pool, River: inserter})
 	river.AddWorker(workers, &consentservice.ExpiryChecker{Service: consentSvc})
-	ropaSvc := &ropaservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter} // ROPA-15: periodic review reminder
-	dpiaSvc := &dpiaservice.Service{Audit: auditservice.New()}                                                  // DPIA-13: breach.activity_linked marks the activity's approved round needs_review
+	ropaSvc := &ropaservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter, Templates: templatesservice.New()} // ROPA-15: periodic review reminder; RTG-10: outdated-template review sweep
+	dpiaSvc := &dpiaservice.Service{Audit: auditservice.New()}                                                                                     // DPIA-13: breach.activity_linked marks the activity's approved round needs_review
 	river.AddWorker(workers, &ropaservice.ReviewSweeper{Pool: pool, River: inserter})
 	river.AddWorker(workers, &ropaservice.ReviewChecker{Service: ropaSvc})
+	river.AddWorker(workers, &ropaservice.TemplateReviewSweeper{Pool: pool, River: inserter}) // RTG-10: daily sweep for activities whose own template was reissued at a newer version
+	river.AddWorker(workers, &ropaservice.TemplateReviewChecker{Service: ropaSvc})
 	vendorSvc := &vendorservice.Service{Audit: auditservice.New(), Org: orgSvc, Notify: notifySvc, River: inserter} // VEN-10: periodic re-assessment reminder
 	river.AddWorker(workers, &vendorservice.ReassessmentSweeper{Pool: pool, River: inserter})
 	river.AddWorker(workers, &vendorservice.ReassessmentChecker{Service: vendorSvc})
@@ -172,7 +175,8 @@ func run() error {
 		PeriodicJobs: []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob(),
 			auditjobs.RetentionPeriodicJob(retentionMonths), govjobs.SweepPeriodicJob(), cookieservice.SweepPeriodicJob(),
 			notice.ReviewSweepPeriodicJob(), ropaservice.ReviewSweepPeriodicJob(), vendorservice.ReassessmentSweepPeriodicJob(),
-			consentservice.DoubleOptInSweepPeriodicJob(), consentservice.ExpirySweepPeriodicJob(), agreementservice.MissingDPASweepPeriodicJob()},
+			consentservice.DoubleOptInSweepPeriodicJob(), consentservice.ExpirySweepPeriodicJob(), agreementservice.MissingDPASweepPeriodicJob(),
+			ropaservice.TemplateReviewSweepPeriodicJob()},
 		SoftStopTimeout: softStop,
 	})
 	if err != nil {

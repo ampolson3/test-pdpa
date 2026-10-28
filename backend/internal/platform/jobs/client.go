@@ -31,6 +31,10 @@ var GlobalKinds = map[string]bool{
 	// agreement.missing_dpa_check per tenant. agreement.missing_dpa_check itself is tenant-scoped and
 	// must NOT be added here.
 	"agreement.missing_dpa_sweep": true,
+	// ropa/service.TemplateReviewSweepArgs (RTG-10): reads only platform.tenants and enqueues one
+	// ropa.template_review_check per tenant. ropa.template_review_check itself is tenant-scoped and
+	// must NOT be added here.
+	"ropa.template_review_sweep": true,
 }
 
 // Known gap (not this feature's to fix — see docs/known-issues.md#jobs-01): vendor.reassessment_sweep

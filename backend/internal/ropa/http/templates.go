@@ -155,6 +155,43 @@ func (h *Strict) RopaDeleteActivityTemplate(ctx context.Context, req RopaDeleteA
 	return RopaDeleteActivityTemplate204Response{}, nil
 }
 
+// RTG-10: every version ever issued of this activity template's own (template_set_id, code).
+func (h *Strict) RopaListTemplateVersions(ctx context.Context, req RopaListTemplateVersionsRequestObject) (RopaListTemplateVersionsResponseObject, error) {
+	tpl, err := h.templates.GetActivityTemplate(ctx, req.ActivityTemplateId)
+	if err != nil {
+		return nil, templatesProblem(err)
+	}
+	list, err := h.templates.ListTemplateVersions(ctx, tpl.TemplateSetID, tpl.Code)
+	if err != nil {
+		return nil, err
+	}
+	resp := RopaListTemplateVersions200JSONResponse{Data: make([]RopaActivityTemplate, 0, len(list))}
+	for _, a := range list {
+		w, err := toActivityTemplateWire(a)
+		if err != nil {
+			return nil, err
+		}
+		resp.Data = append(resp.Data, w)
+	}
+	return resp, nil
+}
+
+// RTG-10: every activity whose own template has since been reissued at a newer version.
+func (h *Strict) RopaListOutdatedTemplateActivities(ctx context.Context, req RopaListOutdatedTemplateActivitiesRequestObject) (RopaListOutdatedTemplateActivitiesResponseObject, error) {
+	list, err := h.svc.ListOutdatedTemplateActivities(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp := RopaListOutdatedTemplateActivities200JSONResponse{Data: make([]RopaOutdatedTemplateActivity, 0, len(list))}
+	for _, o := range list {
+		resp.Data = append(resp.Data, RopaOutdatedTemplateActivity{
+			ActivityId: o.ActivityID, ActivityName: o.ActivityName, ActivityCode: o.ActivityCode,
+			TemplateCode: o.TemplateCode, CurrentVersion: o.CurrentVersion, LatestVersion: o.LatestVersion,
+		})
+	}
+	return resp, nil
+}
+
 func (h *Strict) RopaSuggestTemplateItems(ctx context.Context, req RopaSuggestTemplateItemsRequestObject) (RopaSuggestTemplateItemsResponseObject, error) {
 	sugg, err := h.svc.Suggest(ctx, req.ActivityTemplateId)
 	if err != nil {

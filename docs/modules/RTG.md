@@ -558,6 +558,33 @@ panel และ regression test (`internal/ropa/templates/rtg09_test.go`) ที
 
 **Acceptance criteria:** ประกาศ สคส. ใหม่ → กิจกรรมที่ได้รับผลกระทบได้รับงานทบทวน
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### RTG-10`. สรุป: การ "ออกเวอร์ชันใหม่" ของ
+template เป็น goose migration ใหม่ (เหมือน RTG-01/02/03/07's own seed) ไม่ใช่ live admin action ผ่าน
+`/provider/v1` — เพราะ `internal/platform/provider`'s own bypass pool ถูกจำกัดไว้เฉพาะ
+`platform.tenants`/`platform.tenant_modules` เท่านั้น (CLAUDE.md rule 1) ระบบแจ้งทบทวนเป็น River sweep
+รายวัน (`ropa.template_review_sweep` ใน `jobs.GlobalKinds` → `ropa.template_review_check` ต่อ tenant)
+เทียบ `ropa.processing_activities.template_id` ของแต่ละกิจกรรมกับเวอร์ชันล่าสุดของ template เดียวกัน แล้ว
+เปิด `dpo.tasks` (`source_type='ropa_gap'`, เลขที่ `RTG-<year>-NNNN`) แบบ dedup หนึ่งงานต่อกิจกรรม พบและแก้
+ข้อบกพร่องจริงระหว่างทำ: `ropa.processing_activities.template_id` (คอลัมน์/FK มีมาตั้งแต่ migration 00018)
+ไม่เคยถูกเขียนโดยโค้ดใดเลย — `CreateActivityFromTemplate` (ROPA-05/RTG-04/RTG-07/RTG-08's own shared path)
+ไม่เคยส่งค่านี้ แก้โดยเพิ่ม `TemplateID *uuid.UUID` ใน `Activity` struct, ส่งผ่าน `InsertActivity` SQL และ
+ตั้งค่าจริงใน `CreateActivityFromTemplate` — มิฉะนั้น acceptance criterion นี้จะหากิจกรรมไม่พบเลยใน
+deployment จริง ส่วนอื่น: `GET .../templates/activities/{id}/versions` ("หน้าประวัติ template", newest
+first) และ `GET .../activities/outdated-templates` ("รายการที่ต้องทบทวน") เป็น read-only endpoint ใหม่
+migration 00088 เป็น demonstration เท่านั้น (ไม่มีประกาศ สคส. จริงมาอ้างอิง) — seed เวอร์ชัน 2 ของ
+`recruitment_job_posting` (RTG-01) เพิ่ม `TECH_ENCRYPTION` ติด DRAFT (`docs/decisions.md` Q-43) UI:
+`/ropa/templates` มี panel "รายการที่ต้องทบทวน" (อ่านสดจาก `ListOutdatedTemplateActivities` เดียวกับ
+sweep ไม่ cache) และ `ActivityDetail` panel มี toggle "ประวัติเวอร์ชัน template". Tests:
+`internal/ropa/service/rtg10_test.go` (acceptance criterion ตรง ๆ: กิจกรรมจาก v1 ปรากฏใน outdated list
+และได้ 1 task, sweep ซ้ำไม่ซ้ำ task; กิจกรรมจาก v2 ไม่ถูก flag; nil `Dpo` ไม่ error; two-tenant isolation),
+`internal/ropa/templates`'s existing suite ครอบ `ListTemplateVersions`/`LatestVersion`. ยืนยัน live ต่อ
+Postgres/Redis จริงในเซสชันนี้ — ผ่านทั้งหมด (ความล้มเหลวที่มีอยู่ก่อนในแพ็กเกจเดียวกัน — import suite's
+fixture gap, `consent_purpose_id` template gap, `TestCheckDueReviews_NotifiesOwnerAndReschedules`'s own
+notification-count bug — ยืนยันด้วย `git stash` ว่ามีอยู่ก่อนหน้านี้แล้ว ไม่เกี่ยวกับ feature นี้).
+`go build`/`go vet`/`gofmt -l` สะอาด, `make gen` ไม่มี drift, `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` และ `pnpm --filter @pdpa/admin build` (รวม route `/ropa/templates` ที่
+อัปเดต) ผ่านทั้งหมด.
+
 <a id="rtg-11"></a>
 ### RTG-11 มอบหมายร่าง RoPA ให้หน่วยงานยืนยัน
 

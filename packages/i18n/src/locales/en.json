@@ -3280,6 +3280,18 @@
       "invalidJson": "Defaults/rationale must be valid JSON",
       "saveError": "Could not save",
       "publishedHint": "Published — every legal entity under this tenant can now create activities from it."
+    },
+    "outdated": {
+      "title": "Activities needing review",
+      "loadError": "Could not load the review list.",
+      "versionGap": "template v{current} → v{latest}"
+    },
+    "versions": {
+      "toggle": "Template version history",
+      "loading": "Loading...",
+      "loadError": "Could not load version history.",
+      "versionLabel": "Version {n}",
+      "current": "current"
     }
   },
   "governance": {

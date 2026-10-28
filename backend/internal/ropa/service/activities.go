@@ -63,6 +63,7 @@ type Activity struct {
 	MissingItems      []string
 	EndedAt           *time.Time
 	EndReason         *string
+	TemplateID        *uuid.UUID // RTG-10: the ropa.activity_templates row this was created from, if any; set once at creation
 	RowVersion        int32
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
@@ -259,7 +260,7 @@ func (s *Service) SaveActivity(ctx context.Context, a Activity, version int32) (
 		if isNew {
 			_, err = q.InsertActivity(ctx, ropastore.InsertActivityParams{ID: a.ID, LegalEntityID: a.LegalEntityID, OrgUnitID: a.OrgUnitID,
 				Code: a.Code, Name: a.Name, Description: opt(a.Description), Role: a.Role, ControllerPartyID: pgUUID(a.ControllerPartyID),
-				OwnerUserID: pgUUID(a.OwnerUserID), RightsAndAccess: opt(a.RightsAndAccess)})
+				OwnerUserID: pgUUID(a.OwnerUserID), RightsAndAccess: opt(a.RightsAndAccess), TemplateID: pgUUID(a.TemplateID)})
 		} else {
 			_, err = q.UpdateActivity(ctx, ropastore.UpdateActivityParams{ID: a.ID, RowVersion: version, LegalEntityID: a.LegalEntityID,
 				OrgUnitID: a.OrgUnitID, Code: a.Code, Name: a.Name, Description: opt(a.Description), Role: a.Role,

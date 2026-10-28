@@ -14,6 +14,8 @@ import {
   useOrgUnits,
   useOwnTemplateSets,
   useTemplateSetManagement,
+  useTemplateVersions,
+  useOutdatedTemplateActivities,
   type RopaActivityTemplate,
   type RopaTemplateSet,
 } from "@pdpa/api-client";
@@ -169,8 +171,44 @@ export function TemplatesContent() {
         </div>
       </div>
 
+      <OutdatedActivitiesSection client={client} />
       <CustomTemplatesSection client={client} cloneSourceSetId={activeSet?.id} />
     </main>
+  );
+}
+
+/** RTG-10: "รายการที่ต้องทบทวน" — every activity whose own template has since been reissued at a newer
+ * version (a new PDPC announcement, in the acceptance criterion's own wording), flagged by the daily
+ * ropa.template_review_check sweep which also opens a dpo.tasks review task for each one. This panel is
+ * a plain read of the same live comparison the sweep itself runs (ListOutdatedTemplateActivities), not a
+ * copy of its result, so it never goes stale even between sweep ticks. */
+function OutdatedActivitiesSection({ client }: { client: ReturnType<typeof createApiClient> }) {
+  const t = useTranslations("ropaTemplates.outdated");
+  const outdated = useOutdatedTemplateActivities(client);
+  const list = outdated.data ?? [];
+
+  if (outdated.isPending || (!outdated.isError && list.length === 0)) return null;
+
+  return (
+    <section className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-4" data-testid="outdated-templates-section">
+      <h2 className="font-medium text-amber-900">{t("title")}</h2>
+      {outdated.isError ? (
+        <p className="text-red-700">{t("loadError")}</p>
+      ) : (
+        <ul className="divide-y divide-amber-200" data-testid="outdated-templates-list">
+          {list.map((o) => (
+            <li key={o.activity_id} className="flex items-center justify-between gap-2 py-1 text-sm">
+              <Link className="hover:underline" href={`/ropa/activities/${o.activity_id}`}>
+                {o.activity_name} <span className="text-xs text-slate-600">({o.activity_code})</span>
+              </Link>
+              <span className="text-xs text-amber-800">
+                {t("versionGap", { current: o.current_version, latest: o.latest_version })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -537,6 +575,44 @@ function ActivityDetail({ activity }: { activity: RopaActivityTemplate }) {
       </div>
 
       {activity.legal_refs.length > 0 && <p className="text-xs text-slate-500">{activity.legal_refs.join(" · ")}</p>}
+
+      <TemplateVersionHistory client={client} activityTemplateId={activity.id} />
     </section>
+  );
+}
+
+/** RTG-10: "หน้าประวัติ template" — every version ever issued of this template's own (template_set_id,
+ * code), newest first, e.g. after a new PDPC announcement motivates issuing v2 via a reviewed migration
+ * (see internal/ropa/service/template_review.go's own package doc — SUPER/a legal reviewer issues a new
+ * version by migration, not through this read-only page). */
+function TemplateVersionHistory({ client, activityTemplateId }: { client: ReturnType<typeof createApiClient>; activityTemplateId: string }) {
+  const t = useTranslations("ropaTemplates.versions");
+  const [open, setOpen] = useState(false);
+  const versions = useTemplateVersions(client, open ? activityTemplateId : undefined);
+
+  return (
+    <div className="border-t border-slate-200 pt-3">
+      <button type="button" className="text-left text-sm font-medium text-sky-700" onClick={() => setOpen((v) => !v)} data-testid="template-versions-toggle">
+        {open ? "▾ " : "▸ "}{t("toggle")}
+      </button>
+      {open && (
+        versions.isPending ? (
+          <p className="mt-2 text-sm text-slate-500">{t("loading")}</p>
+        ) : versions.isError ? (
+          <p className="mt-2 text-sm text-red-700">{t("loadError")}</p>
+        ) : (
+          <ul className="mt-2 divide-y divide-slate-100 text-sm" data-testid="template-versions-list">
+            {(versions.data ?? []).map((v) => (
+              <li key={v.id} className="flex items-center justify-between gap-2 py-1">
+                <span>{t("versionLabel", { n: v.version_no! })}</span>
+                {v.id === activityTemplateId && (
+                  <span className="rounded bg-sky-100 px-1.5 py-0.5 text-xs text-sky-800">{t("current")}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )
+      )}
+    </div>
   );
 }

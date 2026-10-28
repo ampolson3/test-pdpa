@@ -73,6 +73,7 @@ func (s *Service) CreateActivityFromTemplate(ctx context.Context, templateID, le
 		Role:            tpl.Role,
 		OwnerUserID:     ownerUserID,
 		RightsAndAccess: defaultRightsAndAccess,
+		TemplateID:      &templateID, // RTG-10: record which template version this activity was built from
 	}, 0)
 	if err != nil {
 		return Activity{}, err

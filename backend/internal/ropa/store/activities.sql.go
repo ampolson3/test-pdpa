@@ -356,8 +356,8 @@ func (q *Queries) GetRetentionRule(ctx context.Context, id uuid.UUID) (GetRetent
 
 const insertActivity = `-- name: InsertActivity :one
 INSERT INTO ropa.processing_activities (id, tenant_id, legal_entity_id, org_unit_id, code, name, description, role,
-    controller_party_id, owner_user_id, rights_and_access, created_by, updated_by)
-VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+    controller_party_id, owner_user_id, rights_and_access, template_id, created_by, updated_by)
+VALUES ($1, current_setting('app.tenant_id')::uuid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
     NULLIF(current_setting('app.user_id', true), '')::uuid, NULLIF(current_setting('app.user_id', true), '')::uuid)
 RETURNING id, legal_entity_id, org_unit_id, code, name, description, role, controller_party_id, owner_user_id,
     status, completeness, rights_and_access, ended_at, end_reason, row_version, created_at, updated_at
@@ -374,6 +374,7 @@ type InsertActivityParams struct {
 	ControllerPartyID pgtype.UUID `db:"controller_party_id" json:"controller_party_id"`
 	OwnerUserID       pgtype.UUID `db:"owner_user_id" json:"owner_user_id"`
 	RightsAndAccess   *string     `db:"rights_and_access" json:"rights_and_access"`
+	TemplateID        pgtype.UUID `db:"template_id" json:"template_id"`
 }
 
 type InsertActivityRow struct {
@@ -396,6 +397,9 @@ type InsertActivityRow struct {
 	UpdatedAt         pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
 
+// template_id (RTG-10): which ropa.activity_templates row this activity was created from, if any
+// (ROPA-05/RTG-04/RTG-07/RTG-08's own shared CreateActivityFromTemplate) — set once at creation and never
+// changed by UpdateActivity, so a later edit never disturbs which template version it was built from.
 func (q *Queries) InsertActivity(ctx context.Context, arg InsertActivityParams) (InsertActivityRow, error) {
 	row := q.db.QueryRow(ctx, insertActivity,
 		arg.ID,
@@ -408,6 +412,7 @@ func (q *Queries) InsertActivity(ctx context.Context, arg InsertActivityParams) 
 		arg.ControllerPartyID,
 		arg.OwnerUserID,
 		arg.RightsAndAccess,
+		arg.TemplateID,
 	)
 	var i InsertActivityRow
 	err := row.Scan(
@@ -727,6 +732,46 @@ func (q *Queries) ListActivities(ctx context.Context, arg ListActivitiesParams) 
 			&i.RowVersion,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listActivitiesWithTemplate = `-- name: ListActivitiesWithTemplate :many
+SELECT id, template_id, name, code
+FROM ropa.processing_activities
+WHERE template_id IS NOT NULL
+`
+
+type ListActivitiesWithTemplateRow struct {
+	ID         uuid.UUID   `db:"id" json:"id"`
+	TemplateID pgtype.UUID `db:"template_id" json:"template_id"`
+	Name       string      `db:"name" json:"name"`
+	Code       string      `db:"code" json:"code"`
+}
+
+// RTG-10: every activity that was ever created from a template (ROPA-05/RTG-04/RTG-07/RTG-08), for the
+// daily sweep to compare each one's own template_id against that template's own latest version.
+func (q *Queries) ListActivitiesWithTemplate(ctx context.Context) ([]ListActivitiesWithTemplateRow, error) {
+	rows, err := q.db.Query(ctx, listActivitiesWithTemplate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListActivitiesWithTemplateRow
+	for rows.Next() {
+		var i ListActivitiesWithTemplateRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TemplateID,
+			&i.Name,
+			&i.Code,
 		); err != nil {
 			return nil, err
 		}

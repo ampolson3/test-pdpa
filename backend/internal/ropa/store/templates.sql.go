@@ -73,6 +73,58 @@ func (q *Queries) GetActivityTemplate(ctx context.Context, id uuid.UUID) (GetAct
 	return i, err
 }
 
+const getLatestTemplateVersionForCode = `-- name: GetLatestTemplateVersionForCode :one
+SELECT id, tenant_id, template_set_id, code, name_th, name_en, job_category, role, defaults, rationale, legal_refs, version_no, row_version
+FROM ropa.activity_templates
+WHERE template_set_id = $1 AND code = $2
+ORDER BY version_no DESC
+LIMIT 1
+`
+
+type GetLatestTemplateVersionForCodeParams struct {
+	TemplateSetID uuid.UUID `db:"template_set_id" json:"template_set_id"`
+	Code          string    `db:"code" json:"code"`
+}
+
+type GetLatestTemplateVersionForCodeRow struct {
+	ID            uuid.UUID   `db:"id" json:"id"`
+	TenantID      pgtype.UUID `db:"tenant_id" json:"tenant_id"`
+	TemplateSetID uuid.UUID   `db:"template_set_id" json:"template_set_id"`
+	Code          string      `db:"code" json:"code"`
+	NameTh        string      `db:"name_th" json:"name_th"`
+	NameEn        *string     `db:"name_en" json:"name_en"`
+	JobCategory   string      `db:"job_category" json:"job_category"`
+	Role          string      `db:"role" json:"role"`
+	Defaults      []byte      `db:"defaults" json:"defaults"`
+	Rationale     []byte      `db:"rationale" json:"rationale"`
+	LegalRefs     []string    `db:"legal_refs" json:"legal_refs"`
+	VersionNo     int32       `db:"version_no" json:"version_no"`
+	RowVersion    int32       `db:"row_version" json:"row_version"`
+}
+
+// RTG-10: the current (highest version_no) row for this template's own (template_set_id, code) — compared
+// against the version_no an activity was actually created from, to decide whether it's now outdated.
+func (q *Queries) GetLatestTemplateVersionForCode(ctx context.Context, arg GetLatestTemplateVersionForCodeParams) (GetLatestTemplateVersionForCodeRow, error) {
+	row := q.db.QueryRow(ctx, getLatestTemplateVersionForCode, arg.TemplateSetID, arg.Code)
+	var i GetLatestTemplateVersionForCodeRow
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.TemplateSetID,
+		&i.Code,
+		&i.NameTh,
+		&i.NameEn,
+		&i.JobCategory,
+		&i.Role,
+		&i.Defaults,
+		&i.Rationale,
+		&i.LegalRefs,
+		&i.VersionNo,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
 const getOwnTemplateSet = `-- name: GetOwnTemplateSet :one
 SELECT id, tenant_id, name, set_type, industry, version_no, status, published_at, row_version
 FROM ropa.template_sets
@@ -374,6 +426,70 @@ func (q *Queries) ListTemplateSets(ctx context.Context) ([]ListTemplateSetsRow, 
 			&i.VersionNo,
 			&i.Status,
 			&i.PublishedAt,
+			&i.RowVersion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTemplateVersionsForCode = `-- name: ListTemplateVersionsForCode :many
+SELECT id, tenant_id, template_set_id, code, name_th, name_en, job_category, role, defaults, rationale, legal_refs, version_no, row_version
+FROM ropa.activity_templates
+WHERE template_set_id = $1 AND code = $2
+ORDER BY version_no DESC
+`
+
+type ListTemplateVersionsForCodeParams struct {
+	TemplateSetID uuid.UUID `db:"template_set_id" json:"template_set_id"`
+	Code          string    `db:"code" json:"code"`
+}
+
+type ListTemplateVersionsForCodeRow struct {
+	ID            uuid.UUID   `db:"id" json:"id"`
+	TenantID      pgtype.UUID `db:"tenant_id" json:"tenant_id"`
+	TemplateSetID uuid.UUID   `db:"template_set_id" json:"template_set_id"`
+	Code          string      `db:"code" json:"code"`
+	NameTh        string      `db:"name_th" json:"name_th"`
+	NameEn        *string     `db:"name_en" json:"name_en"`
+	JobCategory   string      `db:"job_category" json:"job_category"`
+	Role          string      `db:"role" json:"role"`
+	Defaults      []byte      `db:"defaults" json:"defaults"`
+	Rationale     []byte      `db:"rationale" json:"rationale"`
+	LegalRefs     []string    `db:"legal_refs" json:"legal_refs"`
+	VersionNo     int32       `db:"version_no" json:"version_no"`
+	RowVersion    int32       `db:"row_version" json:"row_version"`
+}
+
+// RTG-10: every version ever issued of one template (global standard/industry/government/processor, or a
+// tenant's own custom one — same visibility RLS already scopes), newest first — "หน้าประวัติ template".
+func (q *Queries) ListTemplateVersionsForCode(ctx context.Context, arg ListTemplateVersionsForCodeParams) ([]ListTemplateVersionsForCodeRow, error) {
+	rows, err := q.db.Query(ctx, listTemplateVersionsForCode, arg.TemplateSetID, arg.Code)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTemplateVersionsForCodeRow
+	for rows.Next() {
+		var i ListTemplateVersionsForCodeRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.TemplateSetID,
+			&i.Code,
+			&i.NameTh,
+			&i.NameEn,
+			&i.JobCategory,
+			&i.Role,
+			&i.Defaults,
+			&i.Rationale,
+			&i.LegalRefs,
+			&i.VersionNo,
 			&i.RowVersion,
 		); err != nil {
 			return nil, err

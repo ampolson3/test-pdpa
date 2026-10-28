@@ -3280,6 +3280,18 @@
       "invalidJson": "ค่าตั้งต้น/เหตุผลต้องเป็น JSON ที่ถูกต้อง",
       "saveError": "บันทึกไม่สำเร็จ",
       "publishedHint": "เผยแพร่แล้ว — ทุกบริษัทในเครือภายใต้องค์กรนี้สามารถสร้างกิจกรรมจาก template นี้ได้แล้ว"
+    },
+    "outdated": {
+      "title": "กิจกรรมที่ต้องทบทวน",
+      "loadError": "ไม่สามารถโหลดรายการที่ต้องทบทวนได้",
+      "versionGap": "template v{current} → v{latest}"
+    },
+    "versions": {
+      "toggle": "ประวัติเวอร์ชาน template",
+      "loading": "กำลังโหลด...",
+      "loadError": "ไม่สามารถโหลดประวัติเวอร์ชานได้",
+      "versionLabel": "เวอร์ชาน {n}",
+      "current": "ปีจจุบัน"
     }
   },
   "governance": {

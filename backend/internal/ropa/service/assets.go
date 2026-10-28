@@ -97,6 +97,10 @@ type Notice interface {
 type Dpo interface {
 	HasTaskForConsentPurpose(ctx context.Context, consentPurposeID uuid.UUID) (bool, error)
 	OpenConsentReviewTask(ctx context.Context, consentPurposeID uuid.UUID, title, description string) (uuid.UUID, error)
+	// HasTaskForActivity/OpenTemplateReviewTask are RTG-10's own: an activity created from a template
+	// that has since been reissued at a newer version gets one deduped review task.
+	HasTaskForActivity(ctx context.Context, activityID uuid.UUID) (bool, error)
+	OpenTemplateReviewTask(ctx context.Context, activityID uuid.UUID, title, description string) (uuid.UUID, error)
 }
 
 type Service struct {

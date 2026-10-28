@@ -11311,6 +11311,69 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/ropa/templates/activities/{activityTemplateId}/versions:
+    get:
+      operationId: ropaListTemplateVersions
+      tags: [ropa]
+      summary: 'RTG-10: every version ever issued of this template''s own (template_set_id, code), newest first — "หน้าประวัติ template"'
+      x-permission: ropa.template.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: activityTemplateId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RopaActivityTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/activities/outdated-templates:
+    get:
+      operationId: ropaListOutdatedTemplateActivities
+      tags: [ropa]
+      summary: 'RTG-10: every activity whose own template has since been reissued at a newer version — "รายการที่ต้องทบทวน"'
+      x-permission: ropa.activity.read
+      x-module: ropa
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RopaOutdatedTemplateActivity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/ropa/templates/activities/{activityTemplateId}/suggest:
     get:
       operationId: ropaSuggestTemplateItems
@@ -20762,6 +20825,17 @@ components:
         legal_refs:
           type: array
           items: {type: string}
+    RopaOutdatedTemplateActivity:
+      type: object
+      description: 'RTG-10: one activity whose own template has since been reissued at a newer version — "รายการที่ต้องทบทวน".'
+      required: [activity_id, activity_name, activity_code, template_code, current_version, latest_version]
+      properties:
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        activity_name: {type: string}
+        activity_code: {type: string}
+        template_code: {type: string}
+        current_version: {type: integer}
+        latest_version: {type: integer}
     RopaSuggestedPurpose:
       type: object
       description: 'RTG-06: index is this item''s position — echo it back in RopaApplySuggestedItemsInput.purposes to confirm it.'

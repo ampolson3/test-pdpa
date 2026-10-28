@@ -3875,6 +3875,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/templates/activities/{activityTemplateId}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RTG-10: every version ever issued of this template's own (template_set_id, code), newest first — "หน้าประวัติ template" */
+        get: operations["ropaListTemplateVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/ropa/activities/outdated-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RTG-10: every activity whose own template has since been reissued at a newer version — "รายการที่ต้องทบทวน" */
+        get: operations["ropaListOutdatedTemplateActivities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/ropa/templates/activities/{activityTemplateId}/suggest": {
         parameters: {
             query?: never;
@@ -8229,6 +8263,15 @@ export interface components {
                 [key: string]: unknown;
             };
             legal_refs?: string[];
+        };
+        /** @description RTG-10: one activity whose own template has since been reissued at a newer version — "รายการที่ต้องทบทวน". */
+        RopaOutdatedTemplateActivity: {
+            activity_id: components["schemas"]["Uuid"];
+            activity_name: string;
+            activity_code: string;
+            template_code: string;
+            current_version: number;
+            latest_version: number;
         };
         /** @description RTG-06: index is this item's position — echo it back in RopaApplySuggestedItemsInput.purposes to confirm it. */
         RopaSuggestedPurpose: {
@@ -19589,6 +19632,63 @@ export interface operations {
             404: components["responses"]["NotFound"];
             412: components["responses"]["PreconditionFailed"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    ropaListTemplateVersions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                activityTemplateId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RopaActivityTemplate"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    ropaListOutdatedTemplateActivities: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RopaOutdatedTemplateActivity"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     ropaSuggestTemplateItems: {

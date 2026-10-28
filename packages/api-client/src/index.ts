@@ -247,12 +247,15 @@ export {
   useTemplateSuggestions,
   useOwnTemplateSets,
   useTemplateSetManagement,
+  useTemplateVersions,
+  useOutdatedTemplateActivities,
   type RopaTemplateSet,
   type RopaTemplateSetInput,
   type RopaCloneTemplateSetInput,
   type RopaActivityTemplate,
   type RopaActivityTemplateInput,
   type RopaTemplateSuggestions,
+  type RopaOutdatedTemplateActivity,
 } from "./activity-templates";
 export {
   useNotices,

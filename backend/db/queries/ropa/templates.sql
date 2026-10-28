@@ -18,6 +18,23 @@ SELECT id, tenant_id, template_set_id, code, name_th, name_en, job_category, rol
 FROM ropa.activity_templates
 WHERE id = $1;
 
+-- name: ListTemplateVersionsForCode :many
+-- RTG-10: every version ever issued of one template (global standard/industry/government/processor, or a
+-- tenant's own custom one — same visibility RLS already scopes), newest first — "หน้าประวัติ template".
+SELECT id, tenant_id, template_set_id, code, name_th, name_en, job_category, role, defaults, rationale, legal_refs, version_no, row_version
+FROM ropa.activity_templates
+WHERE template_set_id = $1 AND code = $2
+ORDER BY version_no DESC;
+
+-- name: GetLatestTemplateVersionForCode :one
+-- RTG-10: the current (highest version_no) row for this template's own (template_set_id, code) — compared
+-- against the version_no an activity was actually created from, to decide whether it's now outdated.
+SELECT id, tenant_id, template_set_id, code, name_th, name_en, job_category, role, defaults, rationale, legal_refs, version_no, row_version
+FROM ropa.activity_templates
+WHERE template_set_id = $1 AND code = $2
+ORDER BY version_no DESC
+LIMIT 1;
+
 -- name: ListOwnTemplateSets :many
 -- RTG-08: this tenant's own custom template sets, any status (draft/published/retired) — the management
 -- list, distinct from ListTemplateSets' own published-only browse list every other RTG feature relies on.

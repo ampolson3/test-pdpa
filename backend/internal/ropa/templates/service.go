@@ -111,6 +111,39 @@ func (s *Service) GetActivityTemplate(ctx context.Context, id uuid.UUID) (Activi
 	return toActivityTemplate(row), nil
 }
 
+// ListTemplateVersions is RTG-10's own "หน้าประวัติ template": every version ever issued of one
+// template's (template_set_id, code), newest first.
+func (s *Service) ListTemplateVersions(ctx context.Context, templateSetID uuid.UUID, code string) ([]ActivityTemplate, error) {
+	rows, err := ropastore.New(pdb.MustTxFromContext(ctx)).ListTemplateVersionsForCode(ctx, ropastore.ListTemplateVersionsForCodeParams{
+		TemplateSetID: templateSetID, Code: code,
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ActivityTemplate, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, toActivityTemplate(ropastore.GetActivityTemplateRow(r)))
+	}
+	return out, nil
+}
+
+// LatestVersion is RTG-10's own comparison point: the current (highest version_no) row for a template's
+// own (template_set_id, code) — used to decide whether an activity created from an older version is now
+// outdated. Never errors ErrNotFound for a code that still exists (it always does, since the caller's own
+// template row is itself one of the versions being compared against).
+func (s *Service) LatestVersion(ctx context.Context, templateSetID uuid.UUID, code string) (ActivityTemplate, error) {
+	row, err := ropastore.New(pdb.MustTxFromContext(ctx)).GetLatestTemplateVersionForCode(ctx, ropastore.GetLatestTemplateVersionForCodeParams{
+		TemplateSetID: templateSetID, Code: code,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ActivityTemplate{}, ErrNotFound
+	}
+	if err != nil {
+		return ActivityTemplate{}, err
+	}
+	return toActivityTemplate(ropastore.GetActivityTemplateRow(row)), nil
+}
+
 func toActivityTemplate(r ropastore.GetActivityTemplateRow) ActivityTemplate {
 	return ActivityTemplate{
 		ID: r.ID, TemplateSetID: r.TemplateSetID, Code: r.Code, NameTh: r.NameTh, NameEn: derefStr(r.NameEn),

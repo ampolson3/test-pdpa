@@ -4485,6 +4485,70 @@ internal reference content, not a document issued to a data subject or regulator
 activity across edits (RTG-01's own global templates have no version history either — `version_no` stays
 at 1, the same as every seeded template).
 
+### RTG-10 เวอร์ชัน template และแจ้งเมื่อกฎหมายเปลี่ยน (`docs/modules/RTG.md#rtg-10`) — done
+"ออกเวอร์ชันใหม่" of a template is a new goose migration, not a live `/provider/v1` admin action —
+`internal/platform/provider`'s own package doc explicitly restricts its BYPASSRLS pool to exactly two
+tables (`platform.tenants`, `platform.tenant_modules`), so a SUPER-triggered live write of a global
+(`tenant_id NULL`) `ropa.activity_templates` row is out of scope without expanding that pool's own
+documented authorization boundary — the same "a template version is reviewed legal/business content a
+migration author signs off on" reasoning RTG-01/02/03/07's own seed migrations already established.
+`ropa.activity_templates.version_no` + its baseline `UNIQUE NULLS NOT DISTINCT (tenant_id,
+template_set_id, code, version_no)` constraint (migration 00008) already made multiple versions of one
+(template_set_id, code) a real, distinct row — just never exercised before this feature. Migration 00088
+(`docs/decisions.md` Q-43) seeds a demonstrative version 2 of RTG-01's own `recruitment_job_posting`
+(no real new PDPC announcement motivates this specific content, so it stands for a hypothetical one — an
+added `TECH_ENCRYPTION` security control — flagged DRAFT pending legal review, the same "seed a draft +
+flag it" move ORG-07/ROPA-09/PNG-03/DPIA-01/RTG-01/PNG-11/RTG-02/RTG-03/RTG-07 already made), wrapped in
+the required `NO FORCE`/`FORCE ROW LEVEL SECURITY` toggle (the same pattern migrations 00049/00087 already
+use for inserting a global row into an RLS-forced table).
+
+**Real, in-scope bug found and fixed**: `ropa.processing_activities.template_id` (a real column + FK to
+`ropa.activity_templates`, present since migration 00018) had never been written by any code path —
+`CreateActivityFromTemplate` (ROPA-05's own shared mechanism, reused by RTG-04/RTG-07/RTG-08) built its
+`Activity{...}` literal with no such field, and the `Activity` struct itself (`internal/ropa/service/
+activities.go`) had no `TemplateID` field at all. Left unfixed, this feature's entire acceptance criterion
+would find zero activities in any real deployment, so fixing it was in scope, not a tangential cleanup:
+added `TemplateID *uuid.UUID` to `Activity`, a `template_id` parameter to `InsertActivity`
+(`backend/db/queries/ropa/activities.sql`, `sqlc generate` re-run), and set it in
+`CreateActivityFromTemplate` — `UpdateActivity` deliberately never touches the column, so a later edit
+never disturbs which template version an activity was originally built from.
+
+`internal/ropa/service/template_review.go` is the sweep mechanism — PNG-15/ROPA-15/VEN-10/CON-20/CON-23/
+DPA-12's own exact "sweep lists tenants, per-tenant job reads its own rows" River pattern:
+`ropa.template_review_sweep` (global, daily, added to `jobs.GlobalKinds`) → `ropa.template_review_check`
+per tenant → `CheckOutdatedTemplateActivities`, which reads every activity with a non-null `template_id`
+(`ListActivitiesWithTemplate`), compares its own version against `LatestVersion` for the same
+(template_set_id, code), and opens one deduped `dpo.tasks` review job per outdated activity
+(`internal/dpo/service/template_review_task.go`'s `HasTaskForActivity`/`OpenTemplateReviewTask`, the exact
+dedup shape DPIA-08/DPA-12/ROPA-19 already established — `source_type='ropa_gap'`, already in the
+`dpo.tasks.source_type` CHECK constraint, task numbering `RTG-<year>-NNNN`) — a repeat sweep tick never
+duplicates it. `ropaservice.Dpo` (rule 9) gained the two new methods; `Templates`/`Dpo`/`Notify`/`River`
+stay nil-means-skip, the same convention every other optional cross-cutting field on `ropaservice.Service`
+already follows (a context that never wires `Dpo`, e.g. a future read-only caller, is a harmless no-op).
+`internal/ropa/templates.Service` gained `ListTemplateVersions`/`LatestVersion` (the version-history read,
+"หน้าประวัติ template" — newest first).
+
+API: `GET /admin/v1/ropa/templates/activities/{activityTemplateId}/versions` (`ropa.template.read`, every
+version of this template's own code, newest first) and `GET /admin/v1/ropa/activities/outdated-templates`
+(`ropa.activity.read`, "รายการที่ต้องทบทวน" — live, never cached, so it reflects the exact same comparison
+the sweep itself runs between ticks). UI: `/ropa/templates` gained an amber "Activities needing review"
+panel (reading the same live endpoint, not a snapshot) and `ActivityDetail`'s panel gained a "Template
+version history" toggle. Tests: `internal/ropa/service/rtg10_test.go` — the acceptance criterion directly
+(an activity created from v1 of a template whose own migration (00088) later issued v2 appears in
+`ListOutdatedTemplateActivities` and the sweep opens exactly one deduped review task for it; a repeat
+sweep tick opens nothing more; an activity created from the *current* version is never flagged; a nil
+`Dpo` is harmless; two-tenant isolation), plus `internal/ropa/templates`'s existing suite extended with
+`TestListTemplateVersions`. Verified live against this session's own real Postgres 16 + Redis: `go build
+./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), the full `internal/ropa/...` suite (no
+regressions — every pre-existing failure, confirmed identical both before and after this change via `git
+stash -u`, is unrelated: the ROPA-18 import suite's own fixture gap, the `consent_purpose_id`
+template-purpose gap, and ROPA-15's own notification-count test). `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the updated `/ropa/templates` route) all verified clean. Not done, deliberately: a live
+SUPER-facing `/provider/v1` "issue new version" action (no consumer/authorization-scope decision for it
+exists — see above); RTG-11's own "assign to department to confirm" auto-task (a separate backlog row,
+not this feature's own acceptance criterion).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

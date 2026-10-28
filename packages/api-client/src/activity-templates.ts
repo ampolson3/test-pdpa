@@ -7,6 +7,7 @@ export type RopaCloneTemplateSetInput = components["schemas"]["RopaCloneTemplate
 export type RopaActivityTemplate = components["schemas"]["RopaActivityTemplate"];
 export type RopaActivityTemplateInput = components["schemas"]["RopaActivityTemplateInput"];
 export type RopaTemplateSuggestions = components["schemas"]["RopaTemplateSuggestions"];
+export type RopaOutdatedTemplateActivity = components["schemas"]["RopaOutdatedTemplateActivity"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const ownSetsKey = ["ropa", "templates", "custom"] as const;
@@ -160,6 +161,35 @@ export function useTemplateSuggestions(client: ApiClient, id: string | undefined
       });
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+/** GET /admin/v1/ropa/templates/activities/{activityTemplateId}/versions (RTG-10): every version ever
+ * issued of this template's own (template_set_id, code), newest first — "หน้าประวัติ template". */
+export function useTemplateVersions(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: ["ropa", "templates", "activities", id ?? "", "versions"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/templates/activities/{activityTemplateId}/versions", {
+        params: { path: { activityTemplateId: id! } },
+      });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** GET /admin/v1/ropa/activities/outdated-templates (RTG-10): every activity whose own template has
+ * since been reissued at a newer version — "รายการที่ต้องทบทวน". */
+export function useOutdatedTemplateActivities(client: ApiClient) {
+  return useQuery({
+    queryKey: ["ropa", "activities", "outdated-templates"],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/activities/outdated-templates", {});
+      if (error) throw error;
+      return data.data;
     },
   });
 }
