@@ -3191,9 +3191,20 @@
     "answer": "ตอบ",
     "loading": "กำลังโหลด…",
     "empty": "ยังไม่มีคำถามที่ส่ง",
-    "filters": { "status": "สถานะ", "all": "ทั้งหมด" },
-    "statuses": { "open": "รอตอบ", "answered": "ตอบแล้ว", "closed": "ปิดแล้ว" },
-    "table": { "subject": "หัวข้อ", "requester": "ผู้ส่งคำถาม", "status": "สถานะ" },
+    "filters": {
+      "status": "สถานะ",
+      "all": "ทั้งหมด"
+    },
+    "statuses": {
+      "open": "รอตอบ",
+      "answered": "ตอบแล้ว",
+      "closed": "ปิดแล้ว"
+    },
+    "table": {
+      "subject": "หัวข้อ",
+      "requester": "ผู้ส่งคำถาม",
+      "status": "สถานะ"
+    },
     "kb": {
       "title": "คลังคำตอบ",
       "searchPlaceholder": "ค้นหาคำถาม-คำตอบที่ผ่านมา…",
@@ -3337,9 +3348,23 @@
     "reject": "ส่งกลับ",
     "loading": "กำลังโหลด…",
     "empty": "ยังไม่มีแบบสอบถามที่ส่ง",
-    "filters": { "status": "สถานะ", "all": "ทั้งหมด" },
-    "statuses": { "sent": "ส่งแล้ว", "answered": "ตอบแล้ว", "approved": "อนุมัติแล้ว", "rejected": "ส่งกลับแล้ว" },
-    "table": { "respondent": "ผู้ตอบ", "status": "สถานะ", "sentAt": "วันที่ส่ง", "activity": "กิจกรรม RoPA", "viewActivity": "ดูกิจกรรม" },
+    "filters": {
+      "status": "สถานะ",
+      "all": "ทั้งหมด"
+    },
+    "statuses": {
+      "sent": "ส่งแล้ว",
+      "answered": "ตอบแล้ว",
+      "approved": "อนุมัติแล้ว",
+      "rejected": "ส่งกลับแล้ว"
+    },
+    "table": {
+      "respondent": "ผู้ตอบ",
+      "status": "สถานะ",
+      "sentAt": "วันที่ส่ง",
+      "activity": "กิจกรรม RoPA",
+      "viewActivity": "ดูกิจกรรม"
+    },
     "form": {
       "sendTitle": "ส่งแบบสอบถาม",
       "approveTitle": "อนุมัติ — สร้างกิจกรรม RoPA",
@@ -3419,6 +3444,29 @@
         "save": "ปิดงาน",
         "cancel": "ยกเลิก",
         "saveError": "ปิดงานไม่สำเร็จ: {detail}"
+      }
+    },
+    "policies": {
+      "title": "นโยบายภายใน",
+      "intro": "ติดตามเอกสารที่เผยแพร่แล้วเป็นนโยบายที่พนักงานต้องรับทราบ",
+      "form": {
+        "documentId": "รหัสเอกสาร",
+        "documentIdHint": "เอกสาร PLT-16 ที่เผยแพร่แล้ว",
+        "save": "เผยแพร่นโยบาย",
+        "saveError": "เผยแพร่ไม่สำเร็จ: {detail}"
+      },
+      "table": {
+        "title": "ชื่อนโยบาย",
+        "versionNo": "เวอร์ชัน"
+      },
+      "attest": "รับทราบ",
+      "toggleDetail": "รายละเอียด",
+      "missing": {
+        "title": "ยังไม่รับทราบ",
+        "none": "รับทราบครบทุกคน"
+      },
+      "attestations": {
+        "title": "ประวัติการรับทราบ"
       }
     }
   },
@@ -3718,7 +3766,10 @@
     "report": {
       "title": "รายงานความเสี่ยงสำหรับผู้บริหาร",
       "download": "ดาวน์โหลด {format} ({lang})",
-      "lang": { "th": "ไทย", "en": "อังกฤษ" }
+      "lang": {
+        "th": "ไทย",
+        "en": "อังกฤษ"
+      }
     },
     "filters": {
       "status": "สถานะ",

@@ -7,9 +7,16 @@ export type RetentionScheduleStatus = components["schemas"]["RetentionScheduleSt
 export type DisposalJob = components["schemas"]["DisposalJob"];
 export type DisposalJobStatus = components["schemas"]["DisposalJobStatus"];
 export type DisposalJobCompleteInput = components["schemas"]["DisposalJobCompleteInput"];
+export type GovPolicy = components["schemas"]["GovPolicy"];
+export type GovPolicyInput = components["schemas"]["GovPolicyInput"];
+export type GovPolicyAttestation = components["schemas"]["GovPolicyAttestation"];
+export type GovMissingAttestation = components["schemas"]["GovMissingAttestation"];
 
 const schedulesKey = ["gov", "retention-schedules"] as const;
 const jobsKey = ["gov", "disposal-jobs"] as const;
+const policiesKey = ["gov", "policies"] as const;
+const attestationsKey = ["gov", "policy-attestations"] as const;
+const missingAttestationsKey = ["gov", "missing-attestations"] as const;
 
 /** GET /admin/v1/governance/retention-schedules (DPX-05), newest first. */
 export function useRetentionSchedules(client: ApiClient, filter: { assetId?: string; status?: RetentionScheduleStatus } = {}) {
@@ -131,5 +138,72 @@ export function useReleaseDisposalJobHold(client: ApiClient) {
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: jobsKey }),
+  });
+}
+
+/** GET /admin/v1/governance/policies (DPX-02) — every tracked policy, newest published first. */
+export function usePolicies(client: ApiClient) {
+  return useQuery({
+    queryKey: policiesKey,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/policies", {});
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/governance/policies — track an already-published PLT-16 document's current version. */
+export function usePublishPolicy(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: GovPolicyInput) => {
+      const { data, error } = await client.POST("/admin/v1/governance/policies", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: policiesKey }),
+  });
+}
+
+/** POST /admin/v1/governance/policies/{id}/attest — the signed-in user acknowledges the current version. */
+export function useAttestPolicy(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (policyId: string) => {
+      const { data, error } = await client.POST("/admin/v1/governance/policies/{id}/attest", { params: { path: { id: policyId } } });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, policyId) => {
+      qc.invalidateQueries({ queryKey: [...attestationsKey, policyId] });
+      qc.invalidateQueries({ queryKey: [...missingAttestationsKey, policyId] });
+    },
+  });
+}
+
+/** GET /admin/v1/governance/policies/{id}/attestations — every attestation recorded, oldest first. */
+export function usePolicyAttestations(client: ApiClient, policyId: string) {
+  return useQuery({
+    queryKey: [...attestationsKey, policyId],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/policies/{id}/attestations", { params: { path: { id: policyId } } });
+      if (error) throw error;
+      return data.data;
+    },
+    enabled: !!policyId,
+  });
+}
+
+/** GET /admin/v1/governance/policies/{id}/missing-attestations — the acceptance criterion itself. */
+export function useMissingAttestations(client: ApiClient, policyId: string) {
+  return useQuery({
+    queryKey: [...missingAttestationsKey, policyId],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/policies/{id}/missing-attestations", { params: { path: { id: policyId } } });
+      if (error) throw error;
+      return data.data;
+    },
+    enabled: !!policyId,
   });
 }

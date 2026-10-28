@@ -21,6 +21,7 @@ import (
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
+	docsservice "pdpa-platform/internal/platform/docs"
 	"pdpa-platform/internal/platform/files"
 	ropaservice "pdpa-platform/internal/ropa/service"
 )
@@ -39,6 +40,18 @@ const (
 	PermDelete  = "dpx.retention.delete"
 	PermApprove = "dpx.retention.approve"
 	PermExecute = "dpx.retention.execute"
+)
+
+// DPX-02's own permission codes (dpx.policy.*, distinct from the retention family above). DPO holds
+// publish/create/read/update/delete; LEGAL holds create/read/update; every other role (EMP, EXEC, FRONT,
+// IT, MKT, OWNER, PROC, SEC) holds only .execute — attesting is "doing the thing", not administering it.
+const (
+	PolicyPermRead    = "dpx.policy.read"
+	PolicyPermCreate  = "dpx.policy.create"
+	PolicyPermUpdate  = "dpx.policy.update"
+	PolicyPermDelete  = "dpx.policy.delete"
+	PolicyPermPublish = "dpx.policy.publish"
+	PolicyPermAttest  = "dpx.policy.execute"
 )
 
 var (
@@ -76,12 +89,21 @@ type Files interface {
 	AttachSystem(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error
 }
 
+// Docs is what DPX-02 reads from PLT-16 (rule 9): resolving the published PLT-16 document a policy
+// cites to the version employees must attest to — the exact Docs shape breach's own PDPC-filing feature
+// already established for the identical "cite a published document version" need.
+type Docs interface {
+	Get(ctx context.Context, id uuid.UUID) (docsservice.Document, error)
+	PublishedVersionOf(ctx context.Context, versionID uuid.UUID) (docsservice.PublishedVersion, uuid.UUID, error)
+}
+
 // Service runs the gov module for the tenant of the transaction in ctx.
 type Service struct {
 	Audit *audit.Service
 	Ropa  Ropa
 	Dsar  Dsar
 	Files Files
+	Docs  Docs
 	River *river.Client[pgx.Tx]
 	Now   func() time.Time
 }

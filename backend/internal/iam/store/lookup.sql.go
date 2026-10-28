@@ -97,6 +97,37 @@ func (q *Queries) ActiveUsersWithRole(ctx context.Context, roleCode string) ([]u
 	return items, nil
 }
 
+const allActiveUsers = `-- name: AllActiveUsers :many
+SELECT id, display_name FROM iam.users WHERE status = 'active' ORDER BY display_name
+`
+
+type AllActiveUsersRow struct {
+	ID          uuid.UUID `db:"id" json:"id"`
+	DisplayName string    `db:"display_name" json:"display_name"`
+}
+
+// Every active user of the tenant, with name — DPX-02's own "ผู้ที่ยังไม่รับทราบ" report needs the full
+// roster to compare against who has attested, not just one role's own holders.
+func (q *Queries) AllActiveUsers(ctx context.Context) ([]AllActiveUsersRow, error) {
+	rows, err := q.db.Query(ctx, allActiveUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AllActiveUsersRow
+	for rows.Next() {
+		var i AllActiveUsersRow
+		if err := rows.Scan(&i.ID, &i.DisplayName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const groupIDsOfUser = `-- name: GroupIDsOfUser :many
 SELECT group_id FROM iam.group_members WHERE user_id = $1
 `

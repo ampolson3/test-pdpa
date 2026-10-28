@@ -15,3 +15,9 @@ output-options:
     - govStartDisposalJob
     - govCompleteDisposalJob
     - govReleaseDisposalJobHold
+    - govListPolicies
+    - govPublishPolicy
+    - govGetPolicy
+    - govAttestPolicy
+    - govListPolicyAttestations
+    - govListMissingAttestations

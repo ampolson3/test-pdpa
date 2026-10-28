@@ -184,6 +184,92 @@ func (h *Strict) GovReleaseDisposalJobHold(ctx context.Context, req GovReleaseDi
 	return GovReleaseDisposalJobHold200JSONResponse(toJobWire(j)), nil
 }
 
+func (h *Strict) GovListPolicies(ctx context.Context, req GovListPoliciesRequestObject) (GovListPoliciesResponseObject, error) {
+	list, err := h.svc.ListPolicies(ctx)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovListPolicies200JSONResponse{Data: make([]GovPolicy, 0, len(list))}
+	for _, p := range list {
+		resp.Data = append(resp.Data, toPolicyWire(p))
+	}
+	return resp, nil
+}
+
+func (h *Strict) GovPublishPolicy(ctx context.Context, req GovPublishPolicyRequestObject) (GovPublishPolicyResponseObject, error) {
+	requiresAttestation := true
+	if req.Body.RequiresAttestation != nil {
+		requiresAttestation = *req.Body.RequiresAttestation
+	}
+	title := ""
+	if req.Body.Title != nil {
+		title = *req.Body.Title
+	}
+	p, err := h.svc.PublishPolicy(ctx, req.Body.DocumentId, title, requiresAttestation)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovPublishPolicy201JSONResponse{Body: toPolicyWire(p), Headers: GovPublishPolicy201ResponseHeaders{ETag: etag(p.RowVersion)}}, nil
+}
+
+func (h *Strict) GovGetPolicy(ctx context.Context, req GovGetPolicyRequestObject) (GovGetPolicyResponseObject, error) {
+	p, err := h.svc.GetPolicy(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovGetPolicy200JSONResponse{Body: toPolicyWire(p), Headers: GovGetPolicy200ResponseHeaders{ETag: etag(p.RowVersion)}}, nil
+}
+
+func (h *Strict) GovAttestPolicy(ctx context.Context, req GovAttestPolicyRequestObject) (GovAttestPolicyResponseObject, error) {
+	a, err := h.svc.AttestPolicy(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovAttestPolicy201JSONResponse(toAttestationWire(a)), nil
+}
+
+func (h *Strict) GovListPolicyAttestations(ctx context.Context, req GovListPolicyAttestationsRequestObject) (GovListPolicyAttestationsResponseObject, error) {
+	list, err := h.svc.ListAttestations(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovListPolicyAttestations200JSONResponse{Data: make([]GovPolicyAttestation, 0, len(list))}
+	for _, a := range list {
+		resp.Data = append(resp.Data, toAttestationWire(a))
+	}
+	return resp, nil
+}
+
+func (h *Strict) GovListMissingAttestations(ctx context.Context, req GovListMissingAttestationsRequestObject) (GovListMissingAttestationsResponseObject, error) {
+	list, err := h.svc.MissingAttestations(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovListMissingAttestations200JSONResponse{Data: make([]GovMissingAttestation, 0, len(list))}
+	for _, m := range list {
+		resp.Data = append(resp.Data, GovMissingAttestation{UserId: m.UserID, UserName: m.UserName})
+	}
+	return resp, nil
+}
+
+func toPolicyWire(p govservice.Policy) GovPolicy {
+	return GovPolicy{
+		Id: p.ID, Title: p.Title, DocumentId: p.DocumentID, VersionNo: int(p.VersionNo),
+		RequiresAttestation: p.RequiresAttestation, PublishedAt: p.PublishedAt, RowVersion: int(p.RowVersion),
+	}
+}
+
+func toAttestationWire(a govservice.Attestation) GovPolicyAttestation {
+	w := GovPolicyAttestation{
+		Id: a.ID, PolicyId: a.PolicyID, VersionNo: int(a.VersionNo), UserId: a.UserID,
+		AttestedAt: a.AttestedAt.UTC(),
+	}
+	if a.UserName != "" {
+		w.UserName = &a.UserName
+	}
+	return w
+}
+
 func toScheduleWire(s govservice.RetentionSchedule) RetentionSchedule {
 	return RetentionSchedule{
 		Id: s.ID, RetentionRuleId: s.RetentionRuleID, AssetId: s.AssetID,

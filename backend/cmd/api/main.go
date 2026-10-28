@@ -384,7 +384,7 @@ func run() error {
 	// DPX-05: retention schedules and disposal jobs. Dsar is dsarSvc directly (no import cycle, since
 	// dsar never imports gov) for the legal-hold check; River is nil here (cmd/api never runs the daily
 	// sweep itself — that's cmd/worker's job, same as every other PLT-10-style sweep in this codebase).
-	govSvc := &govservice.Service{Audit: auditSvc, Ropa: ropaSvc, Dsar: dsarSvc, Files: fileSvc}
+	govSvc := &govservice.Service{Audit: auditSvc, Ropa: ropaSvc, Dsar: dsarSvc, Files: fileSvc, Docs: docsSvc}
 	fileSvc.EntityPermissions[govservice.JobType] = "dpx.retention.read" // disposal job evidence
 
 	// Public consent forms (BP-01) and published notices (PNG-06): tenant and principal from the public key,

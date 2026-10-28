@@ -327,6 +327,21 @@ that it pass a threshold).
 
 **Acceptance criteria:** รายงานแสดงผู้ที่ยังไม่รับทราบ
 
+**สถานะ:** done — `internal/gov/service/policies.go` (+ `gov/http`), บน `gov.policies`/`gov.policy_attestations` ที่มีอยู่แล้วในฐานข้อมูลตั้งต้น
+(ไม่ต้อง migration ใหม่). `PublishPolicy` ติดตามเวอร์ชันที่เผยแพร่ล่าสุดของเอกสาร PLT-16 (ผ่าน `Docs.Get`/`PublishedVersionOf`, รูปแบบ
+เดียวกับที่ breach ใช้สำหรับ PDPC filing) — เผยแพร่เอกสารเดิมซ้ำ (ไม่มีเวอร์ชันใหม่) เป็น no-op บนแถวเดิม ไม่สร้างซ้ำ. `AttestPolicy`
+บันทึกการรับทราบของพนักงานต่อเวอร์ชันปัจจุบัน (รับทราบซ้ำเป็น no-op) — ไม่มี IP/evidence แยก เพราะ attested_at + user_id ก็เพียงพอ
+ตามเกณฑ์. `MissingAttestations` (เกณฑ์การรับรู้ผลลัพธ์โดยตรง) คือ roster ผู้ใช้ active ทั้งหมดของ tenant (`iamservice.AllActiveUsers`,
+ใหม่) ลบด้วยผู้ที่รับทราบเวอร์ชันปัจจุบันแล้ว — การรับทราบเวอร์ชันเก่าที่ถูกแทนที่ไม่ถูกนับ. สิทธิ์ใช้โค้ดที่ seed ไว้แล้ว
+`dpx.policy.{read,create,update,delete,publish,execute}` (DPO ครบทุกสิทธิ์, LEGAL create/read/update, ทุก role อื่นมีแค่ `.execute`
+สำหรับรับทราบ) — ไม่มีโค้ดสิทธิ์ใหม่. API: `GET`/`POST /admin/v1/governance/policies`, `GET /admin/v1/governance/policies/{id}`,
+`POST .../attest`, `GET .../attestations`, `GET .../missing-attestations`. UI: ส่วน "นโยบายภายใน" บนหน้า `/governance` เดิม (ฟอร์ม
+publish ด้วย document_id, ปุ่มรับทราบ, และแผงรายละเอียดแสดงรายชื่อผู้ยังไม่รับทราบ/ประวัติการรับทราบ). ทดสอบ: unit (เกณฑ์การรับรู้ผลลัพธ์
+ตรง — รับทราบแล้วหายจาก missing list, รับทราบซ้ำเป็น no-op, publish ซ้ำเวอร์ชันเดียวกันเป็น no-op, เอกสารที่ยังไม่เผยแพร่ถูกปฏิเสธ,
+สิทธิ์ถูกบังคับ, two-tenant isolation — ขับผ่าน PLT-08 submit→DPO approve→publish จริง), HTTP contract ผ่าน validator/AuthZ จริง. ไม่ได้
+ยืนยันแบบ live กับ Postgres/Redis จริงในรอบนี้ (ไม่ reachable ในสภาพแวดล้อมนี้) — คอมไพล์/vet ผ่านและ skip อย่างสุภาพเหมือน feature อื่น
+ที่เพิ่งผ่านมาในช่วงนี้.
+
 <a id="dpx-03"></a>
 ### DPX-03 ตรวจประเมินความพร้อมทั้งองค์กร
 

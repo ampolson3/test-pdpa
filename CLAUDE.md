@@ -4854,6 +4854,65 @@ every touched file), `make gen` re-run with no drift, `pnpm --filter @pdpa/api-c
 `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated `/incidents`
 route) all verified clean.
 
+### DPX-02 รับทราบนโยบายภายใน (`docs/modules/DPX.md#dpx-02`) — done
+`gov.policies`/`gov.policy_attestations` were already fully specified in the baseline migrations
+(00017_gov.sql, both FK'd in 00018: `gov.policies.document_id` → `platform.documents`,
+`gov.policy_attestations.{policy_id,user_id}` → `gov.policies`/`iam.users`) and `dpx.policy.{read,create,
+update,delete,publish,execute}` was already seeded (migration 00019, DPO holds every code, LEGAL holds
+create/read/update, every other seeded role — EMP, EXEC, FRONT, IT, MKT, OWNER, PROC, SEC — holds only
+`.execute`) — no new migration, only `internal/gov/service/policies.go` (+ `gov/http`) against both.
+`gov.Service` gained a `Docs Docs` interface field (`Get`/`PublishedVersionOf`, the exact shape breach's own
+PDPC-filing feature already established for "cite a published PLT-16 document version" — rule 9, no new
+import cycle) and its own `PolicyPerm*` constants, distinct from DPX-05's own `dpx.retention.*` family
+already on this struct.
+
+`PublishPolicy` names an already-published PLT-16 document (any type — most naturally the generic "policy"
+doc type `wiring.Docs` already pre-registered, borrowing notice's own permission codes, unused until now)
+and records that document's *current* published version as the policy employees must attest to
+(`ON CONFLICT ON CONSTRAINT uq_policies_document_id_version_no DO UPDATE SET title = ...` — republishing the
+identical version is a harmless no-op on the same row, not a duplicate; only a publish of a genuinely new
+version opens a fresh tracked round). `AttestPolicy` is the acceptance criterion's own write half: any
+caller holding `dpx.policy.execute` records their own acknowledgement of the policy's current version — a
+repeat attestation of the same already-attested version returns the existing row rather than inserting a
+second one. `MissingAttestations` is the acceptance criterion itself ("รายงานแสดงผู้ที่ยังไม่รับทราบ"): the
+tenant's full active-user roster (a new `iamservice.AllActiveUsers`, reusing the package's own existing
+`UserName` type — no new type) minus whoever has already attested that exact `version_no` (a stale
+attestation of a now-superseded version doesn't count, so re-publishing a new version naturally reopens
+everyone as "missing" again with no extra bookkeeping).
+
+Every exported method checks its own permission internally (`has(ctx, PolicyPerm*)`, the same pattern
+DPX-05's own `retention.go` already established) — not just the HTTP layer's declarative `x-permission` gate
+(rule 2) — with a care DPX-05 didn't need: an EMP calling `AttestPolicy` holds only `.execute`, never
+`.read`, so `AttestPolicy`/`MissingAttestations` read the policy through a new unexported `getPolicy` (no
+permission check of its own) rather than the exported, `.read`-gated `GetPolicy` — calling the exported one
+from inside `AttestPolicy` would have wrongly 403'd every ordinary employee attempting to attest.
+
+API: `GET`/`POST /admin/v1/governance/policies`, `GET /admin/v1/governance/policies/{id}`,
+`POST .../attest`, `GET .../attestations` (newest-first; the admin read side), `GET .../missing-attestations`
+— all on the already-seeded `dpx.policy.*` codes (no new permission code or migration), added to
+`internal/gov/http/oapi-codegen.yaml`'s own `include-operation-ids` allowlist (the recurring gotcha several
+prior features already hit). UI: a "นโยบายภายใน" section added to the existing `/governance` page (DPX-05's
+own retention/disposal page) — a publish form (document_id text input, the same manual-id pattern DPX-05's
+own retention-rule field already uses — no cross-module document picker exists yet), a policy list with an
+"attest" button gated on `dpx.policy.execute`, and a per-row detail toggle showing the missing-attestations
+list and the attestation history. `packages/api-client/src/governance.ts` gained
+`usePolicies`/`usePublishPolicy`/`useAttestPolicy`/`usePolicyAttestations`/`useMissingAttestations`.
+
+Tests: unit (`internal/gov/service/policies_test.go` — the acceptance criterion directly through the real
+PLT-08 submit → DPO approve → publish chain (the same pattern notice's own `checklist_test.go` already
+proved needs no S3/clamd): publishing tracks the document's current version and republishing is a no-op; an
+unpublished document is refused; attesting clears the user from the missing list and a repeat attestation
+is the same row, not a duplicate; attesting without `dpx.policy.execute` is refused; two-tenant isolation),
+HTTP contract (`internal/gov/http/handler_test.go`'s existing `TestGovHandler_Contract`, extended with the
+same publish → attest → missing-attestations chain through the real validator + AuthZ, using real `iam.users`
+rows for both the employee and the DPO approver since both `gov.policy_attestations.user_id` and
+`platform.approvals.approver_user_id`/`requested_by` carry real FKs). Not verified live against a real
+Postgres/Redis in this pass — neither was reachable in this environment for this feature; every test
+compiles and vets clean and skips the same way the rest of this codebase's own suite already does without
+one. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `make gen` re-run with no
+drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/governance` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

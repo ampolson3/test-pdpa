@@ -3191,9 +3191,20 @@
     "answer": "Answer",
     "loading": "Loading…",
     "empty": "No advisory requests yet.",
-    "filters": { "status": "Status", "all": "All" },
-    "statuses": { "open": "Open", "answered": "Answered", "closed": "Closed" },
-    "table": { "subject": "Subject", "requester": "Requested by", "status": "Status" },
+    "filters": {
+      "status": "Status",
+      "all": "All"
+    },
+    "statuses": {
+      "open": "Open",
+      "answered": "Answered",
+      "closed": "Closed"
+    },
+    "table": {
+      "subject": "Subject",
+      "requester": "Requested by",
+      "status": "Status"
+    },
     "kb": {
       "title": "Knowledge base",
       "searchPlaceholder": "Search past questions and answers…",
@@ -3337,9 +3348,23 @@
     "reject": "Reject",
     "loading": "Loading…",
     "empty": "No questionnaires sent yet.",
-    "filters": { "status": "Status", "all": "All" },
-    "statuses": { "sent": "Sent", "answered": "Answered", "approved": "Approved", "rejected": "Rejected" },
-    "table": { "respondent": "Respondent", "status": "Status", "sentAt": "Sent", "activity": "RoPA activity", "viewActivity": "View activity" },
+    "filters": {
+      "status": "Status",
+      "all": "All"
+    },
+    "statuses": {
+      "sent": "Sent",
+      "answered": "Answered",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "table": {
+      "respondent": "Respondent",
+      "status": "Status",
+      "sentAt": "Sent",
+      "activity": "RoPA activity",
+      "viewActivity": "View activity"
+    },
     "form": {
       "sendTitle": "Send questionnaire",
       "approveTitle": "Approve — create the RoPA activity",
@@ -3419,6 +3444,29 @@
         "save": "Close job",
         "cancel": "Cancel",
         "saveError": "Could not close: {detail}"
+      }
+    },
+    "policies": {
+      "title": "Internal policies",
+      "intro": "Track a published document as a policy employees must attest to.",
+      "form": {
+        "documentId": "Document ID",
+        "documentIdHint": "A PLT-16 document already published",
+        "save": "Publish policy",
+        "saveError": "Could not publish: {detail}"
+      },
+      "table": {
+        "title": "Title",
+        "versionNo": "Version"
+      },
+      "attest": "Attest",
+      "toggleDetail": "Details",
+      "missing": {
+        "title": "Not yet attested",
+        "none": "Everyone has attested"
+      },
+      "attestations": {
+        "title": "Attestations"
       }
     }
   },
@@ -3718,7 +3766,10 @@
     "report": {
       "title": "Executive risk report",
       "download": "Download {format} ({lang})",
-      "lang": { "th": "Thai", "en": "English" }
+      "lang": {
+        "th": "Thai",
+        "en": "English"
+      }
     },
     "filters": {
       "status": "Status",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
@@ -15,9 +15,17 @@ import {
   useStartDisposalJob,
   useCompleteDisposalJob,
   useReleaseDisposalJobHold,
+  usePolicies,
+  usePublishPolicy,
+  useAttestPolicy,
+  usePolicyAttestations,
+  useMissingAttestations,
   type RetentionScheduleStatus,
   type DisposalJobStatus,
   type StoredFile,
+  type GovPolicy,
+  type GovPolicyAttestation,
+  type GovMissingAttestation,
 } from "@pdpa/api-client";
 import { FileUploader } from "@/components/file-uploader";
 
@@ -41,6 +49,9 @@ export function GovernanceContent() {
   const canCreate = usePermission("dpx.retention.create");
   const canApprove = usePermission("dpx.retention.approve");
   const canExecute = usePermission("dpx.retention.execute");
+  const canReadPolicy = usePermission("dpx.policy.read");
+  const canPublishPolicy = usePermission("dpx.policy.publish");
+  const canAttest = usePermission("dpx.policy.execute");
   const client = useMemo(() => createApiClient("/api/bff"), []);
 
   const assets = useAssets(client);
@@ -61,7 +72,15 @@ export function GovernanceContent() {
   const releaseHold = useReleaseDisposalJobHold(client);
   const [completing, setCompleting] = useState<{ id: string; rowVersion: number; evidence?: StoredFile; recordCount: string } | null>(null);
 
-  if (!canRead) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
+  const policies = usePolicies(client);
+  const publishPolicy = usePublishPolicy(client);
+  const attestPolicy = useAttestPolicy(client);
+  const [newPolicyDocId, setNewPolicyDocId] = useState("");
+  const [expandedPolicy, setExpandedPolicy] = useState<string | null>(null);
+  const attestations = usePolicyAttestations(client, expandedPolicy ?? "");
+  const missing = useMissingAttestations(client, expandedPolicy ?? "");
+
+  if (!canRead && !canReadPolicy) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
 
   const scheduleRows = schedules.data?.pages.flatMap((p) => p.data) ?? [];
   const jobRows = jobs.data?.pages.flatMap((p) => p.data) ?? [];
@@ -73,7 +92,7 @@ export function GovernanceContent() {
         <p className="text-slate-600">{t("intro")}</p>
       </header>
 
-      <section className="space-y-3">
+      {canRead && <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">{t("schedules.title")}</h2>
           {canCreate && (
@@ -154,9 +173,9 @@ export function GovernanceContent() {
           </tbody>
         </table>
         {schedules.hasNextPage && <Button variant="secondary" onClick={() => schedules.fetchNextPage()}>{t("schedules.loadMore")}</Button>}
-      </section>
+      </section>}
 
-      <section className="space-y-3">
+      {canRead && <section className="space-y-3">
         <h2 className="text-lg font-semibold">{t("jobs.title")}</h2>
         <p className="text-slate-600">{t("jobs.intro")}</p>
 
@@ -234,7 +253,76 @@ export function GovernanceContent() {
           </tbody>
         </table>
         {jobs.hasNextPage && <Button variant="secondary" onClick={() => jobs.fetchNextPage()}>{t("jobs.loadMore")}</Button>}
-      </section>
+      </section>}
+
+      {canReadPolicy && <section className="space-y-3" data-testid="policies-section">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">{t("policies.title")}</h2>
+          <p className="text-slate-600">{t("policies.intro")}</p>
+        </div>
+
+        {canPublishPolicy && (
+          <fieldset className="flex flex-wrap items-end gap-3 rounded-md border border-slate-200 bg-white p-4">
+            <label className="flex-1"><span className="block text-slate-600">{t("policies.form.documentId")}</span>
+              <input className={INPUT} value={newPolicyDocId} onChange={(e) => setNewPolicyDocId(e.target.value)}
+                placeholder={t("policies.form.documentIdHint")} /></label>
+            {publishPolicy.isError && <p className="text-red-700" role="alert">{t("policies.form.saveError", { detail: detail(publishPolicy.error) })}</p>}
+            <Button
+              disabled={publishPolicy.isPending || !newPolicyDocId}
+              onClick={() => publishPolicy.mutate({ document_id: newPolicyDocId, requires_attestation: true }, { onSuccess: () => setNewPolicyDocId("") })}
+            >
+              {t("policies.form.save")}
+            </Button>
+          </fieldset>
+        )}
+
+        <table className="w-full border-collapse text-left">
+          <thead><tr className="border-b border-slate-200 text-slate-500">
+            <th className="py-1">{t("policies.table.title")}</th>
+            <th>{t("policies.table.versionNo")}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            {(policies.data ?? []).map((p: GovPolicy) => (
+              <Fragment key={p.id}>
+                <tr className="border-b border-slate-100">
+                  <td className="py-1">{p.title}</td>
+                  <td>{p.version_no}</td>
+                  <td className="space-x-2 text-right">
+                    {canAttest && (
+                      <button className="text-sky-700 underline" onClick={() => attestPolicy.mutate(p.id)}>{t("policies.attest")}</button>
+                    )}
+                    <button className="text-slate-700 underline" onClick={() => setExpandedPolicy(expandedPolicy === p.id ? null : p.id)}>
+                      {t("policies.toggleDetail")}
+                    </button>
+                  </td>
+                </tr>
+                {expandedPolicy === p.id && (
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <td colSpan={3} className="space-y-3 p-3">
+                      <div>
+                        <p className="font-medium">{t("policies.missing.title")}</p>
+                        <ul className="list-inside list-disc">
+                          {(missing.data ?? []).map((m: GovMissingAttestation) => <li key={m.user_id}>{m.user_name}</li>)}
+                          {missing.data?.length === 0 && <li className="list-none text-emerald-700">{t("policies.missing.none")}</li>}
+                        </ul>
+                      </div>
+                      <div>
+                        <p className="font-medium">{t("policies.attestations.title")}</p>
+                        <ul className="list-inside list-disc">
+                          {(attestations.data ?? []).map((a: GovPolicyAttestation) => (
+                            <li key={a.id}>{a.user_name ?? a.user_id} — {new Date(a.attested_at).toLocaleString()}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </section>}
     </main>
   );
 }

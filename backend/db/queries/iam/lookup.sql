@@ -26,6 +26,11 @@ SELECT id, name FROM iam.groups WHERE name ILIKE @prefix || '%' ORDER BY name LI
 -- Names of users whatever their status (audit trails name people who have since left).
 SELECT id, display_name FROM iam.users WHERE id = ANY (@ids::uuid[]);
 
+-- name: AllActiveUsers :many
+-- Every active user of the tenant, with name — DPX-02's own "ผู้ที่ยังไม่รับทราบ" report needs the full
+-- roster to compare against who has attested, not just one role's own holders.
+SELECT id, display_name FROM iam.users WHERE status = 'active' ORDER BY display_name;
+
 -- name: ActiveUsersWithRole :many
 -- Active users holding a role tenant-wide, directly or through a group (who to alert about a breach, BRE-07).
 SELECT DISTINCT u.id FROM iam.users u

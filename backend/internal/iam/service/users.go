@@ -113,6 +113,20 @@ func AllNames(ctx context.Context, ids []uuid.UUID) (map[uuid.UUID]string, error
 	return out, nil
 }
 
+// AllActiveUsers is DPX-02's own roster for "ผู้ที่ยังไม่รับทราบ" — every active user of the tenant, not
+// scoped to any one role, to compare against who has attested a policy.
+func AllActiveUsers(ctx context.Context) ([]UserName, error) {
+	rows, err := iamstore.New(pdb.MustTxFromContext(ctx)).AllActiveUsers(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("iam: all active users: %w", err)
+	}
+	out := make([]UserName, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, UserName{ID: r.ID, DisplayName: r.DisplayName})
+	}
+	return out, nil
+}
+
 // UsersWithRole returns the active users holding a role (by code, e.g. "DPO") in the tenant, directly or
 // through a group.
 func UsersWithRole(ctx context.Context, roleCode string) ([]uuid.UUID, error) {

@@ -26,8 +26,12 @@ import (
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/validate"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/docs"
+	"pdpa-platform/internal/platform/docs/render"
 	"pdpa-platform/internal/platform/files"
+	"pdpa-platform/internal/platform/versioning"
 	ropaservice "pdpa-platform/internal/ropa/service"
+	"pdpa-platform/internal/wiring"
 )
 
 func envOr(k, def string) string {
@@ -68,7 +72,10 @@ func TestGovHandler_Contract(t *testing.T) {
 			for _, q := range []string{
 				`DELETE FROM gov.disposal_jobs`, `DELETE FROM gov.retention_schedules`, `DELETE FROM ropa.retention_rules`,
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM ropa.assets`, `DELETE FROM org.org_units`,
-				`DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
+				`DELETE FROM org.legal_entities`, `DELETE FROM gov.policy_attestations`, `DELETE FROM gov.policies`,
+				`DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
+				`DELETE FROM iam.role_assignments`, `DELETE FROM iam.users WHERE email LIKE '%@dpx02http.example'`,
+				`DELETE FROM platform.audit_log`,
 			} {
 				_, _ = tx.Exec(ctx, q)
 			}
@@ -80,7 +87,27 @@ func TestGovHandler_Contract(t *testing.T) {
 	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc}
 	dsarSvc := &dsarservice.Service{Audit: audit.New()}
 	fFiles := &govFakeFiles{clean: map[uuid.UUID]bool{}}
-	svc := &govservice.Service{Audit: audit.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fFiles}
+	versioningSvc := wiring.Versioning(nil, audit.New())
+	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
+	docsSvc.RegisterVersioning()
+	svc := &govservice.Service{Audit: audit.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fFiles, Docs: docsSvc}
+
+	// DPX-02's own employee (attestation, gov.policy_attestations.user_id has a real FK) and DPO approver
+	// (platform.approvals.approver_user_id has a real FK too) — both need real iam.users rows.
+	var emp, dpo uuid.UUID
+	if err := pdb.WithTenantTx(ctx, owner, tenant.ID.String(), "", func(ctx context.Context) error {
+		tx := pdb.MustTxFromContext(ctx)
+		if err := tx.QueryRow(ctx,
+			`INSERT INTO iam.users (tenant_id, email, display_name, status) VALUES ($1, $2, 'Emp One', 'active') RETURNING id`,
+			tenant.ID, uuid.NewString()[:8]+"@dpx02http.example").Scan(&emp); err != nil {
+			return err
+		}
+		return tx.QueryRow(ctx,
+			`INSERT INTO iam.users (tenant_id, email, display_name, status) VALUES ($1, $2, 'Dee DPO', 'active') RETURNING id`,
+			tenant.ID, uuid.NewString()[:8]+"@dpx02http.example").Scan(&dpo)
+	}); err != nil {
+		t.Fatal(err)
+	}
 
 	var ruleID, assetID uuid.UUID
 	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
@@ -125,11 +152,15 @@ func TestGovHandler_Contract(t *testing.T) {
 	}
 	reader := uuid.New()
 	grants := map[string][]string{
-		tenant.UserID.String(): {"dpx.retention.read", "dpx.retention.create", "dpx.retention.update", "dpx.retention.approve", "dpx.retention.execute"},
-		reader.String():        {"dpx.retention.read"},
+		tenant.UserID.String(): {"dpx.retention.read", "dpx.retention.create", "dpx.retention.update", "dpx.retention.approve", "dpx.retention.execute",
+			"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.create", "notice.document.update"},
+		reader.String(): {"dpx.retention.read"},
+		emp.String():    {"dpx.policy.execute"},
+		dpo.String():    {"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.update", "notice.document.approve", "notice.document.publish"},
 	}
+	roles := map[string][]string{dpo.String(): {"DPO"}}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
-		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
+		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid], Roles: roles[uid]}, nil
 	})
 	t.Cleanup(func() {
 		for uid := range grants {
@@ -303,5 +334,111 @@ func TestGovHandler_Contract(t *testing.T) {
 	code, body, _ = do("POST", jobsPath+"/"+job.ID+"/complete", &admin, completeEtag, map[string]any{"evidence_file_id": evidenceID})
 	if code != 200 || !strings.Contains(body, `"done"`) {
 		t.Fatalf("complete with evidence: %d %s", code, body)
+	}
+
+	// DPX-02: drive a real PLT-16 "policy" document through the actual submit → DPO approve → publish
+	// chain (direct service calls — docs/versioning aren't exposed through gov's own HTTP router), then
+	// exercise PublishPolicy/AttestPolicy/ListAttestations/MissingAttestations through the real validator.
+	var docID uuid.UUID
+	var latestVersionID uuid.UUID
+	var latestVersionRV int32
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
+			Permissions: []string{"notice.document.read", "notice.document.create", "notice.document.update"}})
+		d, err := docsSvc.Create(ctx, docs.CreateInput{DocType: "policy", Title: "นโยบายทดสอบ"})
+		if err != nil {
+			return err
+		}
+		d, err = docsSvc.SaveDraft(ctx, d.ID, d.RowVersion, docs.Draft{Title: "นโยบายทดสอบ",
+			Content: render.Content{"th": {Type: "doc", Content: []render.Node{{Type: "paragraph", Content: []render.Node{{Type: "text", Text: "เนื้อหา"}}}}}}})
+		if err != nil {
+			return err
+		}
+		docID = d.ID
+		latestVersionID, latestVersionRV = d.Latest.ID, d.Latest.RowVersion
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var v versioning.Version
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
+			Permissions: []string{"notice.document.read", "notice.document.update"}})
+		var err error
+		v, err = versioningSvc.Submit(ctx, latestVersionID, latestVersionRV)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), dpo.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: dpo.String(),
+			Roles: []string{"DPO"}, Permissions: []string{"notice.document.read", "notice.document.update", "notice.document.approve", "notice.document.publish"}})
+		inbox, err := versioningSvc.Inbox(ctx)
+		if err != nil {
+			return err
+		}
+		for _, it := range inbox {
+			if it.VersionID == v.ID {
+				v, err = versioningSvc.Decide(ctx, it.ID, it.RowVersion, "approved", "")
+				return err
+			}
+		}
+		t.Fatal("submitted version not in the DPO's inbox")
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), dpo.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: dpo.String(),
+			Roles: []string{"DPO"}, Permissions: []string{"notice.document.read", "notice.document.update", "notice.document.approve", "notice.document.publish"}})
+		_, err := versioningSvc.Publish(ctx, v.ID, v.RowVersion)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	policiesPath := "/admin/v1/governance/policies"
+	if code, _, _ := do("GET", policiesPath, nil, "", nil); code != 401 {
+		t.Errorf("list policies, no principal: %d, want 401", code)
+	}
+	if code, _, _ := do("POST", policiesPath, &reader, "", map[string]any{"document_id": docID}); code != 403 {
+		t.Errorf("publish policy with read-only permission: %d, want 403", code)
+	}
+	code, body, headers = do("POST", policiesPath, &dpo, "", map[string]any{"document_id": docID})
+	if code != 201 {
+		t.Fatalf("publish policy: %d %s", code, body)
+	}
+	var policy struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &policy)
+	_ = headers
+
+	code, body, _ = do("GET", policiesPath+"/"+policy.ID, &dpo, "", nil)
+	if code != 200 {
+		t.Fatalf("get policy: %d %s", code, body)
+	}
+
+	// An employee without dpx.policy.execute can't attest; emp (who has it) can.
+	if code, _, _ := do("POST", policiesPath+"/"+policy.ID+"/attest", &reader, "", nil); code != 403 {
+		t.Errorf("attest with read-only permission: %d, want 403", code)
+	}
+	code, body, _ = do("POST", policiesPath+"/"+policy.ID+"/attest", &emp, "", nil)
+	if code != 201 {
+		t.Fatalf("attest policy: %d %s", code, body)
+	}
+
+	// The acceptance criterion itself: emp no longer appears in the missing-attestations report.
+	code, body, _ = do("GET", policiesPath+"/"+policy.ID+"/missing-attestations", &dpo, "", nil)
+	if code != 200 {
+		t.Fatalf("missing attestations: %d %s", code, body)
+	}
+	if strings.Contains(body, emp.String()) {
+		t.Errorf("emp should no longer be listed as missing after attesting: %s", body)
+	}
+
+	code, body, _ = do("GET", policiesPath+"/"+policy.ID+"/attestations", &dpo, "", nil)
+	if code != 200 || !strings.Contains(body, emp.String()) {
+		t.Fatalf("list attestations: %d %s", code, body)
 	}
 }

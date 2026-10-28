@@ -5756,6 +5756,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/governance/policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Internal policies (DPX-02) the DPO tracks for mandatory employee attestation, newest published first */
+        get: operations["govListPolicies"];
+        put?: never;
+        /** Track a published PLT-16 document's current version as a policy requiring employee attestation */
+        post: operations["govPublishPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/policies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One tracked policy */
+        get: operations["govGetPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/policies/{id}/attest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The caller acknowledges the policy's current version — a repeat attestation of the same version is a harmless no-op */
+        post: operations["govAttestPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/policies/{id}/attestations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every attestation recorded against this policy, oldest first */
+        get: operations["govListPolicyAttestations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/policies/{id}/missing-attestations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The acceptance criterion itself — every active user who has not yet attested the policy's current version */
+        get: operations["govListMissingAttestations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dataflow/graph": {
         parameters: {
             query?: never;
@@ -10456,6 +10542,43 @@ export interface components {
             /** @description A PLT-09 file the caller already uploaded clean and unattached — closing the job without one is refused (the acceptance criterion). */
             evidence_file_id: components["schemas"]["Uuid"];
             record_count?: number | null;
+        };
+        /**
+         * @example {
+         *       "document_id": "00000000-0000-0000-0000-000000000000",
+         *       "title": "นโยบายความเป็นส่วนตัวภายในองค์กร",
+         *       "requires_attestation": true
+         *     }
+         */
+        GovPolicyInput: {
+            /** @description A PLT-16 document already published (status=published, current_version_id set) — its current version is what employees must attest to. */
+            document_id: components["schemas"]["Uuid"];
+            /** @description Defaults to the document's own title when omitted. */
+            title?: string;
+            /** @default true */
+            requires_attestation: boolean;
+        };
+        GovPolicy: {
+            id: components["schemas"]["Uuid"];
+            title: string;
+            document_id: components["schemas"]["Uuid"];
+            version_no: number;
+            requires_attestation: boolean;
+            /** Format: date-time */
+            published_at?: string | null;
+            row_version: number;
+        };
+        GovPolicyAttestation: {
+            id: components["schemas"]["Uuid"];
+            policy_id: components["schemas"]["Uuid"];
+            version_no: number;
+            user_id: components["schemas"]["Uuid"];
+            user_name?: string;
+            attested_at: components["schemas"]["Timestamp"];
+        };
+        GovMissingAttestation: {
+            user_id: components["schemas"]["Uuid"];
+            user_name: string;
         };
     };
     responses: {
@@ -24732,6 +24855,182 @@ export interface operations {
             409: components["responses"]["Conflict"];
             412: components["responses"]["PreconditionFailed"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    govListPolicies: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GovPolicy"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    govPublishPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GovPolicyInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovPolicy"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    govGetPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovPolicy"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    govAttestPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovPolicyAttestation"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    govListPolicyAttestations: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GovPolicyAttestation"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    govListMissingAttestations: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GovMissingAttestation"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     dataflowGetGraph: {

@@ -16892,6 +16892,199 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/policies:
+    get:
+      operationId: govListPolicies
+      tags: [gov]
+      summary: Internal policies (DPX-02) the DPO tracks for mandatory employee attestation, newest published first
+      x-permission: dpx.policy.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovPolicy'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: govPublishPolicy
+      tags: [gov]
+      summary: Track a published PLT-16 document's current version as a policy requiring employee attestation
+      x-permission: dpx.policy.publish
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovPolicyInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovPolicy'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/governance/policies/{id}:
+    get:
+      operationId: govGetPolicy
+      tags: [gov]
+      summary: One tracked policy
+      x-permission: dpx.policy.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovPolicy'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/governance/policies/{id}/attest:
+    post:
+      operationId: govAttestPolicy
+      tags: [gov]
+      summary: The caller acknowledges the policy's current version — a repeat attestation of the same version is a harmless no-op
+      x-permission: dpx.policy.execute
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovPolicyAttestation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/governance/policies/{id}/attestations:
+    get:
+      operationId: govListPolicyAttestations
+      tags: [gov]
+      summary: Every attestation recorded against this policy, oldest first
+      x-permission: dpx.policy.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovPolicyAttestation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/governance/policies/{id}/missing-attestations:
+    get:
+      operationId: govListMissingAttestations
+      tags: [gov]
+      summary: The acceptance criterion itself — every active user who has not yet attested the policy's current version
+      x-permission: dpx.policy.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovMissingAttestation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/dataflow/graph:
     get:
       operationId: dataflowGetGraph
@@ -25140,3 +25333,63 @@ components:
       example:
         evidence_file_id: 00000000-0000-0000-0000-000000000000
         record_count: 1200
+    GovPolicyInput:
+      type: object
+      required: [document_id]
+      properties:
+        document_id:
+          $ref: '#/components/schemas/Uuid'
+          description: A PLT-16 document already published (status=published, current_version_id set) — its current version is what employees must attest to.
+        title:
+          type: string
+          description: Defaults to the document's own title when omitted.
+        requires_attestation:
+          type: boolean
+          default: true
+      example:
+        document_id: 00000000-0000-0000-0000-000000000000
+        title: 'นโยบายความเป็นส่วนตัวภายในองค์กร'
+        requires_attestation: true
+    GovPolicy:
+      type: object
+      required: [id, title, document_id, version_no, requires_attestation, row_version]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        title:
+          type: string
+        document_id:
+          $ref: '#/components/schemas/Uuid'
+        version_no:
+          type: integer
+        requires_attestation:
+          type: boolean
+        published_at:
+          type: [string, 'null']
+          format: date-time
+        row_version:
+          type: integer
+    GovPolicyAttestation:
+      type: object
+      required: [id, policy_id, version_no, user_id, attested_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        policy_id:
+          $ref: '#/components/schemas/Uuid'
+        version_no:
+          type: integer
+        user_id:
+          $ref: '#/components/schemas/Uuid'
+        user_name:
+          type: string
+        attested_at:
+          $ref: '#/components/schemas/Timestamp'
+    GovMissingAttestation:
+      type: object
+      required: [user_id, user_name]
+      properties:
+        user_id:
+          $ref: '#/components/schemas/Uuid'
+        user_name:
+          type: string
