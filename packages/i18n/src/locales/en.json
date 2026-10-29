@@ -4081,6 +4081,15 @@
       "activityCount": "Activities",
       "viewDetail": "View detail",
       "noActivities": "No activities under this department."
+    },
+    "scorecard": {
+      "title": "PDPA readiness scorecard — overall {score}",
+      "component": {
+        "ropa_completeness": "RoPA completeness",
+        "legal_readiness": "Legal-gap readiness",
+        "dpia_readiness": "DPIA readiness",
+        "training_completion": "Training completion"
+      }
     }
   },
   "dpoTasks": {

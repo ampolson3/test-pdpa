@@ -12679,6 +12679,33 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/dpo/scorecard/{orgUnitId}:
+    get:
+      operationId: dpoGetOrgUnitScorecard
+      tags: [dpo]
+      summary: 'DPO-10: one org unit''s own PDPA-readiness scorecard — RoPA completeness (ROPA-03), legal-gap readiness (RRA-13), DPIA screening/approval status and training completion, read live and every component named, so the score is both reproducible and explainable'
+      x-permission: dpo.report.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: orgUnitId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoScorecard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/dpo/security-assessments:
     get:
       operationId: dpoListAssessments
@@ -22597,6 +22624,25 @@ components:
           type: string
         due_at: {$ref: '#/components/schemas/Timestamp'}
         ref_id: {$ref: '#/components/schemas/Uuid'}
+    DpoScorecardComponent:
+      type: object
+      description: 'DPO-10: one named factor behind the overall score — the acceptance criterion''s own "อธิบายที่มาได้."'
+      required: [name, score, detail]
+      properties:
+        name:
+          type: string
+          enum: [ropa_completeness, legal_readiness, dpia_readiness, training_completion]
+        score: {type: number}
+        detail: {type: string}
+    DpoScorecard:
+      type: object
+      required: [org_unit_id, overall, components]
+      properties:
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        overall: {type: number}
+        components:
+          type: array
+          items: {$ref: '#/components/schemas/DpoScorecardComponent'}
     DpiaScreeningRule:
       type: object
       required: [min_factors]

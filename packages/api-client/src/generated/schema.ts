@@ -4343,6 +4343,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpo/scorecard/{orgUnitId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPO-10: one org unit's own PDPA-readiness scorecard — RoPA completeness (ROPA-03), legal-gap readiness (RRA-13), DPIA screening/approval status and training completion, read live and every component named, so the score is both reproducible and explainable */
+        get: operations["dpoGetOrgUnitScorecard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpo/security-assessments": {
         parameters: {
             query?: never;
@@ -8589,6 +8606,18 @@ export interface components {
             title: string;
             due_at: components["schemas"]["Timestamp"];
             ref_id: components["schemas"]["Uuid"];
+        };
+        /** @description DPO-10: one named factor behind the overall score — the acceptance criterion's own "อธิบายที่มาได้." */
+        DpoScorecardComponent: {
+            /** @enum {string} */
+            name: "ropa_completeness" | "legal_readiness" | "dpia_readiness" | "training_completion";
+            score: number;
+            detail: string;
+        };
+        DpoScorecard: {
+            org_unit_id: components["schemas"]["Uuid"];
+            overall: number;
+            components: components["schemas"]["DpoScorecardComponent"][];
         };
         DpiaScreeningRule: {
             min_factors: number;
@@ -22147,6 +22176,33 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dpoGetOrgUnitScorecard: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                orgUnitId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoScorecard"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };

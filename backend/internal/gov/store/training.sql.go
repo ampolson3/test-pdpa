@@ -69,6 +69,29 @@ func (q *Queries) CompleteTrainingAttempt(ctx context.Context, arg CompleteTrain
 	return i, err
 }
 
+const countOrgUnitTrainingCompletion = `-- name: CountOrgUnitTrainingCompletion :one
+SELECT count(*)::int AS total,
+    count(*) FILTER (WHERE EXISTS (
+        SELECT 1 FROM gov.training_attempts t WHERE t.assignment_id = a.id AND t.completed_at IS NOT NULL AND t.passed
+    ))::int AS completed
+FROM gov.training_assignments a
+WHERE a.target_type = 'org_unit' AND a.target_id = $1
+`
+
+type CountOrgUnitTrainingCompletionRow struct {
+	Total     int32 `db:"total" json:"total"`
+	Completed int32 `db:"completed" json:"completed"`
+}
+
+// DPO-10 (compliance scorecard): how many of this org unit's own training assignments have at least one
+// passed attempt — a forward read for the scorecard, not a reminder job.
+func (q *Queries) CountOrgUnitTrainingCompletion(ctx context.Context, targetID pgtype.UUID) (CountOrgUnitTrainingCompletionRow, error) {
+	row := q.db.QueryRow(ctx, countOrgUnitTrainingCompletion, targetID)
+	var i CountOrgUnitTrainingCompletionRow
+	err := row.Scan(&i.Total, &i.Completed)
+	return i, err
+}
+
 const getCourse = `-- name: GetCourse :one
 SELECT id, title, description, content_type, content_file_id, quiz_form_id, passing_score, validity_months,
     language, status, row_version, created_at, updated_at

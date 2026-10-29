@@ -510,6 +510,42 @@ build`/`typecheck` (incl. the updated `/dpo` route) all verified clean.
 
 **Acceptance criteria:** คะแนนคำนวณซ้ำได้และอธิบายที่มาได้
 
+**Implementation — done.** `internal/dpo/service/scorecard.go`'s `OrgUnitScorecard(ctx, orgUnitID)` combines
+what four other modules already compute, each read live every call (never a stale cached number — "คะแนน
+คำนวณซ้ำได้" literally) with every component named (its own `Detail` string — "อธิบายที่มาได้"): RoPA
+completeness (ROPA-03's own `Activity.Completeness`, averaged across the unit's own activities), legal-gap
+readiness (RRA-13's own `OrgUnitComplianceScore`, this feature's direct dependency), DPIA screening/approval
+status (the fraction of the unit's activities whose latest round is `not_required` or `approved`, via
+`dpiaservice.ListAssessments`), and training completion (a new `CountOrgUnitTrainingCompletion` sqlc query —
+the fraction of `org_unit`-targeted `gov.training_assignments` with a passed attempt). The overall score is a
+plain average of whichever components actually apply (an org unit with no activities carries no
+`ropa_completeness`/`dpia_readiness` component at all, rather than a misleading 0 or 100). No new migration —
+every table read already existed; the only new query is the training-completion count.
+
+Deliberately left out, with the reason named rather than silently skipped: "คำขอเกินกำหนด" (overdue DSAR
+requests), the module description's own fourth named factor — `dsar.requests` has no org-unit column in this
+schema (a request is tied to a requester identity, not an internal department), so there is no reliable way
+to attribute an overdue request to one org unit without inventing a column no other DSAR feature needs; add
+it if a future pass gives DSAR requests a real org-unit link.
+
+`dposervice.Service` reuses its already-wired `Ropa`/`Risk`/`Dpia`/`Gov` fields (all added by earlier DPO-05/
+DPO-08 work) — no new cross-module wiring beyond the one new `Gov.OrgUnitTrainingCompletion` method. API:
+`GET /admin/v1/dpo/scorecard/{orgUnitId}` (`dpo.report.read`, no new permission code). UI: the existing
+`ComplianceScoreSection` on `/settings/risk-register` (RRA-13's own per-org-unit expand panel) gained a
+`ScorecardDetail` sub-component showing this feature's own overall score + every named component right
+alongside RRA-13's legal-gap deductions, reusing the same page rather than a dedicated new screen. Tests:
+unit (`internal/dpo/service/scorecard_test.go` — the acceptance criterion directly: every component named
+with a non-empty explanation, the legal-gap figure matches RRA-13's own math exactly, recomputing twice from
+unchanged data gives an identical overall score; a unit with zero activities carries no ropa/dpia components;
+two-tenant isolation), HTTP contract (`internal/dpo/http/handler_test.go`'s existing
+`TestAppointmentEndpoints_Contract`, extended with 401/403/200 on the new endpoint). Not verified live against
+a real Postgres/Redis in this pass — neither was reachable in this environment for this feature; every test
+compiles and vets clean and skips the same way the rest of this module's own suite already does without one.
+`go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions,
+full backend suite — only the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run
+with no drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/settings/risk-register` route) all verified clean.
+
 <a id="dpo-11"></a>
 ### DPO-11 รายงานการปฏิบัติหน้าที่ DPO และรายงานผู้บริหาร
 

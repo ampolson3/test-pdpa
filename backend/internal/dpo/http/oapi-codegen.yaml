@@ -19,6 +19,7 @@ output-options:
     - dpoListDeadlines
     - dpoGetComplianceCalendar
     - dpoGetComplianceCalendarIcs
+    - dpoGetOrgUnitScorecard
     - dpoListAssessments
     - dpoRecordAssessment
     - dpoGetAssessment

@@ -323,6 +323,20 @@ func TestAppointmentEndpoints_Contract(t *testing.T) {
 	if code, body := do("GET", "/admin/v1/dpo/calendar.ics", &admin, nil, nil); code != 200 || !strings.Contains(body, "BEGIN:VCALENDAR") {
 		t.Errorf("calendar.ics: %d %s", code, body)
 	}
+
+	// DPO-10 compliance scorecard. The fixture's Ropa/Risk/Dpia/Gov fields are nil (the explained
+	// per-component computation itself is proven in the service-level tests), so a caller holding
+	// dpo.report.read sees an empty, zero-overall scorecard rather than an error.
+	scorecardPath := "/admin/v1/dpo/scorecard/" + uuid.New().String()
+	if code, _ := do("GET", scorecardPath, nil, nil, nil); code != 401 {
+		t.Errorf("scorecard no principal: %d, want 401", code)
+	}
+	if code, _ := do("GET", scorecardPath, &viewer, nil, nil); code != 403 {
+		t.Errorf("scorecard without dpo.report.read: %d, want 403", code)
+	}
+	if code, body := do("GET", scorecardPath, &admin, nil, nil); code != 200 || !strings.Contains(body, `"components":[]`) {
+		t.Errorf("scorecard: %d %s", code, body)
+	}
 }
 
 // TestTaskEndpoints_Contract is RRA-07's own HTTP contract test for the generic dpo.tasks tracking view:

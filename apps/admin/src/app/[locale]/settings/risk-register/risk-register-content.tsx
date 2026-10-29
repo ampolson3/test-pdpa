@@ -12,6 +12,7 @@ import {
   useAcceptances,
   useRecordAcceptance,
   useComplianceScoreReport,
+  useOrgUnitScorecard,
   riskReportHref,
   type RiskRegisterEntry,
   type ApiClient,
@@ -330,7 +331,7 @@ function ComplianceScoreSection({ client }: { client: ApiClient }) {
                 </tr>
                 {expanded === u.org_unit_id && (
                   <tr className="border-b border-slate-100 bg-slate-50">
-                    <td colSpan={4} className="p-3">
+                    <td colSpan={4} className="p-3 space-y-3">
                       <ul className="list-inside list-disc space-y-1">
                         {u.activities.map((a) => (
                           <li key={a.activity_id}>
@@ -348,6 +349,7 @@ function ComplianceScoreSection({ client }: { client: ApiClient }) {
                         ))}
                         {u.activities.length === 0 && <li className="list-none text-slate-500">{t("complianceScore.noActivities")}</li>}
                       </ul>
+                      <ScorecardDetail client={client} orgUnitId={u.org_unit_id} />
                     </td>
                   </tr>
                 )}
@@ -357,5 +359,31 @@ function ComplianceScoreSection({ client }: { client: ApiClient }) {
         </table>
       )}
     </fieldset>
+  );
+}
+
+/** DPO-10's own scorecard: RoPA completeness, legal-gap readiness, DPIA status and training completion
+ *  for this org unit — read live every time (reproducible), each component named (explainable). */
+function ScorecardDetail({ client, orgUnitId }: { client: ApiClient; orgUnitId: string }) {
+  const t = useTranslations("riskRegister");
+  const scorecard = useOrgUnitScorecard(client, orgUnitId);
+
+  if (scorecard.isPending) return <p className="text-slate-500">{t("loading")}</p>;
+  if (scorecard.isError) return <p className="text-red-700">{t("loadError")}</p>;
+  const sc = scorecard.data;
+  if (!sc || sc.components.length === 0) return null;
+
+  return (
+    <div className="rounded-md border border-slate-200 bg-white p-3" data-testid="scorecard-detail">
+      <p className="font-medium">{t("scorecard.title", { score: sc.overall.toFixed(1) })}</p>
+      <ul className="list-inside list-disc space-y-0.5 text-sm">
+        {sc.components.map((c) => (
+          <li key={c.name}>
+            {t(`scorecard.component.${c.name}` as "scorecard.component.ropa_completeness")}: {c.score.toFixed(1)}
+            <span className="text-slate-500"> — {c.detail}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

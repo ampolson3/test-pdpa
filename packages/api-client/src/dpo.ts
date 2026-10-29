@@ -15,6 +15,8 @@ export type DpoAdvisory = components["schemas"]["DpoAdvisory"];
 export type DpoAdvisoryInput = components["schemas"]["DpoAdvisoryInput"];
 export type DpoKbArticle = components["schemas"]["DpoKbArticle"];
 export type DpoCalendarItem = components["schemas"]["DpoCalendarItem"];
+export type DpoScorecard = components["schemas"]["DpoScorecard"];
+export type DpoScorecardComponent = components["schemas"]["DpoScorecardComponent"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const appointmentsKey = ["dpo", "appointments"] as const;
@@ -144,6 +146,21 @@ export function complianceCalendarIcsHref(bffBaseUrl: string, range: { from?: st
   const q = new URLSearchParams(range as Record<string, string>);
   const qs = q.toString();
   return `${bffBaseUrl}/admin/v1/dpo/calendar.ics${qs ? `?${qs}` : ""}`;
+}
+
+/** GET /admin/v1/dpo/scorecard/{orgUnitId} (DPO-10): one org unit's own PDPA-readiness scorecard —
+ *  RoPA completeness, legal-gap readiness, DPIA status and training completion, each named, so the
+ *  score is both reproducible and explainable. */
+export function useOrgUnitScorecard(client: ApiClient, orgUnitId: string | undefined) {
+  return useQuery({
+    queryKey: ["dpo", "scorecard", orgUnitId ?? ""],
+    enabled: !!orgUnitId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpo/scorecard/{orgUnitId}", { params: { path: { orgUnitId: orgUnitId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
 }
 
 /** GET /admin/v1/dpo/appointments (DPO-01), newest first. */

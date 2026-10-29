@@ -5416,6 +5416,55 @@ the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run 
 `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated `/settings/risk-register` route) all
 verified clean.
 
+### DPO-10 คะแนนความพร้อมรายหน่วยงาน (`docs/modules/DPO.md#dpo-10`) — done
+`internal/dpo/service/scorecard.go`'s `OrgUnitScorecard(ctx, orgUnitID)` is a per-org-unit summary combining
+what four modules already compute, each read live every call (the acceptance criterion's own "คะแนนคำนวณซ้ำ
+ได้": reproducible, never a stale cached number) with every component named via its own `Detail` string (the
+acceptance criterion's own "อธิบายที่มาได้": explainable, never a bare overall figure) — RoPA completeness
+(ROPA-03's own `Activity.Completeness`, averaged across the unit's own activities via `ListActivities`),
+legal-gap readiness (RRA-13's own `OrgUnitComplianceScore`, this feature's own direct dependency), DPIA
+screening/approval status (the fraction of the unit's activities whose latest round is `not_required` or
+`approved`, via `dpiaservice.ListAssessments`), and training completion (a new `CountOrgUnitTrainingCompletion`
+sqlc query — the fraction of `org_unit`-targeted `gov.training_assignments` with a passed attempt, backing a
+new `govservice.Service.OrgUnitTrainingCompletion` method). No new migration — every table this feature reads
+already existed; the only new query is the training-completion count. The overall score is a plain average of
+whichever components actually apply: an org unit with no activities carries no `ropa_completeness`/
+`dpia_readiness` component at all, rather than a misleading 0 or 100 — proven directly by
+`TestOrgUnitScorecard_NoActivitiesIsHarmless`.
+
+"คำขอเกินกำหนด" (overdue DSAR requests), the module description's own fourth named factor, is deliberately
+left out: `dsar.requests` has no org-unit column in this schema — a request is tied to a requester identity,
+not an internal department — so there is no reliable way to attribute an overdue request to one org unit
+without inventing a column no other DSAR feature needs; the same "no consumer yet" deferral this codebase
+uses throughout (add it if a future pass gives DSAR requests a real org-unit link). `dposervice.Service`
+reuses its already-wired `Ropa`/`Risk`/`Dpia`/`Gov` fields (all added by earlier DPO-05/DPO-08 work, confirmed
+no new import cycle) — no new cross-module wiring beyond the one new `Gov.OrgUnitTrainingCompletion` method.
+
+API: `GET /admin/v1/dpo/scorecard/{orgUnitId}` (`dpo.report.read`, no new permission code) — new
+`DpoScorecardComponent` schema (`name` enum ropa_completeness/legal_readiness/dpia_readiness/
+training_completion, `score`, `detail`) and `DpoScorecard` schema (`org_unit_id`, `overall`, `components[]`).
+UI: the existing `ComplianceScoreSection` on `/settings/risk-register` (RRA-13's own per-org-unit expand
+panel) gained a `ScorecardDetail` sub-component (`useOrgUnitScorecard`, `packages/api-client/src/dpo.ts`)
+showing this feature's own overall score + every named component right alongside RRA-13's legal-gap
+deductions — reusing the same page rather than a dedicated new screen, since both features already describe
+the identical org unit from two complementary angles.
+
+Tests: unit (`internal/dpo/service/dpo10_test.go` — the acceptance criterion directly:
+`TestOrgUnitScorecard_ExplainsEveryComponent` (a bare activity under a fresh org unit produces all four named
+components, each with a non-empty explanation; `legal_readiness` matches RRA-13's own math exactly — 100 −
+20 no_lawful_basis − 10 no_retention = 70; `dpia_readiness` is 0 before any screening; `training_completion`
+is 100 with no assignments; recomputing twice from unchanged data gives an identical overall score —
+reproducible), `TestOrgUnitScorecard_NoActivitiesIsHarmless` (zero activities means no ropa/dpia components),
+`TestOrgUnitScorecard_TwoTenantIsolation`), HTTP contract (`internal/dpo/http/handler_test.go`'s existing
+`TestAppointmentEndpoints_Contract`, extended with 401/403/200 on the new endpoint, asserting an empty org
+unit's `components` reads back as `[]`). Not verified live against a real Postgres/Redis in this pass —
+neither was reachable in this environment for this feature; every test compiles and vets clean and skips the
+same way the rest of this module's own suite already does without one. `go build ./...`, `go vet ./...`,
+`gofmt -l` (clean on every touched file), `go test ./...` (no regressions, full backend suite — only the
+pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/settings/risk-register` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

@@ -86,6 +86,19 @@ func toCalendarItemWire(it dposervice.CalendarItem) DpoCalendarItem {
 	return DpoCalendarItem{Source: DpoCalendarItemSource(it.Source), Title: it.Title, DueAt: it.DueAt, RefId: it.RefID}
 }
 
+// DpoGetOrgUnitScorecard is DPO-10's own acceptance criterion: a reproducible, explained score.
+func (h *Strict) DpoGetOrgUnitScorecard(ctx context.Context, req DpoGetOrgUnitScorecardRequestObject) (DpoGetOrgUnitScorecardResponseObject, error) {
+	sc, err := h.svc.OrgUnitScorecard(ctx, req.OrgUnitId)
+	if err != nil {
+		return nil, err
+	}
+	w := DpoScorecard{OrgUnitId: sc.OrgUnitID, Overall: float32(sc.Overall), Components: make([]DpoScorecardComponent, 0, len(sc.Components))}
+	for _, c := range sc.Components {
+		w.Components = append(w.Components, DpoScorecardComponent{Name: DpoScorecardComponentName(c.Name), Score: float32(c.Score), Detail: c.Detail})
+	}
+	return DpoGetOrgUnitScorecard200JSONResponse(w), nil
+}
+
 func toDeadlineWire(it dposervice.DeadlineItem) DpoDeadlineItem {
 	return DpoDeadlineItem{
 		Source:         DpoDeadlineItemSource(it.Source),

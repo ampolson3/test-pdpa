@@ -79,6 +79,16 @@ SELECT id, course_id, target_type, target_id, due_at, assigned_by, row_version, 
 FROM gov.training_assignments WHERE target_type = 'org_unit' AND target_id = @target_id
 ORDER BY due_at;
 
+-- DPO-10 (compliance scorecard): how many of this org unit's own training assignments have at least one
+-- passed attempt — a forward read for the scorecard, not a reminder job.
+-- name: CountOrgUnitTrainingCompletion :one
+SELECT count(*)::int AS total,
+    count(*) FILTER (WHERE EXISTS (
+        SELECT 1 FROM gov.training_attempts t WHERE t.assignment_id = a.id AND t.completed_at IS NOT NULL AND t.passed
+    ))::int AS completed
+FROM gov.training_assignments a
+WHERE a.target_type = 'org_unit' AND a.target_id = @target_id;
+
 -- name: ListAssignmentsForGroups :many
 SELECT id, course_id, target_type, target_id, due_at, assigned_by, row_version, created_at, updated_at
 FROM gov.training_assignments WHERE target_type = 'group' AND target_id = ANY (@group_ids::uuid[])

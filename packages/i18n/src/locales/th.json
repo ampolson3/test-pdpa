@@ -4081,6 +4081,15 @@
       "activityCount": "จำนวนกิจกรรม",
       "viewDetail": "ดูรายละเอียด",
       "noActivities": "ไม่มีกิจกรรมในหน่วยงานนี้"
+    },
+    "scorecard": {
+      "title": "คะแนนความพร้อมตาม PDPA — รวม {score}",
+      "component": {
+        "ropa_completeness": "ความครบถ้วน RoPA",
+        "legal_readiness": "ความพร้อมด้านกฎหมาย",
+        "dpia_readiness": "ความพร้อมด้าน DPIA",
+        "training_completion": "การอบรมที่เสร็จสิ้น"
+      }
     }
   },
   "dpoTasks": {

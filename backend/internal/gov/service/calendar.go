@@ -33,3 +33,13 @@ func (s *Service) ListUpcomingTrainingDueDates(ctx context.Context, from, to tim
 	}
 	return out, nil
 }
+
+// OrgUnitTrainingCompletion is DPO-10's own training factor: how many of an org unit's own training
+// assignments have at least one passed attempt.
+func (s *Service) OrgUnitTrainingCompletion(ctx context.Context, orgUnitID uuid.UUID) (total, completed int, err error) {
+	row, err := govstore.New(pdb.MustTxFromContext(ctx)).CountOrgUnitTrainingCompletion(ctx, pgUUIDPtr(&orgUnitID))
+	if err != nil {
+		return 0, 0, err
+	}
+	return int(row.Total), int(row.Completed), nil
+}
