@@ -3220,7 +3220,8 @@
     "status": {
       "at_risk": "ใกล้ครบกำหนด",
       "overdue": "เลยกำหนด"
-    }
+    },
+    "tasks": "งาน"
   },
   "dpoAdvisories": {
     "signInRequired": "กรุณาเข้าสู่ระบบ",
@@ -4036,6 +4037,72 @@
       "expiresAt": "ทบทวนภายในวันที่",
       "recordedAt": "บันทึกเมื่อ",
       "record": "บันทึกการยอมรับความเสี่ยง"
+    }
+  },
+  "dpoTasks": {
+    "signInRequired": "กรุณาเข้าสู่ระบบเพื่อดูหน้านี้",
+    "forbidden": "คุณไม่มีสิทธิ์ดูงานของ DPO",
+    "title": "งาน DPO",
+    "intro": "งานทุกรายการที่สร้างอัตโนมัติจากโมดูลอื่น (ช่องว่าง RoPA, แบบตรวจไม่ผ่าน, ไม่มี DPA, ทบทวนความยินยอม, มาตรการความเสี่ยง, ทบทวน template) รวมในที่เดียว — พร้อมที่มาและลิงก์กลับ",
+    "loading": "กำลังโหลดงาน…",
+    "loadError": "โหลดงานไม่สำเร็จ",
+    "empty": "ไม่มีงานตามตัวกรองนี้",
+    "loadMore": "โหลดเพิ่ม",
+    "view": {
+      "kanban": "คัมบัง",
+      "list": "รายการ"
+    },
+    "filters": {
+      "allSources": "ทุกที่มา",
+      "allPriorities": "ทุกความสำคัญ"
+    },
+    "status": {
+      "created": "สร้างแล้ว",
+      "assigned": "มอบหมายแล้ว",
+      "in_review": "รอตรวจ",
+      "done": "เสร็จ",
+      "closed": "สิ้นสุด"
+    },
+    "priority": {
+      "low": "ต่ำ",
+      "medium": "ปานกลาง",
+      "high": "สูง",
+      "urgent": "เร่งด่วน"
+    },
+    "sourceType": {
+      "ropa_gap": "ช่องว่าง RoPA",
+      "dpia": "DPIA",
+      "audit": "ตรวจประเมิน",
+      "breach": "เหตุละเมิด",
+      "risk": "ความเสี่ยง",
+      "vendor": "คู่ค้า",
+      "agreement": "ข้อตกลง",
+      "consent": "ความยินยอม",
+      "manual": "สร้างเอง"
+    },
+    "provenance": "มาจาก: {source}",
+    "viewSource": "ดูที่มา",
+    "dueAt": "ครบกำหนด {date}",
+    "assigneeId": "ผู้รับผิดชอบ: {id}…",
+    "reviewerId": "ผู้ตรวจ: {id}…",
+    "table": {
+      "taskNo": "เลขงาน",
+      "title": "ชื่องาน",
+      "source": "ที่มา",
+      "status": "สถานะ",
+      "priority": "ความสำคัญ",
+      "dueAt": "ครบกำหนด"
+    },
+    "assign": {
+      "open": "มอบหมาย",
+      "search": "ค้นหาชื่อ…",
+      "assignee": "ผู้รับผิดชอบ:",
+      "reviewer": "ผู้ตรวจ:",
+      "submit": "บันทึก",
+      "error": "บันทึกไม่สำเร็จ: {detail}"
+    },
+    "comments": {
+      "open": "ความเห็น"
     }
   }
 }

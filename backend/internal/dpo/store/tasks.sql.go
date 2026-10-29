@@ -12,6 +12,85 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const assignTask = `-- name: AssignTask :one
+UPDATE dpo.tasks
+SET assignee_user_id = $1,
+    reviewer_user_id = $2,
+    org_unit_id = $3,
+    due_at = $4,
+    priority = $5,
+    status = CASE WHEN status = 'created' AND $1::uuid IS NOT NULL THEN 'assigned' ELSE status END,
+    updated_by = $6,
+    row_version = row_version + 1
+WHERE id = $7 AND row_version = $8
+RETURNING id, task_no, title, description, source_type, source_id, status, priority, assignee_user_id, reviewer_user_id,
+    org_unit_id, due_at, completed_at, row_version, created_at
+`
+
+type AssignTaskParams struct {
+	AssigneeUserID pgtype.UUID `db:"assignee_user_id" json:"assignee_user_id"`
+	ReviewerUserID pgtype.UUID `db:"reviewer_user_id" json:"reviewer_user_id"`
+	OrgUnitID      pgtype.UUID `db:"org_unit_id" json:"org_unit_id"`
+	DueAt          pgtype.Date `db:"due_at" json:"due_at"`
+	Priority       string      `db:"priority" json:"priority"`
+	Actor          pgtype.UUID `db:"actor" json:"actor"`
+	ID             uuid.UUID   `db:"id" json:"id"`
+	RowVersion     int32       `db:"row_version" json:"row_version"`
+}
+
+type AssignTaskRow struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	TaskNo         string             `db:"task_no" json:"task_no"`
+	Title          string             `db:"title" json:"title"`
+	Description    *string            `db:"description" json:"description"`
+	SourceType     string             `db:"source_type" json:"source_type"`
+	SourceID       pgtype.UUID        `db:"source_id" json:"source_id"`
+	Status         string             `db:"status" json:"status"`
+	Priority       string             `db:"priority" json:"priority"`
+	AssigneeUserID pgtype.UUID        `db:"assignee_user_id" json:"assignee_user_id"`
+	ReviewerUserID pgtype.UUID        `db:"reviewer_user_id" json:"reviewer_user_id"`
+	OrgUnitID      pgtype.UUID        `db:"org_unit_id" json:"org_unit_id"`
+	DueAt          pgtype.Date        `db:"due_at" json:"due_at"`
+	CompletedAt    pgtype.Timestamptz `db:"completed_at" json:"completed_at"`
+	RowVersion     int32              `db:"row_version" json:"row_version"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+// DPO-06: set/change who is assigned, who reviews, when it's due and how urgent it is on an already-created
+// task — every existing Open*Task caller only ever sets these once, at creation; this is the one place they
+// can be changed afterward. Never touches source_type/source_id/status — assignment is not a status move.
+func (q *Queries) AssignTask(ctx context.Context, arg AssignTaskParams) (AssignTaskRow, error) {
+	row := q.db.QueryRow(ctx, assignTask,
+		arg.AssigneeUserID,
+		arg.ReviewerUserID,
+		arg.OrgUnitID,
+		arg.DueAt,
+		arg.Priority,
+		arg.Actor,
+		arg.ID,
+		arg.RowVersion,
+	)
+	var i AssignTaskRow
+	err := row.Scan(
+		&i.ID,
+		&i.TaskNo,
+		&i.Title,
+		&i.Description,
+		&i.SourceType,
+		&i.SourceID,
+		&i.Status,
+		&i.Priority,
+		&i.AssigneeUserID,
+		&i.ReviewerUserID,
+		&i.OrgUnitID,
+		&i.DueAt,
+		&i.CompletedAt,
+		&i.RowVersion,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getTask = `-- name: GetTask :one
 
 SELECT id, task_no, title, description, source_type, source_id, status, priority, assignee_user_id, reviewer_user_id,
@@ -61,6 +140,93 @@ func (q *Queries) GetTask(ctx context.Context, id uuid.UUID) (GetTaskRow, error)
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const listTasks = `-- name: ListTasks :many
+SELECT id, task_no, title, description, source_type, source_id, status, priority, assignee_user_id, reviewer_user_id,
+    org_unit_id, due_at, completed_at, row_version, created_at
+FROM dpo.tasks
+WHERE ($1::text IS NULL OR status = $1)
+  AND ($2::text IS NULL OR source_type = $2)
+  AND ($3::text IS NULL OR priority = $3)
+  AND ($4::uuid IS NULL OR assignee_user_id = $4)
+  AND ($5::timestamptz IS NULL OR (created_at, id) < ($5, $6::uuid))
+ORDER BY created_at DESC, id DESC
+LIMIT $7
+`
+
+type ListTasksParams struct {
+	Status         *string            `db:"status" json:"status"`
+	SourceType     *string            `db:"source_type" json:"source_type"`
+	Priority       *string            `db:"priority" json:"priority"`
+	AssigneeUserID pgtype.UUID        `db:"assignee_user_id" json:"assignee_user_id"`
+	CursorAt       pgtype.Timestamptz `db:"cursor_at" json:"cursor_at"`
+	CursorID       pgtype.UUID        `db:"cursor_id" json:"cursor_id"`
+	Lim            int32              `db:"lim" json:"lim"`
+}
+
+type ListTasksRow struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	TaskNo         string             `db:"task_no" json:"task_no"`
+	Title          string             `db:"title" json:"title"`
+	Description    *string            `db:"description" json:"description"`
+	SourceType     string             `db:"source_type" json:"source_type"`
+	SourceID       pgtype.UUID        `db:"source_id" json:"source_id"`
+	Status         string             `db:"status" json:"status"`
+	Priority       string             `db:"priority" json:"priority"`
+	AssigneeUserID pgtype.UUID        `db:"assignee_user_id" json:"assignee_user_id"`
+	ReviewerUserID pgtype.UUID        `db:"reviewer_user_id" json:"reviewer_user_id"`
+	OrgUnitID      pgtype.UUID        `db:"org_unit_id" json:"org_unit_id"`
+	DueAt          pgtype.Date        `db:"due_at" json:"due_at"`
+	CompletedAt    pgtype.Timestamptz `db:"completed_at" json:"completed_at"`
+	RowVersion     int32              `db:"row_version" json:"row_version"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
+// DPO-06: the kanban/list view every source feature's own auto-created task already lands in, regardless of
+// source_type — RRA-09's own ListRisks' exact filter/keyset-cursor shape, ported to dpo.tasks.
+func (q *Queries) ListTasks(ctx context.Context, arg ListTasksParams) ([]ListTasksRow, error) {
+	rows, err := q.db.Query(ctx, listTasks,
+		arg.Status,
+		arg.SourceType,
+		arg.Priority,
+		arg.AssigneeUserID,
+		arg.CursorAt,
+		arg.CursorID,
+		arg.Lim,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTasksRow
+	for rows.Next() {
+		var i ListTasksRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.TaskNo,
+			&i.Title,
+			&i.Description,
+			&i.SourceType,
+			&i.SourceID,
+			&i.Status,
+			&i.Priority,
+			&i.AssigneeUserID,
+			&i.ReviewerUserID,
+			&i.OrgUnitID,
+			&i.DueAt,
+			&i.CompletedAt,
+			&i.RowVersion,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateTaskStatus = `-- name: UpdateTaskStatus :one

@@ -59,6 +59,10 @@ type Task struct {
 	Status         string
 	Priority       string
 	AssigneeUserID *uuid.UUID
+	// ReviewerUserID/OrgUnitID are DPO-06's own additions — both columns existed since the baseline
+	// migration but nothing read or wrote them until AssignTask (gap_tasks.go).
+	ReviewerUserID *uuid.UUID
+	OrgUnitID      *uuid.UUID
 	DueAt          *time.Time
 	CompletedAt    *time.Time
 	RowVersion     int32

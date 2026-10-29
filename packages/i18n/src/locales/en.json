@@ -3220,7 +3220,8 @@
     "status": {
       "at_risk": "At risk",
       "overdue": "Overdue"
-    }
+    },
+    "tasks": "Tasks"
   },
   "dpoAdvisories": {
     "signInRequired": "Please sign in.",
@@ -4036,6 +4037,72 @@
       "expiresAt": "Review by",
       "recordedAt": "Recorded",
       "record": "Record acceptance"
+    }
+  },
+  "dpoTasks": {
+    "signInRequired": "Sign in to view this page.",
+    "forbidden": "You don't have permission to view DPO tasks.",
+    "title": "DPO tasks",
+    "intro": "Every task auto-created by another module (legal gaps, failed checklists, missing DPAs, consent review, risk controls, template reviews) in one board — each with where it came from and a link back.",
+    "loading": "Loading tasks…",
+    "loadError": "Couldn't load tasks.",
+    "empty": "No tasks match these filters.",
+    "loadMore": "Load more",
+    "view": {
+      "kanban": "Kanban",
+      "list": "List"
+    },
+    "filters": {
+      "allSources": "All sources",
+      "allPriorities": "All priorities"
+    },
+    "status": {
+      "created": "Created",
+      "assigned": "Assigned",
+      "in_review": "In review",
+      "done": "Done",
+      "closed": "Closed"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "sourceType": {
+      "ropa_gap": "RoPA gap",
+      "dpia": "DPIA",
+      "audit": "Audit",
+      "breach": "Breach",
+      "risk": "Risk",
+      "vendor": "Vendor",
+      "agreement": "Agreement",
+      "consent": "Consent",
+      "manual": "Manual"
+    },
+    "provenance": "From: {source}",
+    "viewSource": "View source",
+    "dueAt": "Due {date}",
+    "assigneeId": "Assignee: {id}…",
+    "reviewerId": "Reviewer: {id}…",
+    "table": {
+      "taskNo": "Task no.",
+      "title": "Title",
+      "source": "Source",
+      "status": "Status",
+      "priority": "Priority",
+      "dueAt": "Due"
+    },
+    "assign": {
+      "open": "Assign",
+      "search": "Search by name…",
+      "assignee": "Assignee:",
+      "reviewer": "Reviewer:",
+      "submit": "Save",
+      "error": "Couldn't save: {detail}"
+    },
+    "comments": {
+      "open": "Comments"
     }
   }
 }

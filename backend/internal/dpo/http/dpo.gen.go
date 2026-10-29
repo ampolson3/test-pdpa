@@ -39,6 +39,30 @@ func (e DpoAdvisoryStatus) Valid() bool {
 	}
 }
 
+// Defines values for DpoAssignTaskInputPriority.
+const (
+	DpoAssignTaskInputPriorityHigh   DpoAssignTaskInputPriority = "high"
+	DpoAssignTaskInputPriorityLow    DpoAssignTaskInputPriority = "low"
+	DpoAssignTaskInputPriorityMedium DpoAssignTaskInputPriority = "medium"
+	DpoAssignTaskInputPriorityUrgent DpoAssignTaskInputPriority = "urgent"
+)
+
+// Valid indicates whether the value is a known member of the DpoAssignTaskInputPriority enum.
+func (e DpoAssignTaskInputPriority) Valid() bool {
+	switch e {
+	case DpoAssignTaskInputPriorityHigh:
+		return true
+	case DpoAssignTaskInputPriorityLow:
+		return true
+	case DpoAssignTaskInputPriorityMedium:
+		return true
+	case DpoAssignTaskInputPriorityUrgent:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DpoDeadlineItemSource.
 const (
 	BreachIncident DpoDeadlineItemSource = "breach_incident"
@@ -104,22 +128,22 @@ func (e DpoKbArticleSource) Valid() bool {
 
 // Defines values for DpoRemediationTaskPriority.
 const (
-	High   DpoRemediationTaskPriority = "high"
-	Low    DpoRemediationTaskPriority = "low"
-	Medium DpoRemediationTaskPriority = "medium"
-	Urgent DpoRemediationTaskPriority = "urgent"
+	DpoRemediationTaskPriorityHigh   DpoRemediationTaskPriority = "high"
+	DpoRemediationTaskPriorityLow    DpoRemediationTaskPriority = "low"
+	DpoRemediationTaskPriorityMedium DpoRemediationTaskPriority = "medium"
+	DpoRemediationTaskPriorityUrgent DpoRemediationTaskPriority = "urgent"
 )
 
 // Valid indicates whether the value is a known member of the DpoRemediationTaskPriority enum.
 func (e DpoRemediationTaskPriority) Valid() bool {
 	switch e {
-	case High:
+	case DpoRemediationTaskPriorityHigh:
 		return true
-	case Low:
+	case DpoRemediationTaskPriorityLow:
 		return true
-	case Medium:
+	case DpoRemediationTaskPriorityMedium:
 		return true
-	case Urgent:
+	case DpoRemediationTaskPriorityUrgent:
 		return true
 	default:
 		return false
@@ -128,37 +152,37 @@ func (e DpoRemediationTaskPriority) Valid() bool {
 
 // Defines values for DpoRemediationTaskSourceType.
 const (
-	Agreement DpoRemediationTaskSourceType = "agreement"
-	Audit     DpoRemediationTaskSourceType = "audit"
-	Breach    DpoRemediationTaskSourceType = "breach"
-	Consent   DpoRemediationTaskSourceType = "consent"
-	Dpia      DpoRemediationTaskSourceType = "dpia"
-	Manual    DpoRemediationTaskSourceType = "manual"
-	Risk      DpoRemediationTaskSourceType = "risk"
-	RopaGap   DpoRemediationTaskSourceType = "ropa_gap"
-	Vendor    DpoRemediationTaskSourceType = "vendor"
+	DpoRemediationTaskSourceTypeAgreement DpoRemediationTaskSourceType = "agreement"
+	DpoRemediationTaskSourceTypeAudit     DpoRemediationTaskSourceType = "audit"
+	DpoRemediationTaskSourceTypeBreach    DpoRemediationTaskSourceType = "breach"
+	DpoRemediationTaskSourceTypeConsent   DpoRemediationTaskSourceType = "consent"
+	DpoRemediationTaskSourceTypeDpia      DpoRemediationTaskSourceType = "dpia"
+	DpoRemediationTaskSourceTypeManual    DpoRemediationTaskSourceType = "manual"
+	DpoRemediationTaskSourceTypeRisk      DpoRemediationTaskSourceType = "risk"
+	DpoRemediationTaskSourceTypeRopaGap   DpoRemediationTaskSourceType = "ropa_gap"
+	DpoRemediationTaskSourceTypeVendor    DpoRemediationTaskSourceType = "vendor"
 )
 
 // Valid indicates whether the value is a known member of the DpoRemediationTaskSourceType enum.
 func (e DpoRemediationTaskSourceType) Valid() bool {
 	switch e {
-	case Agreement:
+	case DpoRemediationTaskSourceTypeAgreement:
 		return true
-	case Audit:
+	case DpoRemediationTaskSourceTypeAudit:
 		return true
-	case Breach:
+	case DpoRemediationTaskSourceTypeBreach:
 		return true
-	case Consent:
+	case DpoRemediationTaskSourceTypeConsent:
 		return true
-	case Dpia:
+	case DpoRemediationTaskSourceTypeDpia:
 		return true
-	case Manual:
+	case DpoRemediationTaskSourceTypeManual:
 		return true
-	case Risk:
+	case DpoRemediationTaskSourceTypeRisk:
 		return true
-	case RopaGap:
+	case DpoRemediationTaskSourceTypeRopaGap:
 		return true
-	case Vendor:
+	case DpoRemediationTaskSourceTypeVendor:
 		return true
 	default:
 		return false
@@ -663,6 +687,114 @@ func (e DpoGetAssessmentParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for DpoListTasksParamsStatus.
+const (
+	DpoListTasksParamsStatusAssigned DpoListTasksParamsStatus = "assigned"
+	DpoListTasksParamsStatusClosed   DpoListTasksParamsStatus = "closed"
+	DpoListTasksParamsStatusCreated  DpoListTasksParamsStatus = "created"
+	DpoListTasksParamsStatusDone     DpoListTasksParamsStatus = "done"
+	DpoListTasksParamsStatusInReview DpoListTasksParamsStatus = "in_review"
+)
+
+// Valid indicates whether the value is a known member of the DpoListTasksParamsStatus enum.
+func (e DpoListTasksParamsStatus) Valid() bool {
+	switch e {
+	case DpoListTasksParamsStatusAssigned:
+		return true
+	case DpoListTasksParamsStatusClosed:
+		return true
+	case DpoListTasksParamsStatusCreated:
+		return true
+	case DpoListTasksParamsStatusDone:
+		return true
+	case DpoListTasksParamsStatusInReview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpoListTasksParamsSourceType.
+const (
+	DpoListTasksParamsSourceTypeAgreement DpoListTasksParamsSourceType = "agreement"
+	DpoListTasksParamsSourceTypeAudit     DpoListTasksParamsSourceType = "audit"
+	DpoListTasksParamsSourceTypeBreach    DpoListTasksParamsSourceType = "breach"
+	DpoListTasksParamsSourceTypeConsent   DpoListTasksParamsSourceType = "consent"
+	DpoListTasksParamsSourceTypeDpia      DpoListTasksParamsSourceType = "dpia"
+	DpoListTasksParamsSourceTypeManual    DpoListTasksParamsSourceType = "manual"
+	DpoListTasksParamsSourceTypeRisk      DpoListTasksParamsSourceType = "risk"
+	DpoListTasksParamsSourceTypeRopaGap   DpoListTasksParamsSourceType = "ropa_gap"
+	DpoListTasksParamsSourceTypeVendor    DpoListTasksParamsSourceType = "vendor"
+)
+
+// Valid indicates whether the value is a known member of the DpoListTasksParamsSourceType enum.
+func (e DpoListTasksParamsSourceType) Valid() bool {
+	switch e {
+	case DpoListTasksParamsSourceTypeAgreement:
+		return true
+	case DpoListTasksParamsSourceTypeAudit:
+		return true
+	case DpoListTasksParamsSourceTypeBreach:
+		return true
+	case DpoListTasksParamsSourceTypeConsent:
+		return true
+	case DpoListTasksParamsSourceTypeDpia:
+		return true
+	case DpoListTasksParamsSourceTypeManual:
+		return true
+	case DpoListTasksParamsSourceTypeRisk:
+		return true
+	case DpoListTasksParamsSourceTypeRopaGap:
+		return true
+	case DpoListTasksParamsSourceTypeVendor:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpoListTasksParamsPriority.
+const (
+	DpoListTasksParamsPriorityHigh   DpoListTasksParamsPriority = "high"
+	DpoListTasksParamsPriorityLow    DpoListTasksParamsPriority = "low"
+	DpoListTasksParamsPriorityMedium DpoListTasksParamsPriority = "medium"
+	DpoListTasksParamsPriorityUrgent DpoListTasksParamsPriority = "urgent"
+)
+
+// Valid indicates whether the value is a known member of the DpoListTasksParamsPriority enum.
+func (e DpoListTasksParamsPriority) Valid() bool {
+	switch e {
+	case DpoListTasksParamsPriorityHigh:
+		return true
+	case DpoListTasksParamsPriorityLow:
+		return true
+	case DpoListTasksParamsPriorityMedium:
+		return true
+	case DpoListTasksParamsPriorityUrgent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpoListTasksParamsAcceptLanguage.
+const (
+	DpoListTasksParamsAcceptLanguageEn DpoListTasksParamsAcceptLanguage = "en"
+	DpoListTasksParamsAcceptLanguageTh DpoListTasksParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpoListTasksParamsAcceptLanguage enum.
+func (e DpoListTasksParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpoListTasksParamsAcceptLanguageEn:
+		return true
+	case DpoListTasksParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DpoGetTaskParamsAcceptLanguage.
 const (
 	DpoGetTaskParamsAcceptLanguageEn DpoGetTaskParamsAcceptLanguage = "en"
@@ -675,6 +807,24 @@ func (e DpoGetTaskParamsAcceptLanguage) Valid() bool {
 	case DpoGetTaskParamsAcceptLanguageEn:
 		return true
 	case DpoGetTaskParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DpoAssignTaskParamsAcceptLanguage.
+const (
+	DpoAssignTaskParamsAcceptLanguageEn DpoAssignTaskParamsAcceptLanguage = "en"
+	DpoAssignTaskParamsAcceptLanguageTh DpoAssignTaskParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DpoAssignTaskParamsAcceptLanguage enum.
+func (e DpoAssignTaskParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DpoAssignTaskParamsAcceptLanguageEn:
+		return true
+	case DpoAssignTaskParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -795,6 +945,23 @@ type DpoAppointmentInput struct {
 	UserId *Uuid `json:"user_id,omitempty"`
 }
 
+// DpoAssignTaskInput defines model for DpoAssignTaskInput.
+type DpoAssignTaskInput struct {
+	// AssigneeUserId UUIDv7 generated by the API
+	AssigneeUserId *Uuid               `json:"assignee_user_id,omitempty"`
+	DueAt          *openapi_types.Date `json:"due_at,omitempty"`
+
+	// OrgUnitId UUIDv7 generated by the API
+	OrgUnitId *Uuid                       `json:"org_unit_id,omitempty"`
+	Priority  *DpoAssignTaskInputPriority `json:"priority,omitempty"`
+
+	// ReviewerUserId UUIDv7 generated by the API
+	ReviewerUserId *Uuid `json:"reviewer_user_id,omitempty"`
+}
+
+// DpoAssignTaskInputPriority defines model for DpoAssignTaskInput.Priority.
+type DpoAssignTaskInputPriority string
+
 // DpoDeadlineItem DPO-05: one near-deadline or overdue item from a module that already tracks a legal deadline — currently DSAR's 30-day SLA and breach's 72-hour PDPC notice clock. Sorted by due_at ascending.
 type DpoDeadlineItem struct {
 	// DueAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
@@ -877,9 +1044,15 @@ type DpoRemediationTask struct {
 	DueAt       *openapi_types.Date `json:"due_at,omitempty"`
 
 	// Id UUIDv7 generated by the API
-	Id         Uuid                       `json:"id"`
-	Priority   DpoRemediationTaskPriority `json:"priority"`
-	RowVersion int                        `json:"row_version"`
+	Id Uuid `json:"id"`
+
+	// OrgUnitId UUIDv7 generated by the API
+	OrgUnitId *Uuid                      `json:"org_unit_id,omitempty"`
+	Priority  DpoRemediationTaskPriority `json:"priority"`
+
+	// ReviewerUserId UUIDv7 generated by the API
+	ReviewerUserId *Uuid `json:"reviewer_user_id,omitempty"`
+	RowVersion     int   `json:"row_version"`
 
 	// SourceId UUIDv7 generated by the API
 	SourceId   *Uuid                         `json:"source_id,omitempty"`
@@ -1012,8 +1185,14 @@ type Uuid = openapi_types.UUID
 // AcceptLanguage defines model for AcceptLanguage.
 type AcceptLanguage string
 
+// Cursor defines model for Cursor.
+type Cursor = string
+
 // IfMatch defines model for IfMatch.
 type IfMatch = string
+
+// Limit defines model for Limit.
+type Limit = int
 
 // BadRequest RFC 9457 problem details with a stable machine-readable `code`
 type BadRequest = Problem
@@ -1248,6 +1427,32 @@ type DpoGetAssessmentParams struct {
 // DpoGetAssessmentParamsAcceptLanguage defines parameters for DpoGetAssessment.
 type DpoGetAssessmentParamsAcceptLanguage string
 
+// DpoListTasksParams defines parameters for DpoListTasks.
+type DpoListTasksParams struct {
+	// Cursor Opaque cursor from `next_cursor` of the previous page
+	Cursor         *Cursor                       `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit          *Limit                        `form:"limit,omitempty" json:"limit,omitempty"`
+	Status         *DpoListTasksParamsStatus     `form:"status,omitempty" json:"status,omitempty"`
+	SourceType     *DpoListTasksParamsSourceType `form:"source_type,omitempty" json:"source_type,omitempty"`
+	Priority       *DpoListTasksParamsPriority   `form:"priority,omitempty" json:"priority,omitempty"`
+	AssigneeUserId *Uuid                         `form:"assignee_user_id,omitempty" json:"assignee_user_id,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpoListTasksParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// DpoListTasksParamsStatus defines parameters for DpoListTasks.
+type DpoListTasksParamsStatus string
+
+// DpoListTasksParamsSourceType defines parameters for DpoListTasks.
+type DpoListTasksParamsSourceType string
+
+// DpoListTasksParamsPriority defines parameters for DpoListTasks.
+type DpoListTasksParamsPriority string
+
+// DpoListTasksParamsAcceptLanguage defines parameters for DpoListTasks.
+type DpoListTasksParamsAcceptLanguage string
+
 // DpoGetTaskParams defines parameters for DpoGetTask.
 type DpoGetTaskParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -1256,6 +1461,18 @@ type DpoGetTaskParams struct {
 
 // DpoGetTaskParamsAcceptLanguage defines parameters for DpoGetTask.
 type DpoGetTaskParamsAcceptLanguage string
+
+// DpoAssignTaskParams defines parameters for DpoAssignTask.
+type DpoAssignTaskParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DpoAssignTaskParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// DpoAssignTaskParamsAcceptLanguage defines parameters for DpoAssignTask.
+type DpoAssignTaskParamsAcceptLanguage string
 
 // DpoUpdateTaskStatusParams defines parameters for DpoUpdateTaskStatus.
 type DpoUpdateTaskStatusParams struct {
@@ -1292,6 +1509,9 @@ type DpoAssessRequirementCheckJSONRequestBody = DpoRequirementCheckInput
 
 // DpoRecordAssessmentJSONRequestBody defines body for DpoRecordAssessment for application/json ContentType.
 type DpoRecordAssessmentJSONRequestBody DpoRecordAssessmentJSONBody
+
+// DpoAssignTaskJSONRequestBody defines body for DpoAssignTask for application/json ContentType.
+type DpoAssignTaskJSONRequestBody = DpoAssignTaskInput
 
 // DpoUpdateTaskStatusJSONRequestBody defines body for DpoUpdateTaskStatus for application/json ContentType.
 type DpoUpdateTaskStatusJSONRequestBody = DpoTaskStatusInput
@@ -1352,9 +1572,15 @@ type ServerInterface interface {
 	// DpoGetAssessment One assessment run, with its remediation tasks
 	// (GET /admin/v1/dpo/security-assessments/{id})
 	DpoGetAssessment(w http.ResponseWriter, r *http.Request, id Uuid, params DpoGetAssessmentParams)
+	// DpoListTasks DPO-06: the kanban/list view of every dpo.tasks job, whatever module opened it (RRA-07/DPO-09/DPA-12/PNG-07/ROPA-19/DPIA-08/RRA-08/RTG-10), filterable by status/source_type/priority/assignee
+	// (GET /admin/v1/dpo/tasks)
+	DpoListTasks(w http.ResponseWriter, r *http.Request, params DpoListTasksParams)
 	// DpoGetTask One dpo.tasks remediation job by id (RRA-07's own tracking view, shared by every source that opens one)
 	// (GET /admin/v1/dpo/tasks/{id})
 	DpoGetTask(w http.ResponseWriter, r *http.Request, id Uuid, params DpoGetTaskParams)
+	// DpoAssignTask DPO-06: set or change who is assigned, who reviews, the due date and the priority on an already-created task (the module description's own "มีผู้ตรวจ วันครบกำหนด และความสำคัญ") — never a status move
+	// (POST /admin/v1/dpo/tasks/{id}/assign)
+	DpoAssignTask(w http.ResponseWriter, r *http.Request, id Uuid, params DpoAssignTaskParams)
 	// DpoUpdateTaskStatus RRA-07: move a task through created -> assigned -> in_review -> done -> closed; closing a "ropa_gap" task re-checks that finding's rule
 	// (POST /admin/v1/dpo/tasks/{id}/status)
 	DpoUpdateTaskStatus(w http.ResponseWriter, r *http.Request, id Uuid, params DpoUpdateTaskStatusParams)
@@ -1472,9 +1698,21 @@ func (_ Unimplemented) DpoGetAssessment(w http.ResponseWriter, r *http.Request, 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// DpoListTasks DPO-06: the kanban/list view of every dpo.tasks job, whatever module opened it (RRA-07/DPO-09/DPA-12/PNG-07/ROPA-19/DPIA-08/RRA-08/RTG-10), filterable by status/source_type/priority/assignee
+// (GET /admin/v1/dpo/tasks)
+func (_ Unimplemented) DpoListTasks(w http.ResponseWriter, r *http.Request, params DpoListTasksParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // DpoGetTask One dpo.tasks remediation job by id (RRA-07's own tracking view, shared by every source that opens one)
 // (GET /admin/v1/dpo/tasks/{id})
 func (_ Unimplemented) DpoGetTask(w http.ResponseWriter, r *http.Request, id Uuid, params DpoGetTaskParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DpoAssignTask DPO-06: set or change who is assigned, who reviews, the due date and the priority on an already-created task (the module description's own "มีผู้ตรวจ วันครบกำหนด และความสำคัญ") — never a status move
+// (POST /admin/v1/dpo/tasks/{id}/assign)
+func (_ Unimplemented) DpoAssignTask(w http.ResponseWriter, r *http.Request, id Uuid, params DpoAssignTaskParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2515,6 +2753,125 @@ func (siw *ServerInterfaceWrapper) DpoGetAssessment(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// DpoListTasks operation middleware
+func (siw *ServerInterfaceWrapper) DpoListTasks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpoListTasksParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "source_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source_type", r.URL.Query(), &params.SourceType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "priority" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "priority", r.URL.Query(), &params.Priority, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "priority"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "priority", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "assignee_user_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "assignee_user_id", r.URL.Query(), &params.AssigneeUserId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "assignee_user_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assignee_user_id", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpoListTasksParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpoListTasks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // DpoGetTask operation middleware
 func (siw *ServerInterfaceWrapper) DpoGetTask(w http.ResponseWriter, r *http.Request) {
 
@@ -2556,6 +2913,79 @@ func (siw *ServerInterfaceWrapper) DpoGetTask(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DpoGetTask(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DpoAssignTask operation middleware
+func (siw *ServerInterfaceWrapper) DpoAssignTask(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DpoAssignTaskParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DpoAssignTaskParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DpoAssignTask(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2806,10 +3236,16 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/admin/v1/dpo/security-assessments/{id}", wrapper.DpoGetAssessment)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dpo/tasks", wrapper.DpoListTasks)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/dpo/tasks/{id}", wrapper.DpoGetTask)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/dpo/tasks/{id}/status", wrapper.DpoUpdateTaskStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dpo/tasks/{id}/assign", wrapper.DpoAssignTask)
 	})
 
 	return r
@@ -4373,6 +4809,79 @@ func (response DpoGetAssessment404ApplicationProblemPlusJSONResponse) VisitDpoGe
 	return err
 }
 
+type DpoListTasksRequestObject struct {
+	Params DpoListTasksParams
+}
+
+type DpoListTasksResponseObject interface {
+	VisitDpoListTasksResponse(w http.ResponseWriter) error
+}
+
+type DpoListTasks200JSONResponse struct {
+	Data       []DpoRemediationTask `json:"data"`
+	NextCursor *string              `json:"next_cursor"`
+}
+
+func (response DpoListTasks200JSONResponse) VisitDpoListTasksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoListTasks400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DpoListTasks400ApplicationProblemPlusJSONResponse) VisitDpoListTasksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoListTasks401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpoListTasks401ApplicationProblemPlusJSONResponse) VisitDpoListTasksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoListTasks403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpoListTasks403ApplicationProblemPlusJSONResponse) VisitDpoListTasksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type DpoGetTaskRequestObject struct {
 	Id     Uuid `json:"id"`
 	Params DpoGetTaskParams
@@ -4440,6 +4949,152 @@ func (response DpoGetTask404ApplicationProblemPlusJSONResponse) VisitDpoGetTaskR
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAssignTaskRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params DpoAssignTaskParams
+	Body   *DpoAssignTaskJSONRequestBody
+}
+
+type DpoAssignTaskResponseObject interface {
+	VisitDpoAssignTaskResponse(w http.ResponseWriter) error
+}
+
+type DpoAssignTask200ResponseHeaders struct {
+	ETag *string
+}
+
+type DpoAssignTask200JSONResponse struct {
+	Body    DpoRemediationTask
+	Headers DpoAssignTask200ResponseHeaders
+}
+
+func (response DpoAssignTask200JSONResponse) VisitDpoAssignTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAssignTask400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAssignTask400ApplicationProblemPlusJSONResponse) VisitDpoAssignTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAssignTask401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAssignTask401ApplicationProblemPlusJSONResponse) VisitDpoAssignTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAssignTask403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAssignTask403ApplicationProblemPlusJSONResponse) VisitDpoAssignTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAssignTask404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAssignTask404ApplicationProblemPlusJSONResponse) VisitDpoAssignTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAssignTask412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAssignTask412ApplicationProblemPlusJSONResponse) VisitDpoAssignTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAssignTask422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAssignTask422ApplicationProblemPlusJSONResponse) VisitDpoAssignTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DpoAssignTask428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response DpoAssignTask428ApplicationProblemPlusJSONResponse) VisitDpoAssignTaskResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4646,9 +5301,15 @@ type StrictServerInterface interface {
 	// DpoGetAssessment One assessment run, with its remediation tasks
 	// (GET /admin/v1/dpo/security-assessments/{id})
 	DpoGetAssessment(ctx context.Context, request DpoGetAssessmentRequestObject) (DpoGetAssessmentResponseObject, error)
+	// DpoListTasks DPO-06: the kanban/list view of every dpo.tasks job, whatever module opened it (RRA-07/DPO-09/DPA-12/PNG-07/ROPA-19/DPIA-08/RRA-08/RTG-10), filterable by status/source_type/priority/assignee
+	// (GET /admin/v1/dpo/tasks)
+	DpoListTasks(ctx context.Context, request DpoListTasksRequestObject) (DpoListTasksResponseObject, error)
 	// DpoGetTask One dpo.tasks remediation job by id (RRA-07's own tracking view, shared by every source that opens one)
 	// (GET /admin/v1/dpo/tasks/{id})
 	DpoGetTask(ctx context.Context, request DpoGetTaskRequestObject) (DpoGetTaskResponseObject, error)
+	// DpoAssignTask DPO-06: set or change who is assigned, who reviews, the due date and the priority on an already-created task (the module description's own "มีผู้ตรวจ วันครบกำหนด และความสำคัญ") — never a status move
+	// (POST /admin/v1/dpo/tasks/{id}/assign)
+	DpoAssignTask(ctx context.Context, request DpoAssignTaskRequestObject) (DpoAssignTaskResponseObject, error)
 	// DpoUpdateTaskStatus RRA-07: move a task through created -> assigned -> in_review -> done -> closed; closing a "ropa_gap" task re-checks that finding's rule
 	// (POST /admin/v1/dpo/tasks/{id}/status)
 	DpoUpdateTaskStatus(ctx context.Context, request DpoUpdateTaskStatusRequestObject) (DpoUpdateTaskStatusResponseObject, error)
@@ -5228,6 +5889,32 @@ func (sh *strictHandler) DpoGetAssessment(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// DpoListTasks operation middleware
+func (sh *strictHandler) DpoListTasks(w http.ResponseWriter, r *http.Request, params DpoListTasksParams) {
+	var request DpoListTasksRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpoListTasks(ctx, request.(DpoListTasksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpoListTasks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpoListTasksResponseObject); ok {
+		if err := validResponse.VisitDpoListTasksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // DpoGetTask operation middleware
 func (sh *strictHandler) DpoGetTask(w http.ResponseWriter, r *http.Request, id Uuid, params DpoGetTaskParams) {
 	var request DpoGetTaskRequestObject
@@ -5248,6 +5935,40 @@ func (sh *strictHandler) DpoGetTask(w http.ResponseWriter, r *http.Request, id U
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DpoGetTaskResponseObject); ok {
 		if err := validResponse.VisitDpoGetTaskResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DpoAssignTask operation middleware
+func (sh *strictHandler) DpoAssignTask(w http.ResponseWriter, r *http.Request, id Uuid, params DpoAssignTaskParams) {
+	var request DpoAssignTaskRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body DpoAssignTaskJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DpoAssignTask(ctx, request.(DpoAssignTaskRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DpoAssignTask")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DpoAssignTaskResponseObject); ok {
+		if err := validResponse.VisitDpoAssignTaskResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

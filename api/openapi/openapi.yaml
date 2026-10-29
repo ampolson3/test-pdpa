@@ -12716,6 +12716,62 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dpo/tasks:
+    get:
+      operationId: dpoListTasks
+      tags: [dpo]
+      summary: 'DPO-06: the kanban/list view of every dpo.tasks job, whatever module opened it (RRA-07/DPO-09/DPA-12/PNG-07/ROPA-19/DPIA-08/RRA-08/RTG-10), filterable by status/source_type/priority/assignee'
+      x-permission: dpo.task.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [created, assigned, in_review, done, closed]
+        - name: source_type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ropa_gap, dpia, audit, breach, risk, vendor, agreement, consent, manual]
+        - name: priority
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [low, medium, high, urgent]
+        - name: assignee_user_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: One page
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, next_cursor]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/DpoRemediationTask'}
+                  next_cursor:
+                    type: [string, 'null']
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/dpo/tasks/{id}:
     get:
       operationId: dpoGetTask
@@ -12768,6 +12824,53 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DpoTaskStatusInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DpoRemediationTask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dpo/tasks/{id}/assign:
+    post:
+      operationId: dpoAssignTask
+      tags: [dpo]
+      summary: 'DPO-06: set or change who is assigned, who reviews, the due date and the priority on an already-created task (the module description''s own "มีผู้ตรวจ วันครบกำหนด และความสำคัญ") — never a status move'
+      x-permission: dpo.task.execute
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DpoAssignTaskInput'
       responses:
         '200':
           description: Updated
@@ -22017,6 +22120,8 @@ components:
         status: {type: string, enum: [created, assigned, in_review, done, closed]}
         priority: {type: string, enum: [low, medium, high, urgent]}
         assignee_user_id: {$ref: '#/components/schemas/Uuid'}
+        reviewer_user_id: {$ref: '#/components/schemas/Uuid'}
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
         due_at: {type: [string, 'null'], format: date}
         completed_at: {$ref: '#/components/schemas/Timestamp'}
         row_version: {type: integer}
@@ -22027,6 +22132,15 @@ components:
       additionalProperties: false
       properties:
         status: {type: string, enum: [created, assigned, in_review, done, closed]}
+    DpoAssignTaskInput:
+      type: object
+      additionalProperties: false
+      properties:
+        assignee_user_id: {$ref: '#/components/schemas/Uuid'}
+        reviewer_user_id: {$ref: '#/components/schemas/Uuid'}
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        due_at: {type: [string, 'null'], format: date}
+        priority: {type: string, enum: [low, medium, high, urgent]}
     RiskRemediateFindingInput:
       type: object
       additionalProperties: false

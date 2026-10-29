@@ -22,6 +22,8 @@ output-options:
     - dpoGetAssessment
     - dpoGetTask
     - dpoUpdateTaskStatus
+    - dpoListTasks
+    - dpoAssignTask
     - dpoListIndependenceDeclarations
     - dpoRecordIndependenceDeclaration
     - dpoSignIndependenceDeclaration

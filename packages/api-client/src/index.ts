@@ -236,7 +236,14 @@ export {
   type RiskGapFinding,
   type RiskRemediateFindingInput,
 } from "./gapFindings";
-export { useTask, useUpdateTaskStatus, type DpoTaskStatus } from "./tasks";
+export {
+  useTask,
+  useUpdateTaskStatus,
+  useTasks,
+  useAssignTask,
+  type DpoTaskStatus,
+  type DpoAssignTaskInput,
+} from "./tasks";
 export {
   useDataInventory,
   useSaveDataInventoryItem,

@@ -4344,6 +4344,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpo/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPO-06: the kanban/list view of every dpo.tasks job, whatever module opened it (RRA-07/DPO-09/DPA-12/PNG-07/ROPA-19/DPIA-08/RRA-08/RTG-10), filterable by status/source_type/priority/assignee */
+        get: operations["dpoListTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpo/tasks/{id}": {
         parameters: {
             query?: never;
@@ -4372,6 +4389,23 @@ export interface paths {
         put?: never;
         /** RRA-07: move a task through created -> assigned -> in_review -> done -> closed; closing a "ropa_gap" task re-checks that finding's rule */
         post: operations["dpoUpdateTaskStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpo/tasks/{id}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** DPO-06: set or change who is assigned, who reviews, the due date and the priority on an already-created task (the module description's own "มีผู้ตรวจ วันครบกำหนด และความสำคัญ") — never a status move */
+        post: operations["dpoAssignTask"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8277,6 +8311,8 @@ export interface components {
             /** @enum {string} */
             priority: "low" | "medium" | "high" | "urgent";
             assignee_user_id?: components["schemas"]["Uuid"];
+            reviewer_user_id?: components["schemas"]["Uuid"];
+            org_unit_id?: components["schemas"]["Uuid"];
             /** Format: date */
             due_at?: string | null;
             completed_at?: components["schemas"]["Timestamp"];
@@ -8286,6 +8322,15 @@ export interface components {
         DpoTaskStatusInput: {
             /** @enum {string} */
             status: "created" | "assigned" | "in_review" | "done" | "closed";
+        };
+        DpoAssignTaskInput: {
+            assignee_user_id?: components["schemas"]["Uuid"];
+            reviewer_user_id?: components["schemas"]["Uuid"];
+            org_unit_id?: components["schemas"]["Uuid"];
+            /** Format: date */
+            due_at?: string | null;
+            /** @enum {string} */
+            priority?: "low" | "medium" | "high" | "urgent";
         };
         RiskRemediateFindingInput: {
             assignee_user_id?: components["schemas"]["Uuid"];
@@ -22000,6 +22045,43 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    dpoListTasks: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from `next_cursor` of the previous page */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                status?: "created" | "assigned" | "in_review" | "done" | "closed";
+                source_type?: "ropa_gap" | "dpia" | "audit" | "breach" | "risk" | "vendor" | "agreement" | "consent" | "manual";
+                priority?: "low" | "medium" | "high" | "urgent";
+                assignee_user_id?: components["schemas"]["Uuid"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpoRemediationTask"][];
+                        next_cursor: string | null;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     dpoGetTask: {
         parameters: {
             query?: never;
@@ -22045,6 +22127,45 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["DpoTaskStatusInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoRemediationTask"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dpoAssignTask: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpoAssignTaskInput"];
             };
         };
         responses: {

@@ -324,8 +324,21 @@ func run() error {
 	riskSvc.DpiaTrigger = dpiaSvc                                                                                                       // RRA-03: a high/very_high risk score opens a DPIA round
 	vendorSvc.Dpia, vendorSvc.Risk = dpiaSvc, riskSvc                                                                                   // VEN-07: answer a VEN-04 template and classify the score on the tenant's own risk matrix
 	dpoSvc.Dpia = dpiaSvc                                                                                                               // DPO-02: ม.41(2) requirement-check screening via dpia's generic ScreenSubject
-	vendorSvc.Events = &events.Publisher{River: riverClient}                                                                            // VEN-08: publish "vendor.approved" on a clean approval
-	ropaSvc.Dpia = wiring.RopaDpia{Dpia: dpiaSvc}                                                                                       // DPX-06: run a transfer impact assessment (TIA) against a logged cross-border transfer; also DPIA-16's own HasApprovedLIA completeness check
+	// DPO-06: comments on a dpo.tasks job (the module description's own "...และความเห็น" — reviewer, due date,
+	// priority and comments), the same cheap PLT-07 reuse ROPA-12/DSAR-17/DPIA-14 already made for their own
+	// records.
+	collabSvc.Register("dpo_task", collab.Policy{
+		ReadPermission: "dpo.task.read", WritePermission: "dpo.task.update",
+		Exists: func(ctx context.Context, id uuid.UUID) (bool, error) {
+			_, err := dpoSvc.GetTask(ctx, id)
+			if errors.Is(err, dposervice.ErrNotFound) {
+				return false, nil
+			}
+			return err == nil, err
+		},
+	})
+	vendorSvc.Events = &events.Publisher{River: riverClient} // VEN-08: publish "vendor.approved" on a clean approval
+	ropaSvc.Dpia = wiring.RopaDpia{Dpia: dpiaSvc}            // DPX-06: run a transfer impact assessment (TIA) against a logged cross-border transfer; also DPIA-16's own HasApprovedLIA completeness check
 	// DPIA-14: comments, attachments and an activity feed (PLT-07) on the assessment, satisfying the "ผู้แก้ไข
 	// และวันที่" half of the acceptance criterion for free — the diff endpoint covers the other half.
 	collabSvc.Register("dpia_assessment", collab.Policy{

@@ -5238,6 +5238,59 @@ the updated `/governance` route) all verified clean. Not done, deliberately: the
 audit's own band/score per legal entity, which already answers the literal acceptance criterion without a
 bespoke comparison screen.
 
+### DPO-06 Tasks Management (`docs/modules/DPO.md#dpo-06`) — done
+`dpo.tasks` (already fully specified in the baseline migrations — `source_type`/`source_id` for provenance,
+the exact 5-state `status` CHECK, `priority`, `assignee_user_id`, `reviewer_user_id`, `org_unit_id`, `due_at`)
+and `dpo.task.{read,create,update,delete,execute}` (already seeded, migration 00019) had everything this
+feature's own description needs — RRA-07 had already built `GetTask`/`UpdateTaskStatus` (the 5-state
+transition machine, the two-tier access restriction) as its own generic "tracking view," and seven other
+features (DPO-09/DPA-12/PNG-07/ROPA-19/DPIA-08/RRA-08/RTG-10) already open these jobs automatically, each
+baking in an assignee/due date once, at creation. What was actually missing against this feature's own
+literal acceptance criterion and its description's "มีผู้ตรวจ วันครบกำหนด ความสำคัญ และความเห็น": a general
+kanban/list view across every source (no caller had ever needed one — every existing consumer only ever
+fetches one task by id), and a way to set or change the reviewer/due date/priority/assignee *after* creation
+(nothing could, since every `Open*Task` caller only ever sets those once).
+
+`internal/dpo/service/gap_tasks.go` gained `ListTasks` (RRA-09's own `ListRisks` keyset-cursor shape ported
+to `dpo.tasks` — newest first, optionally narrowed by status/source_type/priority/assignee) and `AssignTask`
+(gated on `dpo.task.execute`, since "มอบหมาย" is already part of that permission's own seeded description —
+every id given is checked visible under RLS first via `iamservice.Names`/`Org.GetOrgUnit`, rule 1). `Task`
+itself gained `ReviewerUserID`/`OrgUnitID` fields — both columns existed from the baseline but nothing read
+or wrote them until now. "ความเห็น" (comments) reuses PLT-07 directly: `dpo_task` is a new registered
+collaboration record type (`dpo.task.read`/`.update`, `Exists` backed by `GetTask`) — the same cheap reuse
+ROPA-12/DSAR-17/DPIA-14 already made for their own records.
+
+The acceptance criterion itself ("งานที่สร้างอัตโนมัติมีที่มาและลิงก์กลับ") is literal: `source_type`/
+`source_id` are already on every task (provenance), and the frontend resolves a link back only where the id
+a module actually gave is known to mean a real, existing record — an "agreement"-type task's `source_id` is
+a *vendor* id (DPA-12's own missing-DPA reminder), so it links straight to `/vendors/{id}`; "ropa_gap"/"risk"
+link to their own register pages (`/settings/gap-register`/`/settings/risk-register`). Disclosed, not
+silently worked around: every other source_type's own `source_id` carries a *different* meaning per caller
+even within the same source_type (a finding id in one `ropa_gap` task, an activity id in another — RTG-10's
+own; an assessment id in one `risk` task, a risk id in another), so this feature doesn't guess at a link it
+can't prove — those tasks still show their provenance badge, just with no deep link.
+
+API: `GET /admin/v1/dpo/tasks` (cursor pagination, filters: status/source_type/priority/assignee_user_id),
+`POST /admin/v1/dpo/tasks/{id}/assign` (ETag/If-Match) — both on the already-seeded `dpo.task.{read,execute}`
+(no new permission code or migration). UI: a new page, `/dpo/tasks` (linked from the existing `/dpo` deadline
+center's own header, next to the advisories link) — a kanban board (5 columns, one per status) and a
+list-view toggle, filterable by source/priority, each task card showing its provenance + link back, an
+assign form (assignee/reviewer/due date/priority picker, reusing PLT-07's own `useMentionSearch`), and a
+comments toggle mounting the shared `RecordCollaboration` component. Tests: unit
+(`internal/dpo/service/dpo06_test.go` — the acceptance criterion directly: every task's provenance is
+present and correct regardless of which feature opened it, filters narrow correctly, `AssignTask` sets
+assignee/reviewer/org_unit/due_date/priority and moves `created → assigned` the first time an assignee is
+given, the `dpo.task.execute` gate, FK-visibility refusals for an unknown assignee/reviewer/org_unit, a bad
+priority, a stale row_version, two-tenant isolation of the list), HTTP contract
+(`internal/dpo/http/handler_test.go`'s existing `TestTaskEndpoints_Contract`, extended with the list + assign
+chain: 401/403/200/412/428 through the real validator + AuthZ). Not verified live against a real
+Postgres/Redis in this pass — neither was reachable in this environment for this feature; every test
+compiles and vets clean and skips the same way the rest of this module's own suite already does without one.
+`go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions,
+full backend suite — only the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run
+with no drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build`/`typecheck` (incl. the new `/dpo/tasks` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

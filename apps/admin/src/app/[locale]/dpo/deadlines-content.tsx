@@ -38,9 +38,14 @@ export function DeadlinesContent() {
           <h1 className="text-xl font-semibold">{t("title")}</h1>
           <p className="text-sm text-slate-600">{t("description")}</p>
         </div>
-        <Link className="rounded-md border border-slate-300 bg-white px-3 py-2 hover:bg-slate-50" href="/dpo/advisories">
-          {t("advisories")}
-        </Link>
+        <div className="flex gap-2">
+          <Link className="rounded-md border border-slate-300 bg-white px-3 py-2 hover:bg-slate-50" href="/dpo/advisories">
+            {t("advisories")}
+          </Link>
+          <Link className="rounded-md border border-slate-300 bg-white px-3 py-2 hover:bg-slate-50" href="/dpo/tasks">
+            {t("tasks")}
+          </Link>
+        </div>
       </header>
 
       {query.isPending ? (

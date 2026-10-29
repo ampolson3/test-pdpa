@@ -179,7 +179,7 @@ DPO-04,DPO,แดชบอร์ด DPO,DPO dashboard,Should,P1,งาน DPO,�
 DPO-05,DPO,ศูนย์แจ้งเตือนรวม,Notification center,Must,P1,งาน DPO,ม.42,DPO SCHED,M,M,Y,5,5,1.2,2.0,3.5,"PLT-05, PLT-04",,docs/modules/DPO.md#dpo-05,งานใกล้ครบกำหนดจากทุกโมดูลแสดงในหน้าเดียว,done
 DPO-09,DPO,ประเมินมาตรการความปลอดภัย,Security measures assessment,Must,P1,ประเมิน,ประกาศมาตรการความปลอดภัย พ.ศ. 2565,SEC DPO,M,S,N,5,3,1.0,0,2.8,PLT-06,,docs/modules/DPO.md#dpo-09,ข้อที่ไม่ผ่านสร้างงานแก้ไขอัตโนมัติ,done
 DPO-02,DPO,ประเมินหน้าที่ต้องแต่งตั้ง DPO,DPO requirement check,Should,P3,DPO,ม.41; ประกาศ สคส. เรื่อง DPO ตามมาตรา 41(2) พ.ศ. 2566,ORGADMIN DPO,S,S,N,3,3,0.7,0,2.1,PLT-06,,docs/modules/DPO.md#dpo-02,ผลประเมินระบุว่าต้องแต่งตั้งหรือไม่พร้อมเหตุผลอ้างประกาศ,done
-DPO-06,DPO,Tasks Management,DPO task management,Should,P3,งาน DPO,แนวปฏิบัติตลาด,DPO EMP,M,M,Y,5,5,1.2,2.0,3.5,PLT-05,,docs/modules/DPO.md#dpo-06,งานที่สร้างอัตโนมัติมีที่มาและลิงก์กลับ,todo
+DPO-06,DPO,Tasks Management,DPO task management,Should,P3,งาน DPO,แนวปฏิบัติตลาด,DPO EMP,M,M,Y,5,5,1.2,2.0,3.5,PLT-05,,docs/modules/DPO.md#dpo-06,งานที่สร้างอัตโนมัติมีที่มาและลิงก์กลับ,done
 DPO-07,DPO,รับคำปรึกษาจากหน่วยงาน,Advisory requests,Should,P3,งาน DPO,ม.42(1),EMP DPO,S,S,N,3,3,0.7,0,2.1,PLT-05,,docs/modules/DPO.md#dpo-07,คำถามที่ตอบแล้วค้นได้ในคลังคำตอบ,done
 DPO-08,DPO,ปฏิทินงาน compliance,Compliance calendar,Should,P3,งาน DPO,ม.42(2),DPO,S,M,N,3,5,1.0,0,2.8,PLT-05,,docs/modules/DPO.md#dpo-08,ปฏิทินแสดงกิจกรรมจากทุกโมดูลตรงกับกำหนดการจริง,todo
 DPO-10,DPO,คะแนนความพร้อมรายหน่วยงาน,Compliance scorecard,Should,P3,ประเมิน,แนวปฏิบัติตลาด,DPO EXEC,M,M,Y,5,5,1.2,2.0,3.5,RRA-13,,docs/modules/DPO.md#dpo-10,คะแนนคำนวณซ้ำได้และอธิบายที่มาได้,todo

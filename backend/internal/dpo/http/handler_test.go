@@ -460,6 +460,33 @@ func TestTaskEndpoints_Contract(t *testing.T) {
 	if code, _ := do("POST", item+"/status", &noAccess, map[string]string{"status": "done"}, map[string]string{"If-Match": `"2"`}); code != 403 {
 		t.Errorf("update without any dpo.task permission: %d, want 403", code)
 	}
+
+	// DPO-06: the kanban/list view and the assign endpoint, through the real validator + AuthZ chain.
+	if code, _ := do("GET", "/admin/v1/dpo/tasks", nil, nil, nil); code != 401 {
+		t.Errorf("list no principal: %d, want 401", code)
+	}
+	if code, _ := do("GET", "/admin/v1/dpo/tasks", &noAccess, nil, nil); code != 403 {
+		t.Errorf("list without dpo.task.read: %d, want 403", code)
+	}
+	if code, body := do("GET", "/admin/v1/dpo/tasks", &admin, nil, nil); code != 200 || !strings.Contains(body, taskID.String()) {
+		t.Errorf("list: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/dpo/tasks?priority=high", &admin, nil, nil); code != 200 || !strings.Contains(body, taskID.String()) {
+		t.Errorf("list filtered by priority=high: %d %s", code, body)
+	}
+	if code, _ := do("POST", item+"/assign", &admin, map[string]any{"assignee_user_id": admin.String(), "priority": "urgent"}, nil); code != 428 {
+		t.Errorf("assign without If-Match: %d, want 428", code)
+	}
+	if code, _ := do("POST", item+"/assign", &admin, map[string]any{"assignee_user_id": admin.String(), "priority": "urgent"}, map[string]string{"If-Match": `"99"`}); code != 412 {
+		t.Errorf("assign stale If-Match: %d, want 412", code)
+	}
+	if code, body := do("POST", item+"/assign", &admin, map[string]any{"assignee_user_id": admin.String(), "priority": "urgent"}, map[string]string{"If-Match": `"2"`}); code != 200 ||
+		!strings.Contains(body, `"priority":"urgent"`) || !strings.Contains(body, admin.String()) {
+		t.Errorf("assign: %d %s", code, body)
+	}
+	if code, _ := do("POST", item+"/assign", &noAccess, map[string]any{"priority": "low"}, map[string]string{"If-Match": `"3"`}); code != 403 {
+		t.Errorf("assign without dpo.task.execute: %d, want 403", code)
+	}
 }
 
 // TestRequirementCheckEndpoints_Contract is DPO-02's own HTTP contract test: 401/403/201/200/422 through the
