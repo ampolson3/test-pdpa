@@ -31,6 +31,11 @@ SELECT id, display_name FROM iam.users WHERE id = ANY (@ids::uuid[]);
 -- roster to compare against who has attested, not just one role's own holders.
 SELECT id, display_name FROM iam.users WHERE status = 'active' ORDER BY display_name;
 
+-- name: GetPrimaryOrgUnit :one
+-- A user's own primary org unit (DPX-01: resolving which org-unit-targeted training assignments apply
+-- to the calling employee).
+SELECT primary_org_unit_id FROM iam.users WHERE id = @id AND status = 'active';
+
 -- name: ActiveUsersWithRole :many
 -- Active users holding a role tenant-wide, directly or through a group (who to alert about a breach, BRE-07).
 SELECT DISTINCT u.id FROM iam.users u

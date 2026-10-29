@@ -306,6 +306,77 @@ that it pass a threshold).
 
 **หมายเหตุ:** OneTrust ขายส่วนนี้ให้ EQS แล้ว (จุดต่าง)
 
+**Implementation — done, scoped to the literal acceptance criterion.** `gov.courses`/`gov.training_
+assignments`/`gov.training_attempts` were already fully specified in the baseline migrations (00017_gov.sql,
+FK'd in 00018: `content_file_id`/`certificate_file_id` → `platform.files`, `quiz_form_id` →
+`platform.form_definitions`, `assignment_id` → `gov.training_assignments`) and `dpx.training.{create,read,
+update,delete,publish,execute}` was already seeded (DPO holds create/read/update/publish/delete, every
+other seeded role holds `.execute`) — no new migration or permission code, only
+`internal/gov/service/training.go` against both. A small built-in LMS, not the module doc's own alternative
+("หรือเชื่อม LMS ผ่าน SCORM / xAPI" — `scorm`/`xapi` stay in the schema's own `content_type` CHECK for a
+future external-LMS connector this pass doesn't build). A course's own quiz is an ordinary `"quiz"`-type
+PLT-06 form the DPO designs and publishes — `'quiz'` has been reserved in `platform.form_definitions.
+form_type`'s own CHECK since the very first baseline migration, unused until now (`internal/wiring/
+forms.go`'s new `s.Register("quiz", ...)`).
+
+`CreateCourse`/`UpdateCourse`/`SetCourseStatus` are plain CRUD + a `draft -> published -> retired` move
+(publishing needs `dpx.training.publish`, retiring reuses `dpx.training.delete` — a permanent status
+change, the same reasoning DPIA-03's own template retire and ORG-06's party merge already established for
+reusing a "permanent decision" permission rather than minting a new code); a course's content file (video/
+slides) is the caller's own clean, still-unattached PLT-09 upload. `AssignTraining` is "มอบหมายตามแผนก":
+names who must take a published course and by when — `target_type=all` carries no target id at all;
+`org_unit`/`group`/`user` are each checked real/visible before the write (rule 1), a new `Org` interface on
+`gov.Service` for the org-unit case (rule 9, no import cycle), `iamservice.GroupNames`/`Names` for the other
+two. `MyAssignments` resolves what currently applies to the calling employee — every `"all"` assignment,
+plus any naming their own primary org unit (a new `iamservice.PrimaryOrgUnit`, backed by a new
+`iam.users.primary_org_unit_id` lookup), one of their own groups (`iamservice.GroupIDsOf`), or them
+directly.
+
+`StartAttempt`/`SubmitAttempt` are the acceptance criterion's own first half ("พนักงานเรียนและทำแบบทดสอบ
+ได้"): an employee begins a published course (optionally against a real assignment), then completes it —
+a course with a quiz is scored through the form engine (`forms.Service.Record`, the same one-step-record
+path DPO-09's own security checklist already uses) against the course's own `passing_score` (a percentage
+of `max_score`); a quiz-less course is simply marked done with no score, since studying it is enough.
+`TrainingReport` is the other half ("รายงานแสดงผลรายบุคคล"): every attempt against a course with the
+attempting user's own name resolved (`iamservice.AllNames`) — the per-individual report, read live, never a
+stale copy. `MyAttempts` is the employee's own symmetric view.
+
+API: `GET`/`POST /admin/v1/governance/courses`, `GET`/`PUT /admin/v1/governance/courses/{id}` (ETag/
+If-Match on PUT), `PATCH /admin/v1/governance/courses/{id}/status` (ETag/If-Match — declares
+`dpx.training.update` as its floor permission, the service's own internal check additionally requires
+`.publish`/`.delete` per transition, the same "declared floor, stricter internal check" pattern DSAR-11's
+own approve-gated reject already uses), `GET /admin/v1/governance/courses/{id}/report`, `POST
+/admin/v1/governance/courses/{id}/attempts` (start), `POST /admin/v1/governance/training-attempts/{id}/
+submit` (ETag/If-Match), `GET /admin/v1/governance/my-training-attempts`, `GET`/`POST
+/admin/v1/governance/training-assignments`, `GET /admin/v1/governance/my-training-assignments` — all added
+to `internal/gov/http/oapi-codegen.yaml`'s own `include-operation-ids` allowlist, the recurring gotcha
+several prior features already hit. UI: a new "Awareness training & quiz" section on the existing
+`/governance` page (DPX-02/DPX-05/DPX-08's own page) — course CRUD + publish/retire, an assign-to form
+(everyone/department/group/person + due date), a per-course results-by-individual report, and a "My
+training" panel (assigned-to-me list with a start button, past attempts with a submit/mark-complete
+action).
+
+Tests: unit (`internal/gov/service/dpx01_test.go` — the acceptance criterion directly: an employee starts
+a published course and submits its quiz, scored against `passing_score`, and the resulting report shows
+that individual's own result with their name resolved; a quiz-less course completes with no score; an
+"all" assignment reaches every employee with no FK target; an org-unit assignment is checked visible first
+and reaches only that unit's own member, not an unrelated admin; two-tenant isolation), HTTP contract
+(`internal/gov/http/handler_test.go`'s existing `TestGovHandler_Contract`, extended with the full create →
+publish → assign → my-assignments → start → submit (428 without If-Match) → report → my-attempts chain
+through the real validator + AuthZ). Not verified live against a real Postgres/Redis in this pass — neither
+was reachable in this environment for this feature; every test compiles and vets clean and skips the same
+way the rest of this module's own suite already does without one. `go build ./...`, `go vet ./...`,
+`gofmt -l` (clean on every touched file), `go test ./...` (no regressions — only the pre-existing,
+unrelated `internal/pkg/validate` failure), `make gen` re-run with no drift, `pnpm --filter @pdpa/api-client
+typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
+`/governance` route) all verified clean. Not done, deliberately (no consumer yet, the same deferral this
+codebase uses throughout): a certificate PDF (`certificate_file_id` stays unwritten — the acceptance
+criterion is about completing the quiz and the report, not the artifact; render one via
+`platform/docs/render` once a screen actually asks for it), SCORM/xAPI external-LMS content, and a
+course-validity-expiry reminder (`validity_months` is stored but nothing yet re-assigns an expired
+certification — a `gov.course_validity_*`-style sweep, the same VEN-06/VEN-10 pattern, once a real need
+surfaces).
+
 <a id="dpx-02"></a>
 ### DPX-02 รับทราบนโยบายภายใน
 

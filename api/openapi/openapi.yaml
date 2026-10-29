@@ -17714,6 +17714,450 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/courses:
+    get:
+      operationId: govListCourses
+      tags: [gov]
+      summary: 'DPX-01: PDPA awareness courses, newest first'
+      x-permission: dpx.training.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/GovCourseStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovCourse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: govCreateCourse
+      tags: [gov]
+      summary: 'DPX-01: start a new draft course'
+      x-permission: dpx.training.create
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovCourseInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovCourse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/governance/courses/{id}:
+    get:
+      operationId: govGetCourse
+      tags: [gov]
+      summary: One course
+      x-permission: dpx.training.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovCourse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: govUpdateCourse
+      tags: [gov]
+      summary: Edit a still-draft course's own details
+      x-permission: dpx.training.update
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovCourseInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovCourse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/courses/{id}/status:
+    patch:
+      operationId: govSetCourseStatus
+      tags: [gov]
+      summary: 'Move a course draft -> published -> retired. Publishing additionally needs dpx.training.publish; retiring additionally needs dpx.training.delete (checked inside the service).'
+      x-permission: dpx.training.update
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/GovCourseStatus'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovCourse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/courses/{id}/report:
+    get:
+      operationId: govGetTrainingReport
+      tags: [gov]
+      summary: 'DPX-01''s own acceptance criterion: every attempt against this course, with each attempting user''s own name — the per-individual report'
+      x-permission: dpx.training.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovTrainingAttempt'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/governance/courses/{id}/attempts:
+    post:
+      operationId: govStartAttempt
+      tags: [gov]
+      summary: 'DPX-01: an employee begins a published course'
+      x-permission: dpx.training.execute
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                assignment_id:
+                  type: [string, 'null']
+                  format: uuid
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovTrainingAttempt'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/governance/training-attempts/{id}/submit:
+    post:
+      operationId: govSubmitAttempt
+      tags: [gov]
+      summary: 'DPX-01''s own acceptance criterion: the employee completes the course''s own quiz (if any), scored by the form engine against the course''s passing_score'
+      x-permission: dpx.training.execute
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                answers:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovTrainingAttempt'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/my-training-attempts:
+    get:
+      operationId: govListMyTrainingAttempts
+      tags: [gov]
+      summary: 'DPX-01: the caller''s own past attempts, newest first'
+      x-permission: dpx.training.execute
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovTrainingAttempt'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/governance/training-assignments:
+    get:
+      operationId: govListTrainingAssignments
+      tags: [gov]
+      summary: 'DPX-01: every training assignment, optionally narrowed by course'
+      x-permission: dpx.training.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: course_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovTrainingAssignment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: govAssignTraining
+      tags: [gov]
+      summary: 'DPX-01: assign a published course to everyone, an org unit, a group, or one user, by a due date'
+      x-permission: dpx.training.execute
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovTrainingAssignmentInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovTrainingAssignment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/governance/my-training-assignments:
+    get:
+      operationId: govListMyTrainingAssignments
+      tags: [gov]
+      summary: 'DPX-01: every assignment that currently applies to the caller (an "all" assignment, their own primary org unit, their own groups, or them directly)'
+      x-permission: dpx.training.execute
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovTrainingAssignment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/dataflow/graph:
     get:
       operationId: dataflowGetGraph
@@ -26238,5 +26682,145 @@ components:
         responded_at:
           type: [string, 'null']
           format: date
+        row_version:
+          type: integer
+    GovCourseContentType:
+      type: string
+      enum: [video, slides, scorm, xapi]
+    GovCourseStatus:
+      type: string
+      enum: [draft, published, retired]
+    GovCourseInput:
+      type: object
+      required: [title, content_type]
+      properties:
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        content_type:
+          $ref: '#/components/schemas/GovCourseContentType'
+        content_file_id:
+          type: [string, 'null']
+          format: uuid
+          description: The caller's own clean, still-unattached PLT-09 upload.
+        quiz_form_id:
+          type: [string, 'null']
+          format: uuid
+          description: A published form of type "quiz" (internal/wiring.Forms) — the course's own test, if any.
+        passing_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          default: 80
+        validity_months:
+          type: integer
+          minimum: 0
+          default: 12
+        language:
+          type: string
+          default: th
+      example:
+        title: 'พื้นฐาน PDPA สำหรับพนักงานทุกคน'
+        content_type: video
+        passing_score: 80
+        validity_months: 12
+    GovCourse:
+      type: object
+      required: [id, title, content_type, passing_score, validity_months, language, status, row_version]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        content_type:
+          $ref: '#/components/schemas/GovCourseContentType'
+        content_file_id:
+          type: [string, 'null']
+          format: uuid
+        quiz_form_id:
+          type: [string, 'null']
+          format: uuid
+        passing_score:
+          type: integer
+        validity_months:
+          type: integer
+        language:
+          type: string
+        status:
+          $ref: '#/components/schemas/GovCourseStatus'
+        row_version:
+          type: integer
+    GovTrainingAssignmentTargetType:
+      type: string
+      enum: [all, org_unit, group, user]
+    GovTrainingAssignmentInput:
+      type: object
+      required: [course_id, target_type, due_at]
+      properties:
+        course_id:
+          $ref: '#/components/schemas/Uuid'
+        target_type:
+          $ref: '#/components/schemas/GovTrainingAssignmentTargetType'
+        target_id:
+          type: [string, 'null']
+          format: uuid
+          description: Required unless target_type is "all" — an org unit, group or user id.
+        due_at:
+          type: string
+          format: date
+      example:
+        course_id: 00000000-0000-0000-0000-000000000000
+        target_type: all
+        due_at: '2026-12-31'
+    GovTrainingAssignment:
+      type: object
+      required: [id, course_id, target_type, due_at, assigned_by, row_version]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        course_id:
+          $ref: '#/components/schemas/Uuid'
+        target_type:
+          $ref: '#/components/schemas/GovTrainingAssignmentTargetType'
+        target_id:
+          type: [string, 'null']
+          format: uuid
+        due_at:
+          type: string
+          format: date
+        assigned_by:
+          $ref: '#/components/schemas/Uuid'
+        row_version:
+          type: integer
+    GovTrainingAttempt:
+      type: object
+      required: [id, course_id, user_id, started_at, row_version]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        course_id:
+          $ref: '#/components/schemas/Uuid'
+        assignment_id:
+          type: [string, 'null']
+          format: uuid
+        user_id:
+          $ref: '#/components/schemas/Uuid'
+        user_name:
+          type: string
+        started_at:
+          $ref: '#/components/schemas/Timestamp'
+        completed_at:
+          type: [string, 'null']
+          format: date-time
+        score:
+          type: [integer, 'null']
+        passed:
+          type: [boolean, 'null']
+        certificate_file_id:
+          type: [string, 'null']
+          format: uuid
         row_version:
           type: integer

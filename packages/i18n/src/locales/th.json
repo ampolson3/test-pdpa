@@ -3547,6 +3547,79 @@
         "cancel": "ยกเลิก",
         "saveError": "บันทึกไม่สำเร็จ: {detail}"
       }
+    },
+    "training": {
+      "title": "อบรมและทดสอบพนักงาน",
+      "intro": "คอร์สที่ DPO เผยแพร่ พร้อมแบบทดสอบ (ถ้ามี) — มอบหมายให้ทุกคน แผนก กลุ่ม หรือรายบุคคล และดูผลรายบุคคล",
+      "new": "สร้างคอร์สใหม่",
+      "filterStatus": "สถานะ",
+      "allStatuses": "ทุกสถานะ",
+      "statuses": {
+        "draft": "ร่าง",
+        "published": "เผยแพร่แล้ว",
+        "retired": "ปิดใช้งาน"
+      },
+      "table": {
+        "title": "ชื่อคอร์ส",
+        "contentType": "รูปแบบเนื้อหา",
+        "status": "สถานะ"
+      },
+      "contentTypes": {
+        "video": "วิดีโอ",
+        "slides": "สไลด์",
+        "scorm": "SCORM",
+        "xapi": "xAPI"
+      },
+      "publish": "เผยแพร่",
+      "retire": "ปิดใช้งาน",
+      "assign": "มอบหมาย",
+      "report": "รายงาน",
+      "close": "ปิด",
+      "form": {
+        "title": "สร้างคอร์สใหม่",
+        "courseTitle": "ชื่อคอร์ส",
+        "contentType": "รูปแบบเนื้อหา",
+        "quizFormId": "รหัสแบบทดสอบ (ถ้ามี)",
+        "quizFormIdHint": "รหัสแบบฟอร์ม PLT-06 ประเภท \"quiz\" ที่เผยแพร่แล้ว",
+        "passingScore": "คะแนนผ่าน (%)",
+        "save": "บันทึก",
+        "cancel": "ยกเลิก",
+        "saveError": "บันทึกไม่สำเร็จ: {detail}"
+      },
+      "assignForm": {
+        "title": "มอบหมายคอร์ส",
+        "targetType": "มอบหมายให้",
+        "targets": {
+          "all": "ทุกคน",
+          "org_unit": "แผนก",
+          "group": "กลุ่ม",
+          "user": "รายบุคคล"
+        },
+        "targetId": "รหัสเป้าหมาย",
+        "targetIdHint": "จำเป็นเว้นแต่มอบหมายให้ทุกคน — รหัสแผนก กลุ่ม หรือผู้ใช้",
+        "dueAt": "วันครบกำหนด",
+        "save": "มอบหมาย",
+        "cancel": "ยกเลิก",
+        "saveError": "มอบหมายไม่สำเร็จ: {detail}"
+      },
+      "reportPanel": {
+        "title": "ผลรายบุคคล",
+        "empty": "ยังไม่มีผู้ทำคอร์สนี้",
+        "passed": "ผ่าน",
+        "failed": "ไม่ผ่าน",
+        "notScored": "เรียนครบ (ไม่มีแบบทดสอบ)",
+        "inProgress": "กำลังเรียน"
+      },
+      "my": {
+        "title": "การอบรมของฉัน",
+        "assignmentsTitle": "มอบหมายให้ฉัน",
+        "dueBy": "ครบกำหนด {date}",
+        "attemptsTitle": "ประวัติการเรียนของฉัน",
+        "start": "เริ่มเรียน",
+        "submit": "ส่งแบบทดสอบ",
+        "noQuiz": "ทำเครื่องหมายเรียนครบ",
+        "submitError": "ส่งไม่สำเร็จ: {detail}"
+      }
     }
   },
   "ropaWizard": {

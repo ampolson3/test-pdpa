@@ -24,6 +24,15 @@ import {
   useCreateRegulatorLetter,
   useSetRegulatorLetterStatus,
   useDeleteRegulatorLetter,
+  useCourses,
+  useCreateCourse,
+  useSetCourseStatus,
+  useTrainingReport,
+  useAssignTraining,
+  useMyTrainingAssignments,
+  useStartAttempt,
+  useSubmitAttempt,
+  useMyTrainingAttempts,
   type RetentionScheduleStatus,
   type DisposalJobStatus,
   type StoredFile,
@@ -33,6 +42,10 @@ import {
   type GovRegulatorLetter,
   type GovRegulatorLetterStatus,
   type GovRegulatorLetterDirection,
+  type GovCourse,
+  type GovCourseStatus,
+  type GovCourseContentType,
+  type GovTrainingAssignmentTargetType,
 } from "@pdpa/api-client";
 import { FileUploader } from "@/components/file-uploader";
 
@@ -63,6 +76,11 @@ export function GovernanceContent() {
   const canCreateLetter = usePermission("dpx.regulator.create");
   const canUpdateLetter = usePermission("dpx.regulator.update");
   const canDeleteLetter = usePermission("dpx.regulator.delete");
+  const canReadTraining = usePermission("dpx.training.read");
+  const canCreateTraining = usePermission("dpx.training.create");
+  const canPublishTraining = usePermission("dpx.training.publish");
+  const canRetireTraining = usePermission("dpx.training.delete");
+  const canExecuteTraining = usePermission("dpx.training.execute");
   const client = useMemo(() => createApiClient("/api/bff"), []);
 
   const assets = useAssets(client);
@@ -99,7 +117,24 @@ export function GovernanceContent() {
   const deleteLetter = useDeleteRegulatorLetter(client);
   const [newLetter, setNewLetter] = useState<{ direction: GovRegulatorLetterDirection; letter_no: string; subject: string; received_at: string; due_at: string; incident_id: string } | null>(null);
 
-  if (!canRead && !canReadPolicy && !canReadLetters) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
+  const [courseStatusFilter, setCourseStatusFilter] = useState<GovCourseStatus | "">("");
+  const courses = useCourses(client, courseStatusFilter || undefined);
+  const createCourse = useCreateCourse(client);
+  const setCourseStatus = useSetCourseStatus(client);
+  const assignTraining = useAssignTraining(client);
+  const [newCourse, setNewCourse] = useState<{ title: string; content_type: GovCourseContentType; quiz_form_id: string; passing_score: string } | null>(null);
+  const [reportCourse, setReportCourse] = useState<string | null>(null);
+  const report = useTrainingReport(client, reportCourse ?? "");
+  const [assigning, setAssigning] = useState<{ courseId: string; target_type: GovTrainingAssignmentTargetType; target_id: string; due_at: string } | null>(null);
+
+  const myAssignments = useMyTrainingAssignments(client);
+  const myAttempts = useMyTrainingAttempts(client);
+  const startAttempt = useStartAttempt(client);
+  const submitAttempt = useSubmitAttempt(client);
+
+  if (!canRead && !canReadPolicy && !canReadLetters && !canReadTraining && !canExecuteTraining) {
+    return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
+  }
 
   const scheduleRows = schedules.data?.pages.flatMap((p) => p.data) ?? [];
   const jobRows = jobs.data?.pages.flatMap((p) => p.data) ?? [];
@@ -442,6 +477,221 @@ export function GovernanceContent() {
                   )}
                 </td>
               </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>}
+
+      {(canExecuteTraining) && <section className="space-y-3" data-testid="my-training-section">
+        <h2 className="text-lg font-semibold">{t("training.my.title")}</h2>
+
+        <div>
+          <p className="font-medium">{t("training.my.assignmentsTitle")}</p>
+          <ul className="list-inside list-disc">
+            {(myAssignments.data ?? []).map((a) => (
+              <li key={a.id} className="space-x-2">
+                <span>{courses.data?.find((c) => c.id === a.course_id)?.title ?? a.course_id}</span>
+                <span className="text-slate-500">{t("training.my.dueBy", { date: a.due_at })}</span>
+                <button className="text-sky-700 underline" onClick={() => startAttempt.mutate({ courseId: a.course_id, assignmentId: a.id })}>
+                  {t("training.my.start")}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <p className="font-medium">{t("training.my.attemptsTitle")}</p>
+          <table className="w-full border-collapse text-left">
+            <tbody>
+              {(myAttempts.data ?? []).map((a) => (
+                <tr key={a.id} className="border-b border-slate-100">
+                  <td className="py-1">{courses.data?.find((c) => c.id === a.course_id)?.title ?? a.course_id}</td>
+                  <td>
+                    {a.completed_at
+                      ? a.passed === null || a.passed === undefined
+                        ? "—"
+                        : a.passed
+                          ? t("training.reportPanel.passed")
+                          : t("training.reportPanel.failed")
+                      : t("training.reportPanel.inProgress")}
+                  </td>
+                  <td className="text-right">
+                    {!a.completed_at && (
+                      <button
+                        className="text-sky-700 underline"
+                        onClick={() => submitAttempt.mutate({ id: a.id, rowVersion: a.row_version, answers: {} })}
+                      >
+                        {t("training.my.noQuiz")}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {submitAttempt.isError && <p className="text-red-700" role="alert">{t("training.my.submitError", { detail: detail(submitAttempt.error) })}</p>}
+        </div>
+      </section>}
+
+      {canReadTraining && <section className="space-y-3" data-testid="training-section">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">{t("training.title")}</h2>
+          {canCreateTraining && (
+            <Button
+              onClick={() => setNewCourse({ title: "", content_type: "video", quiz_form_id: "", passing_score: "" })}
+              data-testid="new-course"
+            >
+              {t("training.new")}
+            </Button>
+          )}
+        </div>
+        <p className="text-slate-600">{t("training.intro")}</p>
+
+        {newCourse && (
+          <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
+            <legend className="px-1 font-semibold">{t("training.form.title")}</legend>
+            <label className="sm:col-span-2"><span className="block text-slate-600">{t("training.form.courseTitle")}</span>
+              <input className={INPUT} value={newCourse.title} onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })} /></label>
+            <label><span className="block text-slate-600">{t("training.form.contentType")}</span>
+              <select className={INPUT} value={newCourse.content_type}
+                onChange={(e) => setNewCourse({ ...newCourse, content_type: e.target.value as GovCourseContentType })}>
+                {(["video", "slides", "scorm", "xapi"] as const).map((c) => <option key={c} value={c}>{t(`training.contentTypes.${c}`)}</option>)}
+              </select></label>
+            <label><span className="block text-slate-600">{t("training.form.passingScore")}</span>
+              <input type="number" className={INPUT} value={newCourse.passing_score}
+                onChange={(e) => setNewCourse({ ...newCourse, passing_score: e.target.value })} /></label>
+            <label className="sm:col-span-2"><span className="block text-slate-600">{t("training.form.quizFormId")}</span>
+              <input className={INPUT} value={newCourse.quiz_form_id} placeholder={t("training.form.quizFormIdHint")}
+                onChange={(e) => setNewCourse({ ...newCourse, quiz_form_id: e.target.value })} /></label>
+            {createCourse.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("training.form.saveError", { detail: detail(createCourse.error) })}</p>}
+            <div className="flex gap-2 sm:col-span-2">
+              <Button
+                disabled={createCourse.isPending || !newCourse.title}
+                onClick={() =>
+                  createCourse.mutate(
+                    {
+                      title: newCourse.title, content_type: newCourse.content_type,
+                      quiz_form_id: newCourse.quiz_form_id || undefined,
+                      passing_score: newCourse.passing_score ? Number(newCourse.passing_score) : 80,
+                      validity_months: 12, language: "th",
+                    },
+                    { onSuccess: () => setNewCourse(null) },
+                  )
+                }
+              >
+                {t("training.form.save")}
+              </Button>
+              <Button variant="secondary" onClick={() => { createCourse.reset(); setNewCourse(null); }}>{t("training.form.cancel")}</Button>
+            </div>
+          </fieldset>
+        )}
+
+        {assigning && (
+          <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
+            <legend className="px-1 font-semibold">{t("training.assignForm.title")}</legend>
+            <label><span className="block text-slate-600">{t("training.assignForm.targetType")}</span>
+              <select className={INPUT} value={assigning.target_type}
+                onChange={(e) => setAssigning({ ...assigning, target_type: e.target.value as GovTrainingAssignmentTargetType })}>
+                {(["all", "org_unit", "group", "user"] as const).map((tt) => <option key={tt} value={tt}>{t(`training.assignForm.targets.${tt}`)}</option>)}
+              </select></label>
+            <label><span className="block text-slate-600">{t("training.assignForm.dueAt")}</span>
+              <input type="date" className={INPUT} value={assigning.due_at} onChange={(e) => setAssigning({ ...assigning, due_at: e.target.value })} /></label>
+            {assigning.target_type !== "all" && (
+              <label className="sm:col-span-2"><span className="block text-slate-600">{t("training.assignForm.targetId")}</span>
+                <input className={INPUT} value={assigning.target_id} placeholder={t("training.assignForm.targetIdHint")}
+                  onChange={(e) => setAssigning({ ...assigning, target_id: e.target.value })} /></label>
+            )}
+            {assignTraining.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("training.assignForm.saveError", { detail: detail(assignTraining.error) })}</p>}
+            <div className="flex gap-2 sm:col-span-2">
+              <Button
+                disabled={assignTraining.isPending || !assigning.due_at || (assigning.target_type !== "all" && !assigning.target_id)}
+                onClick={() =>
+                  assignTraining.mutate(
+                    {
+                      course_id: assigning.courseId, target_type: assigning.target_type,
+                      target_id: assigning.target_type === "all" ? undefined : assigning.target_id, due_at: assigning.due_at,
+                    },
+                    { onSuccess: () => setAssigning(null) },
+                  )
+                }
+              >
+                {t("training.assignForm.save")}
+              </Button>
+              <Button variant="secondary" onClick={() => { assignTraining.reset(); setAssigning(null); }}>{t("training.assignForm.cancel")}</Button>
+            </div>
+          </fieldset>
+        )}
+
+        <div className="flex items-center gap-2">
+          <span className="text-slate-600">{t("training.filterStatus")}</span>
+          <select className={INPUT + " w-auto"} value={courseStatusFilter} onChange={(e) => setCourseStatusFilter(e.target.value as GovCourseStatus | "")}>
+            <option value="">{t("training.allStatuses")}</option>
+            {(["draft", "published", "retired"] as const).map((s) => <option key={s} value={s}>{t(`training.statuses.${s}`)}</option>)}
+          </select>
+        </div>
+
+        <table className="w-full border-collapse text-left">
+          <thead><tr className="border-b border-slate-200 text-slate-500">
+            <th className="py-1">{t("training.table.title")}</th>
+            <th>{t("training.table.contentType")}</th>
+            <th>{t("training.table.status")}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            {(courses.data ?? []).map((c: GovCourse) => (
+              <Fragment key={c.id}>
+                <tr className="border-b border-slate-100">
+                  <td className="py-1">{c.title}</td>
+                  <td>{t(`training.contentTypes.${c.content_type}`)}</td>
+                  <td>{t(`training.statuses.${c.status}`)}</td>
+                  <td className="space-x-2 text-right">
+                    {canPublishTraining && c.status === "draft" && (
+                      <button className="text-sky-700 underline" onClick={() => setCourseStatus.mutate({ id: c.id, rowVersion: c.row_version, status: "published" })}>
+                        {t("training.publish")}
+                      </button>
+                    )}
+                    {canRetireTraining && c.status !== "retired" && (
+                      <button className="text-red-700 underline" onClick={() => setCourseStatus.mutate({ id: c.id, rowVersion: c.row_version, status: "retired" })}>
+                        {t("training.retire")}
+                      </button>
+                    )}
+                    {canExecuteTraining && c.status === "published" && (
+                      <button className="text-sky-700 underline" onClick={() => setAssigning({ courseId: c.id, target_type: "all", target_id: "", due_at: "" })}>
+                        {t("training.assign")}
+                      </button>
+                    )}
+                    <button className="text-slate-700 underline" onClick={() => setReportCourse(reportCourse === c.id ? null : c.id)}>
+                      {t("training.report")}
+                    </button>
+                  </td>
+                </tr>
+                {reportCourse === c.id && (
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <td colSpan={4} className="p-3">
+                      <p className="font-medium">{t("training.reportPanel.title")}</p>
+                      <table className="w-full border-collapse text-left">
+                        <tbody>
+                          {(report.data ?? []).map((a) => (
+                            <tr key={a.id}>
+                              <td className="py-1">{a.user_name ?? a.user_id}</td>
+                              <td>
+                                {a.completed_at
+                                  ? a.score !== null && a.score !== undefined
+                                    ? `${a.score}%`
+                                    : t("training.reportPanel.notScored")
+                                  : t("training.reportPanel.inProgress")}
+                              </td>
+                              <td>{a.passed === true ? t("training.reportPanel.passed") : a.passed === false ? t("training.reportPanel.failed") : ""}</td>
+                            </tr>
+                          ))}
+                          {report.data?.length === 0 && <tr><td className="py-1 text-slate-500">{t("training.reportPanel.empty")}</td></tr>}
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>

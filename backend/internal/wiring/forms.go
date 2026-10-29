@@ -43,5 +43,11 @@ func Forms(n *notify.Service, a *audit.Service) *forms.Service {
 	// screen edits this global content, so Create/Update/Publish are never exercised in practice).
 	s.Register("sme_exemption", forms.Policy{Read: "ropa.activity.read", Create: "ropa.activity.create",
 		Update: "ropa.activity.update", Publish: "ropa.activity.approve", Respond: "ropa.activity.create"})
+	// Training-course quizzes (DPX-01): the DPO designs and publishes the quiz; any employee holding
+	// dpx.training.execute answers it through the gov module (forms.Service.Record) when completing a
+	// course. 'quiz' was reserved in platform.form_definitions.form_type's own CHECK since the very first
+	// baseline migration, unused until now.
+	s.Register("quiz", forms.Policy{Read: "dpx.training.read", Create: "dpx.training.create",
+		Update: "dpx.training.update", Publish: "dpx.training.publish", Respond: "dpx.training.execute"})
 	return s
 }

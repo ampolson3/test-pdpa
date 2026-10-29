@@ -15,6 +15,14 @@ export type GovRegulatorLetter = components["schemas"]["GovRegulatorLetter"];
 export type GovRegulatorLetterInput = components["schemas"]["GovRegulatorLetterInput"];
 export type GovRegulatorLetterStatus = components["schemas"]["GovRegulatorLetterStatus"];
 export type GovRegulatorLetterDirection = components["schemas"]["GovRegulatorLetterDirection"];
+export type GovCourse = components["schemas"]["GovCourse"];
+export type GovCourseInput = components["schemas"]["GovCourseInput"];
+export type GovCourseStatus = components["schemas"]["GovCourseStatus"];
+export type GovCourseContentType = components["schemas"]["GovCourseContentType"];
+export type GovTrainingAssignment = components["schemas"]["GovTrainingAssignment"];
+export type GovTrainingAssignmentInput = components["schemas"]["GovTrainingAssignmentInput"];
+export type GovTrainingAssignmentTargetType = components["schemas"]["GovTrainingAssignmentTargetType"];
+export type GovTrainingAttempt = components["schemas"]["GovTrainingAttempt"];
 
 const schedulesKey = ["gov", "retention-schedules"] as const;
 const jobsKey = ["gov", "disposal-jobs"] as const;
@@ -22,6 +30,11 @@ const policiesKey = ["gov", "policies"] as const;
 const attestationsKey = ["gov", "policy-attestations"] as const;
 const missingAttestationsKey = ["gov", "missing-attestations"] as const;
 const regulatorLettersKey = ["gov", "regulator-letters"] as const;
+const coursesKey = ["gov", "courses"] as const;
+const trainingAssignmentsKey = ["gov", "training-assignments"] as const;
+const myTrainingAssignmentsKey = ["gov", "my-training-assignments"] as const;
+const myTrainingAttemptsKey = ["gov", "my-training-attempts"] as const;
+const trainingReportKey = ["gov", "training-report"] as const;
 
 /** GET /admin/v1/governance/retention-schedules (DPX-05), newest first. */
 export function useRetentionSchedules(client: ApiClient, filter: { assetId?: string; status?: RetentionScheduleStatus } = {}) {
@@ -281,5 +294,143 @@ export function useDeleteRegulatorLetter(client: ApiClient) {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: regulatorLettersKey }),
+  });
+}
+
+/** GET /admin/v1/governance/courses (DPX-01) — PDPA awareness courses, newest first. */
+export function useCourses(client: ApiClient, status?: GovCourseStatus) {
+  return useQuery({
+    queryKey: [...coursesKey, status],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/courses", { params: { query: { status } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/governance/courses — start a new draft course. */
+export function useCreateCourse(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: GovCourseInput) => {
+      const { data, error } = await client.POST("/admin/v1/governance/courses", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: coursesKey }),
+  });
+}
+
+/** PATCH /admin/v1/governance/courses/{id}/status — draft -> published -> retired. */
+export function useSetCourseStatus(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; rowVersion: number; status: GovCourseStatus }) => {
+      const { data, error } = await client.PATCH("/admin/v1/governance/courses/{id}/status", {
+        params: { path: { id: v.id }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: { status: v.status },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: coursesKey }),
+  });
+}
+
+/** GET /admin/v1/governance/courses/{id}/report — DPX-01's own acceptance criterion: results per individual. */
+export function useTrainingReport(client: ApiClient, courseId: string) {
+  return useQuery({
+    queryKey: [...trainingReportKey, courseId],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/courses/{id}/report", { params: { path: { id: courseId } } });
+      if (error) throw error;
+      return data.data;
+    },
+    enabled: !!courseId,
+  });
+}
+
+/** GET /admin/v1/governance/training-assignments — every assignment, optionally narrowed by course. */
+export function useTrainingAssignments(client: ApiClient, courseId?: string) {
+  return useQuery({
+    queryKey: [...trainingAssignmentsKey, courseId],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/training-assignments", { params: { query: { course_id: courseId } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/governance/training-assignments — assign a published course to all/an org unit/a group/a user. */
+export function useAssignTraining(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: GovTrainingAssignmentInput) => {
+      const { data, error } = await client.POST("/admin/v1/governance/training-assignments", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: trainingAssignmentsKey }),
+  });
+}
+
+/** GET /admin/v1/governance/my-training-assignments — what currently applies to the signed-in employee. */
+export function useMyTrainingAssignments(client: ApiClient) {
+  return useQuery({
+    queryKey: myTrainingAssignmentsKey,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/my-training-assignments", {});
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/governance/courses/{id}/attempts — the employee begins a published course. */
+export function useStartAttempt(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { courseId: string; assignmentId?: string }) => {
+      const { data, error } = await client.POST("/admin/v1/governance/courses/{id}/attempts", {
+        params: { path: { id: v.courseId } },
+        body: { assignment_id: v.assignmentId },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: myTrainingAttemptsKey }),
+  });
+}
+
+/** POST /admin/v1/governance/training-attempts/{id}/submit — the acceptance criterion: complete the quiz (if any). */
+export function useSubmitAttempt(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; rowVersion: number; answers?: Record<string, unknown> }) => {
+      const { data, error } = await client.POST("/admin/v1/governance/training-attempts/{id}/submit", {
+        params: { path: { id: v.id }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: { answers: v.answers },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: myTrainingAttemptsKey });
+      qc.invalidateQueries({ queryKey: trainingReportKey });
+    },
+  });
+}
+
+/** GET /admin/v1/governance/my-training-attempts — the signed-in employee's own past attempts. */
+export function useMyTrainingAttempts(client: ApiClient) {
+  return useQuery({
+    queryKey: myTrainingAttemptsKey,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/my-training-attempts", {});
+      if (error) throw error;
+      return data.data;
+    },
   });
 }

@@ -29,6 +29,7 @@ import (
 	"pdpa-platform/internal/platform/docs"
 	"pdpa-platform/internal/platform/docs/render"
 	"pdpa-platform/internal/platform/files"
+	"pdpa-platform/internal/platform/forms"
 	"pdpa-platform/internal/platform/versioning"
 	ropaservice "pdpa-platform/internal/ropa/service"
 	"pdpa-platform/internal/wiring"
@@ -70,6 +71,8 @@ func TestGovHandler_Contract(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
+				`DELETE FROM gov.training_attempts`, `DELETE FROM gov.training_assignments`, `DELETE FROM gov.courses`,
+				`DELETE FROM platform.form_submissions`, `DELETE FROM platform.form_versions`, `DELETE FROM platform.form_definitions WHERE code LIKE 'quiz_%'`,
 				`DELETE FROM gov.regulator_letters`,
 				`DELETE FROM gov.disposal_jobs`, `DELETE FROM gov.retention_schedules`, `DELETE FROM ropa.retention_rules`,
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM ropa.assets`, `DELETE FROM org.org_units`,
@@ -91,7 +94,8 @@ func TestGovHandler_Contract(t *testing.T) {
 	versioningSvc := wiring.Versioning(nil, audit.New())
 	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
 	docsSvc.RegisterVersioning()
-	svc := &govservice.Service{Audit: audit.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fFiles, Docs: docsSvc}
+	formsSvc := wiring.Forms(nil, audit.New())
+	svc := &govservice.Service{Audit: audit.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fFiles, Docs: docsSvc, Org: orgSvc, Forms: formsSvc}
 
 	// DPX-02's own employee (attestation, gov.policy_attestations.user_id has a real FK) and DPO approver
 	// (platform.approvals.approver_user_id has a real FK too) — both need real iam.users rows.
@@ -155,7 +159,8 @@ func TestGovHandler_Contract(t *testing.T) {
 	grants := map[string][]string{
 		tenant.UserID.String(): {"dpx.retention.read", "dpx.retention.create", "dpx.retention.update", "dpx.retention.approve", "dpx.retention.execute",
 			"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.create", "notice.document.update",
-			"dpx.regulator.read", "dpx.regulator.create", "dpx.regulator.update", "dpx.regulator.delete"},
+			"dpx.regulator.read", "dpx.regulator.create", "dpx.regulator.update", "dpx.regulator.delete",
+			"dpx.training.read", "dpx.training.create", "dpx.training.update", "dpx.training.publish", "dpx.training.delete", "dpx.training.execute"},
 		reader.String(): {"dpx.retention.read"},
 		emp.String():    {"dpx.policy.execute"},
 		dpo.String():    {"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.update", "notice.document.approve", "notice.document.publish"},
@@ -496,5 +501,92 @@ func TestGovHandler_Contract(t *testing.T) {
 	}
 	if code, _, _ := do("GET", lettersPath+"/"+letter.ID, &admin, "", nil); code != 404 {
 		t.Errorf("get deleted regulator letter: %d, want 404", code)
+	}
+
+	// DPX-01: awareness training — a course, a quiz, an assignment and an attempt, through the real
+	// validator + AuthZ chain.
+	var quizFormID uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
+			Permissions: []string{"dpx.training.read", "dpx.training.create", "dpx.training.update", "dpx.training.publish"}})
+		score := func(v float64) *float64 { return &v }
+		d := forms.Draft{Languages: []string{"th"}, Schema: forms.Schema{Sections: []forms.Section{{Key: "q",
+			Title: forms.Text{"th": "คำถาม"}, Questions: []forms.Question{
+				{Key: "q1", Type: forms.TypeYesNo, Label: forms.Text{"th": "คำถามที่ 1"}, Required: true,
+					Options: []forms.Option{{Value: "yes", Score: score(1)}, {Value: "no", Score: score(0)}}},
+			}}}}}
+		f, err := formsSvc.CreateForm(ctx, "quiz_http_"+uuid.NewString()[:8], "แบบทดสอบ", "quiz", d)
+		if err != nil {
+			return err
+		}
+		f, err = formsSvc.Publish(ctx, f.ID, f.LatestVersion)
+		quizFormID = f.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	coursesPath := "/admin/v1/governance/courses"
+	if code, _, _ := do("GET", coursesPath, nil, "", nil); code != 401 {
+		t.Errorf("list courses, no principal: %d, want 401", code)
+	}
+	if code, _, _ := do("POST", coursesPath, &reader, "", map[string]any{"title": "x", "content_type": "video"}); code != 403 {
+		t.Errorf("create course with read-only permission: %d, want 403", code)
+	}
+	code, body, headers = do("POST", coursesPath, &admin, "", map[string]any{
+		"title": "พื้นฐาน PDPA", "content_type": "video", "quiz_form_id": quizFormID,
+	})
+	if code != 201 || !strings.Contains(body, `"draft"`) {
+		t.Fatalf("create course: %d %s", code, body)
+	}
+	var course struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &course)
+	courseEtag := headers.Get("ETag")
+
+	code, body, headers = do("PATCH", coursesPath+"/"+course.ID+"/status", &admin, courseEtag, map[string]any{"status": "published"})
+	if code != 200 || !strings.Contains(body, `"published"`) {
+		t.Fatalf("publish course: %d %s", code, body)
+	}
+	courseEtag = headers.Get("ETag")
+
+	assignmentsPath := "/admin/v1/governance/training-assignments"
+	code, body, _ = do("POST", assignmentsPath, &admin, "", map[string]any{"course_id": course.ID, "target_type": "all", "due_at": "2099-12-31"})
+	if code != 201 {
+		t.Fatalf("assign training: %d %s", code, body)
+	}
+
+	code, body, _ = do("GET", "/admin/v1/governance/my-training-assignments", &admin, "", nil)
+	if code != 200 || !strings.Contains(body, course.ID) {
+		t.Fatalf("my training assignments: %d %s", code, body)
+	}
+
+	code, body, headers = do("POST", coursesPath+"/"+course.ID+"/attempts", &admin, "", nil)
+	if code != 201 {
+		t.Fatalf("start attempt: %d %s", code, body)
+	}
+	var attempt struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &attempt)
+	attemptEtag := headers.Get("ETag")
+
+	if code, _, _ := do("POST", "/admin/v1/governance/training-attempts/"+attempt.ID+"/submit", &admin, "", map[string]any{"answers": map[string]any{"q1": "yes"}}); code != 428 {
+		t.Errorf("submit without If-Match: %d, want 428", code)
+	}
+	code, body, _ = do("POST", "/admin/v1/governance/training-attempts/"+attempt.ID+"/submit", &admin, attemptEtag, map[string]any{"answers": map[string]any{"q1": "yes"}})
+	if code != 200 || !strings.Contains(body, `"passed":true`) {
+		t.Fatalf("submit attempt: %d %s", code, body)
+	}
+
+	code, body, _ = do("GET", coursesPath+"/"+course.ID+"/report", &admin, "", nil)
+	if code != 200 || !strings.Contains(body, admin.String()) {
+		t.Fatalf("training report: %d %s", code, body)
+	}
+
+	code, body, _ = do("GET", "/admin/v1/governance/my-training-attempts", &admin, "", nil)
+	if code != 200 || !strings.Contains(body, attempt.ID) {
+		t.Fatalf("my training attempts: %d %s", code, body)
 	}
 }

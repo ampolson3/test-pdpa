@@ -19,11 +19,13 @@ import (
 
 	breachservice "pdpa-platform/internal/breach/service"
 	dsarservice "pdpa-platform/internal/dsar/service"
+	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
 	docsservice "pdpa-platform/internal/platform/docs"
 	"pdpa-platform/internal/platform/files"
+	"pdpa-platform/internal/platform/forms"
 	"pdpa-platform/internal/platform/notify"
 	ropaservice "pdpa-platform/internal/ropa/service"
 )
@@ -117,6 +119,43 @@ const (
 // RegulatorLetterType is the entity type for audit/files (DPX-08).
 const RegulatorLetterType = "gov_regulator_letter"
 
+// Org is what DPX-01 reads from the org module (rule 9): FK visibility (rule 1) for an org-unit-targeted
+// training assignment.
+type Org interface {
+	GetOrgUnit(ctx context.Context, id uuid.UUID) (orgservice.OrgUnit, error)
+}
+
+// Forms is what DPX-01 reads from PLT-06 (rule 9): a course's own quiz, designed and published as an
+// ordinary "quiz"-type form (internal/wiring.Forms), and answered in one step (forms.Service.Record) when
+// an employee completes a course.
+type Forms interface {
+	GetForm(ctx context.Context, id uuid.UUID) (forms.Form, error)
+	Record(ctx context.Context, versionID uuid.UUID, answers forms.Answers, submitterType string, submitter *uuid.UUID, entityType string, entityID *uuid.UUID) (uuid.UUID, forms.Result, error)
+}
+
+// DPX-01's own permission codes (dpx.training.*, already seeded — DPO holds create/read/update/publish/
+// delete, every other seeded role holds .execute: "ดำเนินการ / มอบหมาย / ทำรายการ").
+const (
+	TrainingPermRead    = "dpx.training.read"
+	TrainingPermCreate  = "dpx.training.create"
+	TrainingPermUpdate  = "dpx.training.update"
+	TrainingPermDelete  = "dpx.training.delete"
+	TrainingPermPublish = "dpx.training.publish"
+	TrainingPermExecute = "dpx.training.execute"
+)
+
+// QuizFormType is the PLT-06 form type DPX-01's course quizzes use ('quiz' has been reserved in
+// platform.form_definitions.form_type's own CHECK since the very first baseline migration, unused until
+// now — the same "schema already anticipated this" discovery every recent pass in this codebase relies on).
+const QuizFormType = "quiz"
+
+// CourseType/AssignmentType/AttemptType are the entity types for audit/files (DPX-01).
+const (
+	CourseType     = "gov_course"
+	AssignmentType = "gov_training_assignment"
+	AttemptType    = "gov_training_attempt"
+)
+
 // Service runs the gov module for the tenant of the transaction in ctx.
 type Service struct {
 	Audit  *audit.Service
@@ -125,6 +164,8 @@ type Service struct {
 	Files  Files
 	Docs   Docs
 	Breach Breach
+	Org    Org
+	Forms  Forms
 	Notify *notify.Service
 	River  *river.Client[pgx.Tx]
 	Now    func() time.Time

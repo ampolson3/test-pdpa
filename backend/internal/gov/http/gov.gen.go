@@ -111,6 +111,51 @@ func (e FormConditionOp) Valid() bool {
 	}
 }
 
+// Defines values for GovCourseContentType.
+const (
+	Scorm  GovCourseContentType = "scorm"
+	Slides GovCourseContentType = "slides"
+	Video  GovCourseContentType = "video"
+	Xapi   GovCourseContentType = "xapi"
+)
+
+// Valid indicates whether the value is a known member of the GovCourseContentType enum.
+func (e GovCourseContentType) Valid() bool {
+	switch e {
+	case Scorm:
+		return true
+	case Slides:
+		return true
+	case Video:
+		return true
+	case Xapi:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovCourseStatus.
+const (
+	GovCourseStatusDraft     GovCourseStatus = "draft"
+	GovCourseStatusPublished GovCourseStatus = "published"
+	GovCourseStatusRetired   GovCourseStatus = "retired"
+)
+
+// Valid indicates whether the value is a known member of the GovCourseStatus enum.
+func (e GovCourseStatus) Valid() bool {
+	switch e {
+	case GovCourseStatusDraft:
+		return true
+	case GovCourseStatusPublished:
+		return true
+	case GovCourseStatusRetired:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GovRegulatorLetterDirection.
 const (
 	Inbound  GovRegulatorLetterDirection = "inbound"
@@ -150,21 +195,45 @@ func (e GovRegulatorLetterStatus) Valid() bool {
 	}
 }
 
+// Defines values for GovTrainingAssignmentTargetType.
+const (
+	All     GovTrainingAssignmentTargetType = "all"
+	Group   GovTrainingAssignmentTargetType = "group"
+	OrgUnit GovTrainingAssignmentTargetType = "org_unit"
+	User    GovTrainingAssignmentTargetType = "user"
+)
+
+// Valid indicates whether the value is a known member of the GovTrainingAssignmentTargetType enum.
+func (e GovTrainingAssignmentTargetType) Valid() bool {
+	switch e {
+	case All:
+		return true
+	case Group:
+		return true
+	case OrgUnit:
+		return true
+	case User:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RetentionScheduleStatus.
 const (
-	Active  RetentionScheduleStatus = "active"
-	Paused  RetentionScheduleStatus = "paused"
-	Retired RetentionScheduleStatus = "retired"
+	RetentionScheduleStatusActive  RetentionScheduleStatus = "active"
+	RetentionScheduleStatusPaused  RetentionScheduleStatus = "paused"
+	RetentionScheduleStatusRetired RetentionScheduleStatus = "retired"
 )
 
 // Valid indicates whether the value is a known member of the RetentionScheduleStatus enum.
 func (e RetentionScheduleStatus) Valid() bool {
 	switch e {
-	case Active:
+	case RetentionScheduleStatusActive:
 		return true
-	case Paused:
+	case RetentionScheduleStatusPaused:
 		return true
-	case Retired:
+	case RetentionScheduleStatusRetired:
 		return true
 	default:
 		return false
@@ -183,6 +252,132 @@ func (e AcceptLanguage) Valid() bool {
 	case AcceptLanguageEn:
 		return true
 	case AcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovListCoursesParamsAcceptLanguage.
+const (
+	GovListCoursesParamsAcceptLanguageEn GovListCoursesParamsAcceptLanguage = "en"
+	GovListCoursesParamsAcceptLanguageTh GovListCoursesParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovListCoursesParamsAcceptLanguage enum.
+func (e GovListCoursesParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovListCoursesParamsAcceptLanguageEn:
+		return true
+	case GovListCoursesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovCreateCourseParamsAcceptLanguage.
+const (
+	GovCreateCourseParamsAcceptLanguageEn GovCreateCourseParamsAcceptLanguage = "en"
+	GovCreateCourseParamsAcceptLanguageTh GovCreateCourseParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovCreateCourseParamsAcceptLanguage enum.
+func (e GovCreateCourseParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovCreateCourseParamsAcceptLanguageEn:
+		return true
+	case GovCreateCourseParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovGetCourseParamsAcceptLanguage.
+const (
+	GovGetCourseParamsAcceptLanguageEn GovGetCourseParamsAcceptLanguage = "en"
+	GovGetCourseParamsAcceptLanguageTh GovGetCourseParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovGetCourseParamsAcceptLanguage enum.
+func (e GovGetCourseParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovGetCourseParamsAcceptLanguageEn:
+		return true
+	case GovGetCourseParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovUpdateCourseParamsAcceptLanguage.
+const (
+	GovUpdateCourseParamsAcceptLanguageEn GovUpdateCourseParamsAcceptLanguage = "en"
+	GovUpdateCourseParamsAcceptLanguageTh GovUpdateCourseParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovUpdateCourseParamsAcceptLanguage enum.
+func (e GovUpdateCourseParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovUpdateCourseParamsAcceptLanguageEn:
+		return true
+	case GovUpdateCourseParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovStartAttemptParamsAcceptLanguage.
+const (
+	GovStartAttemptParamsAcceptLanguageEn GovStartAttemptParamsAcceptLanguage = "en"
+	GovStartAttemptParamsAcceptLanguageTh GovStartAttemptParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovStartAttemptParamsAcceptLanguage enum.
+func (e GovStartAttemptParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovStartAttemptParamsAcceptLanguageEn:
+		return true
+	case GovStartAttemptParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovGetTrainingReportParamsAcceptLanguage.
+const (
+	GovGetTrainingReportParamsAcceptLanguageEn GovGetTrainingReportParamsAcceptLanguage = "en"
+	GovGetTrainingReportParamsAcceptLanguageTh GovGetTrainingReportParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovGetTrainingReportParamsAcceptLanguage enum.
+func (e GovGetTrainingReportParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovGetTrainingReportParamsAcceptLanguageEn:
+		return true
+	case GovGetTrainingReportParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovSetCourseStatusParamsAcceptLanguage.
+const (
+	GovSetCourseStatusParamsAcceptLanguageEn GovSetCourseStatusParamsAcceptLanguage = "en"
+	GovSetCourseStatusParamsAcceptLanguageTh GovSetCourseStatusParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovSetCourseStatusParamsAcceptLanguage enum.
+func (e GovSetCourseStatusParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovSetCourseStatusParamsAcceptLanguageEn:
+		return true
+	case GovSetCourseStatusParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -291,6 +486,42 @@ func (e GovStartDisposalJobParamsAcceptLanguage) Valid() bool {
 	case GovStartDisposalJobParamsAcceptLanguageEn:
 		return true
 	case GovStartDisposalJobParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovListMyTrainingAssignmentsParamsAcceptLanguage.
+const (
+	GovListMyTrainingAssignmentsParamsAcceptLanguageEn GovListMyTrainingAssignmentsParamsAcceptLanguage = "en"
+	GovListMyTrainingAssignmentsParamsAcceptLanguageTh GovListMyTrainingAssignmentsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovListMyTrainingAssignmentsParamsAcceptLanguage enum.
+func (e GovListMyTrainingAssignmentsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovListMyTrainingAssignmentsParamsAcceptLanguageEn:
+		return true
+	case GovListMyTrainingAssignmentsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovListMyTrainingAttemptsParamsAcceptLanguage.
+const (
+	GovListMyTrainingAttemptsParamsAcceptLanguageEn GovListMyTrainingAttemptsParamsAcceptLanguage = "en"
+	GovListMyTrainingAttemptsParamsAcceptLanguageTh GovListMyTrainingAttemptsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovListMyTrainingAttemptsParamsAcceptLanguage enum.
+func (e GovListMyTrainingAttemptsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovListMyTrainingAttemptsParamsAcceptLanguageEn:
+		return true
+	case GovListMyTrainingAttemptsParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -585,6 +816,60 @@ func (e GovSetRetentionScheduleStatusParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for GovListTrainingAssignmentsParamsAcceptLanguage.
+const (
+	GovListTrainingAssignmentsParamsAcceptLanguageEn GovListTrainingAssignmentsParamsAcceptLanguage = "en"
+	GovListTrainingAssignmentsParamsAcceptLanguageTh GovListTrainingAssignmentsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovListTrainingAssignmentsParamsAcceptLanguage enum.
+func (e GovListTrainingAssignmentsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovListTrainingAssignmentsParamsAcceptLanguageEn:
+		return true
+	case GovListTrainingAssignmentsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovAssignTrainingParamsAcceptLanguage.
+const (
+	GovAssignTrainingParamsAcceptLanguageEn GovAssignTrainingParamsAcceptLanguage = "en"
+	GovAssignTrainingParamsAcceptLanguageTh GovAssignTrainingParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovAssignTrainingParamsAcceptLanguage enum.
+func (e GovAssignTrainingParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovAssignTrainingParamsAcceptLanguageEn:
+		return true
+	case GovAssignTrainingParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovSubmitAttemptParamsAcceptLanguage.
+const (
+	GovSubmitAttemptParamsAcceptLanguageEn GovSubmitAttemptParamsAcceptLanguage = "en"
+	GovSubmitAttemptParamsAcceptLanguageTh GovSubmitAttemptParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovSubmitAttemptParamsAcceptLanguage enum.
+func (e GovSubmitAttemptParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovSubmitAttemptParamsAcceptLanguageEn:
+		return true
+	case GovSubmitAttemptParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // DisposalJob defines model for DisposalJob.
 type DisposalJob struct {
 	ApprovedBy     *Uuid              `json:"approved_by,omitempty"`
@@ -639,6 +924,44 @@ type FormCondition struct {
 
 // FormConditionOp defines model for FormCondition.Op.
 type FormConditionOp string
+
+// GovCourse defines model for GovCourse.
+type GovCourse struct {
+	ContentFileId *openapi_types.UUID  `json:"content_file_id,omitempty"`
+	ContentType   GovCourseContentType `json:"content_type"`
+	Description   *string              `json:"description,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id             Uuid                `json:"id"`
+	Language       string              `json:"language"`
+	PassingScore   int                 `json:"passing_score"`
+	QuizFormId     *openapi_types.UUID `json:"quiz_form_id,omitempty"`
+	RowVersion     int                 `json:"row_version"`
+	Status         GovCourseStatus     `json:"status"`
+	Title          string              `json:"title"`
+	ValidityMonths int                 `json:"validity_months"`
+}
+
+// GovCourseContentType defines model for GovCourseContentType.
+type GovCourseContentType string
+
+// GovCourseInput defines model for GovCourseInput.
+type GovCourseInput struct {
+	// ContentFileId The caller's own clean, still-unattached PLT-09 upload.
+	ContentFileId *openapi_types.UUID  `json:"content_file_id,omitempty"`
+	ContentType   GovCourseContentType `json:"content_type"`
+	Description   *string              `json:"description,omitempty"`
+	Language      *string              `json:"language,omitempty"`
+	PassingScore  *int                 `json:"passing_score,omitempty"`
+
+	// QuizFormId A published form of type "quiz" (internal/wiring.Forms) — the course's own test, if any.
+	QuizFormId     *openapi_types.UUID `json:"quiz_form_id,omitempty"`
+	Title          string              `json:"title"`
+	ValidityMonths *int                `json:"validity_months,omitempty"`
+}
+
+// GovCourseStatus defines model for GovCourseStatus.
+type GovCourseStatus string
 
 // GovMissingAttestation defines model for GovMissingAttestation.
 type GovMissingAttestation struct {
@@ -728,6 +1051,59 @@ type GovRegulatorLetterInput struct {
 // GovRegulatorLetterStatus defines model for GovRegulatorLetterStatus.
 type GovRegulatorLetterStatus string
 
+// GovTrainingAssignment defines model for GovTrainingAssignment.
+type GovTrainingAssignment struct {
+	// AssignedBy UUIDv7 generated by the API
+	AssignedBy Uuid `json:"assigned_by"`
+
+	// CourseId UUIDv7 generated by the API
+	CourseId Uuid               `json:"course_id"`
+	DueAt    openapi_types.Date `json:"due_at"`
+
+	// Id UUIDv7 generated by the API
+	Id         Uuid                            `json:"id"`
+	RowVersion int                             `json:"row_version"`
+	TargetId   *openapi_types.UUID             `json:"target_id,omitempty"`
+	TargetType GovTrainingAssignmentTargetType `json:"target_type"`
+}
+
+// GovTrainingAssignmentInput defines model for GovTrainingAssignmentInput.
+type GovTrainingAssignmentInput struct {
+	// CourseId UUIDv7 generated by the API
+	CourseId Uuid               `json:"course_id"`
+	DueAt    openapi_types.Date `json:"due_at"`
+
+	// TargetId Required unless target_type is "all" — an org unit, group or user id.
+	TargetId   *openapi_types.UUID             `json:"target_id,omitempty"`
+	TargetType GovTrainingAssignmentTargetType `json:"target_type"`
+}
+
+// GovTrainingAssignmentTargetType defines model for GovTrainingAssignmentTargetType.
+type GovTrainingAssignmentTargetType string
+
+// GovTrainingAttempt defines model for GovTrainingAttempt.
+type GovTrainingAttempt struct {
+	AssignmentId      *openapi_types.UUID `json:"assignment_id,omitempty"`
+	CertificateFileId *openapi_types.UUID `json:"certificate_file_id,omitempty"`
+	CompletedAt       *time.Time          `json:"completed_at,omitempty"`
+
+	// CourseId UUIDv7 generated by the API
+	CourseId Uuid `json:"course_id"`
+
+	// Id UUIDv7 generated by the API
+	Id         Uuid  `json:"id"`
+	Passed     *bool `json:"passed,omitempty"`
+	RowVersion int   `json:"row_version"`
+	Score      *int  `json:"score,omitempty"`
+
+	// StartedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	StartedAt Timestamp `json:"started_at"`
+
+	// UserId UUIDv7 generated by the API
+	UserId   Uuid    `json:"user_id"`
+	UserName *string `json:"user_name,omitempty"`
+}
+
 // Problem RFC 9457 problem details with a stable machine-readable `code`
 type Problem struct {
 	Code      string        `json:"code"`
@@ -811,6 +1187,87 @@ type Unauthorized = Problem
 // UnprocessableEntity RFC 9457 problem details with a stable machine-readable `code`
 type UnprocessableEntity = Problem
 
+// GovListCoursesParams defines parameters for GovListCourses.
+type GovListCoursesParams struct {
+	Status *GovCourseStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovListCoursesParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovListCoursesParamsAcceptLanguage defines parameters for GovListCourses.
+type GovListCoursesParamsAcceptLanguage string
+
+// GovCreateCourseParams defines parameters for GovCreateCourse.
+type GovCreateCourseParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovCreateCourseParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovCreateCourseParamsAcceptLanguage defines parameters for GovCreateCourse.
+type GovCreateCourseParamsAcceptLanguage string
+
+// GovGetCourseParams defines parameters for GovGetCourse.
+type GovGetCourseParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovGetCourseParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovGetCourseParamsAcceptLanguage defines parameters for GovGetCourse.
+type GovGetCourseParamsAcceptLanguage string
+
+// GovUpdateCourseParams defines parameters for GovUpdateCourse.
+type GovUpdateCourseParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovUpdateCourseParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// GovUpdateCourseParamsAcceptLanguage defines parameters for GovUpdateCourse.
+type GovUpdateCourseParamsAcceptLanguage string
+
+// GovStartAttemptJSONBody defines parameters for GovStartAttempt.
+type GovStartAttemptJSONBody struct {
+	AssignmentId *openapi_types.UUID `json:"assignment_id,omitempty"`
+}
+
+// GovStartAttemptParams defines parameters for GovStartAttempt.
+type GovStartAttemptParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovStartAttemptParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovStartAttemptParamsAcceptLanguage defines parameters for GovStartAttempt.
+type GovStartAttemptParamsAcceptLanguage string
+
+// GovGetTrainingReportParams defines parameters for GovGetTrainingReport.
+type GovGetTrainingReportParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovGetTrainingReportParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovGetTrainingReportParamsAcceptLanguage defines parameters for GovGetTrainingReport.
+type GovGetTrainingReportParamsAcceptLanguage string
+
+// GovSetCourseStatusJSONBody defines parameters for GovSetCourseStatus.
+type GovSetCourseStatusJSONBody struct {
+	Status GovCourseStatus `json:"status"`
+}
+
+// GovSetCourseStatusParams defines parameters for GovSetCourseStatus.
+type GovSetCourseStatusParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovSetCourseStatusParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// GovSetCourseStatusParamsAcceptLanguage defines parameters for GovSetCourseStatus.
+type GovSetCourseStatusParamsAcceptLanguage string
+
 // GovListDisposalJobsParams defines parameters for GovListDisposalJobs.
 type GovListDisposalJobsParams struct {
 	Status *DisposalJobStatus `form:"status,omitempty" json:"status,omitempty"`
@@ -886,6 +1343,24 @@ type GovStartDisposalJobParams struct {
 
 // GovStartDisposalJobParamsAcceptLanguage defines parameters for GovStartDisposalJob.
 type GovStartDisposalJobParamsAcceptLanguage string
+
+// GovListMyTrainingAssignmentsParams defines parameters for GovListMyTrainingAssignments.
+type GovListMyTrainingAssignmentsParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovListMyTrainingAssignmentsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovListMyTrainingAssignmentsParamsAcceptLanguage defines parameters for GovListMyTrainingAssignments.
+type GovListMyTrainingAssignmentsParamsAcceptLanguage string
+
+// GovListMyTrainingAttemptsParams defines parameters for GovListMyTrainingAttempts.
+type GovListMyTrainingAttemptsParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovListMyTrainingAttemptsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovListMyTrainingAttemptsParamsAcceptLanguage defines parameters for GovListMyTrainingAttempts.
+type GovListMyTrainingAttemptsParamsAcceptLanguage string
 
 // GovListPoliciesParams defines parameters for GovListPolicies.
 type GovListPoliciesParams struct {
@@ -1059,6 +1534,55 @@ type GovSetRetentionScheduleStatusParams struct {
 // GovSetRetentionScheduleStatusParamsAcceptLanguage defines parameters for GovSetRetentionScheduleStatus.
 type GovSetRetentionScheduleStatusParamsAcceptLanguage string
 
+// GovListTrainingAssignmentsParams defines parameters for GovListTrainingAssignments.
+type GovListTrainingAssignmentsParams struct {
+	CourseId *Uuid `form:"course_id,omitempty" json:"course_id,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovListTrainingAssignmentsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovListTrainingAssignmentsParamsAcceptLanguage defines parameters for GovListTrainingAssignments.
+type GovListTrainingAssignmentsParamsAcceptLanguage string
+
+// GovAssignTrainingParams defines parameters for GovAssignTraining.
+type GovAssignTrainingParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovAssignTrainingParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovAssignTrainingParamsAcceptLanguage defines parameters for GovAssignTraining.
+type GovAssignTrainingParamsAcceptLanguage string
+
+// GovSubmitAttemptJSONBody defines parameters for GovSubmitAttempt.
+type GovSubmitAttemptJSONBody struct {
+	Answers *map[string]interface{} `json:"answers,omitempty"`
+}
+
+// GovSubmitAttemptParams defines parameters for GovSubmitAttempt.
+type GovSubmitAttemptParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovSubmitAttemptParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// GovSubmitAttemptParamsAcceptLanguage defines parameters for GovSubmitAttempt.
+type GovSubmitAttemptParamsAcceptLanguage string
+
+// GovCreateCourseJSONRequestBody defines body for GovCreateCourse for application/json ContentType.
+type GovCreateCourseJSONRequestBody = GovCourseInput
+
+// GovUpdateCourseJSONRequestBody defines body for GovUpdateCourse for application/json ContentType.
+type GovUpdateCourseJSONRequestBody = GovCourseInput
+
+// GovStartAttemptJSONRequestBody defines body for GovStartAttempt for application/json ContentType.
+type GovStartAttemptJSONRequestBody GovStartAttemptJSONBody
+
+// GovSetCourseStatusJSONRequestBody defines body for GovSetCourseStatus for application/json ContentType.
+type GovSetCourseStatusJSONRequestBody GovSetCourseStatusJSONBody
+
 // GovApproveDisposalJobJSONRequestBody defines body for GovApproveDisposalJob for application/json ContentType.
 type GovApproveDisposalJobJSONRequestBody GovApproveDisposalJobJSONBody
 
@@ -1083,8 +1607,35 @@ type GovCreateRetentionScheduleJSONRequestBody = RetentionScheduleInput
 // GovSetRetentionScheduleStatusJSONRequestBody defines body for GovSetRetentionScheduleStatus for application/json ContentType.
 type GovSetRetentionScheduleStatusJSONRequestBody GovSetRetentionScheduleStatusJSONBody
 
+// GovAssignTrainingJSONRequestBody defines body for GovAssignTraining for application/json ContentType.
+type GovAssignTrainingJSONRequestBody = GovTrainingAssignmentInput
+
+// GovSubmitAttemptJSONRequestBody defines body for GovSubmitAttempt for application/json ContentType.
+type GovSubmitAttemptJSONRequestBody GovSubmitAttemptJSONBody
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// GovListCourses DPX-01: PDPA awareness courses, newest first
+	// (GET /admin/v1/governance/courses)
+	GovListCourses(w http.ResponseWriter, r *http.Request, params GovListCoursesParams)
+	// GovCreateCourse DPX-01: start a new draft course
+	// (POST /admin/v1/governance/courses)
+	GovCreateCourse(w http.ResponseWriter, r *http.Request, params GovCreateCourseParams)
+	// GovGetCourse One course
+	// (GET /admin/v1/governance/courses/{id})
+	GovGetCourse(w http.ResponseWriter, r *http.Request, id Uuid, params GovGetCourseParams)
+	// GovUpdateCourse Edit a still-draft course's own details
+	// (PUT /admin/v1/governance/courses/{id})
+	GovUpdateCourse(w http.ResponseWriter, r *http.Request, id Uuid, params GovUpdateCourseParams)
+	// GovStartAttempt DPX-01: an employee begins a published course
+	// (POST /admin/v1/governance/courses/{id}/attempts)
+	GovStartAttempt(w http.ResponseWriter, r *http.Request, id Uuid, params GovStartAttemptParams)
+	// GovGetTrainingReport DPX-01's own acceptance criterion: every attempt against this course, with each attempting user's own name — the per-individual report
+	// (GET /admin/v1/governance/courses/{id}/report)
+	GovGetTrainingReport(w http.ResponseWriter, r *http.Request, id Uuid, params GovGetTrainingReportParams)
+	// GovSetCourseStatus Move a course draft -> published -> retired. Publishing additionally needs dpx.training.publish; retiring additionally needs dpx.training.delete (checked inside the service).
+	// (PATCH /admin/v1/governance/courses/{id}/status)
+	GovSetCourseStatus(w http.ResponseWriter, r *http.Request, id Uuid, params GovSetCourseStatusParams)
 	// GovListDisposalJobs Disposal jobs (DPX-05) — created automatically by the daily due-date sweep, or manually inspected here
 	// (GET /admin/v1/governance/disposal-jobs)
 	GovListDisposalJobs(w http.ResponseWriter, r *http.Request, params GovListDisposalJobsParams)
@@ -1103,6 +1654,12 @@ type ServerInterface interface {
 	// GovStartDisposalJob Move an approved job to in_progress (IT begins the actual disposal work)
 	// (POST /admin/v1/governance/disposal-jobs/{id}/start)
 	GovStartDisposalJob(w http.ResponseWriter, r *http.Request, id Uuid, params GovStartDisposalJobParams)
+	// GovListMyTrainingAssignments DPX-01: every assignment that currently applies to the caller (an "all" assignment, their own primary org unit, their own groups, or them directly)
+	// (GET /admin/v1/governance/my-training-assignments)
+	GovListMyTrainingAssignments(w http.ResponseWriter, r *http.Request, params GovListMyTrainingAssignmentsParams)
+	// GovListMyTrainingAttempts DPX-01: the caller's own past attempts, newest first
+	// (GET /admin/v1/governance/my-training-attempts)
+	GovListMyTrainingAttempts(w http.ResponseWriter, r *http.Request, params GovListMyTrainingAttemptsParams)
 	// GovListPolicies Internal policies (DPX-02) the DPO tracks for mandatory employee attestation, newest published first
 	// (GET /admin/v1/governance/policies)
 	GovListPolicies(w http.ResponseWriter, r *http.Request, params GovListPoliciesParams)
@@ -1151,11 +1708,62 @@ type ServerInterface interface {
 	// GovSetRetentionScheduleStatus Pause / resume / retire a schedule — a paused or retired schedule is never picked up by the daily due-check
 	// (PATCH /admin/v1/governance/retention-schedules/{id})
 	GovSetRetentionScheduleStatus(w http.ResponseWriter, r *http.Request, id Uuid, params GovSetRetentionScheduleStatusParams)
+	// GovListTrainingAssignments DPX-01: every training assignment, optionally narrowed by course
+	// (GET /admin/v1/governance/training-assignments)
+	GovListTrainingAssignments(w http.ResponseWriter, r *http.Request, params GovListTrainingAssignmentsParams)
+	// GovAssignTraining DPX-01: assign a published course to everyone, an org unit, a group, or one user, by a due date
+	// (POST /admin/v1/governance/training-assignments)
+	GovAssignTraining(w http.ResponseWriter, r *http.Request, params GovAssignTrainingParams)
+	// GovSubmitAttempt DPX-01's own acceptance criterion: the employee completes the course's own quiz (if any), scored by the form engine against the course's passing_score
+	// (POST /admin/v1/governance/training-attempts/{id}/submit)
+	GovSubmitAttempt(w http.ResponseWriter, r *http.Request, id Uuid, params GovSubmitAttemptParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// GovListCourses DPX-01: PDPA awareness courses, newest first
+// (GET /admin/v1/governance/courses)
+func (_ Unimplemented) GovListCourses(w http.ResponseWriter, r *http.Request, params GovListCoursesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovCreateCourse DPX-01: start a new draft course
+// (POST /admin/v1/governance/courses)
+func (_ Unimplemented) GovCreateCourse(w http.ResponseWriter, r *http.Request, params GovCreateCourseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovGetCourse One course
+// (GET /admin/v1/governance/courses/{id})
+func (_ Unimplemented) GovGetCourse(w http.ResponseWriter, r *http.Request, id Uuid, params GovGetCourseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovUpdateCourse Edit a still-draft course's own details
+// (PUT /admin/v1/governance/courses/{id})
+func (_ Unimplemented) GovUpdateCourse(w http.ResponseWriter, r *http.Request, id Uuid, params GovUpdateCourseParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovStartAttempt DPX-01: an employee begins a published course
+// (POST /admin/v1/governance/courses/{id}/attempts)
+func (_ Unimplemented) GovStartAttempt(w http.ResponseWriter, r *http.Request, id Uuid, params GovStartAttemptParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovGetTrainingReport DPX-01's own acceptance criterion: every attempt against this course, with each attempting user's own name — the per-individual report
+// (GET /admin/v1/governance/courses/{id}/report)
+func (_ Unimplemented) GovGetTrainingReport(w http.ResponseWriter, r *http.Request, id Uuid, params GovGetTrainingReportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovSetCourseStatus Move a course draft -> published -> retired. Publishing additionally needs dpx.training.publish; retiring additionally needs dpx.training.delete (checked inside the service).
+// (PATCH /admin/v1/governance/courses/{id}/status)
+func (_ Unimplemented) GovSetCourseStatus(w http.ResponseWriter, r *http.Request, id Uuid, params GovSetCourseStatusParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // GovListDisposalJobs Disposal jobs (DPX-05) — created automatically by the daily due-date sweep, or manually inspected here
 // (GET /admin/v1/governance/disposal-jobs)
@@ -1190,6 +1798,18 @@ func (_ Unimplemented) GovReleaseDisposalJobHold(w http.ResponseWriter, r *http.
 // GovStartDisposalJob Move an approved job to in_progress (IT begins the actual disposal work)
 // (POST /admin/v1/governance/disposal-jobs/{id}/start)
 func (_ Unimplemented) GovStartDisposalJob(w http.ResponseWriter, r *http.Request, id Uuid, params GovStartDisposalJobParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovListMyTrainingAssignments DPX-01: every assignment that currently applies to the caller (an "all" assignment, their own primary org unit, their own groups, or them directly)
+// (GET /admin/v1/governance/my-training-assignments)
+func (_ Unimplemented) GovListMyTrainingAssignments(w http.ResponseWriter, r *http.Request, params GovListMyTrainingAssignmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovListMyTrainingAttempts DPX-01: the caller's own past attempts, newest first
+// (GET /admin/v1/governance/my-training-attempts)
+func (_ Unimplemented) GovListMyTrainingAttempts(w http.ResponseWriter, r *http.Request, params GovListMyTrainingAttemptsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1289,6 +1909,24 @@ func (_ Unimplemented) GovSetRetentionScheduleStatus(w http.ResponseWriter, r *h
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// GovListTrainingAssignments DPX-01: every training assignment, optionally narrowed by course
+// (GET /admin/v1/governance/training-assignments)
+func (_ Unimplemented) GovListTrainingAssignments(w http.ResponseWriter, r *http.Request, params GovListTrainingAssignmentsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovAssignTraining DPX-01: assign a published course to everyone, an org unit, a group, or one user, by a due date
+// (POST /admin/v1/governance/training-assignments)
+func (_ Unimplemented) GovAssignTraining(w http.ResponseWriter, r *http.Request, params GovAssignTrainingParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovSubmitAttempt DPX-01's own acceptance criterion: the employee completes the course's own quiz (if any), scored by the form engine against the course's passing_score
+// (POST /admin/v1/governance/training-attempts/{id}/submit)
+func (_ Unimplemented) GovSubmitAttempt(w http.ResponseWriter, r *http.Request, id Uuid, params GovSubmitAttemptParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler            ServerInterface
@@ -1297,6 +1935,397 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GovListCourses operation middleware
+func (siw *ServerInterfaceWrapper) GovListCourses(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovListCoursesParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovListCoursesParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovListCourses(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovCreateCourse operation middleware
+func (siw *ServerInterfaceWrapper) GovCreateCourse(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovCreateCourseParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovCreateCourseParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovCreateCourse(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovGetCourse operation middleware
+func (siw *ServerInterfaceWrapper) GovGetCourse(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovGetCourseParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovGetCourseParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovGetCourse(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovUpdateCourse operation middleware
+func (siw *ServerInterfaceWrapper) GovUpdateCourse(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovUpdateCourseParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovUpdateCourseParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovUpdateCourse(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovStartAttempt operation middleware
+func (siw *ServerInterfaceWrapper) GovStartAttempt(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovStartAttemptParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovStartAttemptParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovStartAttempt(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovGetTrainingReport operation middleware
+func (siw *ServerInterfaceWrapper) GovGetTrainingReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovGetTrainingReportParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovGetTrainingReportParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovGetTrainingReport(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovSetCourseStatus operation middleware
+func (siw *ServerInterfaceWrapper) GovSetCourseStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovSetCourseStatusParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovSetCourseStatusParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovSetCourseStatus(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GovListDisposalJobs operation middleware
 func (siw *ServerInterfaceWrapper) GovListDisposalJobs(w http.ResponseWriter, r *http.Request) {
@@ -1711,6 +2740,88 @@ func (siw *ServerInterfaceWrapper) GovStartDisposalJob(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GovStartDisposalJob(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovListMyTrainingAssignments operation middleware
+func (siw *ServerInterfaceWrapper) GovListMyTrainingAssignments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovListMyTrainingAssignmentsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovListMyTrainingAssignmentsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovListMyTrainingAssignments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovListMyTrainingAttempts operation middleware
+func (siw *ServerInterfaceWrapper) GovListMyTrainingAttempts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovListMyTrainingAttemptsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovListMyTrainingAttemptsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovListMyTrainingAttempts(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2613,6 +3724,174 @@ func (siw *ServerInterfaceWrapper) GovSetRetentionScheduleStatus(w http.Response
 	handler.ServeHTTP(w, r)
 }
 
+// GovListTrainingAssignments operation middleware
+func (siw *ServerInterfaceWrapper) GovListTrainingAssignments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovListTrainingAssignmentsParams
+
+	// ------------- Optional query parameter "course_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "course_id", r.URL.Query(), &params.CourseId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "course_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "course_id", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovListTrainingAssignmentsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovListTrainingAssignments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovAssignTraining operation middleware
+func (siw *ServerInterfaceWrapper) GovAssignTraining(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovAssignTrainingParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovAssignTrainingParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovAssignTraining(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovSubmitAttempt operation middleware
+func (siw *ServerInterfaceWrapper) GovSubmitAttempt(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovSubmitAttemptParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovSubmitAttemptParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovSubmitAttempt(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -2792,6 +4071,42 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Patch(options.BaseURL+"/admin/v1/governance/regulator-letters/{id}/status", wrapper.GovSetRegulatorLetterStatus)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/governance/courses", wrapper.GovListCourses)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/governance/courses", wrapper.GovCreateCourse)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/governance/courses/{id}", wrapper.GovGetCourse)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/v1/governance/courses/{id}", wrapper.GovUpdateCourse)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/admin/v1/governance/courses/{id}/status", wrapper.GovSetCourseStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/governance/courses/{id}/report", wrapper.GovGetTrainingReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/governance/courses/{id}/attempts", wrapper.GovStartAttempt)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/governance/training-attempts/{id}/submit", wrapper.GovSubmitAttempt)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/governance/my-training-attempts", wrapper.GovListMyTrainingAttempts)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/governance/training-assignments", wrapper.GovListTrainingAssignments)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/governance/training-assignments", wrapper.GovAssignTraining)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/governance/my-training-assignments", wrapper.GovListMyTrainingAssignments)
+	})
 
 	return r
 }
@@ -2811,6 +4126,687 @@ type PreconditionRequiredApplicationProblemPlusJSONResponse Problem
 type UnauthorizedApplicationProblemPlusJSONResponse Problem
 
 type UnprocessableEntityApplicationProblemPlusJSONResponse Problem
+
+type GovListCoursesRequestObject struct {
+	Params GovListCoursesParams
+}
+
+type GovListCoursesResponseObject interface {
+	VisitGovListCoursesResponse(w http.ResponseWriter) error
+}
+
+type GovListCourses200JSONResponse struct {
+	Data []GovCourse `json:"data"`
+}
+
+func (response GovListCourses200JSONResponse) VisitGovListCoursesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListCourses401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovListCourses401ApplicationProblemPlusJSONResponse) VisitGovListCoursesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListCourses403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovListCourses403ApplicationProblemPlusJSONResponse) VisitGovListCoursesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovCreateCourseRequestObject struct {
+	Params GovCreateCourseParams
+	Body   *GovCreateCourseJSONRequestBody
+}
+
+type GovCreateCourseResponseObject interface {
+	VisitGovCreateCourseResponse(w http.ResponseWriter) error
+}
+
+type GovCreateCourse201ResponseHeaders struct {
+	ETag *string
+}
+
+type GovCreateCourse201JSONResponse struct {
+	Body    GovCourse
+	Headers GovCreateCourse201ResponseHeaders
+}
+
+func (response GovCreateCourse201JSONResponse) VisitGovCreateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovCreateCourse400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovCreateCourse400ApplicationProblemPlusJSONResponse) VisitGovCreateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovCreateCourse401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovCreateCourse401ApplicationProblemPlusJSONResponse) VisitGovCreateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovCreateCourse403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovCreateCourse403ApplicationProblemPlusJSONResponse) VisitGovCreateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovCreateCourse422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovCreateCourse422ApplicationProblemPlusJSONResponse) VisitGovCreateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetCourseRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovGetCourseParams
+}
+
+type GovGetCourseResponseObject interface {
+	VisitGovGetCourseResponse(w http.ResponseWriter) error
+}
+
+type GovGetCourse200ResponseHeaders struct {
+	ETag *string
+}
+
+type GovGetCourse200JSONResponse struct {
+	Body    GovCourse
+	Headers GovGetCourse200ResponseHeaders
+}
+
+func (response GovGetCourse200JSONResponse) VisitGovGetCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetCourse401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovGetCourse401ApplicationProblemPlusJSONResponse) VisitGovGetCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetCourse403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovGetCourse403ApplicationProblemPlusJSONResponse) VisitGovGetCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetCourse404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovGetCourse404ApplicationProblemPlusJSONResponse) VisitGovGetCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateCourseRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovUpdateCourseParams
+	Body   *GovUpdateCourseJSONRequestBody
+}
+
+type GovUpdateCourseResponseObject interface {
+	VisitGovUpdateCourseResponse(w http.ResponseWriter) error
+}
+
+type GovUpdateCourse200ResponseHeaders struct {
+	ETag *string
+}
+
+type GovUpdateCourse200JSONResponse struct {
+	Body    GovCourse
+	Headers GovUpdateCourse200ResponseHeaders
+}
+
+func (response GovUpdateCourse200JSONResponse) VisitGovUpdateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateCourse400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateCourse400ApplicationProblemPlusJSONResponse) VisitGovUpdateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateCourse401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateCourse401ApplicationProblemPlusJSONResponse) VisitGovUpdateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateCourse403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateCourse403ApplicationProblemPlusJSONResponse) VisitGovUpdateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateCourse404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateCourse404ApplicationProblemPlusJSONResponse) VisitGovUpdateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateCourse412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateCourse412ApplicationProblemPlusJSONResponse) VisitGovUpdateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateCourse422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateCourse422ApplicationProblemPlusJSONResponse) VisitGovUpdateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateCourse428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateCourse428ApplicationProblemPlusJSONResponse) VisitGovUpdateCourseResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovStartAttemptRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovStartAttemptParams
+	Body   *GovStartAttemptJSONRequestBody
+}
+
+type GovStartAttemptResponseObject interface {
+	VisitGovStartAttemptResponse(w http.ResponseWriter) error
+}
+
+type GovStartAttempt201ResponseHeaders struct {
+	ETag *string
+}
+
+type GovStartAttempt201JSONResponse struct {
+	Body    GovTrainingAttempt
+	Headers GovStartAttempt201ResponseHeaders
+}
+
+func (response GovStartAttempt201JSONResponse) VisitGovStartAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovStartAttempt400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovStartAttempt400ApplicationProblemPlusJSONResponse) VisitGovStartAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovStartAttempt401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovStartAttempt401ApplicationProblemPlusJSONResponse) VisitGovStartAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovStartAttempt403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovStartAttempt403ApplicationProblemPlusJSONResponse) VisitGovStartAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovStartAttempt422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovStartAttempt422ApplicationProblemPlusJSONResponse) VisitGovStartAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetTrainingReportRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovGetTrainingReportParams
+}
+
+type GovGetTrainingReportResponseObject interface {
+	VisitGovGetTrainingReportResponse(w http.ResponseWriter) error
+}
+
+type GovGetTrainingReport200JSONResponse struct {
+	Data []GovTrainingAttempt `json:"data"`
+}
+
+func (response GovGetTrainingReport200JSONResponse) VisitGovGetTrainingReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetTrainingReport401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovGetTrainingReport401ApplicationProblemPlusJSONResponse) VisitGovGetTrainingReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetTrainingReport403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovGetTrainingReport403ApplicationProblemPlusJSONResponse) VisitGovGetTrainingReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetCourseStatusRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovSetCourseStatusParams
+	Body   *GovSetCourseStatusJSONRequestBody
+}
+
+type GovSetCourseStatusResponseObject interface {
+	VisitGovSetCourseStatusResponse(w http.ResponseWriter) error
+}
+
+type GovSetCourseStatus200ResponseHeaders struct {
+	ETag *string
+}
+
+type GovSetCourseStatus200JSONResponse struct {
+	Body    GovCourse
+	Headers GovSetCourseStatus200ResponseHeaders
+}
+
+func (response GovSetCourseStatus200JSONResponse) VisitGovSetCourseStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetCourseStatus400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetCourseStatus400ApplicationProblemPlusJSONResponse) VisitGovSetCourseStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetCourseStatus401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetCourseStatus401ApplicationProblemPlusJSONResponse) VisitGovSetCourseStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetCourseStatus403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetCourseStatus403ApplicationProblemPlusJSONResponse) VisitGovSetCourseStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetCourseStatus404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetCourseStatus404ApplicationProblemPlusJSONResponse) VisitGovSetCourseStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetCourseStatus412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetCourseStatus412ApplicationProblemPlusJSONResponse) VisitGovSetCourseStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetCourseStatus422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetCourseStatus422ApplicationProblemPlusJSONResponse) VisitGovSetCourseStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetCourseStatus428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetCourseStatus428ApplicationProblemPlusJSONResponse) VisitGovSetCourseStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type GovListDisposalJobsRequestObject struct {
 	Params GovListDisposalJobsParams
@@ -3456,6 +5452,118 @@ func (response GovStartDisposalJob428ApplicationProblemPlusJSONResponse) VisitGo
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListMyTrainingAssignmentsRequestObject struct {
+	Params GovListMyTrainingAssignmentsParams
+}
+
+type GovListMyTrainingAssignmentsResponseObject interface {
+	VisitGovListMyTrainingAssignmentsResponse(w http.ResponseWriter) error
+}
+
+type GovListMyTrainingAssignments200JSONResponse struct {
+	Data []GovTrainingAssignment `json:"data"`
+}
+
+func (response GovListMyTrainingAssignments200JSONResponse) VisitGovListMyTrainingAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListMyTrainingAssignments401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovListMyTrainingAssignments401ApplicationProblemPlusJSONResponse) VisitGovListMyTrainingAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListMyTrainingAssignments403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovListMyTrainingAssignments403ApplicationProblemPlusJSONResponse) VisitGovListMyTrainingAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListMyTrainingAttemptsRequestObject struct {
+	Params GovListMyTrainingAttemptsParams
+}
+
+type GovListMyTrainingAttemptsResponseObject interface {
+	VisitGovListMyTrainingAttemptsResponse(w http.ResponseWriter) error
+}
+
+type GovListMyTrainingAttempts200JSONResponse struct {
+	Data []GovTrainingAttempt `json:"data"`
+}
+
+func (response GovListMyTrainingAttempts200JSONResponse) VisitGovListMyTrainingAttemptsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListMyTrainingAttempts401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovListMyTrainingAttempts401ApplicationProblemPlusJSONResponse) VisitGovListMyTrainingAttemptsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListMyTrainingAttempts403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovListMyTrainingAttempts403ApplicationProblemPlusJSONResponse) VisitGovListMyTrainingAttemptsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -4883,8 +6991,318 @@ func (response GovSetRetentionScheduleStatus428ApplicationProblemPlusJSONRespons
 	return err
 }
 
+type GovListTrainingAssignmentsRequestObject struct {
+	Params GovListTrainingAssignmentsParams
+}
+
+type GovListTrainingAssignmentsResponseObject interface {
+	VisitGovListTrainingAssignmentsResponse(w http.ResponseWriter) error
+}
+
+type GovListTrainingAssignments200JSONResponse struct {
+	Data []GovTrainingAssignment `json:"data"`
+}
+
+func (response GovListTrainingAssignments200JSONResponse) VisitGovListTrainingAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListTrainingAssignments401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovListTrainingAssignments401ApplicationProblemPlusJSONResponse) VisitGovListTrainingAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListTrainingAssignments403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovListTrainingAssignments403ApplicationProblemPlusJSONResponse) VisitGovListTrainingAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovAssignTrainingRequestObject struct {
+	Params GovAssignTrainingParams
+	Body   *GovAssignTrainingJSONRequestBody
+}
+
+type GovAssignTrainingResponseObject interface {
+	VisitGovAssignTrainingResponse(w http.ResponseWriter) error
+}
+
+type GovAssignTraining201JSONResponse GovTrainingAssignment
+
+func (response GovAssignTraining201JSONResponse) VisitGovAssignTrainingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovAssignTraining400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovAssignTraining400ApplicationProblemPlusJSONResponse) VisitGovAssignTrainingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovAssignTraining401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovAssignTraining401ApplicationProblemPlusJSONResponse) VisitGovAssignTrainingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovAssignTraining403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovAssignTraining403ApplicationProblemPlusJSONResponse) VisitGovAssignTrainingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovAssignTraining422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovAssignTraining422ApplicationProblemPlusJSONResponse) VisitGovAssignTrainingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSubmitAttemptRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovSubmitAttemptParams
+	Body   *GovSubmitAttemptJSONRequestBody
+}
+
+type GovSubmitAttemptResponseObject interface {
+	VisitGovSubmitAttemptResponse(w http.ResponseWriter) error
+}
+
+type GovSubmitAttempt200ResponseHeaders struct {
+	ETag *string
+}
+
+type GovSubmitAttempt200JSONResponse struct {
+	Body    GovTrainingAttempt
+	Headers GovSubmitAttempt200ResponseHeaders
+}
+
+func (response GovSubmitAttempt200JSONResponse) VisitGovSubmitAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSubmitAttempt400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovSubmitAttempt400ApplicationProblemPlusJSONResponse) VisitGovSubmitAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSubmitAttempt401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovSubmitAttempt401ApplicationProblemPlusJSONResponse) VisitGovSubmitAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSubmitAttempt403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovSubmitAttempt403ApplicationProblemPlusJSONResponse) VisitGovSubmitAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSubmitAttempt404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovSubmitAttempt404ApplicationProblemPlusJSONResponse) VisitGovSubmitAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSubmitAttempt412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response GovSubmitAttempt412ApplicationProblemPlusJSONResponse) VisitGovSubmitAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSubmitAttempt422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovSubmitAttempt422ApplicationProblemPlusJSONResponse) VisitGovSubmitAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSubmitAttempt428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response GovSubmitAttempt428ApplicationProblemPlusJSONResponse) VisitGovSubmitAttemptResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// GovListCourses DPX-01: PDPA awareness courses, newest first
+	// (GET /admin/v1/governance/courses)
+	GovListCourses(ctx context.Context, request GovListCoursesRequestObject) (GovListCoursesResponseObject, error)
+	// GovCreateCourse DPX-01: start a new draft course
+	// (POST /admin/v1/governance/courses)
+	GovCreateCourse(ctx context.Context, request GovCreateCourseRequestObject) (GovCreateCourseResponseObject, error)
+	// GovGetCourse One course
+	// (GET /admin/v1/governance/courses/{id})
+	GovGetCourse(ctx context.Context, request GovGetCourseRequestObject) (GovGetCourseResponseObject, error)
+	// GovUpdateCourse Edit a still-draft course's own details
+	// (PUT /admin/v1/governance/courses/{id})
+	GovUpdateCourse(ctx context.Context, request GovUpdateCourseRequestObject) (GovUpdateCourseResponseObject, error)
+	// GovStartAttempt DPX-01: an employee begins a published course
+	// (POST /admin/v1/governance/courses/{id}/attempts)
+	GovStartAttempt(ctx context.Context, request GovStartAttemptRequestObject) (GovStartAttemptResponseObject, error)
+	// GovGetTrainingReport DPX-01's own acceptance criterion: every attempt against this course, with each attempting user's own name — the per-individual report
+	// (GET /admin/v1/governance/courses/{id}/report)
+	GovGetTrainingReport(ctx context.Context, request GovGetTrainingReportRequestObject) (GovGetTrainingReportResponseObject, error)
+	// GovSetCourseStatus Move a course draft -> published -> retired. Publishing additionally needs dpx.training.publish; retiring additionally needs dpx.training.delete (checked inside the service).
+	// (PATCH /admin/v1/governance/courses/{id}/status)
+	GovSetCourseStatus(ctx context.Context, request GovSetCourseStatusRequestObject) (GovSetCourseStatusResponseObject, error)
 	// GovListDisposalJobs Disposal jobs (DPX-05) — created automatically by the daily due-date sweep, or manually inspected here
 	// (GET /admin/v1/governance/disposal-jobs)
 	GovListDisposalJobs(ctx context.Context, request GovListDisposalJobsRequestObject) (GovListDisposalJobsResponseObject, error)
@@ -4903,6 +7321,12 @@ type StrictServerInterface interface {
 	// GovStartDisposalJob Move an approved job to in_progress (IT begins the actual disposal work)
 	// (POST /admin/v1/governance/disposal-jobs/{id}/start)
 	GovStartDisposalJob(ctx context.Context, request GovStartDisposalJobRequestObject) (GovStartDisposalJobResponseObject, error)
+	// GovListMyTrainingAssignments DPX-01: every assignment that currently applies to the caller (an "all" assignment, their own primary org unit, their own groups, or them directly)
+	// (GET /admin/v1/governance/my-training-assignments)
+	GovListMyTrainingAssignments(ctx context.Context, request GovListMyTrainingAssignmentsRequestObject) (GovListMyTrainingAssignmentsResponseObject, error)
+	// GovListMyTrainingAttempts DPX-01: the caller's own past attempts, newest first
+	// (GET /admin/v1/governance/my-training-attempts)
+	GovListMyTrainingAttempts(ctx context.Context, request GovListMyTrainingAttemptsRequestObject) (GovListMyTrainingAttemptsResponseObject, error)
 	// GovListPolicies Internal policies (DPX-02) the DPO tracks for mandatory employee attestation, newest published first
 	// (GET /admin/v1/governance/policies)
 	GovListPolicies(ctx context.Context, request GovListPoliciesRequestObject) (GovListPoliciesResponseObject, error)
@@ -4951,6 +7375,15 @@ type StrictServerInterface interface {
 	// GovSetRetentionScheduleStatus Pause / resume / retire a schedule — a paused or retired schedule is never picked up by the daily due-check
 	// (PATCH /admin/v1/governance/retention-schedules/{id})
 	GovSetRetentionScheduleStatus(ctx context.Context, request GovSetRetentionScheduleStatusRequestObject) (GovSetRetentionScheduleStatusResponseObject, error)
+	// GovListTrainingAssignments DPX-01: every training assignment, optionally narrowed by course
+	// (GET /admin/v1/governance/training-assignments)
+	GovListTrainingAssignments(ctx context.Context, request GovListTrainingAssignmentsRequestObject) (GovListTrainingAssignmentsResponseObject, error)
+	// GovAssignTraining DPX-01: assign a published course to everyone, an org unit, a group, or one user, by a due date
+	// (POST /admin/v1/governance/training-assignments)
+	GovAssignTraining(ctx context.Context, request GovAssignTrainingRequestObject) (GovAssignTrainingResponseObject, error)
+	// GovSubmitAttempt DPX-01's own acceptance criterion: the employee completes the course's own quiz (if any), scored by the form engine against the course's passing_score
+	// (POST /admin/v1/governance/training-attempts/{id}/submit)
+	GovSubmitAttempt(ctx context.Context, request GovSubmitAttemptRequestObject) (GovSubmitAttemptResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -4990,6 +7423,224 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// GovListCourses operation middleware
+func (sh *strictHandler) GovListCourses(w http.ResponseWriter, r *http.Request, params GovListCoursesParams) {
+	var request GovListCoursesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovListCourses(ctx, request.(GovListCoursesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovListCourses")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovListCoursesResponseObject); ok {
+		if err := validResponse.VisitGovListCoursesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovCreateCourse operation middleware
+func (sh *strictHandler) GovCreateCourse(w http.ResponseWriter, r *http.Request, params GovCreateCourseParams) {
+	var request GovCreateCourseRequestObject
+
+	request.Params = params
+
+	var body GovCreateCourseJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovCreateCourse(ctx, request.(GovCreateCourseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovCreateCourse")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovCreateCourseResponseObject); ok {
+		if err := validResponse.VisitGovCreateCourseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovGetCourse operation middleware
+func (sh *strictHandler) GovGetCourse(w http.ResponseWriter, r *http.Request, id Uuid, params GovGetCourseParams) {
+	var request GovGetCourseRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovGetCourse(ctx, request.(GovGetCourseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovGetCourse")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovGetCourseResponseObject); ok {
+		if err := validResponse.VisitGovGetCourseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovUpdateCourse operation middleware
+func (sh *strictHandler) GovUpdateCourse(w http.ResponseWriter, r *http.Request, id Uuid, params GovUpdateCourseParams) {
+	var request GovUpdateCourseRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body GovUpdateCourseJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovUpdateCourse(ctx, request.(GovUpdateCourseRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovUpdateCourse")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovUpdateCourseResponseObject); ok {
+		if err := validResponse.VisitGovUpdateCourseResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovStartAttempt operation middleware
+func (sh *strictHandler) GovStartAttempt(w http.ResponseWriter, r *http.Request, id Uuid, params GovStartAttemptParams) {
+	var request GovStartAttemptRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body GovStartAttemptJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovStartAttempt(ctx, request.(GovStartAttemptRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovStartAttempt")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovStartAttemptResponseObject); ok {
+		if err := validResponse.VisitGovStartAttemptResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovGetTrainingReport operation middleware
+func (sh *strictHandler) GovGetTrainingReport(w http.ResponseWriter, r *http.Request, id Uuid, params GovGetTrainingReportParams) {
+	var request GovGetTrainingReportRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovGetTrainingReport(ctx, request.(GovGetTrainingReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovGetTrainingReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovGetTrainingReportResponseObject); ok {
+		if err := validResponse.VisitGovGetTrainingReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovSetCourseStatus operation middleware
+func (sh *strictHandler) GovSetCourseStatus(w http.ResponseWriter, r *http.Request, id Uuid, params GovSetCourseStatusParams) {
+	var request GovSetCourseStatusRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body GovSetCourseStatusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovSetCourseStatus(ctx, request.(GovSetCourseStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovSetCourseStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovSetCourseStatusResponseObject); ok {
+		if err := validResponse.VisitGovSetCourseStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GovListDisposalJobs operation middleware
@@ -5163,6 +7814,58 @@ func (sh *strictHandler) GovStartDisposalJob(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GovStartDisposalJobResponseObject); ok {
 		if err := validResponse.VisitGovStartDisposalJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovListMyTrainingAssignments operation middleware
+func (sh *strictHandler) GovListMyTrainingAssignments(w http.ResponseWriter, r *http.Request, params GovListMyTrainingAssignmentsParams) {
+	var request GovListMyTrainingAssignmentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovListMyTrainingAssignments(ctx, request.(GovListMyTrainingAssignmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovListMyTrainingAssignments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovListMyTrainingAssignmentsResponseObject); ok {
+		if err := validResponse.VisitGovListMyTrainingAssignmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovListMyTrainingAttempts operation middleware
+func (sh *strictHandler) GovListMyTrainingAttempts(w http.ResponseWriter, r *http.Request, params GovListMyTrainingAttemptsParams) {
+	var request GovListMyTrainingAttemptsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovListMyTrainingAttempts(ctx, request.(GovListMyTrainingAttemptsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovListMyTrainingAttempts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovListMyTrainingAttemptsResponseObject); ok {
+		if err := validResponse.VisitGovListMyTrainingAttemptsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -5631,6 +8334,102 @@ func (sh *strictHandler) GovSetRetentionScheduleStatus(w http.ResponseWriter, r 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GovSetRetentionScheduleStatusResponseObject); ok {
 		if err := validResponse.VisitGovSetRetentionScheduleStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovListTrainingAssignments operation middleware
+func (sh *strictHandler) GovListTrainingAssignments(w http.ResponseWriter, r *http.Request, params GovListTrainingAssignmentsParams) {
+	var request GovListTrainingAssignmentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovListTrainingAssignments(ctx, request.(GovListTrainingAssignmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovListTrainingAssignments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovListTrainingAssignmentsResponseObject); ok {
+		if err := validResponse.VisitGovListTrainingAssignmentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovAssignTraining operation middleware
+func (sh *strictHandler) GovAssignTraining(w http.ResponseWriter, r *http.Request, params GovAssignTrainingParams) {
+	var request GovAssignTrainingRequestObject
+
+	request.Params = params
+
+	var body GovAssignTrainingJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovAssignTraining(ctx, request.(GovAssignTrainingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovAssignTraining")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovAssignTrainingResponseObject); ok {
+		if err := validResponse.VisitGovAssignTrainingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovSubmitAttempt operation middleware
+func (sh *strictHandler) GovSubmitAttempt(w http.ResponseWriter, r *http.Request, id Uuid, params GovSubmitAttemptParams) {
+	var request GovSubmitAttemptRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body GovSubmitAttemptJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		if !errors.Is(err, io.EOF) {
+			sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+			return
+		}
+	} else {
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovSubmitAttempt(ctx, request.(GovSubmitAttemptRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovSubmitAttempt")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovSubmitAttemptResponseObject); ok {
+		if err := validResponse.VisitGovSubmitAttemptResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

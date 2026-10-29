@@ -15,6 +15,7 @@ import (
 
 	govservice "pdpa-platform/internal/gov/service"
 	"pdpa-platform/internal/pkg/httpx"
+	"pdpa-platform/internal/platform/forms"
 )
 
 type Strict struct {
@@ -333,6 +334,241 @@ func regulatorLetterInputFromWire(in GovRegulatorLetterInput) govservice.Regulat
 	return out
 }
 
+func (h *Strict) GovListCourses(ctx context.Context, req GovListCoursesRequestObject) (GovListCoursesResponseObject, error) {
+	var status *string
+	if req.Params.Status != nil {
+		s := string(*req.Params.Status)
+		status = &s
+	}
+	list, err := h.svc.ListCourses(ctx, status)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovListCourses200JSONResponse{Data: make([]GovCourse, 0, len(list))}
+	for _, c := range list {
+		resp.Data = append(resp.Data, toCourseWire(c))
+	}
+	return resp, nil
+}
+
+func (h *Strict) GovCreateCourse(ctx context.Context, req GovCreateCourseRequestObject) (GovCreateCourseResponseObject, error) {
+	c, err := h.svc.CreateCourse(ctx, courseInputFromWire(*req.Body))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovCreateCourse201JSONResponse{Body: toCourseWire(c), Headers: GovCreateCourse201ResponseHeaders{ETag: etag(c.RowVersion)}}, nil
+}
+
+func (h *Strict) GovGetCourse(ctx context.Context, req GovGetCourseRequestObject) (GovGetCourseResponseObject, error) {
+	c, err := h.svc.GetCourse(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovGetCourse200JSONResponse{Body: toCourseWire(c), Headers: GovGetCourse200ResponseHeaders{ETag: etag(c.RowVersion)}}, nil
+}
+
+func (h *Strict) GovUpdateCourse(ctx context.Context, req GovUpdateCourseRequestObject) (GovUpdateCourseResponseObject, error) {
+	rv, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	c, err := h.svc.UpdateCourse(ctx, req.Id, rv, courseInputFromWire(*req.Body))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovUpdateCourse200JSONResponse{Body: toCourseWire(c), Headers: GovUpdateCourse200ResponseHeaders{ETag: etag(c.RowVersion)}}, nil
+}
+
+func (h *Strict) GovSetCourseStatus(ctx context.Context, req GovSetCourseStatusRequestObject) (GovSetCourseStatusResponseObject, error) {
+	rv, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	c, err := h.svc.SetCourseStatus(ctx, req.Id, rv, string(req.Body.Status))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovSetCourseStatus200JSONResponse{Body: toCourseWire(c), Headers: GovSetCourseStatus200ResponseHeaders{ETag: etag(c.RowVersion)}}, nil
+}
+
+func (h *Strict) GovGetTrainingReport(ctx context.Context, req GovGetTrainingReportRequestObject) (GovGetTrainingReportResponseObject, error) {
+	list, err := h.svc.TrainingReport(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovGetTrainingReport200JSONResponse{Data: make([]GovTrainingAttempt, 0, len(list))}
+	for _, a := range list {
+		resp.Data = append(resp.Data, toAttemptWire(a))
+	}
+	return resp, nil
+}
+
+func (h *Strict) GovStartAttempt(ctx context.Context, req GovStartAttemptRequestObject) (GovStartAttemptResponseObject, error) {
+	var assignmentID *uuid.UUID
+	if req.Body != nil && req.Body.AssignmentId != nil {
+		id := uuid.UUID(*req.Body.AssignmentId)
+		assignmentID = &id
+	}
+	a, err := h.svc.StartAttempt(ctx, req.Id, assignmentID)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovStartAttempt201JSONResponse{Body: toAttemptWire(a), Headers: GovStartAttempt201ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
+func (h *Strict) GovSubmitAttempt(ctx context.Context, req GovSubmitAttemptRequestObject) (GovSubmitAttemptResponseObject, error) {
+	rv, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	answers := forms.Answers{}
+	if req.Body != nil && req.Body.Answers != nil {
+		answers = forms.Answers(*req.Body.Answers)
+	}
+	a, err := h.svc.SubmitAttempt(ctx, req.Id, rv, answers)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovSubmitAttempt200JSONResponse{Body: toAttemptWire(a), Headers: GovSubmitAttempt200ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
+func (h *Strict) GovListMyTrainingAttempts(ctx context.Context, req GovListMyTrainingAttemptsRequestObject) (GovListMyTrainingAttemptsResponseObject, error) {
+	list, err := h.svc.MyAttempts(ctx)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovListMyTrainingAttempts200JSONResponse{Data: make([]GovTrainingAttempt, 0, len(list))}
+	for _, a := range list {
+		resp.Data = append(resp.Data, toAttemptWire(a))
+	}
+	return resp, nil
+}
+
+func (h *Strict) GovListTrainingAssignments(ctx context.Context, req GovListTrainingAssignmentsRequestObject) (GovListTrainingAssignmentsResponseObject, error) {
+	var courseID *uuid.UUID
+	if req.Params.CourseId != nil {
+		id := uuid.UUID(*req.Params.CourseId)
+		courseID = &id
+	}
+	list, err := h.svc.ListAssignments(ctx, courseID)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovListTrainingAssignments200JSONResponse{Data: make([]GovTrainingAssignment, 0, len(list))}
+	for _, a := range list {
+		resp.Data = append(resp.Data, toAssignmentWire(a))
+	}
+	return resp, nil
+}
+
+func (h *Strict) GovAssignTraining(ctx context.Context, req GovAssignTrainingRequestObject) (GovAssignTrainingResponseObject, error) {
+	in := govservice.TrainingAssignmentInput{
+		CourseID: req.Body.CourseId, TargetType: string(req.Body.TargetType), DueAt: req.Body.DueAt.Time,
+	}
+	if req.Body.TargetId != nil {
+		id := uuid.UUID(*req.Body.TargetId)
+		in.TargetID = &id
+	}
+	a, err := h.svc.AssignTraining(ctx, in)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovAssignTraining201JSONResponse(toAssignmentWire(a)), nil
+}
+
+func (h *Strict) GovListMyTrainingAssignments(ctx context.Context, req GovListMyTrainingAssignmentsRequestObject) (GovListMyTrainingAssignmentsResponseObject, error) {
+	list, err := h.svc.MyAssignments(ctx)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovListMyTrainingAssignments200JSONResponse{Data: make([]GovTrainingAssignment, 0, len(list))}
+	for _, a := range list {
+		resp.Data = append(resp.Data, toAssignmentWire(a))
+	}
+	return resp, nil
+}
+
+func courseInputFromWire(in GovCourseInput) govservice.CourseInput {
+	out := govservice.CourseInput{Title: in.Title, Description: in.Description, ContentType: string(in.ContentType)}
+	if in.ContentFileId != nil {
+		id := uuid.UUID(*in.ContentFileId)
+		out.ContentFileID = &id
+	}
+	if in.QuizFormId != nil {
+		id := uuid.UUID(*in.QuizFormId)
+		out.QuizFormID = &id
+	}
+	if in.PassingScore != nil {
+		out.PassingScore = int32(*in.PassingScore)
+	}
+	if in.ValidityMonths != nil {
+		out.ValidityMonths = int32(*in.ValidityMonths)
+	}
+	if in.Language != nil {
+		out.Language = *in.Language
+	}
+	return out
+}
+
+func toCourseWire(c govservice.Course) GovCourse {
+	w := GovCourse{
+		Id: c.ID, Title: c.Title, Description: c.Description, ContentType: GovCourseContentType(c.ContentType),
+		PassingScore: int(c.PassingScore), ValidityMonths: int(c.ValidityMonths), Language: c.Language,
+		Status: GovCourseStatus(c.Status), RowVersion: int(c.RowVersion),
+	}
+	if c.ContentFileID != nil {
+		id := openapi_types.UUID(*c.ContentFileID)
+		w.ContentFileId = &id
+	}
+	if c.QuizFormID != nil {
+		id := openapi_types.UUID(*c.QuizFormID)
+		w.QuizFormId = &id
+	}
+	return w
+}
+
+func toAssignmentWire(a govservice.TrainingAssignment) GovTrainingAssignment {
+	w := GovTrainingAssignment{
+		Id: a.ID, CourseId: a.CourseID, TargetType: GovTrainingAssignmentTargetType(a.TargetType),
+		DueAt: openapi_types.Date{Time: a.DueAt}, AssignedBy: a.AssignedBy, RowVersion: int(a.RowVersion),
+	}
+	if a.TargetID != nil {
+		id := openapi_types.UUID(*a.TargetID)
+		w.TargetId = &id
+	}
+	return w
+}
+
+func toAttemptWire(a govservice.TrainingAttempt) GovTrainingAttempt {
+	w := GovTrainingAttempt{
+		Id: a.ID, CourseId: a.CourseID, UserId: a.UserID, StartedAt: a.StartedAt, RowVersion: int(a.RowVersion),
+	}
+	if a.UserName != "" {
+		w.UserName = &a.UserName
+	}
+	if a.AssignmentID != nil {
+		id := openapi_types.UUID(*a.AssignmentID)
+		w.AssignmentId = &id
+	}
+	if a.CompletedAt != nil {
+		t := *a.CompletedAt
+		w.CompletedAt = &t
+	}
+	if a.Score != nil {
+		sc := int(*a.Score)
+		w.Score = &sc
+	}
+	if a.Passed != nil {
+		p := *a.Passed
+		w.Passed = &p
+	}
+	if a.CertificateFileID != nil {
+		id := openapi_types.UUID(*a.CertificateFileID)
+		w.CertificateFileId = &id
+	}
+	return w
+}
+
 func toRegulatorLetterWire(l govservice.RegulatorLetter) GovRegulatorLetter {
 	w := GovRegulatorLetter{
 		Id: l.ID, Direction: GovRegulatorLetterDirection(l.Direction), LetterNo: l.LetterNo, Subject: l.Subject,
@@ -412,6 +648,8 @@ func problem(err error) error {
 		return httpx.InvalidTransition("gov")
 	case errors.Is(err, govservice.ErrInvalidTransition):
 		return httpx.InvalidTransition("gov")
+	case errors.Is(err, govservice.ErrBadQuizForm):
+		return httpx.UnprocessableEntity("gov.bad_quiz_form", err.Error())
 	}
 	return err
 }

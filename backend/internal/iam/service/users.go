@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	iamstore "pdpa-platform/internal/iam/store"
 	pdb "pdpa-platform/internal/pkg/db"
@@ -125,6 +127,23 @@ func AllActiveUsers(ctx context.Context) ([]UserName, error) {
 		out = append(out, UserName{ID: r.ID, DisplayName: r.DisplayName})
 	}
 	return out, nil
+}
+
+// PrimaryOrgUnit returns a user's own primary org unit, or nil if they have none set or aren't active
+// (DPX-01: resolving an org-unit-targeted training assignment against the calling employee).
+func PrimaryOrgUnit(ctx context.Context, userID uuid.UUID) (*uuid.UUID, error) {
+	id, err := iamstore.New(pdb.MustTxFromContext(ctx)).GetPrimaryOrgUnit(ctx, userID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("iam: primary org unit: %w", err)
+	}
+	if !id.Valid {
+		return nil, nil
+	}
+	u := uuid.UUID(id.Bytes)
+	return &u, nil
 }
 
 // UsersWithRole returns the active users holding a role (by code, e.g. "DPO") in the tenant, directly or

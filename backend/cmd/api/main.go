@@ -386,10 +386,13 @@ func run() error {
 	// cycle, breach never imports gov) for a regulator letter's optional incident_id FK-visibility check;
 	// Notify/River are wired here so creating/editing a letter can schedule its own due-date reminder in
 	// the request's own transaction, the same way VEN-06's certificate reminder is scheduled at write time.
+	// DPX-01: Org is orgSvc directly (no import cycle) for an org-unit-targeted assignment's own
+	// FK-visibility check; Forms is formsSvc directly for a course's own "quiz"-type form.
 	govSvc := &govservice.Service{Audit: auditSvc, Ropa: ropaSvc, Dsar: dsarSvc, Files: fileSvc, Docs: docsSvc,
-		Breach: breachSvc, Notify: notifySvc, River: riverClient}
+		Breach: breachSvc, Notify: notifySvc, River: riverClient, Org: orgSvc, Forms: formsSvc}
 	fileSvc.EntityPermissions[govservice.JobType] = "dpx.retention.read"             // disposal job evidence
 	fileSvc.EntityPermissions[govservice.RegulatorLetterType] = "dpx.regulator.read" // DPX-08 letter attachment
+	fileSvc.EntityPermissions[govservice.CourseType] = "dpx.training.read"           // DPX-01 course content
 
 	// Public consent forms (BP-01) and published notices (PNG-06): tenant and principal from the public key,
 	// then the same Idempotency + Tx chain. Both mount on the same group — chi dispatches by path, and

@@ -3547,6 +3547,79 @@
         "cancel": "Cancel",
         "saveError": "Could not save: {detail}"
       }
+    },
+    "training": {
+      "title": "Awareness training & quiz",
+      "intro": "A course the DPO publishes, with an optional quiz — assign it to everyone, a department, a group, or one person, and see each person's own result.",
+      "new": "New course",
+      "filterStatus": "Status",
+      "allStatuses": "All statuses",
+      "statuses": {
+        "draft": "Draft",
+        "published": "Published",
+        "retired": "Retired"
+      },
+      "table": {
+        "title": "Title",
+        "contentType": "Content",
+        "status": "Status"
+      },
+      "contentTypes": {
+        "video": "Video",
+        "slides": "Slides",
+        "scorm": "SCORM",
+        "xapi": "xAPI"
+      },
+      "publish": "Publish",
+      "retire": "Retire",
+      "assign": "Assign",
+      "report": "Report",
+      "close": "Close",
+      "form": {
+        "title": "New course",
+        "courseTitle": "Title",
+        "contentType": "Content type",
+        "quizFormId": "Quiz form ID (optional)",
+        "quizFormIdHint": "A published PLT-06 form of type \"quiz\"",
+        "passingScore": "Passing score (%)",
+        "save": "Save",
+        "cancel": "Cancel",
+        "saveError": "Could not save: {detail}"
+      },
+      "assignForm": {
+        "title": "Assign course",
+        "targetType": "Assign to",
+        "targets": {
+          "all": "Everyone",
+          "org_unit": "Department",
+          "group": "Group",
+          "user": "One person"
+        },
+        "targetId": "Target ID",
+        "targetIdHint": "Required unless assigning to everyone — an org unit, group or user ID",
+        "dueAt": "Due date",
+        "save": "Assign",
+        "cancel": "Cancel",
+        "saveError": "Could not assign: {detail}"
+      },
+      "reportPanel": {
+        "title": "Results per individual",
+        "empty": "No one has attempted this course yet.",
+        "passed": "Passed",
+        "failed": "Failed",
+        "notScored": "Completed (no quiz)",
+        "inProgress": "In progress"
+      },
+      "my": {
+        "title": "My training",
+        "assignmentsTitle": "Assigned to me",
+        "dueBy": "Due by {date}",
+        "attemptsTitle": "My past attempts",
+        "start": "Start",
+        "submit": "Submit quiz",
+        "noQuiz": "Mark complete",
+        "submitError": "Could not submit: {detail}"
+      }
     }
   },
   "ropaWizard": {

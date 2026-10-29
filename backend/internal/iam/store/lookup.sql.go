@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const activeGroupMembers = `-- name: ActiveGroupMembers :many
@@ -126,6 +127,19 @@ func (q *Queries) AllActiveUsers(ctx context.Context) ([]AllActiveUsersRow, erro
 		return nil, err
 	}
 	return items, nil
+}
+
+const getPrimaryOrgUnit = `-- name: GetPrimaryOrgUnit :one
+SELECT primary_org_unit_id FROM iam.users WHERE id = $1 AND status = 'active'
+`
+
+// A user's own primary org unit (DPX-01: resolving which org-unit-targeted training assignments apply
+// to the calling employee).
+func (q *Queries) GetPrimaryOrgUnit(ctx context.Context, id uuid.UUID) (pgtype.UUID, error) {
+	row := q.db.QueryRow(ctx, getPrimaryOrgUnit, id)
+	var primary_org_unit_id pgtype.UUID
+	err := row.Scan(&primary_org_unit_id)
+	return primary_org_unit_id, err
 }
 
 const groupIDsOfUser = `-- name: GroupIDsOfUser :many
