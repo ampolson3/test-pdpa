@@ -134,6 +134,34 @@ func (s *Service) CheckDueReviews(ctx context.Context) error {
 	return nil
 }
 
+// UpcomingReview is one review-cycle date for DPO-08's own compliance calendar.
+type UpcomingReview struct {
+	ActivityID uuid.UUID
+	Title      string
+	DueAt      time.Time
+}
+
+// ListUpcomingReviews is DPO-08's own read: every active activity whose own next_review_at falls within
+// [from, to] — a forward-looking window, distinct from CheckDueReviews' own "already due" sweep filter.
+func (s *Service) ListUpcomingReviews(ctx context.Context, from, to time.Time) ([]UpcomingReview, error) {
+	rows, err := ropastore.New(pdb.MustTxFromContext(ctx)).ListActivitiesWithReviewWindow(ctx, ropastore.ListActivitiesWithReviewWindowParams{
+		NextReviewAt:   pgtype.Date{Time: from, Valid: true},
+		NextReviewAt_2: pgtype.Date{Time: to, Valid: true},
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := make([]UpcomingReview, 0, len(rows))
+	for _, r := range rows {
+		title := r.Name
+		if r.Code != "" {
+			title = r.Code + " — " + r.Name
+		}
+		out = append(out, UpcomingReview{ActivityID: r.ID, Title: title, DueAt: r.NextReviewAt.Time})
+	}
+	return out, nil
+}
+
 func (s *Service) reviewRecipients(ctx context.Context, owner pgtype.UUID) ([]uuid.UUID, error) {
 	if owner.Valid {
 		return []uuid.UUID{uuid.UUID(owner.Bytes)}, nil

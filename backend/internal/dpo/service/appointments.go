@@ -21,6 +21,7 @@ import (
 	dpiaservice "pdpa-platform/internal/dpia/service"
 	dpostore "pdpa-platform/internal/dpo/store"
 	dsarservice "pdpa-platform/internal/dsar/service"
+	govservice "pdpa-platform/internal/gov/service"
 	iamservice "pdpa-platform/internal/iam/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
@@ -29,6 +30,8 @@ import (
 	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/forms"
 	riskservice "pdpa-platform/internal/risk/service"
+	ropaservice "pdpa-platform/internal/ropa/service"
+	vendorservice "pdpa-platform/internal/vendormgmt/service"
 )
 
 // AppointmentEntityType is the PLT-09 attachment entity for both a signed appointment order and any
@@ -75,7 +78,18 @@ type Service struct {
 	// Dpia is DPO-02's own screening engine (ScreenSubject, a generic rule-9-clean addition to dpia/service) —
 	// a direct concrete field, not an interface: dpia never imports dpo, so there is no cycle to route around.
 	Dpia *dpiaservice.Service
-	Now  func() time.Time
+	// Ropa/Gov/Vendor are DPO-08's own compliance-calendar sources — direct concrete fields, not
+	// interfaces: dpo already imports ropa transitively (via dsar), and neither gov nor vendormgmt
+	// imports dpo concretely (both only reference dpo's own types through a local interface, e.g. gov's
+	// own Dpo field), so none of these three is a new import cycle. Notice is the one exception (notice
+	// already imports dpo/service directly for PNG-07's OpenConsentTask), so it stays a local interface
+	// below whose own return type is dpo's CalendarItem — notice's matching method already returns that
+	// type, no adapter needed.
+	Ropa   *ropaservice.Service
+	Gov    *govservice.Service
+	Vendor *vendorservice.Service
+	Notice Notice
+	Now    func() time.Time
 }
 
 // Appointment is one DPO appointment (ม.41): internal (an existing iam.users row), external (a named person

@@ -3221,7 +3221,25 @@
       "at_risk": "At risk",
       "overdue": "Overdue"
     },
-    "tasks": "Tasks"
+    "tasks": "Tasks",
+    "calendar": {
+      "title": "Compliance calendar",
+      "intro": "RoPA review cycles, notice review cycles, DPIA review, training due dates and vendor reassessment, in one place (ม.42(2)).",
+      "exportIcs": "Export iCal",
+      "empty": "Nothing scheduled in the next 90 days.",
+      "column": {
+        "source": "Source",
+        "title": "Title",
+        "dueAt": "Due"
+      },
+      "source": {
+        "ropa_review": "RoPA review",
+        "notice_review": "Notice review",
+        "dpia_review": "DPIA review",
+        "training_due": "Training due",
+        "vendor_reassessment": "Vendor reassessment"
+      }
+    }
   },
   "dpoAdvisories": {
     "signInRequired": "Please sign in.",

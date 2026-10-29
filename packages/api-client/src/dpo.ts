@@ -14,11 +14,13 @@ export type DpoIndependenceDeclarationInput = components["schemas"]["DpoIndepend
 export type DpoAdvisory = components["schemas"]["DpoAdvisory"];
 export type DpoAdvisoryInput = components["schemas"]["DpoAdvisoryInput"];
 export type DpoKbArticle = components["schemas"]["DpoKbArticle"];
+export type DpoCalendarItem = components["schemas"]["DpoCalendarItem"];
 
 const ifMatch = (v: number) => ({ "If-Match": `"${v}"` });
 const appointmentsKey = ["dpo", "appointments"] as const;
 const assessmentsKey = ["dpo", "security-assessments"] as const;
 const deadlinesKey = ["dpo", "deadlines"] as const;
+const calendarKey = ["dpo", "calendar"] as const;
 const requirementChecksKey = ["dpo", "requirement-checks"] as const;
 const independenceDeclarationsKey = ["dpo", "independence-declarations"] as const;
 const advisoriesKey = ["dpo", "advisories"] as const;
@@ -121,6 +123,27 @@ export function useDeadlines(client: ApiClient) {
       return data;
     },
   });
+}
+
+/** GET /admin/v1/dpo/calendar (DPO-08, ม.42(2)): every module's own scheduled review/due-date cycle,
+ *  read live within [from, to] (default: today through 90 days out). */
+export function useComplianceCalendar(client: ApiClient, range: { from?: string; to?: string } = {}) {
+  return useQuery({
+    queryKey: [...calendarKey, range],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dpo/calendar", { params: { query: range } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** GET /admin/v1/dpo/calendar.ics (DPO-08's own "export iCal") — a plain href, not a query/mutation: the
+ *  browser downloads the feed through this link directly, the same pattern riskReportHref uses. */
+export function complianceCalendarIcsHref(bffBaseUrl: string, range: { from?: string; to?: string } = {}): string {
+  const q = new URLSearchParams(range as Record<string, string>);
+  const qs = q.toString();
+  return `${bffBaseUrl}/admin/v1/dpo/calendar.ics${qs ? `?${qs}` : ""}`;
 }
 
 /** GET /admin/v1/dpo/appointments (DPO-01), newest first. */

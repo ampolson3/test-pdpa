@@ -3221,7 +3221,25 @@
       "at_risk": "ใกล้ครบกำหนด",
       "overdue": "เลยกำหนด"
     },
-    "tasks": "งาน"
+    "tasks": "งาน",
+    "calendar": {
+      "title": "ปฏิทินงาน compliance",
+      "intro": "รอบทบทวน RoPA ประกาศ DPIA การอบรม และการประเมินคู่ค้า ในที่เดียว (ม.42(2))",
+      "exportIcs": "ส่งออก iCal",
+      "empty": "ไม่มีกำหนดการใน 90 วันข้างหน้า",
+      "column": {
+        "source": "ที่มา",
+        "title": "ชื่อ",
+        "dueAt": "ครบกำหนด"
+      },
+      "source": {
+        "ropa_review": "ทบทวน RoPA",
+        "notice_review": "ทบทวนประกาศ",
+        "dpia_review": "ทบทวน DPIA",
+        "training_due": "ครบกำหนดอบรม",
+        "vendor_reassessment": "ประเมินคู่ค้าซ้ำ"
+      }
+    }
   },
   "dpoAdvisories": {
     "signInRequired": "กรุณาเข้าสู่ระบบ",

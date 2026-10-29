@@ -650,6 +650,46 @@ func (q *Queries) ListNoticesDueForReview(ctx context.Context, nextReviewAt pgty
 	return items, nil
 }
 
+const listNoticesWithReviewWindow = `-- name: ListNoticesWithReviewWindow :many
+SELECT id, title, next_review_at
+FROM notice.notices
+WHERE status = 'published' AND next_review_at IS NOT NULL AND next_review_at BETWEEN $1 AND $2
+ORDER BY next_review_at
+`
+
+type ListNoticesWithReviewWindowParams struct {
+	NextReviewAt   pgtype.Date `db:"next_review_at" json:"next_review_at"`
+	NextReviewAt_2 pgtype.Date `db:"next_review_at_2" json:"next_review_at_2"`
+}
+
+type ListNoticesWithReviewWindowRow struct {
+	ID           uuid.UUID   `db:"id" json:"id"`
+	Title        string      `db:"title" json:"title"`
+	NextReviewAt pgtype.Date `db:"next_review_at" json:"next_review_at"`
+}
+
+// DPO-08 (compliance calendar): a forward-looking window read, distinct from ListNoticesDueForReview's own
+// "already due" filter used by the daily sweep.
+func (q *Queries) ListNoticesWithReviewWindow(ctx context.Context, arg ListNoticesWithReviewWindowParams) ([]ListNoticesWithReviewWindowRow, error) {
+	rows, err := q.db.Query(ctx, listNoticesWithReviewWindow, arg.NextReviewAt, arg.NextReviewAt_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListNoticesWithReviewWindowRow
+	for rows.Next() {
+		var i ListNoticesWithReviewWindowRow
+		if err := rows.Scan(&i.ID, &i.Title, &i.NextReviewAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const markNoticeForReview = `-- name: MarkNoticeForReview :exec
 UPDATE notice.notices SET next_review_at = CURRENT_DATE
 WHERE id = $1 AND current_version_id IS NOT NULL AND (next_review_at IS NULL OR next_review_at > CURRENT_DATE)

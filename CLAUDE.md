@@ -5330,6 +5330,52 @@ suite — only the pre-existing, unrelated `internal/pkg/validate` failure), `ma
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
 `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated `/governance` route) all verified clean.
 
+### DPO-08 ปฏิทินงาน compliance (`docs/modules/DPO.md#dpo-08`) — done
+The real gap against the literal acceptance criterion was never a new column — every source this
+feature names already had one, unused by any calendar view: `ropa.processing_activities.
+next_review_at` (ROPA-15), `notice.notices.next_review_at` (PNG-15), `vendor.vendors.
+next_assessment_at` (VEN-10), `gov.training_assignments.due_at` (DPX-01), and `assess.assessments.
+next_review_at` (already in the baseline `00011_assess.sql`, unread by any sweep since DPIA's own
+review trigger is event-based — breach-linked, DPIA-13 — not date-based). This feature adds one
+forward-looking window read per source (distinct from each module's own "already due" sweep filter)
+and a single cross-module aggregator, `internal/dpo/service/calendar.go`'s `ComplianceCalendar`, the
+same "read live, never a stale copy, skip a source the caller can't see" shape DPO-05's own
+`Deadlines` already established — `dpo.report.read` is not a blanket grant to every module's own
+detail; each source checks the caller's own permission for that module (`ropa.activity.read`,
+`notice.document.read`, `assessment.dpia.read`, `dpx.training.read`, `vendor.vendor.read`) before
+calling into it.
+
+Four of the five sources (`Ropa`/`Dpia`/`Gov`/`Vendor`) are direct concrete fields on `dpo.Service` —
+no cycle, since none of ropa/dpia/gov/vendormgmt imports dpo concretely (dpo already imports ropa
+transitively via dsar, and gov/vendormgmt don't import dpo at all). Notice is the one exception
+(notice already imports `dpo/service` directly for PNG-07's own `OpenConsentTask`, so the reverse
+import would be a real cycle): `dpo.Notice` stays a local interface whose return type is dpo's own
+`CalendarItem`, and notice's matching `ListUpcomingReviews` method already returns that exact type —
+satisfied directly, no adapter needed, the cleanest resolution of this codebase's own recurring
+cross-module-type problem. `ComplianceCalendarICS` is the module description's own "export iCal" — a
+plain, hand-written RFC 5545 feed (no dependency needed, the format is simple enough, the same
+"hand-roll the simple format" move PLT-16's own DOCX composer already made).
+
+API: `GET /admin/v1/dpo/calendar` (JSON, `from`/`to` query params, default a 90-day forward window),
+`GET /admin/v1/dpo/calendar.ics` (`text/calendar`, same window) — both on the already-seeded
+`dpo.report.read` (no new permission code or migration — every column already existed). UI: a
+"Compliance calendar" section on the existing `/dpo` deadline-center page (linked from the same
+header the advisories/tasks links already use) — a table of upcoming items by source, due date, and
+an "Export iCal" link. Tests: unit (`internal/dpo/service/dpo08_test.go` — `ComplianceCalendarICS`
+directly (a valid VCALENDAR envelope, a stable per-item UID, SUMMARY escaping, an empty list still
+valid), the acceptance criterion directly through a real RoPA source (an activity's own review date
+inside the window appears, one outside doesn't — read live off the real column), the per-source
+permission gate, two-tenant isolation), HTTP contract (`internal/dpo/http/handler_test.go`'s existing
+`TestAppointmentEndpoints_Contract`, extended with 401/403/200 on both endpoints). Not verified live
+against a real Postgres/Redis in this pass — neither was reachable in this environment for this
+feature, though the pure-function ICS tests ran for real regardless; every DB test compiles and vets
+clean and skips the same way the rest of this module's own suite already does without one.
+`go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no
+regressions, full backend suite — only the pre-existing, unrelated `internal/pkg/validate` failure),
+`make gen` re-run with no drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter
+@pdpa/i18n test` and `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated `/dpo` route)
+all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

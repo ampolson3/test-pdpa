@@ -59,6 +59,15 @@ FROM gov.training_assignments
 WHERE (sqlc.narg(course_id)::uuid IS NULL OR course_id = sqlc.narg(course_id))
 ORDER BY due_at, created_at DESC;
 
+-- DPO-08 (compliance calendar): every assignment's own due_at within a window, with its course's title —
+-- a forward-looking read, not a reminder job.
+-- name: ListUpcomingTrainingDueDates :many
+SELECT a.id, a.due_at, c.title
+FROM gov.training_assignments a
+JOIN gov.courses c ON c.id = a.course_id
+WHERE a.due_at BETWEEN $1 AND $2
+ORDER BY a.due_at;
+
 -- name: ListAssignmentsForAllTarget :many
 -- Every "target_type='all'" assignment — applies to every employee regardless of org unit/group.
 SELECT id, course_id, target_type, target_id, due_at, assigned_by, row_version, created_at, updated_at

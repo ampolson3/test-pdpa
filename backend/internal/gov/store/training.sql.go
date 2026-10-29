@@ -778,6 +778,47 @@ func (q *Queries) ListTrainingAssignments(ctx context.Context, courseID pgtype.U
 	return items, nil
 }
 
+const listUpcomingTrainingDueDates = `-- name: ListUpcomingTrainingDueDates :many
+SELECT a.id, a.due_at, c.title
+FROM gov.training_assignments a
+JOIN gov.courses c ON c.id = a.course_id
+WHERE a.due_at BETWEEN $1 AND $2
+ORDER BY a.due_at
+`
+
+type ListUpcomingTrainingDueDatesParams struct {
+	DueAt   pgtype.Date `db:"due_at" json:"due_at"`
+	DueAt_2 pgtype.Date `db:"due_at_2" json:"due_at_2"`
+}
+
+type ListUpcomingTrainingDueDatesRow struct {
+	ID    uuid.UUID   `db:"id" json:"id"`
+	DueAt pgtype.Date `db:"due_at" json:"due_at"`
+	Title string      `db:"title" json:"title"`
+}
+
+// DPO-08 (compliance calendar): every assignment's own due_at within a window, with its course's title —
+// a forward-looking read, not a reminder job.
+func (q *Queries) ListUpcomingTrainingDueDates(ctx context.Context, arg ListUpcomingTrainingDueDatesParams) ([]ListUpcomingTrainingDueDatesRow, error) {
+	rows, err := q.db.Query(ctx, listUpcomingTrainingDueDates, arg.DueAt, arg.DueAt_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUpcomingTrainingDueDatesRow
+	for rows.Next() {
+		var i ListUpcomingTrainingDueDatesRow
+		if err := rows.Scan(&i.ID, &i.DueAt, &i.Title); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setCourseStatus = `-- name: SetCourseStatus :one
 UPDATE gov.courses
 SET status = $1, updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid,

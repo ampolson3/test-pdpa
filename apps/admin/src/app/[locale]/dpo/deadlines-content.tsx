@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/routing";
 import { usePermission } from "@pdpa/authz";
 import { formatDate, type Locale } from "@pdpa/i18n";
-import { createApiClient, useDeadlines, type DpoDeadlineItem } from "@pdpa/api-client";
+import { createApiClient, useDeadlines, useComplianceCalendar, complianceCalendarIcsHref, type DpoDeadlineItem } from "@pdpa/api-client";
 
 const statusStyle: Record<string, string> = {
   at_risk: "bg-amber-100 text-amber-800",
@@ -25,11 +25,13 @@ export function DeadlinesContent() {
   const allowed = usePermission("dpo.report.read");
   const client = useMemo(() => createApiClient("/api/bff"), []);
   const query = useDeadlines(client);
+  const calendar = useComplianceCalendar(client);
 
   if (!allowed) {
     return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
   }
   const items = query.data?.data ?? [];
+  const calendarItems = calendar.data ?? [];
 
   return (
     <main className="mx-auto max-w-5xl space-y-4 p-8">
@@ -84,6 +86,47 @@ export function DeadlinesContent() {
           </table>
         </div>
       )}
+
+      <section className="space-y-3" data-testid="compliance-calendar-section">
+        <header className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold">{t("calendar.title")}</h2>
+            <p className="text-sm text-slate-600">{t("calendar.intro")}</p>
+          </div>
+          <a className="rounded-md border border-slate-300 bg-white px-3 py-2 hover:bg-slate-50" href={complianceCalendarIcsHref("/api/bff")}>
+            {t("calendar.exportIcs")}
+          </a>
+        </header>
+
+        {calendar.isPending ? (
+          <p className="text-slate-500">{t("loading")}</p>
+        ) : calendar.isError ? (
+          <p className="text-red-700">{t("loadError")}</p>
+        ) : calendarItems.length === 0 ? (
+          <p className="text-slate-500">{t("calendar.empty")}</p>
+        ) : (
+          <div className="overflow-x-auto rounded-md border border-slate-200 bg-white" data-testid="compliance-calendar-table">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-600">
+                <tr>
+                  <th className="px-3 py-2 font-medium">{t("calendar.column.source")}</th>
+                  <th className="px-3 py-2 font-medium">{t("calendar.column.title")}</th>
+                  <th className="px-3 py-2 font-medium">{t("calendar.column.dueAt")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {calendarItems.map((item) => (
+                  <tr key={`${item.source}:${item.ref_id}`} className="border-t border-slate-100">
+                    <td className="px-3 py-2">{t(`calendar.source.${item.source}`)}</td>
+                    <td className="px-3 py-2">{item.title}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">{formatDate(item.due_at, locale, dateFormat)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </main>
   );
 }

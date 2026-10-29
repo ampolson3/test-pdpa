@@ -133,3 +133,11 @@ SELECT id, title, owner_user_id, review_cycle_months, next_review_at
 FROM notice.notices
 WHERE status = 'published' AND next_review_at IS NOT NULL AND next_review_at <= $1
 ORDER BY next_review_at;
+
+-- DPO-08 (compliance calendar): a forward-looking window read, distinct from ListNoticesDueForReview's own
+-- "already due" filter used by the daily sweep.
+-- name: ListNoticesWithReviewWindow :many
+SELECT id, title, next_review_at
+FROM notice.notices
+WHERE status = 'published' AND next_review_at IS NOT NULL AND next_review_at BETWEEN $1 AND $2
+ORDER BY next_review_at;

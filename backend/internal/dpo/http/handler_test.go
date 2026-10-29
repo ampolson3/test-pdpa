@@ -304,6 +304,25 @@ func TestAppointmentEndpoints_Contract(t *testing.T) {
 	if code, body := do("GET", "/admin/v1/dpo/deadlines", &admin, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
 		t.Errorf("deadlines: %d %s", code, body)
 	}
+
+	// DPO-08 compliance calendar. The fixture's Ropa/Notice/Dpia/Gov/Vendor fields are nil (aggregation
+	// itself is proven in the service-level tests), so a caller holding dpo.report.read sees an empty
+	// page, and the .ics export is still a valid, empty VCALENDAR envelope.
+	if code, _ := do("GET", "/admin/v1/dpo/calendar", nil, nil, nil); code != 401 {
+		t.Errorf("calendar no principal: %d, want 401", code)
+	}
+	if code, _ := do("GET", "/admin/v1/dpo/calendar", &viewer, nil, nil); code != 403 {
+		t.Errorf("calendar without dpo.report.read: %d, want 403", code)
+	}
+	if code, body := do("GET", "/admin/v1/dpo/calendar", &admin, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("calendar: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/dpo/calendar.ics", nil, nil, nil); code != 401 {
+		t.Errorf("calendar.ics no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", "/admin/v1/dpo/calendar.ics", &admin, nil, nil); code != 200 || !strings.Contains(body, "BEGIN:VCALENDAR") {
+		t.Errorf("calendar.ics: %d %s", code, body)
+	}
 }
 
 // TestTaskEndpoints_Contract is RRA-07's own HTTP contract test for the generic dpo.tasks tracking view:

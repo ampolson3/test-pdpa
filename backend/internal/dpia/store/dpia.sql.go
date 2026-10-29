@@ -477,3 +477,50 @@ func (q *Queries) ListAssessments(ctx context.Context, arg ListAssessmentsParams
 	}
 	return items, nil
 }
+
+const listUpcomingDpiaReviews = `-- name: ListUpcomingDpiaReviews :many
+SELECT id, title, activity_id, next_review_at
+FROM assess.assessments
+WHERE assessment_type = 'dpia' AND status = 'approved' AND next_review_at IS NOT NULL
+  AND next_review_at BETWEEN $1 AND $2
+ORDER BY next_review_at
+`
+
+type ListUpcomingDpiaReviewsParams struct {
+	NextReviewAt   pgtype.Date `db:"next_review_at" json:"next_review_at"`
+	NextReviewAt_2 pgtype.Date `db:"next_review_at_2" json:"next_review_at_2"`
+}
+
+type ListUpcomingDpiaReviewsRow struct {
+	ID           uuid.UUID   `db:"id" json:"id"`
+	Title        string      `db:"title" json:"title"`
+	ActivityID   pgtype.UUID `db:"activity_id" json:"activity_id"`
+	NextReviewAt pgtype.Date `db:"next_review_at" json:"next_review_at"`
+}
+
+// DPO-08 (compliance calendar): assess.assessments.next_review_at was already in the baseline schema,
+// unused by any sweep yet — a forward-looking read, not a reminder job.
+func (q *Queries) ListUpcomingDpiaReviews(ctx context.Context, arg ListUpcomingDpiaReviewsParams) ([]ListUpcomingDpiaReviewsRow, error) {
+	rows, err := q.db.Query(ctx, listUpcomingDpiaReviews, arg.NextReviewAt, arg.NextReviewAt_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListUpcomingDpiaReviewsRow
+	for rows.Next() {
+		var i ListUpcomingDpiaReviewsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.ActivityID,
+			&i.NextReviewAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

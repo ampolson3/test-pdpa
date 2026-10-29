@@ -55,6 +55,47 @@ func (q *Queries) ListVendorsDueForReassessment(ctx context.Context, nextAssessm
 	return items, nil
 }
 
+const listVendorsWithReassessmentWindow = `-- name: ListVendorsWithReassessmentWindow :many
+SELECT id, service_description, next_assessment_at
+FROM vendor.vendors
+WHERE status IN ('approved', 'conditional') AND next_assessment_at IS NOT NULL
+  AND next_assessment_at BETWEEN $1 AND $2
+ORDER BY next_assessment_at
+`
+
+type ListVendorsWithReassessmentWindowParams struct {
+	NextAssessmentAt   pgtype.Date `db:"next_assessment_at" json:"next_assessment_at"`
+	NextAssessmentAt_2 pgtype.Date `db:"next_assessment_at_2" json:"next_assessment_at_2"`
+}
+
+type ListVendorsWithReassessmentWindowRow struct {
+	ID                 uuid.UUID   `db:"id" json:"id"`
+	ServiceDescription string      `db:"service_description" json:"service_description"`
+	NextAssessmentAt   pgtype.Date `db:"next_assessment_at" json:"next_assessment_at"`
+}
+
+// DPO-08 (compliance calendar): a forward-looking read, distinct from ListVendorsDueForReassessment's own
+// "already due" filter used by the daily sweep.
+func (q *Queries) ListVendorsWithReassessmentWindow(ctx context.Context, arg ListVendorsWithReassessmentWindowParams) ([]ListVendorsWithReassessmentWindowRow, error) {
+	rows, err := q.db.Query(ctx, listVendorsWithReassessmentWindow, arg.NextAssessmentAt, arg.NextAssessmentAt_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListVendorsWithReassessmentWindowRow
+	for rows.Next() {
+		var i ListVendorsWithReassessmentWindowRow
+		if err := rows.Scan(&i.ID, &i.ServiceDescription, &i.NextAssessmentAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setVendorNextAssessment = `-- name: SetVendorNextAssessment :exec
 UPDATE vendor.vendors SET next_assessment_at = $2 WHERE id = $1
 `

@@ -94,6 +94,52 @@ func (q *Queries) ListActivitiesDueForReview(ctx context.Context, nextReviewAt p
 	return items, nil
 }
 
+const listActivitiesWithReviewWindow = `-- name: ListActivitiesWithReviewWindow :many
+SELECT id, name, code, next_review_at
+FROM ropa.processing_activities
+WHERE status = 'active' AND next_review_at IS NOT NULL AND next_review_at BETWEEN $1 AND $2
+ORDER BY next_review_at
+`
+
+type ListActivitiesWithReviewWindowParams struct {
+	NextReviewAt   pgtype.Date `db:"next_review_at" json:"next_review_at"`
+	NextReviewAt_2 pgtype.Date `db:"next_review_at_2" json:"next_review_at_2"`
+}
+
+type ListActivitiesWithReviewWindowRow struct {
+	ID           uuid.UUID   `db:"id" json:"id"`
+	Name         string      `db:"name" json:"name"`
+	Code         string      `db:"code" json:"code"`
+	NextReviewAt pgtype.Date `db:"next_review_at" json:"next_review_at"`
+}
+
+// DPO-08 (compliance calendar): a read-only window query, distinct from ListActivitiesDueForReview's own
+// "already due" filter used by the daily sweep — this one is for a forward-looking calendar view.
+func (q *Queries) ListActivitiesWithReviewWindow(ctx context.Context, arg ListActivitiesWithReviewWindowParams) ([]ListActivitiesWithReviewWindowRow, error) {
+	rows, err := q.db.Query(ctx, listActivitiesWithReviewWindow, arg.NextReviewAt, arg.NextReviewAt_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListActivitiesWithReviewWindowRow
+	for rows.Next() {
+		var i ListActivitiesWithReviewWindowRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Code,
+			&i.NextReviewAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setActivityNextReview = `-- name: SetActivityNextReview :exec
 UPDATE ropa.processing_activities SET next_review_at = $2 WHERE id = $1
 `

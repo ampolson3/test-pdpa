@@ -16,3 +16,11 @@ SELECT id, name, code, owner_user_id, review_cycle_months, next_review_at
 FROM ropa.processing_activities
 WHERE status = 'active' AND next_review_at IS NOT NULL AND next_review_at <= $1
 ORDER BY next_review_at;
+
+-- DPO-08 (compliance calendar): a read-only window query, distinct from ListActivitiesDueForReview's own
+-- "already due" filter used by the daily sweep — this one is for a forward-looking calendar view.
+-- name: ListActivitiesWithReviewWindow :many
+SELECT id, name, code, next_review_at
+FROM ropa.processing_activities
+WHERE status = 'active' AND next_review_at IS NOT NULL AND next_review_at BETWEEN $1 AND $2
+ORDER BY next_review_at;

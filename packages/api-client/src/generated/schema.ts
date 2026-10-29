@@ -4309,6 +4309,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dpo/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPO-08 (ม.42(2)): every module's own scheduled review/due-date cycle (RoPA review, notice review, DPIA review, training due dates, vendor reassessment), read live within [from, to] */
+        get: operations["dpoGetComplianceCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpo/calendar.ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPO-08's own "export iCal": the identical items as a plain iCalendar (RFC 5545) feed, within [from, to] */
+        get: operations["dpoGetComplianceCalendarIcs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dpo/security-assessments": {
         parameters: {
             query?: never;
@@ -8478,6 +8512,14 @@ export interface components {
             due_at: components["schemas"]["Timestamp"];
             /** @enum {string} */
             status: "at_risk" | "overdue";
+        };
+        /** @description DPO-08: one scheduled compliance activity, from whichever module owns the review/due-date cycle. Sorted by due_at ascending. */
+        DpoCalendarItem: {
+            /** @enum {string} */
+            source: "ropa_review" | "notice_review" | "dpia_review" | "training_due" | "vendor_reassessment";
+            title: string;
+            due_at: components["schemas"]["Timestamp"];
+            ref_id: components["schemas"]["Uuid"];
         };
         DpiaScreeningRule: {
             min_factors: number;
@@ -21978,6 +22020,64 @@ export interface operations {
                     };
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dpoGetComplianceCalendar: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DpoCalendarItem"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dpoGetComplianceCalendarIcs: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The iCalendar feed */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/calendar": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };

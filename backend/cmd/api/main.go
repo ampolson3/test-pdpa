@@ -393,6 +393,13 @@ func run() error {
 	fileSvc.EntityPermissions["dsar_request"] = "dsar.request.read"
 	dpoSvc.Dsar = dsarSvc     // DPO-05: DSAR's 30-day SLA on the notification center
 	dpoSvc.Breach = breachSvc // DPO-05: breach's 72-hour PDPC clock on the notification center
+	// DPO-08: the compliance calendar's own cross-module read sources — Ropa/Vendor are direct concrete
+	// fields (no import cycle, neither imports dpo concretely); Notice is dpo's own local interface,
+	// satisfied directly by noticeSvc's own ListUpcomingReviews (it already returns dpo's CalendarItem
+	// type, since notice already imports dpo/service for PNG-07's OpenConsentTask).
+	dpoSvc.Ropa = ropaSvc
+	dpoSvc.Vendor = vendorSvc
+	dpoSvc.Notice = noticeSvc
 
 	// DPX-05: retention schedules and disposal jobs. Dsar is dsarSvc directly (no import cycle, since
 	// dsar never imports gov) for the legal-hold check. DPX-08: Breach is breachSvc directly (no import
@@ -407,6 +414,7 @@ func run() error {
 	// remediation job per audit finding (AssignFindingTask).
 	govSvc := &govservice.Service{Audit: auditSvc, Ropa: ropaSvc, Dsar: dsarSvc, Files: fileSvc, Docs: docsSvc,
 		Breach: breachSvc, Notify: notifySvc, River: riverClient, Org: orgSvc, Forms: formsSvc, Dpia: dpiaSvc, Dpo: dpoSvc}
+	dpoSvc.Gov = govSvc                                                              // DPO-08: training due dates on the compliance calendar
 	fileSvc.EntityPermissions[govservice.JobType] = "dpx.retention.read"             // disposal job evidence
 	fileSvc.EntityPermissions[govservice.RegulatorLetterType] = "dpx.regulator.read" // DPX-08 letter attachment
 	fileSvc.EntityPermissions[govservice.CourseType] = "dpx.training.read"           // DPX-01 course content

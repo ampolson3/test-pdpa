@@ -12598,6 +12598,87 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/dpo/calendar:
+    get:
+      operationId: dpoGetComplianceCalendar
+      tags: [dpo]
+      summary: 'DPO-08 (ม.42(2)): every module''s own scheduled review/due-date cycle (RoPA review, notice review, DPIA review, training due dates, vendor reassessment), read live within [from, to]'
+      x-permission: dpo.report.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DpoCalendarItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/dpo/calendar.ics:
+    get:
+      operationId: dpoGetComplianceCalendarIcs
+      tags: [dpo]
+      summary: 'DPO-08''s own "export iCal": the identical items as a plain iCalendar (RFC 5545) feed, within [from, to]'
+      x-permission: dpo.report.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The iCalendar feed
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            text/calendar:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/dpo/security-assessments:
     get:
       operationId: dpoListAssessments
@@ -22392,6 +22473,18 @@ components:
         status:
           type: string
           enum: [at_risk, overdue]
+    DpoCalendarItem:
+      type: object
+      description: 'DPO-08: one scheduled compliance activity, from whichever module owns the review/due-date cycle. Sorted by due_at ascending.'
+      required: [source, title, due_at, ref_id]
+      properties:
+        source:
+          type: string
+          enum: [ropa_review, notice_review, dpia_review, training_due, vendor_reassessment]
+        title:
+          type: string
+        due_at: {$ref: '#/components/schemas/Timestamp'}
+        ref_id: {$ref: '#/components/schemas/Uuid'}
     DpiaScreeningRule:
       type: object
       required: [min_factors]
