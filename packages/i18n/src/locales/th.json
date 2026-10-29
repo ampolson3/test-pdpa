@@ -3508,6 +3508,45 @@
       "attestations": {
         "title": "ประวัติการรับทราบ"
       }
+    },
+    "regulatorLetters": {
+      "title": "การติดต่อกับ สคส.",
+      "intro": "ทะเบียนหนังสือ คำสั่ง และการตรวจสอบจาก สคส. — กำหนดส่งที่ตั้งไว้จะเตือนล่วงหน้าก่อนครบกำหนด",
+      "new": "สร้างหนังสือใหม่",
+      "filterStatus": "สถานะ",
+      "filterDirection": "ทิศทาง",
+      "allStatuses": "ทุกสถานะ",
+      "allDirections": "ทุกทิศทาง",
+      "directions": {
+        "inbound": "รับเข้า (จาก สคส.)",
+        "outbound": "ส่งออก (ถึง สคส.)"
+      },
+      "statuses": {
+        "open": "เปิด",
+        "responded": "ตอบแล้ว",
+        "closed": "ปิด"
+      },
+      "table": {
+        "subject": "เรื่อง",
+        "direction": "ทิศทาง",
+        "dueAt": "กำหนดส่ง",
+        "status": "สถานะ"
+      },
+      "respond": "ทำเครื่องหมายตอบแล้ว",
+      "close": "ปิด",
+      "delete": "ลบ",
+      "form": {
+        "title": "สร้างหนังสือใหม่",
+        "direction": "ทิศทาง",
+        "letterNo": "เลขที่หนังสือ",
+        "subject": "เรื่อง",
+        "receivedAt": "วันที่รับ",
+        "dueAt": "วันครบกำหนด",
+        "incidentId": "เลขเหตุการละเมิดที่เชื่อมโยง (ถ้ามี)",
+        "save": "บันทึก",
+        "cancel": "ยกเลิก",
+        "saveError": "บันทึกไม่สำเร็จ: {detail}"
+      }
     }
   },
   "ropaWizard": {

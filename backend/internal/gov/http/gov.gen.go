@@ -111,6 +111,45 @@ func (e FormConditionOp) Valid() bool {
 	}
 }
 
+// Defines values for GovRegulatorLetterDirection.
+const (
+	Inbound  GovRegulatorLetterDirection = "inbound"
+	Outbound GovRegulatorLetterDirection = "outbound"
+)
+
+// Valid indicates whether the value is a known member of the GovRegulatorLetterDirection enum.
+func (e GovRegulatorLetterDirection) Valid() bool {
+	switch e {
+	case Inbound:
+		return true
+	case Outbound:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovRegulatorLetterStatus.
+const (
+	Closed    GovRegulatorLetterStatus = "closed"
+	Open      GovRegulatorLetterStatus = "open"
+	Responded GovRegulatorLetterStatus = "responded"
+)
+
+// Valid indicates whether the value is a known member of the GovRegulatorLetterStatus enum.
+func (e GovRegulatorLetterStatus) Valid() bool {
+	switch e {
+	case Closed:
+		return true
+	case Open:
+		return true
+	case Responded:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RetentionScheduleStatus.
 const (
 	Active  RetentionScheduleStatus = "active"
@@ -366,6 +405,114 @@ func (e GovListMissingAttestationsParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for GovListRegulatorLettersParamsAcceptLanguage.
+const (
+	GovListRegulatorLettersParamsAcceptLanguageEn GovListRegulatorLettersParamsAcceptLanguage = "en"
+	GovListRegulatorLettersParamsAcceptLanguageTh GovListRegulatorLettersParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovListRegulatorLettersParamsAcceptLanguage enum.
+func (e GovListRegulatorLettersParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovListRegulatorLettersParamsAcceptLanguageEn:
+		return true
+	case GovListRegulatorLettersParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovCreateRegulatorLetterParamsAcceptLanguage.
+const (
+	GovCreateRegulatorLetterParamsAcceptLanguageEn GovCreateRegulatorLetterParamsAcceptLanguage = "en"
+	GovCreateRegulatorLetterParamsAcceptLanguageTh GovCreateRegulatorLetterParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovCreateRegulatorLetterParamsAcceptLanguage enum.
+func (e GovCreateRegulatorLetterParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovCreateRegulatorLetterParamsAcceptLanguageEn:
+		return true
+	case GovCreateRegulatorLetterParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovDeleteRegulatorLetterParamsAcceptLanguage.
+const (
+	GovDeleteRegulatorLetterParamsAcceptLanguageEn GovDeleteRegulatorLetterParamsAcceptLanguage = "en"
+	GovDeleteRegulatorLetterParamsAcceptLanguageTh GovDeleteRegulatorLetterParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovDeleteRegulatorLetterParamsAcceptLanguage enum.
+func (e GovDeleteRegulatorLetterParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovDeleteRegulatorLetterParamsAcceptLanguageEn:
+		return true
+	case GovDeleteRegulatorLetterParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovGetRegulatorLetterParamsAcceptLanguage.
+const (
+	GovGetRegulatorLetterParamsAcceptLanguageEn GovGetRegulatorLetterParamsAcceptLanguage = "en"
+	GovGetRegulatorLetterParamsAcceptLanguageTh GovGetRegulatorLetterParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovGetRegulatorLetterParamsAcceptLanguage enum.
+func (e GovGetRegulatorLetterParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovGetRegulatorLetterParamsAcceptLanguageEn:
+		return true
+	case GovGetRegulatorLetterParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovUpdateRegulatorLetterParamsAcceptLanguage.
+const (
+	GovUpdateRegulatorLetterParamsAcceptLanguageEn GovUpdateRegulatorLetterParamsAcceptLanguage = "en"
+	GovUpdateRegulatorLetterParamsAcceptLanguageTh GovUpdateRegulatorLetterParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovUpdateRegulatorLetterParamsAcceptLanguage enum.
+func (e GovUpdateRegulatorLetterParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovUpdateRegulatorLetterParamsAcceptLanguageEn:
+		return true
+	case GovUpdateRegulatorLetterParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovSetRegulatorLetterStatusParamsAcceptLanguage.
+const (
+	GovSetRegulatorLetterStatusParamsAcceptLanguageEn GovSetRegulatorLetterStatusParamsAcceptLanguage = "en"
+	GovSetRegulatorLetterStatusParamsAcceptLanguageTh GovSetRegulatorLetterStatusParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovSetRegulatorLetterStatusParamsAcceptLanguage enum.
+func (e GovSetRegulatorLetterStatusParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovSetRegulatorLetterStatusParamsAcceptLanguageEn:
+		return true
+	case GovSetRegulatorLetterStatusParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GovListRetentionSchedulesParamsAcceptLanguage.
 const (
 	GovListRetentionSchedulesParamsAcceptLanguageEn GovListRetentionSchedulesParamsAcceptLanguage = "en"
@@ -540,6 +687,46 @@ type GovPolicyInput struct {
 	// Title Defaults to the document's own title when omitted.
 	Title *string `json:"title,omitempty"`
 }
+
+// GovRegulatorLetter defines model for GovRegulatorLetter.
+type GovRegulatorLetter struct {
+	Direction GovRegulatorLetterDirection `json:"direction"`
+	DueAt     *openapi_types.Date         `json:"due_at,omitempty"`
+	FileId    *openapi_types.UUID         `json:"file_id,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id          Uuid                     `json:"id"`
+	IncidentId  *openapi_types.UUID      `json:"incident_id,omitempty"`
+	LetterNo    *string                  `json:"letter_no,omitempty"`
+	ReceivedAt  *openapi_types.Date      `json:"received_at,omitempty"`
+	RespondedAt *openapi_types.Date      `json:"responded_at,omitempty"`
+	RowVersion  int                      `json:"row_version"`
+	Status      GovRegulatorLetterStatus `json:"status"`
+	Subject     string                   `json:"subject"`
+}
+
+// GovRegulatorLetterDirection defines model for GovRegulatorLetterDirection.
+type GovRegulatorLetterDirection string
+
+// GovRegulatorLetterInput defines model for GovRegulatorLetterInput.
+type GovRegulatorLetterInput struct {
+	Direction GovRegulatorLetterDirection `json:"direction"`
+
+	// DueAt When set, schedules the acceptance criterion's own single reminder (DPX-08) a fixed number of days ahead.
+	DueAt *openapi_types.Date `json:"due_at,omitempty"`
+
+	// FileId The caller's own clean, still-unattached PLT-09 upload.
+	FileId *openapi_types.UUID `json:"file_id,omitempty"`
+
+	// IncidentId An optional link to a breach.incidents row — checked visible under RLS (rule 1).
+	IncidentId *openapi_types.UUID `json:"incident_id,omitempty"`
+	LetterNo   *string             `json:"letter_no,omitempty"`
+	ReceivedAt *openapi_types.Date `json:"received_at,omitempty"`
+	Subject    string              `json:"subject"`
+}
+
+// GovRegulatorLetterStatus defines model for GovRegulatorLetterStatus.
+type GovRegulatorLetterStatus string
 
 // Problem RFC 9457 problem details with a stable machine-readable `code`
 type Problem struct {
@@ -754,6 +941,74 @@ type GovListMissingAttestationsParams struct {
 // GovListMissingAttestationsParamsAcceptLanguage defines parameters for GovListMissingAttestations.
 type GovListMissingAttestationsParamsAcceptLanguage string
 
+// GovListRegulatorLettersParams defines parameters for GovListRegulatorLetters.
+type GovListRegulatorLettersParams struct {
+	Status    *GovRegulatorLetterStatus    `form:"status,omitempty" json:"status,omitempty"`
+	Direction *GovRegulatorLetterDirection `form:"direction,omitempty" json:"direction,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovListRegulatorLettersParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovListRegulatorLettersParamsAcceptLanguage defines parameters for GovListRegulatorLetters.
+type GovListRegulatorLettersParamsAcceptLanguage string
+
+// GovCreateRegulatorLetterParams defines parameters for GovCreateRegulatorLetter.
+type GovCreateRegulatorLetterParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovCreateRegulatorLetterParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovCreateRegulatorLetterParamsAcceptLanguage defines parameters for GovCreateRegulatorLetter.
+type GovCreateRegulatorLetterParamsAcceptLanguage string
+
+// GovDeleteRegulatorLetterParams defines parameters for GovDeleteRegulatorLetter.
+type GovDeleteRegulatorLetterParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovDeleteRegulatorLetterParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovDeleteRegulatorLetterParamsAcceptLanguage defines parameters for GovDeleteRegulatorLetter.
+type GovDeleteRegulatorLetterParamsAcceptLanguage string
+
+// GovGetRegulatorLetterParams defines parameters for GovGetRegulatorLetter.
+type GovGetRegulatorLetterParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovGetRegulatorLetterParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovGetRegulatorLetterParamsAcceptLanguage defines parameters for GovGetRegulatorLetter.
+type GovGetRegulatorLetterParamsAcceptLanguage string
+
+// GovUpdateRegulatorLetterParams defines parameters for GovUpdateRegulatorLetter.
+type GovUpdateRegulatorLetterParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovUpdateRegulatorLetterParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// GovUpdateRegulatorLetterParamsAcceptLanguage defines parameters for GovUpdateRegulatorLetter.
+type GovUpdateRegulatorLetterParamsAcceptLanguage string
+
+// GovSetRegulatorLetterStatusJSONBody defines parameters for GovSetRegulatorLetterStatus.
+type GovSetRegulatorLetterStatusJSONBody struct {
+	Status GovRegulatorLetterStatus `json:"status"`
+}
+
+// GovSetRegulatorLetterStatusParams defines parameters for GovSetRegulatorLetterStatus.
+type GovSetRegulatorLetterStatusParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovSetRegulatorLetterStatusParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// GovSetRegulatorLetterStatusParamsAcceptLanguage defines parameters for GovSetRegulatorLetterStatus.
+type GovSetRegulatorLetterStatusParamsAcceptLanguage string
+
 // GovListRetentionSchedulesParams defines parameters for GovListRetentionSchedules.
 type GovListRetentionSchedulesParams struct {
 	AssetId *Uuid                    `form:"asset_id,omitempty" json:"asset_id,omitempty"`
@@ -813,6 +1068,15 @@ type GovCompleteDisposalJobJSONRequestBody = DisposalJobCompleteInput
 // GovPublishPolicyJSONRequestBody defines body for GovPublishPolicy for application/json ContentType.
 type GovPublishPolicyJSONRequestBody = GovPolicyInput
 
+// GovCreateRegulatorLetterJSONRequestBody defines body for GovCreateRegulatorLetter for application/json ContentType.
+type GovCreateRegulatorLetterJSONRequestBody = GovRegulatorLetterInput
+
+// GovUpdateRegulatorLetterJSONRequestBody defines body for GovUpdateRegulatorLetter for application/json ContentType.
+type GovUpdateRegulatorLetterJSONRequestBody = GovRegulatorLetterInput
+
+// GovSetRegulatorLetterStatusJSONRequestBody defines body for GovSetRegulatorLetterStatus for application/json ContentType.
+type GovSetRegulatorLetterStatusJSONRequestBody GovSetRegulatorLetterStatusJSONBody
+
 // GovCreateRetentionScheduleJSONRequestBody defines body for GovCreateRetentionSchedule for application/json ContentType.
 type GovCreateRetentionScheduleJSONRequestBody = RetentionScheduleInput
 
@@ -857,6 +1121,24 @@ type ServerInterface interface {
 	// GovListMissingAttestations The acceptance criterion itself — every active user who has not yet attested the policy's current version
 	// (GET /admin/v1/governance/policies/{id}/missing-attestations)
 	GovListMissingAttestations(w http.ResponseWriter, r *http.Request, id Uuid, params GovListMissingAttestationsParams)
+	// GovListRegulatorLetters DPX-08: the register of letters/orders/inspection notices to or from the PDPC office (สคส.), soonest-due first
+	// (GET /admin/v1/governance/regulator-letters)
+	GovListRegulatorLetters(w http.ResponseWriter, r *http.Request, params GovListRegulatorLettersParams)
+	// GovCreateRegulatorLetter DPX-08: record a letter — a real due_at schedules the acceptance criterion's own single due-date reminder
+	// (POST /admin/v1/governance/regulator-letters)
+	GovCreateRegulatorLetter(w http.ResponseWriter, r *http.Request, params GovCreateRegulatorLetterParams)
+	// GovDeleteRegulatorLetter Remove a letter record (not its file)
+	// (DELETE /admin/v1/governance/regulator-letters/{id})
+	GovDeleteRegulatorLetter(w http.ResponseWriter, r *http.Request, id Uuid, params GovDeleteRegulatorLetterParams)
+	// GovGetRegulatorLetter One regulator letter
+	// (GET /admin/v1/governance/regulator-letters/{id})
+	GovGetRegulatorLetter(w http.ResponseWriter, r *http.Request, id Uuid, params GovGetRegulatorLetterParams)
+	// GovUpdateRegulatorLetter Edit a letter's own details — a changed due_at reschedules the reminder
+	// (PUT /admin/v1/governance/regulator-letters/{id})
+	GovUpdateRegulatorLetter(w http.ResponseWriter, r *http.Request, id Uuid, params GovUpdateRegulatorLetterParams)
+	// GovSetRegulatorLetterStatus Move a letter open -> responded -> closed (responded_at is stamped automatically on "responded")
+	// (PATCH /admin/v1/governance/regulator-letters/{id}/status)
+	GovSetRegulatorLetterStatus(w http.ResponseWriter, r *http.Request, id Uuid, params GovSetRegulatorLetterStatusParams)
 	// GovListRetentionSchedules Retention schedules (DPX-05) — one per asset's recurring disposal clock
 	// (GET /admin/v1/governance/retention-schedules)
 	GovListRetentionSchedules(w http.ResponseWriter, r *http.Request, params GovListRetentionSchedulesParams)
@@ -944,6 +1226,42 @@ func (_ Unimplemented) GovListPolicyAttestations(w http.ResponseWriter, r *http.
 // GovListMissingAttestations The acceptance criterion itself — every active user who has not yet attested the policy's current version
 // (GET /admin/v1/governance/policies/{id}/missing-attestations)
 func (_ Unimplemented) GovListMissingAttestations(w http.ResponseWriter, r *http.Request, id Uuid, params GovListMissingAttestationsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovListRegulatorLetters DPX-08: the register of letters/orders/inspection notices to or from the PDPC office (สคส.), soonest-due first
+// (GET /admin/v1/governance/regulator-letters)
+func (_ Unimplemented) GovListRegulatorLetters(w http.ResponseWriter, r *http.Request, params GovListRegulatorLettersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovCreateRegulatorLetter DPX-08: record a letter — a real due_at schedules the acceptance criterion's own single due-date reminder
+// (POST /admin/v1/governance/regulator-letters)
+func (_ Unimplemented) GovCreateRegulatorLetter(w http.ResponseWriter, r *http.Request, params GovCreateRegulatorLetterParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovDeleteRegulatorLetter Remove a letter record (not its file)
+// (DELETE /admin/v1/governance/regulator-letters/{id})
+func (_ Unimplemented) GovDeleteRegulatorLetter(w http.ResponseWriter, r *http.Request, id Uuid, params GovDeleteRegulatorLetterParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovGetRegulatorLetter One regulator letter
+// (GET /admin/v1/governance/regulator-letters/{id})
+func (_ Unimplemented) GovGetRegulatorLetter(w http.ResponseWriter, r *http.Request, id Uuid, params GovGetRegulatorLetterParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovUpdateRegulatorLetter Edit a letter's own details — a changed due_at reschedules the reminder
+// (PUT /admin/v1/governance/regulator-letters/{id})
+func (_ Unimplemented) GovUpdateRegulatorLetter(w http.ResponseWriter, r *http.Request, id Uuid, params GovUpdateRegulatorLetterParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovSetRegulatorLetterStatus Move a letter open -> responded -> closed (responded_at is stamped automatically on "responded")
+// (PATCH /admin/v1/governance/regulator-letters/{id}/status)
+func (_ Unimplemented) GovSetRegulatorLetterStatus(w http.ResponseWriter, r *http.Request, id Uuid, params GovSetRegulatorLetterStatusParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1684,6 +2002,360 @@ func (siw *ServerInterfaceWrapper) GovListMissingAttestations(w http.ResponseWri
 	handler.ServeHTTP(w, r)
 }
 
+// GovListRegulatorLetters operation middleware
+func (siw *ServerInterfaceWrapper) GovListRegulatorLetters(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovListRegulatorLettersParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "direction" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "direction", r.URL.Query(), &params.Direction, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "direction"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "direction", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovListRegulatorLettersParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovListRegulatorLetters(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovCreateRegulatorLetter operation middleware
+func (siw *ServerInterfaceWrapper) GovCreateRegulatorLetter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovCreateRegulatorLetterParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovCreateRegulatorLetterParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovCreateRegulatorLetter(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovDeleteRegulatorLetter operation middleware
+func (siw *ServerInterfaceWrapper) GovDeleteRegulatorLetter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovDeleteRegulatorLetterParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovDeleteRegulatorLetterParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovDeleteRegulatorLetter(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovGetRegulatorLetter operation middleware
+func (siw *ServerInterfaceWrapper) GovGetRegulatorLetter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovGetRegulatorLetterParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovGetRegulatorLetterParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovGetRegulatorLetter(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovUpdateRegulatorLetter operation middleware
+func (siw *ServerInterfaceWrapper) GovUpdateRegulatorLetter(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovUpdateRegulatorLetterParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovUpdateRegulatorLetterParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovUpdateRegulatorLetter(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovSetRegulatorLetterStatus operation middleware
+func (siw *ServerInterfaceWrapper) GovSetRegulatorLetterStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovSetRegulatorLetterStatusParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovSetRegulatorLetterStatusParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovSetRegulatorLetterStatus(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GovListRetentionSchedules operation middleware
 func (siw *ServerInterfaceWrapper) GovListRetentionSchedules(w http.ResponseWriter, r *http.Request) {
 
@@ -2101,6 +2773,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/governance/policies/{id}/missing-attestations", wrapper.GovListMissingAttestations)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/governance/regulator-letters", wrapper.GovListRegulatorLetters)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/governance/regulator-letters", wrapper.GovCreateRegulatorLetter)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/admin/v1/governance/regulator-letters/{id}", wrapper.GovDeleteRegulatorLetter)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/governance/regulator-letters/{id}", wrapper.GovGetRegulatorLetter)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/v1/governance/regulator-letters/{id}", wrapper.GovUpdateRegulatorLetter)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/admin/v1/governance/regulator-letters/{id}/status", wrapper.GovSetRegulatorLetterStatus)
 	})
 
 	return r
@@ -3221,6 +3911,597 @@ func (response GovListMissingAttestations404ApplicationProblemPlusJSONResponse) 
 	return err
 }
 
+type GovListRegulatorLettersRequestObject struct {
+	Params GovListRegulatorLettersParams
+}
+
+type GovListRegulatorLettersResponseObject interface {
+	VisitGovListRegulatorLettersResponse(w http.ResponseWriter) error
+}
+
+type GovListRegulatorLetters200JSONResponse struct {
+	Data []GovRegulatorLetter `json:"data"`
+}
+
+func (response GovListRegulatorLetters200JSONResponse) VisitGovListRegulatorLettersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListRegulatorLetters401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovListRegulatorLetters401ApplicationProblemPlusJSONResponse) VisitGovListRegulatorLettersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListRegulatorLetters403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovListRegulatorLetters403ApplicationProblemPlusJSONResponse) VisitGovListRegulatorLettersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovCreateRegulatorLetterRequestObject struct {
+	Params GovCreateRegulatorLetterParams
+	Body   *GovCreateRegulatorLetterJSONRequestBody
+}
+
+type GovCreateRegulatorLetterResponseObject interface {
+	VisitGovCreateRegulatorLetterResponse(w http.ResponseWriter) error
+}
+
+type GovCreateRegulatorLetter201ResponseHeaders struct {
+	ETag *string
+}
+
+type GovCreateRegulatorLetter201JSONResponse struct {
+	Body    GovRegulatorLetter
+	Headers GovCreateRegulatorLetter201ResponseHeaders
+}
+
+func (response GovCreateRegulatorLetter201JSONResponse) VisitGovCreateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovCreateRegulatorLetter400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovCreateRegulatorLetter400ApplicationProblemPlusJSONResponse) VisitGovCreateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovCreateRegulatorLetter401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovCreateRegulatorLetter401ApplicationProblemPlusJSONResponse) VisitGovCreateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovCreateRegulatorLetter403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovCreateRegulatorLetter403ApplicationProblemPlusJSONResponse) VisitGovCreateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovCreateRegulatorLetter422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovCreateRegulatorLetter422ApplicationProblemPlusJSONResponse) VisitGovCreateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovDeleteRegulatorLetterRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovDeleteRegulatorLetterParams
+}
+
+type GovDeleteRegulatorLetterResponseObject interface {
+	VisitGovDeleteRegulatorLetterResponse(w http.ResponseWriter) error
+}
+
+type GovDeleteRegulatorLetter204Response struct {
+}
+
+func (response GovDeleteRegulatorLetter204Response) VisitGovDeleteRegulatorLetterResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type GovDeleteRegulatorLetter401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovDeleteRegulatorLetter401ApplicationProblemPlusJSONResponse) VisitGovDeleteRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovDeleteRegulatorLetter403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovDeleteRegulatorLetter403ApplicationProblemPlusJSONResponse) VisitGovDeleteRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovDeleteRegulatorLetter404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovDeleteRegulatorLetter404ApplicationProblemPlusJSONResponse) VisitGovDeleteRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetRegulatorLetterRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovGetRegulatorLetterParams
+}
+
+type GovGetRegulatorLetterResponseObject interface {
+	VisitGovGetRegulatorLetterResponse(w http.ResponseWriter) error
+}
+
+type GovGetRegulatorLetter200ResponseHeaders struct {
+	ETag *string
+}
+
+type GovGetRegulatorLetter200JSONResponse struct {
+	Body    GovRegulatorLetter
+	Headers GovGetRegulatorLetter200ResponseHeaders
+}
+
+func (response GovGetRegulatorLetter200JSONResponse) VisitGovGetRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetRegulatorLetter401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovGetRegulatorLetter401ApplicationProblemPlusJSONResponse) VisitGovGetRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetRegulatorLetter403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovGetRegulatorLetter403ApplicationProblemPlusJSONResponse) VisitGovGetRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetRegulatorLetter404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovGetRegulatorLetter404ApplicationProblemPlusJSONResponse) VisitGovGetRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateRegulatorLetterRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovUpdateRegulatorLetterParams
+	Body   *GovUpdateRegulatorLetterJSONRequestBody
+}
+
+type GovUpdateRegulatorLetterResponseObject interface {
+	VisitGovUpdateRegulatorLetterResponse(w http.ResponseWriter) error
+}
+
+type GovUpdateRegulatorLetter200ResponseHeaders struct {
+	ETag *string
+}
+
+type GovUpdateRegulatorLetter200JSONResponse struct {
+	Body    GovRegulatorLetter
+	Headers GovUpdateRegulatorLetter200ResponseHeaders
+}
+
+func (response GovUpdateRegulatorLetter200JSONResponse) VisitGovUpdateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateRegulatorLetter400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateRegulatorLetter400ApplicationProblemPlusJSONResponse) VisitGovUpdateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateRegulatorLetter401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateRegulatorLetter401ApplicationProblemPlusJSONResponse) VisitGovUpdateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateRegulatorLetter403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateRegulatorLetter403ApplicationProblemPlusJSONResponse) VisitGovUpdateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateRegulatorLetter404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateRegulatorLetter404ApplicationProblemPlusJSONResponse) VisitGovUpdateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateRegulatorLetter412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateRegulatorLetter412ApplicationProblemPlusJSONResponse) VisitGovUpdateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateRegulatorLetter422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateRegulatorLetter422ApplicationProblemPlusJSONResponse) VisitGovUpdateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateRegulatorLetter428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateRegulatorLetter428ApplicationProblemPlusJSONResponse) VisitGovUpdateRegulatorLetterResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetRegulatorLetterStatusRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovSetRegulatorLetterStatusParams
+	Body   *GovSetRegulatorLetterStatusJSONRequestBody
+}
+
+type GovSetRegulatorLetterStatusResponseObject interface {
+	VisitGovSetRegulatorLetterStatusResponse(w http.ResponseWriter) error
+}
+
+type GovSetRegulatorLetterStatus200ResponseHeaders struct {
+	ETag *string
+}
+
+type GovSetRegulatorLetterStatus200JSONResponse struct {
+	Body    GovRegulatorLetter
+	Headers GovSetRegulatorLetterStatus200ResponseHeaders
+}
+
+func (response GovSetRegulatorLetterStatus200JSONResponse) VisitGovSetRegulatorLetterStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetRegulatorLetterStatus400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetRegulatorLetterStatus400ApplicationProblemPlusJSONResponse) VisitGovSetRegulatorLetterStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetRegulatorLetterStatus401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetRegulatorLetterStatus401ApplicationProblemPlusJSONResponse) VisitGovSetRegulatorLetterStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetRegulatorLetterStatus403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetRegulatorLetterStatus403ApplicationProblemPlusJSONResponse) VisitGovSetRegulatorLetterStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetRegulatorLetterStatus404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetRegulatorLetterStatus404ApplicationProblemPlusJSONResponse) VisitGovSetRegulatorLetterStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetRegulatorLetterStatus412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetRegulatorLetterStatus412ApplicationProblemPlusJSONResponse) VisitGovSetRegulatorLetterStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetRegulatorLetterStatus422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetRegulatorLetterStatus422ApplicationProblemPlusJSONResponse) VisitGovSetRegulatorLetterStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetRegulatorLetterStatus428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetRegulatorLetterStatus428ApplicationProblemPlusJSONResponse) VisitGovSetRegulatorLetterStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GovListRetentionSchedulesRequestObject struct {
 	Params GovListRetentionSchedulesParams
 }
@@ -3640,6 +4921,24 @@ type StrictServerInterface interface {
 	// GovListMissingAttestations The acceptance criterion itself — every active user who has not yet attested the policy's current version
 	// (GET /admin/v1/governance/policies/{id}/missing-attestations)
 	GovListMissingAttestations(ctx context.Context, request GovListMissingAttestationsRequestObject) (GovListMissingAttestationsResponseObject, error)
+	// GovListRegulatorLetters DPX-08: the register of letters/orders/inspection notices to or from the PDPC office (สคส.), soonest-due first
+	// (GET /admin/v1/governance/regulator-letters)
+	GovListRegulatorLetters(ctx context.Context, request GovListRegulatorLettersRequestObject) (GovListRegulatorLettersResponseObject, error)
+	// GovCreateRegulatorLetter DPX-08: record a letter — a real due_at schedules the acceptance criterion's own single due-date reminder
+	// (POST /admin/v1/governance/regulator-letters)
+	GovCreateRegulatorLetter(ctx context.Context, request GovCreateRegulatorLetterRequestObject) (GovCreateRegulatorLetterResponseObject, error)
+	// GovDeleteRegulatorLetter Remove a letter record (not its file)
+	// (DELETE /admin/v1/governance/regulator-letters/{id})
+	GovDeleteRegulatorLetter(ctx context.Context, request GovDeleteRegulatorLetterRequestObject) (GovDeleteRegulatorLetterResponseObject, error)
+	// GovGetRegulatorLetter One regulator letter
+	// (GET /admin/v1/governance/regulator-letters/{id})
+	GovGetRegulatorLetter(ctx context.Context, request GovGetRegulatorLetterRequestObject) (GovGetRegulatorLetterResponseObject, error)
+	// GovUpdateRegulatorLetter Edit a letter's own details — a changed due_at reschedules the reminder
+	// (PUT /admin/v1/governance/regulator-letters/{id})
+	GovUpdateRegulatorLetter(ctx context.Context, request GovUpdateRegulatorLetterRequestObject) (GovUpdateRegulatorLetterResponseObject, error)
+	// GovSetRegulatorLetterStatus Move a letter open -> responded -> closed (responded_at is stamped automatically on "responded")
+	// (PATCH /admin/v1/governance/regulator-letters/{id}/status)
+	GovSetRegulatorLetterStatus(ctx context.Context, request GovSetRegulatorLetterStatusRequestObject) (GovSetRegulatorLetterStatusResponseObject, error)
 	// GovListRetentionSchedules Retention schedules (DPX-05) — one per asset's recurring disposal clock
 	// (GET /admin/v1/governance/retention-schedules)
 	GovListRetentionSchedules(ctx context.Context, request GovListRetentionSchedulesRequestObject) (GovListRetentionSchedulesResponseObject, error)
@@ -4031,6 +5330,187 @@ func (sh *strictHandler) GovListMissingAttestations(w http.ResponseWriter, r *ht
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GovListMissingAttestationsResponseObject); ok {
 		if err := validResponse.VisitGovListMissingAttestationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovListRegulatorLetters operation middleware
+func (sh *strictHandler) GovListRegulatorLetters(w http.ResponseWriter, r *http.Request, params GovListRegulatorLettersParams) {
+	var request GovListRegulatorLettersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovListRegulatorLetters(ctx, request.(GovListRegulatorLettersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovListRegulatorLetters")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovListRegulatorLettersResponseObject); ok {
+		if err := validResponse.VisitGovListRegulatorLettersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovCreateRegulatorLetter operation middleware
+func (sh *strictHandler) GovCreateRegulatorLetter(w http.ResponseWriter, r *http.Request, params GovCreateRegulatorLetterParams) {
+	var request GovCreateRegulatorLetterRequestObject
+
+	request.Params = params
+
+	var body GovCreateRegulatorLetterJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovCreateRegulatorLetter(ctx, request.(GovCreateRegulatorLetterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovCreateRegulatorLetter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovCreateRegulatorLetterResponseObject); ok {
+		if err := validResponse.VisitGovCreateRegulatorLetterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovDeleteRegulatorLetter operation middleware
+func (sh *strictHandler) GovDeleteRegulatorLetter(w http.ResponseWriter, r *http.Request, id Uuid, params GovDeleteRegulatorLetterParams) {
+	var request GovDeleteRegulatorLetterRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovDeleteRegulatorLetter(ctx, request.(GovDeleteRegulatorLetterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovDeleteRegulatorLetter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovDeleteRegulatorLetterResponseObject); ok {
+		if err := validResponse.VisitGovDeleteRegulatorLetterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovGetRegulatorLetter operation middleware
+func (sh *strictHandler) GovGetRegulatorLetter(w http.ResponseWriter, r *http.Request, id Uuid, params GovGetRegulatorLetterParams) {
+	var request GovGetRegulatorLetterRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovGetRegulatorLetter(ctx, request.(GovGetRegulatorLetterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovGetRegulatorLetter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovGetRegulatorLetterResponseObject); ok {
+		if err := validResponse.VisitGovGetRegulatorLetterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovUpdateRegulatorLetter operation middleware
+func (sh *strictHandler) GovUpdateRegulatorLetter(w http.ResponseWriter, r *http.Request, id Uuid, params GovUpdateRegulatorLetterParams) {
+	var request GovUpdateRegulatorLetterRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body GovUpdateRegulatorLetterJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovUpdateRegulatorLetter(ctx, request.(GovUpdateRegulatorLetterRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovUpdateRegulatorLetter")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovUpdateRegulatorLetterResponseObject); ok {
+		if err := validResponse.VisitGovUpdateRegulatorLetterResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovSetRegulatorLetterStatus operation middleware
+func (sh *strictHandler) GovSetRegulatorLetterStatus(w http.ResponseWriter, r *http.Request, id Uuid, params GovSetRegulatorLetterStatusParams) {
+	var request GovSetRegulatorLetterStatusRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body GovSetRegulatorLetterStatusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovSetRegulatorLetterStatus(ctx, request.(GovSetRegulatorLetterStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovSetRegulatorLetterStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovSetRegulatorLetterStatusResponseObject); ok {
+		if err := validResponse.VisitGovSetRegulatorLetterStatusResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

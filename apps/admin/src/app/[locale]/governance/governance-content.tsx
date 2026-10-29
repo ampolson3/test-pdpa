@@ -20,12 +20,19 @@ import {
   useAttestPolicy,
   usePolicyAttestations,
   useMissingAttestations,
+  useRegulatorLetters,
+  useCreateRegulatorLetter,
+  useSetRegulatorLetterStatus,
+  useDeleteRegulatorLetter,
   type RetentionScheduleStatus,
   type DisposalJobStatus,
   type StoredFile,
   type GovPolicy,
   type GovPolicyAttestation,
   type GovMissingAttestation,
+  type GovRegulatorLetter,
+  type GovRegulatorLetterStatus,
+  type GovRegulatorLetterDirection,
 } from "@pdpa/api-client";
 import { FileUploader } from "@/components/file-uploader";
 
@@ -52,6 +59,10 @@ export function GovernanceContent() {
   const canReadPolicy = usePermission("dpx.policy.read");
   const canPublishPolicy = usePermission("dpx.policy.publish");
   const canAttest = usePermission("dpx.policy.execute");
+  const canReadLetters = usePermission("dpx.regulator.read");
+  const canCreateLetter = usePermission("dpx.regulator.create");
+  const canUpdateLetter = usePermission("dpx.regulator.update");
+  const canDeleteLetter = usePermission("dpx.regulator.delete");
   const client = useMemo(() => createApiClient("/api/bff"), []);
 
   const assets = useAssets(client);
@@ -80,7 +91,15 @@ export function GovernanceContent() {
   const attestations = usePolicyAttestations(client, expandedPolicy ?? "");
   const missing = useMissingAttestations(client, expandedPolicy ?? "");
 
-  if (!canRead && !canReadPolicy) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
+  const [letterStatusFilter, setLetterStatusFilter] = useState<GovRegulatorLetterStatus | "">("");
+  const [letterDirectionFilter, setLetterDirectionFilter] = useState<GovRegulatorLetterDirection | "">("");
+  const letters = useRegulatorLetters(client, { status: letterStatusFilter || undefined, direction: letterDirectionFilter || undefined });
+  const saveLetter = useCreateRegulatorLetter(client);
+  const setLetterStatus = useSetRegulatorLetterStatus(client);
+  const deleteLetter = useDeleteRegulatorLetter(client);
+  const [newLetter, setNewLetter] = useState<{ direction: GovRegulatorLetterDirection; letter_no: string; subject: string; received_at: string; due_at: string; incident_id: string } | null>(null);
+
+  if (!canRead && !canReadPolicy && !canReadLetters) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
 
   const scheduleRows = schedules.data?.pages.flatMap((p) => p.data) ?? [];
   const jobRows = jobs.data?.pages.flatMap((p) => p.data) ?? [];
@@ -319,6 +338,110 @@ export function GovernanceContent() {
                   </tr>
                 )}
               </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </section>}
+
+      {canReadLetters && <section className="space-y-3" data-testid="regulator-letters-section">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">{t("regulatorLetters.title")}</h2>
+          {canCreateLetter && (
+            <Button
+              onClick={() => setNewLetter({ direction: "inbound", letter_no: "", subject: "", received_at: "", due_at: "", incident_id: "" })}
+              data-testid="new-regulator-letter"
+            >
+              {t("regulatorLetters.new")}
+            </Button>
+          )}
+        </div>
+        <p className="text-slate-600">{t("regulatorLetters.intro")}</p>
+
+        {newLetter && (
+          <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
+            <legend className="px-1 font-semibold">{t("regulatorLetters.form.title")}</legend>
+            <label><span className="block text-slate-600">{t("regulatorLetters.form.direction")}</span>
+              <select className={INPUT} value={newLetter.direction}
+                onChange={(e) => setNewLetter({ ...newLetter, direction: e.target.value as GovRegulatorLetterDirection })}>
+                <option value="inbound">{t("regulatorLetters.directions.inbound")}</option>
+                <option value="outbound">{t("regulatorLetters.directions.outbound")}</option>
+              </select></label>
+            <label><span className="block text-slate-600">{t("regulatorLetters.form.letterNo")}</span>
+              <input className={INPUT} value={newLetter.letter_no} onChange={(e) => setNewLetter({ ...newLetter, letter_no: e.target.value })} /></label>
+            <label className="sm:col-span-2"><span className="block text-slate-600">{t("regulatorLetters.form.subject")}</span>
+              <input className={INPUT} value={newLetter.subject} onChange={(e) => setNewLetter({ ...newLetter, subject: e.target.value })} /></label>
+            <label><span className="block text-slate-600">{t("regulatorLetters.form.receivedAt")}</span>
+              <input type="date" className={INPUT} value={newLetter.received_at} onChange={(e) => setNewLetter({ ...newLetter, received_at: e.target.value })} /></label>
+            <label><span className="block text-slate-600">{t("regulatorLetters.form.dueAt")}</span>
+              <input type="date" className={INPUT} value={newLetter.due_at} onChange={(e) => setNewLetter({ ...newLetter, due_at: e.target.value })} /></label>
+            <label className="sm:col-span-2"><span className="block text-slate-600">{t("regulatorLetters.form.incidentId")}</span>
+              <input className={INPUT} value={newLetter.incident_id} onChange={(e) => setNewLetter({ ...newLetter, incident_id: e.target.value })} /></label>
+            {saveLetter.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("regulatorLetters.form.saveError", { detail: detail(saveLetter.error) })}</p>}
+            <div className="flex gap-2 sm:col-span-2">
+              <Button
+                disabled={saveLetter.isPending || !newLetter.subject}
+                onClick={() =>
+                  saveLetter.mutate(
+                    {
+                      direction: newLetter.direction, letter_no: newLetter.letter_no || undefined, subject: newLetter.subject,
+                      received_at: newLetter.received_at || undefined, due_at: newLetter.due_at || undefined,
+                      incident_id: newLetter.incident_id || undefined,
+                    },
+                    { onSuccess: () => setNewLetter(null) },
+                  )
+                }
+              >
+                {t("regulatorLetters.form.save")}
+              </Button>
+              <Button variant="secondary" onClick={() => { saveLetter.reset(); setNewLetter(null); }}>{t("regulatorLetters.form.cancel")}</Button>
+            </div>
+          </fieldset>
+        )}
+
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="flex items-center gap-2"><span className="text-slate-600">{t("regulatorLetters.filterStatus")}</span>
+            <select className={INPUT + " w-auto"} value={letterStatusFilter} onChange={(e) => setLetterStatusFilter(e.target.value as GovRegulatorLetterStatus | "")}>
+              <option value="">{t("regulatorLetters.allStatuses")}</option>
+              {(["open", "responded", "closed"] as const).map((s) => <option key={s} value={s}>{t(`regulatorLetters.statuses.${s}`)}</option>)}
+            </select></span>
+          <span className="flex items-center gap-2"><span className="text-slate-600">{t("regulatorLetters.filterDirection")}</span>
+            <select className={INPUT + " w-auto"} value={letterDirectionFilter} onChange={(e) => setLetterDirectionFilter(e.target.value as GovRegulatorLetterDirection | "")}>
+              <option value="">{t("regulatorLetters.allDirections")}</option>
+              {(["inbound", "outbound"] as const).map((d) => <option key={d} value={d}>{t(`regulatorLetters.directions.${d}`)}</option>)}
+            </select></span>
+        </div>
+
+        <table className="w-full border-collapse text-left">
+          <thead><tr className="border-b border-slate-200 text-slate-500">
+            <th className="py-1">{t("regulatorLetters.table.subject")}</th>
+            <th>{t("regulatorLetters.table.direction")}</th>
+            <th>{t("regulatorLetters.table.dueAt")}</th>
+            <th>{t("regulatorLetters.table.status")}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            {(letters.data ?? []).map((l: GovRegulatorLetter) => (
+              <tr key={l.id} className="border-b border-slate-100">
+                <td className="py-1">{l.subject}</td>
+                <td>{t(`regulatorLetters.directions.${l.direction}`)}</td>
+                <td>{l.due_at ?? "—"}</td>
+                <td>{t(`regulatorLetters.statuses.${l.status}`)}</td>
+                <td className="space-x-2 text-right">
+                  {canUpdateLetter && l.status === "open" && (
+                    <button className="text-sky-700 underline" onClick={() => setLetterStatus.mutate({ id: l.id, rowVersion: l.row_version, status: "responded" })}>
+                      {t("regulatorLetters.respond")}
+                    </button>
+                  )}
+                  {canUpdateLetter && l.status !== "closed" && (
+                    <button className="text-sky-700 underline" onClick={() => setLetterStatus.mutate({ id: l.id, rowVersion: l.row_version, status: "closed" })}>
+                      {t("regulatorLetters.close")}
+                    </button>
+                  )}
+                  {canDeleteLetter && (
+                    <button className="text-red-700 underline" onClick={() => deleteLetter.mutate(l.id)}>{t("regulatorLetters.delete")}</button>
+                  )}
+                </td>
+              </tr>
             ))}
           </tbody>
         </table>

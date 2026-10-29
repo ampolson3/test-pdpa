@@ -252,6 +252,104 @@ func (h *Strict) GovListMissingAttestations(ctx context.Context, req GovListMiss
 	return resp, nil
 }
 
+func (h *Strict) GovListRegulatorLetters(ctx context.Context, req GovListRegulatorLettersRequestObject) (GovListRegulatorLettersResponseObject, error) {
+	f := govservice.RegulatorLetterFilter{}
+	if req.Params.Status != nil {
+		s := string(*req.Params.Status)
+		f.Status = &s
+	}
+	if req.Params.Direction != nil {
+		d := string(*req.Params.Direction)
+		f.Direction = &d
+	}
+	list, err := h.svc.ListRegulatorLetters(ctx, f)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovListRegulatorLetters200JSONResponse{Data: make([]GovRegulatorLetter, 0, len(list))}
+	for _, l := range list {
+		resp.Data = append(resp.Data, toRegulatorLetterWire(l))
+	}
+	return resp, nil
+}
+
+func (h *Strict) GovCreateRegulatorLetter(ctx context.Context, req GovCreateRegulatorLetterRequestObject) (GovCreateRegulatorLetterResponseObject, error) {
+	l, err := h.svc.SaveRegulatorLetter(ctx, regulatorLetterInputFromWire(*req.Body))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovCreateRegulatorLetter201JSONResponse{Body: toRegulatorLetterWire(l), Headers: GovCreateRegulatorLetter201ResponseHeaders{ETag: etag(l.RowVersion)}}, nil
+}
+
+func (h *Strict) GovGetRegulatorLetter(ctx context.Context, req GovGetRegulatorLetterRequestObject) (GovGetRegulatorLetterResponseObject, error) {
+	l, err := h.svc.GetRegulatorLetter(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovGetRegulatorLetter200JSONResponse{Body: toRegulatorLetterWire(l), Headers: GovGetRegulatorLetter200ResponseHeaders{ETag: etag(l.RowVersion)}}, nil
+}
+
+func (h *Strict) GovUpdateRegulatorLetter(ctx context.Context, req GovUpdateRegulatorLetterRequestObject) (GovUpdateRegulatorLetterResponseObject, error) {
+	rv, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	l, err := h.svc.UpdateRegulatorLetter(ctx, req.Id, rv, regulatorLetterInputFromWire(*req.Body))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovUpdateRegulatorLetter200JSONResponse{Body: toRegulatorLetterWire(l), Headers: GovUpdateRegulatorLetter200ResponseHeaders{ETag: etag(l.RowVersion)}}, nil
+}
+
+func (h *Strict) GovDeleteRegulatorLetter(ctx context.Context, req GovDeleteRegulatorLetterRequestObject) (GovDeleteRegulatorLetterResponseObject, error) {
+	if err := h.svc.DeleteRegulatorLetter(ctx, req.Id); err != nil {
+		return nil, problem(err)
+	}
+	return GovDeleteRegulatorLetter204Response{}, nil
+}
+
+func (h *Strict) GovSetRegulatorLetterStatus(ctx context.Context, req GovSetRegulatorLetterStatusRequestObject) (GovSetRegulatorLetterStatusResponseObject, error) {
+	rv, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	l, err := h.svc.SetRegulatorLetterStatus(ctx, req.Id, rv, string(req.Body.Status))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovSetRegulatorLetterStatus200JSONResponse{Body: toRegulatorLetterWire(l), Headers: GovSetRegulatorLetterStatus200ResponseHeaders{ETag: etag(l.RowVersion)}}, nil
+}
+
+func regulatorLetterInputFromWire(in GovRegulatorLetterInput) govservice.RegulatorLetterInput {
+	out := govservice.RegulatorLetterInput{Direction: string(in.Direction), LetterNo: in.LetterNo, Subject: in.Subject, FileID: in.FileId, IncidentID: in.IncidentId}
+	if in.ReceivedAt != nil {
+		t := in.ReceivedAt.Time
+		out.ReceivedAt = &t
+	}
+	if in.DueAt != nil {
+		t := in.DueAt.Time
+		out.DueAt = &t
+	}
+	return out
+}
+
+func toRegulatorLetterWire(l govservice.RegulatorLetter) GovRegulatorLetter {
+	w := GovRegulatorLetter{
+		Id: l.ID, Direction: GovRegulatorLetterDirection(l.Direction), LetterNo: l.LetterNo, Subject: l.Subject,
+		Status: GovRegulatorLetterStatus(l.Status), FileId: l.FileID, IncidentId: l.IncidentID, RowVersion: int(l.RowVersion),
+	}
+	if l.ReceivedAt != nil {
+		w.ReceivedAt = &openapi_types.Date{Time: *l.ReceivedAt}
+	}
+	if l.DueAt != nil {
+		w.DueAt = &openapi_types.Date{Time: *l.DueAt}
+	}
+	if l.RespondedAt != nil {
+		w.RespondedAt = &openapi_types.Date{Time: *l.RespondedAt}
+	}
+	return w
+}
+
 func toPolicyWire(p govservice.Policy) GovPolicy {
 	return GovPolicy{
 		Id: p.ID, Title: p.Title, DocumentId: p.DocumentID, VersionNo: int(p.VersionNo),

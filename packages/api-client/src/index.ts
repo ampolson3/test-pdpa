@@ -126,6 +126,11 @@ export {
   useAttestPolicy,
   usePolicyAttestations,
   useMissingAttestations,
+  useRegulatorLetters,
+  useCreateRegulatorLetter,
+  useUpdateRegulatorLetter,
+  useSetRegulatorLetterStatus,
+  useDeleteRegulatorLetter,
   type RetentionSchedule,
   type RetentionScheduleInput,
   type RetentionScheduleStatus,
@@ -136,6 +141,10 @@ export {
   type GovPolicyInput,
   type GovPolicyAttestation,
   type GovMissingAttestation,
+  type GovRegulatorLetter,
+  type GovRegulatorLetterInput,
+  type GovRegulatorLetterStatus,
+  type GovRegulatorLetterDirection,
 } from "./governance";
 export {
   useAgreements,

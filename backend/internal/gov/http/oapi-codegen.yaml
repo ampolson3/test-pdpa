@@ -21,3 +21,9 @@ output-options:
     - govAttestPolicy
     - govListPolicyAttestations
     - govListMissingAttestations
+    - govListRegulatorLetters
+    - govCreateRegulatorLetter
+    - govGetRegulatorLetter
+    - govUpdateRegulatorLetter
+    - govDeleteRegulatorLetter
+    - govSetRegulatorLetterStatus

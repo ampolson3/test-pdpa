@@ -17489,6 +17489,231 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/governance/regulator-letters:
+    get:
+      operationId: govListRegulatorLetters
+      tags: [gov]
+      summary: 'DPX-08: the register of letters/orders/inspection notices to or from the PDPC office (สคส.), soonest-due first'
+      x-permission: dpx.regulator.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/GovRegulatorLetterStatus'
+        - name: direction
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/GovRegulatorLetterDirection'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovRegulatorLetter'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: govCreateRegulatorLetter
+      tags: [gov]
+      summary: 'DPX-08: record a letter — a real due_at schedules the acceptance criterion''s own single due-date reminder'
+      x-permission: dpx.regulator.create
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovRegulatorLetterInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovRegulatorLetter'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/governance/regulator-letters/{id}:
+    get:
+      operationId: govGetRegulatorLetter
+      tags: [gov]
+      summary: One regulator letter
+      x-permission: dpx.regulator.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovRegulatorLetter'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: govUpdateRegulatorLetter
+      tags: [gov]
+      summary: Edit a letter's own details — a changed due_at reschedules the reminder
+      x-permission: dpx.regulator.update
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovRegulatorLetterInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovRegulatorLetter'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+    delete:
+      operationId: govDeleteRegulatorLetter
+      tags: [gov]
+      summary: Remove a letter record (not its file)
+      x-permission: dpx.regulator.delete
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/governance/regulator-letters/{id}/status:
+    patch:
+      operationId: govSetRegulatorLetterStatus
+      tags: [gov]
+      summary: Move a letter open -> responded -> closed (responded_at is stamped automatically on "responded")
+      x-permission: dpx.regulator.update
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/GovRegulatorLetterStatus'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovRegulatorLetter'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/dataflow/graph:
     get:
       operationId: dataflowGetGraph
@@ -25947,3 +26172,71 @@ components:
           $ref: '#/components/schemas/Uuid'
         user_name:
           type: string
+    GovRegulatorLetterDirection:
+      type: string
+      enum: [inbound, outbound]
+    GovRegulatorLetterStatus:
+      type: string
+      enum: [open, responded, closed]
+    GovRegulatorLetterInput:
+      type: object
+      required: [direction, subject]
+      properties:
+        direction:
+          $ref: '#/components/schemas/GovRegulatorLetterDirection'
+        letter_no:
+          type: [string, 'null']
+        subject:
+          type: string
+        received_at:
+          type: [string, 'null']
+          format: date
+        due_at:
+          type: [string, 'null']
+          format: date
+          description: When set, schedules the acceptance criterion's own single reminder (DPX-08) a fixed number of days ahead.
+        file_id:
+          type: [string, 'null']
+          format: uuid
+          description: The caller's own clean, still-unattached PLT-09 upload.
+        incident_id:
+          type: [string, 'null']
+          format: uuid
+          description: An optional link to a breach.incidents row — checked visible under RLS (rule 1).
+      example:
+        direction: inbound
+        letter_no: 'สคส. 1/2569'
+        subject: 'คำสั่งขอข้อมูลเพิ่มเติม'
+        received_at: '2026-10-01'
+        due_at: '2026-10-31'
+    GovRegulatorLetter:
+      type: object
+      required: [id, direction, subject, status, row_version]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        direction:
+          $ref: '#/components/schemas/GovRegulatorLetterDirection'
+        letter_no:
+          type: [string, 'null']
+        subject:
+          type: string
+        received_at:
+          type: [string, 'null']
+          format: date
+        due_at:
+          type: [string, 'null']
+          format: date
+        status:
+          $ref: '#/components/schemas/GovRegulatorLetterStatus'
+        file_id:
+          type: [string, 'null']
+          format: uuid
+        incident_id:
+          type: [string, 'null']
+          format: uuid
+        responded_at:
+          type: [string, 'null']
+          format: date
+        row_version:
+          type: integer

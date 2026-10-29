@@ -382,10 +382,14 @@ func run() error {
 	dpoSvc.Breach = breachSvc // DPO-05: breach's 72-hour PDPC clock on the notification center
 
 	// DPX-05: retention schedules and disposal jobs. Dsar is dsarSvc directly (no import cycle, since
-	// dsar never imports gov) for the legal-hold check; River is nil here (cmd/api never runs the daily
-	// sweep itself — that's cmd/worker's job, same as every other PLT-10-style sweep in this codebase).
-	govSvc := &govservice.Service{Audit: auditSvc, Ropa: ropaSvc, Dsar: dsarSvc, Files: fileSvc, Docs: docsSvc}
-	fileSvc.EntityPermissions[govservice.JobType] = "dpx.retention.read" // disposal job evidence
+	// dsar never imports gov) for the legal-hold check. DPX-08: Breach is breachSvc directly (no import
+	// cycle, breach never imports gov) for a regulator letter's optional incident_id FK-visibility check;
+	// Notify/River are wired here so creating/editing a letter can schedule its own due-date reminder in
+	// the request's own transaction, the same way VEN-06's certificate reminder is scheduled at write time.
+	govSvc := &govservice.Service{Audit: auditSvc, Ropa: ropaSvc, Dsar: dsarSvc, Files: fileSvc, Docs: docsSvc,
+		Breach: breachSvc, Notify: notifySvc, River: riverClient}
+	fileSvc.EntityPermissions[govservice.JobType] = "dpx.retention.read"             // disposal job evidence
+	fileSvc.EntityPermissions[govservice.RegulatorLetterType] = "dpx.regulator.read" // DPX-08 letter attachment
 
 	// Public consent forms (BP-01) and published notices (PNG-06): tenant and principal from the public key,
 	// then the same Idempotency + Tx chain. Both mount on the same group — chi dispatches by path, and

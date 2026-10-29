@@ -11,12 +11,17 @@ export type GovPolicy = components["schemas"]["GovPolicy"];
 export type GovPolicyInput = components["schemas"]["GovPolicyInput"];
 export type GovPolicyAttestation = components["schemas"]["GovPolicyAttestation"];
 export type GovMissingAttestation = components["schemas"]["GovMissingAttestation"];
+export type GovRegulatorLetter = components["schemas"]["GovRegulatorLetter"];
+export type GovRegulatorLetterInput = components["schemas"]["GovRegulatorLetterInput"];
+export type GovRegulatorLetterStatus = components["schemas"]["GovRegulatorLetterStatus"];
+export type GovRegulatorLetterDirection = components["schemas"]["GovRegulatorLetterDirection"];
 
 const schedulesKey = ["gov", "retention-schedules"] as const;
 const jobsKey = ["gov", "disposal-jobs"] as const;
 const policiesKey = ["gov", "policies"] as const;
 const attestationsKey = ["gov", "policy-attestations"] as const;
 const missingAttestationsKey = ["gov", "missing-attestations"] as const;
+const regulatorLettersKey = ["gov", "regulator-letters"] as const;
 
 /** GET /admin/v1/governance/retention-schedules (DPX-05), newest first. */
 export function useRetentionSchedules(client: ApiClient, filter: { assetId?: string; status?: RetentionScheduleStatus } = {}) {
@@ -205,5 +210,76 @@ export function useMissingAttestations(client: ApiClient, policyId: string) {
       return data.data;
     },
     enabled: !!policyId,
+  });
+}
+
+/** GET /admin/v1/governance/regulator-letters (DPX-08) — soonest-due first. */
+export function useRegulatorLetters(client: ApiClient, filter: { status?: GovRegulatorLetterStatus; direction?: GovRegulatorLetterDirection } = {}) {
+  return useQuery({
+    queryKey: [...regulatorLettersKey, filter],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/regulator-letters", {
+        params: { query: { status: filter.status, direction: filter.direction } },
+      });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/governance/regulator-letters — a real due_at schedules the single due-date reminder. */
+export function useCreateRegulatorLetter(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: GovRegulatorLetterInput) => {
+      const { data, error } = await client.POST("/admin/v1/governance/regulator-letters", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: regulatorLettersKey }),
+  });
+}
+
+/** PUT /admin/v1/governance/regulator-letters/{id} — a changed due_at reschedules the reminder. */
+export function useUpdateRegulatorLetter(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; rowVersion: number; input: GovRegulatorLetterInput }) => {
+      const { data, error } = await client.PUT("/admin/v1/governance/regulator-letters/{id}", {
+        params: { path: { id: v.id }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: regulatorLettersKey }),
+  });
+}
+
+/** PATCH /admin/v1/governance/regulator-letters/{id}/status — open -> responded -> closed. */
+export function useSetRegulatorLetterStatus(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; rowVersion: number; status: GovRegulatorLetterStatus }) => {
+      const { data, error } = await client.PATCH("/admin/v1/governance/regulator-letters/{id}/status", {
+        params: { path: { id: v.id }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: { status: v.status },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: regulatorLettersKey }),
+  });
+}
+
+/** DELETE /admin/v1/governance/regulator-letters/{id} — removes the letter record (not its file). */
+export function useDeleteRegulatorLetter(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await client.DELETE("/admin/v1/governance/regulator-letters/{id}", { params: { path: { id } } });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: regulatorLettersKey }),
   });
 }

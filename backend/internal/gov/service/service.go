@@ -17,12 +17,14 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/riverqueue/river"
 
+	breachservice "pdpa-platform/internal/breach/service"
 	dsarservice "pdpa-platform/internal/dsar/service"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
 	docsservice "pdpa-platform/internal/platform/docs"
 	"pdpa-platform/internal/platform/files"
+	"pdpa-platform/internal/platform/notify"
 	ropaservice "pdpa-platform/internal/ropa/service"
 )
 
@@ -97,15 +99,35 @@ type Docs interface {
 	PublishedVersionOf(ctx context.Context, versionID uuid.UUID) (docsservice.PublishedVersion, uuid.UUID, error)
 }
 
+// Breach is what DPX-08 reads from the breach module (rule 9): FK visibility (rule 1) for a
+// regulator letter's optional incident_id. No import cycle: breach/service does not import gov.
+type Breach interface {
+	Get(ctx context.Context, id uuid.UUID) (breachservice.Incident, error)
+}
+
+// DPX-08's own permission codes (dpx.regulator.*, already seeded — DPO holds all four, LEGAL holds
+// create/read/update, AUDIT holds read).
+const (
+	RegulatorPermRead   = "dpx.regulator.read"
+	RegulatorPermCreate = "dpx.regulator.create"
+	RegulatorPermUpdate = "dpx.regulator.update"
+	RegulatorPermDelete = "dpx.regulator.delete"
+)
+
+// RegulatorLetterType is the entity type for audit/files (DPX-08).
+const RegulatorLetterType = "gov_regulator_letter"
+
 // Service runs the gov module for the tenant of the transaction in ctx.
 type Service struct {
-	Audit *audit.Service
-	Ropa  Ropa
-	Dsar  Dsar
-	Files Files
-	Docs  Docs
-	River *river.Client[pgx.Tx]
-	Now   func() time.Time
+	Audit  *audit.Service
+	Ropa   Ropa
+	Dsar   Dsar
+	Files  Files
+	Docs   Docs
+	Breach Breach
+	Notify *notify.Service
+	River  *river.Client[pgx.Tx]
+	Now    func() time.Time
 }
 
 func (s *Service) now() time.Time {

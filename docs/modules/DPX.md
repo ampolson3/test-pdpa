@@ -405,6 +405,52 @@ publish ด้วย document_id, ปุ่มรับทราบ, และ�
 
 **Acceptance criteria:** กำหนดส่งถูกแจ้งเตือนก่อนครบ
 
+**Implementation — done.** `gov.regulator_letters` was already fully specified in the baseline migrations
+(00017_gov.sql, FK'd in 00018: `file_id` → `platform.files`, `incident_id` → `breach.incidents`) and
+`dpx.regulator.{create,read,update,delete}` was already seeded (DPO holds all four, LEGAL holds
+create/read/update, AUDIT holds read) — no new migration or permission code, only
+`internal/gov/service/regulator_letters.go` against both: plain CRUD (`SaveRegulatorLetter`/
+`GetRegulatorLetter`/`ListRegulatorLetters`/`UpdateRegulatorLetter`/`DeleteRegulatorLetter`), an
+`open -> responded -> closed` status move (`SetRegulatorLetterStatus`, stamping `responded_at`
+automatically), and the acceptance criterion itself — a single reminder checkpoint before `due_at`, the
+exact one-time-per-record pattern VEN-06's own certificate-expiry reminder already established (not a
+recurring sweep, since a due date doesn't move on its own the way a review cycle does).
+
+A new `Breach` interface on `gov.Service` (rule 9: `breach/service` never imports `gov`, so no cycle) gives
+`incident_id`'s own FK-visibility check (rule 1) without `gov` touching the `breach` schema directly — the
+first cross-module read this package has needed beyond `Ropa`/`Dsar`/`Docs`. The reminder itself follows
+VEN-06's `scheduleCertificateExpiryReminder`/`FireCertificateExpiryReminder` shape exactly:
+`scheduleRegulatorLetterDueReminder` enqueues `gov.regulator_letter_due` (unique per letter)
+`RegulatorLetterDueNoticeDays` (7, a plain tunable default per CLAUDE.md's "implement the listed default as
+config") ahead of `due_at`, or at once if that moment has already passed; `FireRegulatorLetterDueReminder`
+re-reads the letter and no-ops if `due_at` no longer matches what the job was scheduled for or the letter
+is no longer `open` (responded/closed/deleted since) — then notifies every DPO and LEGAL user (this record
+has no owner column of its own, so there's no single-person fallback the way VEN-06's `relationship_owner_id`
+gives one). Migration 00092 seeds the `gov.regulator_letter_due` template (th/en × in_app/email, operational
+text, no DRAFT marker — rule 8 is about legal/notice wording, not an internal ops reminder). A regulator
+letter's own evidence file (the letter itself, an order, a filed response) is the caller's own clean,
+still-unattached PLT-09 upload, attached via `Files.AttachSystem` the same way every other evidence
+attachment in this codebase already works.
+
+API: `GET`/`POST /admin/v1/governance/regulator-letters`, `GET`/`PUT`/`DELETE
+/admin/v1/governance/regulator-letters/{id}` (ETag/If-Match on PUT), `PATCH
+/admin/v1/governance/regulator-letters/{id}/status` (ETag/If-Match). UI: a "Regulator correspondence"
+section added to the existing `/governance` page (DPX-02/DPX-05's own page) — a register form
+(direction/letter number/subject/received/due date/optional linked incident id), a status/direction-filtered
+list, and per-row respond/close/delete actions. Tests: unit
+(`internal/gov/service/dpx08_test.go` — the acceptance criterion directly: a real `due_at` schedules exactly
+one checkpoint; firing it notifies DPO/LEGAL while the letter is still open and is a harmless no-op once
+responded; an unknown `incident_id` is refused as `ErrInvalid`, a known one round-trips; two-tenant
+isolation), HTTP contract (`internal/gov/http/handler_test.go`'s existing `TestGovHandler_Contract`,
+extended with the full create → list → get → update (428 without If-Match) → respond → delete → 404 chain
+through the real validator + AuthZ). Not verified live against a real Postgres/Redis in this pass — neither
+was reachable in this environment for this feature; every test compiles and vets clean and skips the same
+way the rest of this module's own suite already does without one. `go build ./...`, `go vet ./...`,
+`gofmt -l` (clean on every touched file), `go test ./...` (no regressions — only the pre-existing, unrelated
+`internal/pkg/validate` failure), `make gen` re-run with no drift, `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated `/governance` route)
+all verified clean.
+
 <a id="dpx-13"></a>
 ### DPX-13 เชื่อมระบบ HR / ITSM / SIEM
 

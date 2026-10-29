@@ -3508,6 +3508,45 @@
       "attestations": {
         "title": "Attestations"
       }
+    },
+    "regulatorLetters": {
+      "title": "Regulator correspondence",
+      "intro": "A register of letters, orders and inspection notices to or from the PDPC office — a real due date schedules a reminder before it arrives.",
+      "new": "New letter",
+      "filterStatus": "Status",
+      "filterDirection": "Direction",
+      "allStatuses": "All statuses",
+      "allDirections": "All directions",
+      "directions": {
+        "inbound": "Inbound (from PDPC)",
+        "outbound": "Outbound (to PDPC)"
+      },
+      "statuses": {
+        "open": "Open",
+        "responded": "Responded",
+        "closed": "Closed"
+      },
+      "table": {
+        "subject": "Subject",
+        "direction": "Direction",
+        "dueAt": "Due",
+        "status": "Status"
+      },
+      "respond": "Mark responded",
+      "close": "Close",
+      "delete": "Delete",
+      "form": {
+        "title": "New regulator letter",
+        "direction": "Direction",
+        "letterNo": "Letter number",
+        "subject": "Subject",
+        "receivedAt": "Received on",
+        "dueAt": "Due date",
+        "incidentId": "Linked breach incident ID (optional)",
+        "save": "Save",
+        "cancel": "Cancel",
+        "saveError": "Could not save: {detail}"
+      }
     }
   },
   "ropaWizard": {

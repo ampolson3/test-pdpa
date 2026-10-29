@@ -5964,6 +5964,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/governance/regulator-letters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPX-08: the register of letters/orders/inspection notices to or from the PDPC office (สคส.), soonest-due first */
+        get: operations["govListRegulatorLetters"];
+        put?: never;
+        /** DPX-08: record a letter — a real due_at schedules the acceptance criterion's own single due-date reminder */
+        post: operations["govCreateRegulatorLetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/regulator-letters/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One regulator letter */
+        get: operations["govGetRegulatorLetter"];
+        /** Edit a letter's own details — a changed due_at reschedules the reminder */
+        put: operations["govUpdateRegulatorLetter"];
+        post?: never;
+        /** Remove a letter record (not its file) */
+        delete: operations["govDeleteRegulatorLetter"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/regulator-letters/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Move a letter open -> responded -> closed (responded_at is stamped automatically on "responded") */
+        patch: operations["govSetRegulatorLetterStatus"];
+        trace?: never;
+    };
     "/admin/v1/dataflow/graph": {
         parameters: {
             query?: never;
@@ -10794,6 +10848,59 @@ export interface components {
         GovMissingAttestation: {
             user_id: components["schemas"]["Uuid"];
             user_name: string;
+        };
+        /** @enum {string} */
+        GovRegulatorLetterDirection: "inbound" | "outbound";
+        /** @enum {string} */
+        GovRegulatorLetterStatus: "open" | "responded" | "closed";
+        /**
+         * @example {
+         *       "direction": "inbound",
+         *       "letter_no": "สคส. 1/2569",
+         *       "subject": "คำสั่งขอข้อมูลเพิ่มเติม",
+         *       "received_at": "2026-10-01",
+         *       "due_at": "2026-10-31"
+         *     }
+         */
+        GovRegulatorLetterInput: {
+            direction: components["schemas"]["GovRegulatorLetterDirection"];
+            letter_no?: string | null;
+            subject: string;
+            /** Format: date */
+            received_at?: string | null;
+            /**
+             * Format: date
+             * @description When set, schedules the acceptance criterion's own single reminder (DPX-08) a fixed number of days ahead.
+             */
+            due_at?: string | null;
+            /**
+             * Format: uuid
+             * @description The caller's own clean, still-unattached PLT-09 upload.
+             */
+            file_id?: string | null;
+            /**
+             * Format: uuid
+             * @description An optional link to a breach.incidents row — checked visible under RLS (rule 1).
+             */
+            incident_id?: string | null;
+        };
+        GovRegulatorLetter: {
+            id: components["schemas"]["Uuid"];
+            direction: components["schemas"]["GovRegulatorLetterDirection"];
+            letter_no?: string | null;
+            subject: string;
+            /** Format: date */
+            received_at?: string | null;
+            /** Format: date */
+            due_at?: string | null;
+            status: components["schemas"]["GovRegulatorLetterStatus"];
+            /** Format: uuid */
+            file_id?: string | null;
+            /** Format: uuid */
+            incident_id?: string | null;
+            /** Format: date */
+            responded_at?: string | null;
+            row_version: number;
         };
     };
     responses: {
@@ -25590,6 +25697,203 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    govListRegulatorLetters: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["GovRegulatorLetterStatus"];
+                direction?: components["schemas"]["GovRegulatorLetterDirection"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GovRegulatorLetter"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    govCreateRegulatorLetter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GovRegulatorLetterInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovRegulatorLetter"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    govGetRegulatorLetter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovRegulatorLetter"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    govUpdateRegulatorLetter: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GovRegulatorLetterInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovRegulatorLetter"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    govDeleteRegulatorLetter: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    govSetRegulatorLetterStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    status: components["schemas"]["GovRegulatorLetterStatus"];
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovRegulatorLetter"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     dataflowGetGraph: {

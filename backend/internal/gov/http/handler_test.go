@@ -70,6 +70,7 @@ func TestGovHandler_Contract(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
+				`DELETE FROM gov.regulator_letters`,
 				`DELETE FROM gov.disposal_jobs`, `DELETE FROM gov.retention_schedules`, `DELETE FROM ropa.retention_rules`,
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM ropa.assets`, `DELETE FROM org.org_units`,
 				`DELETE FROM org.legal_entities`, `DELETE FROM gov.policy_attestations`, `DELETE FROM gov.policies`,
@@ -153,7 +154,8 @@ func TestGovHandler_Contract(t *testing.T) {
 	reader := uuid.New()
 	grants := map[string][]string{
 		tenant.UserID.String(): {"dpx.retention.read", "dpx.retention.create", "dpx.retention.update", "dpx.retention.approve", "dpx.retention.execute",
-			"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.create", "notice.document.update"},
+			"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.create", "notice.document.update",
+			"dpx.regulator.read", "dpx.regulator.create", "dpx.regulator.update", "dpx.regulator.delete"},
 		reader.String(): {"dpx.retention.read"},
 		emp.String():    {"dpx.policy.execute"},
 		dpo.String():    {"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.update", "notice.document.approve", "notice.document.publish"},
@@ -440,5 +442,59 @@ func TestGovHandler_Contract(t *testing.T) {
 	code, body, _ = do("GET", policiesPath+"/"+policy.ID+"/attestations", &dpo, "", nil)
 	if code != 200 || !strings.Contains(body, emp.String()) {
 		t.Fatalf("list attestations: %d %s", code, body)
+	}
+
+	// DPX-08: the regulator-letter register, through the real validator + AuthZ chain.
+	lettersPath := "/admin/v1/governance/regulator-letters"
+	if code, _, _ := do("GET", lettersPath, nil, "", nil); code != 401 {
+		t.Errorf("list regulator letters, no principal: %d, want 401", code)
+	}
+	if code, _, _ := do("POST", lettersPath, &reader, "", map[string]any{"direction": "inbound", "subject": "x"}); code != 403 {
+		t.Errorf("create regulator letter with read-only permission: %d, want 403", code)
+	}
+	code, body, headers = do("POST", lettersPath, &admin, "", map[string]any{
+		"direction": "inbound", "subject": "คำสั่งขอข้อมูลเพิ่มเติม", "letter_no": "สคส. 1/2569", "due_at": "2026-12-01",
+	})
+	if code != 201 || !strings.Contains(body, `"open"`) {
+		t.Fatalf("create regulator letter: %d %s", code, body)
+	}
+	var letter struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &letter)
+	letterEtag := headers.Get("ETag")
+
+	if code, _, _ := do("GET", lettersPath, &admin, "", nil); code != 200 {
+		t.Errorf("list regulator letters: %d", code)
+	}
+	code, body, _ = do("GET", lettersPath+"/"+letter.ID, &admin, "", nil)
+	if code != 200 {
+		t.Fatalf("get regulator letter: %d %s", code, body)
+	}
+
+	// Missing If-Match -> 428.
+	if code, _, _ := do("PUT", lettersPath+"/"+letter.ID, &admin, "", map[string]any{"direction": "inbound", "subject": "แก้ไขเรื่อง"}); code != 428 {
+		t.Errorf("update without If-Match: %d, want 428", code)
+	}
+	code, body, headers = do("PUT", lettersPath+"/"+letter.ID, &admin, letterEtag, map[string]any{"direction": "inbound", "subject": "แก้ไขเรื่อง", "due_at": "2026-12-15"})
+	if code != 200 || !strings.Contains(body, "แก้ไขเรื่อง") {
+		t.Fatalf("update regulator letter: %d %s", code, body)
+	}
+	letterEtag = headers.Get("ETag")
+
+	code, body, headers = do("PATCH", lettersPath+"/"+letter.ID+"/status", &admin, letterEtag, map[string]any{"status": "responded"})
+	if code != 200 || !strings.Contains(body, `"responded"`) {
+		t.Fatalf("set regulator letter status: %d %s", code, body)
+	}
+	letterEtag = headers.Get("ETag")
+
+	if code, _, _ := do("DELETE", lettersPath+"/"+letter.ID, &reader, "", nil); code != 403 {
+		t.Errorf("delete regulator letter with read-only permission: %d, want 403", code)
+	}
+	if code, _, _ := do("DELETE", lettersPath+"/"+letter.ID, &admin, "", nil); code != 204 {
+		t.Errorf("delete regulator letter: %d, want 204", code)
+	}
+	if code, _, _ := do("GET", lettersPath+"/"+letter.ID, &admin, "", nil); code != 404 {
+		t.Errorf("get deleted regulator letter: %d, want 404", code)
 	}
 }
