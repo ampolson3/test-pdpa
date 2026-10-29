@@ -18158,6 +18158,314 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/governance/audits:
+    get:
+      operationId: govListAudits
+      tags: [gov]
+      summary: 'DPX-03: organization-wide (or per-subsidiary) PDPA-readiness audits, newest first'
+      x-permission: dpx.audit.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: legal_entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovAudit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: govRunAudit
+      tags: [gov]
+      summary: 'DPX-03''s own acceptance criterion: answer a published maturity questionnaire against a legal entity in one step — the result carries a score per dimension and every yes_no "no" answer opens a remediation finding'
+      x-permission: dpx.audit.create
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [legal_entity_id, period, template_code, answers]
+              additionalProperties: false
+              properties:
+                legal_entity_id:
+                  $ref: '#/components/schemas/Uuid'
+                period:
+                  type: string
+                  description: 'A free-text period label, e.g. "2026-Q4".'
+                template_code:
+                  type: string
+                  description: A published assess.templates code of assessment_type "maturity".
+                answers:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovAudit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/governance/audits/{id}:
+    get:
+      operationId: govGetAudit
+      tags: [gov]
+      summary: One audit, with its own current per-dimension scores and findings
+      x-permission: dpx.audit.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovAudit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: govDeleteAudit
+      tags: [gov]
+      summary: Remove an audit's own wrapper row (not the underlying dpia assessment round)
+      x-permission: dpx.audit.delete
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/governance/audits/{id}/findings:
+    get:
+      operationId: govListAuditFindings
+      tags: [gov]
+      summary: 'DPX-03''s own acceptance criterion: the audit''s own remediation plan, most severe first'
+      x-permission: dpx.audit.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovAuditFinding'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: govAddAuditFinding
+      tags: [gov]
+      summary: Record a finding by hand, alongside whatever the audit itself opened automatically
+      x-permission: dpx.audit.update
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovAuditFindingInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovAuditFinding'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/governance/audit-findings/{id}:
+    put:
+      operationId: govUpdateAuditFinding
+      tags: [gov]
+      summary: Edit a finding's own details
+      x-permission: dpx.audit.update
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GovAuditFindingInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovAuditFinding'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/audit-findings/{id}/status:
+    patch:
+      operationId: govSetAuditFindingStatus
+      tags: [gov]
+      summary: Move a finding open -> in_progress -> done/accepted (evidence-gated closing is DPX-04's own, separate feature)
+      x-permission: dpx.audit.update
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/GovAuditFindingStatus'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovAuditFinding'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/dataflow/graph:
     get:
       operationId: dataflowGetGraph
@@ -26820,6 +27128,110 @@ components:
         passed:
           type: [boolean, 'null']
         certificate_file_id:
+          type: [string, 'null']
+          format: uuid
+        row_version:
+          type: integer
+    GovAuditSectionScore:
+      type: object
+      required: [key, score, max_score]
+      properties:
+        key:
+          type: string
+        title:
+          type: object
+          additionalProperties: true
+          description: 'Localized title by language, e.g. {"th": "...", "en": "..."}.'
+        score:
+          type: number
+        max_score:
+          type: number
+    GovAudit:
+      type: object
+      required: [id, audit_type, assessment_id, period, status, row_version]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        audit_type:
+          type: string
+        legal_entity_id:
+          type: [string, 'null']
+          format: uuid
+        assessment_id:
+          $ref: '#/components/schemas/Uuid'
+        period:
+          type: string
+        status:
+          type: string
+        overall_score:
+          type: [number, 'null']
+        band:
+          type: string
+        completed_at:
+          type: [string, 'null']
+          format: date-time
+        section_scores:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovAuditSectionScore'
+        findings:
+          type: array
+          items:
+            $ref: '#/components/schemas/GovAuditFinding'
+        row_version:
+          type: integer
+    GovAuditFindingSeverity:
+      type: string
+      enum: [low, medium, high, critical]
+    GovAuditFindingStatus:
+      type: string
+      enum: [open, in_progress, done, accepted]
+    GovAuditFindingInput:
+      type: object
+      required: [title, severity]
+      properties:
+        title:
+          type: string
+        severity:
+          $ref: '#/components/schemas/GovAuditFindingSeverity'
+        requirement_ref:
+          type: [string, 'null']
+        recommendation:
+          type: [string, 'null']
+        owner_user_id:
+          type: [string, 'null']
+          format: uuid
+        due_at:
+          type: [string, 'null']
+          format: date
+    GovAuditFinding:
+      type: object
+      required: [id, audit_id, title, severity, status, row_version]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        audit_id:
+          $ref: '#/components/schemas/Uuid'
+        title:
+          type: string
+        severity:
+          $ref: '#/components/schemas/GovAuditFindingSeverity'
+        requirement_ref:
+          type: [string, 'null']
+        recommendation:
+          type: [string, 'null']
+        owner_user_id:
+          type: [string, 'null']
+          format: uuid
+        due_at:
+          type: [string, 'null']
+          format: date
+        status:
+          $ref: '#/components/schemas/GovAuditFindingStatus'
+        task_id:
+          type: [string, 'null']
+          format: uuid
+        evidence_file_id:
           type: [string, 'null']
           format: uuid
         row_version:

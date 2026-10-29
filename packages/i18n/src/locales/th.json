@@ -3620,6 +3620,56 @@
         "noQuiz": "ทำเครื่องหมายเรียนครบ",
         "submitError": "ส่งไม่สำเร็จ: {detail}"
       }
+    },
+    "audit": {
+      "title": "ตรวจประเมินความพร้อมทั้งองค์กร",
+      "intro": "แบบประเมินความพร้อม PDPA ตอบในขั้นตอนเดียวต่อนิติบุคคล — ผลลัพธ์แสดงคะแนนรายด้านและเปิดข้อตรวจพบหนึ่งรายการต่อคำถามที่ไม่ผ่าน",
+      "new": "ประเมิน",
+      "table": {
+        "legalEntity": "นิติบุคคล",
+        "period": "รอบ",
+        "band": "ระดับ",
+        "score": "คะแนน"
+      },
+      "bands": {
+        "developing": "กำลังพัฒนา",
+        "established": "มีพื้นฐาน",
+        "mature": "พร้อมสมบูรณ์"
+      },
+      "delete": "ลบ",
+      "viewFindings": "ข้อตรวจพบ",
+      "form": {
+        "title": "ประเมินความพร้อมองค์กร",
+        "legalEntityId": "รหัสนิติบุคคล",
+        "period": "รอบการประเมิน",
+        "periodHint": "เช่น 2026-Q4",
+        "templateCode": "รหัสแบบประเมิน",
+        "templateCodeHint": "รหัสแบบประเมิน maturity ที่เผยแพร่แล้ว เช่น org_maturity",
+        "save": "ประเมิน",
+        "cancel": "ยกเลิก",
+        "saveError": "ประเมินไม่สำเร็จ: {detail}"
+      },
+      "sectionScores": {
+        "title": "คะแนนรายด้าน"
+      },
+      "findingsPanel": {
+        "title": "แผนแก้ไข",
+        "empty": "ไม่มีข้อตรวจพบ",
+        "severities": {
+          "low": "ต่ำ",
+          "medium": "กลาง",
+          "high": "สูง",
+          "critical": "วิกฤต"
+        },
+        "statuses": {
+          "open": "เปิด",
+          "in_progress": "กำลังดำเนินการ",
+          "done": "เสร็จแล้ว",
+          "accepted": "ยอมรับความเสี่ยง"
+        },
+        "markDone": "ทำเครื่องหมายเสร็จแล้ว",
+        "accept": "ยอมรับความเสี่ยง"
+      }
     }
   },
   "ropaWizard": {

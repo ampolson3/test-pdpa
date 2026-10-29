@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
+	dpiaservice "pdpa-platform/internal/dpia/service"
 	dsarservice "pdpa-platform/internal/dsar/service"
 	govhttp "pdpa-platform/internal/gov/http"
 	govservice "pdpa-platform/internal/gov/service"
@@ -71,6 +72,7 @@ func TestGovHandler_Contract(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
+				`DELETE FROM gov.audit_findings`, `DELETE FROM gov.audits`, `DELETE FROM assess.answers`, `DELETE FROM assess.assessments`,
 				`DELETE FROM gov.training_attempts`, `DELETE FROM gov.training_assignments`, `DELETE FROM gov.courses`,
 				`DELETE FROM platform.form_submissions`, `DELETE FROM platform.form_versions`, `DELETE FROM platform.form_definitions WHERE code LIKE 'quiz_%'`,
 				`DELETE FROM gov.regulator_letters`,
@@ -95,7 +97,8 @@ func TestGovHandler_Contract(t *testing.T) {
 	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
 	docsSvc.RegisterVersioning()
 	formsSvc := wiring.Forms(nil, audit.New())
-	svc := &govservice.Service{Audit: audit.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fFiles, Docs: docsSvc, Org: orgSvc, Forms: formsSvc}
+	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Audit: audit.New()}
+	svc := &govservice.Service{Audit: audit.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fFiles, Docs: docsSvc, Org: orgSvc, Forms: formsSvc, Dpia: dpiaSvc}
 
 	// DPX-02's own employee (attestation, gov.policy_attestations.user_id has a real FK) and DPO approver
 	// (platform.approvals.approver_user_id has a real FK too) — both need real iam.users rows.
@@ -160,7 +163,8 @@ func TestGovHandler_Contract(t *testing.T) {
 		tenant.UserID.String(): {"dpx.retention.read", "dpx.retention.create", "dpx.retention.update", "dpx.retention.approve", "dpx.retention.execute",
 			"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.create", "notice.document.update",
 			"dpx.regulator.read", "dpx.regulator.create", "dpx.regulator.update", "dpx.regulator.delete",
-			"dpx.training.read", "dpx.training.create", "dpx.training.update", "dpx.training.publish", "dpx.training.delete", "dpx.training.execute"},
+			"dpx.training.read", "dpx.training.create", "dpx.training.update", "dpx.training.publish", "dpx.training.delete", "dpx.training.execute",
+			"dpx.audit.read", "dpx.audit.create", "dpx.audit.update", "dpx.audit.delete"},
 		reader.String(): {"dpx.retention.read"},
 		emp.String():    {"dpx.policy.execute"},
 		dpo.String():    {"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.update", "notice.document.approve", "notice.document.publish"},
@@ -588,5 +592,98 @@ func TestGovHandler_Contract(t *testing.T) {
 	code, body, _ = do("GET", "/admin/v1/governance/my-training-attempts", &admin, "", nil)
 	if code != 200 || !strings.Contains(body, attempt.ID) {
 		t.Fatalf("my training attempts: %d %s", code, body)
+	}
+
+	// DPX-03: the organization-wide maturity audit, through the real validator + AuthZ chain. The global
+	// "org_maturity" template (migration 00093) needs no local fixture form.
+	var auditLegalEntityID uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(), Permissions: []string{"ropa.activity.create"}})
+		le, err := orgSvc.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ออดิท จำกัด", IsController: true}, 0)
+		auditLegalEntityID = le.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	auditsPath := "/admin/v1/governance/audits"
+	if code, _, _ := do("GET", auditsPath, nil, "", nil); code != 401 {
+		t.Errorf("list audits, no principal: %d, want 401", code)
+	}
+	if code, _, _ := do("POST", auditsPath, &reader, "", map[string]any{"legal_entity_id": auditLegalEntityID, "period": "2026-Q4", "template_code": "org_maturity", "answers": map[string]any{}}); code != 403 {
+		t.Errorf("run audit with read-only permission: %d, want 403", code)
+	}
+	code, body, headers = do("POST", auditsPath, &admin, "", map[string]any{
+		"legal_entity_id": auditLegalEntityID, "period": "2026-Q4", "template_code": "org_maturity",
+		"answers": map[string]any{
+			"gov_dpo_appointed": "yes", "gov_policy_published": "yes",
+			"ropa_maintained": "yes", "ropa_reviewed_annually": "no",
+			"notices_published": "yes", "consent_records_kept": "yes",
+			"dsar_channel_exists": "yes", "dsar_sla_tracked": "yes",
+			"breach_plan_exists": "yes", "security_measures_reviewed": "yes",
+		},
+	})
+	if code != 201 || !strings.Contains(body, `"section_scores"`) {
+		t.Fatalf("run audit: %d %s", code, body)
+	}
+	var ranAudit struct {
+		ID       string `json:"id"`
+		Findings []struct {
+			ID string `json:"id"`
+		} `json:"findings"`
+	}
+	_ = json.Unmarshal([]byte(body), &ranAudit)
+	if len(ranAudit.Findings) != 1 {
+		t.Fatalf("expected exactly one finding (ropa_reviewed_annually=no), got %+v", ranAudit.Findings)
+	}
+	_ = headers
+
+	if code, _, _ := do("GET", auditsPath, &admin, "", nil); code != 200 {
+		t.Errorf("list audits: %d", code)
+	}
+	code, body, headers = do("GET", auditsPath+"/"+ranAudit.ID, &admin, "", nil)
+	if code != 200 {
+		t.Fatalf("get audit: %d %s", code, body)
+	}
+
+	findingsPath := auditsPath + "/" + ranAudit.ID + "/findings"
+	code, body, _ = do("GET", findingsPath, &admin, "", nil)
+	if code != 200 || !strings.Contains(body, ranAudit.Findings[0].ID) {
+		t.Fatalf("list audit findings: %d %s", code, body)
+	}
+
+	code, body, headers = do("POST", findingsPath, &admin, "", map[string]any{"title": "เพิ่มมาตรการตรวจสอบ", "severity": "low"})
+	if code != 201 {
+		t.Fatalf("add audit finding: %d %s", code, body)
+	}
+	var addedFinding struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &addedFinding)
+	findingEtag := headers.Get("ETag")
+
+	findingPath := "/admin/v1/governance/audit-findings/" + addedFinding.ID
+	if code, _, _ := do("PUT", findingPath, &admin, "", map[string]any{"title": "x", "severity": "low"}); code != 428 {
+		t.Errorf("update finding without If-Match: %d, want 428", code)
+	}
+	code, body, headers = do("PUT", findingPath, &admin, findingEtag, map[string]any{"title": "แก้ไขแล้ว", "severity": "high"})
+	if code != 200 || !strings.Contains(body, "แก้ไขแล้ว") {
+		t.Fatalf("update audit finding: %d %s", code, body)
+	}
+	findingEtag = headers.Get("ETag")
+
+	code, body, _ = do("PATCH", findingPath+"/status", &admin, findingEtag, map[string]any{"status": "done"})
+	if code != 200 || !strings.Contains(body, `"done"`) {
+		t.Fatalf("set audit finding status: %d %s", code, body)
+	}
+
+	if code, _, _ := do("DELETE", auditsPath+"/"+ranAudit.ID, &reader, "", nil); code != 403 {
+		t.Errorf("delete audit with read-only permission: %d, want 403", code)
+	}
+	if code, _, _ := do("DELETE", auditsPath+"/"+ranAudit.ID, &admin, "", nil); code != 204 {
+		t.Errorf("delete audit: %d, want 204", code)
+	}
+	if code, _, _ := do("GET", auditsPath+"/"+ranAudit.ID, &admin, "", nil); code != 404 {
+		t.Errorf("get deleted audit: %d, want 404", code)
 	}
 }

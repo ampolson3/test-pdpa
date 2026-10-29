@@ -3620,6 +3620,56 @@
         "noQuiz": "Mark complete",
         "submitError": "Could not submit: {detail}"
       }
+    },
+    "audit": {
+      "title": "Organization-wide audit & maturity",
+      "intro": "A PDPA-readiness questionnaire answered against a legal entity in one step — the result shows a score per dimension and opens one remediation finding per unmet question.",
+      "new": "Run audit",
+      "table": {
+        "legalEntity": "Legal entity",
+        "period": "Period",
+        "band": "Band",
+        "score": "Score"
+      },
+      "bands": {
+        "developing": "Developing",
+        "established": "Established",
+        "mature": "Mature"
+      },
+      "delete": "Delete",
+      "viewFindings": "Findings",
+      "form": {
+        "title": "Run maturity audit",
+        "legalEntityId": "Legal entity ID",
+        "period": "Period",
+        "periodHint": "e.g. 2026-Q4",
+        "templateCode": "Template code",
+        "templateCodeHint": "A published maturity template code, e.g. org_maturity",
+        "save": "Run",
+        "cancel": "Cancel",
+        "saveError": "Could not run: {detail}"
+      },
+      "sectionScores": {
+        "title": "Score per dimension"
+      },
+      "findingsPanel": {
+        "title": "Remediation plan",
+        "empty": "No findings.",
+        "severities": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "critical": "Critical"
+        },
+        "statuses": {
+          "open": "Open",
+          "in_progress": "In progress",
+          "done": "Done",
+          "accepted": "Accepted"
+        },
+        "markDone": "Mark done",
+        "accept": "Accept"
+      }
     }
   },
   "ropaWizard": {

@@ -25,6 +25,22 @@ type SubjectScreeningResult struct {
 	ScreeningResult string
 	ScreeningReason string
 	Factors         []forms.Contribution
+	Score           float64
+	MaxScore        float64
+	Band            string
+	// SectionScores is DPX-03's own addition (the first caller needing a per-dimension breakdown, not just
+	// an overall score): one entry per schema section, scored by re-running the same engine (forms.Evaluate)
+	// scoped to that section alone — the exact use the engine's own `sections []string` parameter already
+	// anticipated.
+	SectionScores []SectionScore
+}
+
+// SectionScore is one schema section's own score, e.g. one "dimension" of a maturity assessment.
+type SectionScore struct {
+	Key      string
+	Title    forms.Text
+	Score    float64
+	MaxScore float64
 }
 
 // Decide computes a screening's result/reason from its answered factors — the module-specific rule a caller
@@ -58,6 +74,11 @@ func (s *Service) ScreenSubject(ctx context.Context, assessmentType, templateCod
 		return SubjectScreeningResult{}, ve
 	}
 	factors := forms.Contributions(v.Schema, res.Answers)
+	sectionScores := make([]SectionScore, 0, len(v.Schema.Sections))
+	for _, sec := range v.Schema.Sections {
+		secRes := forms.Evaluate(v.Schema, v.Scoring, answers, false, []string{sec.Key})
+		sectionScores = append(sectionScores, SectionScore{Key: sec.Key, Title: sec.Title, Score: secRes.Score, MaxScore: secRes.MaxScore})
+	}
 	factorCount := 0
 	for _, f := range factors {
 		if f.Points > 0 {
@@ -100,5 +121,6 @@ func (s *Service) ScreenSubject(ctx context.Context, assessmentType, templateCod
 			return SubjectScreeningResult{}, err
 		}
 	}
-	return SubjectScreeningResult{AssessmentID: row.ID, RoundNo: round, ScreeningResult: result, ScreeningReason: reason, Factors: factors}, nil
+	return SubjectScreeningResult{AssessmentID: row.ID, RoundNo: round, ScreeningResult: result, ScreeningReason: reason, Factors: factors,
+		Score: res.Score, MaxScore: res.MaxScore, Band: res.Band, SectionScores: sectionScores}, nil
 }

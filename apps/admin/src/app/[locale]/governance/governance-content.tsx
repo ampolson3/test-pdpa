@@ -33,6 +33,11 @@ import {
   useStartAttempt,
   useSubmitAttempt,
   useMyTrainingAttempts,
+  useAudits,
+  useRunAudit,
+  useDeleteAudit,
+  useAuditFindings,
+  useSetAuditFindingStatus,
   type RetentionScheduleStatus,
   type DisposalJobStatus,
   type StoredFile,
@@ -46,6 +51,7 @@ import {
   type GovCourseStatus,
   type GovCourseContentType,
   type GovTrainingAssignmentTargetType,
+  type GovAudit,
 } from "@pdpa/api-client";
 import { FileUploader } from "@/components/file-uploader";
 
@@ -81,6 +87,10 @@ export function GovernanceContent() {
   const canPublishTraining = usePermission("dpx.training.publish");
   const canRetireTraining = usePermission("dpx.training.delete");
   const canExecuteTraining = usePermission("dpx.training.execute");
+  const canReadAudit = usePermission("dpx.audit.read");
+  const canCreateAudit = usePermission("dpx.audit.create");
+  const canUpdateAudit = usePermission("dpx.audit.update");
+  const canDeleteAudit = usePermission("dpx.audit.delete");
   const client = useMemo(() => createApiClient("/api/bff"), []);
 
   const assets = useAssets(client);
@@ -132,7 +142,15 @@ export function GovernanceContent() {
   const startAttempt = useStartAttempt(client);
   const submitAttempt = useSubmitAttempt(client);
 
-  if (!canRead && !canReadPolicy && !canReadLetters && !canReadTraining && !canExecuteTraining) {
+  const audits = useAudits(client);
+  const runAudit = useRunAudit(client);
+  const deleteAudit = useDeleteAudit(client);
+  const [newAudit, setNewAudit] = useState<{ legal_entity_id: string; period: string; template_code: string } | null>(null);
+  const [findingsAudit, setFindingsAudit] = useState<string | null>(null);
+  const auditFindings = useAuditFindings(client, findingsAudit ?? "");
+  const setFindingStatus = useSetAuditFindingStatus(client);
+
+  if (!canRead && !canReadPolicy && !canReadLetters && !canReadTraining && !canExecuteTraining && !canReadAudit) {
     return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
   }
 
@@ -688,6 +706,114 @@ export function GovernanceContent() {
                           {report.data?.length === 0 && <tr><td className="py-1 text-slate-500">{t("training.reportPanel.empty")}</td></tr>}
                         </tbody>
                       </table>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </section>}
+
+      {canReadAudit && <section className="space-y-3" data-testid="audit-section">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">{t("audit.title")}</h2>
+          {canCreateAudit && (
+            <Button onClick={() => setNewAudit({ legal_entity_id: "", period: "", template_code: "org_maturity" })} data-testid="new-audit">
+              {t("audit.new")}
+            </Button>
+          )}
+        </div>
+        <p className="text-slate-600">{t("audit.intro")}</p>
+
+        {newAudit && (
+          <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
+            <legend className="px-1 font-semibold">{t("audit.form.title")}</legend>
+            <label className="sm:col-span-2"><span className="block text-slate-600">{t("audit.form.legalEntityId")}</span>
+              <input className={INPUT} value={newAudit.legal_entity_id} onChange={(e) => setNewAudit({ ...newAudit, legal_entity_id: e.target.value })} /></label>
+            <label><span className="block text-slate-600">{t("audit.form.period")}</span>
+              <input className={INPUT} value={newAudit.period} placeholder={t("audit.form.periodHint")}
+                onChange={(e) => setNewAudit({ ...newAudit, period: e.target.value })} /></label>
+            <label><span className="block text-slate-600">{t("audit.form.templateCode")}</span>
+              <input className={INPUT} value={newAudit.template_code} placeholder={t("audit.form.templateCodeHint")}
+                onChange={(e) => setNewAudit({ ...newAudit, template_code: e.target.value })} /></label>
+            {runAudit.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("audit.form.saveError", { detail: detail(runAudit.error) })}</p>}
+            <div className="flex gap-2 sm:col-span-2">
+              <Button
+                disabled={runAudit.isPending || !newAudit.legal_entity_id || !newAudit.period || !newAudit.template_code}
+                onClick={() =>
+                  runAudit.mutate(
+                    { legal_entity_id: newAudit.legal_entity_id, period: newAudit.period, template_code: newAudit.template_code, answers: {} },
+                    { onSuccess: () => setNewAudit(null) },
+                  )
+                }
+              >
+                {t("audit.form.save")}
+              </Button>
+              <Button variant="secondary" onClick={() => { runAudit.reset(); setNewAudit(null); }}>{t("audit.form.cancel")}</Button>
+            </div>
+          </fieldset>
+        )}
+
+        <table className="w-full border-collapse text-left">
+          <thead><tr className="border-b border-slate-200 text-slate-500">
+            <th className="py-1">{t("audit.table.period")}</th>
+            <th>{t("audit.table.band")}</th>
+            <th>{t("audit.table.score")}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            {(audits.data ?? []).map((a: GovAudit) => (
+              <Fragment key={a.id}>
+                <tr className="border-b border-slate-100">
+                  <td className="py-1">{a.period}</td>
+                  <td>{a.band ? t(`audit.bands.${a.band}` as "audit.bands.developing") : "—"}</td>
+                  <td>{a.overall_score ?? "—"}</td>
+                  <td className="space-x-2 text-right">
+                    <button className="text-slate-700 underline" onClick={() => setFindingsAudit(findingsAudit === a.id ? null : a.id)}>
+                      {t("audit.viewFindings")}
+                    </button>
+                    {canDeleteAudit && (
+                      <button className="text-red-700 underline" onClick={() => deleteAudit.mutate(a.id)}>{t("audit.delete")}</button>
+                    )}
+                  </td>
+                </tr>
+                {findingsAudit === a.id && (
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <td colSpan={4} className="space-y-3 p-3">
+                      {a.section_scores && a.section_scores.length > 0 && (
+                        <div>
+                          <p className="font-medium">{t("audit.sectionScores.title")}</p>
+                          <ul className="list-inside list-disc">
+                            {a.section_scores.map((s) => (
+                              <li key={s.key}>{(s.title?.th as string | undefined) ?? s.key}: {s.score}/{s.max_score}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium">{t("audit.findingsPanel.title")}</p>
+                        <ul className="list-inside list-disc">
+                          {(auditFindings.data ?? []).map((f) => (
+                            <li key={f.id} className="space-x-2">
+                              <span>{f.title}</span>
+                              <span className="text-slate-500">({t(`audit.findingsPanel.severities.${f.severity}`)})</span>
+                              <span>{t(`audit.findingsPanel.statuses.${f.status}`)}</span>
+                              {canUpdateAudit && f.status !== "done" && f.status !== "accepted" && (
+                                <>
+                                  <button className="text-sky-700 underline" onClick={() => setFindingStatus.mutate({ id: f.id, rowVersion: f.row_version, status: "done" })}>
+                                    {t("audit.findingsPanel.markDone")}
+                                  </button>
+                                  <button className="text-amber-700 underline" onClick={() => setFindingStatus.mutate({ id: f.id, rowVersion: f.row_version, status: "accepted" })}>
+                                    {t("audit.findingsPanel.accept")}
+                                  </button>
+                                </>
+                              )}
+                            </li>
+                          ))}
+                          {auditFindings.data?.length === 0 && <li className="list-none text-emerald-700">{t("audit.findingsPanel.empty")}</li>}
+                        </ul>
+                      </div>
                     </td>
                   </tr>
                 )}

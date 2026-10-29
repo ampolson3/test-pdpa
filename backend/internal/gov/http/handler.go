@@ -569,6 +569,172 @@ func toAttemptWire(a govservice.TrainingAttempt) GovTrainingAttempt {
 	return w
 }
 
+func (h *Strict) GovListAudits(ctx context.Context, req GovListAuditsRequestObject) (GovListAuditsResponseObject, error) {
+	var legalEntityID *uuid.UUID
+	if req.Params.LegalEntityId != nil {
+		id := uuid.UUID(*req.Params.LegalEntityId)
+		legalEntityID = &id
+	}
+	list, err := h.svc.ListAudits(ctx, legalEntityID)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovListAudits200JSONResponse{Data: make([]GovAudit, 0, len(list))}
+	for _, a := range list {
+		resp.Data = append(resp.Data, toAuditWire(a))
+	}
+	return resp, nil
+}
+
+func (h *Strict) GovRunAudit(ctx context.Context, req GovRunAuditRequestObject) (GovRunAuditResponseObject, error) {
+	a, err := h.svc.RunAudit(ctx, govservice.RunAuditInput{
+		LegalEntityID: req.Body.LegalEntityId, Period: req.Body.Period, TemplateCode: req.Body.TemplateCode,
+		Answers: forms.Answers(req.Body.Answers),
+	})
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovRunAudit201JSONResponse(toAuditWire(a)), nil
+}
+
+func (h *Strict) GovGetAudit(ctx context.Context, req GovGetAuditRequestObject) (GovGetAuditResponseObject, error) {
+	a, err := h.svc.GetAudit(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovGetAudit200JSONResponse{Body: toAuditWire(a), Headers: GovGetAudit200ResponseHeaders{ETag: etag(a.RowVersion)}}, nil
+}
+
+func (h *Strict) GovDeleteAudit(ctx context.Context, req GovDeleteAuditRequestObject) (GovDeleteAuditResponseObject, error) {
+	if err := h.svc.DeleteAudit(ctx, req.Id); err != nil {
+		return nil, problem(err)
+	}
+	return GovDeleteAudit204Response{}, nil
+}
+
+func (h *Strict) GovListAuditFindings(ctx context.Context, req GovListAuditFindingsRequestObject) (GovListAuditFindingsResponseObject, error) {
+	list, err := h.svc.ListAuditFindings(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovListAuditFindings200JSONResponse{Data: make([]GovAuditFinding, 0, len(list))}
+	for _, f := range list {
+		resp.Data = append(resp.Data, toFindingWire(f))
+	}
+	return resp, nil
+}
+
+func (h *Strict) GovAddAuditFinding(ctx context.Context, req GovAddAuditFindingRequestObject) (GovAddAuditFindingResponseObject, error) {
+	f, err := h.svc.AddAuditFinding(ctx, req.Id, findingInputFromWire(*req.Body))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovAddAuditFinding201JSONResponse{Body: toFindingWire(f), Headers: GovAddAuditFinding201ResponseHeaders{ETag: etag(f.RowVersion)}}, nil
+}
+
+func (h *Strict) GovUpdateAuditFinding(ctx context.Context, req GovUpdateAuditFindingRequestObject) (GovUpdateAuditFindingResponseObject, error) {
+	rv, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	f, err := h.svc.UpdateAuditFinding(ctx, req.Id, rv, findingInputFromWire(*req.Body))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovUpdateAuditFinding200JSONResponse{Body: toFindingWire(f), Headers: GovUpdateAuditFinding200ResponseHeaders{ETag: etag(f.RowVersion)}}, nil
+}
+
+func (h *Strict) GovSetAuditFindingStatus(ctx context.Context, req GovSetAuditFindingStatusRequestObject) (GovSetAuditFindingStatusResponseObject, error) {
+	rv, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	f, err := h.svc.SetAuditFindingStatus(ctx, req.Id, rv, string(req.Body.Status))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovSetAuditFindingStatus200JSONResponse{Body: toFindingWire(f), Headers: GovSetAuditFindingStatus200ResponseHeaders{ETag: etag(f.RowVersion)}}, nil
+}
+
+func findingInputFromWire(in GovAuditFindingInput) govservice.AuditFindingInput {
+	out := govservice.AuditFindingInput{Title: in.Title, Severity: string(in.Severity), RequirementRef: in.RequirementRef, Recommendation: in.Recommendation}
+	if in.OwnerUserId != nil {
+		id := uuid.UUID(*in.OwnerUserId)
+		out.OwnerUserID = &id
+	}
+	if in.DueAt != nil {
+		t := in.DueAt.Time
+		out.DueAt = &t
+	}
+	return out
+}
+
+func toAuditWire(a govservice.Audit) GovAudit {
+	w := GovAudit{
+		Id: a.ID, AuditType: a.AuditType, AssessmentId: a.AssessmentID, Period: a.Period, Status: a.Status,
+		RowVersion: int(a.RowVersion),
+	}
+	if a.LegalEntityID != nil {
+		id := openapi_types.UUID(*a.LegalEntityID)
+		w.LegalEntityId = &id
+	}
+	if a.OverallScore != nil {
+		sc := float32(*a.OverallScore)
+		w.OverallScore = &sc
+	}
+	if a.CompletedAt != nil {
+		t := *a.CompletedAt
+		w.CompletedAt = &t
+	}
+	if a.Band != "" {
+		b := a.Band
+		w.Band = &b
+	}
+	if len(a.SectionScores) > 0 {
+		scores := make([]GovAuditSectionScore, 0, len(a.SectionScores))
+		for _, s := range a.SectionScores {
+			title := map[string]interface{}{}
+			for k, v := range s.Title {
+				title[k] = v
+			}
+			scores = append(scores, GovAuditSectionScore{Key: s.Key, Title: &title, Score: float32(s.Score), MaxScore: float32(s.MaxScore)})
+		}
+		w.SectionScores = &scores
+	}
+	if a.Findings != nil {
+		findings := make([]GovAuditFinding, 0, len(a.Findings))
+		for _, f := range a.Findings {
+			findings = append(findings, toFindingWire(f))
+		}
+		w.Findings = &findings
+	}
+	return w
+}
+
+func toFindingWire(f govservice.AuditFinding) GovAuditFinding {
+	w := GovAuditFinding{
+		Id: f.ID, AuditId: f.AuditID, Title: f.Title, Severity: GovAuditFindingSeverity(f.Severity),
+		RequirementRef: f.RequirementRef, Recommendation: f.Recommendation, Status: GovAuditFindingStatus(f.Status),
+		RowVersion: int(f.RowVersion),
+	}
+	if f.OwnerUserID != nil {
+		id := openapi_types.UUID(*f.OwnerUserID)
+		w.OwnerUserId = &id
+	}
+	if f.DueAt != nil {
+		w.DueAt = &openapi_types.Date{Time: *f.DueAt}
+	}
+	if f.TaskID != nil {
+		id := openapi_types.UUID(*f.TaskID)
+		w.TaskId = &id
+	}
+	if f.EvidenceFileID != nil {
+		id := openapi_types.UUID(*f.EvidenceFileID)
+		w.EvidenceFileId = &id
+	}
+	return w
+}
+
 func toRegulatorLetterWire(l govservice.RegulatorLetter) GovRegulatorLetter {
 	w := GovRegulatorLetter{
 		Id: l.ID, Direction: GovRegulatorLetterDirection(l.Direction), LetterNo: l.LetterNo, Subject: l.Subject,
@@ -650,6 +816,8 @@ func problem(err error) error {
 		return httpx.InvalidTransition("gov")
 	case errors.Is(err, govservice.ErrBadQuizForm):
 		return httpx.UnprocessableEntity("gov.bad_quiz_form", err.Error())
+	case errors.Is(err, govservice.ErrBadMaturityTemplate):
+		return httpx.UnprocessableEntity("gov.bad_maturity_template", err.Error())
 	}
 	return err
 }

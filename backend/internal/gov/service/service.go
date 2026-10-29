@@ -18,6 +18,7 @@ import (
 	"github.com/riverqueue/river"
 
 	breachservice "pdpa-platform/internal/breach/service"
+	dpiaservice "pdpa-platform/internal/dpia/service"
 	dsarservice "pdpa-platform/internal/dsar/service"
 	orgservice "pdpa-platform/internal/org/service"
 	"pdpa-platform/internal/pkg/authz"
@@ -119,10 +120,11 @@ const (
 // RegulatorLetterType is the entity type for audit/files (DPX-08).
 const RegulatorLetterType = "gov_regulator_letter"
 
-// Org is what DPX-01 reads from the org module (rule 9): FK visibility (rule 1) for an org-unit-targeted
-// training assignment.
+// Org is what gov reads from the org module (rule 9): FK visibility (rule 1) for an org-unit-targeted
+// training assignment (DPX-01) and for the legal entity a maturity audit covers (DPX-03).
 type Org interface {
 	GetOrgUnit(ctx context.Context, id uuid.UUID) (orgservice.OrgUnit, error)
+	GetLegalEntity(ctx context.Context, id uuid.UUID) (orgservice.LegalEntity, error)
 }
 
 // Forms is what DPX-01 reads from PLT-06 (rule 9): a course's own quiz, designed and published as an
@@ -156,6 +158,36 @@ const (
 	AttemptType    = "gov_training_attempt"
 )
 
+// Dpia is what DPX-03 reads from the dpia module (rule 9): the generic, non-activity assess.templates/
+// assess.assessments screening round dpia already exposes for DPO-02's own ม.41(2) OR-rule, reused here for
+// an organization-wide maturity audit — no import cycle, dpia never imports gov. gov references dpia's own
+// exported Decide/SubjectScreeningResult types directly, the same way it already references breachservice's
+// own Incident type for DPX-08.
+type Dpia interface {
+	ScreenSubject(ctx context.Context, assessmentType, templateCode, subjectType string, subjectID uuid.UUID, title string, answers forms.Answers, decide dpiaservice.Decide) (dpiaservice.SubjectScreeningResult, error)
+}
+
+// DPX-03's own permission codes (dpx.audit.*, already seeded — DPO holds create/read/update/delete/
+// approve, AUDIT holds read/export, EXEC/IT/OWNER/PRIVACY/SEC hold a mix of read/update).
+const (
+	AuditPermRead    = "dpx.audit.read"
+	AuditPermCreate  = "dpx.audit.create"
+	AuditPermUpdate  = "dpx.audit.update"
+	AuditPermDelete  = "dpx.audit.delete"
+	AuditPermApprove = "dpx.audit.approve"
+)
+
+// MaturityAssessmentType is the assess.templates assessment_type DPX-03 uses — 'maturity' has been
+// reserved in its own CHECK constraint since the very first baseline migration (00011_assess.sql), unused
+// until now (the same "schema already anticipated this" discovery this codebase keeps relying on).
+const MaturityAssessmentType = "maturity"
+
+// AuditType/AuditFindingType are the entity types for audit/files (DPX-03).
+const (
+	AuditType        = "gov_audit"
+	AuditFindingType = "gov_audit_finding"
+)
+
 // Service runs the gov module for the tenant of the transaction in ctx.
 type Service struct {
 	Audit  *audit.Service
@@ -166,6 +198,7 @@ type Service struct {
 	Breach Breach
 	Org    Org
 	Forms  Forms
+	Dpia   Dpia
 	Notify *notify.Service
 	River  *river.Client[pgx.Tx]
 	Now    func() time.Time

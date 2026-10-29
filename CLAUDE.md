@@ -5179,6 +5179,65 @@ criterion is about completing the quiz and the report, not the artifact), SCORM/
 and a course-validity-expiry reminder (`validity_months` is stored but nothing yet re-assigns an expired
 certification).
 
+### DPX-03 ตรวจประเมินความพร้อมทั้งองค์กร (`docs/modules/DPX.md#dpx-03`) — done
+`gov.audits`/`gov.audit_findings` were already fully specified in the baseline migrations (00017_gov.sql,
+FK'd in 00018: `legal_entity_id` → `org.legal_entities`, `assessment_id` → `assess.assessments`,
+`owner_user_id` → `iam.users`, `task_id` → `dpo.tasks`, `evidence_file_id` → `platform.files`) and
+`dpx.audit.{create,read,update,delete,approve,export}` was already seeded (DPO holds create/read/update/
+delete, AUDIT holds read/export, EXEC/IT/OWNER/PRIVACY/SEC hold a mix of read/update) — no new migration
+or permission code, only `internal/gov/service/audit.go` against both. `assess.templates.assessment_type`'s
+own CHECK constraint has listed `'maturity'` since the very first baseline migration (00011_assess.sql),
+unused until now — the same "schema already anticipated this" discovery this codebase keeps relying on.
+Migration 00093 (`docs/decisions.md` Q-45) seeds a global, DRAFT 10-question "org_maturity" questionnaire on
+the already-registered PLT-06 `"assessment"` form type, 5 dimensions (governance & DPO, RoPA & data
+inventory, consent & notices, data subject rights, breach & security) × 2 yes_no questions each.
+
+`RunAudit` is deliberately one-shot, the same pattern DPO-09/DPX-01's own checklists already use (no draft/
+in_progress multi-step flow — the literal acceptance criterion needs a result, not a workflow): it answers
+the published maturity questionnaire against a legal entity (checked visible under RLS, rule 1) through
+`dpiaservice.Service.ScreenSubject` — the generic, non-activity `assess.templates`/`assess.assessments`
+screening round dpia already exposes for DPO-02's own ม.41(2) OR-rule, now reused by its second caller. A
+new `Dpia` interface on `gov.Service` references dpia's own exported `Decide`/`SubjectScreeningResult`
+types directly (rule 9, no import cycle — dpia never imports gov, the same pattern gov's own `Breach`
+interface already uses for `breachservice.Incident`). `ScreenSubject` itself was widened (additive fields
+only — `Score`/`MaxScore`/`Band`/`SectionScores`) to compute a per-dimension breakdown by re-running
+`forms.Evaluate` scoped to each schema section in turn (`sections []string`, a parameter the engine already
+had, built for exactly this) — the acceptance criterion's own "คะแนนรายด้าน" literally. Every yes_no
+question answered "no" automatically opens one `gov.audit_findings` row (open, severity medium) — the same
+"failing items" pattern DPO-09's own security checklist already established, generalized to not need the
+schema itself (gov never reads `platform.form_definitions` for this; the screening's own `Factors` already
+carry each question's answer and label) — the acceptance criterion's other half, "แผนแก้ไข." A caller may
+also add/edit findings by hand (`AddAuditFinding`/`UpdateAuditFinding`) and move one through `open ->
+in_progress -> done/accepted` (`SetAuditFindingStatus`) — evidence-gated closing is DPX-04's own, separate
+acceptance criterion (not built here, blocked on DPO-06 per the backlog's own dependency).
+
+API: `GET`/`POST /admin/v1/governance/audits`, `GET`/`DELETE /admin/v1/governance/audits/{id}`, `GET`/`POST
+/admin/v1/governance/audits/{id}/findings`, `PUT /admin/v1/governance/audit-findings/{id}` (ETag/If-Match),
+`PATCH /admin/v1/governance/audit-findings/{id}/status` (ETag/If-Match) — all added to
+`internal/gov/http/oapi-codegen.yaml`'s own `include-operation-ids` allowlist, the recurring gotcha several
+prior features already hit. UI: a new "Organization-wide audit & maturity" section on the existing
+`/governance` page (DPX-01/DPX-02/DPX-05/DPX-08's own page) — a run-audit form (legal entity/period/
+template code), a list with band/score, and a per-audit panel showing the per-dimension scores and the
+remediation findings with mark-done/accept actions.
+
+Tests: unit (`internal/gov/service/dpx03_test.go` — the acceptance criterion directly: running the audit
+with two failed dimensions shows each dimension's own score and opens exactly two findings, the overall
+score matches the sum; a fully-passing run opens no findings and bands "mature"; an unknown legal entity or
+template is refused distinctly; two-tenant isolation), and the dpia regression suite (`ScreenSubject`'s own
+widening is additive, confirmed by running `internal/dpia/...`/`internal/dpo/...` with no change in
+outcome), HTTP contract (`internal/gov/http/handler_test.go`'s existing `TestGovHandler_Contract`, extended
+with the full run → list → get → list-findings → add-finding → update (428 without If-Match) → set-status →
+delete → 404 chain through the real validator + AuthZ). Not verified live against a real Postgres/Redis in
+this pass — neither was reachable in this environment for this feature; every test compiles and vets clean
+and skips the same way the rest of this module's own suite already does without one. `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions — only the
+pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run with no drift, `pnpm --filter
+@pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl.
+the updated `/governance` route) all verified clean. Not done, deliberately: the module doc's own "ผลเปรียบ
+เทียบรายบริษัท" (a side-by-side comparison view across subsidiaries) — the list already shows every
+audit's own band/score per legal entity, which already answers the literal acceptance criterion without a
+bespoke comparison screen.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

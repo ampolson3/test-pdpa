@@ -23,6 +23,12 @@ export type GovTrainingAssignment = components["schemas"]["GovTrainingAssignment
 export type GovTrainingAssignmentInput = components["schemas"]["GovTrainingAssignmentInput"];
 export type GovTrainingAssignmentTargetType = components["schemas"]["GovTrainingAssignmentTargetType"];
 export type GovTrainingAttempt = components["schemas"]["GovTrainingAttempt"];
+export type GovAudit = components["schemas"]["GovAudit"];
+export type GovAuditSectionScore = components["schemas"]["GovAuditSectionScore"];
+export type GovAuditFinding = components["schemas"]["GovAuditFinding"];
+export type GovAuditFindingInput = components["schemas"]["GovAuditFindingInput"];
+export type GovAuditFindingSeverity = components["schemas"]["GovAuditFindingSeverity"];
+export type GovAuditFindingStatus = components["schemas"]["GovAuditFindingStatus"];
 
 const schedulesKey = ["gov", "retention-schedules"] as const;
 const jobsKey = ["gov", "disposal-jobs"] as const;
@@ -35,6 +41,8 @@ const trainingAssignmentsKey = ["gov", "training-assignments"] as const;
 const myTrainingAssignmentsKey = ["gov", "my-training-assignments"] as const;
 const myTrainingAttemptsKey = ["gov", "my-training-attempts"] as const;
 const trainingReportKey = ["gov", "training-report"] as const;
+const auditsKey = ["gov", "audits"] as const;
+const auditFindingsKey = ["gov", "audit-findings"] as const;
 
 /** GET /admin/v1/governance/retention-schedules (DPX-05), newest first. */
 export function useRetentionSchedules(client: ApiClient, filter: { assetId?: string; status?: RetentionScheduleStatus } = {}) {
@@ -432,5 +440,97 @@ export function useMyTrainingAttempts(client: ApiClient) {
       if (error) throw error;
       return data.data;
     },
+  });
+}
+
+/** GET /admin/v1/governance/audits (DPX-03) — organization-wide/per-subsidiary PDPA-readiness audits. */
+export function useAudits(client: ApiClient, legalEntityId?: string) {
+  return useQuery({
+    queryKey: [...auditsKey, legalEntityId],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/audits", { params: { query: { legal_entity_id: legalEntityId } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/governance/audits — the acceptance criterion: a score per dimension and an opened remediation plan. */
+export function useRunAudit(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { legal_entity_id: string; period: string; template_code: string; answers: Record<string, unknown> }) => {
+      const { data, error } = await client.POST("/admin/v1/governance/audits", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: auditsKey }),
+  });
+}
+
+/** GET /admin/v1/governance/audits/{id} — one audit with its own current scores and findings. */
+export function useAudit(client: ApiClient, id: string) {
+  return useQuery({
+    queryKey: [...auditsKey, "detail", id],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/audits/{id}", { params: { path: { id } } });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+}
+
+/** DELETE /admin/v1/governance/audits/{id} — removes the audit's own wrapper row. */
+export function useDeleteAudit(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await client.DELETE("/admin/v1/governance/audits/{id}", { params: { path: { id } } });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: auditsKey }),
+  });
+}
+
+/** GET /admin/v1/governance/audits/{id}/findings — the audit's own remediation plan. */
+export function useAuditFindings(client: ApiClient, auditId: string) {
+  return useQuery({
+    queryKey: [...auditFindingsKey, auditId],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/audits/{id}/findings", { params: { path: { id: auditId } } });
+      if (error) throw error;
+      return data.data;
+    },
+    enabled: !!auditId,
+  });
+}
+
+/** POST /admin/v1/governance/audits/{id}/findings — record a finding by hand. */
+export function useAddAuditFinding(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { auditId: string; input: GovAuditFindingInput }) => {
+      const { data, error } = await client.POST("/admin/v1/governance/audits/{id}/findings", { params: { path: { id: v.auditId } }, body: v.input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: [...auditFindingsKey, v.auditId] }),
+  });
+}
+
+/** PATCH /admin/v1/governance/audit-findings/{id}/status — open -> in_progress -> done/accepted. */
+export function useSetAuditFindingStatus(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; rowVersion: number; status: GovAuditFindingStatus }) => {
+      const { data, error } = await client.PATCH("/admin/v1/governance/audit-findings/{id}/status", {
+        params: { path: { id: v.id }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: { status: v.status },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: auditFindingsKey }),
   });
 }

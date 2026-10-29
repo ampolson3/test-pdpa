@@ -44,25 +44,25 @@ func (e DisposalJobMethod) Valid() bool {
 
 // Defines values for DisposalJobStatus.
 const (
-	Approved   DisposalJobStatus = "approved"
-	Done       DisposalJobStatus = "done"
-	InProgress DisposalJobStatus = "in_progress"
-	OnHold     DisposalJobStatus = "on_hold"
-	Pending    DisposalJobStatus = "pending"
+	DisposalJobStatusApproved   DisposalJobStatus = "approved"
+	DisposalJobStatusDone       DisposalJobStatus = "done"
+	DisposalJobStatusInProgress DisposalJobStatus = "in_progress"
+	DisposalJobStatusOnHold     DisposalJobStatus = "on_hold"
+	DisposalJobStatusPending    DisposalJobStatus = "pending"
 )
 
 // Valid indicates whether the value is a known member of the DisposalJobStatus enum.
 func (e DisposalJobStatus) Valid() bool {
 	switch e {
-	case Approved:
+	case DisposalJobStatusApproved:
 		return true
-	case Done:
+	case DisposalJobStatusDone:
 		return true
-	case InProgress:
+	case DisposalJobStatusInProgress:
 		return true
-	case OnHold:
+	case DisposalJobStatusOnHold:
 		return true
-	case Pending:
+	case DisposalJobStatusPending:
 		return true
 	default:
 		return false
@@ -105,6 +105,54 @@ func (e FormConditionOp) Valid() bool {
 	case NotAnswered:
 		return true
 	case NotIn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovAuditFindingSeverity.
+const (
+	Critical GovAuditFindingSeverity = "critical"
+	High     GovAuditFindingSeverity = "high"
+	Low      GovAuditFindingSeverity = "low"
+	Medium   GovAuditFindingSeverity = "medium"
+)
+
+// Valid indicates whether the value is a known member of the GovAuditFindingSeverity enum.
+func (e GovAuditFindingSeverity) Valid() bool {
+	switch e {
+	case Critical:
+		return true
+	case High:
+		return true
+	case Low:
+		return true
+	case Medium:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovAuditFindingStatus.
+const (
+	GovAuditFindingStatusAccepted   GovAuditFindingStatus = "accepted"
+	GovAuditFindingStatusDone       GovAuditFindingStatus = "done"
+	GovAuditFindingStatusInProgress GovAuditFindingStatus = "in_progress"
+	GovAuditFindingStatusOpen       GovAuditFindingStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the GovAuditFindingStatus enum.
+func (e GovAuditFindingStatus) Valid() bool {
+	switch e {
+	case GovAuditFindingStatusAccepted:
+		return true
+	case GovAuditFindingStatusDone:
+		return true
+	case GovAuditFindingStatusInProgress:
+		return true
+	case GovAuditFindingStatusOpen:
 		return true
 	default:
 		return false
@@ -176,19 +224,19 @@ func (e GovRegulatorLetterDirection) Valid() bool {
 
 // Defines values for GovRegulatorLetterStatus.
 const (
-	Closed    GovRegulatorLetterStatus = "closed"
-	Open      GovRegulatorLetterStatus = "open"
-	Responded GovRegulatorLetterStatus = "responded"
+	GovRegulatorLetterStatusClosed    GovRegulatorLetterStatus = "closed"
+	GovRegulatorLetterStatusOpen      GovRegulatorLetterStatus = "open"
+	GovRegulatorLetterStatusResponded GovRegulatorLetterStatus = "responded"
 )
 
 // Valid indicates whether the value is a known member of the GovRegulatorLetterStatus enum.
 func (e GovRegulatorLetterStatus) Valid() bool {
 	switch e {
-	case Closed:
+	case GovRegulatorLetterStatusClosed:
 		return true
-	case Open:
+	case GovRegulatorLetterStatusOpen:
 		return true
-	case Responded:
+	case GovRegulatorLetterStatusResponded:
 		return true
 	default:
 		return false
@@ -252,6 +300,150 @@ func (e AcceptLanguage) Valid() bool {
 	case AcceptLanguageEn:
 		return true
 	case AcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovUpdateAuditFindingParamsAcceptLanguage.
+const (
+	GovUpdateAuditFindingParamsAcceptLanguageEn GovUpdateAuditFindingParamsAcceptLanguage = "en"
+	GovUpdateAuditFindingParamsAcceptLanguageTh GovUpdateAuditFindingParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovUpdateAuditFindingParamsAcceptLanguage enum.
+func (e GovUpdateAuditFindingParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovUpdateAuditFindingParamsAcceptLanguageEn:
+		return true
+	case GovUpdateAuditFindingParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovSetAuditFindingStatusParamsAcceptLanguage.
+const (
+	GovSetAuditFindingStatusParamsAcceptLanguageEn GovSetAuditFindingStatusParamsAcceptLanguage = "en"
+	GovSetAuditFindingStatusParamsAcceptLanguageTh GovSetAuditFindingStatusParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovSetAuditFindingStatusParamsAcceptLanguage enum.
+func (e GovSetAuditFindingStatusParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovSetAuditFindingStatusParamsAcceptLanguageEn:
+		return true
+	case GovSetAuditFindingStatusParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovListAuditsParamsAcceptLanguage.
+const (
+	GovListAuditsParamsAcceptLanguageEn GovListAuditsParamsAcceptLanguage = "en"
+	GovListAuditsParamsAcceptLanguageTh GovListAuditsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovListAuditsParamsAcceptLanguage enum.
+func (e GovListAuditsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovListAuditsParamsAcceptLanguageEn:
+		return true
+	case GovListAuditsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovRunAuditParamsAcceptLanguage.
+const (
+	GovRunAuditParamsAcceptLanguageEn GovRunAuditParamsAcceptLanguage = "en"
+	GovRunAuditParamsAcceptLanguageTh GovRunAuditParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovRunAuditParamsAcceptLanguage enum.
+func (e GovRunAuditParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovRunAuditParamsAcceptLanguageEn:
+		return true
+	case GovRunAuditParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovDeleteAuditParamsAcceptLanguage.
+const (
+	GovDeleteAuditParamsAcceptLanguageEn GovDeleteAuditParamsAcceptLanguage = "en"
+	GovDeleteAuditParamsAcceptLanguageTh GovDeleteAuditParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovDeleteAuditParamsAcceptLanguage enum.
+func (e GovDeleteAuditParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovDeleteAuditParamsAcceptLanguageEn:
+		return true
+	case GovDeleteAuditParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovGetAuditParamsAcceptLanguage.
+const (
+	GovGetAuditParamsAcceptLanguageEn GovGetAuditParamsAcceptLanguage = "en"
+	GovGetAuditParamsAcceptLanguageTh GovGetAuditParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovGetAuditParamsAcceptLanguage enum.
+func (e GovGetAuditParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovGetAuditParamsAcceptLanguageEn:
+		return true
+	case GovGetAuditParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovListAuditFindingsParamsAcceptLanguage.
+const (
+	GovListAuditFindingsParamsAcceptLanguageEn GovListAuditFindingsParamsAcceptLanguage = "en"
+	GovListAuditFindingsParamsAcceptLanguageTh GovListAuditFindingsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovListAuditFindingsParamsAcceptLanguage enum.
+func (e GovListAuditFindingsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovListAuditFindingsParamsAcceptLanguageEn:
+		return true
+	case GovListAuditFindingsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GovAddAuditFindingParamsAcceptLanguage.
+const (
+	GovAddAuditFindingParamsAcceptLanguageEn GovAddAuditFindingParamsAcceptLanguage = "en"
+	GovAddAuditFindingParamsAcceptLanguageTh GovAddAuditFindingParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the GovAddAuditFindingParamsAcceptLanguage enum.
+func (e GovAddAuditFindingParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case GovAddAuditFindingParamsAcceptLanguageEn:
+		return true
+	case GovAddAuditFindingParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -925,6 +1117,70 @@ type FormCondition struct {
 // FormConditionOp defines model for FormCondition.Op.
 type FormConditionOp string
 
+// GovAudit defines model for GovAudit.
+type GovAudit struct {
+	// AssessmentId UUIDv7 generated by the API
+	AssessmentId Uuid               `json:"assessment_id"`
+	AuditType    string             `json:"audit_type"`
+	Band         *string            `json:"band,omitempty"`
+	CompletedAt  *time.Time         `json:"completed_at,omitempty"`
+	Findings     *[]GovAuditFinding `json:"findings,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id            Uuid                    `json:"id"`
+	LegalEntityId *openapi_types.UUID     `json:"legal_entity_id,omitempty"`
+	OverallScore  *float32                `json:"overall_score,omitempty"`
+	Period        string                  `json:"period"`
+	RowVersion    int                     `json:"row_version"`
+	SectionScores *[]GovAuditSectionScore `json:"section_scores,omitempty"`
+	Status        string                  `json:"status"`
+}
+
+// GovAuditFinding defines model for GovAuditFinding.
+type GovAuditFinding struct {
+	// AuditId UUIDv7 generated by the API
+	AuditId        Uuid                `json:"audit_id"`
+	DueAt          *openapi_types.Date `json:"due_at,omitempty"`
+	EvidenceFileId *openapi_types.UUID `json:"evidence_file_id,omitempty"`
+
+	// Id UUIDv7 generated by the API
+	Id             Uuid                    `json:"id"`
+	OwnerUserId    *openapi_types.UUID     `json:"owner_user_id,omitempty"`
+	Recommendation *string                 `json:"recommendation,omitempty"`
+	RequirementRef *string                 `json:"requirement_ref,omitempty"`
+	RowVersion     int                     `json:"row_version"`
+	Severity       GovAuditFindingSeverity `json:"severity"`
+	Status         GovAuditFindingStatus   `json:"status"`
+	TaskId         *openapi_types.UUID     `json:"task_id,omitempty"`
+	Title          string                  `json:"title"`
+}
+
+// GovAuditFindingInput defines model for GovAuditFindingInput.
+type GovAuditFindingInput struct {
+	DueAt          *openapi_types.Date     `json:"due_at,omitempty"`
+	OwnerUserId    *openapi_types.UUID     `json:"owner_user_id,omitempty"`
+	Recommendation *string                 `json:"recommendation,omitempty"`
+	RequirementRef *string                 `json:"requirement_ref,omitempty"`
+	Severity       GovAuditFindingSeverity `json:"severity"`
+	Title          string                  `json:"title"`
+}
+
+// GovAuditFindingSeverity defines model for GovAuditFindingSeverity.
+type GovAuditFindingSeverity string
+
+// GovAuditFindingStatus defines model for GovAuditFindingStatus.
+type GovAuditFindingStatus string
+
+// GovAuditSectionScore defines model for GovAuditSectionScore.
+type GovAuditSectionScore struct {
+	Key      string  `json:"key"`
+	MaxScore float32 `json:"max_score"`
+	Score    float32 `json:"score"`
+
+	// Title Localized title by language, e.g. {"th": "...", "en": "..."}.
+	Title *map[string]interface{} `json:"title,omitempty"`
+}
+
 // GovCourse defines model for GovCourse.
 type GovCourse struct {
 	ContentFileId *openapi_types.UUID  `json:"content_file_id,omitempty"`
@@ -1186,6 +1442,105 @@ type Unauthorized = Problem
 
 // UnprocessableEntity RFC 9457 problem details with a stable machine-readable `code`
 type UnprocessableEntity = Problem
+
+// GovUpdateAuditFindingParams defines parameters for GovUpdateAuditFinding.
+type GovUpdateAuditFindingParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovUpdateAuditFindingParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// GovUpdateAuditFindingParamsAcceptLanguage defines parameters for GovUpdateAuditFinding.
+type GovUpdateAuditFindingParamsAcceptLanguage string
+
+// GovSetAuditFindingStatusJSONBody defines parameters for GovSetAuditFindingStatus.
+type GovSetAuditFindingStatusJSONBody struct {
+	Status GovAuditFindingStatus `json:"status"`
+}
+
+// GovSetAuditFindingStatusParams defines parameters for GovSetAuditFindingStatus.
+type GovSetAuditFindingStatusParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovSetAuditFindingStatusParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// GovSetAuditFindingStatusParamsAcceptLanguage defines parameters for GovSetAuditFindingStatus.
+type GovSetAuditFindingStatusParamsAcceptLanguage string
+
+// GovListAuditsParams defines parameters for GovListAudits.
+type GovListAuditsParams struct {
+	LegalEntityId *Uuid `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovListAuditsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovListAuditsParamsAcceptLanguage defines parameters for GovListAudits.
+type GovListAuditsParamsAcceptLanguage string
+
+// GovRunAuditJSONBody defines parameters for GovRunAudit.
+type GovRunAuditJSONBody struct {
+	Answers map[string]interface{} `json:"answers"`
+
+	// LegalEntityId UUIDv7 generated by the API
+	LegalEntityId Uuid `json:"legal_entity_id"`
+
+	// Period A free-text period label, e.g. "2026-Q4".
+	Period string `json:"period"`
+
+	// TemplateCode A published assess.templates code of assessment_type "maturity".
+	TemplateCode string `json:"template_code"`
+}
+
+// GovRunAuditParams defines parameters for GovRunAudit.
+type GovRunAuditParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovRunAuditParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovRunAuditParamsAcceptLanguage defines parameters for GovRunAudit.
+type GovRunAuditParamsAcceptLanguage string
+
+// GovDeleteAuditParams defines parameters for GovDeleteAudit.
+type GovDeleteAuditParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovDeleteAuditParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovDeleteAuditParamsAcceptLanguage defines parameters for GovDeleteAudit.
+type GovDeleteAuditParamsAcceptLanguage string
+
+// GovGetAuditParams defines parameters for GovGetAudit.
+type GovGetAuditParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovGetAuditParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovGetAuditParamsAcceptLanguage defines parameters for GovGetAudit.
+type GovGetAuditParamsAcceptLanguage string
+
+// GovListAuditFindingsParams defines parameters for GovListAuditFindings.
+type GovListAuditFindingsParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovListAuditFindingsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovListAuditFindingsParamsAcceptLanguage defines parameters for GovListAuditFindings.
+type GovListAuditFindingsParamsAcceptLanguage string
+
+// GovAddAuditFindingParams defines parameters for GovAddAuditFinding.
+type GovAddAuditFindingParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *GovAddAuditFindingParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// GovAddAuditFindingParamsAcceptLanguage defines parameters for GovAddAuditFinding.
+type GovAddAuditFindingParamsAcceptLanguage string
 
 // GovListCoursesParams defines parameters for GovListCourses.
 type GovListCoursesParams struct {
@@ -1571,6 +1926,18 @@ type GovSubmitAttemptParams struct {
 // GovSubmitAttemptParamsAcceptLanguage defines parameters for GovSubmitAttempt.
 type GovSubmitAttemptParamsAcceptLanguage string
 
+// GovUpdateAuditFindingJSONRequestBody defines body for GovUpdateAuditFinding for application/json ContentType.
+type GovUpdateAuditFindingJSONRequestBody = GovAuditFindingInput
+
+// GovSetAuditFindingStatusJSONRequestBody defines body for GovSetAuditFindingStatus for application/json ContentType.
+type GovSetAuditFindingStatusJSONRequestBody GovSetAuditFindingStatusJSONBody
+
+// GovRunAuditJSONRequestBody defines body for GovRunAudit for application/json ContentType.
+type GovRunAuditJSONRequestBody GovRunAuditJSONBody
+
+// GovAddAuditFindingJSONRequestBody defines body for GovAddAuditFinding for application/json ContentType.
+type GovAddAuditFindingJSONRequestBody = GovAuditFindingInput
+
 // GovCreateCourseJSONRequestBody defines body for GovCreateCourse for application/json ContentType.
 type GovCreateCourseJSONRequestBody = GovCourseInput
 
@@ -1615,6 +1982,30 @@ type GovSubmitAttemptJSONRequestBody GovSubmitAttemptJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// GovUpdateAuditFinding Edit a finding's own details
+	// (PUT /admin/v1/governance/audit-findings/{id})
+	GovUpdateAuditFinding(w http.ResponseWriter, r *http.Request, id Uuid, params GovUpdateAuditFindingParams)
+	// GovSetAuditFindingStatus Move a finding open -> in_progress -> done/accepted (evidence-gated closing is DPX-04's own, separate feature)
+	// (PATCH /admin/v1/governance/audit-findings/{id}/status)
+	GovSetAuditFindingStatus(w http.ResponseWriter, r *http.Request, id Uuid, params GovSetAuditFindingStatusParams)
+	// GovListAudits DPX-03: organization-wide (or per-subsidiary) PDPA-readiness audits, newest first
+	// (GET /admin/v1/governance/audits)
+	GovListAudits(w http.ResponseWriter, r *http.Request, params GovListAuditsParams)
+	// GovRunAudit DPX-03's own acceptance criterion: answer a published maturity questionnaire against a legal entity in one step — the result carries a score per dimension and every yes_no "no" answer opens a remediation finding
+	// (POST /admin/v1/governance/audits)
+	GovRunAudit(w http.ResponseWriter, r *http.Request, params GovRunAuditParams)
+	// GovDeleteAudit Remove an audit's own wrapper row (not the underlying dpia assessment round)
+	// (DELETE /admin/v1/governance/audits/{id})
+	GovDeleteAudit(w http.ResponseWriter, r *http.Request, id Uuid, params GovDeleteAuditParams)
+	// GovGetAudit One audit, with its own current per-dimension scores and findings
+	// (GET /admin/v1/governance/audits/{id})
+	GovGetAudit(w http.ResponseWriter, r *http.Request, id Uuid, params GovGetAuditParams)
+	// GovListAuditFindings DPX-03's own acceptance criterion: the audit's own remediation plan, most severe first
+	// (GET /admin/v1/governance/audits/{id}/findings)
+	GovListAuditFindings(w http.ResponseWriter, r *http.Request, id Uuid, params GovListAuditFindingsParams)
+	// GovAddAuditFinding Record a finding by hand, alongside whatever the audit itself opened automatically
+	// (POST /admin/v1/governance/audits/{id}/findings)
+	GovAddAuditFinding(w http.ResponseWriter, r *http.Request, id Uuid, params GovAddAuditFindingParams)
 	// GovListCourses DPX-01: PDPA awareness courses, newest first
 	// (GET /admin/v1/governance/courses)
 	GovListCourses(w http.ResponseWriter, r *http.Request, params GovListCoursesParams)
@@ -1722,6 +2113,54 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// GovUpdateAuditFinding Edit a finding's own details
+// (PUT /admin/v1/governance/audit-findings/{id})
+func (_ Unimplemented) GovUpdateAuditFinding(w http.ResponseWriter, r *http.Request, id Uuid, params GovUpdateAuditFindingParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovSetAuditFindingStatus Move a finding open -> in_progress -> done/accepted (evidence-gated closing is DPX-04's own, separate feature)
+// (PATCH /admin/v1/governance/audit-findings/{id}/status)
+func (_ Unimplemented) GovSetAuditFindingStatus(w http.ResponseWriter, r *http.Request, id Uuid, params GovSetAuditFindingStatusParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovListAudits DPX-03: organization-wide (or per-subsidiary) PDPA-readiness audits, newest first
+// (GET /admin/v1/governance/audits)
+func (_ Unimplemented) GovListAudits(w http.ResponseWriter, r *http.Request, params GovListAuditsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovRunAudit DPX-03's own acceptance criterion: answer a published maturity questionnaire against a legal entity in one step — the result carries a score per dimension and every yes_no "no" answer opens a remediation finding
+// (POST /admin/v1/governance/audits)
+func (_ Unimplemented) GovRunAudit(w http.ResponseWriter, r *http.Request, params GovRunAuditParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovDeleteAudit Remove an audit's own wrapper row (not the underlying dpia assessment round)
+// (DELETE /admin/v1/governance/audits/{id})
+func (_ Unimplemented) GovDeleteAudit(w http.ResponseWriter, r *http.Request, id Uuid, params GovDeleteAuditParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovGetAudit One audit, with its own current per-dimension scores and findings
+// (GET /admin/v1/governance/audits/{id})
+func (_ Unimplemented) GovGetAudit(w http.ResponseWriter, r *http.Request, id Uuid, params GovGetAuditParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovListAuditFindings DPX-03's own acceptance criterion: the audit's own remediation plan, most severe first
+// (GET /admin/v1/governance/audits/{id}/findings)
+func (_ Unimplemented) GovListAuditFindings(w http.ResponseWriter, r *http.Request, id Uuid, params GovListAuditFindingsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GovAddAuditFinding Record a finding by hand, alongside whatever the audit itself opened automatically
+// (POST /admin/v1/governance/audits/{id}/findings)
+func (_ Unimplemented) GovAddAuditFinding(w http.ResponseWriter, r *http.Request, id Uuid, params GovAddAuditFindingParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // GovListCourses DPX-01: PDPA awareness courses, newest first
 // (GET /admin/v1/governance/courses)
@@ -1935,6 +2374,447 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GovUpdateAuditFinding operation middleware
+func (siw *ServerInterfaceWrapper) GovUpdateAuditFinding(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovUpdateAuditFindingParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovUpdateAuditFindingParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovUpdateAuditFinding(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovSetAuditFindingStatus operation middleware
+func (siw *ServerInterfaceWrapper) GovSetAuditFindingStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovSetAuditFindingStatusParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovSetAuditFindingStatusParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovSetAuditFindingStatus(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovListAudits operation middleware
+func (siw *ServerInterfaceWrapper) GovListAudits(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovListAuditsParams
+
+	// ------------- Optional query parameter "legal_entity_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "legal_entity_id", r.URL.Query(), &params.LegalEntityId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "legal_entity_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legal_entity_id", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovListAuditsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovListAudits(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovRunAudit operation middleware
+func (siw *ServerInterfaceWrapper) GovRunAudit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovRunAuditParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovRunAuditParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovRunAudit(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovDeleteAudit operation middleware
+func (siw *ServerInterfaceWrapper) GovDeleteAudit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovDeleteAuditParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovDeleteAuditParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovDeleteAudit(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovGetAudit operation middleware
+func (siw *ServerInterfaceWrapper) GovGetAudit(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovGetAuditParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovGetAuditParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovGetAudit(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovListAuditFindings operation middleware
+func (siw *ServerInterfaceWrapper) GovListAuditFindings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovListAuditFindingsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovListAuditFindingsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovListAuditFindings(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GovAddAuditFinding operation middleware
+func (siw *ServerInterfaceWrapper) GovAddAuditFinding(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GovAddAuditFindingParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage GovAddAuditFindingParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GovAddAuditFinding(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GovListCourses operation middleware
 func (siw *ServerInterfaceWrapper) GovListCourses(w http.ResponseWriter, r *http.Request) {
@@ -4107,6 +4987,30 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/governance/my-training-assignments", wrapper.GovListMyTrainingAssignments)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/governance/audits", wrapper.GovListAudits)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/governance/audits", wrapper.GovRunAudit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/admin/v1/governance/audits/{id}", wrapper.GovDeleteAudit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/governance/audits/{id}", wrapper.GovGetAudit)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/governance/audits/{id}/findings", wrapper.GovListAuditFindings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/governance/audits/{id}/findings", wrapper.GovAddAuditFinding)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/v1/governance/audit-findings/{id}", wrapper.GovUpdateAuditFinding)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/admin/v1/governance/audit-findings/{id}/status", wrapper.GovSetAuditFindingStatus)
+	})
 
 	return r
 }
@@ -4126,6 +5030,774 @@ type PreconditionRequiredApplicationProblemPlusJSONResponse Problem
 type UnauthorizedApplicationProblemPlusJSONResponse Problem
 
 type UnprocessableEntityApplicationProblemPlusJSONResponse Problem
+
+type GovUpdateAuditFindingRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovUpdateAuditFindingParams
+	Body   *GovUpdateAuditFindingJSONRequestBody
+}
+
+type GovUpdateAuditFindingResponseObject interface {
+	VisitGovUpdateAuditFindingResponse(w http.ResponseWriter) error
+}
+
+type GovUpdateAuditFinding200ResponseHeaders struct {
+	ETag *string
+}
+
+type GovUpdateAuditFinding200JSONResponse struct {
+	Body    GovAuditFinding
+	Headers GovUpdateAuditFinding200ResponseHeaders
+}
+
+func (response GovUpdateAuditFinding200JSONResponse) VisitGovUpdateAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateAuditFinding400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateAuditFinding400ApplicationProblemPlusJSONResponse) VisitGovUpdateAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateAuditFinding401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateAuditFinding401ApplicationProblemPlusJSONResponse) VisitGovUpdateAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateAuditFinding403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateAuditFinding403ApplicationProblemPlusJSONResponse) VisitGovUpdateAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateAuditFinding404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateAuditFinding404ApplicationProblemPlusJSONResponse) VisitGovUpdateAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateAuditFinding412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateAuditFinding412ApplicationProblemPlusJSONResponse) VisitGovUpdateAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateAuditFinding422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateAuditFinding422ApplicationProblemPlusJSONResponse) VisitGovUpdateAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovUpdateAuditFinding428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response GovUpdateAuditFinding428ApplicationProblemPlusJSONResponse) VisitGovUpdateAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetAuditFindingStatusRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovSetAuditFindingStatusParams
+	Body   *GovSetAuditFindingStatusJSONRequestBody
+}
+
+type GovSetAuditFindingStatusResponseObject interface {
+	VisitGovSetAuditFindingStatusResponse(w http.ResponseWriter) error
+}
+
+type GovSetAuditFindingStatus200ResponseHeaders struct {
+	ETag *string
+}
+
+type GovSetAuditFindingStatus200JSONResponse struct {
+	Body    GovAuditFinding
+	Headers GovSetAuditFindingStatus200ResponseHeaders
+}
+
+func (response GovSetAuditFindingStatus200JSONResponse) VisitGovSetAuditFindingStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetAuditFindingStatus400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetAuditFindingStatus400ApplicationProblemPlusJSONResponse) VisitGovSetAuditFindingStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetAuditFindingStatus401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetAuditFindingStatus401ApplicationProblemPlusJSONResponse) VisitGovSetAuditFindingStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetAuditFindingStatus403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetAuditFindingStatus403ApplicationProblemPlusJSONResponse) VisitGovSetAuditFindingStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetAuditFindingStatus404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetAuditFindingStatus404ApplicationProblemPlusJSONResponse) VisitGovSetAuditFindingStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetAuditFindingStatus412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetAuditFindingStatus412ApplicationProblemPlusJSONResponse) VisitGovSetAuditFindingStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetAuditFindingStatus422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetAuditFindingStatus422ApplicationProblemPlusJSONResponse) VisitGovSetAuditFindingStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovSetAuditFindingStatus428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response GovSetAuditFindingStatus428ApplicationProblemPlusJSONResponse) VisitGovSetAuditFindingStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListAuditsRequestObject struct {
+	Params GovListAuditsParams
+}
+
+type GovListAuditsResponseObject interface {
+	VisitGovListAuditsResponse(w http.ResponseWriter) error
+}
+
+type GovListAudits200JSONResponse struct {
+	Data []GovAudit `json:"data"`
+}
+
+func (response GovListAudits200JSONResponse) VisitGovListAuditsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListAudits401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovListAudits401ApplicationProblemPlusJSONResponse) VisitGovListAuditsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListAudits403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovListAudits403ApplicationProblemPlusJSONResponse) VisitGovListAuditsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovRunAuditRequestObject struct {
+	Params GovRunAuditParams
+	Body   *GovRunAuditJSONRequestBody
+}
+
+type GovRunAuditResponseObject interface {
+	VisitGovRunAuditResponse(w http.ResponseWriter) error
+}
+
+type GovRunAudit201JSONResponse GovAudit
+
+func (response GovRunAudit201JSONResponse) VisitGovRunAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovRunAudit400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovRunAudit400ApplicationProblemPlusJSONResponse) VisitGovRunAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovRunAudit401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovRunAudit401ApplicationProblemPlusJSONResponse) VisitGovRunAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovRunAudit403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovRunAudit403ApplicationProblemPlusJSONResponse) VisitGovRunAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovRunAudit422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovRunAudit422ApplicationProblemPlusJSONResponse) VisitGovRunAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovDeleteAuditRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovDeleteAuditParams
+}
+
+type GovDeleteAuditResponseObject interface {
+	VisitGovDeleteAuditResponse(w http.ResponseWriter) error
+}
+
+type GovDeleteAudit204Response struct {
+}
+
+func (response GovDeleteAudit204Response) VisitGovDeleteAuditResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type GovDeleteAudit401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovDeleteAudit401ApplicationProblemPlusJSONResponse) VisitGovDeleteAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovDeleteAudit403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovDeleteAudit403ApplicationProblemPlusJSONResponse) VisitGovDeleteAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovDeleteAudit404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovDeleteAudit404ApplicationProblemPlusJSONResponse) VisitGovDeleteAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetAuditRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovGetAuditParams
+}
+
+type GovGetAuditResponseObject interface {
+	VisitGovGetAuditResponse(w http.ResponseWriter) error
+}
+
+type GovGetAudit200ResponseHeaders struct {
+	ETag *string
+}
+
+type GovGetAudit200JSONResponse struct {
+	Body    GovAudit
+	Headers GovGetAudit200ResponseHeaders
+}
+
+func (response GovGetAudit200JSONResponse) VisitGovGetAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetAudit401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovGetAudit401ApplicationProblemPlusJSONResponse) VisitGovGetAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetAudit403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovGetAudit403ApplicationProblemPlusJSONResponse) VisitGovGetAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovGetAudit404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovGetAudit404ApplicationProblemPlusJSONResponse) VisitGovGetAuditResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListAuditFindingsRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovListAuditFindingsParams
+}
+
+type GovListAuditFindingsResponseObject interface {
+	VisitGovListAuditFindingsResponse(w http.ResponseWriter) error
+}
+
+type GovListAuditFindings200JSONResponse struct {
+	Data []GovAuditFinding `json:"data"`
+}
+
+func (response GovListAuditFindings200JSONResponse) VisitGovListAuditFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListAuditFindings401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovListAuditFindings401ApplicationProblemPlusJSONResponse) VisitGovListAuditFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListAuditFindings403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovListAuditFindings403ApplicationProblemPlusJSONResponse) VisitGovListAuditFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovListAuditFindings404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovListAuditFindings404ApplicationProblemPlusJSONResponse) VisitGovListAuditFindingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovAddAuditFindingRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params GovAddAuditFindingParams
+	Body   *GovAddAuditFindingJSONRequestBody
+}
+
+type GovAddAuditFindingResponseObject interface {
+	VisitGovAddAuditFindingResponse(w http.ResponseWriter) error
+}
+
+type GovAddAuditFinding201ResponseHeaders struct {
+	ETag *string
+}
+
+type GovAddAuditFinding201JSONResponse struct {
+	Body    GovAuditFinding
+	Headers GovAddAuditFinding201ResponseHeaders
+}
+
+func (response GovAddAuditFinding201JSONResponse) VisitGovAddAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovAddAuditFinding400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response GovAddAuditFinding400ApplicationProblemPlusJSONResponse) VisitGovAddAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovAddAuditFinding401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response GovAddAuditFinding401ApplicationProblemPlusJSONResponse) VisitGovAddAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovAddAuditFinding403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response GovAddAuditFinding403ApplicationProblemPlusJSONResponse) VisitGovAddAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovAddAuditFinding404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response GovAddAuditFinding404ApplicationProblemPlusJSONResponse) VisitGovAddAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GovAddAuditFinding422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response GovAddAuditFinding422ApplicationProblemPlusJSONResponse) VisitGovAddAuditFindingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type GovListCoursesRequestObject struct {
 	Params GovListCoursesParams
@@ -7282,6 +8954,30 @@ func (response GovSubmitAttempt428ApplicationProblemPlusJSONResponse) VisitGovSu
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// GovUpdateAuditFinding Edit a finding's own details
+	// (PUT /admin/v1/governance/audit-findings/{id})
+	GovUpdateAuditFinding(ctx context.Context, request GovUpdateAuditFindingRequestObject) (GovUpdateAuditFindingResponseObject, error)
+	// GovSetAuditFindingStatus Move a finding open -> in_progress -> done/accepted (evidence-gated closing is DPX-04's own, separate feature)
+	// (PATCH /admin/v1/governance/audit-findings/{id}/status)
+	GovSetAuditFindingStatus(ctx context.Context, request GovSetAuditFindingStatusRequestObject) (GovSetAuditFindingStatusResponseObject, error)
+	// GovListAudits DPX-03: organization-wide (or per-subsidiary) PDPA-readiness audits, newest first
+	// (GET /admin/v1/governance/audits)
+	GovListAudits(ctx context.Context, request GovListAuditsRequestObject) (GovListAuditsResponseObject, error)
+	// GovRunAudit DPX-03's own acceptance criterion: answer a published maturity questionnaire against a legal entity in one step — the result carries a score per dimension and every yes_no "no" answer opens a remediation finding
+	// (POST /admin/v1/governance/audits)
+	GovRunAudit(ctx context.Context, request GovRunAuditRequestObject) (GovRunAuditResponseObject, error)
+	// GovDeleteAudit Remove an audit's own wrapper row (not the underlying dpia assessment round)
+	// (DELETE /admin/v1/governance/audits/{id})
+	GovDeleteAudit(ctx context.Context, request GovDeleteAuditRequestObject) (GovDeleteAuditResponseObject, error)
+	// GovGetAudit One audit, with its own current per-dimension scores and findings
+	// (GET /admin/v1/governance/audits/{id})
+	GovGetAudit(ctx context.Context, request GovGetAuditRequestObject) (GovGetAuditResponseObject, error)
+	// GovListAuditFindings DPX-03's own acceptance criterion: the audit's own remediation plan, most severe first
+	// (GET /admin/v1/governance/audits/{id}/findings)
+	GovListAuditFindings(ctx context.Context, request GovListAuditFindingsRequestObject) (GovListAuditFindingsResponseObject, error)
+	// GovAddAuditFinding Record a finding by hand, alongside whatever the audit itself opened automatically
+	// (POST /admin/v1/governance/audits/{id}/findings)
+	GovAddAuditFinding(ctx context.Context, request GovAddAuditFindingRequestObject) (GovAddAuditFindingResponseObject, error)
 	// GovListCourses DPX-01: PDPA awareness courses, newest first
 	// (GET /admin/v1/governance/courses)
 	GovListCourses(ctx context.Context, request GovListCoursesRequestObject) (GovListCoursesResponseObject, error)
@@ -7423,6 +9119,248 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// GovUpdateAuditFinding operation middleware
+func (sh *strictHandler) GovUpdateAuditFinding(w http.ResponseWriter, r *http.Request, id Uuid, params GovUpdateAuditFindingParams) {
+	var request GovUpdateAuditFindingRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body GovUpdateAuditFindingJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovUpdateAuditFinding(ctx, request.(GovUpdateAuditFindingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovUpdateAuditFinding")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovUpdateAuditFindingResponseObject); ok {
+		if err := validResponse.VisitGovUpdateAuditFindingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovSetAuditFindingStatus operation middleware
+func (sh *strictHandler) GovSetAuditFindingStatus(w http.ResponseWriter, r *http.Request, id Uuid, params GovSetAuditFindingStatusParams) {
+	var request GovSetAuditFindingStatusRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body GovSetAuditFindingStatusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovSetAuditFindingStatus(ctx, request.(GovSetAuditFindingStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovSetAuditFindingStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovSetAuditFindingStatusResponseObject); ok {
+		if err := validResponse.VisitGovSetAuditFindingStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovListAudits operation middleware
+func (sh *strictHandler) GovListAudits(w http.ResponseWriter, r *http.Request, params GovListAuditsParams) {
+	var request GovListAuditsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovListAudits(ctx, request.(GovListAuditsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovListAudits")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovListAuditsResponseObject); ok {
+		if err := validResponse.VisitGovListAuditsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovRunAudit operation middleware
+func (sh *strictHandler) GovRunAudit(w http.ResponseWriter, r *http.Request, params GovRunAuditParams) {
+	var request GovRunAuditRequestObject
+
+	request.Params = params
+
+	var body GovRunAuditJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovRunAudit(ctx, request.(GovRunAuditRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovRunAudit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovRunAuditResponseObject); ok {
+		if err := validResponse.VisitGovRunAuditResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovDeleteAudit operation middleware
+func (sh *strictHandler) GovDeleteAudit(w http.ResponseWriter, r *http.Request, id Uuid, params GovDeleteAuditParams) {
+	var request GovDeleteAuditRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovDeleteAudit(ctx, request.(GovDeleteAuditRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovDeleteAudit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovDeleteAuditResponseObject); ok {
+		if err := validResponse.VisitGovDeleteAuditResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovGetAudit operation middleware
+func (sh *strictHandler) GovGetAudit(w http.ResponseWriter, r *http.Request, id Uuid, params GovGetAuditParams) {
+	var request GovGetAuditRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovGetAudit(ctx, request.(GovGetAuditRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovGetAudit")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovGetAuditResponseObject); ok {
+		if err := validResponse.VisitGovGetAuditResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovListAuditFindings operation middleware
+func (sh *strictHandler) GovListAuditFindings(w http.ResponseWriter, r *http.Request, id Uuid, params GovListAuditFindingsParams) {
+	var request GovListAuditFindingsRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovListAuditFindings(ctx, request.(GovListAuditFindingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovListAuditFindings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovListAuditFindingsResponseObject); ok {
+		if err := validResponse.VisitGovListAuditFindingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GovAddAuditFinding operation middleware
+func (sh *strictHandler) GovAddAuditFinding(w http.ResponseWriter, r *http.Request, id Uuid, params GovAddAuditFindingParams) {
+	var request GovAddAuditFindingRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	var body GovAddAuditFindingJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GovAddAuditFinding(ctx, request.(GovAddAuditFindingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GovAddAuditFinding")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GovAddAuditFindingResponseObject); ok {
+		if err := validResponse.VisitGovAddAuditFindingResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GovListCourses operation middleware

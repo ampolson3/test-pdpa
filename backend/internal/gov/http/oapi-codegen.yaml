@@ -39,3 +39,11 @@ output-options:
     - govListTrainingAssignments
     - govAssignTraining
     - govListMyTrainingAssignments
+    - govListAudits
+    - govRunAudit
+    - govGetAudit
+    - govDeleteAudit
+    - govListAuditFindings
+    - govAddAuditFinding
+    - govUpdateAuditFinding
+    - govSetAuditFindingStatus

@@ -6174,6 +6174,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/governance/audits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPX-03: organization-wide (or per-subsidiary) PDPA-readiness audits, newest first */
+        get: operations["govListAudits"];
+        put?: never;
+        /** DPX-03's own acceptance criterion: answer a published maturity questionnaire against a legal entity in one step — the result carries a score per dimension and every yes_no "no" answer opens a remediation finding */
+        post: operations["govRunAudit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/audits/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One audit, with its own current per-dimension scores and findings */
+        get: operations["govGetAudit"];
+        put?: never;
+        post?: never;
+        /** Remove an audit's own wrapper row (not the underlying dpia assessment round) */
+        delete: operations["govDeleteAudit"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/audits/{id}/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPX-03's own acceptance criterion: the audit's own remediation plan, most severe first */
+        get: operations["govListAuditFindings"];
+        put?: never;
+        /** Record a finding by hand, alongside whatever the audit itself opened automatically */
+        post: operations["govAddAuditFinding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/audit-findings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit a finding's own details */
+        put: operations["govUpdateAuditFinding"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/audit-findings/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Move a finding open -> in_progress -> done/accepted (evidence-gated closing is DPX-04's own, separate feature) */
+        patch: operations["govSetAuditFindingStatus"];
+        trace?: never;
+    };
     "/admin/v1/dataflow/graph": {
         parameters: {
             query?: never;
@@ -11151,6 +11239,63 @@ export interface components {
             passed?: boolean | null;
             /** Format: uuid */
             certificate_file_id?: string | null;
+            row_version: number;
+        };
+        GovAuditSectionScore: {
+            key: string;
+            /** @description Localized title by language, e.g. {"th": "...", "en": "..."}. */
+            title?: {
+                [key: string]: unknown;
+            };
+            score: number;
+            max_score: number;
+        };
+        GovAudit: {
+            id: components["schemas"]["Uuid"];
+            audit_type: string;
+            /** Format: uuid */
+            legal_entity_id?: string | null;
+            assessment_id: components["schemas"]["Uuid"];
+            period: string;
+            status: string;
+            overall_score?: number | null;
+            band?: string;
+            /** Format: date-time */
+            completed_at?: string | null;
+            section_scores?: components["schemas"]["GovAuditSectionScore"][];
+            findings?: components["schemas"]["GovAuditFinding"][];
+            row_version: number;
+        };
+        /** @enum {string} */
+        GovAuditFindingSeverity: "low" | "medium" | "high" | "critical";
+        /** @enum {string} */
+        GovAuditFindingStatus: "open" | "in_progress" | "done" | "accepted";
+        GovAuditFindingInput: {
+            title: string;
+            severity: components["schemas"]["GovAuditFindingSeverity"];
+            requirement_ref?: string | null;
+            recommendation?: string | null;
+            /** Format: uuid */
+            owner_user_id?: string | null;
+            /** Format: date */
+            due_at?: string | null;
+        };
+        GovAuditFinding: {
+            id: components["schemas"]["Uuid"];
+            audit_id: components["schemas"]["Uuid"];
+            title: string;
+            severity: components["schemas"]["GovAuditFindingSeverity"];
+            requirement_ref?: string | null;
+            recommendation?: string | null;
+            /** Format: uuid */
+            owner_user_id?: string | null;
+            /** Format: date */
+            due_at?: string | null;
+            status: components["schemas"]["GovAuditFindingStatus"];
+            /** Format: uuid */
+            task_id?: string | null;
+            /** Format: uuid */
+            evidence_file_id?: string | null;
             row_version: number;
         };
     };
@@ -26538,6 +26683,275 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    govListAudits: {
+        parameters: {
+            query?: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GovAudit"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    govRunAudit: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    legal_entity_id: components["schemas"]["Uuid"];
+                    /** @description A free-text period label, e.g. "2026-Q4". */
+                    period: string;
+                    /** @description A published assess.templates code of assessment_type "maturity". */
+                    template_code: string;
+                    answers: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovAudit"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    govGetAudit: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovAudit"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    govDeleteAudit: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    govListAuditFindings: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GovAuditFinding"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    govAddAuditFinding: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GovAuditFindingInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovAuditFinding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    govUpdateAuditFinding: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GovAuditFindingInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovAuditFinding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    govSetAuditFindingStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    status: components["schemas"]["GovAuditFindingStatus"];
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovAuditFinding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     dataflowGetGraph: {
