@@ -70,6 +70,38 @@ func (a RiskRopa) ListActivityIDs(ctx context.Context) ([]uuid.UUID, error) {
 	}
 }
 
+// ListActivityIDsByOrgUnit is RRA-13's own per-org-unit rollup source.
+func (a RiskRopa) ListActivityIDsByOrgUnit(ctx context.Context, orgUnitID uuid.UUID) ([]uuid.UUID, error) {
+	var out []uuid.UUID
+	f := ropaservice.ActivityFilter{OrgUnitID: &orgUnitID}
+	for {
+		page, cursor, err := a.Ropa.ListActivities(ctx, f)
+		if err != nil {
+			return nil, err
+		}
+		for _, act := range page {
+			out = append(out, act.ID)
+		}
+		if cursor == nil {
+			return out, nil
+		}
+		f.After = cursor
+	}
+}
+
+// ListOrgUnitIDs is RRA-13's own tenant-wide report source — every org unit, any legal entity.
+func (a RiskRopa) ListOrgUnitIDs(ctx context.Context) ([]uuid.UUID, error) {
+	units, err := a.Org.ListOrgUnits(ctx, nil, false)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]uuid.UUID, 0, len(units))
+	for _, u := range units {
+		out = append(out, u.ID)
+	}
+	return out, nil
+}
+
 func (a RiskRopa) Signals(ctx context.Context, id uuid.UUID) (riskservice.ActivitySignals, error) {
 	var sig riskservice.ActivitySignals
 

@@ -4,8 +4,13 @@ import type { ApiClient, components } from "./client";
 export type RiskGapRule = components["schemas"]["RiskGapRule"];
 export type RiskGapFinding = components["schemas"]["RiskGapFinding"];
 export type RiskRemediateFindingInput = components["schemas"]["RiskRemediateFindingInput"];
+export type RiskComplianceScore = components["schemas"]["RiskComplianceScore"];
+export type RiskOrgUnitComplianceScore = components["schemas"]["RiskOrgUnitComplianceScore"];
 
 const activityFindingsKey = (activityId: string) => ["risk", "gap-findings", activityId] as const;
+const activityScoreKey = (activityId: string) => ["risk", "compliance-score", activityId] as const;
+const orgUnitScoreKey = (orgUnitId: string) => ["risk", "compliance-score", "org-unit", orgUnitId] as const;
+const scoreReportKey = ["risk", "compliance-score", "report"] as const;
 
 /** GET /admin/v1/risk/gap-rules (RRA-04) — every active legal-gap rule, with the article it cites. */
 export function useGapRules(client: ApiClient) {
@@ -57,6 +62,49 @@ export function useAnalyzeActivity(client: ApiClient) {
     onSuccess: ({ activityId }) => {
       qc.invalidateQueries({ queryKey: activityFindingsKey(activityId) });
       qc.invalidateQueries({ queryKey: ["risk", "gap-findings", "open"] });
+      qc.invalidateQueries({ queryKey: activityScoreKey(activityId) });
+      qc.invalidateQueries({ queryKey: scoreReportKey });
+    },
+  });
+}
+
+/** GET /admin/v1/ropa/activities/{id}/compliance-score (RRA-13) — the acceptance criterion itself: a
+ *  score that explains exactly which still-open gap it was deducted for. */
+export function useActivityComplianceScore(client: ApiClient, activityId: string | undefined) {
+  return useQuery({
+    queryKey: activityScoreKey(activityId ?? ""),
+    enabled: !!activityId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/ropa/activities/{id}/compliance-score", { params: { path: { id: activityId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** GET /admin/v1/risk/compliance-score/{orgUnitId} (RRA-13) — one org unit's own rollup, every activity
+ *  under it with its own explained score, averaged. */
+export function useOrgUnitComplianceScore(client: ApiClient, orgUnitId: string | undefined) {
+  return useQuery({
+    queryKey: orgUnitScoreKey(orgUnitId ?? ""),
+    enabled: !!orgUnitId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/risk/compliance-score/{orgUnitId}", { params: { path: { orgUnitId: orgUnitId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** GET /admin/v1/risk/compliance-score (RRA-13) — the module description's own "ตารางคะแนนรายหน่วยงาน":
+ *  every org unit's averaged score, for comparing and tracking progress. */
+export function useComplianceScoreReport(client: ApiClient) {
+  return useQuery({
+    queryKey: scoreReportKey,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/risk/compliance-score", {});
+      if (error) throw error;
+      return data.data;
     },
   });
 }

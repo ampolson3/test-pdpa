@@ -234,9 +234,14 @@ export {
   useActivityGapFindings,
   useAnalyzeActivity,
   useRemediateGapFinding,
+  useActivityComplianceScore,
+  useOrgUnitComplianceScore,
+  useComplianceScoreReport,
   type RiskGapRule,
   type RiskGapFinding,
   type RiskRemediateFindingInput,
+  type RiskComplianceScore,
+  type RiskOrgUnitComplianceScore,
 } from "./gapFindings";
 export {
   useTask,

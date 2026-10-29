@@ -4071,6 +4071,16 @@
       "expiresAt": "Review by",
       "recordedAt": "Recorded",
       "record": "Record acceptance"
+    },
+    "complianceScore": {
+      "title": "Compliance score by department",
+      "intro": "Every department's own activities, scored against RRA-04's legal gap findings — a score always names the gap it was deducted for.",
+      "empty": "No departments to score yet.",
+      "orgUnit": "Department",
+      "averageScore": "Average score",
+      "activityCount": "Activities",
+      "viewDetail": "View detail",
+      "noActivities": "No activities under this department."
     }
   },
   "dpoTasks": {

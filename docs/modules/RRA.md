@@ -759,6 +759,45 @@ verified clean, plus `pnpm --filter @pdpa/admin build`/`typecheck` and `pnpm --f
 
 **Acceptance criteria:** คะแนนอธิบายได้ว่าหักจากช่องว่างใด
 
+**Implementation — done.** A plain function of RRA-04's own already-built `risk.gap_findings` — no new
+table or column. `internal/risk/service/compliance_score.go`'s `ActivityComplianceScore` is the
+acceptance criterion itself: 100 minus a per-severity point deduction (low 5 / medium 10 / high 20 — a
+plain tunable, not a legal question) for every still-open finding, each deduction naming the exact
+rule code, name and severity it came from — never a bare number. Deliberately read-only: it never
+re-runs `AnalyzeActivity` itself (that stays the activity page's own action, already built by RRA-04)
+— it reads whatever `risk.gap_findings` currently holds, the same "list is for scanning, not for
+triggering writes" convention this module already uses for `ListGapFindingsForActivity`.
+
+`OrgUnitComplianceScore` is the module description's own rollup — every activity under one org unit,
+averaged, each still carrying its own explained score — and `ComplianceScoreReport` is the "ตารางคะแนน
+รายหน่วยงาน" (table of scores per department) itself: every org unit in the tenant. Both needed two
+small additions to risk's own local `Ropa` interface (rule 9) — `ListActivityIDsByOrgUnit` and
+`ListOrgUnitIDs` — implemented on the existing `wiring.RiskRopa` adapter (RRA-01's own, already holding
+both `*ropaservice.Service` and `*orgservice.Service`), reusing ROPA-03's own `ActivityFilter.OrgUnitID`
+and ORG-04's own `ListOrgUnits(nil, false)` for "every org unit, any legal entity" — no new query on
+either module's own schema.
+
+API: `GET /admin/v1/ropa/activities/{id}/compliance-score`, `GET /admin/v1/risk/compliance-score`
+(the tenant-wide report), `GET /admin/v1/risk/compliance-score/{orgUnitId}` — all on the already-seeded
+`ropa.risk.read` (no new permission code or migration). UI: a "Compliance score by department" section
+on the existing `/settings/risk-register` page — a table of every org unit's own average score with a
+detail toggle listing each activity's own score and the gaps it was deducted for, linking straight to
+the activity. Tests: unit (`internal/risk/service/compliance_score_test.go` — the acceptance criterion
+directly: a bare activity scores 70 (100 − 20 no_lawful_basis − 10 no_retention) with both deductions
+named, fixing the lawful-basis gap raises it to 90 and drops that deduction from the list, a fully
+complete activity scores 100 with no deductions; the org-unit rollup averages two activities correctly
+and the same org unit appears in the tenant-wide report; two-tenant isolation of all three reads),
+HTTP contract (`internal/risk/http/handler_test.go`'s existing `TestGapAnalysisEndpoints_Contract`,
+extended with the same analyze → score → org-unit score → report chain: 401/200/404 through the real
+validator + AuthZ). Not verified live against a real Postgres/Redis in this pass — neither was
+reachable in this environment for this feature; every test compiles and vets clean and skips the same
+way the rest of this module's own suite already does without one. `go build ./...`, `go vet ./...`,
+`gofmt -l` (clean on every touched file), `go test ./...` (no regressions, full backend suite — only
+the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated `/settings/risk-register` route) all
+verified clean.
+
 <a id="rra-14"></a>
 ### RRA-14 รายงานความเสี่ยงสำหรับผู้บริหาร
 

@@ -5737,6 +5737,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/ropa/activities/{id}/compliance-score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RRA-13: one activity's compliance score (100 minus a point deduction per still-open gap finding, RRA-04) — the acceptance criterion itself, every deduction names the gap it came from */
+        get: operations["riskGetActivityComplianceScore"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/risk/compliance-score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RRA-13's own "ตารางคะแนนรายหน่วยงาน": every org unit's averaged, explained compliance score, for comparing and tracking progress */
+        get: operations["riskListComplianceScoreReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/risk/compliance-score/{orgUnitId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RRA-13: one org unit's compliance score — every activity under it, each with its own explained score, averaged */
+        get: operations["riskGetOrgUnitComplianceScore"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/risk/gap-findings/{id}/remediate": {
         parameters: {
             query?: never;
@@ -8194,6 +8245,24 @@ export interface components {
             detected_at: components["schemas"]["Timestamp"];
             resolved_at?: components["schemas"]["Timestamp"];
             task_id?: components["schemas"]["Uuid"];
+        };
+        /** @description RRA-13: one still-open gap finding counted against the score — the acceptance criterion's own explanation. */
+        RiskScoreDeduction: {
+            rule_code: string;
+            rule_name: string;
+            /** @enum {string} */
+            severity: "low" | "medium" | "high";
+            points: number;
+        };
+        RiskComplianceScore: {
+            activity_id: components["schemas"]["Uuid"];
+            score: number;
+            deductions: components["schemas"]["RiskScoreDeduction"][];
+        };
+        RiskOrgUnitComplianceScore: {
+            org_unit_id: components["schemas"]["Uuid"];
+            average_score: number;
+            activities: components["schemas"]["RiskComplianceScore"][];
         };
         /** @enum {string} */
         DataInventorySource: "direct" | "indirect" | "derived";
@@ -25599,6 +25668,88 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    riskGetActivityComplianceScore: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskComplianceScore"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    riskListComplianceScoreReport: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["RiskOrgUnitComplianceScore"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    riskGetOrgUnitComplianceScore: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                orgUnitId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RiskOrgUnitComplianceScore"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     riskRemediateGapFinding: {

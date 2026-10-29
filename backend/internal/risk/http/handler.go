@@ -155,6 +155,53 @@ func (h *Strict) RiskAnalyzeActivity(ctx context.Context, req RiskAnalyzeActivit
 	return resp, nil
 }
 
+// RiskGetActivityComplianceScore is RRA-13's own acceptance criterion: a score that explains exactly
+// which still-open gap it was deducted for.
+func (h *Strict) RiskGetActivityComplianceScore(ctx context.Context, req RiskGetActivityComplianceScoreRequestObject) (RiskGetActivityComplianceScoreResponseObject, error) {
+	cs, err := h.svc.ActivityComplianceScore(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RiskGetActivityComplianceScore200JSONResponse(toComplianceScoreWire(cs)), nil
+}
+
+// RiskListComplianceScoreReport is the module description's own "ตารางคะแนนรายหน่วยงาน."
+func (h *Strict) RiskListComplianceScoreReport(ctx context.Context, req RiskListComplianceScoreReportRequestObject) (RiskListComplianceScoreReportResponseObject, error) {
+	list, err := h.svc.ComplianceScoreReport(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp := RiskListComplianceScoreReport200JSONResponse{Data: make([]RiskOrgUnitComplianceScore, 0, len(list))}
+	for _, ou := range list {
+		resp.Data = append(resp.Data, toOrgUnitComplianceScoreWire(ou))
+	}
+	return resp, nil
+}
+
+func (h *Strict) RiskGetOrgUnitComplianceScore(ctx context.Context, req RiskGetOrgUnitComplianceScoreRequestObject) (RiskGetOrgUnitComplianceScoreResponseObject, error) {
+	ou, err := h.svc.OrgUnitComplianceScore(ctx, req.OrgUnitId)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return RiskGetOrgUnitComplianceScore200JSONResponse(toOrgUnitComplianceScoreWire(ou)), nil
+}
+
+func toComplianceScoreWire(cs riskservice.ComplianceScore) RiskComplianceScore {
+	w := RiskComplianceScore{ActivityId: cs.ActivityID, Score: float32(cs.Score), Deductions: make([]RiskScoreDeduction, 0, len(cs.Deductions))}
+	for _, d := range cs.Deductions {
+		w.Deductions = append(w.Deductions, RiskScoreDeduction{RuleCode: d.RuleCode, RuleName: d.RuleName, Severity: RiskScoreDeductionSeverity(d.Severity), Points: float32(d.Points)})
+	}
+	return w
+}
+
+func toOrgUnitComplianceScoreWire(ou riskservice.OrgUnitComplianceScore) RiskOrgUnitComplianceScore {
+	w := RiskOrgUnitComplianceScore{OrgUnitId: ou.OrgUnitID, AverageScore: float32(ou.AverageScore), Activities: make([]RiskComplianceScore, 0, len(ou.Activities))}
+	for _, a := range ou.Activities {
+		w.Activities = append(w.Activities, toComplianceScoreWire(a))
+	}
+	return w
+}
+
 func (h *Strict) RiskRemediateGapFinding(ctx context.Context, req RiskRemediateGapFindingRequestObject) (RiskRemediateGapFindingResponseObject, error) {
 	var assignee *uuid.UUID
 	var dueAt *time.Time

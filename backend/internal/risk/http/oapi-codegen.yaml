@@ -18,6 +18,9 @@ output-options:
     - riskListOpenGapFindings
     - riskListActivityGapFindings
     - riskAnalyzeActivity
+    - riskGetActivityComplianceScore
+    - riskListComplianceScoreReport
+    - riskGetOrgUnitComplianceScore
     - riskRemediateGapFinding
     - riskListRisks
     - riskCreateRisk

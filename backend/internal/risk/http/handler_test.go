@@ -461,7 +461,7 @@ func TestGapAnalysisEndpoints_Contract(t *testing.T) {
 	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc, Risk: riskSvc}
 	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}
 
-	var activityID uuid.UUID
+	var activityID, unitID uuid.UUID
 	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
 		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
 			Permissions: []string{"org.structure.read", "org.structure.update", "ropa.activity.create"}})
@@ -473,6 +473,7 @@ func TestGapAnalysisEndpoints_Contract(t *testing.T) {
 		if err != nil {
 			return err
 		}
+		unitID = unit.ID
 		a, err := ropaSvc.SaveActivity(ctx, ropaservice.Activity{LegalEntityID: le.ID, OrgUnitID: unit.ID, Code: "HR-GAPHTTP", Name: "ทดสอบช่องว่าง", Role: "controller"}, 0)
 		activityID = a.ID
 		return err
@@ -595,6 +596,24 @@ func TestGapAnalysisEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("POST", "/admin/v1/ropa/activities/"+uuid.New().String()+"/gap-analysis", &admin, nil, nil); code != 404 {
 		t.Errorf("analyze unknown activity: %d, want 404", code)
+	}
+
+	// RRA-13: the compliance score reads the same findings the analysis just populated.
+	scorePath := "/admin/v1/ropa/activities/" + activityID.String() + "/compliance-score"
+	if code, _ := do("GET", scorePath, nil, nil, nil); code != 401 {
+		t.Errorf("activity score, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", scorePath, &reader, nil, nil); code != 200 || !strings.Contains(body, `"no_lawful_basis"`) || !strings.Contains(body, `"score":70`) {
+		t.Errorf("activity score: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/ropa/activities/"+uuid.New().String()+"/compliance-score", &reader, nil, nil); code != 404 {
+		t.Errorf("score for unknown activity: %d, want 404", code)
+	}
+	if code, body := do("GET", "/admin/v1/risk/compliance-score/"+unitID.String(), &reader, nil, nil); code != 200 || !strings.Contains(body, activityID.String()) {
+		t.Errorf("org-unit score: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/risk/compliance-score", &reader, nil, nil); code != 200 || !strings.Contains(body, unitID.String()) {
+		t.Errorf("compliance score report: %d %s", code, body)
 	}
 }
 

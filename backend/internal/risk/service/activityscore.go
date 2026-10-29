@@ -43,6 +43,10 @@ type Ropa interface {
 	MissingItems(ctx context.Context, id uuid.UUID) ([]string, error)
 	// ListActivityIDs is every activity visible to the caller's tenant — RRA-04's sweep source.
 	ListActivityIDs(ctx context.Context) ([]uuid.UUID, error)
+	// ListActivityIDsByOrgUnit is RRA-13's own per-org-unit rollup source.
+	ListActivityIDsByOrgUnit(ctx context.Context, orgUnitID uuid.UUID) ([]uuid.UUID, error)
+	// ListOrgUnitIDs is RRA-13's own tenant-wide report source — every org unit, any legal entity.
+	ListOrgUnitIDs(ctx context.Context) ([]uuid.UUID, error)
 }
 
 // DpiaTrigger is RRA-03: risk hands a fresh high/very_high score to dpia so it can open a DPIA round —

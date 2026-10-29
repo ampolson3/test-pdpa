@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
 import { Button } from "@pdpa/ui";
@@ -11,6 +11,7 @@ import {
   useSaveRiskRegisterEntry,
   useAcceptances,
   useRecordAcceptance,
+  useComplianceScoreReport,
   riskReportHref,
   type RiskRegisterEntry,
   type ApiClient,
@@ -215,6 +216,8 @@ export function RiskRegisterContent() {
       {acceptancesFor && (
         <AcceptancesPanel client={client} riskId={acceptancesFor} canApprove={canApprove} t={t} />
       )}
+
+      <ComplianceScoreSection client={client} />
     </main>
   );
 }
@@ -279,6 +282,79 @@ function AcceptancesPanel({
             <Button onClick={submit} disabled={record.isPending || !reason.trim() || !expiresAt}>{t("acceptances.record")}</Button>
           </div>
         </div>
+      )}
+    </fieldset>
+  );
+}
+
+/** RRA-13's own "ตารางคะแนนรายหน่วยงาน": every org unit's own averaged compliance score, explained by
+ *  the still-open gaps (RRA-04) it was deducted for. */
+function ComplianceScoreSection({ client }: { client: ApiClient }) {
+  const t = useTranslations("riskRegister");
+  const report = useComplianceScoreReport(client);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const units = report.data ?? [];
+
+  return (
+    <fieldset className="space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="compliance-score-section">
+      <legend className="px-1 font-medium">{t("complianceScore.title")}</legend>
+      <p className="text-sm text-slate-600">{t("complianceScore.intro")}</p>
+      {report.isPending ? (
+        <p className="text-slate-500">{t("loading")}</p>
+      ) : report.isError ? (
+        <p className="text-red-700">{t("loadError")}</p>
+      ) : units.length === 0 ? (
+        <p className="text-slate-500">{t("complianceScore.empty")}</p>
+      ) : (
+        <table className="w-full border-collapse text-left text-sm">
+          <thead>
+            <tr className="border-b border-slate-200 text-slate-500">
+              <th className="py-1">{t("complianceScore.orgUnit")}</th>
+              <th className="py-1">{t("complianceScore.averageScore")}</th>
+              <th className="py-1">{t("complianceScore.activityCount")}</th>
+              <th className="py-1" />
+            </tr>
+          </thead>
+          <tbody>
+            {units.map((u) => (
+              <Fragment key={u.org_unit_id}>
+                <tr className="border-b border-slate-100">
+                  <td className="py-1 font-mono text-xs">{u.org_unit_id}</td>
+                  <td className="py-1">{u.average_score.toFixed(1)}</td>
+                  <td className="py-1">{u.activities.length}</td>
+                  <td className="py-1">
+                    <button className="text-sky-700 underline" onClick={() => setExpanded(expanded === u.org_unit_id ? null : u.org_unit_id)}>
+                      {t("complianceScore.viewDetail")}
+                    </button>
+                  </td>
+                </tr>
+                {expanded === u.org_unit_id && (
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <td colSpan={4} className="p-3">
+                      <ul className="list-inside list-disc space-y-1">
+                        {u.activities.map((a) => (
+                          <li key={a.activity_id}>
+                            <Link className="text-sky-700 underline" href={`/ropa/activities/${a.activity_id}`}>
+                              {a.activity_id}
+                            </Link>{" "}
+                            — {a.score.toFixed(1)}
+                            {a.deductions.length > 0 && (
+                              <span className="text-slate-600">
+                                {" "}
+                                ({a.deductions.map((d) => `-${d.points} ${d.rule_name}`).join(", ")})
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                        {u.activities.length === 0 && <li className="list-none text-slate-500">{t("complianceScore.noActivities")}</li>}
+                      </ul>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
       )}
     </fieldset>
   );

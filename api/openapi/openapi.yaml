@@ -16800,6 +16800,89 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/ropa/activities/{id}/compliance-score:
+    get:
+      operationId: riskGetActivityComplianceScore
+      tags: [risk]
+      summary: 'RRA-13: one activity''s compliance score (100 minus a point deduction per still-open gap finding, RRA-04) — the acceptance criterion itself, every deduction names the gap it came from'
+      x-permission: ropa.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskComplianceScore'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/risk/compliance-score:
+    get:
+      operationId: riskListComplianceScoreReport
+      tags: [risk]
+      summary: 'RRA-13''s own "ตารางคะแนนรายหน่วยงาน": every org unit''s averaged, explained compliance score, for comparing and tracking progress'
+      x-permission: ropa.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/RiskOrgUnitComplianceScore'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/risk/compliance-score/{orgUnitId}:
+    get:
+      operationId: riskGetOrgUnitComplianceScore
+      tags: [risk]
+      summary: 'RRA-13: one org unit''s compliance score — every activity under it, each with its own explained score, averaged'
+      x-permission: ropa.risk.read
+      x-module: risk
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: orgUnitId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskOrgUnitComplianceScore'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/risk/gap-findings/{id}/remediate:
     post:
       operationId: riskRemediateGapFinding
@@ -22118,6 +22201,35 @@ components:
         detected_at: {$ref: '#/components/schemas/Timestamp'}
         resolved_at: {$ref: '#/components/schemas/Timestamp'}
         task_id: {$ref: '#/components/schemas/Uuid'}
+    RiskScoreDeduction:
+      type: object
+      description: 'RRA-13: one still-open gap finding counted against the score — the acceptance criterion''s own explanation.'
+      required: [rule_code, rule_name, severity, points]
+      properties:
+        rule_code: {type: string}
+        rule_name: {type: string}
+        severity:
+          type: string
+          enum: [low, medium, high]
+        points: {type: number}
+    RiskComplianceScore:
+      type: object
+      required: [activity_id, score, deductions]
+      properties:
+        activity_id: {$ref: '#/components/schemas/Uuid'}
+        score: {type: number}
+        deductions:
+          type: array
+          items: {$ref: '#/components/schemas/RiskScoreDeduction'}
+    RiskOrgUnitComplianceScore:
+      type: object
+      required: [org_unit_id, average_score, activities]
+      properties:
+        org_unit_id: {$ref: '#/components/schemas/Uuid'}
+        average_score: {type: number}
+        activities:
+          type: array
+          items: {$ref: '#/components/schemas/RiskComplianceScore'}
     DataInventorySource:
       type: string
       enum: [direct, indirect, derived]
