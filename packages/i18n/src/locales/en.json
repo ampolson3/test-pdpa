@@ -3669,7 +3669,23 @@
           "accepted": "Accepted"
         },
         "markDone": "Mark done",
-        "accept": "Accept"
+        "accept": "Accept",
+        "evidenceAttached": "evidence attached",
+        "taskAssigned": "task assigned",
+        "statusError": "Couldn't update status: {detail}",
+        "attachEvidence": "Attach evidence",
+        "assignTask": "Assign task",
+        "evidenceReady": "Ready to attach: {name}",
+        "evidenceError": "Couldn't attach evidence: {detail}",
+        "saveEvidence": "Save evidence",
+        "priority": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "urgent": "Urgent"
+        },
+        "saveAssign": "Assign",
+        "assignError": "Couldn't assign: {detail}"
       }
     }
   },

@@ -18522,7 +18522,7 @@ paths:
     patch:
       operationId: govSetAuditFindingStatus
       tags: [gov]
-      summary: Move a finding open -> in_progress -> done/accepted (evidence-gated closing is DPX-04's own, separate feature)
+      summary: 'DPX-04: move a finding open -> in_progress -> done/accepted; entering done/accepted is refused without evidence_file_id already set (govAttachFindingEvidence), and accepted additionally needs dpx.audit.approve'
       x-permission: dpx.audit.update
       x-module: gov
       security:
@@ -18548,6 +18548,109 @@ paths:
       responses:
         '200':
           description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovAuditFinding'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/audit-findings/{id}/evidence:
+    post:
+      operationId: govAttachFindingEvidence
+      tags: [gov]
+      summary: 'DPX-04: attach the caller''s own clean, still-unattached PLT-09 upload as this finding''s evidence — the precondition govSetAuditFindingStatus checks before allowing done/accepted'
+      x-permission: dpx.audit.update
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [evidence_file_id]
+              additionalProperties: false
+              properties:
+                evidence_file_id: {$ref: '#/components/schemas/Uuid'}
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovAuditFinding'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/audit-findings/{id}/assign-task:
+    post:
+      operationId: govAssignFindingTask
+      tags: [gov]
+      summary: 'DPX-04: open one dpo.tasks remediation job for this finding (assignee/due date/priority) and link it back via task_id — idempotent, a finding that already has a task is returned unchanged'
+      x-permission: dpx.audit.update
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                assignee_user_id: {$ref: '#/components/schemas/Uuid'}
+                due_at: {type: [string, 'null'], format: date}
+                priority: {type: string, enum: [low, medium, high, urgent]}
+      responses:
+        '200':
+          description: Updated (or unchanged if a task was already linked)
           headers:
             ETag:
               $ref: '#/components/headers/ETag'

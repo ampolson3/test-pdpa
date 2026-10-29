@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
@@ -55,6 +56,16 @@ func (f *govFakeFiles) AttachSystem(ctx context.Context, id uuid.UUID, entityTyp
 	return nil
 }
 
+// govFakeDpo is DPX-04's own test double for govservice.Dpo — this file's svc has no real dpo/service
+// wired at all, the same reasoning govFakeFiles already stands in for platform/files.
+type govFakeDpo struct{ calls int }
+
+func (f *govFakeDpo) OpenAuditFindingTask(ctx context.Context, findingID uuid.UUID, title, description string,
+	assigneeUserID *uuid.UUID, dueAt *time.Time, priority string) (uuid.UUID, error) {
+	f.calls++
+	return uuid.New(), nil
+}
+
 // TestGovHandler_Contract drives the retention-schedule + disposal-job endpoints through the real
 // validator/AuthZ chain (401/403/200/201/422/428), mirroring ropa/http's own tia_test.go pattern.
 func TestGovHandler_Contract(t *testing.T) {
@@ -98,7 +109,8 @@ func TestGovHandler_Contract(t *testing.T) {
 	docsSvc.RegisterVersioning()
 	formsSvc := wiring.Forms(nil, audit.New())
 	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Audit: audit.New()}
-	svc := &govservice.Service{Audit: audit.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fFiles, Docs: docsSvc, Org: orgSvc, Forms: formsSvc, Dpia: dpiaSvc}
+	fDpo := &govFakeDpo{}
+	svc := &govservice.Service{Audit: audit.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fFiles, Docs: docsSvc, Org: orgSvc, Forms: formsSvc, Dpia: dpiaSvc, Dpo: fDpo}
 
 	// DPX-02's own employee (attestation, gov.policy_attestations.user_id has a real FK) and DPO approver
 	// (platform.approvals.approver_user_id has a real FK too) — both need real iam.users rows.
@@ -164,8 +176,8 @@ func TestGovHandler_Contract(t *testing.T) {
 			"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.create", "notice.document.update",
 			"dpx.regulator.read", "dpx.regulator.create", "dpx.regulator.update", "dpx.regulator.delete",
 			"dpx.training.read", "dpx.training.create", "dpx.training.update", "dpx.training.publish", "dpx.training.delete", "dpx.training.execute",
-			"dpx.audit.read", "dpx.audit.create", "dpx.audit.update", "dpx.audit.delete"},
-		reader.String(): {"dpx.retention.read"},
+			"dpx.audit.read", "dpx.audit.create", "dpx.audit.update", "dpx.audit.delete", "dpx.audit.approve"},
+		reader.String(): {"dpx.retention.read", "dpx.audit.read", "dpx.audit.update"},
 		emp.String():    {"dpx.policy.execute"},
 		dpo.String():    {"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.update", "notice.document.approve", "notice.document.publish"},
 	}
@@ -672,9 +684,52 @@ func TestGovHandler_Contract(t *testing.T) {
 	}
 	findingEtag = headers.Get("ETag")
 
+	// DPX-04's own acceptance criterion: a finding can't close without evidence.
+	if code, _, _ := do("PATCH", findingPath+"/status", &admin, findingEtag, map[string]any{"status": "done"}); code != 422 {
+		t.Errorf("close without evidence: %d, want 422", code)
+	}
+	evidenceFileID := uuid.NewString()
+	fFiles.clean[uuid.MustParse(evidenceFileID)] = true
+	code, body, headers = do("POST", findingPath+"/evidence", &admin, findingEtag, map[string]any{"evidence_file_id": evidenceFileID})
+	if code != 200 || !strings.Contains(body, evidenceFileID) {
+		t.Fatalf("attach finding evidence: %d %s", code, body)
+	}
+	findingEtag = headers.Get("ETag")
+
+	// "accepted" additionally needs dpx.audit.approve — reader holds dpx.audit.update but not .approve.
+	if code, _, _ := do("PATCH", findingPath+"/status", &reader, findingEtag, map[string]any{"status": "accepted"}); code != 403 {
+		t.Errorf("accepted without dpx.audit.approve: %d, want 403", code)
+	}
+
 	code, body, _ = do("PATCH", findingPath+"/status", &admin, findingEtag, map[string]any{"status": "done"})
 	if code != 200 || !strings.Contains(body, `"done"`) {
-		t.Fatalf("set audit finding status: %d %s", code, body)
+		t.Fatalf("set audit finding status with evidence attached: %d %s", code, body)
+	}
+
+	// DPX-04's own "มอบหมายงานตามข้อตรวจพบ": open one dpo.tasks job for the finding, idempotently.
+	code, body, headers = do("POST", findingsPath, &admin, "", map[string]any{"title": "ข้อตรวจพบอีกรายการ", "severity": "medium"})
+	if code != 201 {
+		t.Fatalf("add second finding: %d %s", code, body)
+	}
+	var secondFinding struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &secondFinding)
+	secondEtag := headers.Get("ETag")
+	secondPath := "/admin/v1/governance/audit-findings/" + secondFinding.ID
+	if code, _, _ := do("POST", secondPath+"/assign-task", &admin, "", map[string]any{"priority": "high"}); code != 428 {
+		t.Errorf("assign-task without If-Match: %d, want 428", code)
+	}
+	code, body, headers = do("POST", secondPath+"/assign-task", &admin, secondEtag, map[string]any{"priority": "high"})
+	if code != 200 || !strings.Contains(body, `"task_id"`) {
+		t.Fatalf("assign-task: %d %s", code, body)
+	}
+	secondEtag = headers.Get("ETag")
+	if code, body, _ := do("POST", secondPath+"/assign-task", &admin, secondEtag, map[string]any{"priority": "urgent"}); code != 200 {
+		t.Errorf("repeat assign-task: %d %s", code, body)
+	}
+	if fDpo.calls != 1 {
+		t.Errorf("OpenAuditFindingTask called %d times, want 1 (deduped)", fDpo.calls)
 	}
 
 	if code, _, _ := do("DELETE", auditsPath+"/"+ranAudit.ID, &reader, "", nil); code != 403 {

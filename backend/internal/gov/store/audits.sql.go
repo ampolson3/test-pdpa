@@ -349,6 +349,61 @@ func (q *Queries) ListAudits(ctx context.Context, legalEntityID pgtype.UUID) ([]
 	return items, nil
 }
 
+const setAuditFindingEvidence = `-- name: SetAuditFindingEvidence :one
+
+UPDATE gov.audit_findings
+SET evidence_file_id = $1, updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
+WHERE id = $2 AND row_version = $3
+RETURNING id, audit_id, title, severity, requirement_ref, recommendation, owner_user_id, due_at, status, task_id, evidence_file_id, row_version, created_at, updated_at
+`
+
+type SetAuditFindingEvidenceParams struct {
+	EvidenceFileID pgtype.UUID `db:"evidence_file_id" json:"evidence_file_id"`
+	ID             uuid.UUID   `db:"id" json:"id"`
+	RowVersion     int32       `db:"row_version" json:"row_version"`
+}
+
+type SetAuditFindingEvidenceRow struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	AuditID        uuid.UUID          `db:"audit_id" json:"audit_id"`
+	Title          string             `db:"title" json:"title"`
+	Severity       string             `db:"severity" json:"severity"`
+	RequirementRef *string            `db:"requirement_ref" json:"requirement_ref"`
+	Recommendation *string            `db:"recommendation" json:"recommendation"`
+	OwnerUserID    pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	DueAt          pgtype.Date        `db:"due_at" json:"due_at"`
+	Status         string             `db:"status" json:"status"`
+	TaskID         pgtype.UUID        `db:"task_id" json:"task_id"`
+	EvidenceFileID pgtype.UUID        `db:"evidence_file_id" json:"evidence_file_id"`
+	RowVersion     int32              `db:"row_version" json:"row_version"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// DPX-04: evidence attach and remediation-task linkage — both columns existed since the baseline but
+// nothing wrote to either until now.
+func (q *Queries) SetAuditFindingEvidence(ctx context.Context, arg SetAuditFindingEvidenceParams) (SetAuditFindingEvidenceRow, error) {
+	row := q.db.QueryRow(ctx, setAuditFindingEvidence, arg.EvidenceFileID, arg.ID, arg.RowVersion)
+	var i SetAuditFindingEvidenceRow
+	err := row.Scan(
+		&i.ID,
+		&i.AuditID,
+		&i.Title,
+		&i.Severity,
+		&i.RequirementRef,
+		&i.Recommendation,
+		&i.OwnerUserID,
+		&i.DueAt,
+		&i.Status,
+		&i.TaskID,
+		&i.EvidenceFileID,
+		&i.RowVersion,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const setAuditFindingStatus = `-- name: SetAuditFindingStatus :one
 UPDATE gov.audit_findings
 SET status = $1, updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
@@ -382,6 +437,58 @@ type SetAuditFindingStatusRow struct {
 func (q *Queries) SetAuditFindingStatus(ctx context.Context, arg SetAuditFindingStatusParams) (SetAuditFindingStatusRow, error) {
 	row := q.db.QueryRow(ctx, setAuditFindingStatus, arg.Status, arg.ID, arg.RowVersion)
 	var i SetAuditFindingStatusRow
+	err := row.Scan(
+		&i.ID,
+		&i.AuditID,
+		&i.Title,
+		&i.Severity,
+		&i.RequirementRef,
+		&i.Recommendation,
+		&i.OwnerUserID,
+		&i.DueAt,
+		&i.Status,
+		&i.TaskID,
+		&i.EvidenceFileID,
+		&i.RowVersion,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const setAuditFindingTask = `-- name: SetAuditFindingTask :one
+UPDATE gov.audit_findings
+SET task_id = $1, updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
+WHERE id = $2 AND row_version = $3
+RETURNING id, audit_id, title, severity, requirement_ref, recommendation, owner_user_id, due_at, status, task_id, evidence_file_id, row_version, created_at, updated_at
+`
+
+type SetAuditFindingTaskParams struct {
+	TaskID     pgtype.UUID `db:"task_id" json:"task_id"`
+	ID         uuid.UUID   `db:"id" json:"id"`
+	RowVersion int32       `db:"row_version" json:"row_version"`
+}
+
+type SetAuditFindingTaskRow struct {
+	ID             uuid.UUID          `db:"id" json:"id"`
+	AuditID        uuid.UUID          `db:"audit_id" json:"audit_id"`
+	Title          string             `db:"title" json:"title"`
+	Severity       string             `db:"severity" json:"severity"`
+	RequirementRef *string            `db:"requirement_ref" json:"requirement_ref"`
+	Recommendation *string            `db:"recommendation" json:"recommendation"`
+	OwnerUserID    pgtype.UUID        `db:"owner_user_id" json:"owner_user_id"`
+	DueAt          pgtype.Date        `db:"due_at" json:"due_at"`
+	Status         string             `db:"status" json:"status"`
+	TaskID         pgtype.UUID        `db:"task_id" json:"task_id"`
+	EvidenceFileID pgtype.UUID        `db:"evidence_file_id" json:"evidence_file_id"`
+	RowVersion     int32              `db:"row_version" json:"row_version"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+func (q *Queries) SetAuditFindingTask(ctx context.Context, arg SetAuditFindingTaskParams) (SetAuditFindingTaskRow, error) {
+	row := q.db.QueryRow(ctx, setAuditFindingTask, arg.TaskID, arg.ID, arg.RowVersion)
+	var i SetAuditFindingTaskRow
 	err := row.Scan(
 		&i.ID,
 		&i.AuditID,

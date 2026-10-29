@@ -266,7 +266,7 @@ DPX-06,DPX,ประเมินการโอนข้อมูลไปต่
 DPX-01,DPX,อบรมและทดสอบพนักงาน,Awareness training & quiz,Should,P3,บุคลากร,"ม.37(1), ม.42",EMP DPO,L,L,Y,10,10,2.4,4.0,7.0,PLT-06,,docs/modules/DPX.md#dpx-01,พนักงานเรียนและทำแบบทดสอบได้ และรายงานแสดงผลรายบุคคล,done
 DPX-02,DPX,รับทราบนโยบายภายใน,Policy attestation,Should,P3,บุคลากร,แนวปฏิบัติตลาด,EMP DPO,S,S,N,3,3,0.7,0,2.1,PLT-08,,docs/modules/DPX.md#dpx-02,รายงานแสดงผู้ที่ยังไม่รับทราบ,done
 DPX-03,DPX,ตรวจประเมินความพร้อมทั้งองค์กร,Organization-wide audit & maturity,Should,P3,ตรวจสอบ,ม.37(1),AUDIT DPO,M,M,Y,5,5,1.2,2.0,3.5,PLT-06,,docs/modules/DPX.md#dpx-03,ผลประเมินแสดงคะแนนรายด้านและแผนแก้ไข,done
-DPX-04,DPX,ติดตามแผนแก้ไขจากการตรวจ,Audit remediation tracking,Should,P3,ตรวจสอบ,แนวปฏิบัติตลาด,DPO EMP,S,S,N,3,3,0.7,0,2.1,DPO-06,,docs/modules/DPX.md#dpx-04,ข้อตรวจพบปิดได้เมื่อแนบหลักฐาน,todo
+DPX-04,DPX,ติดตามแผนแก้ไขจากการตรวจ,Audit remediation tracking,Should,P3,ตรวจสอบ,แนวปฏิบัติตลาด,DPO EMP,S,S,N,3,3,0.7,0,2.1,DPO-06,,docs/modules/DPX.md#dpx-04,ข้อตรวจพบปิดได้เมื่อแนบหลักฐาน,done
 DPX-08,DPX,บันทึกการติดต่อกับ สคส.,Regulator correspondence,Should,P3,กำกับ,ม.42(3),DPO PDPC,S,S,N,3,3,0.7,0,2.1,PLT-07,,docs/modules/DPX.md#dpx-08,กำหนดส่งถูกแจ้งเตือนก่อนครบ,done
 DPX-13,DPX,เชื่อมระบบ HR / ITSM / SIEM,"HR, ITSM & SIEM connectors",Should,P3,เชื่อมต่อ,แนวปฏิบัติตลาด,IT HRIS,L,S,N,10,3,1.6,0,4.5,PLT-20,,docs/modules/DPX.md#dpx-13,พนักงานลาออกใน HRIS แล้วบัญชีถูกปิดอัตโนมัติ,todo
 DPX-07,DPX,เครื่องมือ Masking / Pseudonymization,Data masking tool,Nice,P4,ข้อมูล,"ม.33, ม.37(1)",IT,L,S,N,10,3,1.6,0,4.5,PLT-13,,docs/modules/DPX.md#dpx-07,ไฟล์ที่ mask แล้วไม่มีค่าจริงหลงเหลือแต่รูปแบบยังถูกต้อง,todo

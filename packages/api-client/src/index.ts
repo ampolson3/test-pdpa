@@ -148,6 +148,8 @@ export {
   useAuditFindings,
   useAddAuditFinding,
   useSetAuditFindingStatus,
+  useAttachFindingEvidence,
+  useAssignFindingTask,
   type RetentionSchedule,
   type RetentionScheduleInput,
   type RetentionScheduleStatus,

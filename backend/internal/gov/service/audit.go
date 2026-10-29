@@ -350,15 +350,30 @@ func (s *Service) UpdateAuditFinding(ctx context.Context, id uuid.UUID, rowVersi
 	return out, s.audit(ctx, "gov.audit_finding.update", AuditFindingType, out.ID, nil, map[string]any{"title": out.Title})
 }
 
-// SetAuditFindingStatus moves a finding open/in_progress/done/accepted. Closing with evidence is DPX-04's
-// own, separate acceptance criterion (not built here, blocked on DPO-06) — this feature's own literal
-// criterion is only that the plan is shown, not that it's gated shut.
+// SetAuditFindingStatus moves a finding open/in_progress/done/accepted. DPX-04's own acceptance criterion
+// ("ข้อตรวจพบปิดได้เมื่อแนบหลักฐาน" — a finding closes only once evidence is attached) gates both terminal
+// states on evidence_file_id already being set — AttachFindingEvidence's own job, not this call's; "accepted"
+// is additionally a permanent decision (accepting a gap as-is rather than fixing it), so it needs
+// dpx.audit.approve beyond this endpoint's own dpx.audit.update, the same reasoning VEN-14/ORG-06/DPIA-03
+// already use for reusing a stronger permission rather than minting a new code.
 func (s *Service) SetAuditFindingStatus(ctx context.Context, id uuid.UUID, rowVersion int32, status string) (AuditFinding, error) {
 	if !has(ctx, AuditPermUpdate) {
 		return AuditFinding{}, ErrForbidden
 	}
 	if !validFindingStatus(status) {
 		return AuditFinding{}, fmt.Errorf("%w: status", ErrInvalid)
+	}
+	if status == "accepted" && !has(ctx, AuditPermApprove) {
+		return AuditFinding{}, ErrForbidden
+	}
+	if status == "done" || status == "accepted" {
+		current, err := s.GetAuditFinding(ctx, id)
+		if err != nil {
+			return AuditFinding{}, err
+		}
+		if current.EvidenceFileID == nil {
+			return AuditFinding{}, ErrEvidenceRequired
+		}
 	}
 	row, err := govstore.New(pdb.MustTxFromContext(ctx)).SetAuditFindingStatus(ctx, govstore.SetAuditFindingStatusParams{
 		ID: id, RowVersion: rowVersion, Status: status,

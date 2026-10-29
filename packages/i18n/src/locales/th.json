@@ -3669,7 +3669,23 @@
           "accepted": "ยอมรับความเสี่ยง"
         },
         "markDone": "ทำเครื่องหมายเสร็จแล้ว",
-        "accept": "ยอมรับความเสี่ยง"
+        "accept": "ยอมรับความเสี่ยง",
+        "evidenceAttached": "แนบหลักฐานแล้ว",
+        "taskAssigned": "มอบหมายงานแล้ว",
+        "statusError": "อัปเดตสถานะไม่สำเร็จ: {detail}",
+        "attachEvidence": "แนบหลักฐาน",
+        "assignTask": "มอบหมายงาน",
+        "evidenceReady": "พร้อมแนบ: {name}",
+        "evidenceError": "แนบหลักฐานไม่สำเร็จ: {detail}",
+        "saveEvidence": "บันทึกหลักฐาน",
+        "priority": {
+          "low": "ต่ำ",
+          "medium": "ปานกลาง",
+          "high": "สูง",
+          "urgent": "เร่งด่วน"
+        },
+        "saveAssign": "มอบหมาย",
+        "assignError": "มอบหมายไม่สำเร็จ: {detail}"
       }
     }
   },

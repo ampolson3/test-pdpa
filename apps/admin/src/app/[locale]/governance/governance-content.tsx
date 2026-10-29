@@ -38,6 +38,8 @@ import {
   useDeleteAudit,
   useAuditFindings,
   useSetAuditFindingStatus,
+  useAttachFindingEvidence,
+  useAssignFindingTask,
   type RetentionScheduleStatus,
   type DisposalJobStatus,
   type StoredFile,
@@ -149,6 +151,10 @@ export function GovernanceContent() {
   const [findingsAudit, setFindingsAudit] = useState<string | null>(null);
   const auditFindings = useAuditFindings(client, findingsAudit ?? "");
   const setFindingStatus = useSetAuditFindingStatus(client);
+  const attachEvidence = useAttachFindingEvidence(client);
+  const assignFindingTask = useAssignFindingTask(client);
+  const [evidencing, setEvidencing] = useState<{ id: string; rowVersion: number; file?: StoredFile } | null>(null);
+  const [assigningFinding, setAssigningFinding] = useState<{ id: string; rowVersion: number; priority: string } | null>(null);
 
   if (!canRead && !canReadPolicy && !canReadLetters && !canReadTraining && !canExecuteTraining && !canReadAudit) {
     return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
@@ -793,21 +799,85 @@ export function GovernanceContent() {
                       )}
                       <div>
                         <p className="font-medium">{t("audit.findingsPanel.title")}</p>
-                        <ul className="list-inside list-disc">
+                        <ul className="list-inside list-disc space-y-1">
                           {(auditFindings.data ?? []).map((f) => (
                             <li key={f.id} className="space-x-2">
                               <span>{f.title}</span>
                               <span className="text-slate-500">({t(`audit.findingsPanel.severities.${f.severity}`)})</span>
                               <span>{t(`audit.findingsPanel.statuses.${f.status}`)}</span>
+                              {f.evidence_file_id && <span className="text-emerald-700">{t("audit.findingsPanel.evidenceAttached")}</span>}
+                              {f.task_id && <span className="text-sky-700">{t("audit.findingsPanel.taskAssigned")}</span>}
                               {canUpdateAudit && f.status !== "done" && f.status !== "accepted" && (
                                 <>
-                                  <button className="text-sky-700 underline" onClick={() => setFindingStatus.mutate({ id: f.id, rowVersion: f.row_version, status: "done" })}>
+                                  <button
+                                    className="text-sky-700 underline"
+                                    onClick={() => setFindingStatus.mutate({ id: f.id, rowVersion: f.row_version, status: "done" })}
+                                  >
                                     {t("audit.findingsPanel.markDone")}
                                   </button>
-                                  <button className="text-amber-700 underline" onClick={() => setFindingStatus.mutate({ id: f.id, rowVersion: f.row_version, status: "accepted" })}>
+                                  <button
+                                    className="text-amber-700 underline"
+                                    onClick={() => setFindingStatus.mutate({ id: f.id, rowVersion: f.row_version, status: "accepted" })}
+                                  >
                                     {t("audit.findingsPanel.accept")}
                                   </button>
+                                  {setFindingStatus.isError && <span className="text-red-700" role="alert">{t("audit.findingsPanel.statusError", { detail: detail(setFindingStatus.error) })}</span>}
+                                  <button
+                                    className="text-slate-700 underline"
+                                    onClick={() => setEvidencing(evidencing?.id === f.id ? null : { id: f.id, rowVersion: f.row_version })}
+                                  >
+                                    {t("audit.findingsPanel.attachEvidence")}
+                                  </button>
+                                  {!f.task_id && (
+                                    <button
+                                      className="text-slate-700 underline"
+                                      onClick={() =>
+                                        setAssigningFinding(assigningFinding?.id === f.id ? null : { id: f.id, rowVersion: f.row_version, priority: "medium" })
+                                      }
+                                    >
+                                      {t("audit.findingsPanel.assignTask")}
+                                    </button>
+                                  )}
                                 </>
+                              )}
+                              {evidencing?.id === f.id && (
+                                <div className="mt-1 space-y-2 rounded-md border border-slate-200 bg-white p-2">
+                                  <FileUploader onUploaded={(file) => setEvidencing((e) => (e ? { ...e, file } : e))} />
+                                  {evidencing.file && <p className="text-emerald-700">{t("audit.findingsPanel.evidenceReady", { name: evidencing.file.file_name })}</p>}
+                                  {attachEvidence.isError && <p className="text-red-700" role="alert">{t("audit.findingsPanel.evidenceError", { detail: detail(attachEvidence.error) })}</p>}
+                                  <Button
+                                    disabled={!evidencing.file || attachEvidence.isPending}
+                                    onClick={() =>
+                                      attachEvidence.mutate(
+                                        { id: evidencing.id, rowVersion: evidencing.rowVersion, evidenceFileId: evidencing.file!.id },
+                                        { onSuccess: () => setEvidencing(null) },
+                                      )
+                                    }
+                                  >
+                                    {t("audit.findingsPanel.saveEvidence")}
+                                  </Button>
+                                </div>
+                              )}
+                              {assigningFinding?.id === f.id && (
+                                <div className="mt-1 flex items-center gap-2 rounded-md border border-slate-200 bg-white p-2">
+                                  <select className={INPUT} value={assigningFinding.priority} onChange={(e) => setAssigningFinding({ ...assigningFinding, priority: e.target.value })}>
+                                    {(["low", "medium", "high", "urgent"] as const).map((p) => (
+                                      <option key={p} value={p}>{t(`audit.findingsPanel.priority.${p}`)}</option>
+                                    ))}
+                                  </select>
+                                  <Button
+                                    disabled={assignFindingTask.isPending}
+                                    onClick={() =>
+                                      assignFindingTask.mutate(
+                                        { id: assigningFinding.id, rowVersion: assigningFinding.rowVersion, priority: assigningFinding.priority },
+                                        { onSuccess: () => setAssigningFinding(null) },
+                                      )
+                                    }
+                                  >
+                                    {t("audit.findingsPanel.saveAssign")}
+                                  </Button>
+                                  {assignFindingTask.isError && <span className="text-red-700" role="alert">{t("audit.findingsPanel.assignError", { detail: detail(assignFindingTask.error) })}</span>}
+                                </div>
                               )}
                             </li>
                           ))}

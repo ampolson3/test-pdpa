@@ -51,3 +51,18 @@ UPDATE gov.audit_findings
 SET status = @status, updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
 WHERE id = @id AND row_version = @row_version
 RETURNING id, audit_id, title, severity, requirement_ref, recommendation, owner_user_id, due_at, status, task_id, evidence_file_id, row_version, created_at, updated_at;
+
+-- DPX-04: evidence attach and remediation-task linkage — both columns existed since the baseline but
+-- nothing wrote to either until now.
+
+-- name: SetAuditFindingEvidence :one
+UPDATE gov.audit_findings
+SET evidence_file_id = @evidence_file_id, updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
+WHERE id = @id AND row_version = @row_version
+RETURNING id, audit_id, title, severity, requirement_ref, recommendation, owner_user_id, due_at, status, task_id, evidence_file_id, row_version, created_at, updated_at;
+
+-- name: SetAuditFindingTask :one
+UPDATE gov.audit_findings
+SET task_id = @task_id, updated_at = now(), updated_by = NULLIF(current_setting('app.user_id', true), '')::uuid, row_version = row_version + 1
+WHERE id = @id AND row_version = @row_version
+RETURNING id, audit_id, title, severity, requirement_ref, recommendation, owner_user_id, due_at, status, task_id, evidence_file_id, row_version, created_at, updated_at;

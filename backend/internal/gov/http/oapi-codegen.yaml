@@ -47,3 +47,5 @@ output-options:
     - govAddAuditFinding
     - govUpdateAuditFinding
     - govSetAuditFindingStatus
+    - govAttachFindingEvidence
+    - govAssignFindingTask

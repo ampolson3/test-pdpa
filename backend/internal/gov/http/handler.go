@@ -656,6 +656,44 @@ func (h *Strict) GovSetAuditFindingStatus(ctx context.Context, req GovSetAuditFi
 	return GovSetAuditFindingStatus200JSONResponse{Body: toFindingWire(f), Headers: GovSetAuditFindingStatus200ResponseHeaders{ETag: etag(f.RowVersion)}}, nil
 }
 
+// GovAttachFindingEvidence is DPX-04's own "แนบหลักฐาน" — the precondition GovSetAuditFindingStatus checks
+// before allowing done/accepted.
+func (h *Strict) GovAttachFindingEvidence(ctx context.Context, req GovAttachFindingEvidenceRequestObject) (GovAttachFindingEvidenceResponseObject, error) {
+	rv, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	f, err := h.svc.AttachFindingEvidence(ctx, req.Id, rv, uuid.UUID(req.Body.EvidenceFileId))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovAttachFindingEvidence200JSONResponse{Body: toFindingWire(f), Headers: GovAttachFindingEvidence200ResponseHeaders{ETag: etag(f.RowVersion)}}, nil
+}
+
+// GovAssignFindingTask is DPX-04's own "มอบหมายงานตามข้อตรวจพบ".
+func (h *Strict) GovAssignFindingTask(ctx context.Context, req GovAssignFindingTaskRequestObject) (GovAssignFindingTaskResponseObject, error) {
+	rv, err := parseETag(req.Params.IfMatch)
+	if err != nil {
+		return nil, httpx.VersionMismatch()
+	}
+	in := govservice.AssignFindingTaskInput{}
+	if req.Body != nil {
+		in.AssigneeUserID = req.Body.AssigneeUserId
+		if req.Body.DueAt != nil {
+			t := req.Body.DueAt.Time
+			in.DueAt = &t
+		}
+		if req.Body.Priority != nil {
+			in.Priority = string(*req.Body.Priority)
+		}
+	}
+	f, err := h.svc.AssignFindingTask(ctx, req.Id, rv, in)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovAssignFindingTask200JSONResponse{Body: toFindingWire(f), Headers: GovAssignFindingTask200ResponseHeaders{ETag: etag(f.RowVersion)}}, nil
+}
+
 func findingInputFromWire(in GovAuditFindingInput) govservice.AuditFindingInput {
 	out := govservice.AuditFindingInput{Title: in.Title, Severity: string(in.Severity), RequirementRef: in.RequirementRef, Recommendation: in.Recommendation}
 	if in.OwnerUserId != nil {

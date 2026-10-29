@@ -108,6 +108,15 @@ type Breach interface {
 	Get(ctx context.Context, id uuid.UUID) (breachservice.Incident, error)
 }
 
+// Dpo is what DPX-04 reads from the dpo module (rule 9): opening one dpo.tasks remediation job per audit
+// finding, the same "mobilize work in the generic task board" move RRA-07/DPO-09/DPA-12/PNG-07/ROPA-19/
+// DPIA-08/RRA-08/RTG-10 already make — gov never writes to dpo.tasks directly. No import cycle: dpo/service
+// does not import gov.
+type Dpo interface {
+	OpenAuditFindingTask(ctx context.Context, findingID uuid.UUID, title, description string,
+		assigneeUserID *uuid.UUID, dueAt *time.Time, priority string) (uuid.UUID, error)
+}
+
 // DPX-08's own permission codes (dpx.regulator.*, already seeded — DPO holds all four, LEGAL holds
 // create/read/update, AUDIT holds read).
 const (
@@ -199,6 +208,7 @@ type Service struct {
 	Org    Org
 	Forms  Forms
 	Dpia   Dpia
+	Dpo    Dpo
 	Notify *notify.Service
 	River  *river.Client[pgx.Tx]
 	Now    func() time.Time

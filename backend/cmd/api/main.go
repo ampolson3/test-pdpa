@@ -403,11 +403,14 @@ func run() error {
 	// FK-visibility check; Forms is formsSvc directly for a course's own "quiz"-type form.
 	// DPX-03: Dpia is dpiaSvc directly (no import cycle, dpia never imports gov) for the generic
 	// ScreenSubject screening round a maturity audit answers through.
+	// DPX-04: Dpo is dpoSvc directly (no import cycle, dpo never imports gov) for opening one dpo.tasks
+	// remediation job per audit finding (AssignFindingTask).
 	govSvc := &govservice.Service{Audit: auditSvc, Ropa: ropaSvc, Dsar: dsarSvc, Files: fileSvc, Docs: docsSvc,
-		Breach: breachSvc, Notify: notifySvc, River: riverClient, Org: orgSvc, Forms: formsSvc, Dpia: dpiaSvc}
+		Breach: breachSvc, Notify: notifySvc, River: riverClient, Org: orgSvc, Forms: formsSvc, Dpia: dpiaSvc, Dpo: dpoSvc}
 	fileSvc.EntityPermissions[govservice.JobType] = "dpx.retention.read"             // disposal job evidence
 	fileSvc.EntityPermissions[govservice.RegulatorLetterType] = "dpx.regulator.read" // DPX-08 letter attachment
 	fileSvc.EntityPermissions[govservice.CourseType] = "dpx.training.read"           // DPX-01 course content
+	fileSvc.EntityPermissions[govservice.AuditFindingType] = "dpx.audit.read"        // DPX-04 finding evidence
 
 	// Public consent forms (BP-01) and published notices (PNG-06): tenant and principal from the public key,
 	// then the same Idempotency + Tx chain. Both mount on the same group — chi dispatches by path, and

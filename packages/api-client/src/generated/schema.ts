@@ -6292,8 +6292,42 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Move a finding open -> in_progress -> done/accepted (evidence-gated closing is DPX-04's own, separate feature) */
+        /** DPX-04: move a finding open -> in_progress -> done/accepted; entering done/accepted is refused without evidence_file_id already set (govAttachFindingEvidence), and accepted additionally needs dpx.audit.approve */
         patch: operations["govSetAuditFindingStatus"];
+        trace?: never;
+    };
+    "/admin/v1/governance/audit-findings/{id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** DPX-04: attach the caller's own clean, still-unattached PLT-09 upload as this finding's evidence — the precondition govSetAuditFindingStatus checks before allowing done/accepted */
+        post: operations["govAttachFindingEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/audit-findings/{id}/assign-task": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** DPX-04: open one dpo.tasks remediation job for this finding (assignee/due date/priority) and link it back via task_id — idempotent, a finding that already has a task is returned unchanged */
+        post: operations["govAssignFindingTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/admin/v1/dataflow/graph": {
@@ -27057,6 +27091,92 @@ export interface operations {
         };
         responses: {
             /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovAuditFinding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    govAttachFindingEvidence: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    evidence_file_id: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovAuditFinding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    govAssignFindingTask: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    assignee_user_id?: components["schemas"]["Uuid"];
+                    /** Format: date */
+                    due_at?: string | null;
+                    /** @enum {string} */
+                    priority?: "low" | "medium" | "high" | "urgent";
+                };
+            };
+        };
+        responses: {
+            /** @description Updated (or unchanged if a task was already linked) */
             200: {
                 headers: {
                     ETag: components["headers"]["ETag"];

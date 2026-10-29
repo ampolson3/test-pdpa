@@ -515,6 +515,47 @@ bespoke comparison screen; add one if a future screen needs it.
 
 **Acceptance criteria:** ข้อตรวจพบปิดได้เมื่อแนบหลักฐาน
 
+**Implementation — done.** `gov.audit_findings.task_id`/`evidence_file_id` (already fully specified
+in the baseline migration since DPX-03's own schema notes, unused until now — no new migration) are
+this feature's own two real gaps: `internal/gov/service/finding_remediation.go`'s
+`AssignFindingTask` ("มอบหมายงานตามข้อตรวจพบ") opens one `dpo.tasks` job through a new `Dpo` interface
+(rule 9 — gov never writes to `dpo.tasks` directly; backed by `*dposervice.Service` in `cmd/api/
+main.go`, no import cycle) via a new `dposervice.OpenAuditFindingTask` (source_type `"audit"`,
+already in the table's own CHECK constraint — the exact `OpenGapRemediationTask`/`OpenMissingDPATask`
+shape every other auto-task caller already uses), and links it back via `task_id` — idempotent, the
+same DPIA-08/RRA-08/RTG-10 dedup discipline: a finding that already has a task is returned unchanged.
+`AttachFindingEvidence` is "แนบหลักฐาน" itself — the caller's own clean, still-unattached PLT-09
+upload, the same rule every other evidence attachment in this codebase already follows.
+
+The acceptance criterion itself ("ข้อตรวจพบปิดได้เมื่อแนบหลักฐาน") is a gate on the already-existing
+`SetAuditFindingStatus`, not a new endpoint: entering `done` or `accepted` is refused with
+`ErrEvidenceRequired` (reused directly from DPX-05's own `CompleteJob` — "a job cannot close without
+evidence," the identical shape) unless `evidence_file_id` is already set. `accepted` is additionally
+a permanent decision (accepting a gap as-is rather than fixing it), so it needs `dpx.audit.approve`
+beyond this endpoint's own `dpx.audit.update` — the same reasoning VEN-14/ORG-06/DPIA-03 already use
+for reusing a stronger permission rather than minting a new code; `dpx.audit.approve` was already
+seeded (DPO only), unused until now.
+
+API: `POST /admin/v1/governance/audit-findings/{id}/evidence` (ETag/If-Match, `dpx.audit.update`),
+`POST /admin/v1/governance/audit-findings/{id}/assign-task` (ETag/If-Match, `dpx.audit.update`) — both
+on already-seeded permission codes, no new migration. UI: the findings panel on `/governance`'s audit
+section gained "Attach evidence" (a `FileUploader` + save) and "Assign task" (priority picker + save,
+hidden once a task is already linked) actions per open finding, plus badges once evidence/a task are
+on record. Tests: unit (`internal/gov/service/dpx04_test.go` — the acceptance criterion directly:
+closing is refused without evidence, succeeds once attached; an unusable or already-attached file is
+refused; `accepted` without `dpx.audit.approve` is refused; `AssignFindingTask` opens exactly one task
+and a repeat call never duplicates it; two-tenant isolation), HTTP contract
+(`internal/gov/http/handler_test.go`'s existing `TestGovHandler_Contract`, extended with the full
+close-blocked → attach-evidence → close → assign-task → repeat-assign chain through the real
+validator + AuthZ). Not verified live against a real Postgres/Redis in this pass — neither was
+reachable in this environment for this feature; every test compiles and vets clean and skips the
+same way the rest of this module's own suite already does without one. `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions, full
+backend suite — only the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run
+with no drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated `/governance` route) all verified
+clean.
+
 <a id="dpx-08"></a>
 ### DPX-08 บันทึกการติดต่อกับ สคส.
 

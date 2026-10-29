@@ -534,3 +534,38 @@ export function useSetAuditFindingStatus(client: ApiClient) {
     onSuccess: () => qc.invalidateQueries({ queryKey: auditFindingsKey }),
   });
 }
+
+/** POST /admin/v1/governance/audit-findings/{id}/evidence (DPX-04) — the precondition SetAuditFindingStatus
+ *  checks before allowing done/accepted. */
+export function useAttachFindingEvidence(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; rowVersion: number; evidenceFileId: string }) => {
+      const { data, error } = await client.POST("/admin/v1/governance/audit-findings/{id}/evidence", {
+        params: { path: { id: v.id }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: { evidence_file_id: v.evidenceFileId },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: auditFindingsKey }),
+  });
+}
+
+/** POST /admin/v1/governance/audit-findings/{id}/assign-task (DPX-04) — open one dpo.tasks job for this
+ *  finding (assignee/due date/priority); idempotent, a finding that already has a task is returned
+ *  unchanged. */
+export function useAssignFindingTask(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id: string; rowVersion: number; assigneeUserId?: string; dueAt?: string; priority?: string }) => {
+      const { data, error } = await client.POST("/admin/v1/governance/audit-findings/{id}/assign-task", {
+        params: { path: { id: v.id }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: { assignee_user_id: v.assigneeUserId, due_at: v.dueAt, priority: v.priority as never },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: auditFindingsKey }),
+  });
+}
