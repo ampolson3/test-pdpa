@@ -49,6 +49,23 @@
       "cancelled": "Cancelled"
     }
   },
+  "roleRequests": {
+    "title": "Dual control for the ORGADMIN role",
+    "description": "Granting ORGADMIN to someone needs a different person's approval — the role takes effect only once that approval is published.",
+    "signInRequired": "Please sign in to view role requests.",
+    "requestTitle": "Request ORGADMIN for someone",
+    "targetUser": "User",
+    "searchPlaceholder": "Search by name...",
+    "submit": "Request",
+    "submitError": "Couldn't submit the request. Please try again.",
+    "historyTitle": "Requests",
+    "loading": "Loading...",
+    "loadError": "Couldn't load requests. Please try again.",
+    "empty": "No requests yet.",
+    "row": "Grant {role} to {user}",
+    "requestedBy": "Requested by {name}",
+    "applied": "granted"
+  },
   "provider": {
     "title": "Provider console",
     "description": "Create and suspend tenants, and license which modules each one has purchased (IAM-03). SUPER only.",

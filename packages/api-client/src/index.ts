@@ -393,6 +393,7 @@ export {
   type VersionChange,
   type ApprovalInboxItem,
 } from "./versioning";
+export { useRoleAssignmentRequests, useRequestRoleAssignment, type RoleAssignmentRequest } from "./iam";
 export {
   useLegalEntities,
   useSaveLegalEntity,

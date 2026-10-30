@@ -300,6 +300,7 @@ func run() error {
 	ropaSvc.Dpo = dpoSvc                                                                                                     // ROPA-19: open a review task per linked consent purpose when the activity changes
 	workflowSvc := wiring.Workflow(notifySvc, riverClient, auditSvc)
 	versioningSvc := wiring.Versioning(notifySvc, auditSvc)
+	wiring.RegisterIamVersioning(iamSvc, versioningSvc) // IAM-06: dual control for granting the ORGADMIN role
 	formsSvc := wiring.Forms(notifySvc, auditSvc)
 	riskSvc.Forms = formsSvc                                               // RRA-05: the per-activity checklist's own "checklist" form type
 	ropaSvc.Forms = formsSvc                                               // ROPA-11: the data mapping questionnaire's own "questionnaire" form type

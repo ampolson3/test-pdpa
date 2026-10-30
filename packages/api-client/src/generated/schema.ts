@@ -24,6 +24,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/iam/role-assignment-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pending and decided requests to grant the ORGADMIN role (IAM-06)
+         * @description Dual control for a sensitive admin action — history view; the pending/decided detail of each request itself comes from the generic platformListRecordVersions/platformListMyApprovals endpoints, keyed by this list's own version_id.
+         */
+        get: operations["iamListRoleAssignmentRequests"];
+        put?: never;
+        /**
+         * Request that a user be granted the ORGADMIN role (IAM-06)
+         * @description Opens and immediately submits one PLT-08 version for SEC to decide — the acceptance criterion itself (ม.action ไม่มีผลจนกว่าจะอนุมัติ): granting the role only happens once a different person (SEC) approves and the version is published (the generic platformPublishRecordVersion).
+         */
+        post: operations["iamRequestRoleAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/iam/role-assignment-requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One role-assignment request (IAM-06) */
+        get: operations["iamGetRoleAssignmentRequest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/platform/jobs": {
         parameters: {
             query?: never;
@@ -10382,6 +10423,24 @@ export interface components {
             org_unit_id?: components["schemas"]["Uuid"] | null;
             include_descendants?: boolean;
         };
+        IamRoleAssignmentRequestInput: {
+            target_user_id: components["schemas"]["Uuid"];
+        };
+        IamRoleAssignmentRequest: {
+            id: components["schemas"]["Uuid"];
+            target_user_id: components["schemas"]["Uuid"];
+            target_user_name: string;
+            role_code: string;
+            requested_by: components["schemas"]["Uuid"];
+            requested_by_name: string;
+            role_assignment_id?: components["schemas"]["Uuid"] | null;
+            applied_at?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** @description Present only right after creation, so the caller can mount the generic version/approval UI. */
+            version_id?: components["schemas"]["Uuid"];
+            row_version?: number;
+        };
         PublicCollectionPoint: {
             code: string;
             name: string;
@@ -11685,6 +11744,82 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    iamListRoleAssignmentRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Requests, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["IamRoleAssignmentRequest"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    iamRequestRoleAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IamRoleAssignmentRequestInput"];
+            };
+        };
+        responses: {
+            /** @description The request, now in_review */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamRoleAssignmentRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    iamGetRoleAssignmentRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamRoleAssignmentRequest"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     platformListJobs: {

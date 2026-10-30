@@ -2098,6 +2098,17 @@ type IamRoleAssignment struct {
 	RowVersion         int32              `db:"row_version" json:"row_version"`
 }
 
+type IamRoleAssignmentRequest struct {
+	ID               uuid.UUID          `db:"id" json:"id"`
+	TenantID         uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	TargetUserID     uuid.UUID          `db:"target_user_id" json:"target_user_id"`
+	RoleID           uuid.UUID          `db:"role_id" json:"role_id"`
+	RequestedBy      uuid.UUID          `db:"requested_by" json:"requested_by"`
+	RoleAssignmentID pgtype.UUID        `db:"role_assignment_id" json:"role_assignment_id"`
+	AppliedAt        pgtype.Timestamptz `db:"applied_at" json:"applied_at"`
+	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
+}
+
 // สิทธิ์ของแต่ละ role
 type IamRolePermission struct {
 	RoleID         uuid.UUID   `db:"role_id" json:"role_id"`

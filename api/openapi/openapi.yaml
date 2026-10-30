@@ -74,6 +74,93 @@ paths:
                 mfa_enrolled: true
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /admin/v1/iam/role-assignment-requests:
+    get:
+      operationId: iamListRoleAssignmentRequests
+      tags: [iam]
+      summary: Pending and decided requests to grant the ORGADMIN role (IAM-06)
+      description: Dual control for a sensitive admin action — history view; the pending/decided detail of
+        each request itself comes from the generic platformListRecordVersions/platformListMyApprovals
+        endpoints, keyed by this list's own version_id.
+      x-permission: admin.user.read
+      x-module: iam
+      security:
+        - adminJwt: []
+      responses:
+        '200':
+          description: Requests, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/IamRoleAssignmentRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: iamRequestRoleAssignment
+      tags: [iam]
+      summary: Request that a user be granted the ORGADMIN role (IAM-06)
+      description: >-
+        Opens and immediately submits one PLT-08 version for SEC to decide — the acceptance criterion
+        itself (ม.action ไม่มีผลจนกว่าจะอนุมัติ): granting the role only happens once a different person
+        (SEC) approves and the version is published (the generic platformPublishRecordVersion).
+      x-permission: admin.user.update
+      x-module: iam
+      security:
+        - adminJwt: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IamRoleAssignmentRequestInput'
+      responses:
+        '201':
+          description: The request, now in_review
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IamRoleAssignmentRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/iam/role-assignment-requests/{id}:
+    get:
+      operationId: iamGetRoleAssignmentRequest
+      tags: [iam]
+      summary: One role-assignment request (IAM-06)
+      x-permission: admin.user.read
+      x-module: iam
+      security:
+        - adminJwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IamRoleAssignmentRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/platform/jobs:
     get:
       operationId: platformListJobs
@@ -25104,6 +25191,45 @@ components:
             - type: 'null'
         include_descendants:
           type: boolean
+    IamRoleAssignmentRequestInput:
+      type: object
+      required: [target_user_id]
+      properties:
+        target_user_id:
+          $ref: '#/components/schemas/Uuid'
+    IamRoleAssignmentRequest:
+      type: object
+      required: [id, target_user_id, target_user_name, role_code, requested_by, requested_by_name, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        target_user_id:
+          $ref: '#/components/schemas/Uuid'
+        target_user_name:
+          type: string
+        role_code:
+          type: string
+        requested_by:
+          $ref: '#/components/schemas/Uuid'
+        requested_by_name:
+          type: string
+        role_assignment_id:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        applied_at:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+        version_id:
+          description: Present only right after creation, so the caller can mount the generic version/approval UI.
+          $ref: '#/components/schemas/Uuid'
+        row_version:
+          type: integer
     PublicCollectionPoint:
       type: object
       required: [code, name, channel, purposes, double_opt_in, verification_method]

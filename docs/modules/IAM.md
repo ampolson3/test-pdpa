@@ -545,6 +545,63 @@ nothing reads it to actually cap usage — no feature has asked for that yet).
 
 **Acceptance criteria:** ผู้ขอกับผู้อนุมัติต้องต่างคน และ action ไม่มีผลจนกว่าจะอนุมัติ
 
+**Implementation — done, scoped to granting the ORGADMIN role.** Of the module description's own four named
+actions, only "เปลี่ยน role ระดับ admin" has anywhere real to attach to: no write endpoint exists for the
+other three (bulk export's own endpoints — audit/ROPA/master-data/DSAR exports — already ship ungated, and
+gating all of them would be a much larger change than this feature's own BE S/FE S size calls for; a hard
+delete of consent data and an MFA-disable action don't exist at all yet). `admin.role` already carries the
+literal line "เปลี่ยน role ระดับ admin ต้องมีผู้อนุมัติ (IAM-06)" in this module's own permission table — and
+`iam.role_assignments.approval_id` has been a real FK to `platform.approvals` since the very first baseline
+migration, anticipating exactly this gate, unused until now.
+
+Built directly on PLT-08 (`internal/platform/versioning`), the same generic maker-checker engine CON's
+consent purposes already register with (no docs.Service layer needed — a module can register a record type
+with the engine directly). A new table, `iam.role_assignment_requests` (migration 00094), is the thin
+wrapper every other PLT-08-based feature in this codebase uses (notice.notices, dsar.intake_forms,
+breach.report_forms, ...) — one row per request, carrying the target user's and role's own names for the
+approval inbox/history, since the version's own snapshot jsonb is opaque to those generic screens.
+`internal/iam/service/role_assignment.go`'s `RequestRoleAssignment` (ORGADMIN, `admin.user.update`) opens
+and immediately submits one version — in_review, not left as an editable draft, since there's nothing else
+to draft-edit about a single role grant. The acceptance criterion's first half ("ผู้ขอกับผู้อนุมัติต้องต่าง
+คน") is PLT-08's own `ErrSelfApproval`, already enforced by every maker-checker flow in this codebase; the
+second half ("action ไม่มีผลจนกว่าจะอนุมัติ") is literal: the authz grants loader
+(`internal/iam/service/loader.go`'s `ListEffectiveRoleAssignments`) reads `iam.role_assignments` directly
+with no "approval decided" gate of its own, so the real grant row is only ever inserted by `ApplyRoleAssignment`
+(this feature's own `OnPublish` hook) — the one moment PLT-08 actually publishes the approved version.
+
+`GrantableRole = "ORGADMIN"` is the only role this endpoint will request: SUPER is platform-only (IAM-03's own
+`/provider/v1` console, never requested through a tenant endpoint), and every other role has no gated — or
+ungated — assignment path at all yet (ordinary role assignment stays IAM-01/02's own job, blocked on
+decisions.md Q-18's unresolved Keycloak model). Real import-cycle problem, not a design choice: `platform/
+versioning` already imports `iam/service` (to resolve a requester's/approver's display name), so `iam/service`
+can't import it back — fixed with `iam/service`'s own minimal `Versioning` interface (`SaveDraft`/`Submit`,
+mirroring only the two calls this feature needs) and `internal/wiring.RegisterIamVersioning`'s adapter, the
+same pattern IAM-05's own `Auditor`/`Notifier` workaround already established for the identical kind of cycle.
+No new permission code or grant: SEC decides purely by holding the Steps role ("SEC") — `versioning.Service.
+authorize`'s own "read" case already lets a caller through on step-role membership alone, with no separate
+permission check, the same as every other PLT-08 flow in this codebase.
+
+API: `GET`/`POST /admin/v1/iam/role-assignment-requests` (`admin.user.read`/`.update`),
+`GET /admin/v1/iam/role-assignment-requests/{id}`. The actual decide/publish steps are the already-generic
+`platformDecideApproval`/`platformPublishRecordVersion` endpoints — no new endpoint needed for those. UI: a
+new page, `/settings/role-requests` — a user-search request form (ORGADMIN only) and a history list, each
+row expanding into the shared `RecordVersions` component (`entityType="iam_role_assignment_request"`) to
+show the approval step and a publish button once approved (`admin.role.approve`); SEC's own decision still
+happens on the existing, generic `/approvals` inbox, unchanged. Tests: unit
+(`internal/iam/service/role_assignment_test.go` — the acceptance criterion directly: the requester holding
+every relevant permission still can't decide their own request (`ErrSelfApproval`); a different person (SEC)
+deciding then publishing is the only path that ever inserts the real `iam.role_assignments` row, and it
+reads back `ORGADMIN`; an unknown target user is refused before any version is opened; two-tenant isolation
+of the list), HTTP contract (`internal/iam/http/handler_test.go` — 401/403/422/201/200/404 through the real
+validator + AuthZ). Not verified live against a real Postgres/Redis in this pass — neither was reachable in
+this environment for this feature; every test compiles and vets clean and skips the same way the rest of
+this codebase's own suite already does without one. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on
+every touched file), `go test ./...` (no regressions, full backend suite — only the pre-existing, unrelated
+`internal/pkg/validate` failure), `make gen` re-run with no drift, `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the new
+`/settings/role-requests` route) all verified clean. Not done, deliberately (no endpoint exists yet to
+gate): export/consent-deletion/MFA-disable dual control — add each once that action itself ships.
+
 <a id="iam-07"></a>
 ### IAM-07 Break-glass และสิทธิ์ระดับสูง
 

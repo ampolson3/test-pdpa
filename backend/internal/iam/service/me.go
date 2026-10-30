@@ -77,11 +77,12 @@ type Me struct {
 }
 
 // Keyring, Notify and Audit are IAM-05's own dependencies (verification.go); nil in code paths (like Me)
-// that don't need them.
+// that don't need them. Versioning is IAM-06's own (role_assignment.go).
 type Service struct {
-	Keyring *crypto.Keyring
-	Notify  Notifier
-	Audit   Auditor
+	Keyring    *crypto.Keyring
+	Notify     Notifier
+	Audit      Auditor
+	Versioning Versioning
 	// Now is the clock (injectable for tests); nil means time.Now.
 	Now func() time.Time
 }

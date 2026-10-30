@@ -49,6 +49,23 @@
       "cancelled": "ยกเลิก"
     }
   },
+  "roleRequests": {
+    "title": "การอนุมัติคู่สำหรับ role ผู้ดูแลระบบ",
+    "description": "การให้สิทธิ์ ORGADMIN แก่ผู้ใช้ต้องได้รับอนุมัติจากอีกคนหนึ่ง และมีผลเมื่อเผยแพร่คำอนุมัตินั้นแล้วเท่านั้น",
+    "signInRequired": "กรุณาเข้าสู่ระบบเพื่อดูคำขอ role",
+    "requestTitle": "ขอให้สิทธิ์ ORGADMIN แก่ผู้ใช้",
+    "targetUser": "ผู้ใช้",
+    "searchPlaceholder": "ค้นหาชื่อ...",
+    "submit": "ส่งคำขอ",
+    "submitError": "ส่งคำขอไม่สำเร็จ กรุณาลองใหม่",
+    "historyTitle": "คำขอ",
+    "loading": "กำลังโหลด...",
+    "loadError": "โหลดคำขอไม่สำเร็จ กรุณาลองใหม่",
+    "empty": "ยังไม่มีคำขอ",
+    "row": "ให้สิทธิ์ {role} แก่ {user}",
+    "requestedBy": "ขอโดย {name}",
+    "applied": "ให้สิทธิ์แล้ว"
+  },
   "provider": {
     "title": "ศูนย์ควบคุมผู้ให้บริการ",
     "description": "สร้างและระงับ tenant และเปิด/ปิดโมดูลที่แต่ละ tenant ซื้อ (IAM-03) — เฉพาะ SUPER",
