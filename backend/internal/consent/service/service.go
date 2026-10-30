@@ -28,6 +28,7 @@ const (
 	PurposeType         = "consent_purpose"
 	CollectionPointType = "consent_collection_point"
 	SubjectType         = "consent_subject"
+	CampaignType        = "consent_campaign"
 )
 
 var (

@@ -13,3 +13,5 @@ output-options:
     - consentStartPreferenceVerification
     - consentViewPreferenceCenter
     - consentUpdatePreferenceCenter
+    - consentViewCampaign
+    - consentRespondToCampaign

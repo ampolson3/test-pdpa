@@ -42,6 +42,11 @@ const (
 	// feature needs. Its value, "portal", was already in platform.public_keys.entity_type's own CHECK
 	// constraint from the baseline schema, unused until now — not a value CON-18 invented.
 	EntityPreferenceCenter = "portal"
+	// EntityConsentCampaign (CON-24): the key names a consent.campaigns row directly, resolved through
+	// Issue/Get like EntityPreferenceCenter since that table has no public_key column of its own. Its value
+	// must match platform.public_keys.entity_type's own CHECK constraint, widened for this feature
+	// (00095_con24_campaign_public_key.sql).
+	EntityConsentCampaign = "consent_campaign"
 )
 
 // Key is a resolved public key.

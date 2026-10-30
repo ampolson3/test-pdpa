@@ -5666,6 +5666,78 @@ failure), `make gen` re-run with no drift, `pnpm --filter @pdpa/api-client typec
 @pdpa/i18n test` and `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated `/notices` route) all
 verified clean.
 
+### CON-24 ส่งคำขอความยินยอมแบบ Bulk (`docs/modules/CON.md#con-24`) — done
+`consent.campaigns`/`consent.campaign_recipients` were already fully specified in the baseline migration
+(name/purpose_ids/audience_query/channel/template_id/status/sent_count/response_count on the campaign;
+subject_id/token_hash/status/sent_at/responded_at per recipient) and `consent.campaign.*` was already seeded
+in the baseline permission migration — unused until now. No separate "audience" storage of raw identifiers:
+`internal/consent/service/campaigns.go`'s `CreateCampaign` resolves every given identifier into a real
+`consent.data_subjects` row immediately, one identifier at a time via the existing `resolveSubject` (the same
+find-or-create logic `Record()` already uses) — `audience_query` only ever holds the resulting subject ids
+(`CampaignAudienceQuery{SubjectIDs}`), never a raw e-mail/phone (rule 3), and one `consent.campaign_recipients`
+row per resolved subject is created in the same call, status `queued`.
+
+`SendCampaign`/`ResendCampaign` share one core (`dispatchCampaign`): `SendCampaign` targets only `queued`
+recipients, `ResendCampaign` targets every recipient not yet `responded` (`queued`/`sent`/`opened`) — the
+acceptance criterion's own literal "ส่งซ้ำเฉพาะผู้ยังไม่ตอบได้". Each dispatch issues a fresh random token per
+recipient (`SetCampaignRecipientSent`, `WHERE status != 'responded'` so a stale resend never races a response
+already in flight), overwriting any previous token's hash — the same "a fresh token per (re)send invalidates
+the old link" discipline CON-23's own double opt-in link already established — and sends one notification each
+via the campaign's own `channel` (email/sms/line, a subset of notify's own), best-effort per recipient so one
+bad address never blocks the rest of the batch. The campaign's own public key is issued lazily, on first
+dispatch, through `publickeys.Issue`/`Get` (`EntityConsentCampaign`, CON-01's own `Get` helper for a table with
+no `public_key` column of its own, the same move CON-18's preference centre already made) — migration 00095
+widens `platform.public_keys.entity_type`'s CHECK to add it, the same widening pattern DSAR-14/CON-18 already
+used.
+
+The recipient's own decision (`RespondCampaignRecipient`) is written through the exact same
+`checkDecisions`/`writeDecisions` core every other consent write uses — `source: "campaign"`, already in
+`consent_transactions`' own CHECK constraint, unused until now — attributed to a real active collection point
+via the same disclosed `channelForPreferenceUpdate` limitation CON-18's own preference-centre save already
+established. Unlike a public collection-point form, not every offered purpose needs deciding in one call
+(`sub.Public` stays false) — a recipient may consent to some and leave others; withdrawal isn't offered here
+(decisions are CONSENTED/NOT_CONSENTED only, refused otherwise). `ViewCampaignRecipient`/`RespondCampaignRecipient`
+resolve the recipient by the hash of their own token (`LockCampaignRecipientByTokenHash`, scoped to the
+tenant + campaign the public key already named) — a view marks `queued`/`sent` → `opened` (the acceptance
+criterion's own "เปิด" count); a response on an already-`responded` recipient is refused as
+`ErrInvalidTransition`, not a silent duplicate. `GetCampaign`/`ListCampaigns` compute sent/opened/responded
+live from the recipient rows' own current status every call (`campaignCounts`), never trusted from a
+possibly-stale cached number, while the campaign's own `sent_count`/`response_count` columns are kept in step
+at dispatch/respond time too, for anything that reads the raw table directly.
+
+API: `GET`/`POST /admin/v1/consent/campaigns` (`consent.campaign.{read,create}`), `GET
+/admin/v1/consent/campaigns/{id}` (`.read`), `POST .../send` / `.../resend` (`.execute`) — no ETag, since a
+campaign's own fields are never hand-edited once created, only dispatched; public
+`POST /public/v1/consent-campaigns/view` (no Idempotency-Key — a read), `POST .../respond` (`Idempotency-Key`
+required per rule 10) — both `X-Public-Key`-gated like CON-23's own double opt-in confirm, not path-keyed like
+CON-09/18's own public surfaces, since the recipient's own token (not the campaign's public key) is the real
+per-person secret. UI: a new page, `/consent/campaigns` — a create form (name/channel/purpose checkboxes/
+one-identifier-per-line audience textarea) and a list with live sent/opened/responded counts and per-row
+send/resend buttons; the portal gained `/[locale]/consent-campaigns/[key]` (a plain decide-and-submit form,
+no OTP step — the recipient's own token already proves they hold the link, the same reasoning BRE-01's own
+public incident report needs no identity check either). Tests: unit
+(`internal/consent/service/campaigns_test.go` — the acceptance criterion directly: creating a campaign
+resolves every identifier into a real, distinct recipient; send then respond shows the right live counts and
+refuses a second response from the same token as an invalid transition, not a duplicate; resend reaches only
+the still-pending recipient and invalidates their own stale token in the process, while the already-responded
+recipient's own history is untouched; two-tenant isolation of both the list and a cross-tenant `GetCampaign`
+call; input validation), HTTP contract (`internal/consent/http/handler_test.go`'s existing
+`TestConsentEndpoints_Contract`, extended with the full create → send → view → respond (428 without
+Idempotency-Key, 404 wrong token, 409 second response) chain through the real validator + AuthZ + public-key +
+Idempotency + Tx chain). Not verified live against a real Postgres/Redis in this pass — neither was reachable
+in this environment for this feature; every test compiles and vets clean and skips the same way the rest of
+this module's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every
+touched file, matching the same pre-existing stable violation list every recent pass in this codebase already
+discloses), `go test ./...` (no regressions, full backend suite — only the pre-existing, unrelated
+`internal/pkg/validate` failure), `make gen` re-run with no drift, `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the new
+`/consent/campaigns` route) and `pnpm --filter @pdpa/portal build` (incl. the new
+`/[locale]/consent-campaigns/[key]` route) all verified clean. Not done, deliberately (no consumer yet, the
+same deferral this codebase uses throughout): `scheduled_at` (the column exists; a campaign is always sent
+on demand, not on a schedule, since the literal acceptance criterion needs only send/resend); LINE's own real
+delivery (PLT-04's own `MockSender` until a real provider decision exists, same as every other LINE send in
+this codebase).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

@@ -1078,6 +1078,14 @@ already does here.
 
 **Acceptance criteria:** แคมเปญแสดงจำนวนส่ง / เปิด / ตอบ และส่งซ้ำเฉพาะผู้ยังไม่ตอบได้
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### CON-24`. สรุป: `consent.campaigns`/
+`consent.campaign_recipients` มีอยู่แล้วตั้งแต่ baseline migration ไม่ได้ใช้งานจนถึงรอบนี้ — audience (ที่อยู่
+อีเมล/เบอร์โทร) แปลงเป็นเจ้าของข้อมูลจริงทันทีตอนสร้างแคมเปญ ไม่เคยเก็บค่าดิบ (rule 3) ส่ง/ส่งซ้ำผ่าน
+`consentSendCampaign`/`consentResendCampaign` — ส่งซ้ำไปถึงเฉพาะผู้ที่ยังไม่ตอบเท่านั้น (สถานะ queued/sent/
+opened) ลิงก์ของผู้รับที่ตอบแล้วใช้ไม่ได้อีก ผู้รับตัดสินใจผ่าน `/public/v1/consent-campaigns/{view,respond}`
+(X-Public-Key ชื่อแคมเปญ + token ของผู้รับเอง) เขียนผ่าน consent transaction/receipt เดิมทุกอย่าง
+(source="campaign").
+
 <a id="con-08"></a>
 ### CON-08 A/B testing และวัด consent rate
 

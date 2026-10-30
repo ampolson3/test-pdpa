@@ -77,6 +77,72 @@ func (e CollectionPointInputVerificationMethod) Valid() bool {
 	}
 }
 
+// Defines values for ConsentCampaignChannel.
+const (
+	ConsentCampaignChannelEmail ConsentCampaignChannel = "email"
+	ConsentCampaignChannelLine  ConsentCampaignChannel = "line"
+	ConsentCampaignChannelSms   ConsentCampaignChannel = "sms"
+)
+
+// Valid indicates whether the value is a known member of the ConsentCampaignChannel enum.
+func (e ConsentCampaignChannel) Valid() bool {
+	switch e {
+	case ConsentCampaignChannelEmail:
+		return true
+	case ConsentCampaignChannelLine:
+		return true
+	case ConsentCampaignChannelSms:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentCampaignStatus.
+const (
+	ConsentCampaignStatusCancelled ConsentCampaignStatus = "cancelled"
+	ConsentCampaignStatusDone      ConsentCampaignStatus = "done"
+	ConsentCampaignStatusDraft     ConsentCampaignStatus = "draft"
+	ConsentCampaignStatusSending   ConsentCampaignStatus = "sending"
+)
+
+// Valid indicates whether the value is a known member of the ConsentCampaignStatus enum.
+func (e ConsentCampaignStatus) Valid() bool {
+	switch e {
+	case ConsentCampaignStatusCancelled:
+		return true
+	case ConsentCampaignStatusDone:
+		return true
+	case ConsentCampaignStatusDraft:
+		return true
+	case ConsentCampaignStatusSending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentCampaignInputChannel.
+const (
+	ConsentCampaignInputChannelEmail ConsentCampaignInputChannel = "email"
+	ConsentCampaignInputChannelLine  ConsentCampaignInputChannel = "line"
+	ConsentCampaignInputChannelSms   ConsentCampaignInputChannel = "sms"
+)
+
+// Valid indicates whether the value is a known member of the ConsentCampaignInputChannel enum.
+func (e ConsentCampaignInputChannel) Valid() bool {
+	switch e {
+	case ConsentCampaignInputChannelEmail:
+		return true
+	case ConsentCampaignInputChannelLine:
+		return true
+	case ConsentCampaignInputChannelSms:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ConsentCollectionPointStatus.
 const (
 	ConsentCollectionPointStatusActive  ConsentCollectionPointStatus = "active"
@@ -521,6 +587,96 @@ func (e AcceptLanguage) Valid() bool {
 	case AcceptLanguageEn:
 		return true
 	case AcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentListCampaignsParamsAcceptLanguage.
+const (
+	ConsentListCampaignsParamsAcceptLanguageEn ConsentListCampaignsParamsAcceptLanguage = "en"
+	ConsentListCampaignsParamsAcceptLanguageTh ConsentListCampaignsParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentListCampaignsParamsAcceptLanguage enum.
+func (e ConsentListCampaignsParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ConsentListCampaignsParamsAcceptLanguageEn:
+		return true
+	case ConsentListCampaignsParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentCreateCampaignParamsAcceptLanguage.
+const (
+	ConsentCreateCampaignParamsAcceptLanguageEn ConsentCreateCampaignParamsAcceptLanguage = "en"
+	ConsentCreateCampaignParamsAcceptLanguageTh ConsentCreateCampaignParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentCreateCampaignParamsAcceptLanguage enum.
+func (e ConsentCreateCampaignParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ConsentCreateCampaignParamsAcceptLanguageEn:
+		return true
+	case ConsentCreateCampaignParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentGetCampaignParamsAcceptLanguage.
+const (
+	ConsentGetCampaignParamsAcceptLanguageEn ConsentGetCampaignParamsAcceptLanguage = "en"
+	ConsentGetCampaignParamsAcceptLanguageTh ConsentGetCampaignParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentGetCampaignParamsAcceptLanguage enum.
+func (e ConsentGetCampaignParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ConsentGetCampaignParamsAcceptLanguageEn:
+		return true
+	case ConsentGetCampaignParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentResendCampaignParamsAcceptLanguage.
+const (
+	ConsentResendCampaignParamsAcceptLanguageEn ConsentResendCampaignParamsAcceptLanguage = "en"
+	ConsentResendCampaignParamsAcceptLanguageTh ConsentResendCampaignParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentResendCampaignParamsAcceptLanguage enum.
+func (e ConsentResendCampaignParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ConsentResendCampaignParamsAcceptLanguageEn:
+		return true
+	case ConsentResendCampaignParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ConsentSendCampaignParamsAcceptLanguage.
+const (
+	ConsentSendCampaignParamsAcceptLanguageEn ConsentSendCampaignParamsAcceptLanguage = "en"
+	ConsentSendCampaignParamsAcceptLanguageTh ConsentSendCampaignParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the ConsentSendCampaignParamsAcceptLanguage enum.
+func (e ConsentSendCampaignParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case ConsentSendCampaignParamsAcceptLanguageEn:
+		return true
+	case ConsentSendCampaignParamsAcceptLanguageTh:
 		return true
 	default:
 		return false
@@ -992,6 +1148,46 @@ type CollectionPointInputChannel string
 // CollectionPointInputVerificationMethod CON-19 — identity check required before a public submission is recorded; defaults to "none"
 type CollectionPointInputVerificationMethod string
 
+// ConsentCampaign defines model for ConsentCampaign.
+type ConsentCampaign struct {
+	Channel ConsentCampaignChannel `json:"channel"`
+
+	// Id UUIDv7 generated by the API
+	Id   Uuid   `json:"id"`
+	Name string `json:"name"`
+
+	// OpenedCount Recipients who opened their own link (opened or responded)
+	OpenedCount   int    `json:"opened_count"`
+	PurposeIds    []Uuid `json:"purpose_ids"`
+	ResponseCount int    `json:"response_count"`
+	RowVersion    int    `json:"row_version"`
+
+	// SentCount Recipients ever notified (sent, opened or responded)
+	SentCount  int                   `json:"sent_count"`
+	Status     ConsentCampaignStatus `json:"status"`
+	TemplateId *openapi_types.UUID   `json:"template_id,omitempty"`
+}
+
+// ConsentCampaignChannel defines model for ConsentCampaign.Channel.
+type ConsentCampaignChannel string
+
+// ConsentCampaignStatus defines model for ConsentCampaign.Status.
+type ConsentCampaignStatus string
+
+// ConsentCampaignInput defines model for ConsentCampaignInput.
+type ConsentCampaignInput struct {
+	Channel ConsentCampaignInputChannel `json:"channel"`
+
+	// Identifiers The existing customer base to notify — resolved into data subjects (find-or-create) at creation time, never stored raw.
+	Identifiers []SubjectIdentifier `json:"identifiers"`
+	Name        string              `json:"name"`
+	PurposeIds  []Uuid              `json:"purpose_ids"`
+	TemplateId  *Uuid               `json:"template_id,omitempty"`
+}
+
+// ConsentCampaignInputChannel defines model for ConsentCampaignInput.Channel.
+type ConsentCampaignInputChannel string
+
 // ConsentChecklist s.19 attestation made when publishing
 type ConsentChecklist struct {
 	NotBundled     bool `json:"not_bundled"`
@@ -1414,6 +1610,51 @@ type Unauthorized = Problem
 // UnprocessableEntity RFC 9457 problem details with a stable machine-readable `code`
 type UnprocessableEntity = Problem
 
+// ConsentListCampaignsParams defines parameters for ConsentListCampaigns.
+type ConsentListCampaignsParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ConsentListCampaignsParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// ConsentListCampaignsParamsAcceptLanguage defines parameters for ConsentListCampaigns.
+type ConsentListCampaignsParamsAcceptLanguage string
+
+// ConsentCreateCampaignParams defines parameters for ConsentCreateCampaign.
+type ConsentCreateCampaignParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ConsentCreateCampaignParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// ConsentCreateCampaignParamsAcceptLanguage defines parameters for ConsentCreateCampaign.
+type ConsentCreateCampaignParamsAcceptLanguage string
+
+// ConsentGetCampaignParams defines parameters for ConsentGetCampaign.
+type ConsentGetCampaignParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ConsentGetCampaignParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// ConsentGetCampaignParamsAcceptLanguage defines parameters for ConsentGetCampaign.
+type ConsentGetCampaignParamsAcceptLanguage string
+
+// ConsentResendCampaignParams defines parameters for ConsentResendCampaign.
+type ConsentResendCampaignParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ConsentResendCampaignParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// ConsentResendCampaignParamsAcceptLanguage defines parameters for ConsentResendCampaign.
+type ConsentResendCampaignParamsAcceptLanguage string
+
+// ConsentSendCampaignParams defines parameters for ConsentSendCampaign.
+type ConsentSendCampaignParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *ConsentSendCampaignParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+}
+
+// ConsentSendCampaignParamsAcceptLanguage defines parameters for ConsentSendCampaign.
+type ConsentSendCampaignParamsAcceptLanguage string
+
 // ConsentListCollectionPointsParams defines parameters for ConsentListCollectionPoints.
 type ConsentListCollectionPointsParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -1659,6 +1900,9 @@ type ConsentVerifySubjectParams struct {
 // ConsentVerifySubjectParamsAcceptLanguage defines parameters for ConsentVerifySubject.
 type ConsentVerifySubjectParamsAcceptLanguage string
 
+// ConsentCreateCampaignJSONRequestBody defines body for ConsentCreateCampaign for application/json ContentType.
+type ConsentCreateCampaignJSONRequestBody = ConsentCampaignInput
+
 // ConsentCreateCollectionPointJSONRequestBody defines body for ConsentCreateCollectionPoint for application/json ContentType.
 type ConsentCreateCollectionPointJSONRequestBody ConsentCreateCollectionPointJSONBody
 
@@ -1682,6 +1926,21 @@ type ConsentSearchSubjectsJSONRequestBody ConsentSearchSubjectsJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// ConsentListCampaigns Bulk consent request campaigns (CON-24)
+	// (GET /admin/v1/consent/campaigns)
+	ConsentListCampaigns(w http.ResponseWriter, r *http.Request, params ConsentListCampaignsParams)
+	// ConsentCreateCampaign Create a campaign — the audience's own identifiers are resolved into data subjects immediately and never stored raw (CON-24)
+	// (POST /admin/v1/consent/campaigns)
+	ConsentCreateCampaign(w http.ResponseWriter, r *http.Request, params ConsentCreateCampaignParams)
+	// ConsentGetCampaign One campaign with its live sent / opened / responded counts (CON-24's own acceptance criterion)
+	// (GET /admin/v1/consent/campaigns/{id})
+	ConsentGetCampaign(w http.ResponseWriter, r *http.Request, id Uuid, params ConsentGetCampaignParams)
+	// ConsentResendCampaign Resend a fresh link only to recipients who haven't responded yet (CON-24's own literal acceptance criterion)
+	// (POST /admin/v1/consent/campaigns/{id}/resend)
+	ConsentResendCampaign(w http.ResponseWriter, r *http.Request, id Uuid, params ConsentResendCampaignParams)
+	// ConsentSendCampaign Send every still-queued recipient their own link (CON-24)
+	// (POST /admin/v1/consent/campaigns/{id}/send)
+	ConsentSendCampaign(w http.ResponseWriter, r *http.Request, id Uuid, params ConsentSendCampaignParams)
 	// ConsentListCollectionPoints Collection points (CON-09)
 	// (GET /admin/v1/consent/collection-points)
 	ConsentListCollectionPoints(w http.ResponseWriter, r *http.Request, params ConsentListCollectionPointsParams)
@@ -1750,6 +2009,36 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// ConsentListCampaigns Bulk consent request campaigns (CON-24)
+// (GET /admin/v1/consent/campaigns)
+func (_ Unimplemented) ConsentListCampaigns(w http.ResponseWriter, r *http.Request, params ConsentListCampaignsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConsentCreateCampaign Create a campaign — the audience's own identifiers are resolved into data subjects immediately and never stored raw (CON-24)
+// (POST /admin/v1/consent/campaigns)
+func (_ Unimplemented) ConsentCreateCampaign(w http.ResponseWriter, r *http.Request, params ConsentCreateCampaignParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConsentGetCampaign One campaign with its live sent / opened / responded counts (CON-24's own acceptance criterion)
+// (GET /admin/v1/consent/campaigns/{id})
+func (_ Unimplemented) ConsentGetCampaign(w http.ResponseWriter, r *http.Request, id Uuid, params ConsentGetCampaignParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConsentResendCampaign Resend a fresh link only to recipients who haven't responded yet (CON-24's own literal acceptance criterion)
+// (POST /admin/v1/consent/campaigns/{id}/resend)
+func (_ Unimplemented) ConsentResendCampaign(w http.ResponseWriter, r *http.Request, id Uuid, params ConsentResendCampaignParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConsentSendCampaign Send every still-queued recipient their own link (CON-24)
+// (POST /admin/v1/consent/campaigns/{id}/send)
+func (_ Unimplemented) ConsentSendCampaign(w http.ResponseWriter, r *http.Request, id Uuid, params ConsentSendCampaignParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // ConsentListCollectionPoints Collection points (CON-09)
 // (GET /admin/v1/consent/collection-points)
@@ -1885,6 +2174,238 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// ConsentListCampaigns operation middleware
+func (siw *ServerInterfaceWrapper) ConsentListCampaigns(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConsentListCampaignsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ConsentListCampaignsParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConsentListCampaigns(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConsentCreateCampaign operation middleware
+func (siw *ServerInterfaceWrapper) ConsentCreateCampaign(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConsentCreateCampaignParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ConsentCreateCampaignParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConsentCreateCampaign(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConsentGetCampaign operation middleware
+func (siw *ServerInterfaceWrapper) ConsentGetCampaign(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConsentGetCampaignParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ConsentGetCampaignParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConsentGetCampaign(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConsentResendCampaign operation middleware
+func (siw *ServerInterfaceWrapper) ConsentResendCampaign(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConsentResendCampaignParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ConsentResendCampaignParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConsentResendCampaign(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConsentSendCampaign operation middleware
+func (siw *ServerInterfaceWrapper) ConsentSendCampaign(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ConsentSendCampaignParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage ConsentSendCampaignParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConsentSendCampaign(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // ConsentListCollectionPoints operation middleware
 func (siw *ServerInterfaceWrapper) ConsentListCollectionPoints(w http.ResponseWriter, r *http.Request) {
@@ -3113,6 +3634,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/admin/v1/consent/preference-centers/{legalEntityId}/retire", wrapper.ConsentRetirePreferenceCenter)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/consent/campaigns", wrapper.ConsentListCampaigns)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/consent/campaigns", wrapper.ConsentCreateCampaign)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/consent/campaigns/{id}", wrapper.ConsentGetCampaign)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/consent/campaigns/{id}/send", wrapper.ConsentSendCampaign)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/consent/campaigns/{id}/resend", wrapper.ConsentResendCampaign)
+	})
 
 	return r
 }
@@ -3132,6 +3668,394 @@ type PreconditionRequiredApplicationProblemPlusJSONResponse Problem
 type UnauthorizedApplicationProblemPlusJSONResponse Problem
 
 type UnprocessableEntityApplicationProblemPlusJSONResponse Problem
+
+type ConsentListCampaignsRequestObject struct {
+	Params ConsentListCampaignsParams
+}
+
+type ConsentListCampaignsResponseObject interface {
+	VisitConsentListCampaignsResponse(w http.ResponseWriter) error
+}
+
+type ConsentListCampaigns200JSONResponse struct {
+	Data []ConsentCampaign `json:"data"`
+}
+
+func (response ConsentListCampaigns200JSONResponse) VisitConsentListCampaignsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentListCampaigns401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentListCampaigns401ApplicationProblemPlusJSONResponse) VisitConsentListCampaignsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentListCampaigns403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentListCampaigns403ApplicationProblemPlusJSONResponse) VisitConsentListCampaignsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentCreateCampaignRequestObject struct {
+	Params ConsentCreateCampaignParams
+	Body   *ConsentCreateCampaignJSONRequestBody
+}
+
+type ConsentCreateCampaignResponseObject interface {
+	VisitConsentCreateCampaignResponse(w http.ResponseWriter) error
+}
+
+type ConsentCreateCampaign201JSONResponse ConsentCampaign
+
+func (response ConsentCreateCampaign201JSONResponse) VisitConsentCreateCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentCreateCampaign400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentCreateCampaign400ApplicationProblemPlusJSONResponse) VisitConsentCreateCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentCreateCampaign401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentCreateCampaign401ApplicationProblemPlusJSONResponse) VisitConsentCreateCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentCreateCampaign403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentCreateCampaign403ApplicationProblemPlusJSONResponse) VisitConsentCreateCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentCreateCampaign422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentCreateCampaign422ApplicationProblemPlusJSONResponse) VisitConsentCreateCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentGetCampaignRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params ConsentGetCampaignParams
+}
+
+type ConsentGetCampaignResponseObject interface {
+	VisitConsentGetCampaignResponse(w http.ResponseWriter) error
+}
+
+type ConsentGetCampaign200JSONResponse ConsentCampaign
+
+func (response ConsentGetCampaign200JSONResponse) VisitConsentGetCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentGetCampaign401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentGetCampaign401ApplicationProblemPlusJSONResponse) VisitConsentGetCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentGetCampaign403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentGetCampaign403ApplicationProblemPlusJSONResponse) VisitConsentGetCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentGetCampaign404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentGetCampaign404ApplicationProblemPlusJSONResponse) VisitConsentGetCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentResendCampaignRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params ConsentResendCampaignParams
+}
+
+type ConsentResendCampaignResponseObject interface {
+	VisitConsentResendCampaignResponse(w http.ResponseWriter) error
+}
+
+type ConsentResendCampaign200JSONResponse ConsentCampaign
+
+func (response ConsentResendCampaign200JSONResponse) VisitConsentResendCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentResendCampaign401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentResendCampaign401ApplicationProblemPlusJSONResponse) VisitConsentResendCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentResendCampaign403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentResendCampaign403ApplicationProblemPlusJSONResponse) VisitConsentResendCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentResendCampaign404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentResendCampaign404ApplicationProblemPlusJSONResponse) VisitConsentResendCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentResendCampaign409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentResendCampaign409ApplicationProblemPlusJSONResponse) VisitConsentResendCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentSendCampaignRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params ConsentSendCampaignParams
+}
+
+type ConsentSendCampaignResponseObject interface {
+	VisitConsentSendCampaignResponse(w http.ResponseWriter) error
+}
+
+type ConsentSendCampaign200JSONResponse ConsentCampaign
+
+func (response ConsentSendCampaign200JSONResponse) VisitConsentSendCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentSendCampaign401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentSendCampaign401ApplicationProblemPlusJSONResponse) VisitConsentSendCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentSendCampaign403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentSendCampaign403ApplicationProblemPlusJSONResponse) VisitConsentSendCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentSendCampaign404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentSendCampaign404ApplicationProblemPlusJSONResponse) VisitConsentSendCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConsentSendCampaign409ApplicationProblemPlusJSONResponse struct {
+	ConflictApplicationProblemPlusJSONResponse
+}
+
+func (response ConsentSendCampaign409ApplicationProblemPlusJSONResponse) VisitConsentSendCampaignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type ConsentListCollectionPointsRequestObject struct {
 	Params ConsentListCollectionPointsParams
@@ -4950,6 +5874,21 @@ func (response ConsentVerifySubject404ApplicationProblemPlusJSONResponse) VisitC
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// ConsentListCampaigns Bulk consent request campaigns (CON-24)
+	// (GET /admin/v1/consent/campaigns)
+	ConsentListCampaigns(ctx context.Context, request ConsentListCampaignsRequestObject) (ConsentListCampaignsResponseObject, error)
+	// ConsentCreateCampaign Create a campaign — the audience's own identifiers are resolved into data subjects immediately and never stored raw (CON-24)
+	// (POST /admin/v1/consent/campaigns)
+	ConsentCreateCampaign(ctx context.Context, request ConsentCreateCampaignRequestObject) (ConsentCreateCampaignResponseObject, error)
+	// ConsentGetCampaign One campaign with its live sent / opened / responded counts (CON-24's own acceptance criterion)
+	// (GET /admin/v1/consent/campaigns/{id})
+	ConsentGetCampaign(ctx context.Context, request ConsentGetCampaignRequestObject) (ConsentGetCampaignResponseObject, error)
+	// ConsentResendCampaign Resend a fresh link only to recipients who haven't responded yet (CON-24's own literal acceptance criterion)
+	// (POST /admin/v1/consent/campaigns/{id}/resend)
+	ConsentResendCampaign(ctx context.Context, request ConsentResendCampaignRequestObject) (ConsentResendCampaignResponseObject, error)
+	// ConsentSendCampaign Send every still-queued recipient their own link (CON-24)
+	// (POST /admin/v1/consent/campaigns/{id}/send)
+	ConsentSendCampaign(ctx context.Context, request ConsentSendCampaignRequestObject) (ConsentSendCampaignResponseObject, error)
 	// ConsentListCollectionPoints Collection points (CON-09)
 	// (GET /admin/v1/consent/collection-points)
 	ConsentListCollectionPoints(ctx context.Context, request ConsentListCollectionPointsRequestObject) (ConsentListCollectionPointsResponseObject, error)
@@ -5052,6 +5991,146 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// ConsentListCampaigns operation middleware
+func (sh *strictHandler) ConsentListCampaigns(w http.ResponseWriter, r *http.Request, params ConsentListCampaignsParams) {
+	var request ConsentListCampaignsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConsentListCampaigns(ctx, request.(ConsentListCampaignsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConsentListCampaigns")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConsentListCampaignsResponseObject); ok {
+		if err := validResponse.VisitConsentListCampaignsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConsentCreateCampaign operation middleware
+func (sh *strictHandler) ConsentCreateCampaign(w http.ResponseWriter, r *http.Request, params ConsentCreateCampaignParams) {
+	var request ConsentCreateCampaignRequestObject
+
+	request.Params = params
+
+	var body ConsentCreateCampaignJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConsentCreateCampaign(ctx, request.(ConsentCreateCampaignRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConsentCreateCampaign")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConsentCreateCampaignResponseObject); ok {
+		if err := validResponse.VisitConsentCreateCampaignResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConsentGetCampaign operation middleware
+func (sh *strictHandler) ConsentGetCampaign(w http.ResponseWriter, r *http.Request, id Uuid, params ConsentGetCampaignParams) {
+	var request ConsentGetCampaignRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConsentGetCampaign(ctx, request.(ConsentGetCampaignRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConsentGetCampaign")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConsentGetCampaignResponseObject); ok {
+		if err := validResponse.VisitConsentGetCampaignResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConsentResendCampaign operation middleware
+func (sh *strictHandler) ConsentResendCampaign(w http.ResponseWriter, r *http.Request, id Uuid, params ConsentResendCampaignParams) {
+	var request ConsentResendCampaignRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConsentResendCampaign(ctx, request.(ConsentResendCampaignRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConsentResendCampaign")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConsentResendCampaignResponseObject); ok {
+		if err := validResponse.VisitConsentResendCampaignResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConsentSendCampaign operation middleware
+func (sh *strictHandler) ConsentSendCampaign(w http.ResponseWriter, r *http.Request, id Uuid, params ConsentSendCampaignParams) {
+	var request ConsentSendCampaignRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConsentSendCampaign(ctx, request.(ConsentSendCampaignRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConsentSendCampaign")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConsentSendCampaignResponseObject); ok {
+		if err := validResponse.VisitConsentSendCampaignResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // ConsentListCollectionPoints operation middleware

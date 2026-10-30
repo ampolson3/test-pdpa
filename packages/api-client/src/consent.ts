@@ -16,6 +16,8 @@ export type ConsentDecisionInput = components["schemas"]["ConsentDecisionInput"]
 export type ConsentRecordInput = components["schemas"]["ConsentRecordInput"];
 export type ConsentResult = components["schemas"]["ConsentResult"];
 export type SubjectIdentifier = components["schemas"]["SubjectIdentifier"];
+export type ConsentCampaign = components["schemas"]["ConsentCampaign"];
+export type ConsentCampaignInput = components["schemas"]["ConsentCampaignInput"];
 
 /** CON-22's own PLT-14 import type code, for the import wizard's `type` parameter. */
 export const CONSENT_LEGACY_IMPORT_TYPE = "consent.legacy";
@@ -251,6 +253,51 @@ export function usePreferenceCenterMutations(client: ApiClient) {
         if (error) throw error;
       },
       onSuccess: (_d, legalEntityId) => refresh(legalEntityId),
+    }),
+  };
+}
+
+/** Bulk consent request campaigns (CON-24): an existing-customer-base audience is resolved into real data
+ * subjects at creation time; send/resend show live sent/opened/responded counts. */
+export function useConsentCampaigns(client: ApiClient) {
+  return useQuery({
+    queryKey: ["consent", "campaigns"],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/consent/campaigns");
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+export function useConsentCampaignMutations(client: ApiClient) {
+  const qc = useQueryClient();
+  const refresh = () => qc.invalidateQueries({ queryKey: ["consent", "campaigns"] });
+  return {
+    create: useMutation({
+      mutationFn: async (v: ConsentCampaignInput) => {
+        const { data, error } = await client.POST("/admin/v1/consent/campaigns", { body: v });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    send: useMutation({
+      mutationFn: async (id: string) => {
+        const { data, error } = await client.POST("/admin/v1/consent/campaigns/{id}/send", { params: { path: { id } } });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
+    }),
+    // CON-24's own acceptance criterion: resend only reaches recipients who haven't responded yet.
+    resend: useMutation({
+      mutationFn: async (id: string) => {
+        const { data, error } = await client.POST("/admin/v1/consent/campaigns/{id}/resend", { params: { path: { id } } });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: refresh,
     }),
   };
 }

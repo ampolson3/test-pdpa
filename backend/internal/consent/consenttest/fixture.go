@@ -69,6 +69,9 @@ func Setup(t *testing.T) *Fixture {
 			_ = pdb.WithTenantTx(context.Background(), f.Owner, tn.ID.String(), "", func(ctx context.Context) error {
 				tx := pdb.MustTxFromContext(ctx)
 				for _, q := range []string{`DELETE FROM consent.consent_status`, `DELETE FROM consent.consent_transactions`, `DELETE FROM consent.guardian_approvals`, `DELETE FROM consent.consent_receipts`,
+					// CON-24: campaign_recipients references consent.data_subjects, so it must go before that
+					// table's own delete below, same as every other append-only/child table this fixture clears.
+					`DELETE FROM consent.campaign_recipients`, `DELETE FROM consent.campaigns`,
 					`DELETE FROM iam.subject_verifications`, `DELETE FROM consent.subject_identifiers`, `DELETE FROM consent.data_subjects`, `DELETE FROM consent.collection_point_purposes`,
 					`DELETE FROM consent.collection_points`, `DELETE FROM consent.purpose_preferences`, `UPDATE consent.purposes SET current_version_id = NULL`,
 					`DELETE FROM consent.purpose_versions`, `DELETE FROM consent.purposes`, `DELETE FROM platform.approvals`, `DELETE FROM platform.record_versions`,

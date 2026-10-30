@@ -454,6 +454,8 @@ export {
   useConsentSettings,
   usePreferenceCenterLink,
   usePreferenceCenterMutations,
+  useConsentCampaigns,
+  useConsentCampaignMutations,
   CONSENT_LEGACY_IMPORT_TYPE,
   type ConsentPurpose,
   type PurposeContent,
@@ -470,6 +472,8 @@ export {
   type ConsentRecordInput,
   type ConsentResult,
   type SubjectIdentifier,
+  type ConsentCampaign,
+  type ConsentCampaignInput,
 } from "./consent";
 export {
   useIncidents,

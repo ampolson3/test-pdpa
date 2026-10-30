@@ -2211,7 +2211,8 @@
       "title": "Consent",
       "purposes": "Purposes",
       "collectionPoints": "Collection points",
-      "subjects": "Data subjects"
+      "subjects": "Data subjects",
+      "campaigns": "Campaigns"
     },
     "status": {
       "draft": "Draft",
@@ -2324,6 +2325,26 @@
       "hostedLink": "Preference centre link",
       "publish": "Publish preference centre",
       "retire": "Revoke link"
+    },
+    "campaign": {
+      "title": "Bulk consent request campaigns",
+      "intro": "Send a consent-request link by e-mail or SMS to an existing customer base, then track who has opened and responded (CON-24).",
+      "new": "New campaign",
+      "empty": "No campaigns yet",
+      "name": "Name",
+      "channel": "Channel",
+      "channels": { "email": "E-mail", "sms": "SMS", "line": "LINE" },
+      "purposes": "Purposes requested",
+      "identifiers": "Audience",
+      "identifiersHint": "One per line, as type:value (e.g. email:alice@example.com, phone:+66812345678). Resolved into data subjects immediately — never stored raw.",
+      "create": "Create campaign",
+      "status": "Status",
+      "statuses": { "draft": "Draft", "sending": "Sending", "done": "Done", "cancelled": "Cancelled" },
+      "sent": "Sent",
+      "opened": "Opened",
+      "responded": "Responded",
+      "send": "Send",
+      "resend": "Resend to non-responders"
     },
     "subjects": {
       "title": "Consent by data subject",
@@ -2487,6 +2508,21 @@
         "not_found": "This confirmation link is invalid.",
         "invalid_transition": "This link has already been used, has expired, or is no longer valid.",
         "unavailable": "We couldn't confirm this right now. Please try again shortly.",
+        "generic": "Something went wrong. Please try again."
+      }
+    },
+    "campaign": {
+      "intro": "This organization is asking for your consent. Choose for each purpose below.",
+      "agree": "I agree",
+      "decline": "I don't agree",
+      "submit": "Submit",
+      "sending": "Submitting…",
+      "thanks": "Thank you — your choices have been recorded.",
+      "receipt": "Receipt number: {receipt}",
+      "errors": {
+        "no_change": "Please choose for at least one purpose.",
+        "not_found": "This link is invalid.",
+        "invalid_transition": "This link has already been used.",
         "generic": "Something went wrong. Please try again."
       }
     },

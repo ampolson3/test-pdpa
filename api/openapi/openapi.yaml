@@ -4509,6 +4509,248 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/consent/campaigns:
+    get:
+      operationId: consentListCampaigns
+      tags: [consent]
+      summary: Bulk consent request campaigns (CON-24)
+      x-permission: consent.campaign.read
+      x-module: consent
+      security: [adminJwt: []]
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConsentCampaign'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: consentCreateCampaign
+      tags: [consent]
+      summary: Create a campaign — the audience's own identifiers are resolved into data subjects immediately and never stored raw (CON-24)
+      x-permission: consent.campaign.create
+      x-module: consent
+      security: [adminJwt: []]
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentCampaignInput'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentCampaign'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/consent/campaigns/{id}:
+    get:
+      operationId: consentGetCampaign
+      tags: [consent]
+      summary: One campaign with its live sent / opened / responded counts (CON-24's own acceptance criterion)
+      x-permission: consent.campaign.read
+      x-module: consent
+      security: [adminJwt: []]
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentCampaign'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/consent/campaigns/{id}/send:
+    post:
+      operationId: consentSendCampaign
+      tags: [consent]
+      summary: Send every still-queued recipient their own link (CON-24)
+      x-permission: consent.campaign.execute
+      x-module: consent
+      security: [adminJwt: []]
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentCampaign'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /admin/v1/consent/campaigns/{id}/resend:
+    post:
+      operationId: consentResendCampaign
+      tags: [consent]
+      summary: Resend a fresh link only to recipients who haven't responded yet (CON-24's own literal acceptance criterion)
+      x-permission: consent.campaign.execute
+      x-module: consent
+      security: [adminJwt: []]
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentCampaign'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /public/v1/consent-campaigns/view:
+    post:
+      operationId: consentViewCampaign
+      tags: [consent]
+      summary: The recipient's own link — resolves by token and marks it opened (CON-24)
+      description: The public key (X-Public-Key) names the campaign/tenant; token is the one embedded in the link the campaign sent.
+      x-permission: public
+      x-module: consent
+      security: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: X-Public-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{22,64}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              additionalProperties: false
+              properties:
+                token:
+                  type: string
+                  minLength: 32
+                  maxLength: 128
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentCampaignView'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /public/v1/consent-campaigns/respond:
+    post:
+      operationId: consentRespondToCampaign
+      tags: [consent]
+      summary: The recipient's own decisions (CON-24) — written the same way every other consent decision is, source "campaign"
+      x-permission: public
+      x-module: consent
+      security: []
+      parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+      - name: X-Public-Key
+        in: header
+        required: true
+        schema:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{22,64}$
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, decisions]
+              additionalProperties: false
+              properties:
+                token:
+                  type: string
+                  minLength: 32
+                  maxLength: 128
+                decisions:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [purpose_code, purpose_version_no, decision]
+                    additionalProperties: false
+                    properties:
+                      purpose_code: {type: string}
+                      purpose_version_no: {type: integer}
+                      decision: {type: string, enum: [CONSENTED, NOT_CONSENTED]}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /public/v1/preference-centers/{key}/start-verification:
     post:
       operationId: consentStartPreferenceVerification
@@ -25867,6 +26109,76 @@ components:
                 $ref: '#/components/schemas/Uuid'
               required:
                 type: boolean
+    ConsentCampaignInput:
+      type: object
+      required: [name, purpose_ids, channel, identifiers]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        purpose_ids:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Uuid'
+        channel:
+          type: string
+          enum: [email, sms, line]
+        template_id:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        identifiers:
+          description: The existing customer base to notify — resolved into data subjects (find-or-create) at creation time, never stored raw.
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/SubjectIdentifier'
+    ConsentCampaign:
+      type: object
+      required: [id, name, purpose_ids, channel, status, sent_count, opened_count, response_count, row_version]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+        purpose_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/Uuid'
+        channel:
+          type: string
+          enum: [email, sms, line]
+        template_id:
+          type: [string, 'null']
+          format: uuid
+        status:
+          type: string
+          enum: [draft, sending, done, cancelled]
+        sent_count:
+          type: integer
+          description: Recipients ever notified (sent, opened or responded)
+        opened_count:
+          type: integer
+          description: Recipients who opened their own link (opened or responded)
+        response_count:
+          type: integer
+        row_version:
+          type: integer
+    ConsentCampaignView:
+      type: object
+      required: [campaign_name, purposes, responded]
+      properties:
+        campaign_name:
+          type: string
+        purposes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicPurpose'
+        responded:
+          type: boolean
+          description: Already decided through an earlier call — consentRespondToCampaign refuses a second one
     ConsentCollectionPoint:
       type: object
       required:

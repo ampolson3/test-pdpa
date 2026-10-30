@@ -65,8 +65,10 @@ func TestConsentEndpoints_Contract(t *testing.T) {
 			}
 		}
 	}
-	reader := uuid.New() // may read purposes, nothing else
-	grants := map[string][]string{f.Alice.String(): consenttest.Maker, reader.String(): {"consent.purpose.read"}}
+	reader := uuid.New()     // may read purposes, nothing else
+	campaigner := uuid.New() // CON-24: full campaign access
+	grants := map[string][]string{f.Alice.String(): consenttest.Maker, reader.String(): {"consent.purpose.read"},
+		campaigner.String(): {"consent.campaign.read", "consent.campaign.create", "consent.campaign.execute"}}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
 	})
@@ -586,6 +588,125 @@ func TestConsentEndpoints_Contract(t *testing.T) {
 	if res := do("POST", confirmPath, nil, map[string]any{"token": doiToken}, map[string]string{"X-Public-Key": doiKey, "Idempotency-Key": uuid.NewString()}); res.code == 200 {
 		t.Errorf("second confirm with the same token should not succeed again: %d %v", res.code, res.body)
 	}
+
+	// ---- CON-24: bulk consent request campaigns ----
+	campaignInput := map[string]any{"name": "แคมเปญทดสอบ", "purpose_ids": []string{news.ID.String()}, "channel": "email",
+		"identifiers": []map[string]string{{"type": "email", "value": "campaign-http@example.com"}}}
+	if res := do("POST", "/admin/v1/consent/campaigns", nil, campaignInput, nil); res.code != 401 {
+		t.Errorf("campaign create no principal: %d, want 401", res.code)
+	}
+	if res := do("POST", "/admin/v1/consent/campaigns", &dpoLess, campaignInput, nil); res.code != 403 {
+		t.Errorf("campaign create without permission: %d, want 403", res.code)
+	}
+	created := do("POST", "/admin/v1/consent/campaigns", &campaigner, campaignInput, nil)
+	if created.code != 201 || created.body["status"] != "draft" || created.body["id"] == nil {
+		t.Fatalf("create campaign: %d %v", created.code, created.body)
+	}
+	campaignID := created.body["id"].(string)
+	if res := do("GET", "/admin/v1/consent/campaigns/"+campaignID, &campaigner, nil, nil); res.code != 200 {
+		t.Errorf("get campaign: %d", res.code)
+	}
+	if res := do("GET", "/admin/v1/consent/campaigns/"+uuid.NewString(), &campaigner, nil, nil); res.code != 404 {
+		t.Errorf("get unknown campaign: %d, want 404", res.code)
+	}
+	if res := do("POST", "/admin/v1/consent/campaigns/"+campaignID+"/send", &dpoLess, nil, nil); res.code != 403 {
+		t.Errorf("send without permission: %d, want 403", res.code)
+	}
+	sent := do("POST", "/admin/v1/consent/campaigns/"+campaignID+"/send", &campaigner, nil, nil)
+	if sent.code != 200 || sent.body["status"] != "done" || sent.body["sent_count"] != float64(1) {
+		t.Fatalf("send campaign: %d %v", sent.code, sent.body)
+	}
+
+	campaignKey := lastCampaignPublicKey(t, f, campaignID)
+	campaignToken := lastCampaignRequestToken(t, f)
+	if campaignKey == "" || campaignToken == "" {
+		t.Fatal("expected a real campaign public key and request token")
+	}
+	campaignView := do("POST", "/public/v1/consent-campaigns/view", nil, map[string]any{"token": campaignToken}, map[string]string{"X-Public-Key": campaignKey})
+	campaignPurposes, _ := campaignView.body["purposes"].([]any)
+	if campaignView.code != 200 || len(campaignPurposes) != 1 {
+		t.Fatalf("view campaign: %d %v", campaignView.code, campaignView.body)
+	}
+	versionNo := campaignPurposes[0].(map[string]any)["version_no"]
+	respondBody := map[string]any{"token": campaignToken, "decisions": []map[string]any{{"purpose_code": "NEWSLETTER", "purpose_version_no": versionNo, "decision": "CONSENTED"}}}
+	if res := do("POST", "/public/v1/consent-campaigns/respond", nil, respondBody, map[string]string{"X-Public-Key": campaignKey}); res.code != 428 {
+		t.Errorf("respond without Idempotency-Key: %d, want 428", res.code)
+	}
+	if res := do("POST", "/public/v1/consent-campaigns/respond", nil, map[string]any{"token": "wrong-token-wrong-token-wrong-token", "decisions": respondBody["decisions"]},
+		map[string]string{"X-Public-Key": campaignKey, "Idempotency-Key": uuid.NewString()}); res.code != 404 {
+		t.Errorf("respond wrong token: %d, want 404", res.code)
+	}
+	respond := do("POST", "/public/v1/consent-campaigns/respond", nil, respondBody, map[string]string{"X-Public-Key": campaignKey, "Idempotency-Key": uuid.NewString()})
+	if respond.code != 200 || respond.body["receipt_no"] == nil {
+		t.Fatalf("respond to campaign: %d %v", respond.code, respond.body)
+	}
+	// A second response with the same token is refused as an invalid transition, not a duplicate.
+	if res := do("POST", "/public/v1/consent-campaigns/respond", nil, respondBody, map[string]string{"X-Public-Key": campaignKey, "Idempotency-Key": uuid.NewString()}); res.code != 409 {
+		t.Errorf("second response with the same token: %d, want 409", res.code)
+	}
+	if res := do("GET", "/admin/v1/consent/campaigns/"+campaignID, &campaigner, nil, nil); res.code != 200 || res.body["response_count"] != float64(1) {
+		t.Errorf("campaign counts after response: %d %v", res.code, res.body)
+	}
+}
+
+// lastCampaignPublicKey reads the public key issued for a campaign (CON-24 has no public_key column of its
+// own — the key is issued lazily, on first send, through publickeys.Issue/Get like CON-18's own preference
+// centre).
+func lastCampaignPublicKey(t *testing.T, f *consenttest.Fixture, campaignID string) string {
+	t.Helper()
+	var key string
+	err := f.Public(t, func(ctx context.Context) error {
+		return pdb.MustTxFromContext(ctx).QueryRow(ctx,
+			`SELECT key FROM platform.public_keys WHERE entity_type = 'consent_campaign' AND entity_id = $1`, campaignID).Scan(&key)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return key
+}
+
+// lastCampaignRequestToken is lastDoubleOptInToken's own white-box technique, for the consent.campaign_request
+// template instead.
+func lastCampaignRequestToken(t *testing.T, f *consenttest.Fixture) string {
+	t.Helper()
+	var token string
+	err := f.Public(t, func(ctx context.Context) error {
+		tx := pdb.MustTxFromContext(ctx)
+		var payloadJSON []byte
+		if err := tx.QueryRow(ctx, `SELECT n.payload FROM platform.notifications n JOIN platform.notification_templates t ON t.id = n.template_id
+			WHERE t.code = 'consent.campaign_request' ORDER BY n.created_at DESC LIMIT 1`).Scan(&payloadJSON); err != nil {
+			return err
+		}
+		var p struct {
+			VarsEnc string `json:"vars_enc"`
+		}
+		if err := json.Unmarshal(payloadJSON, &p); err != nil {
+			return err
+		}
+		varsEnc, err := base64.StdEncoding.DecodeString(p.VarsEnc)
+		if err != nil {
+			return err
+		}
+		plain, err := f.Svc.Keyring.Decrypt(ctx, "notification", "platform.notifications.payload.vars_enc", varsEnc)
+		if err != nil {
+			return err
+		}
+		var vars map[string]any
+		if err := json.Unmarshal(plain, &vars); err != nil {
+			return err
+		}
+		link, _ := vars["link"].(string)
+		u, err := url.Parse(link)
+		if err != nil {
+			return err
+		}
+		token = u.Query().Get("token")
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return token
 }
 
 // lastDoubleOptInToken decrypts the most recently queued consent.double_opt_in notification's own "link"
