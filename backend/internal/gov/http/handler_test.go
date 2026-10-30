@@ -1,0 +1,744 @@
+package govhttp_test
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
+
+	dpiaservice "pdpa-platform/internal/dpia/service"
+	dsarservice "pdpa-platform/internal/dsar/service"
+	govhttp "pdpa-platform/internal/gov/http"
+	govservice "pdpa-platform/internal/gov/service"
+	orgservice "pdpa-platform/internal/org/service"
+	"pdpa-platform/internal/pkg/authz"
+	pdb "pdpa-platform/internal/pkg/db"
+	"pdpa-platform/internal/pkg/dbtest"
+	"pdpa-platform/internal/pkg/httpx"
+	"pdpa-platform/internal/pkg/validate"
+	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/docs"
+	"pdpa-platform/internal/platform/docs/render"
+	"pdpa-platform/internal/platform/files"
+	"pdpa-platform/internal/platform/forms"
+	"pdpa-platform/internal/platform/versioning"
+	ropaservice "pdpa-platform/internal/ropa/service"
+	"pdpa-platform/internal/wiring"
+)
+
+func envOr(k, def string) string {
+	if v := os.Getenv(k); v != "" {
+		return v
+	}
+	return def
+}
+
+type govFakeFiles struct{ clean map[uuid.UUID]bool }
+
+func (f *govFakeFiles) Get(ctx context.Context, id uuid.UUID) (files.File, error) {
+	if !f.clean[id] {
+		return files.File{}, os.ErrNotExist
+	}
+	return files.File{ID: id, AVStatus: "clean"}, nil
+}
+func (f *govFakeFiles) AttachSystem(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error {
+	return nil
+}
+
+// govFakeDpo is DPX-04's own test double for govservice.Dpo — this file's svc has no real dpo/service
+// wired at all, the same reasoning govFakeFiles already stands in for platform/files.
+type govFakeDpo struct{ calls int }
+
+func (f *govFakeDpo) OpenAuditFindingTask(ctx context.Context, findingID uuid.UUID, title, description string,
+	assigneeUserID *uuid.UUID, dueAt *time.Time, priority string) (uuid.UUID, error) {
+	f.calls++
+	return uuid.New(), nil
+}
+
+// TestGovHandler_Contract drives the retention-schedule + disposal-job endpoints through the real
+// validator/AuthZ chain (401/403/200/201/422/428), mirroring ropa/http's own tia_test.go pattern.
+func TestGovHandler_Contract(t *testing.T) {
+	ctx := context.Background()
+	rdb := redis.NewClient(&redis.Options{Addr: envOr("TEST_REDIS_ADDR", "localhost:6379")})
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		t.Skipf("no Redis: %v", err)
+	}
+	t.Cleanup(func() { rdb.Close() })
+	app := dbtest.Pool(t)
+	tenant := dbtest.SeedTenant(t, ctx, app, dbtest.PlatformPool(t), "govhttp")
+
+	owner := dbtest.OwnerPool(t)
+	t.Cleanup(func() {
+		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
+			tx := pdb.MustTxFromContext(ctx)
+			for _, q := range []string{
+				`DELETE FROM gov.audit_findings`, `DELETE FROM gov.audits`, `DELETE FROM assess.answers`, `DELETE FROM assess.assessments`,
+				`DELETE FROM gov.training_attempts`, `DELETE FROM gov.training_assignments`, `DELETE FROM gov.courses`,
+				`DELETE FROM platform.form_submissions`, `DELETE FROM platform.form_versions`, `DELETE FROM platform.form_definitions WHERE code LIKE 'quiz_%'`,
+				`DELETE FROM gov.regulator_letters`,
+				`DELETE FROM gov.disposal_jobs`, `DELETE FROM gov.retention_schedules`, `DELETE FROM ropa.retention_rules`,
+				`DELETE FROM ropa.processing_activities`, `DELETE FROM ropa.assets`, `DELETE FROM org.org_units`,
+				`DELETE FROM org.legal_entities`, `DELETE FROM gov.policy_attestations`, `DELETE FROM gov.policies`,
+				`DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
+				`DELETE FROM iam.role_assignments`, `DELETE FROM iam.users WHERE email LIKE '%@dpx02http.example'`,
+				`DELETE FROM platform.audit_log`,
+			} {
+				_, _ = tx.Exec(ctx, q)
+			}
+			return nil
+		})
+	})
+
+	orgSvc := &orgservice.Service{Audit: audit.New()}
+	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc}
+	dsarSvc := &dsarservice.Service{Audit: audit.New()}
+	fFiles := &govFakeFiles{clean: map[uuid.UUID]bool{}}
+	versioningSvc := wiring.Versioning(nil, audit.New())
+	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
+	docsSvc.RegisterVersioning()
+	formsSvc := wiring.Forms(nil, audit.New())
+	dpiaSvc := &dpiaservice.Service{Forms: formsSvc, Audit: audit.New()}
+	fDpo := &govFakeDpo{}
+	svc := &govservice.Service{Audit: audit.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fFiles, Docs: docsSvc, Org: orgSvc, Forms: formsSvc, Dpia: dpiaSvc, Dpo: fDpo}
+
+	// DPX-02's own employee (attestation, gov.policy_attestations.user_id has a real FK) and DPO approver
+	// (platform.approvals.approver_user_id has a real FK too) — both need real iam.users rows.
+	var emp, dpo uuid.UUID
+	if err := pdb.WithTenantTx(ctx, owner, tenant.ID.String(), "", func(ctx context.Context) error {
+		tx := pdb.MustTxFromContext(ctx)
+		if err := tx.QueryRow(ctx,
+			`INSERT INTO iam.users (tenant_id, email, display_name, status) VALUES ($1, $2, 'Emp One', 'active') RETURNING id`,
+			tenant.ID, uuid.NewString()[:8]+"@dpx02http.example").Scan(&emp); err != nil {
+			return err
+		}
+		return tx.QueryRow(ctx,
+			`INSERT INTO iam.users (tenant_id, email, display_name, status) VALUES ($1, $2, 'Dee DPO', 'active') RETURNING id`,
+			tenant.ID, uuid.NewString()[:8]+"@dpx02http.example").Scan(&dpo)
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	var ruleID, assetID uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
+			Permissions: []string{"ropa.activity.create", "ropa.activity.update"}})
+		le, err := orgSvc.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ตัวอย่าง จำกัด", IsController: true}, 0)
+		if err != nil {
+			return err
+		}
+		unit, err := orgSvc.CreateOrgUnit(ctx, orgservice.OrgUnit{LegalEntityID: le.ID, Code: "IT", NameTh: "IT", UnitType: "department"})
+		if err != nil {
+			return err
+		}
+		asset, err := ropaSvc.SaveAsset(ctx, ropaservice.Asset{Name: "HR system", AssetType: "application", OrgUnitID: &unit.ID}, 0)
+		if err != nil {
+			return err
+		}
+		assetID = asset.ID
+		activity, err := ropaSvc.SaveActivity(ctx, ropaservice.Activity{LegalEntityID: le.ID, OrgUnitID: unit.ID, Code: "HR-01", Name: "HR records", Role: "controller"}, 0)
+		if err != nil {
+			return err
+		}
+		rule, err := ropaSvc.AddRetentionRule(ctx, ropaservice.RetentionRule{ActivityID: activity.ID, RetentionBasis: "ม.37(3)", TriggerEvent: "สิ้นสุดการจ้าง", DisposalMethod: "delete"})
+		ruleID = rule.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	validateMw, _ := validate.Middleware(spec, nil)
+	perms := map[string]string{}
+	for _, item := range spec.Paths.Map() {
+		for _, op := range item.Operations() {
+			if code, ok := op.Extensions["x-permission"].(string); ok {
+				perms[strings.ToUpper(op.OperationID[:1])+op.OperationID[1:]] = code
+			}
+		}
+	}
+	reader := uuid.New()
+	grants := map[string][]string{
+		tenant.UserID.String(): {"dpx.retention.read", "dpx.retention.create", "dpx.retention.update", "dpx.retention.approve", "dpx.retention.execute",
+			"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.create", "notice.document.update",
+			"dpx.regulator.read", "dpx.regulator.create", "dpx.regulator.update", "dpx.regulator.delete",
+			"dpx.training.read", "dpx.training.create", "dpx.training.update", "dpx.training.publish", "dpx.training.delete", "dpx.training.execute",
+			"dpx.audit.read", "dpx.audit.create", "dpx.audit.update", "dpx.audit.delete", "dpx.audit.approve"},
+		reader.String(): {"dpx.retention.read", "dpx.audit.read", "dpx.audit.update"},
+		emp.String():    {"dpx.policy.execute"},
+		dpo.String():    {"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.update", "notice.document.approve", "notice.document.publish"},
+	}
+	roles := map[string][]string{dpo.String(): {"DPO"}}
+	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
+		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid], Roles: roles[uid]}, nil
+	})
+	t.Cleanup(func() {
+		for uid := range grants {
+			_ = cache.Invalidate(context.Background(), tenant.ID.String(), uid)
+		}
+	})
+
+	r := chi.NewRouter()
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if u := req.Header.Get("X-Test-User"); u != "" {
+				req = req.WithContext(httpx.WithPrincipal(req.Context(), httpx.Principal{TenantID: tenant.ID.String(), UserID: u, ActorType: "user"}))
+			}
+			next.ServeHTTP(w, req)
+		})
+	})
+	r.Use(validateMw)
+	r.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			p, ok := httpx.PrincipalFromContext(req.Context())
+			if !ok {
+				next.ServeHTTP(w, req)
+				return
+			}
+			_ = pdb.WithTenantTx(req.Context(), app, p.TenantID, p.UserID, func(ctx context.Context) error {
+				next.ServeHTTP(w, req.WithContext(ctx))
+				return nil
+			})
+		})
+	})
+	strict := govhttp.NewStrictHandlerWithOptions(govhttp.NewStrict(svc),
+		[]govhttp.StrictMiddlewareFunc{authz.StrictMiddleware[govhttp.StrictHandlerFunc](cache, func(op string) (string, bool) { c, ok := perms[op]; return c, ok })},
+		govhttp.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+			},
+			ResponseErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+				if p, ok := err.(httpx.Problem); ok {
+					httpx.WriteProblem(w, r, p)
+					return
+				}
+				httpx.WriteProblem(w, r, httpx.Internal())
+			},
+		})
+	govhttp.HandlerWithOptions(strict, govhttp.ChiServerOptions{BaseRouter: r})
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	do := func(method, path string, user *uuid.UUID, ifMatch string, body any) (int, string, http.Header) {
+		var buf bytes.Buffer
+		if body != nil {
+			_ = json.NewEncoder(&buf).Encode(body)
+		}
+		req, _ := http.NewRequest(method, srv.URL+path, &buf)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if user != nil {
+			req.Header.Set("X-Test-User", user.String())
+		}
+		if ifMatch != "" {
+			req.Header.Set("If-Match", ifMatch)
+		}
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		var out bytes.Buffer
+		_, _ = out.ReadFrom(res.Body)
+		return res.StatusCode, out.String(), res.Header
+	}
+	admin := tenant.UserID
+	schedulesPath := "/admin/v1/governance/retention-schedules"
+
+	if code, _, _ := do("GET", schedulesPath, nil, "", nil); code != 401 {
+		t.Errorf("no principal: %d, want 401", code)
+	}
+
+	createBody := map[string]any{"retention_rule_id": ruleID, "asset_id": assetID, "next_due_at": "2020-01-01"}
+	if code, _, _ := do("POST", schedulesPath, &reader, "", createBody); code != 403 {
+		t.Errorf("create with read-only permission: %d, want 403", code)
+	}
+	code, body, headers := do("POST", schedulesPath, &admin, "", createBody)
+	if code != 201 || !strings.Contains(body, `"active"`) {
+		t.Fatalf("create schedule: %d %s", code, body)
+	}
+	var created struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &created)
+	etag := headers.Get("ETag")
+
+	if code, _, _ := do("GET", schedulesPath, &admin, "", nil); code != 200 {
+		t.Errorf("list schedules: %d", code)
+	}
+
+	// Missing If-Match -> 428.
+	if code, _, _ := do("PATCH", schedulesPath+"/"+created.ID, &admin, "", map[string]any{"status": "paused"}); code != 428 {
+		t.Errorf("patch without If-Match: %d, want 428", code)
+	}
+	if code, _, _ := do("PATCH", schedulesPath+"/"+created.ID, &admin, etag, map[string]any{"status": "paused"}); code != 200 {
+		t.Errorf("pause schedule: %d", code)
+	}
+
+	// Run the sweep directly (not an HTTP endpoint) to create a disposal job to drive through the lifecycle.
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(), Permissions: []string{"dpx.retention.read", "dpx.retention.update"}})
+		// Re-activate so the sweep can pick it up.
+		sch, err := svc.GetSchedule(ctx, uuid.MustParse(created.ID))
+		if err != nil {
+			return err
+		}
+		if _, err := svc.SetScheduleStatus(ctx, sch.ID, sch.RowVersion, "active"); err != nil {
+			return err
+		}
+		_, err = svc.RunRetentionCheck(ctx)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	jobsPath := "/admin/v1/governance/disposal-jobs"
+	code, body, _ = do("GET", jobsPath, &admin, "", nil)
+	if code != 200 {
+		t.Fatalf("list jobs: %d %s", code, body)
+	}
+	var jobsResp struct {
+		Data []struct {
+			ID         string `json:"id"`
+			RowVersion int    `json:"row_version"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal([]byte(body), &jobsResp)
+	if len(jobsResp.Data) != 1 {
+		t.Fatalf("expected one disposal job, got %d", len(jobsResp.Data))
+	}
+	job := jobsResp.Data[0]
+	jobEtag := `"` + strconv.Itoa(job.RowVersion) + `"`
+
+	if code, _, _ := do("POST", jobsPath+"/"+job.ID+"/approve", &reader, jobEtag, nil); code != 403 {
+		t.Errorf("approve with read-only permission: %d, want 403", code)
+	}
+	code, body, headers = do("POST", jobsPath+"/"+job.ID+"/approve", &admin, jobEtag, nil)
+	if code != 200 || !strings.Contains(body, `"approved"`) {
+		t.Fatalf("approve job: %d %s", code, body)
+	}
+	_ = headers
+	var approved struct {
+		RowVersion int `json:"row_version"`
+	}
+	_ = json.Unmarshal([]byte(body), &approved)
+	startEtag := `"` + strconv.Itoa(approved.RowVersion) + `"`
+	code, body, _ = do("POST", jobsPath+"/"+job.ID+"/start", &admin, startEtag, nil)
+	if code != 200 {
+		t.Fatalf("start job: %d %s", code, body)
+	}
+	var started struct {
+		RowVersion int `json:"row_version"`
+	}
+	_ = json.Unmarshal([]byte(body), &started)
+	completeEtag := `"` + strconv.Itoa(started.RowVersion) + `"`
+
+	// Completing without evidence is refused (422) — the acceptance criterion's own gate.
+	if code, body, _ := do("POST", jobsPath+"/"+job.ID+"/complete", &admin, completeEtag, map[string]any{}); code != 422 && code != 400 {
+		t.Errorf("complete without evidence: %d %s, want 422/400", code, body)
+	}
+
+	evidenceID := uuid.New()
+	fFiles.clean[evidenceID] = true
+	code, body, _ = do("POST", jobsPath+"/"+job.ID+"/complete", &admin, completeEtag, map[string]any{"evidence_file_id": evidenceID})
+	if code != 200 || !strings.Contains(body, `"done"`) {
+		t.Fatalf("complete with evidence: %d %s", code, body)
+	}
+
+	// DPX-02: drive a real PLT-16 "policy" document through the actual submit → DPO approve → publish
+	// chain (direct service calls — docs/versioning aren't exposed through gov's own HTTP router), then
+	// exercise PublishPolicy/AttestPolicy/ListAttestations/MissingAttestations through the real validator.
+	var docID uuid.UUID
+	var latestVersionID uuid.UUID
+	var latestVersionRV int32
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
+			Permissions: []string{"notice.document.read", "notice.document.create", "notice.document.update"}})
+		d, err := docsSvc.Create(ctx, docs.CreateInput{DocType: "policy", Title: "นโยบายทดสอบ"})
+		if err != nil {
+			return err
+		}
+		d, err = docsSvc.SaveDraft(ctx, d.ID, d.RowVersion, docs.Draft{Title: "นโยบายทดสอบ",
+			Content: render.Content{"th": {Type: "doc", Content: []render.Node{{Type: "paragraph", Content: []render.Node{{Type: "text", Text: "เนื้อหา"}}}}}}})
+		if err != nil {
+			return err
+		}
+		docID = d.ID
+		latestVersionID, latestVersionRV = d.Latest.ID, d.Latest.RowVersion
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var v versioning.Version
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
+			Permissions: []string{"notice.document.read", "notice.document.update"}})
+		var err error
+		v, err = versioningSvc.Submit(ctx, latestVersionID, latestVersionRV)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), dpo.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: dpo.String(),
+			Roles: []string{"DPO"}, Permissions: []string{"notice.document.read", "notice.document.update", "notice.document.approve", "notice.document.publish"}})
+		inbox, err := versioningSvc.Inbox(ctx)
+		if err != nil {
+			return err
+		}
+		for _, it := range inbox {
+			if it.VersionID == v.ID {
+				v, err = versioningSvc.Decide(ctx, it.ID, it.RowVersion, "approved", "")
+				return err
+			}
+		}
+		t.Fatal("submitted version not in the DPO's inbox")
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), dpo.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: dpo.String(),
+			Roles: []string{"DPO"}, Permissions: []string{"notice.document.read", "notice.document.update", "notice.document.approve", "notice.document.publish"}})
+		_, err := versioningSvc.Publish(ctx, v.ID, v.RowVersion)
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	policiesPath := "/admin/v1/governance/policies"
+	if code, _, _ := do("GET", policiesPath, nil, "", nil); code != 401 {
+		t.Errorf("list policies, no principal: %d, want 401", code)
+	}
+	if code, _, _ := do("POST", policiesPath, &reader, "", map[string]any{"document_id": docID}); code != 403 {
+		t.Errorf("publish policy with read-only permission: %d, want 403", code)
+	}
+	code, body, headers = do("POST", policiesPath, &dpo, "", map[string]any{"document_id": docID})
+	if code != 201 {
+		t.Fatalf("publish policy: %d %s", code, body)
+	}
+	var policy struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &policy)
+	_ = headers
+
+	code, body, _ = do("GET", policiesPath+"/"+policy.ID, &dpo, "", nil)
+	if code != 200 {
+		t.Fatalf("get policy: %d %s", code, body)
+	}
+
+	// An employee without dpx.policy.execute can't attest; emp (who has it) can.
+	if code, _, _ := do("POST", policiesPath+"/"+policy.ID+"/attest", &reader, "", nil); code != 403 {
+		t.Errorf("attest with read-only permission: %d, want 403", code)
+	}
+	code, body, _ = do("POST", policiesPath+"/"+policy.ID+"/attest", &emp, "", nil)
+	if code != 201 {
+		t.Fatalf("attest policy: %d %s", code, body)
+	}
+
+	// The acceptance criterion itself: emp no longer appears in the missing-attestations report.
+	code, body, _ = do("GET", policiesPath+"/"+policy.ID+"/missing-attestations", &dpo, "", nil)
+	if code != 200 {
+		t.Fatalf("missing attestations: %d %s", code, body)
+	}
+	if strings.Contains(body, emp.String()) {
+		t.Errorf("emp should no longer be listed as missing after attesting: %s", body)
+	}
+
+	code, body, _ = do("GET", policiesPath+"/"+policy.ID+"/attestations", &dpo, "", nil)
+	if code != 200 || !strings.Contains(body, emp.String()) {
+		t.Fatalf("list attestations: %d %s", code, body)
+	}
+
+	// DPX-08: the regulator-letter register, through the real validator + AuthZ chain.
+	lettersPath := "/admin/v1/governance/regulator-letters"
+	if code, _, _ := do("GET", lettersPath, nil, "", nil); code != 401 {
+		t.Errorf("list regulator letters, no principal: %d, want 401", code)
+	}
+	if code, _, _ := do("POST", lettersPath, &reader, "", map[string]any{"direction": "inbound", "subject": "x"}); code != 403 {
+		t.Errorf("create regulator letter with read-only permission: %d, want 403", code)
+	}
+	code, body, headers = do("POST", lettersPath, &admin, "", map[string]any{
+		"direction": "inbound", "subject": "คำสั่งขอข้อมูลเพิ่มเติม", "letter_no": "สคส. 1/2569", "due_at": "2026-12-01",
+	})
+	if code != 201 || !strings.Contains(body, `"open"`) {
+		t.Fatalf("create regulator letter: %d %s", code, body)
+	}
+	var letter struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &letter)
+	letterEtag := headers.Get("ETag")
+
+	if code, _, _ := do("GET", lettersPath, &admin, "", nil); code != 200 {
+		t.Errorf("list regulator letters: %d", code)
+	}
+	code, body, _ = do("GET", lettersPath+"/"+letter.ID, &admin, "", nil)
+	if code != 200 {
+		t.Fatalf("get regulator letter: %d %s", code, body)
+	}
+
+	// Missing If-Match -> 428.
+	if code, _, _ := do("PUT", lettersPath+"/"+letter.ID, &admin, "", map[string]any{"direction": "inbound", "subject": "แก้ไขเรื่อง"}); code != 428 {
+		t.Errorf("update without If-Match: %d, want 428", code)
+	}
+	code, body, headers = do("PUT", lettersPath+"/"+letter.ID, &admin, letterEtag, map[string]any{"direction": "inbound", "subject": "แก้ไขเรื่อง", "due_at": "2026-12-15"})
+	if code != 200 || !strings.Contains(body, "แก้ไขเรื่อง") {
+		t.Fatalf("update regulator letter: %d %s", code, body)
+	}
+	letterEtag = headers.Get("ETag")
+
+	code, body, headers = do("PATCH", lettersPath+"/"+letter.ID+"/status", &admin, letterEtag, map[string]any{"status": "responded"})
+	if code != 200 || !strings.Contains(body, `"responded"`) {
+		t.Fatalf("set regulator letter status: %d %s", code, body)
+	}
+	letterEtag = headers.Get("ETag")
+
+	if code, _, _ := do("DELETE", lettersPath+"/"+letter.ID, &reader, "", nil); code != 403 {
+		t.Errorf("delete regulator letter with read-only permission: %d, want 403", code)
+	}
+	if code, _, _ := do("DELETE", lettersPath+"/"+letter.ID, &admin, "", nil); code != 204 {
+		t.Errorf("delete regulator letter: %d, want 204", code)
+	}
+	if code, _, _ := do("GET", lettersPath+"/"+letter.ID, &admin, "", nil); code != 404 {
+		t.Errorf("get deleted regulator letter: %d, want 404", code)
+	}
+
+	// DPX-01: awareness training — a course, a quiz, an assignment and an attempt, through the real
+	// validator + AuthZ chain.
+	var quizFormID uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(),
+			Permissions: []string{"dpx.training.read", "dpx.training.create", "dpx.training.update", "dpx.training.publish"}})
+		score := func(v float64) *float64 { return &v }
+		d := forms.Draft{Languages: []string{"th"}, Schema: forms.Schema{Sections: []forms.Section{{Key: "q",
+			Title: forms.Text{"th": "คำถาม"}, Questions: []forms.Question{
+				{Key: "q1", Type: forms.TypeYesNo, Label: forms.Text{"th": "คำถามที่ 1"}, Required: true,
+					Options: []forms.Option{{Value: "yes", Score: score(1)}, {Value: "no", Score: score(0)}}},
+			}}}}}
+		f, err := formsSvc.CreateForm(ctx, "quiz_http_"+uuid.NewString()[:8], "แบบทดสอบ", "quiz", d)
+		if err != nil {
+			return err
+		}
+		f, err = formsSvc.Publish(ctx, f.ID, f.LatestVersion)
+		quizFormID = f.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	coursesPath := "/admin/v1/governance/courses"
+	if code, _, _ := do("GET", coursesPath, nil, "", nil); code != 401 {
+		t.Errorf("list courses, no principal: %d, want 401", code)
+	}
+	if code, _, _ := do("POST", coursesPath, &reader, "", map[string]any{"title": "x", "content_type": "video"}); code != 403 {
+		t.Errorf("create course with read-only permission: %d, want 403", code)
+	}
+	code, body, headers = do("POST", coursesPath, &admin, "", map[string]any{
+		"title": "พื้นฐาน PDPA", "content_type": "video", "quiz_form_id": quizFormID,
+	})
+	if code != 201 || !strings.Contains(body, `"draft"`) {
+		t.Fatalf("create course: %d %s", code, body)
+	}
+	var course struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &course)
+	courseEtag := headers.Get("ETag")
+
+	code, body, headers = do("PATCH", coursesPath+"/"+course.ID+"/status", &admin, courseEtag, map[string]any{"status": "published"})
+	if code != 200 || !strings.Contains(body, `"published"`) {
+		t.Fatalf("publish course: %d %s", code, body)
+	}
+	courseEtag = headers.Get("ETag")
+
+	assignmentsPath := "/admin/v1/governance/training-assignments"
+	code, body, _ = do("POST", assignmentsPath, &admin, "", map[string]any{"course_id": course.ID, "target_type": "all", "due_at": "2099-12-31"})
+	if code != 201 {
+		t.Fatalf("assign training: %d %s", code, body)
+	}
+
+	code, body, _ = do("GET", "/admin/v1/governance/my-training-assignments", &admin, "", nil)
+	if code != 200 || !strings.Contains(body, course.ID) {
+		t.Fatalf("my training assignments: %d %s", code, body)
+	}
+
+	code, body, headers = do("POST", coursesPath+"/"+course.ID+"/attempts", &admin, "", nil)
+	if code != 201 {
+		t.Fatalf("start attempt: %d %s", code, body)
+	}
+	var attempt struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &attempt)
+	attemptEtag := headers.Get("ETag")
+
+	if code, _, _ := do("POST", "/admin/v1/governance/training-attempts/"+attempt.ID+"/submit", &admin, "", map[string]any{"answers": map[string]any{"q1": "yes"}}); code != 428 {
+		t.Errorf("submit without If-Match: %d, want 428", code)
+	}
+	code, body, _ = do("POST", "/admin/v1/governance/training-attempts/"+attempt.ID+"/submit", &admin, attemptEtag, map[string]any{"answers": map[string]any{"q1": "yes"}})
+	if code != 200 || !strings.Contains(body, `"passed":true`) {
+		t.Fatalf("submit attempt: %d %s", code, body)
+	}
+
+	code, body, _ = do("GET", coursesPath+"/"+course.ID+"/report", &admin, "", nil)
+	if code != 200 || !strings.Contains(body, admin.String()) {
+		t.Fatalf("training report: %d %s", code, body)
+	}
+
+	code, body, _ = do("GET", "/admin/v1/governance/my-training-attempts", &admin, "", nil)
+	if code != 200 || !strings.Contains(body, attempt.ID) {
+		t.Fatalf("my training attempts: %d %s", code, body)
+	}
+
+	// DPX-03: the organization-wide maturity audit, through the real validator + AuthZ chain. The global
+	// "org_maturity" template (migration 00093) needs no local fixture form.
+	var auditLegalEntityID uuid.UUID
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		ctx = authz.WithGrants(ctx, authz.Grants{TenantID: tenant.ID.String(), UserID: tenant.UserID.String(), Permissions: []string{"ropa.activity.create"}})
+		le, err := orgSvc.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ออดิท จำกัด", IsController: true}, 0)
+		auditLegalEntityID = le.ID
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	auditsPath := "/admin/v1/governance/audits"
+	if code, _, _ := do("GET", auditsPath, nil, "", nil); code != 401 {
+		t.Errorf("list audits, no principal: %d, want 401", code)
+	}
+	if code, _, _ := do("POST", auditsPath, &reader, "", map[string]any{"legal_entity_id": auditLegalEntityID, "period": "2026-Q4", "template_code": "org_maturity", "answers": map[string]any{}}); code != 403 {
+		t.Errorf("run audit with read-only permission: %d, want 403", code)
+	}
+	code, body, headers = do("POST", auditsPath, &admin, "", map[string]any{
+		"legal_entity_id": auditLegalEntityID, "period": "2026-Q4", "template_code": "org_maturity",
+		"answers": map[string]any{
+			"gov_dpo_appointed": "yes", "gov_policy_published": "yes",
+			"ropa_maintained": "yes", "ropa_reviewed_annually": "no",
+			"notices_published": "yes", "consent_records_kept": "yes",
+			"dsar_channel_exists": "yes", "dsar_sla_tracked": "yes",
+			"breach_plan_exists": "yes", "security_measures_reviewed": "yes",
+		},
+	})
+	if code != 201 || !strings.Contains(body, `"section_scores"`) {
+		t.Fatalf("run audit: %d %s", code, body)
+	}
+	var ranAudit struct {
+		ID       string `json:"id"`
+		Findings []struct {
+			ID string `json:"id"`
+		} `json:"findings"`
+	}
+	_ = json.Unmarshal([]byte(body), &ranAudit)
+	if len(ranAudit.Findings) != 1 {
+		t.Fatalf("expected exactly one finding (ropa_reviewed_annually=no), got %+v", ranAudit.Findings)
+	}
+	_ = headers
+
+	if code, _, _ := do("GET", auditsPath, &admin, "", nil); code != 200 {
+		t.Errorf("list audits: %d", code)
+	}
+	code, body, headers = do("GET", auditsPath+"/"+ranAudit.ID, &admin, "", nil)
+	if code != 200 {
+		t.Fatalf("get audit: %d %s", code, body)
+	}
+
+	findingsPath := auditsPath + "/" + ranAudit.ID + "/findings"
+	code, body, _ = do("GET", findingsPath, &admin, "", nil)
+	if code != 200 || !strings.Contains(body, ranAudit.Findings[0].ID) {
+		t.Fatalf("list audit findings: %d %s", code, body)
+	}
+
+	code, body, headers = do("POST", findingsPath, &admin, "", map[string]any{"title": "เพิ่มมาตรการตรวจสอบ", "severity": "low"})
+	if code != 201 {
+		t.Fatalf("add audit finding: %d %s", code, body)
+	}
+	var addedFinding struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &addedFinding)
+	findingEtag := headers.Get("ETag")
+
+	findingPath := "/admin/v1/governance/audit-findings/" + addedFinding.ID
+	if code, _, _ := do("PUT", findingPath, &admin, "", map[string]any{"title": "x", "severity": "low"}); code != 428 {
+		t.Errorf("update finding without If-Match: %d, want 428", code)
+	}
+	code, body, headers = do("PUT", findingPath, &admin, findingEtag, map[string]any{"title": "แก้ไขแล้ว", "severity": "high"})
+	if code != 200 || !strings.Contains(body, "แก้ไขแล้ว") {
+		t.Fatalf("update audit finding: %d %s", code, body)
+	}
+	findingEtag = headers.Get("ETag")
+
+	// DPX-04's own acceptance criterion: a finding can't close without evidence.
+	if code, _, _ := do("PATCH", findingPath+"/status", &admin, findingEtag, map[string]any{"status": "done"}); code != 422 {
+		t.Errorf("close without evidence: %d, want 422", code)
+	}
+	evidenceFileID := uuid.NewString()
+	fFiles.clean[uuid.MustParse(evidenceFileID)] = true
+	code, body, headers = do("POST", findingPath+"/evidence", &admin, findingEtag, map[string]any{"evidence_file_id": evidenceFileID})
+	if code != 200 || !strings.Contains(body, evidenceFileID) {
+		t.Fatalf("attach finding evidence: %d %s", code, body)
+	}
+	findingEtag = headers.Get("ETag")
+
+	// "accepted" additionally needs dpx.audit.approve — reader holds dpx.audit.update but not .approve.
+	if code, _, _ := do("PATCH", findingPath+"/status", &reader, findingEtag, map[string]any{"status": "accepted"}); code != 403 {
+		t.Errorf("accepted without dpx.audit.approve: %d, want 403", code)
+	}
+
+	code, body, _ = do("PATCH", findingPath+"/status", &admin, findingEtag, map[string]any{"status": "done"})
+	if code != 200 || !strings.Contains(body, `"done"`) {
+		t.Fatalf("set audit finding status with evidence attached: %d %s", code, body)
+	}
+
+	// DPX-04's own "มอบหมายงานตามข้อตรวจพบ": open one dpo.tasks job for the finding, idempotently.
+	code, body, headers = do("POST", findingsPath, &admin, "", map[string]any{"title": "ข้อตรวจพบอีกรายการ", "severity": "medium"})
+	if code != 201 {
+		t.Fatalf("add second finding: %d %s", code, body)
+	}
+	var secondFinding struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &secondFinding)
+	secondEtag := headers.Get("ETag")
+	secondPath := "/admin/v1/governance/audit-findings/" + secondFinding.ID
+	if code, _, _ := do("POST", secondPath+"/assign-task", &admin, "", map[string]any{"priority": "high"}); code != 428 {
+		t.Errorf("assign-task without If-Match: %d, want 428", code)
+	}
+	code, body, headers = do("POST", secondPath+"/assign-task", &admin, secondEtag, map[string]any{"priority": "high"})
+	if code != 200 || !strings.Contains(body, `"task_id"`) {
+		t.Fatalf("assign-task: %d %s", code, body)
+	}
+	secondEtag = headers.Get("ETag")
+	if code, body, _ := do("POST", secondPath+"/assign-task", &admin, secondEtag, map[string]any{"priority": "urgent"}); code != 200 {
+		t.Errorf("repeat assign-task: %d %s", code, body)
+	}
+	if fDpo.calls != 1 {
+		t.Errorf("OpenAuditFindingTask called %d times, want 1 (deduped)", fDpo.calls)
+	}
+
+	if code, _, _ := do("DELETE", auditsPath+"/"+ranAudit.ID, &reader, "", nil); code != 403 {
+		t.Errorf("delete audit with read-only permission: %d, want 403", code)
+	}
+	if code, _, _ := do("DELETE", auditsPath+"/"+ranAudit.ID, &admin, "", nil); code != 204 {
+		t.Errorf("delete audit: %d, want 204", code)
+	}
+	if code, _, _ := do("GET", auditsPath+"/"+ranAudit.ID, &admin, "", nil); code != 404 {
+		t.Errorf("get deleted audit: %d, want 404", code)
+	}
+}

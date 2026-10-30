@@ -1,0 +1,214 @@
+// Package noticepublichttp holds the /public/v1 notice endpoints (PNG-06): a published notice's current
+// version and its version history, with no login — the tenant comes from the public key
+// (publickeys.Middleware), the same mechanism consent's own /public/v1 collection-point form already uses.
+// Types in public.gen.go are generated from api/openapi/openapi.yaml by oapi-codegen (see oapi-codegen.yaml).
+package noticepublichttp
+
+import (
+	"context"
+	"errors"
+	"net/netip"
+	"time"
+
+	openapi_types "github.com/oapi-codegen/runtime/types"
+
+	noticeservice "pdpa-platform/internal/notice/service"
+	"pdpa-platform/internal/pkg/clientip"
+	"pdpa-platform/internal/pkg/httpx"
+	docsservice "pdpa-platform/internal/platform/docs"
+	filesservice "pdpa-platform/internal/platform/files"
+	"pdpa-platform/internal/platform/publickeys"
+)
+
+func dateOf(t time.Time) openapi_types.Date { return openapi_types.Date{Time: t} }
+
+type Strict struct {
+	svc *noticeservice.Service
+}
+
+func NewStrict(svc *noticeservice.Service) *Strict { return &Strict{svc: svc} }
+
+var _ StrictServerInterface = (*Strict)(nil)
+
+// notice is the key of this request, which must stand for a notice (PNG-06).
+func notice(ctx context.Context) (publickeys.Key, error) {
+	k, ok := publickeys.FromContext(ctx)
+	if !ok || k.EntityType != publickeys.EntityNotice {
+		return publickeys.Key{}, httpx.NotFound()
+	}
+	return k, nil
+}
+
+// problem maps every "not visible to this public caller" sentinel to 404, never leaking which
+// layer (notice/docs/files) actually drew the line. PNG-08's own download also surfaces a render
+// that hasn't finished yet (files.ErrScanPending — docs.render's own worker job is still running,
+// or never got a chance to) or was rejected (ErrNotClean) the same way: there is nothing a public
+// caller can do about either, and no file to serve either way.
+func problem(err error) error {
+	switch {
+	case errors.Is(err, noticeservice.ErrNotFound),
+		errors.Is(err, docsservice.ErrNotFound),
+		errors.Is(err, filesservice.ErrNotFound),
+		errors.Is(err, filesservice.ErrScanPending),
+		errors.Is(err, filesservice.ErrNotClean):
+		return httpx.NotFound()
+	}
+	return err
+}
+
+func (h *Strict) NoticeGetPublicNotice(ctx context.Context, _ NoticeGetPublicNoticeRequestObject) (NoticeGetPublicNoticeResponseObject, error) {
+	k, err := notice(ctx)
+	if err != nil {
+		return nil, err
+	}
+	n, err := h.svc.PublicNotice(ctx, k.EntityID)
+	if err != nil {
+		return nil, problem(err)
+	}
+	out, err := toPublicNotice(ctx, h.svc, n, nil)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return NoticeGetPublicNotice200JSONResponse(out), nil
+}
+
+func (h *Strict) NoticeListPublicVersions(ctx context.Context, _ NoticeListPublicVersionsRequestObject) (NoticeListPublicVersionsResponseObject, error) {
+	k, err := notice(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := h.svc.PublicNotice(ctx, k.EntityID); err != nil {
+		return nil, problem(err)
+	}
+	versions, err := h.svc.PublicVersions(ctx, k.EntityID)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := NoticeListPublicVersions200JSONResponse{Data: make([]PublicNoticeVersion, 0, len(versions))}
+	for _, v := range versions {
+		resp.Data = append(resp.Data, PublicNoticeVersion{VersionNo: int(v.VersionNo), EffectiveFrom: dateOf(v.EffectiveFrom), PublishedAt: v.PublishedAt.UTC()})
+	}
+	return resp, nil
+}
+
+func (h *Strict) NoticeGetPublicVersion(ctx context.Context, req NoticeGetPublicVersionRequestObject) (NoticeGetPublicVersionResponseObject, error) {
+	k, err := notice(ctx)
+	if err != nil {
+		return nil, err
+	}
+	n, err := h.svc.PublicNotice(ctx, k.EntityID)
+	if err != nil {
+		return nil, problem(err)
+	}
+	no := int32(req.VersionNo)
+	out, err := toPublicNotice(ctx, h.svc, n, &no)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return NoticeGetPublicVersion200JSONResponse(out), nil
+}
+
+func (h *Strict) NoticeGetPublicDownload(ctx context.Context, req NoticeGetPublicDownloadRequestObject) (NoticeGetPublicDownloadResponseObject, error) {
+	k, err := notice(ctx)
+	if err != nil {
+		return nil, err
+	}
+	n, err := h.svc.PublicNotice(ctx, k.EntityID)
+	if err != nil {
+		return nil, problem(err)
+	}
+	var versionNo *int32
+	if req.Params.Version != nil {
+		v := int32(*req.Params.Version)
+		versionNo = &v
+	}
+	url, err := h.svc.PublicDownloadURL(ctx, n, versionNo, string(req.Params.Lang), string(req.Params.Format))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return NoticeGetPublicDownload200JSONResponse{DownloadUrl: url}, nil
+}
+
+// NoticeAcknowledgePublic is PNG-09's own public half — a visitor (or an embedded SDK calling this same
+// endpoint) acknowledges reading the notice, no identity accepted or resolved (rule 3).
+func (h *Strict) NoticeAcknowledgePublic(ctx context.Context, req NoticeAcknowledgePublicRequestObject) (NoticeAcknowledgePublicResponseObject, error) {
+	k, err := notice(ctx)
+	if err != nil {
+		return nil, err
+	}
+	n, err := h.svc.PublicNotice(ctx, k.EntityID)
+	if err != nil {
+		return nil, problem(err)
+	}
+	if req.Body == nil {
+		return nil, httpx.RequestInvalid("channel")
+	}
+	var versionNo *int32
+	if req.Body.Version != nil {
+		v := int32(*req.Body.Version)
+		versionNo = &v
+	}
+	var ip *netip.Addr
+	if addr, ok := clientip.From(ctx); ok {
+		ip = &addr
+	}
+	_, resolvedVersionNo, err := h.svc.RecordPublicAcknowledgement(ctx, n, versionNo, string(req.Body.Channel), ip)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return NoticeAcknowledgePublic201JSONResponse{Acknowledged: true, VersionNo: int(resolvedVersionNo)}, nil
+}
+
+// toPublicNotice resolves one version (nil: the current one) and renders every language it carries.
+func toPublicNotice(ctx context.Context, svc *noticeservice.Service, n noticeservice.Notice, versionNo *int32) (PublicNotice, error) {
+	versions, err := svc.PublicVersions(ctx, n.ID)
+	if err != nil {
+		return PublicNotice{}, err
+	}
+	if len(versions) == 0 {
+		return PublicNotice{}, noticeservice.ErrNotFound
+	}
+	var v noticeservice.NoticeVersion
+	found := false
+	if versionNo == nil {
+		v, found = versions[0], true // ListNoticeVersions orders version_no DESC — [0] is the current one
+	} else {
+		for _, x := range versions {
+			if x.VersionNo == *versionNo {
+				v, found = x, true
+				break
+			}
+		}
+	}
+	if !found {
+		return PublicNotice{}, noticeservice.ErrNotFound
+	}
+	out := PublicNotice{Title: n.Title, NoticeType: NoticeType(n.NoticeType), VersionNo: int(v.VersionNo),
+		EffectiveFrom: dateOf(v.EffectiveFrom), Languages: make([]PublicNoticeLanguages, 0, len(v.Languages)), Content: map[string]string{}}
+	for _, lang := range v.Languages {
+		out.Languages = append(out.Languages, PublicNoticeLanguages(lang))
+		html, err := svc.PublicVersionHTML(ctx, n, &v.VersionNo, lang)
+		if err != nil {
+			return PublicNotice{}, err
+		}
+		out.Content[lang] = string(html)
+	}
+	// PNG-13: every linked reference document, resolved to a real URL (a signed link for an attached file) —
+	// one that fails to resolve (e.g. no file renderer configured) is skipped rather than failing the whole page.
+	linked, err := svc.ListLinkedDocuments(ctx, n.ID)
+	if err != nil {
+		return PublicNotice{}, err
+	}
+	linkedOut := make([]PublicNoticeLinkedDocument, 0, len(linked))
+	for _, ld := range linked {
+		url, err := svc.PublicLinkedDocumentURL(ctx, ld)
+		if err != nil {
+			continue
+		}
+		linkedOut = append(linkedOut, PublicNoticeLinkedDocument{
+			Label: ld.Label, DisplayMode: NoticeLinkedDocumentDisplayMode(ld.DisplayMode), Url: url,
+		})
+	}
+	out.LinkedDocuments = &linkedOut
+	return out, nil
+}

@@ -1,0 +1,17 @@
+package: consentpublichttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - consentGetPublicCollectionPoint
+    - consentSubmitPublicConsent
+    - consentStartVerification
+    - consentVerifyGuardianApproval
+    - consentConfirmDoubleOptIn
+    - consentStartPreferenceVerification
+    - consentViewPreferenceCenter
+    - consentUpdatePreferenceCenter
+    - consentViewCampaign
+    - consentRespondToCampaign

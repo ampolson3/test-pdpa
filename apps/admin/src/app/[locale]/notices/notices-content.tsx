@@ -1,0 +1,612 @@
+"use client";
+
+import { Fragment, useMemo, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { usePermission } from "@pdpa/authz";
+import { Button } from "@pdpa/ui";
+import {
+  createApiClient,
+  useActivities,
+  useCreateNoticeWizard,
+  useIndustryTemplates,
+  useLegalEntities,
+  useMentionSearch,
+  useNotices,
+  useNoticeAcknowledgements,
+  useNoticeChecklist,
+  useNoticeDownloadUrl,
+  useNoticeLinkedDocuments,
+  useAddNoticeLinkedDocument,
+  useRemoveNoticeLinkedDocument,
+  useNoticeTranslationStatus,
+  useNoticeVersions,
+  useRecordNoticeAcknowledgement,
+  useSetNoticePublishIntent,
+  useTemplateGroups,
+  cctvSignHref,
+  type ApiClient,
+  type Notice,
+  type NoticeAckChannel,
+  type NoticeLinkedDocumentDisplayMode,
+  type NoticeType,
+} from "@pdpa/api-client";
+import { Link, useRouter } from "@/i18n/routing";
+
+const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
+const NOTICE_TYPES: NoticeType[] = ["privacy_notice", "privacy_policy", "cookie_policy", "cctv", "layered_short", "employee"];
+const SLUG_RE = /^[a-z0-9-]+$/;
+
+function detail(e: unknown): string {
+  return typeof e === "object" && e !== null ? [(e as { title?: string }).title, (e as { detail?: string }).detail].filter(Boolean).join(" — ") : "";
+}
+
+type Draft = { legal_entity_id: string; notice_type: NoticeType | ""; title: string; slug: string; activity_ids: string[]; template_group: string };
+const blank: Draft = { legal_entity_id: "", notice_type: "", title: "", slug: "", activity_ids: [], template_group: "" };
+
+/** PNG-02/PNG-05: the ม.23 checklist and translation-sync status for one notice — expanded inline under its row. */
+function ChecklistPanel({ client, noticeId }: { client: ApiClient; noticeId: string }) {
+  const t = useTranslations("notices");
+  const checklist = useNoticeChecklist(client, noticeId);
+  const translation = useNoticeTranslationStatus(client, noticeId);
+  if (checklist.isPending) return <p className="text-slate-500">{t("loading")}</p>;
+  if (checklist.isError) return <p className="text-red-700">{t("loadError")}</p>;
+  const missing = (checklist.data ?? []).filter((i) => !i.complete);
+  return (
+    <div className="space-y-2" data-testid="checklist-panel">
+      <ul className="grid gap-1 sm:grid-cols-2">
+        {(checklist.data ?? []).map((item) => (
+          <li key={item.code} className="flex items-center gap-2">
+            <span className={item.complete ? "text-emerald-700" : "text-amber-700"}>{item.complete ? "✓" : "✗"}</span>
+            <span>{t(`checklist.${item.code}`)}</span>
+          </li>
+        ))}
+        {missing.length === 0 && <li className="text-emerald-700 sm:col-span-2">{t("checklist.complete")}</li>}
+      </ul>
+      {translation.data === true && (
+        <p className="rounded bg-amber-100 px-2 py-1 text-amber-800" data-testid="translation-stale">{t("translation.stale")}</p>
+      )}
+    </div>
+  );
+}
+
+/** PNG-07: the DPO stages whether the next publish is a material change / changes a purpose. */
+function PublishIntentForm({ client, notice }: { client: ApiClient; notice: Notice }) {
+  const t = useTranslations("notices");
+  const mutation = useSetNoticePublishIntent(client);
+  const [isMaterial, setIsMaterial] = useState(notice.pending_is_material_change ?? false);
+  const [changesPurpose, setChangesPurpose] = useState(notice.pending_changes_purpose ?? false);
+  return (
+    <div className="rounded border border-slate-200 bg-white p-2" data-testid="publish-intent-form">
+      <p className="mb-1 font-medium text-slate-700">{t("publishIntent.title")}</p>
+      <label className="flex items-center gap-2">
+        <input type="checkbox" checked={isMaterial} onChange={(e) => setIsMaterial(e.target.checked)} />
+        <span>{t("publishIntent.isMaterialChange")}</span>
+      </label>
+      <label className="flex items-center gap-2">
+        <input type="checkbox" checked={changesPurpose} onChange={(e) => setChangesPurpose(e.target.checked)} />
+        <span>{t("publishIntent.changesPurpose")}</span>
+      </label>
+      <Button
+        className="mt-2"
+        onClick={() => mutation.mutate({ notice, input: { is_material_change: isMaterial, changes_purpose: changesPurpose } })}
+        disabled={mutation.isPending}
+        data-testid="publish-intent-save"
+      >
+        {t("publishIntent.save")}
+      </Button>
+      {mutation.isSuccess && <p className="text-emerald-700">{t("publishIntent.saved")}</p>}
+      {mutation.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(mutation.error) })}</p>}
+    </div>
+  );
+}
+
+/** PNG-08: the embed-code generator — an iframe snippet (auto-updates on republish, since it always
+ * points at the portal's own live current-version page) plus Word/PDF links for LINE OA / apps. */
+function EmbedPanel({ client, notice, portalUrl, locale }: { client: ApiClient; notice: Notice; portalUrl: string; locale: string }) {
+  const t = useTranslations("notices");
+  const key = notice.public_url?.split("/").pop();
+  const pdf = useNoticeDownloadUrl(client, key, locale === "th" ? "th" : "en", "pdf");
+  const docx = useNoticeDownloadUrl(client, key, locale === "th" ? "th" : "en", "docx");
+  const [copied, setCopied] = useState(false);
+  const publicLink = `${portalUrl.replace(/\/$/, "")}/${locale}${notice.public_url}`;
+  const snippet = `<iframe src="${publicLink}" style="width:100%;min-height:600px;border:0;" title="${notice.title}"></iframe>`;
+
+  const copy = () => {
+    void navigator.clipboard.writeText(snippet);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+      <h4 className="font-medium">{t("embed.title")}</h4>
+      <p className="text-xs text-slate-500">{t("embed.hint")}</p>
+      <div className="flex items-start gap-2">
+        <textarea readOnly rows={2} className="flex-1 rounded border border-slate-300 bg-white p-2 font-mono text-xs" value={snippet} />
+        <Button variant="secondary" onClick={copy}>{copied ? t("embed.copied") : t("embed.copy")}</Button>
+      </div>
+      <div className="flex flex-wrap gap-3 text-xs">
+        {pdf.data && (
+          <a className="text-sky-700 underline" href={pdf.data} target="_blank" rel="noreferrer">{t("embed.downloadPdf")}</a>
+        )}
+        {docx.data && (
+          <a className="text-sky-700 underline" href={docx.data} target="_blank" rel="noreferrer">{t("embed.downloadWord")}</a>
+        )}
+        {!pdf.data && !docx.data && <span className="text-slate-500">{t("embed.filesPending")}</span>}
+      </div>
+    </div>
+  );
+}
+
+/** PNG-09: who acknowledged the current published version, through which channel, when — plus a form
+ * for staff to record a named user's own acknowledgement (e.g. one gathered offline, by phone or letter). */
+function AckPanel({ client, notice, versionNo }: { client: ApiClient; notice: Notice; versionNo: number | undefined }) {
+  const t = useTranslations("notices");
+  const canUpdate = usePermission("notice.document.update");
+  const acks = useNoticeAcknowledgements(client, notice.id, versionNo);
+  const record = useRecordNoticeAcknowledgement(client);
+  const [q, setQ] = useState("");
+  const [userId, setUserId] = useState("");
+  const [channel, setChannel] = useState<NoticeAckChannel>("web");
+  const search = useMentionSearch(client, q.length >= 2 ? q : null);
+  const list = acks.data?.data ?? [];
+
+  if (!versionNo) return <p className="text-slate-500">{t("versions.notPublishedYet")}</p>;
+
+  return (
+    <div className="space-y-2 rounded-md border border-slate-200 bg-white p-3" data-testid="ack-panel">
+      <h4 className="font-medium">{t("ack.title")}</h4>
+      {acks.isPending ? (
+        <p className="text-slate-500">{t("loading")}</p>
+      ) : list.length === 0 ? (
+        <p className="text-slate-500">{t("ack.none")}</p>
+      ) : (
+        <>
+          <p className="text-xs text-slate-500">{t("ack.total", { count: acks.data?.total ?? list.length })}</p>
+          <table className="w-full text-xs">
+            <thead className="text-left text-slate-500">
+              <tr>
+                <th className="py-1">{t("ack.occurredAt")}</th>
+                <th className="py-1">{t("ack.user")}</th>
+                <th className="py-1">{t("ack.channel")}</th>
+                <th className="py-1">{t("ack.ip")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {list.map((a) => (
+                <tr key={a.id}>
+                  <td className="py-1">{new Date(a.occurred_at).toLocaleString()}</td>
+                  <td className="py-1">{a.user_id ? a.user_name : t("ack.anonymous")}</td>
+                  <td className="py-1">{t(`ack.channels.${a.channel}`)}</td>
+                  <td className="py-1 font-mono">{a.ip ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+      {canUpdate && (
+        <div className="space-y-1 border-t border-slate-100 pt-2">
+          <p className="font-medium text-slate-700">{t("ack.recordTitle")}</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="relative">
+              <span className="block text-slate-600">{t("ack.userSearch")}</span>
+              <input
+                className={INPUT}
+                value={q}
+                onChange={(e) => { setQ(e.target.value); setUserId(""); }}
+                placeholder={t("ack.userSearchPlaceholder")}
+                data-testid="ack-user-search"
+              />
+              {search.data && search.data.length > 0 && !userId && (
+                <ul className="absolute z-10 mt-1 w-full rounded border border-slate-300 bg-white shadow">
+                  {search.data.map((u) => (
+                    <li key={u.id}>
+                      <button
+                        type="button"
+                        className="block w-full px-2 py-1 text-left hover:bg-slate-100"
+                        onClick={() => { setUserId(u.id); setQ(u.display_name); }}
+                      >
+                        {u.display_name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </label>
+            <label>
+              <span className="block text-slate-600">{t("ack.channelLabel")}</span>
+              <select className={INPUT} value={channel} onChange={(e) => setChannel(e.target.value as NoticeAckChannel)}>
+                {(["web", "sdk", "email", "api"] as NoticeAckChannel[]).map((c) => (
+                  <option key={c} value={c}>{t(`ack.channels.${c}`)}</option>
+                ))}
+              </select>
+            </label>
+            <Button
+              onClick={() => record.mutate({ noticeId: notice.id, versionNo, user_id: userId, channel }, { onSuccess: () => { setQ(""); setUserId(""); } })}
+              disabled={!userId || record.isPending}
+              data-testid="ack-record-save"
+            >
+              {t("ack.save")}
+            </Button>
+          </div>
+          {record.isSuccess && <p className="text-emerald-700">{t("ack.saved")}</p>}
+          {record.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(record.error) })}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** PNG-12: a printable CCTV signage sheet (A4/A3, PDF or PNG) whose QR code opens the full notice —
+ *  this notice's own public page, or another already-published notice's (the ฉบับย่อ/ฉบับเต็ม pairing),
+ *  picked from the same list of notices this page already loaded. */
+function CctvSignPanel({ notice, allNotices }: { notice: Notice; allNotices: Notice[] }) {
+  const t = useTranslations("notices");
+  const [lang, setLang] = useState<"th" | "en">("th");
+  const [format, setFormat] = useState<"pdf" | "png">("pdf");
+  const [paper, setPaper] = useState<"a4" | "a3">("a4");
+  const [fullNoticeId, setFullNoticeId] = useState("");
+  const published = allNotices.filter((x) => x.id !== notice.id && x.status === "published");
+
+  return (
+    <div className="space-y-2 rounded-md border border-slate-200 bg-white p-3" data-testid="cctv-sign-panel">
+      <h4 className="font-medium">{t("cctvSign.title")}</h4>
+      <div className="flex flex-wrap items-end gap-2">
+        <label>
+          <span className="block text-slate-600">{t("cctvSign.fullNotice")}</span>
+          <select className={INPUT} value={fullNoticeId} onChange={(e) => setFullNoticeId(e.target.value)}>
+            <option value="">{t("cctvSign.fullNoticeThisOne")}</option>
+            {published.map((p) => (
+              <option key={p.id} value={p.id}>{p.title}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className="block text-slate-600">{t("cctvSign.lang")}</span>
+          <select className={INPUT} value={lang} onChange={(e) => setLang(e.target.value as "th" | "en")}>
+            <option value="th">ไทย</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <label>
+          <span className="block text-slate-600">{t("cctvSign.format")}</span>
+          <select className={INPUT} value={format} onChange={(e) => setFormat(e.target.value as "pdf" | "png")}>
+            <option value="pdf">PDF</option>
+            <option value="png">PNG</option>
+          </select>
+        </label>
+        <label>
+          <span className="block text-slate-600">{t("cctvSign.paper")}</span>
+          <select className={INPUT} value={paper} onChange={(e) => setPaper(e.target.value as "a4" | "a3")}>
+            <option value="a4">A4</option>
+            <option value="a3">A3</option>
+          </select>
+        </label>
+        <a
+          className="inline-block rounded-md bg-sky-700 px-3 py-1.5 text-white"
+          href={cctvSignHref("/api/bff", notice.id, lang, format, paper, fullNoticeId || undefined)}
+          data-testid="cctv-sign-download"
+        >
+          {t("cctvSign.download")}
+        </a>
+      </div>
+      <p className="text-xs text-slate-500">{t("cctvSign.hint")}</p>
+    </div>
+  );
+}
+
+/** PNG-13: reference documents linked from a notice (retention schedule, security policy, ...), each
+ *  shown per its own display mode (inline / popup / link) on the public page. */
+function LinkedDocumentsPanel({ client, noticeId }: { client: ApiClient; noticeId: string }) {
+  const t = useTranslations("notices");
+  const canUpdate = usePermission("notice.document.update");
+  const list = useNoticeLinkedDocuments(client, noticeId);
+  const add = useAddNoticeLinkedDocument(client, noticeId);
+  const remove = useRemoveNoticeLinkedDocument(client, noticeId);
+  const [label, setLabel] = useState("");
+  const [url, setUrl] = useState("");
+  const [displayMode, setDisplayMode] = useState<NoticeLinkedDocumentDisplayMode>("link");
+  const items = list.data ?? [];
+
+  const submit = () => {
+    add.mutate({ label, url: url || undefined, display_mode: displayMode }, { onSuccess: () => { setLabel(""); setUrl(""); } });
+  };
+
+  return (
+    <div className="space-y-2 rounded-md border border-slate-200 bg-white p-3" data-testid="linked-documents-panel">
+      <h4 className="font-medium">{t("linkedDocuments.title")}</h4>
+      {list.isPending ? (
+        <p className="text-slate-500">{t("loading")}</p>
+      ) : items.length === 0 ? (
+        <p className="text-slate-500">{t("linkedDocuments.none")}</p>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {items.map((ld) => (
+            <li key={ld.id} className="flex items-center justify-between gap-2 py-1 text-sm">
+              <span>
+                {ld.label} <span className="text-xs text-slate-500">({t(`linkedDocuments.modes.${ld.display_mode}`)})</span>
+              </span>
+              {canUpdate && (
+                <button type="button" className="text-red-700 underline" onClick={() => remove.mutate(ld.id)} data-testid={`linked-document-remove-${ld.id}`}>
+                  {t("linkedDocuments.remove")}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {canUpdate && (
+        <div className="space-y-1 border-t border-slate-100 pt-2">
+          <div className="flex flex-wrap items-end gap-2">
+            <label>
+              <span className="block text-slate-600">{t("linkedDocuments.label")}</span>
+              <input className={INPUT} value={label} onChange={(e) => setLabel(e.target.value)} data-testid="linked-document-label" />
+            </label>
+            <label>
+              <span className="block text-slate-600">{t("linkedDocuments.url")}</span>
+              <input className={INPUT} value={url} onChange={(e) => setUrl(e.target.value)} data-testid="linked-document-url" />
+            </label>
+            <label>
+              <span className="block text-slate-600">{t("linkedDocuments.displayMode")}</span>
+              <select className={INPUT} value={displayMode} onChange={(e) => setDisplayMode(e.target.value as NoticeLinkedDocumentDisplayMode)}>
+                {(["inline", "popup", "link"] as NoticeLinkedDocumentDisplayMode[]).map((m) => (
+                  <option key={m} value={m}>{t(`linkedDocuments.modes.${m}`)}</option>
+                ))}
+              </select>
+            </label>
+            <Button onClick={submit} disabled={!label || !url || add.isPending} data-testid="linked-document-save">
+              {t("linkedDocuments.save")}
+            </Button>
+          </div>
+          {add.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(add.error) })}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** PNG-06: version history + the public page link once a notice has been published at least once. */
+function VersionsPanel({ client, notice, portalUrl, locale }: { client: ApiClient; notice: Notice; portalUrl: string; locale: string }) {
+  const t = useTranslations("notices");
+  const versions = useNoticeVersions(client, notice.id);
+  const list = versions.data ?? [];
+  const latestVersionNo = list[0]?.version_no;
+  const publicLink = notice.public_url ? `${portalUrl.replace(/\/$/, "")}/${locale}${notice.public_url}` : "";
+  return (
+    <div className="space-y-2" data-testid="versions-panel">
+      <PublishIntentForm client={client} notice={notice} />
+      {publicLink ? (
+        <>
+          <p>
+            {t("versions.publicLink")}{" "}
+            <a className="text-sky-700 underline" href={publicLink} target="_blank" rel="noreferrer">
+              {publicLink}
+            </a>
+          </p>
+          <EmbedPanel client={client} notice={notice} portalUrl={portalUrl} locale={locale} />
+        </>
+      ) : (
+        <p className="text-slate-500">{t("versions.notPublishedYet")}</p>
+      )}
+      {versions.isPending ? (
+        <p className="text-slate-500">{t("loading")}</p>
+      ) : list.length === 0 ? (
+        <p className="text-slate-500">{t("versions.none")}</p>
+      ) : (
+        <table className="w-full text-xs">
+          <thead className="text-left text-slate-500">
+            <tr><th className="py-1">{t("versions.versionNo")}</th><th className="py-1">{t("versions.effectiveFrom")}</th><th className="py-1">{t("versions.publishedAt")}</th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {list.map((v) => (
+              <tr key={v.id}>
+                <td className="py-1">{v.version_no}</td>
+                <td className="py-1">{v.effective_from}</td>
+                <td className="py-1">{new Date(v.published_at).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <AckPanel client={client} notice={notice} versionNo={latestVersionNo} />
+    </div>
+  );
+}
+
+export function NoticesContent({ portalUrl }: { portalUrl: string }) {
+  const t = useTranslations("notices");
+  const locale = useLocale();
+  const canRead = usePermission("notice.document.read");
+  const canCreate = usePermission("notice.document.create");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const router = useRouter();
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [versionsOpen, setVersionsOpen] = useState<string | null>(null);
+  const [linkedOpen, setLinkedOpen] = useState<string | null>(null);
+  const [cctvOpen, setCctvOpen] = useState<string | null>(null);
+
+  const list = useNotices(client, {});
+  const wizard = useCreateNoticeWizard(client);
+  const entities = useLegalEntities(client);
+  const activities = useActivities(client, {});
+  const templateGroups = useTemplateGroups(client);
+  const industryTemplates = useIndustryTemplates(client);
+
+  if (!canRead) return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
+
+  const rows = list.data?.pages.flatMap((p) => p.data) ?? [];
+  const activityRows = activities.data?.pages.flatMap((p) => p.data) ?? [];
+  const set = (p: Partial<Draft>) => setDraft({ ...(draft ?? blank), ...p });
+  const slugValid = !draft || draft.slug === "" || SLUG_RE.test(draft.slug);
+
+  const submit = () => {
+    if (!draft || !draft.notice_type || !slugValid) return;
+    wizard.mutate(
+      {
+        legal_entity_id: draft.legal_entity_id, notice_type: draft.notice_type, title: draft.title, slug: draft.slug,
+        activity_ids: draft.template_group ? [] : draft.activity_ids,
+        template_group: draft.template_group || undefined,
+      },
+      { onSuccess: (n) => { setDraft(null); router.push(`/documents/${n!.document_id}`); } },
+    );
+  };
+
+  const toggleActivity = (id: string) => {
+    if (!draft) return;
+    const has = draft.activity_ids.includes(id);
+    set({ activity_ids: has ? draft.activity_ids.filter((x) => x !== id) : [...draft.activity_ids, id] });
+  };
+
+  return (
+    <main className="mx-auto max-w-6xl space-y-6 p-8 text-sm">
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-semibold">{t("title")}</h1>
+          <p className="text-slate-600">{t("intro")}</p>
+        </div>
+        <div className="flex gap-2">
+          <Link className="self-center text-sky-700 underline" href="/notices/indirect-collections">{t("indirectCollectionsLink")}</Link>
+          {canCreate && <Button onClick={() => { wizard.reset(); setDraft({ ...blank }); }} data-testid="new-notice">{t("newNotice")}</Button>}
+        </div>
+      </header>
+
+      {draft && (
+        <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2" disabled={!canCreate}>
+          <legend className="px-1 font-semibold">{t("wizard.title")}</legend>
+          <p className="text-slate-600 sm:col-span-2">{t("wizard.intro")}</p>
+          <label><span className="block text-slate-600">{t("form.legalEntity")}</span>
+            <select className={INPUT} value={draft.legal_entity_id} onChange={(e) => set({ legal_entity_id: e.target.value })}>
+              <option value="">{t("form.choose")}</option>
+              {entities.data?.map((le) => <option key={le.id} value={le.id}>{le.name_th}</option>)}
+            </select>
+          </label>
+          <label><span className="block text-slate-600">{t("form.noticeType")}</span>
+            <select className={INPUT} value={draft.notice_type} onChange={(e) => set({ notice_type: e.target.value as NoticeType })}>
+              <option value="">{t("form.choose")}</option>
+              {NOTICE_TYPES.map((n) => <option key={n} value={n}>{t(`types.${n}`)}</option>)}
+            </select>
+          </label>
+          <label><span className="block text-slate-600">{t("form.noticeTitle")}</span>
+            <input className={INPUT} value={draft.title} onChange={(e) => set({ title: e.target.value })} maxLength={300} /></label>
+          <label><span className="block text-slate-600">{t("form.slug")}</span>
+            <input className={INPUT} value={draft.slug} onChange={(e) => set({ slug: e.target.value })} maxLength={120}
+              aria-invalid={!slugValid} placeholder="employee-privacy-notice" />
+            {!slugValid && <span className="text-xs text-red-700">{t("form.slugInvalid")}</span>}
+          </label>
+          <label className="sm:col-span-2"><span className="block text-slate-600">{t("form.templateGroup")}</span>
+            <p className="mb-1 text-xs text-slate-500">{t("form.templateGroupHint")}</p>
+            <select className={INPUT} value={templateGroups.data?.includes(draft.template_group) ? draft.template_group : ""}
+              onChange={(e) => set({ template_group: e.target.value })} data-testid="template-group-picker">
+              <option value="">{t("form.noTemplateGroup")}</option>
+              {(templateGroups.data ?? []).map((g) => <option key={g} value={g}>{t(`templateGroups.${g}`)}</option>)}
+            </select>
+          </label>
+          <label className="sm:col-span-2"><span className="block text-slate-600">{t("form.industryTemplate")}</span>
+            <p className="mb-1 text-xs text-slate-500">{t("form.industryTemplateHint")}</p>
+            <select className={INPUT} value={industryTemplates.data?.includes(draft.template_group) ? draft.template_group : ""}
+              onChange={(e) => set({ template_group: e.target.value })} data-testid="industry-template-picker">
+              <option value="">{t("form.noIndustryTemplate")}</option>
+              {(industryTemplates.data ?? []).map((g) => <option key={g} value={g}>{t(`industryTemplates.${g}`)}</option>)}
+            </select>
+          </label>
+          <div className="sm:col-span-2">
+            <span className="block text-slate-600">{t("form.activities")}</span>
+            <p className="mb-1 text-xs text-slate-500">{draft.template_group ? t("form.activitiesDisabledByTemplate") : t("form.activitiesHint")}</p>
+            <div className="max-h-48 space-y-1 overflow-auto rounded-md border border-slate-200 p-2 aria-disabled:opacity-50" aria-disabled={!!draft.template_group} data-testid="activity-picker">
+              {activityRows.length === 0 && <p className="text-slate-500">{t("form.noActivities")}</p>}
+              {activityRows.map((a) => (
+                <label key={a.id} className="flex items-center gap-2">
+                  <input type="checkbox" disabled={!!draft.template_group} checked={draft.activity_ids.includes(a.id)} onChange={() => toggleActivity(a.id)} />
+                  <span>{a.code} — {a.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          {wizard.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("form.saveError", { detail: detail(wizard.error) })}</p>}
+          <div className="flex gap-2 sm:col-span-2">
+            <Button onClick={submit} disabled={wizard.isPending || !draft.legal_entity_id || !draft.notice_type || !draft.title || !draft.slug || !slugValid}>
+              {t("wizard.generate")}
+            </Button>
+            <Button variant="secondary" onClick={() => { wizard.reset(); setDraft(null); }}>{t("form.cancel")}</Button>
+          </div>
+        </fieldset>
+      )}
+
+      {list.isPending ? <p className="text-slate-500">{t("loading")}</p> : list.isError ? <p className="text-red-700">{t("loadError")}</p> : rows.length === 0 ? (
+        <p className="rounded-md bg-amber-50 p-3 text-amber-800">{t("empty")}</p>
+      ) : (
+        <table className="w-full rounded-md border border-slate-200 bg-white" data-testid="notices-list">
+          <thead className="bg-slate-50 text-left text-slate-600">
+            <tr><th className="px-3 py-2">{t("form.noticeTitle")}</th><th className="px-3 py-2">{t("form.noticeType")}</th>
+              <th className="px-3 py-2">{t("statusLabel")}</th><th className="px-3 py-2">{t("form.slug")}</th><th className="px-3 py-2">{t("checklist.title")}</th>
+              <th className="px-3 py-2">{t("versions.title")}</th><th className="px-3 py-2">{t("linkedDocuments.title")}</th>
+              <th className="px-3 py-2">{t("cctvSign.title")}</th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.map((n) => (
+              <Fragment key={n.id}>
+                <tr>
+                  <td className="px-3 py-2"><Link className="text-sky-700 underline" href={`/documents/${n.document_id}`}>{n.title}</Link></td>
+                  <td className="px-3 py-2">{t(`types.${n.notice_type}`)}</td>
+                  <td className="px-3 py-2">{t(`statuses.${n.status}`)}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{n.slug}</td>
+                  <td className="px-3 py-2">
+                    <button type="button" className="text-sky-700 underline" onClick={() => setExpanded(expanded === n.id ? null : n.id)} data-testid={`checklist-toggle-${n.id}`}>
+                      {expanded === n.id ? t("checklist.hide") : t("checklist.check")}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2">
+                    <button type="button" className="text-sky-700 underline" onClick={() => setVersionsOpen(versionsOpen === n.id ? null : n.id)} data-testid={`versions-toggle-${n.id}`}>
+                      {versionsOpen === n.id ? t("versions.hide") : t("versions.show")}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2">
+                    <button type="button" className="text-sky-700 underline" onClick={() => setLinkedOpen(linkedOpen === n.id ? null : n.id)} data-testid={`linked-documents-toggle-${n.id}`}>
+                      {linkedOpen === n.id ? t("linkedDocuments.hide") : t("linkedDocuments.show")}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2">
+                    <button type="button" className="text-sky-700 underline" onClick={() => setCctvOpen(cctvOpen === n.id ? null : n.id)} data-testid={`cctv-sign-toggle-${n.id}`}>
+                      {cctvOpen === n.id ? t("cctvSign.hide") : t("cctvSign.show")}
+                    </button>
+                  </td>
+                </tr>
+                {expanded === n.id && (
+                  <tr>
+                    <td colSpan={8} className="bg-slate-50 px-3 py-3">
+                      <ChecklistPanel client={client} noticeId={n.id} />
+                    </td>
+                  </tr>
+                )}
+                {versionsOpen === n.id && (
+                  <tr>
+                    <td colSpan={8} className="bg-slate-50 px-3 py-3">
+                      <VersionsPanel client={client} notice={n} portalUrl={portalUrl} locale={locale} />
+                    </td>
+                  </tr>
+                )}
+                {linkedOpen === n.id && (
+                  <tr>
+                    <td colSpan={8} className="bg-slate-50 px-3 py-3">
+                      <LinkedDocumentsPanel client={client} noticeId={n.id} />
+                    </td>
+                  </tr>
+                )}
+                {cctvOpen === n.id && (
+                  <tr>
+                    <td colSpan={8} className="bg-slate-50 px-3 py-3">
+                      <CctvSignPanel notice={n} allNotices={rows} />
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {list.hasNextPage && <Button variant="secondary" onClick={() => list.fetchNextPage()}>{t("more")}</Button>}
+    </main>
+  );
+}

@@ -1,0 +1,897 @@
+"use client";
+
+import { Fragment, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
+import { usePermission } from "@pdpa/authz";
+import { Button } from "@pdpa/ui";
+import {
+  createApiClient,
+  useAssets,
+  useRetentionSchedules,
+  useCreateRetentionSchedule,
+  useSetRetentionScheduleStatus,
+  useDisposalJobs,
+  useApproveDisposalJob,
+  useStartDisposalJob,
+  useCompleteDisposalJob,
+  useReleaseDisposalJobHold,
+  usePolicies,
+  usePublishPolicy,
+  useAttestPolicy,
+  usePolicyAttestations,
+  useMissingAttestations,
+  useRegulatorLetters,
+  useCreateRegulatorLetter,
+  useSetRegulatorLetterStatus,
+  useDeleteRegulatorLetter,
+  useCourses,
+  useCreateCourse,
+  useSetCourseStatus,
+  useTrainingReport,
+  useAssignTraining,
+  useMyTrainingAssignments,
+  useStartAttempt,
+  useSubmitAttempt,
+  useMyTrainingAttempts,
+  useAudits,
+  useRunAudit,
+  useDeleteAudit,
+  useAuditFindings,
+  useSetAuditFindingStatus,
+  useAttachFindingEvidence,
+  useAssignFindingTask,
+  type RetentionScheduleStatus,
+  type DisposalJobStatus,
+  type StoredFile,
+  type GovPolicy,
+  type GovPolicyAttestation,
+  type GovMissingAttestation,
+  type GovRegulatorLetter,
+  type GovRegulatorLetterStatus,
+  type GovRegulatorLetterDirection,
+  type GovCourse,
+  type GovCourseStatus,
+  type GovCourseContentType,
+  type GovTrainingAssignmentTargetType,
+  type GovAudit,
+} from "@pdpa/api-client";
+import { FileUploader } from "@/components/file-uploader";
+
+const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
+
+function detail(e: unknown): string {
+  return typeof e === "object" && e !== null ? [(e as { title?: string }).title, (e as { detail?: string }).detail].filter(Boolean).join(" — ") : "";
+}
+
+const JOB_STATUS_STYLE: Record<DisposalJobStatus, string> = {
+  pending: "bg-slate-100 text-slate-700",
+  approved: "bg-sky-100 text-sky-800",
+  in_progress: "bg-amber-100 text-amber-800",
+  done: "bg-emerald-100 text-emerald-800",
+  on_hold: "bg-red-100 text-red-800",
+};
+
+export function GovernanceContent() {
+  const t = useTranslations("governance");
+  const canRead = usePermission("dpx.retention.read");
+  const canCreate = usePermission("dpx.retention.create");
+  const canApprove = usePermission("dpx.retention.approve");
+  const canExecute = usePermission("dpx.retention.execute");
+  const canReadPolicy = usePermission("dpx.policy.read");
+  const canPublishPolicy = usePermission("dpx.policy.publish");
+  const canAttest = usePermission("dpx.policy.execute");
+  const canReadLetters = usePermission("dpx.regulator.read");
+  const canCreateLetter = usePermission("dpx.regulator.create");
+  const canUpdateLetter = usePermission("dpx.regulator.update");
+  const canDeleteLetter = usePermission("dpx.regulator.delete");
+  const canReadTraining = usePermission("dpx.training.read");
+  const canCreateTraining = usePermission("dpx.training.create");
+  const canPublishTraining = usePermission("dpx.training.publish");
+  const canRetireTraining = usePermission("dpx.training.delete");
+  const canExecuteTraining = usePermission("dpx.training.execute");
+  const canReadAudit = usePermission("dpx.audit.read");
+  const canCreateAudit = usePermission("dpx.audit.create");
+  const canUpdateAudit = usePermission("dpx.audit.update");
+  const canDeleteAudit = usePermission("dpx.audit.delete");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+
+  const assets = useAssets(client);
+  const assetRows = assets.data?.pages.flatMap((p) => p.data) ?? [];
+  const assetName = (id: string) => assetRows.find((a) => a.id === id)?.name ?? id;
+
+  const [scheduleStatusFilter, setScheduleStatusFilter] = useState<RetentionScheduleStatus | "">("");
+  const schedules = useRetentionSchedules(client, { status: scheduleStatusFilter || undefined });
+  const saveSchedule = useCreateRetentionSchedule(client);
+  const setScheduleStatus = useSetRetentionScheduleStatus(client);
+  const [newSchedule, setNewSchedule] = useState<{ retention_rule_id: string; asset_id: string; next_due_at: string } | null>(null);
+
+  const [jobStatusFilter, setJobStatusFilter] = useState<DisposalJobStatus | "">("");
+  const jobs = useDisposalJobs(client, { status: jobStatusFilter || undefined });
+  const approveJob = useApproveDisposalJob(client);
+  const startJob = useStartDisposalJob(client);
+  const completeJob = useCompleteDisposalJob(client);
+  const releaseHold = useReleaseDisposalJobHold(client);
+  const [completing, setCompleting] = useState<{ id: string; rowVersion: number; evidence?: StoredFile; recordCount: string } | null>(null);
+
+  const policies = usePolicies(client);
+  const publishPolicy = usePublishPolicy(client);
+  const attestPolicy = useAttestPolicy(client);
+  const [newPolicyDocId, setNewPolicyDocId] = useState("");
+  const [expandedPolicy, setExpandedPolicy] = useState<string | null>(null);
+  const attestations = usePolicyAttestations(client, expandedPolicy ?? "");
+  const missing = useMissingAttestations(client, expandedPolicy ?? "");
+
+  const [letterStatusFilter, setLetterStatusFilter] = useState<GovRegulatorLetterStatus | "">("");
+  const [letterDirectionFilter, setLetterDirectionFilter] = useState<GovRegulatorLetterDirection | "">("");
+  const letters = useRegulatorLetters(client, { status: letterStatusFilter || undefined, direction: letterDirectionFilter || undefined });
+  const saveLetter = useCreateRegulatorLetter(client);
+  const setLetterStatus = useSetRegulatorLetterStatus(client);
+  const deleteLetter = useDeleteRegulatorLetter(client);
+  const [newLetter, setNewLetter] = useState<{ direction: GovRegulatorLetterDirection; letter_no: string; subject: string; received_at: string; due_at: string; incident_id: string } | null>(null);
+
+  const [courseStatusFilter, setCourseStatusFilter] = useState<GovCourseStatus | "">("");
+  const courses = useCourses(client, courseStatusFilter || undefined);
+  const createCourse = useCreateCourse(client);
+  const setCourseStatus = useSetCourseStatus(client);
+  const assignTraining = useAssignTraining(client);
+  const [newCourse, setNewCourse] = useState<{ title: string; content_type: GovCourseContentType; quiz_form_id: string; passing_score: string } | null>(null);
+  const [reportCourse, setReportCourse] = useState<string | null>(null);
+  const report = useTrainingReport(client, reportCourse ?? "");
+  const [assigning, setAssigning] = useState<{ courseId: string; target_type: GovTrainingAssignmentTargetType; target_id: string; due_at: string } | null>(null);
+
+  const myAssignments = useMyTrainingAssignments(client);
+  const myAttempts = useMyTrainingAttempts(client);
+  const startAttempt = useStartAttempt(client);
+  const submitAttempt = useSubmitAttempt(client);
+
+  const audits = useAudits(client);
+  const runAudit = useRunAudit(client);
+  const deleteAudit = useDeleteAudit(client);
+  const [newAudit, setNewAudit] = useState<{ legal_entity_id: string; period: string; template_code: string } | null>(null);
+  const [findingsAudit, setFindingsAudit] = useState<string | null>(null);
+  const auditFindings = useAuditFindings(client, findingsAudit ?? "");
+  const setFindingStatus = useSetAuditFindingStatus(client);
+  const attachEvidence = useAttachFindingEvidence(client);
+  const assignFindingTask = useAssignFindingTask(client);
+  const [evidencing, setEvidencing] = useState<{ id: string; rowVersion: number; file?: StoredFile } | null>(null);
+  const [assigningFinding, setAssigningFinding] = useState<{ id: string; rowVersion: number; priority: string } | null>(null);
+
+  if (!canRead && !canReadPolicy && !canReadLetters && !canReadTraining && !canExecuteTraining && !canReadAudit) {
+    return <main className="mx-auto max-w-5xl p-8 text-slate-600">{t("forbidden")}</main>;
+  }
+
+  const scheduleRows = schedules.data?.pages.flatMap((p) => p.data) ?? [];
+  const jobRows = jobs.data?.pages.flatMap((p) => p.data) ?? [];
+
+  return (
+    <main className="mx-auto max-w-6xl space-y-8 p-8 text-sm">
+      <header>
+        <h1 className="text-xl font-semibold">{t("title")}</h1>
+        <p className="text-slate-600">{t("intro")}</p>
+      </header>
+
+      {canRead && <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">{t("schedules.title")}</h2>
+          {canCreate && (
+            <Button onClick={() => setNewSchedule({ retention_rule_id: "", asset_id: "", next_due_at: "" })} data-testid="new-schedule">
+              {t("schedules.new")}
+            </Button>
+          )}
+        </div>
+
+        {newSchedule && (
+          <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
+            <legend className="px-1 font-semibold">{t("schedules.form.title")}</legend>
+            <label><span className="block text-slate-600">{t("schedules.form.asset")}</span>
+              <select className={INPUT} value={newSchedule.asset_id} onChange={(e) => setNewSchedule({ ...newSchedule, asset_id: e.target.value })}>
+                <option value="">{t("schedules.form.none")}</option>
+                {assetRows.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </label>
+            <label><span className="block text-slate-600">{t("schedules.form.retentionRuleId")}</span>
+              <input className={INPUT} value={newSchedule.retention_rule_id}
+                onChange={(e) => setNewSchedule({ ...newSchedule, retention_rule_id: e.target.value })}
+                placeholder={t("schedules.form.retentionRuleIdHint")} /></label>
+            <label><span className="block text-slate-600">{t("schedules.form.nextDueAt")}</span>
+              <input type="date" className={INPUT} value={newSchedule.next_due_at}
+                onChange={(e) => setNewSchedule({ ...newSchedule, next_due_at: e.target.value })} /></label>
+            {saveSchedule.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("schedules.form.saveError", { detail: detail(saveSchedule.error) })}</p>}
+            <div className="flex gap-2 sm:col-span-2">
+              <Button
+                disabled={saveSchedule.isPending || !newSchedule.asset_id || !newSchedule.retention_rule_id || !newSchedule.next_due_at}
+                onClick={() =>
+                  saveSchedule.mutate(
+                    { asset_id: newSchedule.asset_id, retention_rule_id: newSchedule.retention_rule_id, next_due_at: newSchedule.next_due_at },
+                    { onSuccess: () => setNewSchedule(null) },
+                  )
+                }
+              >
+                {t("schedules.form.save")}
+              </Button>
+              <Button variant="secondary" onClick={() => { saveSchedule.reset(); setNewSchedule(null); }}>{t("schedules.form.cancel")}</Button>
+            </div>
+          </fieldset>
+        )}
+
+        <div className="flex items-center gap-2">
+          <span className="text-slate-600">{t("schedules.filterStatus")}</span>
+          <select className={INPUT + " w-auto"} value={scheduleStatusFilter} onChange={(e) => setScheduleStatusFilter(e.target.value as RetentionScheduleStatus | "")}>
+            <option value="">{t("schedules.allStatuses")}</option>
+            {(["active", "paused", "retired"] as const).map((s) => <option key={s} value={s}>{t(`schedules.statuses.${s}`)}</option>)}
+          </select>
+        </div>
+
+        <table className="w-full border-collapse text-left">
+          <thead><tr className="border-b border-slate-200 text-slate-500">
+            <th className="py-1">{t("schedules.table.asset")}</th>
+            <th>{t("schedules.table.nextDueAt")}</th>
+            <th>{t("schedules.table.status")}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            {scheduleRows.map((s) => (
+              <tr key={s.id} className="border-b border-slate-100">
+                <td className="py-1">{assetName(s.asset_id)}</td>
+                <td>{s.next_due_at}</td>
+                <td>{t(`schedules.statuses.${s.status}`)}</td>
+                <td className="space-x-2 text-right">
+                  {canCreate && s.status === "active" && (
+                    <button className="text-sky-700 underline" onClick={() => setScheduleStatus.mutate({ id: s.id, rowVersion: s.row_version, status: "paused" })}>{t("schedules.pause")}</button>
+                  )}
+                  {canCreate && s.status === "paused" && (
+                    <button className="text-sky-700 underline" onClick={() => setScheduleStatus.mutate({ id: s.id, rowVersion: s.row_version, status: "active" })}>{t("schedules.resume")}</button>
+                  )}
+                  {canCreate && s.status !== "retired" && (
+                    <button className="text-red-700 underline" onClick={() => setScheduleStatus.mutate({ id: s.id, rowVersion: s.row_version, status: "retired" })}>{t("schedules.retire")}</button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {schedules.hasNextPage && <Button variant="secondary" onClick={() => schedules.fetchNextPage()}>{t("schedules.loadMore")}</Button>}
+      </section>}
+
+      {canRead && <section className="space-y-3">
+        <h2 className="text-lg font-semibold">{t("jobs.title")}</h2>
+        <p className="text-slate-600">{t("jobs.intro")}</p>
+
+        <div className="flex items-center gap-2">
+          <span className="text-slate-600">{t("jobs.filterStatus")}</span>
+          <select className={INPUT + " w-auto"} value={jobStatusFilter} onChange={(e) => setJobStatusFilter(e.target.value as DisposalJobStatus | "")}>
+            <option value="">{t("jobs.allStatuses")}</option>
+            {(["pending", "approved", "in_progress", "done", "on_hold"] as const).map((s) => <option key={s} value={s}>{t(`jobs.statuses.${s}`)}</option>)}
+          </select>
+        </div>
+
+        <table className="w-full border-collapse text-left">
+          <thead><tr className="border-b border-slate-200 text-slate-500">
+            <th className="py-1">{t("jobs.table.dueAt")}</th>
+            <th>{t("jobs.table.method")}</th>
+            <th>{t("jobs.table.status")}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            {jobRows.map((j) => (
+              <>
+                <tr key={j.id} className="border-b border-slate-100">
+                  <td className="py-1">{j.due_at}</td>
+                  <td>{j.method}</td>
+                  <td><span className={`rounded px-1.5 py-0.5 ${JOB_STATUS_STYLE[j.status]}`}>{t(`jobs.statuses.${j.status}`)}</span></td>
+                  <td className="space-x-2 text-right">
+                    {canApprove && j.status === "pending" && (
+                      <button className="text-sky-700 underline" onClick={() => approveJob.mutate({ id: j.id, rowVersion: j.row_version })}>{t("jobs.approve")}</button>
+                    )}
+                    {canExecute && j.status === "approved" && (
+                      <button className="text-sky-700 underline" onClick={() => startJob.mutate({ id: j.id, rowVersion: j.row_version })}>{t("jobs.start")}</button>
+                    )}
+                    {canExecute && j.status === "in_progress" && (
+                      <button className="text-sky-700 underline" onClick={() => setCompleting({ id: j.id, rowVersion: j.row_version, recordCount: "" })}>{t("jobs.complete")}</button>
+                    )}
+                    {canApprove && j.status === "on_hold" && (
+                      <button className="text-amber-700 underline" onClick={() => releaseHold.mutate({ id: j.id, rowVersion: j.row_version })}>{t("jobs.releaseHold")}</button>
+                    )}
+                  </td>
+                </tr>
+                {completing?.id === j.id && (
+                  <tr key={`${j.id}-complete`} className="border-b border-slate-100 bg-slate-50">
+                    <td colSpan={4} className="p-3">
+                      <div className="space-y-2">
+                        <p className="font-medium">{t("jobs.completeForm.title")}</p>
+                        <FileUploader onUploaded={(f) => setCompleting((c) => (c ? { ...c, evidence: f } : c))} />
+                        {completing.evidence && <p className="text-emerald-700">{t("jobs.completeForm.evidenceAttached", { name: completing.evidence.file_name })}</p>}
+                        <label className="block w-48"><span className="block text-slate-600">{t("jobs.completeForm.recordCount")}</span>
+                          <input type="number" className={INPUT} value={completing.recordCount}
+                            onChange={(e) => setCompleting({ ...completing, recordCount: e.target.value })} /></label>
+                        {completeJob.isError && <p className="text-red-700" role="alert">{t("jobs.completeForm.saveError", { detail: detail(completeJob.error) })}</p>}
+                        <div className="flex gap-2">
+                          <Button
+                            disabled={completeJob.isPending || !completing.evidence}
+                            onClick={() =>
+                              completeJob.mutate(
+                                {
+                                  id: completing.id, rowVersion: completing.rowVersion,
+                                  input: { evidence_file_id: completing.evidence!.id, record_count: completing.recordCount ? Number(completing.recordCount) : undefined },
+                                },
+                                { onSuccess: () => setCompleting(null) },
+                              )
+                            }
+                          >
+                            {t("jobs.completeForm.save")}
+                          </Button>
+                          <Button variant="secondary" onClick={() => { completeJob.reset(); setCompleting(null); }}>{t("jobs.completeForm.cancel")}</Button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
+            ))}
+          </tbody>
+        </table>
+        {jobs.hasNextPage && <Button variant="secondary" onClick={() => jobs.fetchNextPage()}>{t("jobs.loadMore")}</Button>}
+      </section>}
+
+      {canReadPolicy && <section className="space-y-3" data-testid="policies-section">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">{t("policies.title")}</h2>
+          <p className="text-slate-600">{t("policies.intro")}</p>
+        </div>
+
+        {canPublishPolicy && (
+          <fieldset className="flex flex-wrap items-end gap-3 rounded-md border border-slate-200 bg-white p-4">
+            <label className="flex-1"><span className="block text-slate-600">{t("policies.form.documentId")}</span>
+              <input className={INPUT} value={newPolicyDocId} onChange={(e) => setNewPolicyDocId(e.target.value)}
+                placeholder={t("policies.form.documentIdHint")} /></label>
+            {publishPolicy.isError && <p className="text-red-700" role="alert">{t("policies.form.saveError", { detail: detail(publishPolicy.error) })}</p>}
+            <Button
+              disabled={publishPolicy.isPending || !newPolicyDocId}
+              onClick={() => publishPolicy.mutate({ document_id: newPolicyDocId, requires_attestation: true }, { onSuccess: () => setNewPolicyDocId("") })}
+            >
+              {t("policies.form.save")}
+            </Button>
+          </fieldset>
+        )}
+
+        <table className="w-full border-collapse text-left">
+          <thead><tr className="border-b border-slate-200 text-slate-500">
+            <th className="py-1">{t("policies.table.title")}</th>
+            <th>{t("policies.table.versionNo")}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            {(policies.data ?? []).map((p: GovPolicy) => (
+              <Fragment key={p.id}>
+                <tr className="border-b border-slate-100">
+                  <td className="py-1">{p.title}</td>
+                  <td>{p.version_no}</td>
+                  <td className="space-x-2 text-right">
+                    {canAttest && (
+                      <button className="text-sky-700 underline" onClick={() => attestPolicy.mutate(p.id)}>{t("policies.attest")}</button>
+                    )}
+                    <button className="text-slate-700 underline" onClick={() => setExpandedPolicy(expandedPolicy === p.id ? null : p.id)}>
+                      {t("policies.toggleDetail")}
+                    </button>
+                  </td>
+                </tr>
+                {expandedPolicy === p.id && (
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <td colSpan={3} className="space-y-3 p-3">
+                      <div>
+                        <p className="font-medium">{t("policies.missing.title")}</p>
+                        <ul className="list-inside list-disc">
+                          {(missing.data ?? []).map((m: GovMissingAttestation) => <li key={m.user_id}>{m.user_name}</li>)}
+                          {missing.data?.length === 0 && <li className="list-none text-emerald-700">{t("policies.missing.none")}</li>}
+                        </ul>
+                      </div>
+                      <div>
+                        <p className="font-medium">{t("policies.attestations.title")}</p>
+                        <ul className="list-inside list-disc">
+                          {(attestations.data ?? []).map((a: GovPolicyAttestation) => (
+                            <li key={a.id}>{a.user_name ?? a.user_id} — {new Date(a.attested_at).toLocaleString()}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </section>}
+
+      {canReadLetters && <section className="space-y-3" data-testid="regulator-letters-section">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">{t("regulatorLetters.title")}</h2>
+          {canCreateLetter && (
+            <Button
+              onClick={() => setNewLetter({ direction: "inbound", letter_no: "", subject: "", received_at: "", due_at: "", incident_id: "" })}
+              data-testid="new-regulator-letter"
+            >
+              {t("regulatorLetters.new")}
+            </Button>
+          )}
+        </div>
+        <p className="text-slate-600">{t("regulatorLetters.intro")}</p>
+
+        {newLetter && (
+          <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
+            <legend className="px-1 font-semibold">{t("regulatorLetters.form.title")}</legend>
+            <label><span className="block text-slate-600">{t("regulatorLetters.form.direction")}</span>
+              <select className={INPUT} value={newLetter.direction}
+                onChange={(e) => setNewLetter({ ...newLetter, direction: e.target.value as GovRegulatorLetterDirection })}>
+                <option value="inbound">{t("regulatorLetters.directions.inbound")}</option>
+                <option value="outbound">{t("regulatorLetters.directions.outbound")}</option>
+              </select></label>
+            <label><span className="block text-slate-600">{t("regulatorLetters.form.letterNo")}</span>
+              <input className={INPUT} value={newLetter.letter_no} onChange={(e) => setNewLetter({ ...newLetter, letter_no: e.target.value })} /></label>
+            <label className="sm:col-span-2"><span className="block text-slate-600">{t("regulatorLetters.form.subject")}</span>
+              <input className={INPUT} value={newLetter.subject} onChange={(e) => setNewLetter({ ...newLetter, subject: e.target.value })} /></label>
+            <label><span className="block text-slate-600">{t("regulatorLetters.form.receivedAt")}</span>
+              <input type="date" className={INPUT} value={newLetter.received_at} onChange={(e) => setNewLetter({ ...newLetter, received_at: e.target.value })} /></label>
+            <label><span className="block text-slate-600">{t("regulatorLetters.form.dueAt")}</span>
+              <input type="date" className={INPUT} value={newLetter.due_at} onChange={(e) => setNewLetter({ ...newLetter, due_at: e.target.value })} /></label>
+            <label className="sm:col-span-2"><span className="block text-slate-600">{t("regulatorLetters.form.incidentId")}</span>
+              <input className={INPUT} value={newLetter.incident_id} onChange={(e) => setNewLetter({ ...newLetter, incident_id: e.target.value })} /></label>
+            {saveLetter.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("regulatorLetters.form.saveError", { detail: detail(saveLetter.error) })}</p>}
+            <div className="flex gap-2 sm:col-span-2">
+              <Button
+                disabled={saveLetter.isPending || !newLetter.subject}
+                onClick={() =>
+                  saveLetter.mutate(
+                    {
+                      direction: newLetter.direction, letter_no: newLetter.letter_no || undefined, subject: newLetter.subject,
+                      received_at: newLetter.received_at || undefined, due_at: newLetter.due_at || undefined,
+                      incident_id: newLetter.incident_id || undefined,
+                    },
+                    { onSuccess: () => setNewLetter(null) },
+                  )
+                }
+              >
+                {t("regulatorLetters.form.save")}
+              </Button>
+              <Button variant="secondary" onClick={() => { saveLetter.reset(); setNewLetter(null); }}>{t("regulatorLetters.form.cancel")}</Button>
+            </div>
+          </fieldset>
+        )}
+
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="flex items-center gap-2"><span className="text-slate-600">{t("regulatorLetters.filterStatus")}</span>
+            <select className={INPUT + " w-auto"} value={letterStatusFilter} onChange={(e) => setLetterStatusFilter(e.target.value as GovRegulatorLetterStatus | "")}>
+              <option value="">{t("regulatorLetters.allStatuses")}</option>
+              {(["open", "responded", "closed"] as const).map((s) => <option key={s} value={s}>{t(`regulatorLetters.statuses.${s}`)}</option>)}
+            </select></span>
+          <span className="flex items-center gap-2"><span className="text-slate-600">{t("regulatorLetters.filterDirection")}</span>
+            <select className={INPUT + " w-auto"} value={letterDirectionFilter} onChange={(e) => setLetterDirectionFilter(e.target.value as GovRegulatorLetterDirection | "")}>
+              <option value="">{t("regulatorLetters.allDirections")}</option>
+              {(["inbound", "outbound"] as const).map((d) => <option key={d} value={d}>{t(`regulatorLetters.directions.${d}`)}</option>)}
+            </select></span>
+        </div>
+
+        <table className="w-full border-collapse text-left">
+          <thead><tr className="border-b border-slate-200 text-slate-500">
+            <th className="py-1">{t("regulatorLetters.table.subject")}</th>
+            <th>{t("regulatorLetters.table.direction")}</th>
+            <th>{t("regulatorLetters.table.dueAt")}</th>
+            <th>{t("regulatorLetters.table.status")}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            {(letters.data ?? []).map((l: GovRegulatorLetter) => (
+              <tr key={l.id} className="border-b border-slate-100">
+                <td className="py-1">{l.subject}</td>
+                <td>{t(`regulatorLetters.directions.${l.direction}`)}</td>
+                <td>{l.due_at ?? "—"}</td>
+                <td>{t(`regulatorLetters.statuses.${l.status}`)}</td>
+                <td className="space-x-2 text-right">
+                  {canUpdateLetter && l.status === "open" && (
+                    <button className="text-sky-700 underline" onClick={() => setLetterStatus.mutate({ id: l.id, rowVersion: l.row_version, status: "responded" })}>
+                      {t("regulatorLetters.respond")}
+                    </button>
+                  )}
+                  {canUpdateLetter && l.status !== "closed" && (
+                    <button className="text-sky-700 underline" onClick={() => setLetterStatus.mutate({ id: l.id, rowVersion: l.row_version, status: "closed" })}>
+                      {t("regulatorLetters.close")}
+                    </button>
+                  )}
+                  {canDeleteLetter && (
+                    <button className="text-red-700 underline" onClick={() => deleteLetter.mutate(l.id)}>{t("regulatorLetters.delete")}</button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>}
+
+      {(canExecuteTraining) && <section className="space-y-3" data-testid="my-training-section">
+        <h2 className="text-lg font-semibold">{t("training.my.title")}</h2>
+
+        <div>
+          <p className="font-medium">{t("training.my.assignmentsTitle")}</p>
+          <ul className="list-inside list-disc">
+            {(myAssignments.data ?? []).map((a) => (
+              <li key={a.id} className="space-x-2">
+                <span>{courses.data?.find((c) => c.id === a.course_id)?.title ?? a.course_id}</span>
+                <span className="text-slate-500">{t("training.my.dueBy", { date: a.due_at })}</span>
+                <button className="text-sky-700 underline" onClick={() => startAttempt.mutate({ courseId: a.course_id, assignmentId: a.id })}>
+                  {t("training.my.start")}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <p className="font-medium">{t("training.my.attemptsTitle")}</p>
+          <table className="w-full border-collapse text-left">
+            <tbody>
+              {(myAttempts.data ?? []).map((a) => (
+                <tr key={a.id} className="border-b border-slate-100">
+                  <td className="py-1">{courses.data?.find((c) => c.id === a.course_id)?.title ?? a.course_id}</td>
+                  <td>
+                    {a.completed_at
+                      ? a.passed === null || a.passed === undefined
+                        ? "—"
+                        : a.passed
+                          ? t("training.reportPanel.passed")
+                          : t("training.reportPanel.failed")
+                      : t("training.reportPanel.inProgress")}
+                  </td>
+                  <td className="text-right">
+                    {!a.completed_at && (
+                      <button
+                        className="text-sky-700 underline"
+                        onClick={() => submitAttempt.mutate({ id: a.id, rowVersion: a.row_version, answers: {} })}
+                      >
+                        {t("training.my.noQuiz")}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {submitAttempt.isError && <p className="text-red-700" role="alert">{t("training.my.submitError", { detail: detail(submitAttempt.error) })}</p>}
+        </div>
+      </section>}
+
+      {canReadTraining && <section className="space-y-3" data-testid="training-section">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">{t("training.title")}</h2>
+          {canCreateTraining && (
+            <Button
+              onClick={() => setNewCourse({ title: "", content_type: "video", quiz_form_id: "", passing_score: "" })}
+              data-testid="new-course"
+            >
+              {t("training.new")}
+            </Button>
+          )}
+        </div>
+        <p className="text-slate-600">{t("training.intro")}</p>
+
+        {newCourse && (
+          <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
+            <legend className="px-1 font-semibold">{t("training.form.title")}</legend>
+            <label className="sm:col-span-2"><span className="block text-slate-600">{t("training.form.courseTitle")}</span>
+              <input className={INPUT} value={newCourse.title} onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })} /></label>
+            <label><span className="block text-slate-600">{t("training.form.contentType")}</span>
+              <select className={INPUT} value={newCourse.content_type}
+                onChange={(e) => setNewCourse({ ...newCourse, content_type: e.target.value as GovCourseContentType })}>
+                {(["video", "slides", "scorm", "xapi"] as const).map((c) => <option key={c} value={c}>{t(`training.contentTypes.${c}`)}</option>)}
+              </select></label>
+            <label><span className="block text-slate-600">{t("training.form.passingScore")}</span>
+              <input type="number" className={INPUT} value={newCourse.passing_score}
+                onChange={(e) => setNewCourse({ ...newCourse, passing_score: e.target.value })} /></label>
+            <label className="sm:col-span-2"><span className="block text-slate-600">{t("training.form.quizFormId")}</span>
+              <input className={INPUT} value={newCourse.quiz_form_id} placeholder={t("training.form.quizFormIdHint")}
+                onChange={(e) => setNewCourse({ ...newCourse, quiz_form_id: e.target.value })} /></label>
+            {createCourse.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("training.form.saveError", { detail: detail(createCourse.error) })}</p>}
+            <div className="flex gap-2 sm:col-span-2">
+              <Button
+                disabled={createCourse.isPending || !newCourse.title}
+                onClick={() =>
+                  createCourse.mutate(
+                    {
+                      title: newCourse.title, content_type: newCourse.content_type,
+                      quiz_form_id: newCourse.quiz_form_id || undefined,
+                      passing_score: newCourse.passing_score ? Number(newCourse.passing_score) : 80,
+                      validity_months: 12, language: "th",
+                    },
+                    { onSuccess: () => setNewCourse(null) },
+                  )
+                }
+              >
+                {t("training.form.save")}
+              </Button>
+              <Button variant="secondary" onClick={() => { createCourse.reset(); setNewCourse(null); }}>{t("training.form.cancel")}</Button>
+            </div>
+          </fieldset>
+        )}
+
+        {assigning && (
+          <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
+            <legend className="px-1 font-semibold">{t("training.assignForm.title")}</legend>
+            <label><span className="block text-slate-600">{t("training.assignForm.targetType")}</span>
+              <select className={INPUT} value={assigning.target_type}
+                onChange={(e) => setAssigning({ ...assigning, target_type: e.target.value as GovTrainingAssignmentTargetType })}>
+                {(["all", "org_unit", "group", "user"] as const).map((tt) => <option key={tt} value={tt}>{t(`training.assignForm.targets.${tt}`)}</option>)}
+              </select></label>
+            <label><span className="block text-slate-600">{t("training.assignForm.dueAt")}</span>
+              <input type="date" className={INPUT} value={assigning.due_at} onChange={(e) => setAssigning({ ...assigning, due_at: e.target.value })} /></label>
+            {assigning.target_type !== "all" && (
+              <label className="sm:col-span-2"><span className="block text-slate-600">{t("training.assignForm.targetId")}</span>
+                <input className={INPUT} value={assigning.target_id} placeholder={t("training.assignForm.targetIdHint")}
+                  onChange={(e) => setAssigning({ ...assigning, target_id: e.target.value })} /></label>
+            )}
+            {assignTraining.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("training.assignForm.saveError", { detail: detail(assignTraining.error) })}</p>}
+            <div className="flex gap-2 sm:col-span-2">
+              <Button
+                disabled={assignTraining.isPending || !assigning.due_at || (assigning.target_type !== "all" && !assigning.target_id)}
+                onClick={() =>
+                  assignTraining.mutate(
+                    {
+                      course_id: assigning.courseId, target_type: assigning.target_type,
+                      target_id: assigning.target_type === "all" ? undefined : assigning.target_id, due_at: assigning.due_at,
+                    },
+                    { onSuccess: () => setAssigning(null) },
+                  )
+                }
+              >
+                {t("training.assignForm.save")}
+              </Button>
+              <Button variant="secondary" onClick={() => { assignTraining.reset(); setAssigning(null); }}>{t("training.assignForm.cancel")}</Button>
+            </div>
+          </fieldset>
+        )}
+
+        <div className="flex items-center gap-2">
+          <span className="text-slate-600">{t("training.filterStatus")}</span>
+          <select className={INPUT + " w-auto"} value={courseStatusFilter} onChange={(e) => setCourseStatusFilter(e.target.value as GovCourseStatus | "")}>
+            <option value="">{t("training.allStatuses")}</option>
+            {(["draft", "published", "retired"] as const).map((s) => <option key={s} value={s}>{t(`training.statuses.${s}`)}</option>)}
+          </select>
+        </div>
+
+        <table className="w-full border-collapse text-left">
+          <thead><tr className="border-b border-slate-200 text-slate-500">
+            <th className="py-1">{t("training.table.title")}</th>
+            <th>{t("training.table.contentType")}</th>
+            <th>{t("training.table.status")}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            {(courses.data ?? []).map((c: GovCourse) => (
+              <Fragment key={c.id}>
+                <tr className="border-b border-slate-100">
+                  <td className="py-1">{c.title}</td>
+                  <td>{t(`training.contentTypes.${c.content_type}`)}</td>
+                  <td>{t(`training.statuses.${c.status}`)}</td>
+                  <td className="space-x-2 text-right">
+                    {canPublishTraining && c.status === "draft" && (
+                      <button className="text-sky-700 underline" onClick={() => setCourseStatus.mutate({ id: c.id, rowVersion: c.row_version, status: "published" })}>
+                        {t("training.publish")}
+                      </button>
+                    )}
+                    {canRetireTraining && c.status !== "retired" && (
+                      <button className="text-red-700 underline" onClick={() => setCourseStatus.mutate({ id: c.id, rowVersion: c.row_version, status: "retired" })}>
+                        {t("training.retire")}
+                      </button>
+                    )}
+                    {canExecuteTraining && c.status === "published" && (
+                      <button className="text-sky-700 underline" onClick={() => setAssigning({ courseId: c.id, target_type: "all", target_id: "", due_at: "" })}>
+                        {t("training.assign")}
+                      </button>
+                    )}
+                    <button className="text-slate-700 underline" onClick={() => setReportCourse(reportCourse === c.id ? null : c.id)}>
+                      {t("training.report")}
+                    </button>
+                  </td>
+                </tr>
+                {reportCourse === c.id && (
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <td colSpan={4} className="p-3">
+                      <p className="font-medium">{t("training.reportPanel.title")}</p>
+                      <table className="w-full border-collapse text-left">
+                        <tbody>
+                          {(report.data ?? []).map((a) => (
+                            <tr key={a.id}>
+                              <td className="py-1">{a.user_name ?? a.user_id}</td>
+                              <td>
+                                {a.completed_at
+                                  ? a.score !== null && a.score !== undefined
+                                    ? `${a.score}%`
+                                    : t("training.reportPanel.notScored")
+                                  : t("training.reportPanel.inProgress")}
+                              </td>
+                              <td>{a.passed === true ? t("training.reportPanel.passed") : a.passed === false ? t("training.reportPanel.failed") : ""}</td>
+                            </tr>
+                          ))}
+                          {report.data?.length === 0 && <tr><td className="py-1 text-slate-500">{t("training.reportPanel.empty")}</td></tr>}
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </section>}
+
+      {canReadAudit && <section className="space-y-3" data-testid="audit-section">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">{t("audit.title")}</h2>
+          {canCreateAudit && (
+            <Button onClick={() => setNewAudit({ legal_entity_id: "", period: "", template_code: "org_maturity" })} data-testid="new-audit">
+              {t("audit.new")}
+            </Button>
+          )}
+        </div>
+        <p className="text-slate-600">{t("audit.intro")}</p>
+
+        {newAudit && (
+          <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2">
+            <legend className="px-1 font-semibold">{t("audit.form.title")}</legend>
+            <label className="sm:col-span-2"><span className="block text-slate-600">{t("audit.form.legalEntityId")}</span>
+              <input className={INPUT} value={newAudit.legal_entity_id} onChange={(e) => setNewAudit({ ...newAudit, legal_entity_id: e.target.value })} /></label>
+            <label><span className="block text-slate-600">{t("audit.form.period")}</span>
+              <input className={INPUT} value={newAudit.period} placeholder={t("audit.form.periodHint")}
+                onChange={(e) => setNewAudit({ ...newAudit, period: e.target.value })} /></label>
+            <label><span className="block text-slate-600">{t("audit.form.templateCode")}</span>
+              <input className={INPUT} value={newAudit.template_code} placeholder={t("audit.form.templateCodeHint")}
+                onChange={(e) => setNewAudit({ ...newAudit, template_code: e.target.value })} /></label>
+            {runAudit.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("audit.form.saveError", { detail: detail(runAudit.error) })}</p>}
+            <div className="flex gap-2 sm:col-span-2">
+              <Button
+                disabled={runAudit.isPending || !newAudit.legal_entity_id || !newAudit.period || !newAudit.template_code}
+                onClick={() =>
+                  runAudit.mutate(
+                    { legal_entity_id: newAudit.legal_entity_id, period: newAudit.period, template_code: newAudit.template_code, answers: {} },
+                    { onSuccess: () => setNewAudit(null) },
+                  )
+                }
+              >
+                {t("audit.form.save")}
+              </Button>
+              <Button variant="secondary" onClick={() => { runAudit.reset(); setNewAudit(null); }}>{t("audit.form.cancel")}</Button>
+            </div>
+          </fieldset>
+        )}
+
+        <table className="w-full border-collapse text-left">
+          <thead><tr className="border-b border-slate-200 text-slate-500">
+            <th className="py-1">{t("audit.table.period")}</th>
+            <th>{t("audit.table.band")}</th>
+            <th>{t("audit.table.score")}</th>
+            <th></th>
+          </tr></thead>
+          <tbody>
+            {(audits.data ?? []).map((a: GovAudit) => (
+              <Fragment key={a.id}>
+                <tr className="border-b border-slate-100">
+                  <td className="py-1">{a.period}</td>
+                  <td>{a.band ? t(`audit.bands.${a.band}` as "audit.bands.developing") : "—"}</td>
+                  <td>{a.overall_score ?? "—"}</td>
+                  <td className="space-x-2 text-right">
+                    <button className="text-slate-700 underline" onClick={() => setFindingsAudit(findingsAudit === a.id ? null : a.id)}>
+                      {t("audit.viewFindings")}
+                    </button>
+                    {canDeleteAudit && (
+                      <button className="text-red-700 underline" onClick={() => deleteAudit.mutate(a.id)}>{t("audit.delete")}</button>
+                    )}
+                  </td>
+                </tr>
+                {findingsAudit === a.id && (
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <td colSpan={4} className="space-y-3 p-3">
+                      {a.section_scores && a.section_scores.length > 0 && (
+                        <div>
+                          <p className="font-medium">{t("audit.sectionScores.title")}</p>
+                          <ul className="list-inside list-disc">
+                            {a.section_scores.map((s) => (
+                              <li key={s.key}>{(s.title?.th as string | undefined) ?? s.key}: {s.score}/{s.max_score}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      <div>
+                        <p className="font-medium">{t("audit.findingsPanel.title")}</p>
+                        <ul className="list-inside list-disc space-y-1">
+                          {(auditFindings.data ?? []).map((f) => (
+                            <li key={f.id} className="space-x-2">
+                              <span>{f.title}</span>
+                              <span className="text-slate-500">({t(`audit.findingsPanel.severities.${f.severity}`)})</span>
+                              <span>{t(`audit.findingsPanel.statuses.${f.status}`)}</span>
+                              {f.evidence_file_id && <span className="text-emerald-700">{t("audit.findingsPanel.evidenceAttached")}</span>}
+                              {f.task_id && <span className="text-sky-700">{t("audit.findingsPanel.taskAssigned")}</span>}
+                              {canUpdateAudit && f.status !== "done" && f.status !== "accepted" && (
+                                <>
+                                  <button
+                                    className="text-sky-700 underline"
+                                    onClick={() => setFindingStatus.mutate({ id: f.id, rowVersion: f.row_version, status: "done" })}
+                                  >
+                                    {t("audit.findingsPanel.markDone")}
+                                  </button>
+                                  <button
+                                    className="text-amber-700 underline"
+                                    onClick={() => setFindingStatus.mutate({ id: f.id, rowVersion: f.row_version, status: "accepted" })}
+                                  >
+                                    {t("audit.findingsPanel.accept")}
+                                  </button>
+                                  {setFindingStatus.isError && <span className="text-red-700" role="alert">{t("audit.findingsPanel.statusError", { detail: detail(setFindingStatus.error) })}</span>}
+                                  <button
+                                    className="text-slate-700 underline"
+                                    onClick={() => setEvidencing(evidencing?.id === f.id ? null : { id: f.id, rowVersion: f.row_version })}
+                                  >
+                                    {t("audit.findingsPanel.attachEvidence")}
+                                  </button>
+                                  {!f.task_id && (
+                                    <button
+                                      className="text-slate-700 underline"
+                                      onClick={() =>
+                                        setAssigningFinding(assigningFinding?.id === f.id ? null : { id: f.id, rowVersion: f.row_version, priority: "medium" })
+                                      }
+                                    >
+                                      {t("audit.findingsPanel.assignTask")}
+                                    </button>
+                                  )}
+                                </>
+                              )}
+                              {evidencing?.id === f.id && (
+                                <div className="mt-1 space-y-2 rounded-md border border-slate-200 bg-white p-2">
+                                  <FileUploader onUploaded={(file) => setEvidencing((e) => (e ? { ...e, file } : e))} />
+                                  {evidencing.file && <p className="text-emerald-700">{t("audit.findingsPanel.evidenceReady", { name: evidencing.file.file_name })}</p>}
+                                  {attachEvidence.isError && <p className="text-red-700" role="alert">{t("audit.findingsPanel.evidenceError", { detail: detail(attachEvidence.error) })}</p>}
+                                  <Button
+                                    disabled={!evidencing.file || attachEvidence.isPending}
+                                    onClick={() =>
+                                      attachEvidence.mutate(
+                                        { id: evidencing.id, rowVersion: evidencing.rowVersion, evidenceFileId: evidencing.file!.id },
+                                        { onSuccess: () => setEvidencing(null) },
+                                      )
+                                    }
+                                  >
+                                    {t("audit.findingsPanel.saveEvidence")}
+                                  </Button>
+                                </div>
+                              )}
+                              {assigningFinding?.id === f.id && (
+                                <div className="mt-1 flex items-center gap-2 rounded-md border border-slate-200 bg-white p-2">
+                                  <select className={INPUT} value={assigningFinding.priority} onChange={(e) => setAssigningFinding({ ...assigningFinding, priority: e.target.value })}>
+                                    {(["low", "medium", "high", "urgent"] as const).map((p) => (
+                                      <option key={p} value={p}>{t(`audit.findingsPanel.priority.${p}`)}</option>
+                                    ))}
+                                  </select>
+                                  <Button
+                                    disabled={assignFindingTask.isPending}
+                                    onClick={() =>
+                                      assignFindingTask.mutate(
+                                        { id: assigningFinding.id, rowVersion: assigningFinding.rowVersion, priority: assigningFinding.priority },
+                                        { onSuccess: () => setAssigningFinding(null) },
+                                      )
+                                    }
+                                  >
+                                    {t("audit.findingsPanel.saveAssign")}
+                                  </Button>
+                                  {assignFindingTask.isError && <span className="text-red-700" role="alert">{t("audit.findingsPanel.assignError", { detail: detail(assignFindingTask.error) })}</span>}
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                          {auditFindings.data?.length === 0 && <li className="list-none text-emerald-700">{t("audit.findingsPanel.empty")}</li>}
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
+      </section>}
+    </main>
+  );
+}

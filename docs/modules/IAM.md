@@ -206,7 +206,57 @@
 
 **Acceptance criteria:** ปิดโมดูลที่ไม่ได้ซื้อแล้วเมนูและ API ของโมดูลนั้นใช้ไม่ได้
 
-**หมายเหตุจาก SA (ใช้แทนข้อความในแผนเมื่อขัดกัน):** provider console เป็น surface `/provider/v1` ใช้ DB role `pdpa_platform` เฉพาะ package `internal/platform/provider` · บัญชี SUPER อยู่ใน tenant พิเศษ `platform` (decisions Q-19)
+**หมายเหตุจาก SA (ใช้แทนข้อความในแผนเมื่อขัดกัน):** provider console เป็น surface `/provider/v1` ใช้ DB role `pdpa_platform` เฉพาะ package `internal/platform/provider` · บัญชี SUPER อยู่ใน tenant พิเศษ `platform` (decisions D-24, ย้ายจาก Q-19)
+
+**Implementation (IAM-03) — done:** `internal/platform/provider` (service.go) is the only package in the
+whole backend holding a `pdpa_platform` (BYPASSRLS) pool — migration 00064 seeds the reserved `platform`
+tenant SUPER accounts live in (`iam.users.tenant_id` points at it like any other tenant, so AuthZ's
+ordinary per-tenant grant cache needs no special-casing for SUPER). `CreateTenant`/`GetTenant`/
+`ListTenants` (no pagination — the platform's own roster, same reasoning DPIA-12/ROPA-04's own
+platform-wide lists already used) and `SuspendTenant`/`ReactivateTenant` (a tiny trial/active <->
+suspended machine) write `platform.tenants` directly through that pool, never through the request's own
+`pdpa_app` transaction (CLAUDE.md rule 1 — that transaction is RLS-scoped to the `platform` tenant and
+can never legitimately hold another tenant's row). `CreateFirstAdmin` is the one write that *does* go
+through the ordinary `pdpa_app` + `db.WithTenantTx` path, scoped to the *new* tenant: a DB-only
+`iam.users` insert + role grant, following `cmd/devseed`'s own exact pattern — no real Keycloak account,
+since Keycloak isn't available in this environment (the same gap IAM-01 is blocked on).
+
+The acceptance criterion itself ("ปิดโมดูลที่ไม่ได้ซื้อแล้วเมนูและ API ของโมดูลนั้นใช้ไม่ได้") is
+`internal/pkg/modulegate` — a sibling of `internal/pkg/authz.StrictMiddleware`, hooked into the exact
+same oapi-codegen strict-middleware chain on every `/admin/v1` module (keyed by operationId → `x-module`,
+the same tag `internal/pkg/isolationaudit` already reads off the live OpenAPI spec). It reads the
+caller's own tenant's `platform.tenant_modules` row inside the request's already-open transaction — no
+row at all means enabled (the table is opt-out, not opt-in, so an existing tenant with nothing explicit
+set keeps working); an explicit `enabled = false` blocks with 403 `platform.module_disabled`. Two tags
+are never gated — `iam` (a locked-out tenant must still reach `/me`) and `platform` (shared plumbing,
+`/provider/v1` included) — everything else (`ropa`, `consent`, `dsar`, `breach`, `notice`, `dpo`, `dpia`,
+`risk`, `org`, `vendor`, `agreement`, `gov`, `dataflow`) is a real `PurchasableModules` code `SetTenantModule`
+can flip. `ListTenantModules` returns every purchasable code even with no row (a virtual default, `enabled:
+true, row_version: 0` — the same "defaults until first save" convention ORG-20's own `org_settings`
+established), so the console's first toggle on an untouched module can still send a real `If-Match`.
+
+API: `GET/POST /provider/v1/tenants`, `GET /provider/v1/tenants/{id}`, `POST .../suspend` / `.../reactivate`
+(ETag/If-Match), `GET /provider/v1/tenants/{id}/modules`, `PUT .../modules/{moduleCode}` (ETag/If-Match),
+`POST .../admins` — all on the already-seeded `admin.tenant.*`/`admin.user.create` permissions (no new
+permission code or migration for RBAC; `x-module: platform`, since the provider console's own CRUD is
+exactly the shared-plumbing category `modulegate` never gates). UI: `/settings/provider` — a tenant list
+with an inline create form, per-row suspend/reactivate, and a selected tenant's module-toggle list + a
+first-admin form. Known gap: this codebase has no central sidebar/nav component to literally hide a
+disabled module's *menu* item from (every settings/feature page is reached by direct URL, confirmed by
+grepping for any such component before building this) — the "menu...ใช้ไม่ได้" half of the acceptance
+criterion is satisfied by the API gate itself: a disabled module's pages fail to load or write the moment
+`modulegate` blocks their own `/admin/v1` calls, so there's nothing left to "use" even though no menu item
+is hidden. Add menu-hiding once a real nav component exists for it to hide an item from. Tests: unit
+(`internal/platform/provider/service_test.go` — create/duplicate-code, suspend/reactivate transitions +
+stale ETag, the acceptance criterion directly via `ListTenantModules`/`SetTenantModule` — default enabled,
+explicit disable persists, a stale first-time claim refused, cross-tenant independence; `CreateFirstAdmin`
++ duplicate/unknown-role/unknown-tenant), `internal/pkg/modulegate/middleware_test.go` (the gate itself: no
+row passes, explicit disable blocks with `platform.module_disabled`, `iam` never gated, cross-tenant
+isolation), HTTP contract (401/403/404/412/428/409/422/201/200 through the real validator + AuthZ). Not
+done: the subdomain/custom-domain tenant resolver and break-glass cross-tenant access `docs/decisions.md`
+D-24 names (no `/public/v1` or break-glass consumer needs either yet — PLT-02's own identical deferral);
+quota enforcement (the `quota` jsonb column round-trips through `SetTenantModule`/`ListTenantModules` but
+nothing reads it to actually cap usage — no feature has asked for that yet).
 
 <a id="org-09"></a>
 ### ORG-09 จัดการผู้ใช้
@@ -335,6 +385,8 @@
 **Frontend (Next.js):** หน้าดู log ตามผู้ใช้ / โมดูล / ช่วงเวลา พร้อมรายละเอียด before/after
 
 **Acceptance criteria:** ตรวจได้ว่าใครเปลี่ยนสิทธิ์ของใคร เมื่อไร และส่งออกได้
+
+**Implementation (ORG-19):** `backend/internal/platform/audit/service/search.go` + `audit/http` — `GET /admin/v1/platform/audit-log` (`admin.audit.read`; กรองตามผู้กระทำ, ประเภท/รหัสรายการ, action ขึ้นต้นด้วย (โมดูล), ช่วงเวลา, `kind` = changes (ค่าเริ่มต้น) / requests (แถวต่อคำขอ API) / all; ใหม่สุดก่อน, cursor) · ชื่อผู้กระทำและชื่อเจ้าของรายการเมื่อ `entity_type = user` (รวมผู้ใช้ที่ปิดบัญชีแล้ว, `iamservice.AllNames`) · `GET …/export` (`admin.audit.export`) CSV UTF-8 BOM ไม่เกิน 50,000 แถว (ค่า config; มากกว่านั้น 422 `audit.export_too_large`) ป้องกัน formula injection และบันทึกการส่งออกเป็น `platform.audit.export` · `POST …/verify` ตรวจ hash chain ทันที · หน้าจอ `/settings/audit` · BFF ส่งต่อ `Content-Disposition` แล้ว · ส่งออกแบบ async ผ่านศูนย์ดาวน์โหลด (`export_jobs`) ยังไม่ทำ
 
 <a id="iam-04"></a>
 ### IAM-04 สิทธิ์ผู้ใช้ภายนอก (guest)
@@ -492,6 +544,63 @@
 **Frontend (Next.js):** กล่องคำขอรออนุมัติ + ประวัติ
 
 **Acceptance criteria:** ผู้ขอกับผู้อนุมัติต้องต่างคน และ action ไม่มีผลจนกว่าจะอนุมัติ
+
+**Implementation — done, scoped to granting the ORGADMIN role.** Of the module description's own four named
+actions, only "เปลี่ยน role ระดับ admin" has anywhere real to attach to: no write endpoint exists for the
+other three (bulk export's own endpoints — audit/ROPA/master-data/DSAR exports — already ship ungated, and
+gating all of them would be a much larger change than this feature's own BE S/FE S size calls for; a hard
+delete of consent data and an MFA-disable action don't exist at all yet). `admin.role` already carries the
+literal line "เปลี่ยน role ระดับ admin ต้องมีผู้อนุมัติ (IAM-06)" in this module's own permission table — and
+`iam.role_assignments.approval_id` has been a real FK to `platform.approvals` since the very first baseline
+migration, anticipating exactly this gate, unused until now.
+
+Built directly on PLT-08 (`internal/platform/versioning`), the same generic maker-checker engine CON's
+consent purposes already register with (no docs.Service layer needed — a module can register a record type
+with the engine directly). A new table, `iam.role_assignment_requests` (migration 00094), is the thin
+wrapper every other PLT-08-based feature in this codebase uses (notice.notices, dsar.intake_forms,
+breach.report_forms, ...) — one row per request, carrying the target user's and role's own names for the
+approval inbox/history, since the version's own snapshot jsonb is opaque to those generic screens.
+`internal/iam/service/role_assignment.go`'s `RequestRoleAssignment` (ORGADMIN, `admin.user.update`) opens
+and immediately submits one version — in_review, not left as an editable draft, since there's nothing else
+to draft-edit about a single role grant. The acceptance criterion's first half ("ผู้ขอกับผู้อนุมัติต้องต่าง
+คน") is PLT-08's own `ErrSelfApproval`, already enforced by every maker-checker flow in this codebase; the
+second half ("action ไม่มีผลจนกว่าจะอนุมัติ") is literal: the authz grants loader
+(`internal/iam/service/loader.go`'s `ListEffectiveRoleAssignments`) reads `iam.role_assignments` directly
+with no "approval decided" gate of its own, so the real grant row is only ever inserted by `ApplyRoleAssignment`
+(this feature's own `OnPublish` hook) — the one moment PLT-08 actually publishes the approved version.
+
+`GrantableRole = "ORGADMIN"` is the only role this endpoint will request: SUPER is platform-only (IAM-03's own
+`/provider/v1` console, never requested through a tenant endpoint), and every other role has no gated — or
+ungated — assignment path at all yet (ordinary role assignment stays IAM-01/02's own job, blocked on
+decisions.md Q-18's unresolved Keycloak model). Real import-cycle problem, not a design choice: `platform/
+versioning` already imports `iam/service` (to resolve a requester's/approver's display name), so `iam/service`
+can't import it back — fixed with `iam/service`'s own minimal `Versioning` interface (`SaveDraft`/`Submit`,
+mirroring only the two calls this feature needs) and `internal/wiring.RegisterIamVersioning`'s adapter, the
+same pattern IAM-05's own `Auditor`/`Notifier` workaround already established for the identical kind of cycle.
+No new permission code or grant: SEC decides purely by holding the Steps role ("SEC") — `versioning.Service.
+authorize`'s own "read" case already lets a caller through on step-role membership alone, with no separate
+permission check, the same as every other PLT-08 flow in this codebase.
+
+API: `GET`/`POST /admin/v1/iam/role-assignment-requests` (`admin.user.read`/`.update`),
+`GET /admin/v1/iam/role-assignment-requests/{id}`. The actual decide/publish steps are the already-generic
+`platformDecideApproval`/`platformPublishRecordVersion` endpoints — no new endpoint needed for those. UI: a
+new page, `/settings/role-requests` — a user-search request form (ORGADMIN only) and a history list, each
+row expanding into the shared `RecordVersions` component (`entityType="iam_role_assignment_request"`) to
+show the approval step and a publish button once approved (`admin.role.approve`); SEC's own decision still
+happens on the existing, generic `/approvals` inbox, unchanged. Tests: unit
+(`internal/iam/service/role_assignment_test.go` — the acceptance criterion directly: the requester holding
+every relevant permission still can't decide their own request (`ErrSelfApproval`); a different person (SEC)
+deciding then publishing is the only path that ever inserts the real `iam.role_assignments` row, and it
+reads back `ORGADMIN`; an unknown target user is refused before any version is opened; two-tenant isolation
+of the list), HTTP contract (`internal/iam/http/handler_test.go` — 401/403/422/201/200/404 through the real
+validator + AuthZ). Not verified live against a real Postgres/Redis in this pass — neither was reachable in
+this environment for this feature; every test compiles and vets clean and skips the same way the rest of
+this codebase's own suite already does without one. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on
+every touched file), `go test ./...` (no regressions, full backend suite — only the pre-existing, unrelated
+`internal/pkg/validate` failure), `make gen` re-run with no drift, `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the new
+`/settings/role-requests` route) all verified clean. Not done, deliberately (no endpoint exists yet to
+gate): export/consent-deletion/MFA-disable dual control — add each once that action itself ships.
 
 <a id="iam-07"></a>
 ### IAM-07 Break-glass และสิทธิ์ระดับสูง

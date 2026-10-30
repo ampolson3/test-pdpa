@@ -1,0 +1,51 @@
+package: govhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - govListRetentionSchedules
+    - govCreateRetentionSchedule
+    - govGetRetentionSchedule
+    - govSetRetentionScheduleStatus
+    - govListDisposalJobs
+    - govGetDisposalJob
+    - govApproveDisposalJob
+    - govStartDisposalJob
+    - govCompleteDisposalJob
+    - govReleaseDisposalJobHold
+    - govListPolicies
+    - govPublishPolicy
+    - govGetPolicy
+    - govAttestPolicy
+    - govListPolicyAttestations
+    - govListMissingAttestations
+    - govListRegulatorLetters
+    - govCreateRegulatorLetter
+    - govGetRegulatorLetter
+    - govUpdateRegulatorLetter
+    - govDeleteRegulatorLetter
+    - govSetRegulatorLetterStatus
+    - govListCourses
+    - govCreateCourse
+    - govGetCourse
+    - govUpdateCourse
+    - govSetCourseStatus
+    - govGetTrainingReport
+    - govStartAttempt
+    - govSubmitAttempt
+    - govListMyTrainingAttempts
+    - govListTrainingAssignments
+    - govAssignTraining
+    - govListMyTrainingAssignments
+    - govListAudits
+    - govRunAudit
+    - govGetAudit
+    - govDeleteAudit
+    - govListAuditFindings
+    - govAddAuditFinding
+    - govUpdateAuditFinding
+    - govSetAuditFindingStatus
+    - govAttachFindingEvidence
+    - govAssignFindingTask

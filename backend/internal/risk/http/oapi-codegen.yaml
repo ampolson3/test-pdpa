@@ -1,0 +1,33 @@
+package: riskhttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - riskListMatrices
+    - riskCreateMatrix
+    - riskGetMatrix
+    - riskUpdateMatrix
+    - riskDeleteMatrix
+    - riskGetLatestActivityScore
+    - riskScoreActivity
+    - riskListHighRiskActivityScores
+    - riskGetExecutiveReport
+    - riskListGapRules
+    - riskListOpenGapFindings
+    - riskListActivityGapFindings
+    - riskAnalyzeActivity
+    - riskGetActivityComplianceScore
+    - riskListComplianceScoreReport
+    - riskGetOrgUnitComplianceScore
+    - riskRemediateGapFinding
+    - riskListRisks
+    - riskCreateRisk
+    - riskGetRisk
+    - riskUpdateRiskEntry
+    - riskListAcceptances
+    - riskRecordAcceptance
+    - riskListActivityChecklists
+    - riskAnswerActivityChecklist
+    - riskGetActivityChecklist
