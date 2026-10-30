@@ -19,6 +19,7 @@ output-options:
     - noticeListLinkedDocuments
     - noticeAddLinkedDocument
     - noticeRemoveLinkedDocument
+    - noticeGetCctvSign
     - noticeListIndirectCollections
     - noticeRegisterIndirectCollection
     - noticeGetIndirectCollection

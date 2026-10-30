@@ -121,6 +121,13 @@ type Service struct {
 	EnforceChecklist bool
 	// EnforceTranslationSync gates PNG-05's translation-sync check at publish time; default true.
 	EnforceTranslationSync bool
+	// PDF and Image render PNG-12's own CCTV signage sheet (nil until a renderer is configured — the
+	// same render.FromEnv()/ImageFromEnv() wiring dataflow's own DFG-08 export already uses).
+	PDF   render.PDFRenderer
+	Image render.ImageRenderer
+	// PortalBaseURL resolves a notice's own public page for the CCTV sign's QR code — the same backend
+	// counterpart to PORTAL_PUBLIC_URL that CON-23's own double opt-in confirmation link already uses.
+	PortalBaseURL string
 }
 
 func (s *Service) audit(ctx context.Context, action string, id uuid.UUID, before, after any) error {

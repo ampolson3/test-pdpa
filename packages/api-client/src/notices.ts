@@ -237,6 +237,23 @@ export function useRecordNoticeAcknowledgement(client: ApiClient) {
   });
 }
 
+/** GET /admin/v1/notices/{id}/cctv-sign (PNG-12) — a plain href, not a query/mutation: the browser
+ *  downloads the printable CCTV signage sheet directly, the same pattern dataflowExportHref/riskReportHref
+ *  already use. fullNoticeId names the already-published notice the sign's QR code should open — "the full
+ *  version" of this standalone sign/short notice; omitted, the QR opens this notice's own public page. */
+export function cctvSignHref(
+  bffBaseUrl: string,
+  noticeId: string,
+  lang: "th" | "en" = "th",
+  format: "pdf" | "png" = "pdf",
+  paper: "a4" | "a3" = "a4",
+  fullNoticeId?: string,
+): string {
+  const q = new URLSearchParams({ lang, format, paper });
+  if (fullNoticeId) q.set("full_notice_id", fullNoticeId);
+  return `${bffBaseUrl}/admin/v1/notices/${noticeId}/cctv-sign?${q}`;
+}
+
 /** GET /admin/v1/notices/{id}/linked-documents (PNG-13) — reference documents linked from this notice. */
 export function useNoticeLinkedDocuments(client: ApiClient, id: string | undefined) {
   return useQuery({

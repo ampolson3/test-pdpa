@@ -1929,6 +1929,18 @@
         "link": "ลิงก์ธรรมดา"
       }
     },
+    "cctvSign": {
+      "title": "ป้าย CCTV (PNG-12)",
+      "show": "ดูป้าย CCTV",
+      "hide": "ซ่อนป้าย CCTV",
+      "fullNotice": "QR เปิดฉบับเต็ม",
+      "fullNoticeThisOne": "ประกาศนี้ (ป้ายฉบับเดี่ยว)",
+      "lang": "ภาษา",
+      "format": "รูปแบบไฟล์",
+      "paper": "ขนาดกระดาษ",
+      "download": "ดาวน์โหลดป้าย",
+      "hint": "ป้ายพิมพ์ได้ที่มี QR code เปิดประกาศฉบับเต็มของประกาศที่เลือก"
+    },
     "industryTemplates": {
       "retail": "ค้าปลีก",
       "hospital": "โรงพยาบาล",

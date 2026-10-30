@@ -351,6 +351,7 @@ export {
   useNoticeLinkedDocuments,
   useAddNoticeLinkedDocument,
   useRemoveNoticeLinkedDocument,
+  cctvSignHref,
   useTemplateGroups,
   useIndustryTemplates,
   useIndirectCollections,

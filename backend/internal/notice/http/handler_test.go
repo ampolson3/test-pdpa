@@ -331,6 +331,18 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 		t.Errorf("linked-documents, unknown notice: %d, want 404", code)
 	}
 
+	// PNG-12 CCTV signage.
+	cctvSign := item + "/cctv-sign"
+	if code, _ := do("GET", cctvSign, nil, nil); code != 401 {
+		t.Errorf("cctv-sign, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", cctvSign, &viewer, nil); code != 422 || !strings.Contains(body, "notice.invalid_input") {
+		t.Errorf("cctv-sign, not published yet: %d %s, want 422", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/notices/"+uuid.New().String()+"/cctv-sign", &viewer, nil); code != 404 {
+		t.Errorf("cctv-sign, unknown notice: %d, want 404", code)
+	}
+
 	// PNG-04 indirect-collection notices (ม.25).
 	icBase := "/admin/v1/notices/indirect-collections"
 	if code, _ := do("GET", icBase, nil, nil); code != 401 {

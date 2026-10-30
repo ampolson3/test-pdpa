@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -431,6 +432,60 @@ func (e NoticeGetNoticeParamsAcceptLanguage) Valid() bool {
 	case NoticeGetNoticeParamsAcceptLanguageEn:
 		return true
 	case NoticeGetNoticeParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NoticeGetCctvSignParamsLang.
+const (
+	NoticeGetCctvSignParamsLangEn NoticeGetCctvSignParamsLang = "en"
+	NoticeGetCctvSignParamsLangTh NoticeGetCctvSignParamsLang = "th"
+)
+
+// Valid indicates whether the value is a known member of the NoticeGetCctvSignParamsLang enum.
+func (e NoticeGetCctvSignParamsLang) Valid() bool {
+	switch e {
+	case NoticeGetCctvSignParamsLangEn:
+		return true
+	case NoticeGetCctvSignParamsLangTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NoticeGetCctvSignParamsFormat.
+const (
+	Pdf NoticeGetCctvSignParamsFormat = "pdf"
+	Png NoticeGetCctvSignParamsFormat = "png"
+)
+
+// Valid indicates whether the value is a known member of the NoticeGetCctvSignParamsFormat enum.
+func (e NoticeGetCctvSignParamsFormat) Valid() bool {
+	switch e {
+	case Pdf:
+		return true
+	case Png:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NoticeGetCctvSignParamsPaper.
+const (
+	A3 NoticeGetCctvSignParamsPaper = "a3"
+	A4 NoticeGetCctvSignParamsPaper = "a4"
+)
+
+// Valid indicates whether the value is a known member of the NoticeGetCctvSignParamsPaper enum.
+func (e NoticeGetCctvSignParamsPaper) Valid() bool {
+	switch e {
+	case A3:
+		return true
+	case A4:
 		return true
 	default:
 		return false
@@ -958,6 +1013,23 @@ type NoticeGetNoticeParams struct {
 // NoticeGetNoticeParamsAcceptLanguage defines parameters for NoticeGetNotice.
 type NoticeGetNoticeParamsAcceptLanguage string
 
+// NoticeGetCctvSignParams defines parameters for NoticeGetCctvSign.
+type NoticeGetCctvSignParams struct {
+	FullNoticeId *Uuid                          `form:"full_notice_id,omitempty" json:"full_notice_id,omitempty"`
+	Lang         *NoticeGetCctvSignParamsLang   `form:"lang,omitempty" json:"lang,omitempty"`
+	Format       *NoticeGetCctvSignParamsFormat `form:"format,omitempty" json:"format,omitempty"`
+	Paper        *NoticeGetCctvSignParamsPaper  `form:"paper,omitempty" json:"paper,omitempty"`
+}
+
+// NoticeGetCctvSignParamsLang defines parameters for NoticeGetCctvSign.
+type NoticeGetCctvSignParamsLang string
+
+// NoticeGetCctvSignParamsFormat defines parameters for NoticeGetCctvSign.
+type NoticeGetCctvSignParamsFormat string
+
+// NoticeGetCctvSignParamsPaper defines parameters for NoticeGetCctvSign.
+type NoticeGetCctvSignParamsPaper string
+
 // NoticeGetChecklistParams defines parameters for NoticeGetChecklist.
 type NoticeGetChecklistParams struct {
 	// AcceptLanguage Language of messages and localized fields (default th)
@@ -1100,6 +1172,9 @@ type ServerInterface interface {
 	// NoticeGetNotice One notice, with the RoPA activities it covers
 	// (GET /admin/v1/notices/{id})
 	NoticeGetNotice(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetNoticeParams)
+	// NoticeGetCctvSign PNG-12: a printable CCTV signage sheet with a QR code opening the full notice (this notice, or another already-published one named by full_notice_id — the ฉบับย่อ/ฉบับเต็ม pairing)
+	// (GET /admin/v1/notices/{id}/cctv-sign)
+	NoticeGetCctvSign(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetCctvSignParams)
 	// NoticeGetChecklist The six ม.23 mandatory topics and whether each is filled in (PNG-02) — a notice's document can't be published while any is missing
 	// (GET /admin/v1/notices/{id}/checklist)
 	NoticeGetChecklist(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetChecklistParams)
@@ -1184,6 +1259,12 @@ func (_ Unimplemented) NoticeListTemplateGroups(w http.ResponseWriter, r *http.R
 // NoticeGetNotice One notice, with the RoPA activities it covers
 // (GET /admin/v1/notices/{id})
 func (_ Unimplemented) NoticeGetNotice(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetNoticeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// NoticeGetCctvSign PNG-12: a printable CCTV signage sheet with a QR code opening the full notice (this notice, or another already-published one named by full_notice_id — the ฉบับย่อ/ฉบับเต็ม pairing)
+// (GET /admin/v1/notices/{id}/cctv-sign)
+func (_ Unimplemented) NoticeGetCctvSign(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetCctvSignParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1751,6 +1832,87 @@ func (siw *ServerInterfaceWrapper) NoticeGetNotice(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.NoticeGetNotice(w, r, id, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// NoticeGetCctvSign operation middleware
+func (siw *ServerInterfaceWrapper) NoticeGetCctvSign(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params NoticeGetCctvSignParams
+
+	// ------------- Optional query parameter "full_notice_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "full_notice_id", r.URL.Query(), &params.FullNoticeId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "full_notice_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "full_notice_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "lang" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "lang", r.URL.Query(), &params.Lang, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "lang"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "lang", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "format" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "format", r.URL.Query(), &params.Format, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "format"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "format", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "paper" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "paper", r.URL.Query(), &params.Paper, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "paper"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "paper", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.NoticeGetCctvSign(w, r, id, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2440,6 +2602,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/admin/v1/notices/{id}/linked-documents/{linkedDocumentId}", wrapper.NoticeRemoveLinkedDocument)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/notices/{id}/cctv-sign", wrapper.NoticeGetCctvSign)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/notices/indirect-collections", wrapper.NoticeListIndirectCollections)
@@ -3195,6 +3360,121 @@ func (response NoticeGetNotice404ApplicationProblemPlusJSONResponse) VisitNotice
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetCctvSignRequestObject struct {
+	Id     Uuid `json:"id"`
+	Params NoticeGetCctvSignParams
+}
+
+type NoticeGetCctvSignResponseObject interface {
+	VisitNoticeGetCctvSignResponse(w http.ResponseWriter) error
+}
+
+type NoticeGetCctvSign200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type NoticeGetCctvSign200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       NoticeGetCctvSign200ResponseHeaders
+	ContentLength int64
+}
+
+func (response NoticeGetCctvSign200ApplicationoctetStreamResponse) VisitNoticeGetCctvSignResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type NoticeGetCctvSign401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeGetCctvSign401ApplicationProblemPlusJSONResponse) VisitNoticeGetCctvSignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetCctvSign403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeGetCctvSign403ApplicationProblemPlusJSONResponse) VisitNoticeGetCctvSignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetCctvSign404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeGetCctvSign404ApplicationProblemPlusJSONResponse) VisitNoticeGetCctvSignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetCctvSign422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response NoticeGetCctvSign422ApplicationProblemPlusJSONResponse) VisitNoticeGetCctvSignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type NoticeGetCctvSign503ApplicationProblemPlusJSONResponse Problem
+
+func (response NoticeGetCctvSign503ApplicationProblemPlusJSONResponse) VisitNoticeGetCctvSignResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -3985,6 +4265,9 @@ type StrictServerInterface interface {
 	// NoticeGetNotice One notice, with the RoPA activities it covers
 	// (GET /admin/v1/notices/{id})
 	NoticeGetNotice(ctx context.Context, request NoticeGetNoticeRequestObject) (NoticeGetNoticeResponseObject, error)
+	// NoticeGetCctvSign PNG-12: a printable CCTV signage sheet with a QR code opening the full notice (this notice, or another already-published one named by full_notice_id — the ฉบับย่อ/ฉบับเต็ม pairing)
+	// (GET /admin/v1/notices/{id}/cctv-sign)
+	NoticeGetCctvSign(ctx context.Context, request NoticeGetCctvSignRequestObject) (NoticeGetCctvSignResponseObject, error)
 	// NoticeGetChecklist The six ม.23 mandatory topics and whether each is filled in (PNG-02) — a notice's document can't be published while any is missing
 	// (GET /admin/v1/notices/{id}/checklist)
 	NoticeGetChecklist(ctx context.Context, request NoticeGetChecklistRequestObject) (NoticeGetChecklistResponseObject, error)
@@ -4304,6 +4587,33 @@ func (sh *strictHandler) NoticeGetNotice(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(NoticeGetNoticeResponseObject); ok {
 		if err := validResponse.VisitNoticeGetNoticeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// NoticeGetCctvSign operation middleware
+func (sh *strictHandler) NoticeGetCctvSign(w http.ResponseWriter, r *http.Request, id Uuid, params NoticeGetCctvSignParams) {
+	var request NoticeGetCctvSignRequestObject
+
+	request.Id = id
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.NoticeGetCctvSign(ctx, request.(NoticeGetCctvSignRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "NoticeGetCctvSign")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(NoticeGetCctvSignResponseObject); ok {
+		if err := validResponse.VisitNoticeGetCctvSignResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

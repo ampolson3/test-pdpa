@@ -23,6 +23,7 @@ import {
   useRecordNoticeAcknowledgement,
   useSetNoticePublishIntent,
   useTemplateGroups,
+  cctvSignHref,
   type ApiClient,
   type Notice,
   type NoticeAckChannel,
@@ -237,6 +238,64 @@ function AckPanel({ client, notice, versionNo }: { client: ApiClient; notice: No
   );
 }
 
+/** PNG-12: a printable CCTV signage sheet (A4/A3, PDF or PNG) whose QR code opens the full notice —
+ *  this notice's own public page, or another already-published notice's (the ฉบับย่อ/ฉบับเต็ม pairing),
+ *  picked from the same list of notices this page already loaded. */
+function CctvSignPanel({ notice, allNotices }: { notice: Notice; allNotices: Notice[] }) {
+  const t = useTranslations("notices");
+  const [lang, setLang] = useState<"th" | "en">("th");
+  const [format, setFormat] = useState<"pdf" | "png">("pdf");
+  const [paper, setPaper] = useState<"a4" | "a3">("a4");
+  const [fullNoticeId, setFullNoticeId] = useState("");
+  const published = allNotices.filter((x) => x.id !== notice.id && x.status === "published");
+
+  return (
+    <div className="space-y-2 rounded-md border border-slate-200 bg-white p-3" data-testid="cctv-sign-panel">
+      <h4 className="font-medium">{t("cctvSign.title")}</h4>
+      <div className="flex flex-wrap items-end gap-2">
+        <label>
+          <span className="block text-slate-600">{t("cctvSign.fullNotice")}</span>
+          <select className={INPUT} value={fullNoticeId} onChange={(e) => setFullNoticeId(e.target.value)}>
+            <option value="">{t("cctvSign.fullNoticeThisOne")}</option>
+            {published.map((p) => (
+              <option key={p.id} value={p.id}>{p.title}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className="block text-slate-600">{t("cctvSign.lang")}</span>
+          <select className={INPUT} value={lang} onChange={(e) => setLang(e.target.value as "th" | "en")}>
+            <option value="th">ไทย</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+        <label>
+          <span className="block text-slate-600">{t("cctvSign.format")}</span>
+          <select className={INPUT} value={format} onChange={(e) => setFormat(e.target.value as "pdf" | "png")}>
+            <option value="pdf">PDF</option>
+            <option value="png">PNG</option>
+          </select>
+        </label>
+        <label>
+          <span className="block text-slate-600">{t("cctvSign.paper")}</span>
+          <select className={INPUT} value={paper} onChange={(e) => setPaper(e.target.value as "a4" | "a3")}>
+            <option value="a4">A4</option>
+            <option value="a3">A3</option>
+          </select>
+        </label>
+        <a
+          className="inline-block rounded-md bg-sky-700 px-3 py-1.5 text-white"
+          href={cctvSignHref("/api/bff", notice.id, lang, format, paper, fullNoticeId || undefined)}
+          data-testid="cctv-sign-download"
+        >
+          {t("cctvSign.download")}
+        </a>
+      </div>
+      <p className="text-xs text-slate-500">{t("cctvSign.hint")}</p>
+    </div>
+  );
+}
+
 /** PNG-13: reference documents linked from a notice (retention schedule, security policy, ...), each
  *  shown per its own display mode (inline / popup / link) on the public page. */
 function LinkedDocumentsPanel({ client, noticeId }: { client: ApiClient; noticeId: string }) {
@@ -366,6 +425,7 @@ export function NoticesContent({ portalUrl }: { portalUrl: string }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [versionsOpen, setVersionsOpen] = useState<string | null>(null);
   const [linkedOpen, setLinkedOpen] = useState<string | null>(null);
+  const [cctvOpen, setCctvOpen] = useState<string | null>(null);
 
   const list = useNotices(client, {});
   const wizard = useCreateNoticeWizard(client);
@@ -481,7 +541,8 @@ export function NoticesContent({ portalUrl }: { portalUrl: string }) {
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr><th className="px-3 py-2">{t("form.noticeTitle")}</th><th className="px-3 py-2">{t("form.noticeType")}</th>
               <th className="px-3 py-2">{t("statusLabel")}</th><th className="px-3 py-2">{t("form.slug")}</th><th className="px-3 py-2">{t("checklist.title")}</th>
-              <th className="px-3 py-2">{t("versions.title")}</th><th className="px-3 py-2">{t("linkedDocuments.title")}</th></tr>
+              <th className="px-3 py-2">{t("versions.title")}</th><th className="px-3 py-2">{t("linkedDocuments.title")}</th>
+              <th className="px-3 py-2">{t("cctvSign.title")}</th></tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((n) => (
@@ -506,25 +567,37 @@ export function NoticesContent({ portalUrl }: { portalUrl: string }) {
                       {linkedOpen === n.id ? t("linkedDocuments.hide") : t("linkedDocuments.show")}
                     </button>
                   </td>
+                  <td className="px-3 py-2">
+                    <button type="button" className="text-sky-700 underline" onClick={() => setCctvOpen(cctvOpen === n.id ? null : n.id)} data-testid={`cctv-sign-toggle-${n.id}`}>
+                      {cctvOpen === n.id ? t("cctvSign.hide") : t("cctvSign.show")}
+                    </button>
+                  </td>
                 </tr>
                 {expanded === n.id && (
                   <tr>
-                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={8} className="bg-slate-50 px-3 py-3">
                       <ChecklistPanel client={client} noticeId={n.id} />
                     </td>
                   </tr>
                 )}
                 {versionsOpen === n.id && (
                   <tr>
-                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={8} className="bg-slate-50 px-3 py-3">
                       <VersionsPanel client={client} notice={n} portalUrl={portalUrl} locale={locale} />
                     </td>
                   </tr>
                 )}
                 {linkedOpen === n.id && (
                   <tr>
-                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={8} className="bg-slate-50 px-3 py-3">
                       <LinkedDocumentsPanel client={client} noticeId={n.id} />
+                    </td>
+                  </tr>
+                )}
+                {cctvOpen === n.id && (
+                  <tr>
+                    <td colSpan={8} className="bg-slate-50 px-3 py-3">
+                      <CctvSignPanel notice={n} allNotices={rows} />
                     </td>
                   </tr>
                 )}

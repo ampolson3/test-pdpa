@@ -15033,6 +15033,70 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/notices/{id}/cctv-sign:
+    get:
+      operationId: noticeGetCctvSign
+      tags: [notice]
+      summary: 'PNG-12: a printable CCTV signage sheet with a QR code opening the full notice (this notice, or another already-published one named by full_notice_id — the ฉบับย่อ/ฉบับเต็ม pairing)'
+      x-permission: notice.document.read
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: full_notice_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: lang
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [th, en]
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pdf, png]
+        - name: paper
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [a4, a3]
+      responses:
+        '200':
+          description: The CCTV signage file
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          description: Rendering is not configured
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
   /admin/v1/notices/indirect-collections:
     get:
       operationId: noticeListIndirectCollections

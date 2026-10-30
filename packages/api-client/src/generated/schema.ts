@@ -5151,6 +5151,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/notices/{id}/cctv-sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** PNG-12: a printable CCTV signage sheet with a QR code opening the full notice (this notice, or another already-published one named by full_notice_id — the ฉบับย่อ/ฉบับเต็ม pairing) */
+        get: operations["noticeGetCctvSign"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/notices/indirect-collections": {
         parameters: {
             query?: never;
@@ -24323,6 +24340,47 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    noticeGetCctvSign: {
+        parameters: {
+            query?: {
+                full_notice_id?: components["schemas"]["Uuid"];
+                lang?: "th" | "en";
+                format?: "pdf" | "png";
+                paper?: "a4" | "a3";
+            };
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The CCTV signage file */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+            /** @description Rendering is not configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
         };
     };
     noticeListIndirectCollections: {

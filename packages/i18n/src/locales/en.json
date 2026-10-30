@@ -1929,6 +1929,18 @@
         "link": "Plain link"
       }
     },
+    "cctvSign": {
+      "title": "CCTV signage (PNG-12)",
+      "show": "Show CCTV sign",
+      "hide": "Hide CCTV sign",
+      "fullNotice": "QR opens",
+      "fullNoticeThisOne": "This notice (standalone sign)",
+      "lang": "Language",
+      "format": "Format",
+      "paper": "Paper size",
+      "download": "Download sign",
+      "hint": "A printable sign whose QR code opens the chosen notice's full public page."
+    },
     "industryTemplates": {
       "retail": "Retail",
       "hospital": "Hospital",

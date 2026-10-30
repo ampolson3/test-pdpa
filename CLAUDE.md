@@ -5619,6 +5619,53 @@ drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n tes
 @pdpa/admin build`/`typecheck` (incl. the updated `/notices` route) and `pnpm --filter @pdpa/portal
 build`/`typecheck` (incl. the updated `/[locale]/n/[key]` route) all verified clean.
 
+### PNG-12 ประกาศแบบหลายชั้นและป้าย CCTV (`docs/modules/PNG.md#png-12`) — done
+Read literally against its own acceptance criterion ("ป้าย CCTV พิมพ์ได้และ QR เปิดฉบับเต็มได้" — a CCTV sign
+is printable and its QR opens the full version): the ฉบับย่อ/ฉบับเต็ม (short/full) pairing needs no persisted
+relation at all — a "short" notice is just an ordinary notice (PNG-01's own `notice_type` already covers
+`layered_short`/`cctv`), and the caller picks which already-published notice is "the full version" at
+sign-*generation* time via an optional `full_notice_id` query parameter, since nothing else in this feature
+needs that link stored. No migration. The real new work is the signage sheet itself.
+
+`internal/notice/service/cctv_sign.go`'s `GenerateCCTVSign` resolves the target notice (defaulting to the
+notice being signed itself when `full_notice_id` is omitted — a standalone CCTV sign needs no separate full
+version), refuses one that isn't published yet (`ErrInvalid` — the acceptance criterion's own implicit
+precondition: a QR can't open a page that doesn't exist publicly), builds the public URL from
+`s.PortalBaseURL` + the resolved notice's own `public_key` (the same backend-side `PORTAL_PUBLIC_URL`
+counterpart CON-23's own double opt-in link already established) and language, encodes it as a QR PNG via a
+new dependency, `github.com/skip2/go-qrcode` (added rather than hand-rolled — Reed-Solomon error correction
+is high-risk to get right with no real decoder to test against, and the module proxy is reachable here, the
+same reasoning CON-04's own `chromedp` dependency already used), and embeds it as a base64 `data:image/png`
+`<img>` in a small hand-built HTML sign (bilingual static CCTV-notice text, `render.FontFaces()` for correct
+Thai glyph rendering — the exact pattern DFG-08's own `dataflow/service/export.go` already established for
+its own on-demand screenshot/print HTML). Rendered to PDF (A4/A3, `@page{size:...}` CSS) via the existing
+`render.PDFRenderer`/`render.FromEnv()` or to PNG (fixed pixel dimensions per paper size) via
+`render.ImageRenderer`/`render.ImageFromEnv()` — both already wired for `cmd/api`'s own `noticeSvc` (`PDF`/
+`Image` fields, nil-means-skip, refusing with `render.ErrNoRenderer`/`render.ErrNoImageRenderer` → 503
+`notice.no_renderer` when neither is configured, the same binary-response pattern RRA-14/DFG-08 already use).
+
+API: `GET /admin/v1/notices/{id}/cctv-sign` (`notice.document.read`, `application/octet-stream` +
+`Content-Disposition: attachment`, query params `full_notice_id`/`lang` (th/en)/`format` (pdf/png)/`paper`
+(a4/a3), added to `internal/notice/http/oapi-codegen.yaml`'s own `include-operation-ids` allowlist — the
+recurring gotcha several prior features already hit). UI: a "CCTV signage" panel per row on `/notices`
+(`CctvSignPanel` — a full-notice picker defaulting to "this notice," lang/format/paper selects, and a plain
+`<a href>` download link through the BFF via the new `cctvSignHref` helper — the same "href, not hook" pattern
+RRA-14's `riskReportHref`/DFG-08's `dataflowExportHref` already use, since this is a one-click file download,
+not a query/mutation). Tests: unit (`internal/notice/service/png12_cctv_sign_test.go` — the acceptance
+criterion's own precondition directly: an unpublished own notice, an unknown `full_notice_id`, and an
+unpublished `full_notice_id` are all refused as `ErrInvalid` before any rendering is attempted; a bad
+lang/format/paper is refused the same way; pdf/png with no renderer configured is refused distinctly as
+`render.ErrNoRenderer`/`render.ErrNoImageRenderer`), HTTP contract (`internal/notice/http/handler_test.go`'s
+existing `TestNoticeEndpoints_Contract`, extended with 401/422/404 through the real validator + AuthZ). Not
+verified live against a real Postgres/Redis in this pass — neither was reachable in this environment for this
+feature; every test compiles and vets clean and skips the same way the rest of this module's own suite
+already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file, matching the
+same pre-existing stable violation list every recent pass in this codebase already discloses), `go test
+./...` (no regressions, full backend suite — only the pre-existing, unrelated `internal/pkg/validate`
+failure), `make gen` re-run with no drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter
+@pdpa/i18n test` and `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated `/notices` route) all
+verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

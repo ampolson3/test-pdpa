@@ -686,6 +686,13 @@ wizard's `template_group` field ตัวเดิมใช้คัดลอก
 
 **Acceptance criteria:** ป้าย CCTV พิมพ์ได้และ QR เปิดฉบับเต็มได้
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### PNG-12`. สรุป: ฉบับย่อ+ฉบับเต็มไม่มีความสัมพันธ์
+ที่ต้องเก็บถาวร — เลือก "ฉบับเต็ม" ตอนสร้างป้าย (`full_notice_id` query param ตัวเลือก) เนื่องจาก
+ไม่มีฟีเจอร์อื่นต้องใช้ความเชื่อมโยงนี้แบบถาวร ไม่มี migration ใหม่ ป้าย CCTV สร้างเป็น PDF (A4/A3) หรือ PNG
+ผ่าน `render.PDFRenderer`/`render.ImageRenderer` ตัวเดิมที่ DFG-08 ใช้อยู่แล้ว, ฝัง QR code (dependency ใหม่
+`go-qrcode`) ที่เปิดหน้า public ของประกาศฉบับเต็มบน portal (`PortalBaseURL` + `public_key`) —
+`GET /admin/v1/notices/{id}/cctv-sign` (`notice.document.read`).
+
 <a id="png-15"></a>
 ### PNG-15 แจ้งเตือนทบทวนตามรอบ
 
