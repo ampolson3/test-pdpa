@@ -412,6 +412,24 @@ agreement-module test this session.
 
 **Acceptance criteria:** แก้ clause แล้วเอกสารใหม่ใช้เวอร์ชันล่าสุด
 
+**Implementation — done, no new code.** Already fully built by PLT-16's own clause library
+(`internal/platform/docs/library.go`) plus DPA-03/DSA-05's `AddClause`/`MissingMandatoryClauses` — the
+same "done, no new code" pattern this codebase already used for ROPA-07/PNG-14/DSA-09. `platform.
+clause_library` is versioned TH/EN per code (`Clause.VersionNo`, draft → published → retired); publishing a
+new version retires the previous one, so `ListClauses` (the picker `AddClause` and the `/documents/clauses`
+page both read) always returns the latest published version per code for a *new* attachment — "เอกสารใหม่ใช้
+เวอร์ชันล่าสุด" literally. A document that already cited an older version (`ClauseRef(code, versionNo)`,
+`agreement.clauses.clause_version_no` pinned at attach time) keeps rendering that exact text — proven
+directly by the pre-existing `TestClauseVersions` (`internal/platform/docs/docs_test.go`): editing a
+published clause creates version 2 as a draft, publishing it retires version 1, `ListClauses` then returns
+only version 2, and a document built with `ClauseRef("...", 1)` still renders version 1's own words. The
+page itself ("หน้าคลัง clause") already exists at `/documents/clauses`
+(`apps/admin/src/app/[locale]/documents/clauses/clauses-content.tsx`), whose own comment already reads "The
+clause library (DSA-06 / PLT-16): the latest version of each clause; editing a published one starts the
+next version" — th/en editor, version history list, publish/retire actions, shared by both `dpa` and `dsa`
+(`appliesTo` covers both). Marked done as documentation only (backlog + module doc) — no migration, code or
+test changes needed.
+
 <a id="dsa-07"></a>
 ### DSA-07 ภาคผนวกประกอบข้อตกลง
 
