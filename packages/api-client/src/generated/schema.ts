@@ -5116,6 +5116,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/notices/{id}/linked-documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reference documents linked from a notice (PNG-13) — a retention schedule, security policy, or anything else, each with its own display mode */
+        get: operations["noticeListLinkedDocuments"];
+        put?: never;
+        /** Link a reference document to a notice, with how it should be shown (inline / popup / link) */
+        post: operations["noticeAddLinkedDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/notices/{id}/linked-documents/{linkedDocumentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink a reference document from a notice */
+        delete: operations["noticeRemoveLinkedDocument"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/notices/indirect-collections": {
         parameters: {
             query?: never;
@@ -10115,6 +10150,30 @@ export interface components {
             occurred_at: components["schemas"]["Timestamp"];
             ip?: string | null;
         };
+        /** @enum {string} */
+        NoticeLinkedDocumentDisplayMode: "inline" | "popup" | "link";
+        NoticeLinkedDocumentInput: {
+            label: string;
+            url?: string;
+            file_id?: components["schemas"]["Uuid"];
+            display_mode: components["schemas"]["NoticeLinkedDocumentDisplayMode"];
+        };
+        NoticeLinkedDocument: {
+            id: components["schemas"]["Uuid"];
+            notice_id: components["schemas"]["Uuid"];
+            label: string;
+            url?: string | null;
+            file_id?: components["schemas"]["Uuid"] | null;
+            display_mode: components["schemas"]["NoticeLinkedDocumentDisplayMode"];
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        PublicNoticeLinkedDocument: {
+            label: string;
+            display_mode: components["schemas"]["NoticeLinkedDocumentDisplayMode"];
+            /** @description Resolved — the stored url */
+            url: string;
+        };
         PublicNotice: {
             title: string;
             notice_type: components["schemas"]["NoticeType"];
@@ -10126,6 +10185,7 @@ export interface components {
             content: {
                 [key: string]: string;
             };
+            linked_documents?: components["schemas"]["PublicNoticeLinkedDocument"][];
         };
         PublicNoticeVersion: {
             version_no: number;
@@ -24172,6 +24232,97 @@ export interface operations {
             404: components["responses"]["NotFound"];
             412: components["responses"]["PreconditionFailed"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    noticeListLinkedDocuments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["NoticeLinkedDocument"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    noticeAddLinkedDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoticeLinkedDocumentInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoticeLinkedDocument"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    noticeRemoveLinkedDocument: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+                linkedDocumentId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     noticeListIndirectCollections: {

@@ -83,6 +83,27 @@ func (e NoticeAckChannel) Valid() bool {
 	}
 }
 
+// Defines values for NoticeLinkedDocumentDisplayMode.
+const (
+	Inline NoticeLinkedDocumentDisplayMode = "inline"
+	Link   NoticeLinkedDocumentDisplayMode = "link"
+	Popup  NoticeLinkedDocumentDisplayMode = "popup"
+)
+
+// Valid indicates whether the value is a known member of the NoticeLinkedDocumentDisplayMode enum.
+func (e NoticeLinkedDocumentDisplayMode) Valid() bool {
+	switch e {
+	case Inline:
+		return true
+	case Link:
+		return true
+	case Popup:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for NoticeType.
 const (
 	Cctv          NoticeType = "cctv"
@@ -261,6 +282,9 @@ type FormConditionOp string
 // NoticeAckChannel defines model for NoticeAckChannel.
 type NoticeAckChannel string
 
+// NoticeLinkedDocumentDisplayMode defines model for NoticeLinkedDocumentDisplayMode.
+type NoticeLinkedDocumentDisplayMode string
+
 // NoticePublicDownloadResult defines model for NoticePublicDownloadResult.
 type NoticePublicDownloadResult struct {
 	// DownloadUrl A short-lived, pre-signed URL for the notice's own already-rendered Word/PDF file
@@ -285,16 +309,26 @@ type Problem struct {
 // PublicNotice defines model for PublicNotice.
 type PublicNotice struct {
 	// Content One rendered HTML body per language, merge fields and clauses already resolved
-	Content       map[string]string       `json:"content"`
-	EffectiveFrom openapi_types.Date      `json:"effective_from"`
-	Languages     []PublicNoticeLanguages `json:"languages"`
-	NoticeType    NoticeType              `json:"notice_type"`
-	Title         string                  `json:"title"`
-	VersionNo     int                     `json:"version_no"`
+	Content         map[string]string             `json:"content"`
+	EffectiveFrom   openapi_types.Date            `json:"effective_from"`
+	Languages       []PublicNoticeLanguages       `json:"languages"`
+	LinkedDocuments *[]PublicNoticeLinkedDocument `json:"linked_documents,omitempty"`
+	NoticeType      NoticeType                    `json:"notice_type"`
+	Title           string                        `json:"title"`
+	VersionNo       int                           `json:"version_no"`
 }
 
 // PublicNoticeLanguages defines model for PublicNotice.Languages.
 type PublicNoticeLanguages string
+
+// PublicNoticeLinkedDocument defines model for PublicNoticeLinkedDocument.
+type PublicNoticeLinkedDocument struct {
+	DisplayMode NoticeLinkedDocumentDisplayMode `json:"display_mode"`
+	Label       string                          `json:"label"`
+
+	// Url Resolved — the stored url
+	Url string `json:"url"`
+}
 
 // PublicNoticeVersion defines model for PublicNoticeVersion.
 type PublicNoticeVersion struct {

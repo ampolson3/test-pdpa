@@ -16,6 +16,9 @@ output-options:
     - noticeListAcknowledgements
     - noticeRecordAcknowledgement
     - noticeSetPublishIntent
+    - noticeListLinkedDocuments
+    - noticeAddLinkedDocument
+    - noticeRemoveLinkedDocument
     - noticeListIndirectCollections
     - noticeRegisterIndirectCollection
     - noticeGetIndirectCollection

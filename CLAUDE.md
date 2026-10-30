@@ -5581,6 +5581,44 @@ clauses-content.tsx`), whose own comment already reads "The clause library (DSA-
 version of each clause; editing a published one starts the next version" — shared by both `dpa` and `dsa`.
 Marked done as documentation only (backlog + module doc) — no migration, code or test changes needed.
 
+### PNG-13 ลิงก์เอกสารอ้างอิงในประกาศ (`docs/modules/PNG.md#png-13`) — done
+`notice.linked_documents` was already fully specified in the baseline migrations (`label`, `url`, `file_id`,
+`display_mode` CHECK `inline`/`popup`/`link`) — completely unused by any code until now, so no new migration.
+`internal/notice/service/linked_documents.go`: `AddLinkedDocument`/`ListLinkedDocuments`/
+`RemoveLinkedDocument` are plain CRUD proving the notice visible first (rule 1, via `GetNotice`) — exactly one
+of `url`/`file_id` is required, never both; a `file_id` must be the caller's own clean, still-unattached
+PLT-09 upload (`Files.Get` + `Files.AttachSystem` against a new `LinkedDocumentType` entity type, the same
+"caller's own clean upload" pattern PNG-04's evidence file already uses). No new permission code — reuses
+`notice.document.{read,update}`.
+
+The acceptance criterion itself ("ลิงก์แสดงตามรูปแบบที่ตั้ง") is proven on the public page, not just the
+admin data: `PublicLinkedDocumentURL` resolves each link to a real URL (the stored url, or a short-lived
+signed link to the attached file via `Files.SignedURL`) with no permission check — the same no-gate reasoning
+`PublicVersionHTML`/`PublicVersionFile` already use, since the caller already proved the notice is published.
+`GET /public/v1/notices/{key}` (PNG-06) now also returns `linked_documents` (label, display_mode, resolved
+url); a link that fails to resolve (e.g. no file renderer configured) is silently skipped rather than failing
+the whole page. The portal's own `/[locale]/n/[key]` page renders each one per its own `display_mode`
+literally: `inline` as an embedded `<iframe>`, `popup` as a link opening in a new tab/window
+(`target="_blank"`), `link` as a plain same-tab anchor.
+
+API: `GET`/`POST /admin/v1/notices/{id}/linked-documents`, `DELETE
+/admin/v1/notices/{id}/linked-documents/{linkedDocumentId}` — the same list+create+delete child-table shape
+ROPA-03/CON-02's own sub-resources already use (no per-row update; editing is remove+re-add). UI: a "Linked
+documents" toggle per row on `/notices` (label/url/display-mode form + a remove action, gated on
+`notice.document.update`). Tests: unit (`internal/notice/service/png13_linked_documents_test.go` — the data
+half directly: a url-based link round-trips, lists and removes cleanly; validation (empty label, bad
+display_mode, neither/both of url and file_id, a file_id refused with no `Files` configured); the public
+resolution directly (`PublicLinkedDocumentURL` returns the stored url); two-tenant isolation), HTTP contract
+(`internal/notice/http/handler_test.go`'s existing `TestNoticeEndpoints_Contract`, extended with
+401/403/422/201/200/204/404 through the real validator + AuthZ). Not verified live against a real
+Postgres/Redis in this pass — neither was reachable in this environment for this feature; every test compiles
+and vets clean and skips the same way the rest of this module's own suite already does here. `go build
+./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions, full
+backend suite — only the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run with no
+drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter
+@pdpa/admin build`/`typecheck` (incl. the updated `/notices` route) and `pnpm --filter @pdpa/portal
+build`/`typecheck` (incl. the updated `/[locale]/n/[key]` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

@@ -55,7 +55,7 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
 				`DELETE FROM notice.indirect_collections`, `DELETE FROM platform.files`,
-				`DELETE FROM notice.acknowledgements`,
+				`DELETE FROM notice.acknowledgements`, `DELETE FROM notice.linked_documents`,
 				`DELETE FROM notice.notice_activity_links`, `DELETE FROM notice.notices`,
 				`DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM org.external_parties`, `DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
@@ -291,6 +291,44 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("GET", "/admin/v1/notices/"+uuid.New().String()+"/translation-status", &admin, nil); code != 404 {
 		t.Errorf("translation-status, unknown notice: %d, want 404", code)
+	}
+
+	// PNG-13 linked documents.
+	linked := item + "/linked-documents"
+	if code, _ := do("GET", linked, nil, nil); code != 401 {
+		t.Errorf("linked-documents, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", linked, &viewer, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("linked-documents list (none yet): %d %s", code, body)
+	}
+	ldInput := map[string]any{"label": "ตารางระยะเวลาเก็บรักษา", "url": "https://example.com/retention.pdf", "display_mode": "popup"}
+	if code, _ := do("POST", linked, &viewer, ldInput); code != 403 {
+		t.Errorf("add linked document with read permission only: %d, want 403", code)
+	}
+	if code, body := do("POST", linked, &admin, map[string]any{"label": "x", "display_mode": "popup"}); code != 422 || !strings.Contains(body, "notice.invalid_input") {
+		t.Errorf("add linked document with neither url nor file_id: %d %s, want 422", code, body)
+	}
+	code, body = do("POST", linked, &admin, ldInput)
+	if code != 201 || !strings.Contains(body, `"display_mode":"popup"`) {
+		t.Fatalf("add linked document: %d %s", code, body)
+	}
+	var ld noticehttp.NoticeLinkedDocument
+	_ = json.Unmarshal([]byte(body), &ld)
+	if code, body := do("GET", linked, &viewer, nil); code != 200 || !strings.Contains(body, ld.Id.String()) {
+		t.Errorf("linked-documents list: %d %s", code, body)
+	}
+	ldItem := linked + "/" + ld.Id.String()
+	if code, _ := do("DELETE", ldItem, &viewer, nil); code != 403 {
+		t.Errorf("remove linked document with read permission only: %d, want 403", code)
+	}
+	if code, _ := do("DELETE", ldItem, &admin, nil); code != 204 {
+		t.Errorf("remove linked document: %d", code)
+	}
+	if code, _ := do("DELETE", ldItem, &admin, nil); code != 404 {
+		t.Errorf("remove linked document again: %d, want 404", code)
+	}
+	if code, _ := do("GET", "/admin/v1/notices/"+uuid.New().String()+"/linked-documents", &admin, nil); code != 404 {
+		t.Errorf("linked-documents, unknown notice: %d, want 404", code)
 	}
 
 	// PNG-04 indirect-collection notices (ม.25).

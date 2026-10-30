@@ -10,6 +10,9 @@ export type NoticeVersion = components["schemas"]["NoticeVersion"];
 export type NoticePublishIntentInput = components["schemas"]["NoticePublishIntentInput"];
 export type NoticeAckChannel = components["schemas"]["NoticeAckChannel"];
 export type NoticeAcknowledgement = components["schemas"]["NoticeAcknowledgement"];
+export type NoticeLinkedDocument = components["schemas"]["NoticeLinkedDocument"];
+export type NoticeLinkedDocumentInput = components["schemas"]["NoticeLinkedDocumentInput"];
+export type NoticeLinkedDocumentDisplayMode = components["schemas"]["NoticeLinkedDocumentDisplayMode"];
 export type IndirectCollection = components["schemas"]["IndirectCollection"];
 export type IndirectCollectionInput = components["schemas"]["IndirectCollectionInput"];
 export type IndirectCollectionStatus = components["schemas"]["IndirectCollectionStatus"];
@@ -231,6 +234,46 @@ export function useRecordNoticeAcknowledgement(client: ApiClient) {
       return data;
     },
     onSuccess: (_data, v) => qc.invalidateQueries({ queryKey: [...noticeKey(v.noticeId), "acknowledgements", v.versionNo] }),
+  });
+}
+
+/** GET /admin/v1/notices/{id}/linked-documents (PNG-13) — reference documents linked from this notice. */
+export function useNoticeLinkedDocuments(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...noticeKey(id ?? ""), "linked-documents"],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/notices/{id}/linked-documents", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/notices/{id}/linked-documents — link a reference document, with its display mode. */
+export function useAddNoticeLinkedDocument(client: ApiClient, id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: NoticeLinkedDocumentInput) => {
+      const { data, error } = await client.POST("/admin/v1/notices/{id}/linked-documents", { params: { path: { id } }, body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...noticeKey(id), "linked-documents"] }),
+  });
+}
+
+/** DELETE /admin/v1/notices/{id}/linked-documents/{linkedDocumentId} — unlink a reference document. */
+export function useRemoveNoticeLinkedDocument(client: ApiClient, id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (linkedDocumentId: string) => {
+      const { error } = await client.DELETE("/admin/v1/notices/{id}/linked-documents/{linkedDocumentId}", {
+        params: { path: { id, linkedDocumentId } },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...noticeKey(id), "linked-documents"] }),
   });
 }
 

@@ -1913,6 +1913,22 @@
         "api": "API"
       }
     },
+    "linkedDocuments": {
+      "title": "Linked documents (PNG-13)",
+      "show": "Show linked documents",
+      "hide": "Hide linked documents",
+      "none": "No linked documents yet",
+      "label": "Label",
+      "url": "URL",
+      "displayMode": "Display",
+      "save": "Add",
+      "remove": "Remove",
+      "modes": {
+        "inline": "Inline",
+        "popup": "Popup",
+        "link": "Plain link"
+      }
+    },
     "industryTemplates": {
       "retail": "Retail",
       "hospital": "Hospital",
@@ -2471,7 +2487,9 @@
       "history": "Version history",
       "historyEmpty": "Only the current version exists",
       "published": "Published",
-      "view": "View"
+      "view": "View",
+      "relatedDocuments": "Related documents",
+      "openInNewWindow": "Open in a new window"
     },
     "cookiePolicy": {
       "title": "Cookie Policy",

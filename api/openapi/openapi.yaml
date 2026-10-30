@@ -14930,6 +14930,109 @@ paths:
           $ref: '#/components/responses/PreconditionFailed'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/notices/{id}/linked-documents:
+    get:
+      operationId: noticeListLinkedDocuments
+      tags: [notice]
+      summary: Reference documents linked from a notice (PNG-13) — a retention schedule, security policy, or anything else, each with its own display mode
+      x-permission: notice.document.read
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NoticeLinkedDocument'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: noticeAddLinkedDocument
+      tags: [notice]
+      summary: Link a reference document to a notice, with how it should be shown (inline / popup / link)
+      x-permission: notice.document.update
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeLinkedDocumentInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoticeLinkedDocument'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/notices/{id}/linked-documents/{linkedDocumentId}:
+    delete:
+      operationId: noticeRemoveLinkedDocument
+      tags: [notice]
+      summary: Unlink a reference document from a notice
+      x-permission: notice.document.update
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: linkedDocumentId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/notices/indirect-collections:
     get:
       operationId: noticeListIndirectCollections
@@ -24656,6 +24759,37 @@ components:
         channel: {$ref: '#/components/schemas/NoticeAckChannel'}
         occurred_at: {$ref: '#/components/schemas/Timestamp'}
         ip: {type: string, nullable: true}
+    NoticeLinkedDocumentDisplayMode:
+      type: string
+      enum: [inline, popup, link]
+    NoticeLinkedDocumentInput:
+      type: object
+      required: [label, display_mode]
+      properties:
+        label: {type: string, maxLength: 300}
+        url: {type: string, maxLength: 2000}
+        file_id: {$ref: '#/components/schemas/Uuid'}
+        display_mode: {$ref: '#/components/schemas/NoticeLinkedDocumentDisplayMode'}
+    NoticeLinkedDocument:
+      type: object
+      required: [id, notice_id, label, display_mode, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        notice_id: {$ref: '#/components/schemas/Uuid'}
+        label: {type: string}
+        url: {type: string, nullable: true}
+        file_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        display_mode: {$ref: '#/components/schemas/NoticeLinkedDocumentDisplayMode'}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    PublicNoticeLinkedDocument:
+      type: object
+      required: [label, display_mode, url]
+      properties:
+        label: {type: string}
+        display_mode: {$ref: '#/components/schemas/NoticeLinkedDocumentDisplayMode'}
+        url: {type: string, description: Resolved — the stored url, or a short-lived signed link to the attached file}
     PublicNotice:
       type: object
       required: [title, notice_type, version_no, effective_from, languages, content]
@@ -24671,6 +24805,10 @@ components:
           type: object
           description: One rendered HTML body per language, merge fields and clauses already resolved
           additionalProperties: {type: string}
+        linked_documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicNoticeLinkedDocument'
     PublicNoticeVersion:
       type: object
       required: [version_no, effective_from, published_at]

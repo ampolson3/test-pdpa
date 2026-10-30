@@ -46,6 +46,32 @@ export default async function NoticePage({
 
       <article className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: html }} />
 
+      {notice.linked_documents && notice.linked_documents.length > 0 && (
+        <section className="border-t border-slate-200 pt-4">
+          <h2 className="text-sm font-semibold text-slate-700">{t("relatedDocuments")}</h2>
+          <ul className="mt-2 space-y-3 text-sm">
+            {notice.linked_documents.map((ld, i) => (
+              <li key={i}>
+                {ld.display_mode === "inline" ? (
+                  <div className="space-y-1">
+                    <p className="font-medium">{ld.label}</p>
+                    <iframe src={ld.url} title={ld.label} className="h-64 w-full rounded border border-slate-200" />
+                  </div>
+                ) : ld.display_mode === "popup" ? (
+                  <a className="text-sky-700 underline" href={ld.url} target="_blank" rel="noopener noreferrer">
+                    {ld.label} ({t("openInNewWindow")})
+                  </a>
+                ) : (
+                  <a className="text-sky-700 underline" href={ld.url}>
+                    {ld.label}
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section className="border-t border-slate-200 pt-4">
         <h2 className="text-sm font-semibold text-slate-700">{t("history")}</h2>
         {versions.length <= 1 ? (

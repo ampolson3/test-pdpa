@@ -2,6 +2,12 @@
 // consent.ts reads /public/v1/collection-points/{key} — the browser never talks to the API directly.
 const API_BASE = process.env.API_BASE_URL ?? "http://localhost:8080";
 
+export type PublicNoticeLinkedDocument = {
+  label: string;
+  display_mode: "inline" | "popup" | "link";
+  url: string;
+};
+
 export type PublicNotice = {
   title: string;
   notice_type: string;
@@ -9,6 +15,7 @@ export type PublicNotice = {
   effective_from: string;
   languages: string[];
   content: Record<string, string>;
+  linked_documents?: PublicNoticeLinkedDocument[];
 };
 
 export type PublicNoticeVersion = { version_no: number; effective_from: string; published_at: string };

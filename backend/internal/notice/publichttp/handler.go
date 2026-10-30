@@ -193,5 +193,22 @@ func toPublicNotice(ctx context.Context, svc *noticeservice.Service, n noticeser
 		}
 		out.Content[lang] = string(html)
 	}
+	// PNG-13: every linked reference document, resolved to a real URL (a signed link for an attached file) —
+	// one that fails to resolve (e.g. no file renderer configured) is skipped rather than failing the whole page.
+	linked, err := svc.ListLinkedDocuments(ctx, n.ID)
+	if err != nil {
+		return PublicNotice{}, err
+	}
+	linkedOut := make([]PublicNoticeLinkedDocument, 0, len(linked))
+	for _, ld := range linked {
+		url, err := svc.PublicLinkedDocumentURL(ctx, ld)
+		if err != nil {
+			continue
+		}
+		linkedOut = append(linkedOut, PublicNoticeLinkedDocument{
+			Label: ld.Label, DisplayMode: NoticeLinkedDocumentDisplayMode(ld.DisplayMode), Url: url,
+		})
+	}
+	out.LinkedDocuments = &linkedOut
 	return out, nil
 }

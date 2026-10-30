@@ -15,6 +15,9 @@ import {
   useNoticeAcknowledgements,
   useNoticeChecklist,
   useNoticeDownloadUrl,
+  useNoticeLinkedDocuments,
+  useAddNoticeLinkedDocument,
+  useRemoveNoticeLinkedDocument,
   useNoticeTranslationStatus,
   useNoticeVersions,
   useRecordNoticeAcknowledgement,
@@ -23,6 +26,7 @@ import {
   type ApiClient,
   type Notice,
   type NoticeAckChannel,
+  type NoticeLinkedDocumentDisplayMode,
   type NoticeType,
 } from "@pdpa/api-client";
 import { Link, useRouter } from "@/i18n/routing";
@@ -233,6 +237,76 @@ function AckPanel({ client, notice, versionNo }: { client: ApiClient; notice: No
   );
 }
 
+/** PNG-13: reference documents linked from a notice (retention schedule, security policy, ...), each
+ *  shown per its own display mode (inline / popup / link) on the public page. */
+function LinkedDocumentsPanel({ client, noticeId }: { client: ApiClient; noticeId: string }) {
+  const t = useTranslations("notices");
+  const canUpdate = usePermission("notice.document.update");
+  const list = useNoticeLinkedDocuments(client, noticeId);
+  const add = useAddNoticeLinkedDocument(client, noticeId);
+  const remove = useRemoveNoticeLinkedDocument(client, noticeId);
+  const [label, setLabel] = useState("");
+  const [url, setUrl] = useState("");
+  const [displayMode, setDisplayMode] = useState<NoticeLinkedDocumentDisplayMode>("link");
+  const items = list.data ?? [];
+
+  const submit = () => {
+    add.mutate({ label, url: url || undefined, display_mode: displayMode }, { onSuccess: () => { setLabel(""); setUrl(""); } });
+  };
+
+  return (
+    <div className="space-y-2 rounded-md border border-slate-200 bg-white p-3" data-testid="linked-documents-panel">
+      <h4 className="font-medium">{t("linkedDocuments.title")}</h4>
+      {list.isPending ? (
+        <p className="text-slate-500">{t("loading")}</p>
+      ) : items.length === 0 ? (
+        <p className="text-slate-500">{t("linkedDocuments.none")}</p>
+      ) : (
+        <ul className="divide-y divide-slate-100">
+          {items.map((ld) => (
+            <li key={ld.id} className="flex items-center justify-between gap-2 py-1 text-sm">
+              <span>
+                {ld.label} <span className="text-xs text-slate-500">({t(`linkedDocuments.modes.${ld.display_mode}`)})</span>
+              </span>
+              {canUpdate && (
+                <button type="button" className="text-red-700 underline" onClick={() => remove.mutate(ld.id)} data-testid={`linked-document-remove-${ld.id}`}>
+                  {t("linkedDocuments.remove")}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {canUpdate && (
+        <div className="space-y-1 border-t border-slate-100 pt-2">
+          <div className="flex flex-wrap items-end gap-2">
+            <label>
+              <span className="block text-slate-600">{t("linkedDocuments.label")}</span>
+              <input className={INPUT} value={label} onChange={(e) => setLabel(e.target.value)} data-testid="linked-document-label" />
+            </label>
+            <label>
+              <span className="block text-slate-600">{t("linkedDocuments.url")}</span>
+              <input className={INPUT} value={url} onChange={(e) => setUrl(e.target.value)} data-testid="linked-document-url" />
+            </label>
+            <label>
+              <span className="block text-slate-600">{t("linkedDocuments.displayMode")}</span>
+              <select className={INPUT} value={displayMode} onChange={(e) => setDisplayMode(e.target.value as NoticeLinkedDocumentDisplayMode)}>
+                {(["inline", "popup", "link"] as NoticeLinkedDocumentDisplayMode[]).map((m) => (
+                  <option key={m} value={m}>{t(`linkedDocuments.modes.${m}`)}</option>
+                ))}
+              </select>
+            </label>
+            <Button onClick={submit} disabled={!label || !url || add.isPending} data-testid="linked-document-save">
+              {t("linkedDocuments.save")}
+            </Button>
+          </div>
+          {add.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(add.error) })}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** PNG-06: version history + the public page link once a notice has been published at least once. */
 function VersionsPanel({ client, notice, portalUrl, locale }: { client: ApiClient; notice: Notice; portalUrl: string; locale: string }) {
   const t = useTranslations("notices");
@@ -291,6 +365,7 @@ export function NoticesContent({ portalUrl }: { portalUrl: string }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [versionsOpen, setVersionsOpen] = useState<string | null>(null);
+  const [linkedOpen, setLinkedOpen] = useState<string | null>(null);
 
   const list = useNotices(client, {});
   const wizard = useCreateNoticeWizard(client);
@@ -406,7 +481,7 @@ export function NoticesContent({ portalUrl }: { portalUrl: string }) {
           <thead className="bg-slate-50 text-left text-slate-600">
             <tr><th className="px-3 py-2">{t("form.noticeTitle")}</th><th className="px-3 py-2">{t("form.noticeType")}</th>
               <th className="px-3 py-2">{t("statusLabel")}</th><th className="px-3 py-2">{t("form.slug")}</th><th className="px-3 py-2">{t("checklist.title")}</th>
-              <th className="px-3 py-2">{t("versions.title")}</th></tr>
+              <th className="px-3 py-2">{t("versions.title")}</th><th className="px-3 py-2">{t("linkedDocuments.title")}</th></tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((n) => (
@@ -426,18 +501,30 @@ export function NoticesContent({ portalUrl }: { portalUrl: string }) {
                       {versionsOpen === n.id ? t("versions.hide") : t("versions.show")}
                     </button>
                   </td>
+                  <td className="px-3 py-2">
+                    <button type="button" className="text-sky-700 underline" onClick={() => setLinkedOpen(linkedOpen === n.id ? null : n.id)} data-testid={`linked-documents-toggle-${n.id}`}>
+                      {linkedOpen === n.id ? t("linkedDocuments.hide") : t("linkedDocuments.show")}
+                    </button>
+                  </td>
                 </tr>
                 {expanded === n.id && (
                   <tr>
-                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
                       <ChecklistPanel client={client} noticeId={n.id} />
                     </td>
                   </tr>
                 )}
                 {versionsOpen === n.id && (
                   <tr>
-                    <td colSpan={6} className="bg-slate-50 px-3 py-3">
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
                       <VersionsPanel client={client} notice={n} portalUrl={portalUrl} locale={locale} />
+                    </td>
+                  </tr>
+                )}
+                {linkedOpen === n.id && (
+                  <tr>
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
+                      <LinkedDocumentsPanel client={client} noticeId={n.id} />
                     </td>
                   </tr>
                 )}

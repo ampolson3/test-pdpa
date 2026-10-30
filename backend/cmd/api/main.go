@@ -375,6 +375,7 @@ func run() error {
 	riskSvc.Notice = noticeSvc                                                               // RRA-04: "no covering notice" gap rule
 	ropaSvc.Notice = noticeSvc                                                               // ROPA-19: notices composed from an activity, shown on its own "linkage" tab
 	fileSvc.EntityPermissions[noticeservice.IndirectCollectionType] = "notice.indirect.read" // PNG-04 notice evidence
+	fileSvc.EntityPermissions[noticeservice.LinkedDocumentType] = "notice.document.read"     // PNG-13 linked document
 	fileSvc.EntityPermissions[breach.IncidentType] = "breach.incident.read"                  // BRE-12 evidence
 	fileSvc.EntityPermissions[breach.SubjectNotificationType] = "breach.notification.read"   // BRE-10 recipient lists
 	fileSvc.EntityPermissions[breach.PDPCEntityType] = "breach.notification.read"            // BRE-09 filing evidence
