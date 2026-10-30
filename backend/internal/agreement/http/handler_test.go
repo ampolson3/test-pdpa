@@ -406,6 +406,25 @@ func TestAgreementEndpoints_Contract(t *testing.T) {
 	if code, _ := do("GET", "/admin/v1/agreements/type-check?counterparty_role=processor", &noPerm, nil, nil); code != 403 {
 		t.Errorf("type-check without agreement.dsa.read: %d, want 403", code)
 	}
+
+	// DSA-07: annexes — an empty list before anything is attached, and attaching fails cleanly (422) with
+	// no data-flow renderer configured in this fixture (no S3 here either, so the happy path through a
+	// real render + file save is covered by the service-level test, which skips without S3 reachable).
+	if code, body := do("GET", item+"/annexes", &reader, nil, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list annexes, fresh agreement: %d %s, want 200 data:[]", code, body)
+	}
+	if code, _ := do("GET", item+"/annexes", &noPerm, nil, nil); code != 403 {
+		t.Errorf("list annexes without agreement.dpa.read: %d, want 403", code)
+	}
+	if code, _ := do("GET", "/admin/v1/agreements/"+uuid.New().String()+"/annexes", &admin, nil, nil); code != 404 {
+		t.Errorf("list annexes, unknown agreement: %d, want 404", code)
+	}
+	if code, _ := do("POST", item+"/annexes/flow-diagram", &reader, nil, nil); code != 403 {
+		t.Errorf("attach flow diagram with read only: %d, want 403", code)
+	}
+	if code, body := do("POST", item+"/annexes/flow-diagram", &admin, nil, nil); code != 422 {
+		t.Errorf("attach flow diagram, no renderer configured: %d %s, want 422", code, body)
+	}
 }
 
 func etagOf(v int) string { return `"` + strconv.Itoa(v) + `"` }

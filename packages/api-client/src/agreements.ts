@@ -87,6 +87,34 @@ export function useMissingClauses(client: ApiClient, agreementId: string | undef
   });
 }
 
+export type AgreementAnnex = components["schemas"]["AgreementAnnex"];
+
+/** GET /admin/v1/agreements/{id}/annexes — DSA-07: whatever's currently attached (e.g. the flow diagram). */
+export function useAgreementAnnexes(client: ApiClient, agreementId: string | undefined) {
+  return useQuery({
+    queryKey: [...agreementsKey, agreementId ?? "", "annexes"],
+    enabled: !!agreementId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/agreements/{id}/annexes", { params: { path: { id: agreementId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/agreements/{id}/annexes/flow-diagram — render and attach the current data-flow diagram. */
+export function useAttachFlowDiagramAnnex(client: ApiClient, agreementId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await client.POST("/admin/v1/agreements/{id}/annexes/flow-diagram", { params: { path: { id: agreementId } } });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...agreementsKey, agreementId, "annexes"] }),
+  });
+}
+
 function invalidateClauses(qc: ReturnType<typeof useQueryClient>, agreementId: string) {
   qc.invalidateQueries({ queryKey: [...agreementsKey, agreementId, "clauses"] });
   qc.invalidateQueries({ queryKey: [...agreementsKey, agreementId, "missing-clauses"] });

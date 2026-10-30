@@ -21,6 +21,9 @@ import {
   useExternalParties,
   useLegalEntities,
   useDocumentDownloads,
+  useAgreementAnnexes,
+  useAttachFlowDiagramAnnex,
+  fileDownloadHref,
   type ApiClient,
   type Agreement,
   type AgreementPartyInput,
@@ -97,6 +100,8 @@ export function AgreementDetailContent({ id }: { id: string }) {
       <ProcessingScheduleSection client={client} agreementId={id} />
 
       <DownloadLogSection client={client} documentId={a.document_id} />
+
+      <AnnexesSection client={client} agreementId={id} />
 
       <Link className="inline-block rounded-md bg-sky-700 px-3 py-1.5 text-white" href={`/documents/${a.document_id}`}>{t("detail.openDocument")}</Link>
     </main>
@@ -233,6 +238,43 @@ function DownloadLogSection({ client, documentId }: { client: ApiClient; documen
           </tbody>
         </table>
       )}
+    </section>
+  );
+}
+
+/** DSA-07: annexes attached to the agreement — today only the flow_diagram annex, rendered live from
+ *  the current data-flow diagram and attached on demand (attaching again replaces the prior one). */
+function AnnexesSection({ client, agreementId }: { client: ApiClient; agreementId: string }) {
+  const t = useTranslations("agreements");
+  const canUpdate = usePermission("agreement.dpa.update");
+  const annexes = useAgreementAnnexes(client, agreementId);
+  const attach = useAttachFlowDiagramAnnex(client, agreementId);
+
+  const flowDiagram = (annexes.data ?? []).find((a) => a.annex_type === "flow_diagram");
+
+  return (
+    <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4">
+      <h2 className="font-semibold">{t("detail.annexes.title")}</h2>
+      {annexes.isPending && <p className="text-slate-500">{t("loading")}</p>}
+      {annexes.isError && <p className="text-red-700" role="alert">{t("detail.annexes.loadError")}</p>}
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="font-medium">{t("detail.annexes.flowDiagram")}</p>
+          {flowDiagram?.file_id ? (
+            <a className="text-sky-700 underline" href={fileDownloadHref("/api/bff", flowDiagram.file_id)}>
+              {t("detail.annexes.download")}
+            </a>
+          ) : (
+            <p className="text-slate-500">{t("detail.annexes.none")}</p>
+          )}
+        </div>
+        {canUpdate && (
+          <Button onClick={() => attach.mutate()} disabled={attach.isPending}>
+            {attach.isPending ? t("detail.annexes.attaching") : t("detail.annexes.attach")}
+          </Button>
+        )}
+      </div>
+      {attach.isError && <p className="text-red-700" role="alert">{detail(attach.error)}</p>}
     </section>
   );
 }

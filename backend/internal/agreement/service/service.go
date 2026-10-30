@@ -20,6 +20,7 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/docs"
+	"pdpa-platform/internal/platform/files"
 	"pdpa-platform/internal/platform/notify"
 	riskservice "pdpa-platform/internal/risk/service"
 	ropaservice "pdpa-platform/internal/ropa/service"
@@ -89,6 +90,12 @@ type Service struct {
 	// dsarservice.Service's own optional fields).
 	Notify *notify.Service
 	River  *river.Client[pgx.Tx]
+	// Files backs DSA-07's own flow-diagram annex (annexes.go) — a direct concrete field, not a rule-9
+	// interface: platform/files has no reverse import of agreement to avoid.
+	Files *files.Service
+	// Dataflow backs the same feature (annexes.go) — nil in any wiring that never calls
+	// AttachFlowDiagramAnnex.
+	Dataflow Dataflow
 }
 
 func (s *Service) audit(ctx context.Context, action string, id uuid.UUID, before, after any) error {

@@ -16394,6 +16394,71 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/agreements/{id}/annexes:
+    get:
+      operationId: agreementListAnnexes
+      tags: [agreement]
+      summary: 'DSA-07: annexes currently attached to this agreement'
+      x-permission: agreement.dpa.read
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AgreementAnnex'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/agreements/{id}/annexes/flow-diagram:
+    post:
+      operationId: agreementAttachFlowDiagramAnnex
+      tags: [agreement]
+      summary: 'DSA-07: render the latest data-flow diagram (DFG-01/08) and attach it as this agreement''s annex'
+      description: Replaces whatever flow-diagram annex was attached before — there is only ever one current image per agreement.
+      x-permission: agreement.dpa.update
+      x-module: agreement
+      security:
+        - adminJwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '201':
+          description: Attached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgreementAnnex'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/risk/matrices:
     get:
       operationId: riskListMatrices
@@ -22115,6 +22180,23 @@ components:
       properties:
         clause_code: {type: string}
         legal_ref: {type: string}
+    AgreementAnnex:
+      type: object
+      description: 'DSA-07: one agreement.annexes row.'
+      required: [id, agreement_id, annex_type, created_at, updated_at, row_version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        agreement_id: {$ref: '#/components/schemas/Uuid'}
+        annex_type:
+          type: string
+          enum: [processing_schedule, data_list, security_measures, request_form, flow_diagram, transfer_clauses]
+        file_id:
+          oneOf:
+            - $ref: '#/components/schemas/Uuid'
+            - type: 'null'
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        row_version: {type: integer}
     AgreementProcessingSchedule:
       type: object
       description: 'DPA-04: the ม.40 processing-schedule annex — data categories, data subject groups, purposes, retention and security measures per linked RoPA activity, composed live on every read, never persisted (same reasoning DPIA-04''s own live description already used).'

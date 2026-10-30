@@ -5523,6 +5523,48 @@ typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build
 `/settings/role-requests` route) all verified clean. Not done, deliberately (no endpoint exists yet to
 gate): export/consent-deletion/MFA-disable dual control — add each once that action itself ships.
 
+### DSA-07 ภาคผนวกประกอบข้อตกลง (`docs/modules/DSA.md#dsa-07`) — done
+`agreement.annexes` was already fully specified in the baseline migrations (`annex_type` CHECK already
+including `'flow_diagram'`, `content` jsonb, `file_id` FK) — no new migration. Scoped to exactly the literal
+acceptance criterion ("ภาคผนวกแนบภาพแผนผังล่าสุดได้"): `data_list`/`security_measures` need no further work —
+DPA-04's own `ProcessingSchedule` already composes the shared data-list/recipients/retention content live
+from RoPA for every agreement regardless of type, and `agreement.clauses` already carries the
+security-measures clause text — and `request_form` has no owning feature yet (no consumer), left out.
+
+`internal/agreement/service/annexes.go`'s `AttachFlowDiagramAnnex` renders the current data-flow diagram
+through a new `Dataflow` interface (`ExportDiagram(ctx, legalEntityID *uuid.UUID, format, paper string)
+([]byte, string, error)`, rule 9: `dataflow/service` already imports `agreement/service` concretely for
+DFG-04/DSA-12's own `ListAgreements` calls, so the reverse import would cycle — `internal/wiring/dataflow.go`'s
+`agreementDataflow` adapter wraps the real `*dataflowservice.Service` and converts its own typed
+`ExportFormat`/`Paper` enums to plain strings at the boundary, the same local-interface-plus-wiring-adapter
+pattern IAM-05's own `Auditor`/`Notifier` and IAM-06's own `Versioning` already established), saves the PNG
+via the existing `files.Service.SaveGenerated` (already attached, trusted by construction —
+`agreement.Service` gained a direct concrete `Files *files.Service` field, no cycle), then deletes any
+existing `flow_diagram` annex and inserts the new one in the same transaction — replacing, not accumulating a
+history, the acceptance criterion's own literal "ล่าสุด." No new permission code — reuses
+`agreement.dpa.{read,update}`.
+
+API: `GET /admin/v1/agreements/{id}/annexes` (`agreement.dpa.read`), `POST
+/admin/v1/agreements/{id}/annexes/flow-diagram` (`agreement.dpa.update`) — a new `AgreementAnnex` schema. UI:
+an "Annexes" section on `/agreements/{id}` — the current flow-diagram annex's own download link (or "not
+attached yet") and an "Attach latest diagram" button for a caller holding `agreement.dpa.update`. Tests:
+unit (`internal/agreement/service/dsa07_annex_test.go` — the acceptance criterion directly: attaching
+creates a flow_diagram annex with a real file, a second attach replaces it so exactly one flow_diagram annex
+remains, pointing at the newer file; no `Dataflow` configured is refused; a fresh agreement has zero
+annexes; two-tenant isolation — needs a reachable S3, skipped the same way this module's other file-backed
+tests already do when it isn't), HTTP contract (`internal/agreement/http/handler_test.go`'s existing
+`TestAgreementEndpoints_Contract`, extended with 200 empty list, 403 without `agreement.dpa.read`/`.update`,
+404 unknown agreement, 422 with no renderer configured). Not verified live against a real Postgres/Redis/S3
+in this pass — neither was reachable in this environment for this feature; every test compiles and vets
+clean and skips the same way the rest of this codebase's own suite already does without one. `go build
+./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions, full
+backend suite — only the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run with no
+drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter
+@pdpa/admin build`/`typecheck` (incl. the updated `/agreements/[id]` route) all verified clean. Not done,
+deliberately (no consumer yet, the same deferral this codebase uses throughout): `data_list`/
+`security_measures` as standalone annex rows (both already satisfied live elsewhere, as above), and the
+`request_form` annex (no owning feature).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

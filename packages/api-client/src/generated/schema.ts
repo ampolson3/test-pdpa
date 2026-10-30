@@ -5603,6 +5603,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/agreements/{id}/annexes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DSA-07: annexes currently attached to this agreement */
+        get: operations["agreementListAnnexes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/agreements/{id}/annexes/flow-diagram": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * DSA-07: render the latest data-flow diagram (DFG-01/08) and attach it as this agreement's annex
+         * @description Replaces whatever flow-diagram annex was attached before — there is only ever one current image per agreement.
+         */
+        post: operations["agreementAttachFlowDiagramAnnex"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/risk/matrices": {
         parameters: {
             query?: never;
@@ -8172,6 +8209,19 @@ export interface components {
         AgreementMissingClause: {
             clause_code: string;
             legal_ref: string;
+        };
+        /** @description DSA-07: one agreement.annexes row. */
+        AgreementAnnex: {
+            id: components["schemas"]["Uuid"];
+            agreement_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            annex_type: "processing_schedule" | "data_list" | "security_measures" | "request_form" | "flow_diagram" | "transfer_clauses";
+            file_id?: components["schemas"]["Uuid"] | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            row_version: number;
         };
         /** @description DPA-04: the ม.40 processing-schedule annex — data categories, data subject groups, purposes, retention and security measures per linked RoPA activity, composed live on every read, never persisted (same reasoning DPIA-04's own live description already used). */
         AgreementProcessingSchedule: {
@@ -25374,6 +25424,59 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    agreementListAnnexes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["AgreementAnnex"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    agreementAttachFlowDiagramAnnex: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Attached */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementAnnex"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     riskListMatrices: {

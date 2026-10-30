@@ -196,6 +196,8 @@ export {
   useAddAgreementParty,
   useRemoveAgreementParty,
   useMissingDpaVendors,
+  useAgreementAnnexes,
+  useAttachFlowDiagramAnnex,
   type Agreement,
   type AgreementCreateInput,
   type AgreementType,
@@ -210,6 +212,7 @@ export {
   type AgreementParty,
   type AgreementPartyInput,
   type MissingDpaVendor,
+  type AgreementAnnex,
 } from "./agreements";
 export {
   useRiskMatrices,
