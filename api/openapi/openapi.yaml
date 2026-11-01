@@ -19424,6 +19424,140 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/frameworks:
+    get:
+      operationId: govListFrameworks
+      tags: [gov]
+      summary: 'DPX-10: the whole catalog of other related laws/notices, each naming its own ready-to-use PLT-06 checklist form (fetch its schema generically via GET /admin/v1/platform/forms/{id})'
+      x-permission: dpx.framework.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovFramework'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/governance/frameworks/{code}/assessments:
+    get:
+      operationId: govListFrameworkAssessments
+      tags: [gov]
+      summary: 'DPX-10: this tenant''s own past runs of one framework''s checklist, newest first'
+      x-permission: dpx.framework.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GovFrameworkAssessment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: govAssessFramework
+      tags: [gov]
+      summary: 'DPX-10''s own acceptance criterion: answer the framework''s own ready-to-use checklist in one step, scored by the form engine'
+      x-permission: dpx.framework.execute
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answers]
+              additionalProperties: false
+              properties:
+                answers:
+                  type: object
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovFrameworkAssessment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/governance/framework-assessments/{id}:
+    get:
+      operationId: govGetFrameworkAssessment
+      tags: [gov]
+      summary: 'DPX-10: one past framework-checklist run'
+      x-permission: dpx.framework.read
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovFrameworkAssessment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/dataflow/graph:
     get:
       operationId: dataflowGetGraph
@@ -28336,6 +28470,61 @@ components:
           type: number
         max_score:
           type: number
+    GovFramework:
+      type: object
+      required: [id, code, name_th, name_en, legal_refs, row_version]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        code:
+          type: string
+        name_th:
+          type: string
+        name_en:
+          type: string
+        legal_refs:
+          type: array
+          items:
+            type: string
+        description_th:
+          type: [string, 'null']
+        description_en:
+          type: [string, 'null']
+        checklist_form_id:
+          type: [string, 'null']
+          format: uuid
+        row_version:
+          type: integer
+    GovFrameworkAssessment:
+      type: object
+      required: [id, framework_id, form_submission_id, score, result, factors, assessed_at, row_version, created_at]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        framework_id:
+          $ref: '#/components/schemas/Uuid'
+        form_submission_id:
+          $ref: '#/components/schemas/Uuid'
+        score:
+          type: number
+        result:
+          type: string
+        factors:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        assessed_by:
+          type: [string, 'null']
+          format: uuid
+        assessed_at:
+          type: string
+          format: date-time
+        row_version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
     GovAudit:
       type: object
       required: [id, audit_type, assessment_id, period, status, row_version]

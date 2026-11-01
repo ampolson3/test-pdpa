@@ -150,6 +150,9 @@ export {
   useSetAuditFindingStatus,
   useAttachFindingEvidence,
   useAssignFindingTask,
+  useFrameworks,
+  useAssessFramework,
+  useFrameworkAssessments,
   type RetentionSchedule,
   type RetentionScheduleInput,
   type RetentionScheduleStatus,
@@ -178,6 +181,8 @@ export {
   type GovAuditFindingInput,
   type GovAuditFindingSeverity,
   type GovAuditFindingStatus,
+  type GovFramework,
+  type GovFrameworkAssessment,
 } from "./governance";
 export {
   useAgreements,

@@ -2333,13 +2333,22 @@
       "empty": "ยังไม่มีแคมเปญ",
       "name": "ชื่อแคมเปญ",
       "channel": "ช่องทาง",
-      "channels": { "email": "อีเมล", "sms": "SMS", "line": "LINE" },
+      "channels": {
+        "email": "อีเมล",
+        "sms": "SMS",
+        "line": "LINE"
+      },
       "purposes": "วัตถุประสงค์ที่ขอความยินยอม",
       "identifiers": "กลุ่มเป้าหมาย",
       "identifiersHint": "พิมพ์ทีละบรรทัดในรูปแบบ ประเภท:ค่า (เช่น email:alice@example.com, phone:+66812345678) ระบบจะแปลงเป็นเจ้าของข้อมูลทันที — ไม่เก็บค่าดิบ",
       "create": "สร้างแคมเปญ",
       "status": "สถานะ",
-      "statuses": { "draft": "ร่าง", "sending": "กำลังส่ง", "done": "เสร็จแล้ว", "cancelled": "ยกเลิก" },
+      "statuses": {
+        "draft": "ร่าง",
+        "sending": "กำลังส่ง",
+        "done": "เสร็จแล้ว",
+        "cancelled": "ยกเลิก"
+      },
       "sent": "ส่งแล้ว",
       "opened": "เปิดแล้ว",
       "responded": "ตอบแล้ว",
@@ -3797,6 +3806,15 @@
         "saveAssign": "มอบหมาย",
         "assignError": "มอบหมายไม่สำเร็จ: {detail}"
       }
+    },
+    "frameworks": {
+      "title": "เชื่อมโยงกฎหมายอื่นที่เกี่ยวข้อง",
+      "intro": "เลือกกฎหมายหรือประกาศอื่นที่เกี่ยวข้อง (พ.ร.บ.ไซเบอร์ พ.ร.บ.คอมพิวเตอร์ ประกาศ ธปท./ก.ล.ต./คปภ.) แล้วรับ checklist พร้อมใช้ของกฎหมายนั้น",
+      "noChecklist": "กฎหมายนี้ยังไม่มี checklist ที่เผยแพร่",
+      "submit": "ส่ง checklist",
+      "loading": "กำลังโหลด...",
+      "empty": "ยังไม่มีการตอบ checklist ของกฎหมายนี้",
+      "score": "คะแนน: {score}"
     }
   },
   "ropaWizard": {

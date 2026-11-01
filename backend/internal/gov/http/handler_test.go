@@ -83,6 +83,7 @@ func TestGovHandler_Contract(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
+				`DELETE FROM gov.framework_assessments`,
 				`DELETE FROM gov.audit_findings`, `DELETE FROM gov.audits`, `DELETE FROM assess.answers`, `DELETE FROM assess.assessments`,
 				`DELETE FROM gov.training_attempts`, `DELETE FROM gov.training_assignments`, `DELETE FROM gov.courses`,
 				`DELETE FROM platform.form_submissions`, `DELETE FROM platform.form_versions`, `DELETE FROM platform.form_definitions WHERE code LIKE 'quiz_%'`,
@@ -176,8 +177,9 @@ func TestGovHandler_Contract(t *testing.T) {
 			"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.create", "notice.document.update",
 			"dpx.regulator.read", "dpx.regulator.create", "dpx.regulator.update", "dpx.regulator.delete",
 			"dpx.training.read", "dpx.training.create", "dpx.training.update", "dpx.training.publish", "dpx.training.delete", "dpx.training.execute",
-			"dpx.audit.read", "dpx.audit.create", "dpx.audit.update", "dpx.audit.delete", "dpx.audit.approve"},
-		reader.String(): {"dpx.retention.read", "dpx.audit.read", "dpx.audit.update"},
+			"dpx.audit.read", "dpx.audit.create", "dpx.audit.update", "dpx.audit.delete", "dpx.audit.approve",
+			"dpx.framework.read", "dpx.framework.execute"},
+		reader.String(): {"dpx.retention.read", "dpx.audit.read", "dpx.audit.update", "dpx.framework.read"},
 		emp.String():    {"dpx.policy.execute"},
 		dpo.String():    {"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.update", "notice.document.approve", "notice.document.publish"},
 	}
@@ -740,5 +742,50 @@ func TestGovHandler_Contract(t *testing.T) {
 	}
 	if code, _, _ := do("GET", auditsPath+"/"+ranAudit.ID, &admin, "", nil); code != 404 {
 		t.Errorf("get deleted audit: %d, want 404", code)
+	}
+
+	// DPX-10: pick a related-law framework from the seeded catalog (migration 00096), get its own
+	// ready-to-use checklist, and answer it.
+	frameworksPath := "/admin/v1/governance/frameworks"
+	if code, _, _ := do("GET", frameworksPath, nil, "", nil); code != 401 {
+		t.Errorf("list frameworks with no principal: %d, want 401", code)
+	}
+	code, body, _ = do("GET", frameworksPath, &admin, "", nil)
+	if code != 200 || !strings.Contains(body, `"cybersecurity_act"`) {
+		t.Fatalf("list frameworks: %d %s", code, body)
+	}
+
+	assessPath := "/admin/v1/governance/frameworks/cybersecurity_act/assessments"
+	if code, _, _ := do("POST", assessPath, &reader, "", map[string]any{"answers": map[string]any{"csc_critical_infra": "yes"}}); code != 403 {
+		t.Errorf("assess framework without dpx.framework.execute: %d, want 403", code)
+	}
+	code, body, _ = do("POST", assessPath, &admin, "", map[string]any{"answers": map[string]any{
+		"csc_critical_infra": "yes", "csc_incident_plan": "yes", "csc_risk_assessment": "no"}})
+	if code != 201 {
+		t.Fatalf("assess framework: %d %s", code, body)
+	}
+	var ranAssessment struct {
+		ID string `json:"id"`
+	}
+	_ = json.Unmarshal([]byte(body), &ranAssessment)
+	if ranAssessment.ID == "" {
+		t.Fatalf("assess framework response missing id: %s", body)
+	}
+
+	code, body, _ = do("GET", assessPath, &admin, "", nil)
+	if code != 200 || !strings.Contains(body, ranAssessment.ID) {
+		t.Fatalf("list framework assessments: %d %s", code, body)
+	}
+
+	if code, _, _ := do("GET", "/admin/v1/governance/framework-assessments/"+ranAssessment.ID, nil, "", nil); code != 401 {
+		t.Errorf("get framework assessment with no principal: %d, want 401", code)
+	}
+	code, body, _ = do("GET", "/admin/v1/governance/framework-assessments/"+ranAssessment.ID, &admin, "", nil)
+	if code != 200 || !strings.Contains(body, ranAssessment.ID) {
+		t.Fatalf("get framework assessment: %d %s", code, body)
+	}
+
+	if code, body, _ := do("POST", "/admin/v1/governance/frameworks/no_such_framework/assessments", &admin, "", map[string]any{"answers": map[string]any{}}); code != 404 {
+		t.Errorf("assess unknown framework: %d %s, want 404", code, body)
 	}
 }

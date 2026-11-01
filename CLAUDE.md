@@ -5738,6 +5738,60 @@ on demand, not on a schedule, since the literal acceptance criterion needs only 
 delivery (PLT-04's own `MockSender` until a real provider decision exists, same as every other LINE send in
 this codebase).
 
+### DPX-10 เชื่อมโยงกฎหมายอื่นที่เกี่ยวข้อง (`docs/modules/DPX.md#dpx-10`) — done
+`gov.regulatory_frameworks` is a new, small global reference catalog (migration 00096, no `tenant_id`, no
+RLS — the same pattern `gov.regulatory_updates` already uses since the very first baseline migration):
+4 seeded rows (`cybersecurity_act`, `computer_crime_act`, `bot_notices`, `sec_oic_notices`), each naming a
+global, published, `'framework'`-type PLT-06 checklist form (migration 00096 also widens
+`platform.form_definitions.form_type`'s CHECK to add it) — the module doc's own backend note
+("framework กฎหมายอื่น...เป็น checklist") taken literally: every related law is turned into an ordinary
+form the DPO authors, never a bespoke per-law engine, and the seeded wording is a DRAFT pending legal
+review (`docs/decisions.md` Q-46, the same "seed a draft + flag it" move this codebase has made throughout
+for content with no official source to copy from this environment). `gov.framework_assessments` is the
+thin, tenant-scoped run record — DPO-09's own `Assess`/`Assessment` shape exactly (score/band +
+`form_submission_id`), just keyed by `framework_id` instead of a legal entity, since a related law either
+applies to the tenant's whole operation or it doesn't.
+
+`internal/gov/service/frameworks.go`: `ListFrameworks`/`GetFrameworkByCode` are the read side (no
+pagination — a handful of laws, the same "platform-wide list" reasoning DPO-05/RRA-09/RTG-01 already use);
+`AssessFramework` is the acceptance criterion's natural next step — answering the checklist that was just
+made available — through `gov.Service`'s already-existing `Forms` field (`forms.Service.Record`, DPO-09's
+own pattern precisely), scored by the form engine and persisted as one `gov.framework_assessments` row; no
+auto-opened remediation task, unlike DPO-09's own failing items — a related-law checklist is informational
+(this feature's own literal BE S scope), not a security-control register this codebase already tracks
+elsewhere. `internal/wiring/forms.go` gained a `"framework"` registration (`dpx.framework.*` throughout —
+Create/Update/Publish declared for symmetry but never exercised in practice, the same note ROPA-20's own
+`sme_exemption` registration already makes for its own global, migration-only content; Respond is
+`dpx.framework.execute`, the one real action). New permission family `dpx.framework.{read,create,update,
+publish,execute}` (migration 00096): DPO full, PRIVACY create/read/update/execute, LEGAL/IT/SEC
+read/execute, OWNER/AUDIT/EXEC read — no module had a reserved code for this feature, unlike several
+sibling DPX features that reused an already-seeded family.
+
+API: `GET /admin/v1/governance/frameworks` (the catalog, each row naming its own `checklist_form_id` for
+the frontend to fetch generically via the already-existing `GET /admin/v1/platform/forms/{id}` — no
+separate "get this framework's checklist" endpoint was needed, since the generic PLT-06 form read already
+serves that whole), `GET`/`POST /admin/v1/governance/frameworks/{code}/assessments` (list + answer),
+`GET /admin/v1/governance/framework-assessments/{id}`. UI: a "Related laws mapping" section on the existing
+`/governance` page (`FrameworksSection`, a standalone component mirroring RRA-05's own
+`ActivityChecklistSection` almost exactly) — a framework picker, the chosen framework's own `FormRenderer`
+checklist (via the generic `useForm` hook against its `checklist_form_id`), and a list of past runs with
+their score. Tests: unit (`internal/gov/service/dpx10_test.go` — the acceptance criterion directly: the
+seeded catalog is listed with a real `checklist_form_id`; answering a framework's checklist scores and
+records a run, re-readable by id and by the framework's own list, with an unrelated framework's own list
+staying empty; an unknown framework code is `ErrNotFound`; the `.execute` permission gate; two-tenant
+isolation), HTTP contract (`internal/gov/http/handler_test.go`'s existing `TestGovHandler_Contract`,
+extended with the full list → assess (403 without `.execute`, 201 happy path) → list-by-code → get →
+unknown-code-404 chain through the real validator + AuthZ). Not verified live against a real Postgres/Redis
+in this pass — neither was reachable in this environment for this feature; every test compiles and vets
+clean and skips the same way the rest of this codebase's own suite already does without one. `go build
+./...`, `go vet ./...`, `gofmt -l` (clean on every touched file, matching the same pre-existing stable
+violation list every recent pass in this codebase already discloses), `go test ./...` (no regressions, full
+backend suite — only the pre-existing, unrelated `internal/pkg/validate` failure, confirmed identical via
+`git stash` both before and after this change), `sqlc generate`/`oapi-codegen`/`openapi-typescript` all
+re-run with no drift beyond this feature's own additions, `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated
+`/governance` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

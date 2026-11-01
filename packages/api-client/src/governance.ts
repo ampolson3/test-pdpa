@@ -29,6 +29,8 @@ export type GovAuditFinding = components["schemas"]["GovAuditFinding"];
 export type GovAuditFindingInput = components["schemas"]["GovAuditFindingInput"];
 export type GovAuditFindingSeverity = components["schemas"]["GovAuditFindingSeverity"];
 export type GovAuditFindingStatus = components["schemas"]["GovAuditFindingStatus"];
+export type GovFramework = components["schemas"]["GovFramework"];
+export type GovFrameworkAssessment = components["schemas"]["GovFrameworkAssessment"];
 
 const schedulesKey = ["gov", "retention-schedules"] as const;
 const jobsKey = ["gov", "disposal-jobs"] as const;
@@ -43,6 +45,8 @@ const myTrainingAttemptsKey = ["gov", "my-training-attempts"] as const;
 const trainingReportKey = ["gov", "training-report"] as const;
 const auditsKey = ["gov", "audits"] as const;
 const auditFindingsKey = ["gov", "audit-findings"] as const;
+const frameworksKey = ["gov", "frameworks"] as const;
+const frameworkAssessmentsKey = ["gov", "framework-assessments"] as const;
 
 /** GET /admin/v1/governance/retention-schedules (DPX-05), newest first. */
 export function useRetentionSchedules(client: ApiClient, filter: { assetId?: string; status?: RetentionScheduleStatus } = {}) {
@@ -567,5 +571,49 @@ export function useAssignFindingTask(client: ApiClient) {
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: auditFindingsKey }),
+  });
+}
+
+/** GET /admin/v1/governance/frameworks (DPX-10) — the whole catalog of related laws/notices, each naming
+ *  its own ready-to-use checklist form. */
+export function useFrameworks(client: ApiClient) {
+  return useQuery({
+    queryKey: frameworksKey,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/frameworks", {});
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/governance/frameworks/{code}/assessments — the acceptance criterion: answer the picked
+ *  framework's own checklist in one step, scored by the form engine. */
+export function useAssessFramework(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { code: string; answers: Record<string, unknown> }) => {
+      const { data, error } = await client.POST("/admin/v1/governance/frameworks/{code}/assessments", {
+        params: { path: { code: v.code } },
+        body: { answers: v.answers },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: [...frameworkAssessmentsKey, v.code] }),
+  });
+}
+
+/** GET /admin/v1/governance/frameworks/{code}/assessments — this tenant's own past runs of one
+ *  framework's checklist, newest first. */
+export function useFrameworkAssessments(client: ApiClient, code: string) {
+  return useQuery({
+    queryKey: [...frameworkAssessmentsKey, code],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/governance/frameworks/{code}/assessments", { params: { path: { code } } });
+      if (error) throw error;
+      return data.data;
+    },
+    enabled: !!code,
   });
 }

@@ -5,6 +5,7 @@ package govhttp
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -569,6 +570,78 @@ func toAttemptWire(a govservice.TrainingAttempt) GovTrainingAttempt {
 	return w
 }
 
+func toFrameworkWire(f govservice.Framework) GovFramework {
+	w := GovFramework{Id: f.ID, Code: f.Code, NameTh: f.NameTh, NameEn: f.NameEn, LegalRefs: f.LegalRefs,
+		DescriptionTh: f.DescriptionTh, DescriptionEn: f.DescriptionEn, RowVersion: int(f.RowVersion)}
+	if f.ChecklistFormID != nil {
+		id := openapi_types.UUID(*f.ChecklistFormID)
+		w.ChecklistFormId = &id
+	}
+	return w
+}
+
+func toFrameworkAssessmentWire(a govservice.FrameworkAssessment) GovFrameworkAssessment {
+	w := GovFrameworkAssessment{Id: a.ID, FrameworkId: a.FrameworkID, FormSubmissionId: a.FormSubmissionID,
+		Score: float32(a.Score), Result: a.Result, RowVersion: int(a.RowVersion), CreatedAt: a.CreatedAt,
+		Factors: make([]map[string]interface{}, 0, len(a.Factors))}
+	for _, f := range a.Factors {
+		b, _ := json.Marshal(f)
+		var m map[string]interface{}
+		_ = json.Unmarshal(b, &m)
+		w.Factors = append(w.Factors, m)
+	}
+	w.AssessedAt = a.AssessedAt
+	if a.AssessedBy != nil {
+		id := openapi_types.UUID(*a.AssessedBy)
+		w.AssessedBy = &id
+	}
+	return w
+}
+
+func (h *Strict) GovListFrameworks(ctx context.Context, req GovListFrameworksRequestObject) (GovListFrameworksResponseObject, error) {
+	list, err := h.svc.ListFrameworks(ctx)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovListFrameworks200JSONResponse{Data: make([]GovFramework, 0, len(list))}
+	for _, f := range list {
+		resp.Data = append(resp.Data, toFrameworkWire(f))
+	}
+	return resp, nil
+}
+
+func (h *Strict) GovAssessFramework(ctx context.Context, req GovAssessFrameworkRequestObject) (GovAssessFrameworkResponseObject, error) {
+	if req.Body == nil {
+		return nil, httpx.UnprocessableEntity("gov.invalid_input", "answers is required")
+	}
+	a, err := h.svc.AssessFramework(ctx, req.Code, forms.Answers(req.Body.Answers))
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovAssessFramework201JSONResponse(toFrameworkAssessmentWire(a)), nil
+}
+
+func (h *Strict) GovListFrameworkAssessments(ctx context.Context, req GovListFrameworkAssessmentsRequestObject) (GovListFrameworkAssessmentsResponseObject, error) {
+	code := req.Code
+	list, err := h.svc.ListFrameworkAssessments(ctx, &code)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := GovListFrameworkAssessments200JSONResponse{Data: make([]GovFrameworkAssessment, 0, len(list))}
+	for _, a := range list {
+		resp.Data = append(resp.Data, toFrameworkAssessmentWire(a))
+	}
+	return resp, nil
+}
+
+func (h *Strict) GovGetFrameworkAssessment(ctx context.Context, req GovGetFrameworkAssessmentRequestObject) (GovGetFrameworkAssessmentResponseObject, error) {
+	a, err := h.svc.GetFrameworkAssessment(ctx, req.Id)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovGetFrameworkAssessment200JSONResponse(toFrameworkAssessmentWire(a)), nil
+}
+
 func (h *Strict) GovListAudits(ctx context.Context, req GovListAuditsRequestObject) (GovListAuditsResponseObject, error) {
 	var legalEntityID *uuid.UUID
 	if req.Params.LegalEntityId != nil {
@@ -835,7 +908,16 @@ func toJobWire(j govservice.DisposalJob) DisposalJob {
 }
 
 func problem(err error) error {
+	var ve *govservice.ValidationError
 	switch {
+	case errors.As(err, &ve):
+		p := httpx.Problem{Status: 422, Code: "gov.invalid_input", Title: "Invalid input"}
+		for _, f := range ve.Fields {
+			p.Errors = append(p.Errors, httpx.FieldError{Field: f.Field, Code: f.Code})
+		}
+		return p
+	case errors.Is(err, govservice.ErrBadFrameworkForm):
+		return httpx.UnprocessableEntity("gov.bad_framework_form", err.Error())
 	case errors.Is(err, govservice.ErrNotFound):
 		return httpx.NotFound()
 	case errors.Is(err, govservice.ErrForbidden):

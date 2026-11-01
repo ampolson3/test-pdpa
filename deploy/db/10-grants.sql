@@ -26,7 +26,7 @@ REVOKE DELETE, TRUNCATE ON platform.tenant_keys FROM pdpa_app, pdpa_platform;
 
 -- global tables without RLS: read-only for the application, written by the provider console (pdpa_platform) or migrations
 REVOKE INSERT, UPDATE, DELETE ON platform.tenants, iam.permissions, org.lawful_bases, org.countries, cookie.cookie_kb,
-  agreement.mandatory_rules, gov.regulatory_updates FROM pdpa_app;
+  agreement.mandatory_rules, gov.regulatory_updates, gov.regulatory_frameworks FROM pdpa_app;
 
 -- partitions are reachable only through their parent, where RLS applies (a partition queried directly bypasses the parent's policies)
 DO $$

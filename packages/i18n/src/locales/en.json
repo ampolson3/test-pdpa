@@ -2333,13 +2333,22 @@
       "empty": "No campaigns yet",
       "name": "Name",
       "channel": "Channel",
-      "channels": { "email": "E-mail", "sms": "SMS", "line": "LINE" },
+      "channels": {
+        "email": "E-mail",
+        "sms": "SMS",
+        "line": "LINE"
+      },
       "purposes": "Purposes requested",
       "identifiers": "Audience",
       "identifiersHint": "One per line, as type:value (e.g. email:alice@example.com, phone:+66812345678). Resolved into data subjects immediately — never stored raw.",
       "create": "Create campaign",
       "status": "Status",
-      "statuses": { "draft": "Draft", "sending": "Sending", "done": "Done", "cancelled": "Cancelled" },
+      "statuses": {
+        "draft": "Draft",
+        "sending": "Sending",
+        "done": "Done",
+        "cancelled": "Cancelled"
+      },
       "sent": "Sent",
       "opened": "Opened",
       "responded": "Responded",
@@ -3797,6 +3806,15 @@
         "saveAssign": "Assign",
         "assignError": "Couldn't assign: {detail}"
       }
+    },
+    "frameworks": {
+      "title": "Related laws mapping",
+      "intro": "Pick another related Thai law or notice (cybersecurity act, computer crime act, BOT/OIC/SEC notices) and get its own ready-to-use checklist.",
+      "noChecklist": "This framework has no published checklist yet.",
+      "submit": "Submit checklist",
+      "loading": "Loading...",
+      "empty": "No runs yet for this framework.",
+      "score": "Score: {score}"
     }
   },
   "ropaWizard": {

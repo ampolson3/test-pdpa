@@ -1724,6 +1724,24 @@ type GovDisposalJob struct {
 	RowVersion     int32              `db:"row_version" json:"row_version"`
 }
 
+// ผลการตอบ checklist ของกฎหมายอื่น ต่อรอบ (DPX-10)
+type GovFrameworkAssessment struct {
+	ID               uuid.UUID          `db:"id" json:"id"`
+	TenantID         uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	FrameworkID      uuid.UUID          `db:"framework_id" json:"framework_id"`
+	FormSubmissionID uuid.UUID          `db:"form_submission_id" json:"form_submission_id"`
+	Score            pgtype.Numeric     `db:"score" json:"score"`
+	Result           string             `db:"result" json:"result"`
+	Factors          []byte             `db:"factors" json:"factors"`
+	AssessedBy       pgtype.UUID        `db:"assessed_by" json:"assessed_by"`
+	AssessedAt       pgtype.Timestamptz `db:"assessed_at" json:"assessed_at"`
+	CreatedAt        pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy        pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt        pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy        pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion       int32              `db:"row_version" json:"row_version"`
+}
+
 // ชิ้นเอกสารสำหรับ RAG ของผู้ช่วย AI (pgvector)
 type GovKbChunk struct {
 	ID          uuid.UUID        `db:"id" json:"id"`
@@ -1795,6 +1813,21 @@ type GovRegulatorLetter struct {
 	UpdatedAt   pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 	UpdatedBy   pgtype.UUID        `db:"updated_by" json:"updated_by"`
 	RowVersion  int32              `db:"row_version" json:"row_version"`
+}
+
+// กฎหมาย/ประกาศอื่นที่เกี่ยวข้อง พร้อม checklist (DPX-10)
+type GovRegulatoryFramework struct {
+	ID              uuid.UUID          `db:"id" json:"id"`
+	Code            string             `db:"code" json:"code"`
+	NameTh          string             `db:"name_th" json:"name_th"`
+	NameEn          string             `db:"name_en" json:"name_en"`
+	LegalRefs       []string           `db:"legal_refs" json:"legal_refs"`
+	DescriptionTh   *string            `db:"description_th" json:"description_th"`
+	DescriptionEn   *string            `db:"description_en" json:"description_en"`
+	ChecklistFormID pgtype.UUID        `db:"checklist_form_id" json:"checklist_form_id"`
+	CreatedAt       pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	RowVersion      int32              `db:"row_version" json:"row_version"`
 }
 
 // การประเมินผลกระทบของประกาศใหม่ต่อ tenant

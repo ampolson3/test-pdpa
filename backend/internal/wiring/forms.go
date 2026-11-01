@@ -49,5 +49,12 @@ func Forms(n *notify.Service, a *audit.Service) *forms.Service {
 	// baseline migration, unused until now.
 	s.Register("quiz", forms.Policy{Read: "dpx.training.read", Create: "dpx.training.create",
 		Update: "dpx.training.update", Publish: "dpx.training.publish", Respond: "dpx.training.execute"})
+	// Related-laws checklists (DPX-10): a global catalog (migration 00096) seeded by migration, never
+	// authored through a tenant screen — Create/Update/Publish are declared for symmetry but never
+	// exercised in practice (the same "no screen edits this global content" note ROPA-20's sme_exemption
+	// registration already gives). Respond (dpx.framework.execute) is the one real action: answering a
+	// picked framework's own checklist through the gov module (forms.Service.Record).
+	s.Register("framework", forms.Policy{Read: "dpx.framework.read", Create: "dpx.framework.create",
+		Update: "dpx.framework.update", Publish: "dpx.framework.publish", Respond: "dpx.framework.execute"})
 	return s
 }

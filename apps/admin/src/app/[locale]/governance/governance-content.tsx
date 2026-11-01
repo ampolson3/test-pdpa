@@ -56,6 +56,7 @@ import {
   type GovAudit,
 } from "@pdpa/api-client";
 import { FileUploader } from "@/components/file-uploader";
+import { FrameworksSection } from "./frameworks-section";
 
 const INPUT = "mt-1 w-full rounded-md border border-slate-300 bg-white px-2 py-1";
 
@@ -892,6 +893,8 @@ export function GovernanceContent() {
           </tbody>
         </table>
       </section>}
+
+      <FrameworksSection client={client} />
     </main>
   );
 }

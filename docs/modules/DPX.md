@@ -707,6 +707,8 @@ all verified clean.
 
 **Acceptance criteria:** เลือก framework แล้วได้ checklist พร้อมใช้
 
+**สถานะ:** done — ดูรายละเอียดที่ `CLAUDE.md` หัวข้อ `### DPX-10 เชื่อมโยงกฎหมายอื่นที่เกี่ยวข้อง`.
+
 <a id="dpx-11"></a>
 ### DPX-11 ผู้ช่วย AI สำหรับ DPO
 

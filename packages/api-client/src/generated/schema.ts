@@ -6668,6 +6668,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/governance/frameworks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPX-10: the whole catalog of other related laws/notices, each naming its own ready-to-use PLT-06 checklist form (fetch its schema generically via GET /admin/v1/platform/forms/{id}) */
+        get: operations["govListFrameworks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/frameworks/{code}/assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPX-10: this tenant's own past runs of one framework's checklist, newest first */
+        get: operations["govListFrameworkAssessments"];
+        put?: never;
+        /** DPX-10's own acceptance criterion: answer the framework's own ready-to-use checklist in one step, scored by the form engine */
+        post: operations["govAssessFramework"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/governance/framework-assessments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DPX-10: one past framework-checklist run */
+        get: operations["govGetFrameworkAssessment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dataflow/graph": {
         parameters: {
             query?: never;
@@ -11792,6 +11844,35 @@ export interface components {
             };
             score: number;
             max_score: number;
+        };
+        GovFramework: {
+            id: components["schemas"]["Uuid"];
+            code: string;
+            name_th: string;
+            name_en: string;
+            legal_refs: string[];
+            description_th?: string | null;
+            description_en?: string | null;
+            /** Format: uuid */
+            checklist_form_id?: string | null;
+            row_version: number;
+        };
+        GovFrameworkAssessment: {
+            id: components["schemas"]["Uuid"];
+            framework_id: components["schemas"]["Uuid"];
+            form_submission_id: components["schemas"]["Uuid"];
+            score: number;
+            result: string;
+            factors: {
+                [key: string]: unknown;
+            }[];
+            /** Format: uuid */
+            assessed_by?: string | null;
+            /** Format: date-time */
+            assessed_at: string;
+            row_version: number;
+            /** Format: date-time */
+            created_at: string;
         };
         GovAudit: {
             id: components["schemas"]["Uuid"];
@@ -28303,6 +28384,128 @@ export interface operations {
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    govListFrameworks: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GovFramework"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    govListFrameworkAssessments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["GovFrameworkAssessment"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    govAssessFramework: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    answers: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovFrameworkAssessment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    govGetFrameworkAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovFrameworkAssessment"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     dataflowGetGraph: {

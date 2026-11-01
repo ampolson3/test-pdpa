@@ -49,3 +49,7 @@ output-options:
     - govSetAuditFindingStatus
     - govAttachFindingEvidence
     - govAssignFindingTask
+    - govListFrameworks
+    - govAssessFramework
+    - govListFrameworkAssessments
+    - govGetFrameworkAssessment
