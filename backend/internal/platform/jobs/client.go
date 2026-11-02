@@ -35,15 +35,30 @@ var GlobalKinds = map[string]bool{
 	// ropa.template_review_check per tenant. ropa.template_review_check itself is tenant-scoped and
 	// must NOT be added here.
 	"ropa.template_review_sweep": true,
+	// vendor/service.ReassessmentSweepArgs (VEN-10): reads only platform.tenants and enqueues one
+	// vendor.reassessment_check per tenant. vendor.reassessment_check itself is tenant-scoped and must
+	// NOT be added here. (docs/known-issues.md#jobs-01: this entry, and the five below it, were each
+	// already claimed "platform-wide (jobs.GlobalKinds)" by their own source comment but never actually
+	// added — every one of them was being cancelled with ErrMissingTenant on every real run. Fixed here.)
+	"vendor.reassessment_sweep": true,
+	// notice/service.ReviewSweepArgs (PNG-15): reads only platform.tenants and enqueues one
+	// notice.review_check per tenant. notice.review_check itself is tenant-scoped and must NOT be added here.
+	"notice.review_sweep": true,
+	// ropa/service.ReviewSweepArgs (ROPA-15): reads only platform.tenants and enqueues one
+	// ropa.review_check per tenant. ropa.review_check itself is tenant-scoped and must NOT be added here.
+	"ropa.review_sweep": true,
+	// consent/service.DoubleOptInSweepArgs (CON-23): reads only platform.tenants and enqueues one
+	// consent.double_opt_in_check per tenant. consent.double_opt_in_check itself is tenant-scoped and
+	// must NOT be added here.
+	"consent.double_opt_in_sweep": true,
+	// consent/service.ExpirySweepArgs (CON-20): reads only platform.tenants and enqueues one
+	// consent.expiry_check per tenant. consent.expiry_check itself is tenant-scoped and must NOT be
+	// added here.
+	"consent.expiry_sweep": true,
+	// gov/jobs.SweepArgs (DPX-05): reads only platform.tenants and enqueues one gov.retention_check per
+	// tenant. gov.retention_check itself is tenant-scoped and must NOT be added here.
+	"gov.retention_sweep": true,
 }
-
-// Known gap (not this feature's to fix — see docs/known-issues.md#jobs-01): vendor.reassessment_sweep
-// (VEN-10), notice.review_sweep (PNG-15), ropa.review_sweep (ROPA-15), consent.double_opt_in_sweep,
-// consent.expiry_sweep (CON-23/CON-20) and gov.retention_sweep (DPX-05) are the identical "sweep lists
-// tenants, carries no tenant_id" shape as this package's own entries above — each one's own source
-// comment even says "platform-wide (jobs.GlobalKinds)" — but none were ever actually added to this map.
-// Every one of them is cancelled with ErrMissingTenant the moment it actually runs. Each was only ever
-// disclosed as "not verified live"; add them here once that's addressed.
 
 // WorkerOptions configures NewWorkerClient. Zero values take the documented defaults.
 type WorkerOptions struct {

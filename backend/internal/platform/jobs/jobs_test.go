@@ -217,6 +217,77 @@ func TestTenantTxMiddleware_CancelsJobWithoutTenant(t *testing.T) {
 	}
 }
 
+// TestGlobalKinds_IncludesEveryPlatformWideSweep is the regression guard for docs/known-issues.md#jobs-01:
+// vendor.reassessment_sweep (VEN-10), notice.review_sweep (PNG-15), ropa.review_sweep (ROPA-15),
+// consent.double_opt_in_sweep (CON-23), consent.expiry_sweep (CON-20) and gov.retention_sweep (DPX-05) each
+// had a source comment claiming "platform-wide (jobs.GlobalKinds)" but no matching entry in the map itself,
+// so every one of them was silently cancelled by TenantTxMiddleware on every real run. Needs no database —
+// a pure check of the map literal — so it runs even where Postgres/Redis aren't reachable.
+func TestGlobalKinds_IncludesEveryPlatformWideSweep(t *testing.T) {
+	for _, kind := range []string{
+		"vendor.reassessment_sweep",
+		"notice.review_sweep",
+		"ropa.review_sweep",
+		"consent.double_opt_in_sweep",
+		"consent.expiry_sweep",
+		"gov.retention_sweep",
+	} {
+		if !jobs.GlobalKinds[kind] {
+			t.Errorf("GlobalKinds[%q] = false, want true — this sweep has no tenant_id and would be cancelled on every real run", kind)
+		}
+	}
+}
+
+// unscopedSweepArgs stands in for the real sweep structs above: no tenant_id, kind set per test case.
+type unscopedSweepArgs struct {
+	kind string
+	N    int `json:"n"`
+}
+
+func (a unscopedSweepArgs) Kind() string { return a.kind }
+
+// TestTenantTxMiddleware_RunsRegisteredGlobalSweepsWithoutATenant is
+// TestTenantTxMiddleware_CancelsJobWithoutTenant's own mirror image, driven through a real river.Client
+// against each of the six real kind strings TestGlobalKinds_IncludesEveryPlatformWideSweep checks
+// statically — proving the map entry actually lets a tenant-less job reach Work, not just that the map
+// literal contains the string.
+func TestTenantTxMiddleware_RunsRegisteredGlobalSweepsWithoutATenant(t *testing.T) {
+	for _, kind := range []string{
+		"vendor.reassessment_sweep",
+		"notice.review_sweep",
+		"ropa.review_sweep",
+		"consent.double_opt_in_sweep",
+		"consent.expiry_sweep",
+		"gov.retention_sweep",
+	} {
+		t.Run(kind, func(t *testing.T) {
+			app := dbtest.Pool(t)
+			t.Cleanup(func() {
+				_, _ = app.Exec(context.Background(), `DELETE FROM river_job WHERE kind = $1`, kind)
+			})
+
+			var ran atomic.Bool
+			workers := river.NewWorkers()
+			// AddWorkerArgs (not AddWorker) so the worker registers under this kind's own string —
+			// AddWorker would call Kind() on a zero-value unscopedSweepArgs instead, registering "".
+			river.AddWorkerArgs(workers, unscopedSweepArgs{kind: kind}, river.WorkFunc(func(ctx context.Context, job *river.Job[unscopedSweepArgs]) error {
+				ran.Store(true)
+				return nil
+			}))
+			client, _ := startWorker(t, app, jobs.WorkerOptions{Workers: workers})
+
+			res, err := client.Insert(context.Background(), unscopedSweepArgs{kind: kind, N: 1}, nil)
+			if err != nil {
+				t.Fatalf("insert: %v", err)
+			}
+			waitForState(t, app, res.Job.ID, "completed")
+			if !ran.Load() {
+				t.Errorf("worker for global kind %q never ran", kind)
+			}
+		})
+	}
+}
+
 // Enqueue uses the caller's transaction: the job exists only if that transaction commits.
 func TestEnqueue_FollowsTheCallersTransaction(t *testing.T) {
 	f := setup(t)

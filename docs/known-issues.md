@@ -140,7 +140,18 @@
 
 ## JOBS-01 — หลาย periodic sweep job ไม่ได้อยู่ใน `jobs.GlobalKinds` ทั้งที่ comment ของตัวเองบอกว่าอยู่
 
-- **สถานะ:** open
+- **สถานะ:** fixed (2026-11-02) — เพิ่ม 6 entry (`vendor.reassessment_sweep`, `notice.review_sweep`,
+  `ropa.review_sweep`, `consent.double_opt_in_sweep`, `consent.expiry_sweep`, `gov.retention_sweep`) เข้า
+  `internal/platform/jobs/client.go`'s `GlobalKinds` ตามที่ comment ของแต่ละ sweep เองบอกไว้อยู่แล้ว.
+  เพิ่มเทสต์กันไม่ให้เกิดซ้ำ 2 ตัวใน `internal/platform/jobs/jobs_test.go`:
+  `TestGlobalKinds_IncludesEveryPlatformWideSweep` (เช็ก literal string ทั้ง 6 ตัวอยู่ในแมปจริง — ไม่ต้องใช้
+  ฐานข้อมูล รันได้เสมอ) และ `TestTenantTxMiddleware_RunsRegisteredGlobalSweepsWithoutATenant` (รัน job จริง
+  ที่ไม่มี `tenant_id` ผ่าน `river.Client` จริงสำหรับ kind string ทั้ง 6 ตัว พิสูจน์ว่าไปถึง `Work` จริง ไม่ถูก
+  cancel — ต้องมี Postgres จริง, skip เมื่อไม่มี). ไม่กระทบ logic ของ `CheckDueReassessments`/
+  `CheckDueReviews`/ฯลฯ เอง (ถูกต้องอยู่แล้ว) — แก้แค่จุดที่ sweep เคยถูก cancel ก่อนจะไปถึง logic นั้น.
+  `go build ./...`, `go vet ./...`, `gofmt -l` (clean), `go test ./...` (ไม่มี regression — เหลือแต่
+  `internal/pkg/validate`'s own ที่ไม่เกี่ยวข้อง) ตรวจสอบแล้ว.
+- **สถานะเดิม (ก่อนแก้):** open
 - **พบเมื่อ:** 2026-10-23 ระหว่างทำ DPA-12 (เพิ่ม `agreement.missing_dpa_sweep` เข้า
   `internal/platform/jobs/client.go`'s `GlobalKinds`) — ไล่ตรวจ `GlobalKinds` ทั้งไฟล์เพื่อดูว่าจะวาง
   entry ใหม่ตรงไหน แล้วพบว่า sweep job อื่นๆ ที่ comment ของตัวเอง (ในไฟล์ของแต่ละโมดูล) ระบุชัดว่า

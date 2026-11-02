@@ -5792,6 +5792,32 @@ re-run with no drift beyond this feature's own additions, `pnpm --filter @pdpa/a
 `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated
 `/governance` route) all verified clean.
 
+### Fix: 6 periodic sweep jobs restored to `jobs.GlobalKinds` (`docs/known-issues.md#jobs-01`) — done
+Not a backlog feature — a cross-cutting bug fix. `internal/platform/jobs/client.go`'s `GlobalKinds` map had
+a `// Known gap` comment naming six periodic sweep jobs (`vendor.reassessment_sweep` VEN-10,
+`notice.review_sweep` PNG-15, `ropa.review_sweep` ROPA-15, `consent.double_opt_in_sweep` CON-23,
+`consent.expiry_sweep` CON-20, `gov.retention_sweep` DPX-05) each already claimed "platform-wide
+(jobs.GlobalKinds)" by its own source comment in its own module — but none were ever actually added to the
+map itself. Each of those six structs carries no `tenant_id`, so `TenantTxMiddleware.Work` was cancelling
+every one of them with `ErrMissingTenant` the instant it ran for real, before ever reaching its own `Work`
+method to enqueue the real per-tenant check job — meaning all six of these features' own periodic-reminder
+acceptance criteria had never actually fired against a real worker, despite each one's own unit tests
+(which call the `Service` method directly, bypassing River/`TenantTxMiddleware` entirely) passing. Fixed by
+adding the six literal kind strings to the map, following the exact comment style the already-present
+entries (`cookie.scan_schedule_sweep`, `agreement.missing_dpa_sweep`, `ropa.template_review_sweep`) already
+use. Two regression tests added to `internal/platform/jobs/jobs_test.go`:
+`TestGlobalKinds_IncludesEveryPlatformWideSweep` (a pure map-literal check, no database needed, so it runs
+even where Postgres isn't reachable) and `TestTenantTxMiddleware_RunsRegisteredGlobalSweepsWithoutATenant`
+(drives a real tenant-less job through a real `river.Client` for each of the six kind strings via
+`river.AddWorkerArgs` — not `river.AddWorker`, which would call `Kind()` on a zero-value instance instead of
+the real kind — proving each one reaches `Work` rather than being cancelled). No change to any of the six
+sweeps' own `Work`/`CheckDue*` logic, which was already correct — only to the point upstream where they were
+being stopped before ever running. `go build ./...`, `go vet ./...`, `gofmt -l` (clean), `go test ./...` (no
+regressions — only the pre-existing, unrelated `internal/pkg/validate` failure) all verified clean. Not
+verified live against a real Postgres/Redis in this pass — neither was reachable in this environment; the
+new live test compiles and vets clean and skips the same way the rest of this codebase's own suite already
+does without one.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 
