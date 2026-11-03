@@ -21,6 +21,8 @@ SELECT id, legal_entity_id, subject_type_id, notice_type, title, slug, document_
 FROM notice.notices
 WHERE (sqlc.narg(notice_type)::text IS NULL OR notice_type = sqlc.narg(notice_type))
   AND (sqlc.narg(status)::text IS NULL OR status = sqlc.narg(status))
+  -- PNG-16: scopes the org-policy composer's own "every published notice" read to one legal entity.
+  AND (sqlc.narg(legal_entity_id)::uuid IS NULL OR legal_entity_id = sqlc.narg(legal_entity_id))
   AND (sqlc.narg(cursor_at)::timestamptz IS NULL
        OR (updated_at, id) < (sqlc.narg(cursor_at)::timestamptz, sqlc.narg(cursor_id)::uuid))
 ORDER BY updated_at DESC, id DESC

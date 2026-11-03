@@ -8,6 +8,7 @@ import {
   createApiClient,
   useActivities,
   useCreateNoticeWizard,
+  useCreateOrgPolicyWizard,
   useIndustryTemplates,
   useLegalEntities,
   useMentionSearch,
@@ -42,6 +43,71 @@ function detail(e: unknown): string {
 
 type Draft = { legal_entity_id: string; notice_type: NoticeType | ""; title: string; slug: string; activity_ids: string[]; template_group: string };
 const blank: Draft = { legal_entity_id: "", notice_type: "", title: "", slug: "", activity_ids: [], template_group: "" };
+
+type OrgPolicyDraft = { legal_entity_id: string; policy_type: "privacy_policy" | "cookie_policy" | ""; title: string; slug: string };
+const blankOrgPolicy: OrgPolicyDraft = { legal_entity_id: "", policy_type: "", title: "", slug: "" };
+
+/** PNG-16: compose an organization-level Privacy Policy or Cookie Policy citing every one of a legal
+ * entity's own currently-published notices / cookie-policy pages, each at its own always-current link. */
+function OrgPolicyPanel({
+  client, entities, canCreate, onClose, onCreated,
+}: {
+  client: ApiClient;
+  entities: { id: string; name_th: string }[];
+  canCreate: boolean;
+  onClose: () => void;
+  onCreated: (documentId: string) => void;
+}) {
+  const t = useTranslations("notices");
+  const wizard = useCreateOrgPolicyWizard(client);
+  const [d, setD] = useState<OrgPolicyDraft>(blankOrgPolicy);
+  const slugValid = d.slug === "" || SLUG_RE.test(d.slug);
+  const set = (p: Partial<OrgPolicyDraft>) => setD({ ...d, ...p });
+
+  return (
+    <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2" disabled={!canCreate} data-testid="org-policy-wizard">
+      <legend className="px-1 font-semibold">{t("orgPolicy.title")}</legend>
+      <p className="text-slate-600 sm:col-span-2">{t("orgPolicy.intro")}</p>
+      <label><span className="block text-slate-600">{t("form.legalEntity")}</span>
+        <select className={INPUT} value={d.legal_entity_id} onChange={(e) => set({ legal_entity_id: e.target.value })}>
+          <option value="">{t("form.choose")}</option>
+          {entities.map((le) => <option key={le.id} value={le.id}>{le.name_th}</option>)}
+        </select>
+      </label>
+      <label><span className="block text-slate-600">{t("orgPolicy.policyType")}</span>
+        <select className={INPUT} value={d.policy_type} onChange={(e) => set({ policy_type: e.target.value as OrgPolicyDraft["policy_type"] })}>
+          <option value="">{t("form.choose")}</option>
+          <option value="privacy_policy">{t("types.privacy_policy")}</option>
+          <option value="cookie_policy">{t("types.cookie_policy")}</option>
+        </select>
+      </label>
+      <label><span className="block text-slate-600">{t("form.noticeTitle")}</span>
+        <input className={INPUT} value={d.title} onChange={(e) => set({ title: e.target.value })} maxLength={300} /></label>
+      <label><span className="block text-slate-600">{t("form.slug")}</span>
+        <input className={INPUT} value={d.slug} onChange={(e) => set({ slug: e.target.value })} maxLength={120}
+          aria-invalid={!slugValid} placeholder="org-privacy-policy" />
+        {!slugValid && <span className="text-xs text-red-700">{t("form.slugInvalid")}</span>}
+      </label>
+      {wizard.isError && <p className="text-red-700 sm:col-span-2" role="alert">{t("form.saveError", { detail: detail(wizard.error) })}</p>}
+      <div className="flex gap-2 sm:col-span-2">
+        <Button
+          data-testid="org-policy-generate"
+          disabled={wizard.isPending || !d.legal_entity_id || !d.policy_type || !d.title || !d.slug || !slugValid}
+          onClick={() => {
+            if (!d.policy_type) return;
+            wizard.mutate(
+              { legal_entity_id: d.legal_entity_id, policy_type: d.policy_type, title: d.title, slug: d.slug },
+              { onSuccess: (n) => { setD(blankOrgPolicy); onCreated(n!.document_id); } },
+            );
+          }}
+        >
+          {t("orgPolicy.generate")}
+        </Button>
+        <Button variant="secondary" onClick={() => { wizard.reset(); setD(blankOrgPolicy); onClose(); }}>{t("form.cancel")}</Button>
+      </div>
+    </fieldset>
+  );
+}
 
 /** PNG-02/PNG-05: the ม.23 checklist and translation-sync status for one notice — expanded inline under its row. */
 function ChecklistPanel({ client, noticeId }: { client: ApiClient; noticeId: string }) {
@@ -426,6 +492,7 @@ export function NoticesContent({ portalUrl }: { portalUrl: string }) {
   const [versionsOpen, setVersionsOpen] = useState<string | null>(null);
   const [linkedOpen, setLinkedOpen] = useState<string | null>(null);
   const [cctvOpen, setCctvOpen] = useState<string | null>(null);
+  const [orgPolicyOpen, setOrgPolicyOpen] = useState(false);
 
   const list = useNotices(client, {});
   const wizard = useCreateNoticeWizard(client);
@@ -469,8 +536,19 @@ export function NoticesContent({ portalUrl }: { portalUrl: string }) {
         <div className="flex gap-2">
           <Link className="self-center text-sky-700 underline" href="/notices/indirect-collections">{t("indirectCollectionsLink")}</Link>
           {canCreate && <Button onClick={() => { wizard.reset(); setDraft({ ...blank }); }} data-testid="new-notice">{t("newNotice")}</Button>}
+          {canCreate && <Button variant="secondary" onClick={() => setOrgPolicyOpen((v) => !v)} data-testid="org-policy-toggle">{t("orgPolicy.toggle")}</Button>}
         </div>
       </header>
+
+      {orgPolicyOpen && (
+        <OrgPolicyPanel
+          client={client}
+          entities={entities.data ?? []}
+          canCreate={canCreate}
+          onClose={() => setOrgPolicyOpen(false)}
+          onCreated={(documentId) => { setOrgPolicyOpen(false); router.push(`/documents/${documentId}`); }}
+        />
+      )}
 
       {draft && (
         <fieldset className="grid gap-3 rounded-md border border-slate-200 bg-white p-4 sm:grid-cols-2" disabled={!canCreate}>

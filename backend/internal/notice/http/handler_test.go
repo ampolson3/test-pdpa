@@ -216,6 +216,24 @@ func TestNoticeEndpoints_Contract(t *testing.T) {
 		t.Errorf("list: %d %s", code, body)
 	}
 
+	// PNG-16 org-policy wizard.
+	orgPolicy := map[string]any{"legal_entity_id": legalEntity, "policy_type": "privacy_policy", "title": "นโยบายความเป็นส่วนตัวระดับองค์กร", "slug": "org-privacy-policy"}
+	if code, _ := do("POST", "/admin/v1/notices/org-policy-wizard", nil, orgPolicy); code != 401 {
+		t.Errorf("org-policy-wizard, no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", "/admin/v1/notices/org-policy-wizard", &viewer, orgPolicy); code != 403 {
+		t.Errorf("org-policy-wizard, read permission only: %d, want 403", code)
+	}
+	if code, _ := do("POST", "/admin/v1/notices/org-policy-wizard", &admin, map[string]any{"legal_entity_id": legalEntity, "policy_type": "bogus", "title": "x", "slug": "x"}); code != 400 {
+		t.Errorf("org-policy-wizard, bad policy_type: %d, want 400 (schema)", code)
+	}
+	if code, body := do("POST", "/admin/v1/notices/org-policy-wizard", &admin, map[string]any{"legal_entity_id": uuid.New(), "policy_type": "privacy_policy", "title": "x", "slug": "org-policy-unknown-entity"}); code != 422 || !strings.Contains(body, "notice.invalid_input") {
+		t.Errorf("org-policy-wizard, unknown legal entity: %d %s, want 422", code, body)
+	}
+	if code, body := do("POST", "/admin/v1/notices/org-policy-wizard", &admin, orgPolicy); code != 201 || !strings.Contains(body, `"notice_type":"privacy_policy"`) || !strings.Contains(body, `"status":"draft"`) {
+		t.Errorf("org-policy-wizard, create: %d %s", code, body)
+	}
+
 	// PNG-02 checklist.
 	checklist := item + "/checklist"
 	if code, _ := do("GET", checklist, nil, nil); code != 401 {

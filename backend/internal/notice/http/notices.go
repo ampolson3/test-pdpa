@@ -91,6 +91,17 @@ func (h *Strict) NoticeCreateNotice(ctx context.Context, req NoticeCreateNoticeR
 	return NoticeCreateNotice201JSONResponse{Body: toNoticeWire(n), Headers: NoticeCreateNotice201ResponseHeaders{ETag: etag(n.RowVersion)}}, nil
 }
 
+func (h *Strict) NoticeCreateOrgPolicy(ctx context.Context, req NoticeCreateOrgPolicyRequestObject) (NoticeCreateOrgPolicyResponseObject, error) {
+	b := *req.Body
+	n, err := h.svc.CreateOrgPolicyWizard(ctx, noticeservice.OrgPolicyWizardInput{
+		LegalEntityID: b.LegalEntityId, PolicyType: string(b.PolicyType), Title: b.Title, Slug: b.Slug,
+	})
+	if err != nil {
+		return nil, problem(err)
+	}
+	return NoticeCreateOrgPolicy201JSONResponse{Body: toNoticeWire(n), Headers: NoticeCreateOrgPolicy201ResponseHeaders{ETag: etag(n.RowVersion)}}, nil
+}
+
 func (h *Strict) NoticeGetNotice(ctx context.Context, req NoticeGetNoticeRequestObject) (NoticeGetNoticeResponseObject, error) {
 	n, err := h.svc.GetNotice(ctx, req.Id)
 	if err != nil {

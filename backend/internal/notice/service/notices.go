@@ -58,8 +58,11 @@ type NoticeCursor struct {
 type NoticeFilter struct {
 	NoticeType string
 	Status     string
-	After      *NoticeCursor
-	Limit      int
+	// LegalEntityID narrows to one legal entity's own notices (PNG-16's org-policy composer; optional
+	// everywhere else).
+	LegalEntityID *uuid.UUID
+	After         *NoticeCursor
+	Limit         int
 }
 
 const noticePageSize = 50
@@ -98,6 +101,9 @@ func (s *Service) ListNotices(ctx context.Context, f NoticeFilter) ([]Notice, *N
 	}
 	if f.Status != "" {
 		p.Status = &f.Status
+	}
+	if f.LegalEntityID != nil {
+		p.LegalEntityID = pgUUID(f.LegalEntityID)
 	}
 	if f.After != nil {
 		p.CursorAt = pgtype.Timestamptz{Time: f.After.UpdatedAt, Valid: true}
@@ -176,11 +182,19 @@ func (s *Service) CreateWizard(ctx context.Context, in WizardInput) (Notice, err
 		return Notice{}, err
 	}
 
-	doc, err := s.Docs.Create(ctx, docsservice.CreateInput{DocType: "notice", Title: in.Title, LegalEntityID: &in.LegalEntityID})
+	return s.createNotice(ctx, in.LegalEntityID, in.SubjectTypeID, in.NoticeType, in.Title, in.Slug, content, in.ActivityIDs)
+}
+
+// createNotice is CreateWizard's and CreateOrgPolicyWizard's (PNG-16) shared tail: create the underlying
+// PLT-16 document with the given content, insert the notice row, link any given RoPA activities, and audit —
+// all in the request's own transaction (rule 1). The caller has already validated title/slug/notice_type
+// and resolved legalEntityID/subjectTypeID visible under RLS.
+func (s *Service) createNotice(ctx context.Context, legalEntityID uuid.UUID, subjectTypeID *uuid.UUID, noticeType, title, slug string, content render.Content, activityIDs []uuid.UUID) (Notice, error) {
+	doc, err := s.Docs.Create(ctx, docsservice.CreateInput{DocType: "notice", Title: title, LegalEntityID: &legalEntityID})
 	if err != nil {
 		return Notice{}, err
 	}
-	if _, err := s.Docs.SaveDraft(ctx, doc.ID, doc.RowVersion, docsservice.Draft{Title: in.Title, LegalEntityID: &in.LegalEntityID, Content: content}); err != nil {
+	if _, err := s.Docs.SaveDraft(ctx, doc.ID, doc.RowVersion, docsservice.Draft{Title: title, LegalEntityID: &legalEntityID, Content: content}); err != nil {
 		return Notice{}, err
 	}
 
@@ -193,8 +207,8 @@ func (s *Service) CreateWizard(ctx context.Context, in WizardInput) (Notice, err
 	err = pdb.Savepoint(ctx, func(ctx context.Context) error {
 		var err error
 		row, err = noticestore.New(pdb.MustTxFromContext(ctx)).InsertNotice(ctx, noticestore.InsertNoticeParams{
-			ID: id, LegalEntityID: in.LegalEntityID, SubjectTypeID: pgUUID(in.SubjectTypeID), NoticeType: in.NoticeType,
-			Title: in.Title, Slug: in.Slug, DocumentID: doc.ID,
+			ID: id, LegalEntityID: legalEntityID, SubjectTypeID: pgUUID(subjectTypeID), NoticeType: noticeType,
+			Title: title, Slug: slug, DocumentID: doc.ID,
 		})
 		return err
 	})
@@ -205,14 +219,14 @@ func (s *Service) CreateWizard(ctx context.Context, in WizardInput) (Notice, err
 	if err != nil {
 		return Notice{}, err
 	}
-	for _, aid := range in.ActivityIDs {
+	for _, aid := range activityIDs {
 		if err := q.InsertNoticeActivityLink(ctx, noticestore.InsertNoticeActivityLinkParams{NoticeID: id, ActivityID: aid}); err != nil {
 			return Notice{}, err
 		}
 	}
 
 	out := toNotice(noticestore.GetNoticeRow(row))
-	out.ActivityIDs = in.ActivityIDs
+	out.ActivityIDs = activityIDs
 	if err := s.audit(ctx, "notice.notice.create", out.ID, nil, map[string]any{"title": out.Title, "notice_type": out.NoticeType, "document_id": out.DocumentID}); err != nil {
 		return Notice{}, err
 	}

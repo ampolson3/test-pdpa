@@ -1948,6 +1948,13 @@
       "hotel": "Hotel",
       "education": "Education",
       "government": "Government"
+    },
+    "orgPolicy": {
+      "toggle": "Generate org policy",
+      "title": "Org-level policy wizard",
+      "intro": "Pick a legal entity and which document to compose (Privacy Policy or Cookie Policy). A draft is generated citing every one of this legal entity's own currently-published notices / cookie-policy pages, each by its own always-current public link.",
+      "policyType": "Document type",
+      "generate": "Generate draft"
     }
   },
   "masterData": {

@@ -5096,6 +5096,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/notices/org-policy-wizard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** PNG-16 — compose an organization-level Privacy Policy or Cookie Policy citing every one of this legal entity's own currently-published notices / cookie-policy pages, each by its own always-current public link (so "latest version" holds by construction, not a snapshot) */
+        post: operations["noticeCreateOrgPolicy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/notices": {
         parameters: {
             query?: never;
@@ -10270,6 +10287,24 @@ export interface components {
             activity_ids: components["schemas"]["Uuid"][];
             /** @description A PNG-03 data-subject group code (see GET /admin/v1/notices/template-groups) or a PNG-11 industry code (see GET /admin/v1/notices/industry-templates) — both are starter templates on the same underlying table, looked up by this one code; its DRAFT sample content becomes the draft instead of composing from activity_ids. Mutually exclusive with activity_ids. */
             template_group?: string;
+        };
+        /**
+         * @example {
+         *       "legal_entity_id": "00000000-0000-0000-0000-000000000000",
+         *       "policy_type": "privacy_policy",
+         *       "title": "นโยบายความเป็นส่วนตัวระดับองค์กร",
+         *       "slug": "org-privacy-policy"
+         *     }
+         */
+        NoticeOrgPolicyInput: {
+            legal_entity_id: components["schemas"]["Uuid"];
+            /**
+             * @description Which org-level document to compose — notice_type privacy_policy cites every published notice of this legal entity; cookie_policy cites every one of its registered cookie domains' own live cookie-policy page (CON-05).
+             * @enum {string}
+             */
+            policy_type: "privacy_policy" | "cookie_policy";
+            title: string;
+            slug: string;
         };
         Notice: {
             id: components["schemas"]["Uuid"];
@@ -24391,6 +24426,38 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    noticeCreateOrgPolicy: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoticeOrgPolicyInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Notice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     noticeListNotices: {

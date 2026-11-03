@@ -740,6 +740,10 @@ changed" trigger is PNG-10's own job, not built here.
 
 **Acceptance criteria:** นโยบายที่สร้างอ้างถึงประกาศและตารางคุกกี้เวอร์ชันล่าสุด
 
+**สถานะ:** done — see `CLAUDE.md`'s own PNG-16 section for the implementation note (compose(); `notice.notices`
+of type `privacy_policy`/`cookie_policy`, each a thin PLT-16 document citing every one of the legal entity's
+own currently-published notices, or cookie domains, by their own always-current public link).
+
 <a id="png-13"></a>
 ### PNG-13 ลิงก์เอกสารอ้างอิงในประกาศ
 

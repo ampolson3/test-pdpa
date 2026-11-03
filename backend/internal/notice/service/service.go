@@ -110,6 +110,9 @@ type Service struct {
 	Files   Files
 	Dpo     Dpo
 	Consent Consent
+	// Cookie resolves PNG-16's own Cookie Policy wizard (nil-means-skip, same convention as every other
+	// optional cross-cutting field here).
+	Cookie Cookie
 	// Notify and River drive PNG-04's 30-day indirect-collection reminders (notice.indirect_due); nil in
 	// contexts that don't need them (e.g. a stub in a test that never registers a collection).
 	Notify *notify.Service

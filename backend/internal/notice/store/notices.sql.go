@@ -497,18 +497,21 @@ SELECT id, legal_entity_id, subject_type_id, notice_type, title, slug, document_
 FROM notice.notices
 WHERE ($1::text IS NULL OR notice_type = $1)
   AND ($2::text IS NULL OR status = $2)
-  AND ($3::timestamptz IS NULL
-       OR (updated_at, id) < ($3::timestamptz, $4::uuid))
+  -- PNG-16: scopes the org-policy composer's own "every published notice" read to one legal entity.
+  AND ($3::uuid IS NULL OR legal_entity_id = $3)
+  AND ($4::timestamptz IS NULL
+       OR (updated_at, id) < ($4::timestamptz, $5::uuid))
 ORDER BY updated_at DESC, id DESC
-LIMIT $5
+LIMIT $6
 `
 
 type ListNoticesParams struct {
-	NoticeType *string            `db:"notice_type" json:"notice_type"`
-	Status     *string            `db:"status" json:"status"`
-	CursorAt   pgtype.Timestamptz `db:"cursor_at" json:"cursor_at"`
-	CursorID   pgtype.UUID        `db:"cursor_id" json:"cursor_id"`
-	Lim        int32              `db:"lim" json:"lim"`
+	NoticeType    *string            `db:"notice_type" json:"notice_type"`
+	Status        *string            `db:"status" json:"status"`
+	LegalEntityID pgtype.UUID        `db:"legal_entity_id" json:"legal_entity_id"`
+	CursorAt      pgtype.Timestamptz `db:"cursor_at" json:"cursor_at"`
+	CursorID      pgtype.UUID        `db:"cursor_id" json:"cursor_id"`
+	Lim           int32              `db:"lim" json:"lim"`
 }
 
 type ListNoticesRow struct {
@@ -534,6 +537,7 @@ func (q *Queries) ListNotices(ctx context.Context, arg ListNoticesParams) ([]Lis
 	rows, err := q.db.Query(ctx, listNotices,
 		arg.NoticeType,
 		arg.Status,
+		arg.LegalEntityID,
 		arg.CursorAt,
 		arg.CursorID,
 		arg.Lim,

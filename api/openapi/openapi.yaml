@@ -14814,6 +14814,41 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/notices/org-policy-wizard:
+    post:
+      operationId: noticeCreateOrgPolicy
+      tags: [notice]
+      summary: PNG-16 — compose an organization-level Privacy Policy or Cookie Policy citing every one of this legal entity's own currently-published notices / cookie-policy pages, each by its own always-current public link (so "latest version" holds by construction, not a snapshot)
+      x-permission: notice.document.create
+      x-module: notice
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoticeOrgPolicyInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/notices:
     get:
       operationId: noticeListNotices
@@ -25127,6 +25162,22 @@ components:
         title: ประกาศความเป็นส่วนตัวสำหรับลูกค้า
         slug: customer-privacy-notice
         activity_ids: []
+    NoticeOrgPolicyInput:
+      type: object
+      required: [legal_entity_id, policy_type, title, slug]
+      properties:
+        legal_entity_id: {$ref: '#/components/schemas/Uuid'}
+        policy_type:
+          type: string
+          enum: [privacy_policy, cookie_policy]
+          description: Which org-level document to compose — notice_type privacy_policy cites every published notice of this legal entity; cookie_policy cites every one of its registered cookie domains' own live cookie-policy page (CON-05).
+        title: {type: string, maxLength: 300}
+        slug: {type: string, minLength: 1, maxLength: 120, pattern: '^[a-z0-9-]+$'}
+      example:
+        legal_entity_id: 00000000-0000-0000-0000-000000000000
+        policy_type: privacy_policy
+        title: นโยบายความเป็นส่วนตัวระดับองค์กร
+        slug: org-privacy-policy
     Notice:
       type: object
       required: [id, legal_entity_id, notice_type, title, slug, document_id, status, review_cycle_months, row_version, updated_at]

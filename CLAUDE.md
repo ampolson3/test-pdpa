@@ -5818,6 +5818,54 @@ verified live against a real Postgres/Redis in this pass — neither was reachab
 new live test compiles and vets clean and skips the same way the rest of this codebase's own suite already
 does without one.
 
+### PNG-16 สร้างนโยบายความเป็นส่วนตัวและนโยบายคุกกี้ (`docs/modules/PNG.md#png-16`) — done
+`notice.notices.notice_type`'s own CHECK constraint has listed `privacy_policy`/`cookie_policy` since the
+very first baseline migration (00007_notice.sql), unused by any code until now — no new migration.
+`internal/notice/service/org_policy.go`'s `CreateOrgPolicyWizard` composes and creates either kind the exact
+way PNG-01's own `CreateWizard` already does: the shared insert-document-and-notice-row tail
+(`notices.go`'s now-exported-internally `createNotice`, factored out of `CreateWizard` itself, which calls
+it unchanged) is reused by both. The acceptance criterion ("นโยบายที่สร้างอ้างถึงประกาศและตารางคุกกี้เวอร์ชัน
+ล่าสุด") holds by construction rather than by snapshotting: `composeOrgPolicy` cites every source as a
+plain-text title/name plus that source's own always-current public link — PNG-06's own `/n/{key}` page for a
+Privacy Policy's related notices (each with the version number current at compose time, `ListNoticeVersions`'
+own newest-first convention), or CON-05's own `/cookie-policy/{key}` page for a Cookie Policy's own domains —
+never a copy of that page's content, so a later republish is automatically "the latest version" with no
+re-compose needed. `ListNotices` gained a `LegalEntityID` filter (new `sqlc.narg` clause, no migration) to
+scope the Privacy Policy's own "every notice" read to one legal entity, the same pattern DPA-12's own
+`CounterpartyID` filter already established on a sibling list query.
+
+A new `Cookie` interface (rule 9: `ListDomains`, backed directly by `*cookieservice.Service` — `cookieSvc` is
+already constructed ahead of `noticeSvc` in `cmd/api/main.go`, no import cycle) gives the Cookie Policy path
+every one of this tenant's registered domains; only a domain that both belongs to the chosen legal entity
+and has a `PublicKey` (CON-01's own "issued only once the banner has published") is cited — an unregistered
+or not-yet-published domain is silently skipped, the same "existence, not judgement" reading DSAR-04/DSAR-10's
+own FK-presence gates already use. Either composer falls back to a bracketed placeholder (`[ยังไม่มี...]`)
+when nothing qualifies yet — PNG-01's own compose() convention, never a silently empty section. `s.Cookie`
+stays nil-means-skip (the worker's own `noticeSvc`, which never calls this wizard, is unaffected).
+
+API: `POST /admin/v1/notices/org-policy-wizard` (`notice.document.create`, reusing PNG-01's own permission —
+no new code; `NoticeOrgPolicyInput{legal_entity_id, policy_type, title, slug}` → `Notice`, same shape
+`noticeCreateNotice` already returns, since the result is an ordinary `notice.notices` row routed straight
+to PLT-16's own document editor exactly like PNG-01's own wizard). UI: `/notices` gained a "Generate org
+policy" toggle next to the existing wizard button — a legal-entity picker, a Privacy Policy/Cookie Policy
+selector, title/slug, and a generate button routing straight to the composed draft's document editor, the
+same pattern PNG-01's own wizard already uses. Tests: unit (`internal/notice/service/org_policy_test.go` —
+the acceptance criterion directly: a published notice is cited by title, version and its own live link,
+while a still-draft one never is; a domain with a published banner is cited by its own cookie-policy link,
+one with no published banner or belonging to another legal entity is not; a legal entity with nothing
+published yet gets a placeholder; validation — bad policy_type, unknown legal entity, bad title/slug; two-
+tenant isolation: tenant B's composed policy never cites tenant A's own published notice), HTTP contract
+(`internal/notice/http/handler_test.go`'s existing `TestNoticeEndpoints_Contract`, extended with
+401/403/400/422/201 on the new endpoint through the real validator + AuthZ). Not verified live against a
+real Postgres/Redis in this pass — neither was reachable in this environment; every test compiles and vets
+clean and skips the same way the rest of this module's own suite already does without one. `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file — the pre-existing `internal/notice/service/
+indirect.go` violation is untouched by this change), `go test ./...` (no regressions — the only failure,
+`internal/pkg/validate`'s own pre-existing, unrelated one, confirmed identical via `git stash` both before
+and after this change), `sqlc generate`/`oapi-codegen`/`openapi-typescript` all re-run with no drift beyond
+this feature's own additions, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated `/notices` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

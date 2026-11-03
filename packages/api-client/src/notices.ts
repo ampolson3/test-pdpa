@@ -5,6 +5,7 @@ export type Notice = components["schemas"]["Notice"];
 export type NoticeType = components["schemas"]["NoticeType"];
 export type NoticeStatus = components["schemas"]["NoticeStatus"];
 export type NoticeWizardInput = components["schemas"]["NoticeWizardInput"];
+export type NoticeOrgPolicyInput = components["schemas"]["NoticeOrgPolicyInput"];
 export type NoticeChecklistItem = components["schemas"]["NoticeChecklistItem"];
 export type NoticeVersion = components["schemas"]["NoticeVersion"];
 export type NoticePublishIntentInput = components["schemas"]["NoticePublishIntentInput"];
@@ -123,6 +124,21 @@ export function useCreateNoticeWizard(client: ApiClient) {
   return useMutation({
     mutationFn: async (body: NoticeWizardInput) => {
       const { data, error } = await client.POST("/admin/v1/notices", { body });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: noticesKey }),
+  });
+}
+
+/** POST /admin/v1/notices/org-policy-wizard (PNG-16) — composes an organization-level Privacy Policy or
+ * Cookie Policy citing every one of this legal entity's own currently-published notices / cookie-policy
+ * pages, each by its own always-current public link. */
+export function useCreateOrgPolicyWizard(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: NoticeOrgPolicyInput) => {
+      const { data, error } = await client.POST("/admin/v1/notices/org-policy-wizard", { body });
       if (error) throw error;
       return data;
     },

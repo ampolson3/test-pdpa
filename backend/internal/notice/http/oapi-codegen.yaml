@@ -9,6 +9,7 @@ output-options:
     - noticeListIndustryTemplates
     - noticeListNotices
     - noticeCreateNotice
+    - noticeCreateOrgPolicy
     - noticeGetNotice
     - noticeGetChecklist
     - noticeGetTranslationStatus
