@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	orgstore "pdpa-platform/internal/org/store"
+	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/platform/files"
 )
@@ -186,6 +187,28 @@ func (e *LegalEntity) normalize() error {
 	return nil
 }
 
+// inLegalEntityScope reports whether the caller's own grants (ORG-02) let them see id — true for every
+// caller with no narrowing scope at all (a worker's own trusted system call, or at least one tenant-scoped
+// assignment), false only for a caller restricted to a specific set of legal entities that doesn't include
+// id. See authz.Grants.LegalEntityScope.
+func inLegalEntityScope(ctx context.Context, id uuid.UUID) bool {
+	g, _ := authz.FromContext(ctx)
+	ids, scoped := g.LegalEntityScope()
+	if !scoped {
+		return true
+	}
+	s := id.String()
+	for _, want := range ids {
+		if want == s {
+			return true
+		}
+	}
+	return false
+}
+
+// ListLegalEntities returns every legal entity visible under RLS, narrowed to the caller's own
+// legal-entity scope when one applies (ORG-02's own acceptance criterion: a user scoped to one company
+// never sees another's, even though both are in the same tenant and pass RLS).
 func (s *Service) ListLegalEntities(ctx context.Context) ([]LegalEntity, error) {
 	rows, err := orgstore.New(pdb.MustTxFromContext(ctx)).ListLegalEntities(ctx)
 	if err != nil {
@@ -193,7 +216,10 @@ func (s *Service) ListLegalEntities(ctx context.Context) ([]LegalEntity, error) 
 	}
 	out := make([]LegalEntity, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, toLegalEntity(orgstore.GetLegalEntityRow(r)))
+		e := toLegalEntity(orgstore.GetLegalEntityRow(r))
+		if inLegalEntityScope(ctx, e.ID) {
+			out = append(out, e)
+		}
 	}
 	return out, nil
 }
@@ -205,6 +231,9 @@ func (s *Service) GetLegalEntity(ctx context.Context, id uuid.UUID) (LegalEntity
 	}
 	if err != nil {
 		return LegalEntity{}, err
+	}
+	if !inLegalEntityScope(ctx, id) {
+		return LegalEntity{}, ErrNotFound // out of the caller's own scope reads the same as not existing
 	}
 	return toLegalEntity(r), nil
 }
@@ -367,7 +396,8 @@ func (u *OrgUnit) normalize() error {
 	return nil
 }
 
-// ListOrgUnits returns the tree in path order (parents before children), optionally of one legal entity.
+// ListOrgUnits returns the tree in path order (parents before children), optionally of one legal entity —
+// narrowed to the caller's own legal-entity scope when one applies (ORG-02).
 func (s *Service) ListOrgUnits(ctx context.Context, legalEntityID *uuid.UUID, includeClosed bool) ([]OrgUnit, error) {
 	rows, err := orgstore.New(pdb.MustTxFromContext(ctx)).ListOrgUnits(ctx, orgstore.ListOrgUnitsParams{LegalEntityID: pgUUID(legalEntityID), IncludeClosed: includeClosed})
 	if err != nil {
@@ -375,7 +405,10 @@ func (s *Service) ListOrgUnits(ctx context.Context, legalEntityID *uuid.UUID, in
 	}
 	out := make([]OrgUnit, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, toOrgUnit(orgstore.GetOrgUnitRow(r)))
+		u := toOrgUnit(orgstore.GetOrgUnitRow(r))
+		if inLegalEntityScope(ctx, u.LegalEntityID) {
+			out = append(out, u)
+		}
 	}
 	return out, nil
 }
@@ -520,6 +553,8 @@ func (s *Service) UnitWithin(ctx context.Context, unit, scope uuid.UUID, include
 
 // GetOrgUnit reads under the RLS of the transaction in ctx — exported for other modules (rule 9) to
 // verify an org_unit_id they're about to store is real and visible before writing it (FKs bypass RLS).
+// Also enforces the caller's own legal-entity scope (ORG-02), so a scoped caller can't reference — or
+// learn the existence of — another company's own org unit through a cross-module write either.
 func (s *Service) GetOrgUnit(ctx context.Context, id uuid.UUID) (OrgUnit, error) {
 	r, err := orgstore.New(pdb.MustTxFromContext(ctx)).GetOrgUnit(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -528,7 +563,11 @@ func (s *Service) GetOrgUnit(ctx context.Context, id uuid.UUID) (OrgUnit, error)
 	if err != nil {
 		return OrgUnit{}, err
 	}
-	return toOrgUnit(r), nil
+	u := toOrgUnit(r)
+	if !inLegalEntityScope(ctx, u.LegalEntityID) {
+		return OrgUnit{}, ErrNotFound
+	}
+	return u, nil
 }
 
 // label is a unit's own ltree label: its id without dashes (stable across renames and moves).

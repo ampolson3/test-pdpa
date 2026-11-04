@@ -131,12 +131,15 @@
 
 **หมายเหตุ:** ดึงเข้า P0 เพราะกระทบ data model ทุกโมดูล
 
-**สถานะ (decisions Q-24):** เลื่อนไว้ก่อน — acceptance criterion บังคับ data scope ต่อผู้ใช้ ซึ่งเป็นงานของ permission
-engine (IAM-02, ยัง blocked อยู่ที่ Keycloak/IAM-01, Q-18) ไม่ใช่ของ ORG โดยตรง ระดับข้อมูลพร้อมแล้ว:
-`org.legal_entities.parent_id` (ORG-01) รองรับบริษัทแม่/บริษัทในเครือ และทุกตารางธุรกิจมีคอลัมน์ `legal_entity_id`
-มาตั้งแต่ baseline migration (00006–00018) — ขาดแค่ชั้นบังคับสิทธิ์ (`iam.role_assignments.legal_entity_id` มีคอลัมน์
-แล้วแต่ยังไม่มี service ให้กำหนด และ AuthZ ยังไม่อ่านค่านี้) กับ DPO ร่วมของกลุ่ม (ต้องมีโมดูล DPO ก่อน) ทำต่อเมื่อ IAM-02
-เสร็จ
+**สถานะ: done** (การมอบ scope เองยังรอ IAM-02) — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### ORG-02`. สรุป: ตัวบล็อกจริง
+ที่ Q-24 เคยระบุคือ "AuthZ ยังไม่อ่านคอลัมน์นี้" ไม่ใช่ตัว IAM-02 โดยตรง — `internal/iam/service/loader.go`'s
+`NewLoader` อ่าน `iam.role_assignments.scope_type`/`legal_entity_id` เข้า `authz.Grants.Scopes` มาตั้งแต่ baseline
+อยู่แล้ว (ไม่ขึ้นกับ IAM-02) เพียงไม่มีอะไรบังคับตามค่านี้ — ปิดช่องว่างด้วย `authz.Grants.LegalEntityScope()` ใหม่ +
+การบังคับใน `ListLegalEntities`/`GetLegalEntity`/`ListOrgUnits`/`GetOrgUnit` ซึ่งเป็น gate ที่ทุกโมดูลอื่นเรียกตรวจ
+FK-visibility อยู่แล้ว (rule 1) — ไม่มี UI ใหม่เลย ตัวสลับ/กรองบริษัทที่มีอยู่แล้วบน `/settings/organization` ก็เป็นของ
+จริงทันที เพราะอ่านจาก endpoint ที่ถูกจำกัดขอบเขตแล้วโดยตรง ("ตัวสลับบริษัทที่กำลังทำงาน + ตัวกรองบริษัท" ของฟีเจอร์
+นี้). DPO ร่วมของกลุ่มทำได้แล้วด้วย DPO-01 เดิม (แต่งตั้งผู้ใช้คนเดียวกันที่หลายนิติบุคคล). ยังรอ IAM-02 จริงๆ แค่หน้าจอ
+ให้ ORGADMIN มอบ legal_entity-scoped role assignment เอง (วันนี้ทำได้แค่ insert ตรงฐานข้อมูล/migration/devseed).
 
 <a id="org-04"></a>
 ### ORG-04 โครงสร้างหน่วยงานแบบลำดับชั้น

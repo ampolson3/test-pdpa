@@ -5927,6 +5927,63 @@ elsewhere in the tree are untouched by this change), `go test ./...` (no regress
 `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
 build`/`typecheck` (incl. the updated `/data-flow` route) all verified clean.
 
+### ORG-02 หลายนิติบุคคลและบริษัทในเครือ (`docs/modules/ORG.md#org-02`) — done, scope-granting UI still pending IAM-02
+`docs/decisions.md` Q-24 had deferred this feature past IAM-02 (blocked on Keycloak/IAM-01, Q-18), reasoning
+that its literal acceptance criterion ("ผู้ใช้ของบริษัท A ไม่เห็นข้อมูลบริษัท B ถ้าไม่ได้รับ scope") needs a
+real data-scope enforcement layer, not a UI that only looks like it enforces one. Re-reading that reasoning
+against the actual code found the real blocker was narrower than "needs IAM-02": `internal/iam/service/
+loader.go`'s `NewLoader` already reads `iam.role_assignments.scope_type`/`legal_entity_id`/`org_unit_id`
+into `authz.Grants.Scopes` on every request — since the very first baseline IAM pass, with no dependency on
+IAM-02 at all — the gap was only that nothing anywhere ever read `Scopes` back to actually narrow anything
+(confirmed by grep: `Scopes` was surfaced on `GET /me` and otherwise untouched). That gap is exactly what
+this feature closes, with no new migration, endpoint, or UI.
+
+`authz.Grants` gained `LegalEntityScope() (ids []string, ok bool)`: `ok` is false — unrestricted, exactly
+today's behavior — when the caller holds no grants at all (a worker's own trusted system call) or at least
+one `scope_type="tenant"` assignment, the default every seeded/dev role assignment already uses (confirmed
+via grep: no existing test anywhere in this codebase sets `Grants.Scopes`, so this is a zero-regression
+change); `ok` is true only when every one of the caller's own assignments is `legal_entity`-scoped, in which
+case `ids` is the union of every entity they name. `internal/org/service/structure.go`'s new
+`inLegalEntityScope` helper enforces it in exactly four places: `ListLegalEntities` (filters the result),
+`GetLegalEntity` (returns `ErrNotFound` for an out-of-scope id — existence hidden, not a 403, the literal
+"ไม่เห็น"), `ListOrgUnits` and `GetOrgUnit` (same, keyed off each unit's own `legal_entity_id`). Because
+`GetLegalEntity`/`GetOrgUnit` are already the shared rule-1 FK-visibility gate dozens of other modules call
+before storing a `legal_entity_id`/`org_unit_id` they didn't create themselves (ROPA-02, DPO-01, VEN-01,
+and every module since), this one change also means a scoped caller can't reference — or learn the
+existence of — another company's data through any of those cross-module writes either, not just the org
+module's own reads.
+
+No new UI at all: `/settings/organization`'s existing legal-entity picker (`useLegalEntities`, already the
+page's own "switch the working company" + filter, this feature's own frontend note taken literally) reads
+straight from the now-scoped `ListLegalEntities` — a scoped caller's picker already shows only their own
+companies with zero frontend change, closing Q-24's own objection to building a picker with nothing real
+behind it. "DPO ร่วมของกลุ่ม" (a shared group DPO) needed no new code either: DPO-01 already lets the same
+`user_id` be appointed across several legal entities' own `dpo.appointments` rows.
+
+Still genuinely waiting on IAM-02, disclosed rather than worked around: there is no screen anywhere in this
+codebase yet for an ORGADMIN to actually grant someone a `legal_entity`-scoped role assignment — only a
+direct database/migration/devseed insert can create one today (the same "no consumer yet" deferral this
+codebase uses throughout). The enforcement this feature builds is real and already active the moment such a
+row exists; building the self-service grant screen is IAM-01/IAM-02's own job once Q-18's Keycloak PoC
+unblocks them.
+
+Tests: `internal/pkg/authz/grants_test.go`'s `TestLegalEntityScope` (pure, no database — every case directly:
+no scopes, a tenant-scoped assignment overriding an alongside legal_entity one, one and several
+legal_entity scopes unioned and deduplicated, org_unit/self scopes alone not narrowing anything), run live
+and passing in this environment with no reachable Postgres needed. `internal/org/service/
+org02_scope_test.go`'s `TestLegalEntityScope_UserOfCompanyANeverSeesCompanyB` (the acceptance criterion
+directly: a caller scoped to company A sees only A in the list, gets A directly, gets `ErrNotFound` for B
+and for B's own org unit both via list and via direct get; an unscoped caller is unaffected and still sees
+both) and `TestLegalEntityScope_CrossModuleWriteRefusesOutOfScopeEntity` (a scoped caller's own
+`CreateOrgUnit` against B's legal entity is refused as `ErrInvalid`, the same way an unknown/invisible one
+already was, while their own scoped company A still succeeds). Not verified live against a real
+Postgres/Redis in this pass — neither was reachable in this environment; both DB-backed tests compile and
+vet clean and skip the same way the rest of this module's own suite already does without one. `go build
+./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions — the only
+failure, `internal/pkg/validate`'s own pre-existing, unrelated one) all verified clean. No OpenAPI, sqlc, or
+frontend change — `pnpm --filter @pdpa/i18n test` re-verified clean as a sanity check since no file there
+changed either.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 
