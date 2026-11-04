@@ -5866,6 +5866,67 @@ and after this change), `sqlc generate`/`oapi-codegen`/`openapi-typescript` all 
 this feature's own additions, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
 `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated `/notices` route) all verified clean.
 
+### DFG-06 มุมมองหลายระดับ (`docs/modules/DFG.md#dfg-06`) — done, scoped to 3 of the 4 named views
+`dataflow.snapshots.view_type` had no CHECK constraint — unlike `dataflow.layouts`, which does — and
+already carried a code comment from DFG-07's own pass explicitly anticipating this feature, so no
+migration was needed; the entire scope is a pure read-side change to the live graph computation
+(`Graph()`, DFG-01/03/04) plus the small set of callers that already pass it a context.
+`dataflowservice.View` is a new string type with three constants: `ViewDepartment` (literal value
+`"org_unit"` — kept identical to the value every snapshot published before this feature already stores,
+so an old snapshot's own `view_type` still round-trips; the OpenAPI-facing enum value is `"department"`
+for clarity, bridged by a `toView()` mapping function at the HTTP boundary, `internal/dataflow/http/
+handler.go`), `ViewCompany` (`"company"`), `ViewDataCategory` (`"data_category"`). `Graph(ctx,
+legalEntityID, view)` widened its own signature (every call site updated: `ExportDiagram`, `Report`,
+`PublishSnapshot`/`ListSnapshots`, `internal/wiring/dataflow.go`'s DSA-07 annex adapter, and all 6
+pre-existing test files in `internal/dataflow/service`).
+
+The acceptance criterion ("สลับมุมมองได้โดยข้อมูลตรงกัน" — switching views keeps the data consistent)
+holds by construction, not by a post-hoc check: every non-swimlane node (activity/recipient/country/
+disposal) and every edge is computed identically regardless of `view` — only each activity's own
+`ParentID` and which swimlane node it points to differ. `seenOrgUnit` (a department-only dedup map)
+became a generic `seenSwimlane map[string]bool`, and a new `swimlaneNode` helper method resolves the
+right swimlane per view: `ViewDepartment` keeps the existing org-unit-name lookup (`Org.GetOrgUnit`);
+`ViewCompany` resolves the activity's own legal entity (`Org.GetLegalEntity`, a new `legalEntityNodeID`
+helper, node type `legal_entity`); `ViewDataCategory` resolves the activity's own *primary* data category
+— the first `ropa.activity_data` row's own category, `Org.GetMaster` — falling back to a fixed
+`uncategorizedDataCategoryNodeID` swimlane (`"data_category:uncategorized"`) when the activity has no
+data rows at all, so every activity always lands under exactly one data-category swimlane. `Org`
+(rule 9) widened with `GetLegalEntity` — already exported by `orgservice`, no change needed there.
+
+Deliberately **not built**: the fourth named view, "รายระบบ" (by system/asset) — RoPA activities have no
+FK link to `ropa.assets` yet (the exact gap DPIA-04's own CLAUDE.md note already discloses: "no field for
+owner_user_id yet... `ropa.activity_systems`... ROPA-02/03 never built any CRUD on that table"), so there
+is nothing real to swimlane by; add it once that link exists. `dataflow.layouts`' own `view_type` CHECK
+constraint (a different table, DFG-05's own saved-layout positions) is untouched — this feature only
+widens the already-unconstrained `dataflow.snapshots.view_type`.
+
+API: `view` query parameter (enum `department`/`company`/`data_category`, default `department`) added to
+`GET /admin/v1/dataflow/graph`, `GET /admin/v1/dataflow/graph/export`, `GET /admin/v1/dataflow/report`,
+`GET`/`POST /admin/v1/dataflow/snapshots` — no new endpoint, permission or migration; `DataflowNode.type`'s
+wire enum widened with `legal_entity`/`data_category`. UI: `/data-flow` gained a view picker
+(`data-testid="dataflow-view-picker"`) next to the legal-entity filter — switching it re-queries the graph
+and re-renders with the chosen swimlanes; the existing `n.type === "org_unit"` swimlane-rendering checks
+(both the React Flow group-node builder and the label-node push) were generalized into a shared
+`isSwimlane(type)` helper covering all three swimlane types. `packages/api-client/src/dataflow.ts`'s
+`useDataflowGraph`/`useDataflowSnapshots`/`useDataflowPublishSnapshot` filters and
+`dataflowExportHref`/`dataflowReportHref` all gained an optional `view` parameter.
+
+Tests: `internal/dataflow/service/dfg06_view_test.go` — the acceptance criterion directly
+(`TestGraph_SwitchingViewsKeepsTheSameUnderlyingData`: department/company/data_category views return the
+exact same non-swimlane node/edge sets, only each activity's own `parent_id` differs, matching each view's
+own expected swimlane), `TestGraph_CompanyView_SeparatesLegalEntitiesIntoSwimlanes` (two legal entities'
+activities land under two separate `legal_entity` swimlanes, never merged and never under an `org_unit`
+one), `TestGraph_DataCategoryView_GroupsByPrimaryCategory` (an activity with a logged category lands under
+that category's own named swimlane, never the uncategorized one). Not verified live against a real
+Postgres/Redis in this pass — neither was reachable in this environment; every test compiles and vets
+clean and skips the same way the rest of this module's own suite already does without one. `go build
+./...`, `go vet ./...`, `gofmt -l` (clean on every touched file — the pre-existing, unrelated violations
+elsewhere in the tree are untouched by this change), `go test ./...` (no regressions — the only failure,
+`internal/pkg/validate`'s own pre-existing, unrelated one), `sqlc generate`/`oapi-codegen`/
+`openapi-typescript` (`make gen`) all re-run with no drift beyond this feature's own additions,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build`/`typecheck` (incl. the updated `/data-flow` route) all verified clean.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

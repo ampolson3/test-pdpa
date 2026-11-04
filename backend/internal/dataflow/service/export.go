@@ -67,8 +67,8 @@ const (
 // hand it to the shared platform/docs/render renderers — the diagram is not a PLT-16 document, but the
 // rendering backends (Gotenberg in production, a local headless Chromium in development) are the same
 // shared, stateless capability every other module's own PDF export already reuses.
-func (s *Service) ExportDiagram(ctx context.Context, legalEntityID *uuid.UUID, format ExportFormat, paper Paper) ([]byte, string, error) {
-	g, err := s.Graph(ctx, legalEntityID)
+func (s *Service) ExportDiagram(ctx context.Context, legalEntityID *uuid.UUID, view View, format ExportFormat, paper Paper) ([]byte, string, error) {
+	g, err := s.Graph(ctx, legalEntityID, view)
 	if err != nil {
 		return nil, "", err
 	}

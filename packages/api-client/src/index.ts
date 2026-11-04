@@ -679,6 +679,7 @@ export {
   type DataflowEdge,
   type DataflowSnapshot,
   type DataflowSnapshotSummary,
+  type DataflowView,
 } from "./dataflow";
 export {
   useDsarRequestTypes,

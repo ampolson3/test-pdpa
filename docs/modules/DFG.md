@@ -342,6 +342,15 @@ the raster path actually produces a valid image at the chosen paper's pixel size
 
 **Acceptance criteria:** สลับมุมมองได้โดยข้อมูลตรงกัน
 
+**สถานะ: done** (ไม่รวมมุมมองรายระบบ) — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### DFG-06`. สรุป: `Graph()`
+(DFG-01/03/04) รับพารามิเตอร์ `View` ใหม่ (department/company/data_category — ตรงกับ `dataflow.
+snapshots.view_type` ที่เตรียมช่องไว้ตั้งแต่ DFG-07 ไม่ต้อง migration ใหม่) สลับเฉพาะ swimlane ของแต่ละ
+activity (org_unit/legal_entity/data_category) โดย node ที่ไม่ใช่ swimlane (activity/recipient/country/
+disposal) และ edge เหมือนกันทุกมุมมอง — พิสูจน์ด้วยเทส `TestGraph_SwitchingViewsKeepsTheSameUnderlyingData`.
+มุมมองรายระบบ (ตามระบบ/ asset) ยังไม่ทำ เพราะ RoPA ยังไม่มี FK เชื่อม activity ↔ `ropa.assets` (ช่องว่างที่
+เปิดเผยไว้แล้วใน DPIA-04). Endpoint เดิม (`GET /admin/v1/dataflow/graph`, `/graph/export`, `/report`,
+`/snapshots`) รับ query param `view` ใหม่ (ค่าเริ่มต้น department). UI: `/data-flow` มีตัวเลือกมุมมองใหม่.
+
 <a id="dfg-07"></a>
 ### DFG-07 เผยแพร่และประวัติเวอร์ชันแผนผัง
 

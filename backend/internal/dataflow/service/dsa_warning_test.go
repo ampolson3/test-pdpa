@@ -51,7 +51,7 @@ func TestGraph_ControllerWithoutDSAWarning(t *testing.T) {
 	})
 
 	e.in(t, func(ctx context.Context) error {
-		g, err := e.svc.Graph(ctx, nil)
+		g, err := e.svc.Graph(ctx, nil, "")
 		if err != nil {
 			return err
 		}
@@ -80,7 +80,7 @@ func TestGraph_ControllerWithoutDSAWarning(t *testing.T) {
 	})
 
 	e.in(t, func(ctx context.Context) error {
-		g, err := e.svc.Graph(ctx, nil)
+		g, err := e.svc.Graph(ctx, nil, "")
 		if err != nil {
 			return err
 		}

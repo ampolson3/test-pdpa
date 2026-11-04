@@ -20,17 +20,35 @@ func NewStrict(svc *dataflowservice.Service) *Strict { return &Strict{svc: svc} 
 var _ StrictServerInterface = (*Strict)(nil)
 
 func (h *Strict) DataflowGetGraph(ctx context.Context, req DataflowGetGraphRequestObject) (DataflowGetGraphResponseObject, error) {
-	g, err := h.svc.Graph(ctx, req.Params.LegalEntityId)
+	g, err := h.svc.Graph(ctx, req.Params.LegalEntityId, toView(req.Params.View))
 	if err != nil {
 		return nil, err
 	}
 	return DataflowGetGraph200JSONResponse(toGraphWire(g)), nil
 }
 
+// toView maps the wire DataflowView enum (department/company/data_category) onto the service's own View
+// type — DFG-06's own department value is the literal string "org_unit" internally (ViewDepartment,
+// graph.go), the same value every snapshot published before DFG-06 already stores, so the wire-facing name
+// stays clear while dataflow.snapshots.view_type keeps resolving under its original key.
+func toView(v *DataflowView) dataflowservice.View {
+	if v == nil {
+		return dataflowservice.ViewDepartment
+	}
+	switch *v {
+	case "company":
+		return dataflowservice.ViewCompany
+	case "data_category":
+		return dataflowservice.ViewDataCategory
+	default:
+		return dataflowservice.ViewDepartment
+	}
+}
+
 // DFG-07: publish/version-history endpoints.
 
 func (h *Strict) DataflowListSnapshots(ctx context.Context, req DataflowListSnapshotsRequestObject) (DataflowListSnapshotsResponseObject, error) {
-	list, err := h.svc.ListSnapshots(ctx, req.Params.LegalEntityId)
+	list, err := h.svc.ListSnapshots(ctx, req.Params.LegalEntityId, toView(req.Params.View))
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +60,7 @@ func (h *Strict) DataflowListSnapshots(ctx context.Context, req DataflowListSnap
 }
 
 func (h *Strict) DataflowPublishSnapshot(ctx context.Context, req DataflowPublishSnapshotRequestObject) (DataflowPublishSnapshotResponseObject, error) {
-	s, err := h.svc.PublishSnapshot(ctx, req.Params.LegalEntityId)
+	s, err := h.svc.PublishSnapshot(ctx, req.Params.LegalEntityId, toView(req.Params.View))
 	if err != nil {
 		return nil, snapshotProblem(err)
 	}

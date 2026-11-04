@@ -32,7 +32,7 @@ func TestPublishSnapshot_RoundTripsAndListsNewestFirst(t *testing.T) {
 
 	var firstID string
 	e.in(t, func(ctx context.Context) error {
-		s, err := e.svc.PublishSnapshot(ctx, nil)
+		s, err := e.svc.PublishSnapshot(ctx, nil, "")
 		if err != nil {
 			return err
 		}
@@ -62,7 +62,7 @@ func TestPublishSnapshot_RoundTripsAndListsNewestFirst(t *testing.T) {
 
 	var secondID string
 	e.in(t, func(ctx context.Context) error {
-		s, err := e.svc.PublishSnapshot(ctx, nil)
+		s, err := e.svc.PublishSnapshot(ctx, nil, "")
 		if err != nil {
 			return err
 		}
@@ -77,7 +77,7 @@ func TestPublishSnapshot_RoundTripsAndListsNewestFirst(t *testing.T) {
 	})
 
 	e.in(t, func(ctx context.Context) error {
-		list, err := e.svc.ListSnapshots(ctx, nil)
+		list, err := e.svc.ListSnapshots(ctx, nil, "")
 		if err != nil {
 			return err
 		}
@@ -137,7 +137,7 @@ func TestListSnapshots_TwoTenantIsolation(t *testing.T) {
 		if _, err := a.ropa.SaveActivity(ctx, ropaservice.Activity{LegalEntityID: le.ID, OrgUnitID: unit.ID, Code: "ISO-01", Name: "A", Role: "controller"}, 0); err != nil {
 			return err
 		}
-		s, err := a.svc.PublishSnapshot(ctx, nil)
+		s, err := a.svc.PublishSnapshot(ctx, nil, "")
 		if err != nil {
 			return err
 		}
@@ -146,7 +146,7 @@ func TestListSnapshots_TwoTenantIsolation(t *testing.T) {
 	})
 
 	b.in(t, func(ctx context.Context) error {
-		list, err := b.svc.ListSnapshots(ctx, nil)
+		list, err := b.svc.ListSnapshots(ctx, nil, "")
 		if err != nil {
 			return err
 		}

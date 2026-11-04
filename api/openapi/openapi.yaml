@@ -19597,7 +19597,7 @@ paths:
     get:
       operationId: dataflowGetGraph
       tags: [dataflow]
-      summary: 'DFG-01/DFG-03: the tenant''s data flow diagram, composed live from RoPA (ROPA-03/08) on every read — org-unit swimlanes, activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge'
+      summary: 'DFG-01/DFG-03: the tenant''s data flow diagram, composed live from RoPA (ROPA-03/08) on every read — a swimlane per DFG-06 view (department/company/data_category), activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge'
       x-permission: ropa.dataflow.read
       x-module: dataflow
       security:
@@ -19610,6 +19610,12 @@ paths:
           schema:
             $ref: '#/components/schemas/Uuid'
           description: Narrow the graph to one legal entity's activities; omitted shows every legal entity's activities together
+        - name: view
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/DataflowView'
+          description: 'DFG-06: how activities are grouped into swimlanes — the same nodes/edges otherwise, so switching views never changes the underlying data; defaults to department'
       responses:
         '200':
           description: OK
@@ -19637,6 +19643,11 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/Uuid'
+        - name: view
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/DataflowView'
         - name: format
           in: query
           required: true
@@ -19690,6 +19701,11 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/Uuid'
+        - name: view
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/DataflowView'
         - name: language
           in: query
           required: true
@@ -19741,6 +19757,11 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/Uuid'
+        - name: view
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/DataflowView'
       responses:
         '200':
           description: OK
@@ -19771,6 +19792,11 @@ paths:
           required: false
           schema:
             $ref: '#/components/schemas/Uuid'
+        - name: view
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/DataflowView'
       responses:
         '201':
           description: Created
@@ -23607,17 +23633,21 @@ components:
         task_id: {$ref: '#/components/schemas/Uuid'}
         row_version: {type: integer}
         created_at: {$ref: '#/components/schemas/Timestamp'}
+    DataflowView:
+      type: string
+      enum: [department, company, data_category]
+      description: 'DFG-06: department groups by org unit (the original DFG-01 grouping), company by legal entity, data_category by each activity''s own primary data category (or an "uncategorized" swimlane if it names none). "system" (by ropa.assets) is not offered — RoPA never links an activity to an asset yet.'
     DataflowNode:
       type: object
-      description: One box on the diagram — an org unit (a swimlane other nodes nest under via parent_id), a processing activity, an external-party recipient, or a destination country.
+      description: 'One box on the diagram — a swimlane (DFG-06: org_unit, legal_entity or data_category, depending on the requested view) other nodes nest under via parent_id, a processing activity, an external-party recipient, a destination country, or a disposal method.'
       required: [id, type, label]
       properties:
         id: {type: string, description: 'Stable within one graph response, e.g. "activity:<uuid>" — not a database id on its own.'}
         type:
           type: string
-          enum: [org_unit, activity, recipient, country, disposal]
+          enum: [org_unit, legal_entity, data_category, activity, recipient, country, disposal]
         label: {type: string}
-        parent_id: {type: string, description: "The containing org_unit node's id, for an activity node"}
+        parent_id: {type: string, description: "The containing swimlane node's own id (DFG-06: org_unit/legal_entity/data_category, depending on the requested view), for an activity node"}
         activity_code: {type: string}
         activity_status: {type: string}
         role:

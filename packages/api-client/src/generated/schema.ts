@@ -6744,7 +6744,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — org-unit swimlanes, activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge */
+        /** DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — a swimlane per DFG-06 view (department/company/data_category), activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge */
         get: operations["dataflowGetGraph"];
         put?: never;
         post?: never;
@@ -9102,14 +9102,19 @@ export interface components {
             row_version: number;
             created_at: components["schemas"]["Timestamp"];
         };
-        /** @description One box on the diagram — an org unit (a swimlane other nodes nest under via parent_id), a processing activity, an external-party recipient, or a destination country. */
+        /**
+         * @description DFG-06: department groups by org unit (the original DFG-01 grouping), company by legal entity, data_category by each activity's own primary data category (or an "uncategorized" swimlane if it names none). "system" (by ropa.assets) is not offered — RoPA never links an activity to an asset yet.
+         * @enum {string}
+         */
+        DataflowView: "department" | "company" | "data_category";
+        /** @description One box on the diagram — a swimlane (DFG-06: org_unit, legal_entity or data_category, depending on the requested view) other nodes nest under via parent_id, a processing activity, an external-party recipient, a destination country, or a disposal method. */
         DataflowNode: {
             /** @description Stable within one graph response, e.g. "activity:<uuid>" — not a database id on its own. */
             id: string;
             /** @enum {string} */
-            type: "org_unit" | "activity" | "recipient" | "country" | "disposal";
+            type: "org_unit" | "legal_entity" | "data_category" | "activity" | "recipient" | "country" | "disposal";
             label: string;
-            /** @description The containing org_unit node's id, for an activity node */
+            /** @description The containing swimlane node's own id (DFG-06: org_unit/legal_entity/data_category, depending on the requested view), for an activity node */
             parent_id?: string;
             activity_code?: string;
             activity_status?: string;
@@ -28580,6 +28585,8 @@ export interface operations {
             query?: {
                 /** @description Narrow the graph to one legal entity's activities; omitted shows every legal entity's activities together */
                 legal_entity_id?: components["schemas"]["Uuid"];
+                /** @description DFG-06: how activities are grouped into swimlanes — the same nodes/edges otherwise, so switching views never changes the underlying data; defaults to department */
+                view?: components["schemas"]["DataflowView"];
             };
             header?: {
                 /** @description Language of messages and localized fields (default th) */
@@ -28607,6 +28614,7 @@ export interface operations {
         parameters: {
             query: {
                 legal_entity_id?: components["schemas"]["Uuid"];
+                view?: components["schemas"]["DataflowView"];
                 format: "svg" | "png" | "pdf";
                 /** @description Page size for png/pdf (ignored for svg); defaults to a3 */
                 paper?: "a3" | "a4" | "letter";
@@ -28648,6 +28656,7 @@ export interface operations {
         parameters: {
             query: {
                 legal_entity_id?: components["schemas"]["Uuid"];
+                view?: components["schemas"]["DataflowView"];
                 language: "th" | "en";
                 format: "pdf" | "docx" | "html";
             };
@@ -28688,6 +28697,7 @@ export interface operations {
         parameters: {
             query?: {
                 legal_entity_id?: components["schemas"]["Uuid"];
+                view?: components["schemas"]["DataflowView"];
             };
             header?: never;
             path?: never;
@@ -28714,6 +28724,7 @@ export interface operations {
         parameters: {
             query?: {
                 legal_entity_id?: components["schemas"]["Uuid"];
+                view?: components["schemas"]["DataflowView"];
             };
             header?: never;
             path?: never;

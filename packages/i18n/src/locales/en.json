@@ -3931,6 +3931,12 @@
       "loadError": "Could not load version history.",
       "empty": "No published versions yet.",
       "versionLabel": "Version {n}"
+    },
+    "view": {
+      "label": "View",
+      "department": "Department",
+      "company": "Company",
+      "dataCategory": "Data category"
     }
   },
   "cookieBanners": {

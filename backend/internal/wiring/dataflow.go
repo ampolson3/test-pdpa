@@ -17,7 +17,7 @@ import (
 type agreementDataflow struct{ svc *dataflowservice.Service }
 
 func (a agreementDataflow) ExportDiagram(ctx context.Context, legalEntityID *uuid.UUID, format, paper string) ([]byte, string, error) {
-	return a.svc.ExportDiagram(ctx, legalEntityID, dataflowservice.ExportFormat(format), dataflowservice.Paper(paper))
+	return a.svc.ExportDiagram(ctx, legalEntityID, dataflowservice.ViewDepartment, dataflowservice.ExportFormat(format), dataflowservice.Paper(paper))
 }
 
 // AgreementDataflow builds the Dataflow adapter DSA-07's AttachFlowDiagramAnnex needs.

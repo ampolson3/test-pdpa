@@ -41,25 +41,52 @@ func (e DataflowEdgeType) Valid() bool {
 
 // Defines values for DataflowNodeType.
 const (
-	Activity  DataflowNodeType = "activity"
-	Country   DataflowNodeType = "country"
-	Disposal  DataflowNodeType = "disposal"
-	OrgUnit   DataflowNodeType = "org_unit"
-	Recipient DataflowNodeType = "recipient"
+	DataflowNodeTypeActivity     DataflowNodeType = "activity"
+	DataflowNodeTypeCountry      DataflowNodeType = "country"
+	DataflowNodeTypeDataCategory DataflowNodeType = "data_category"
+	DataflowNodeTypeDisposal     DataflowNodeType = "disposal"
+	DataflowNodeTypeLegalEntity  DataflowNodeType = "legal_entity"
+	DataflowNodeTypeOrgUnit      DataflowNodeType = "org_unit"
+	DataflowNodeTypeRecipient    DataflowNodeType = "recipient"
 )
 
 // Valid indicates whether the value is a known member of the DataflowNodeType enum.
 func (e DataflowNodeType) Valid() bool {
 	switch e {
-	case Activity:
+	case DataflowNodeTypeActivity:
 		return true
-	case Country:
+	case DataflowNodeTypeCountry:
 		return true
-	case Disposal:
+	case DataflowNodeTypeDataCategory:
 		return true
-	case OrgUnit:
+	case DataflowNodeTypeDisposal:
 		return true
-	case Recipient:
+	case DataflowNodeTypeLegalEntity:
+		return true
+	case DataflowNodeTypeOrgUnit:
+		return true
+	case DataflowNodeTypeRecipient:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DataflowView.
+const (
+	DataflowViewCompany      DataflowView = "company"
+	DataflowViewDataCategory DataflowView = "data_category"
+	DataflowViewDepartment   DataflowView = "department"
+)
+
+// Valid indicates whether the value is a known member of the DataflowView enum.
+func (e DataflowView) Valid() bool {
+	switch e {
+	case DataflowViewCompany:
+		return true
+	case DataflowViewDataCategory:
+		return true
+	case DataflowViewDepartment:
 		return true
 	default:
 		return false
@@ -286,7 +313,7 @@ type DataflowGraph struct {
 	Nodes       []DataflowNode `json:"nodes"`
 }
 
-// DataflowNode One box on the diagram — an org unit (a swimlane other nodes nest under via parent_id), a processing activity, an external-party recipient, or a destination country.
+// DataflowNode One box on the diagram — a swimlane (DFG-06: org_unit, legal_entity or data_category, depending on the requested view) other nodes nest under via parent_id, a processing activity, an external-party recipient, a destination country, or a disposal method.
 type DataflowNode struct {
 	ActivityCode   *string `json:"activity_code,omitempty"`
 	ActivityStatus *string `json:"activity_status,omitempty"`
@@ -302,7 +329,7 @@ type DataflowNode struct {
 	Id    string `json:"id"`
 	Label string `json:"label"`
 
-	// ParentId The containing org_unit node's id, for an activity node
+	// ParentId The containing swimlane node's own id (DFG-06: org_unit/legal_entity/data_category, depending on the requested view), for an activity node
 	ParentId      *string   `json:"parent_id,omitempty"`
 	Purposes      *[]string `json:"purposes,omitempty"`
 	RecipientRole *string   `json:"recipient_role,omitempty"`
@@ -355,6 +382,9 @@ type DataflowSnapshotSummary struct {
 	PublishedBy *Uuid `json:"published_by,omitempty"`
 	VersionNo   int   `json:"version_no"`
 }
+
+// DataflowView DFG-06: department groups by org unit (the original DFG-01 grouping), company by legal entity, data_category by each activity's own primary data category (or an "uncategorized" swimlane if it names none). "system" (by ropa.assets) is not offered — RoPA never links an activity to an asset yet.
+type DataflowView string
 
 // FieldError defines model for FieldError.
 type FieldError struct {
@@ -413,6 +443,9 @@ type DataflowGetGraphParams struct {
 	// LegalEntityId Narrow the graph to one legal entity's activities; omitted shows every legal entity's activities together
 	LegalEntityId *Uuid `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
 
+	// View DFG-06: how activities are grouped into swimlanes — the same nodes/edges otherwise, so switching views never changes the underlying data; defaults to department
+	View *DataflowView `form:"view,omitempty" json:"view,omitempty"`
+
 	// AcceptLanguage Language of messages and localized fields (default th)
 	AcceptLanguage *DataflowGetGraphParamsAcceptLanguage `json:"Accept-Language,omitempty"`
 }
@@ -423,6 +456,7 @@ type DataflowGetGraphParamsAcceptLanguage string
 // DataflowExportGraphParams defines parameters for DataflowExportGraph.
 type DataflowExportGraphParams struct {
 	LegalEntityId *Uuid                           `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+	View          *DataflowView                   `form:"view,omitempty" json:"view,omitempty"`
 	Format        DataflowExportGraphParamsFormat `form:"format" json:"format"`
 
 	// Paper Page size for png/pdf (ignored for svg); defaults to a3
@@ -444,6 +478,7 @@ type DataflowExportGraphParamsAcceptLanguage string
 // DataflowGetReportParams defines parameters for DataflowGetReport.
 type DataflowGetReportParams struct {
 	LegalEntityId *Uuid                           `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+	View          *DataflowView                   `form:"view,omitempty" json:"view,omitempty"`
 	Language      DataflowGetReportParamsLanguage `form:"language" json:"language"`
 	Format        DataflowGetReportParamsFormat   `form:"format" json:"format"`
 
@@ -462,17 +497,19 @@ type DataflowGetReportParamsAcceptLanguage string
 
 // DataflowListSnapshotsParams defines parameters for DataflowListSnapshots.
 type DataflowListSnapshotsParams struct {
-	LegalEntityId *Uuid `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+	LegalEntityId *Uuid         `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+	View          *DataflowView `form:"view,omitempty" json:"view,omitempty"`
 }
 
 // DataflowPublishSnapshotParams defines parameters for DataflowPublishSnapshot.
 type DataflowPublishSnapshotParams struct {
-	LegalEntityId *Uuid `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+	LegalEntityId *Uuid         `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+	View          *DataflowView `form:"view,omitempty" json:"view,omitempty"`
 }
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// DataflowGetGraph DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — org-unit swimlanes, activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge
+	// DataflowGetGraph DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — a swimlane per DFG-06 view (department/company/data_category), activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge
 	// (GET /admin/v1/dataflow/graph)
 	DataflowGetGraph(w http.ResponseWriter, r *http.Request, params DataflowGetGraphParams)
 	// DataflowExportGraph DFG-08: the diagram (DFG-01/03/04's own live Graph) as a standalone image — SVG (vector, no renderer needed), or PNG/PDF rendered through the shared platform/docs/render renderer, sized for print (always landscape)
@@ -496,7 +533,7 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
-// DataflowGetGraph DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — org-unit swimlanes, activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge
+// DataflowGetGraph DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — a swimlane per DFG-06 view (department/company/data_category), activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge
 // (GET /admin/v1/dataflow/graph)
 func (_ Unimplemented) DataflowGetGraph(w http.ResponseWriter, r *http.Request, params DataflowGetGraphParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -563,6 +600,19 @@ func (siw *ServerInterfaceWrapper) DataflowGetGraph(w http.ResponseWriter, r *ht
 		return
 	}
 
+	// ------------- Optional query parameter "view" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "view", r.URL.Query(), &params.View, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "view"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "view", Err: err})
+		}
+		return
+	}
+
 	headers := r.Header
 
 	// ------------- Optional header parameter "Accept-Language" -------------
@@ -613,6 +663,19 @@ func (siw *ServerInterfaceWrapper) DataflowExportGraph(w http.ResponseWriter, r 
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "legal_entity_id"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legal_entity_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "view" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "view", r.URL.Query(), &params.View, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "view"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "view", Err: err})
 		}
 		return
 	}
@@ -697,6 +760,19 @@ func (siw *ServerInterfaceWrapper) DataflowGetReport(w http.ResponseWriter, r *h
 		return
 	}
 
+	// ------------- Optional query parameter "view" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "view", r.URL.Query(), &params.View, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "view"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "view", Err: err})
+		}
+		return
+	}
+
 	// ------------- Required query parameter "language" -------------
 
 	err = runtime.BindQueryParameterWithOptions("form", true, true, "language", r.URL.Query(), &params.Language, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
@@ -777,6 +853,19 @@ func (siw *ServerInterfaceWrapper) DataflowListSnapshots(w http.ResponseWriter, 
 		return
 	}
 
+	// ------------- Optional query parameter "view" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "view", r.URL.Query(), &params.View, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "view"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "view", Err: err})
+		}
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DataflowListSnapshots(w, r, params)
 	}))
@@ -806,6 +895,19 @@ func (siw *ServerInterfaceWrapper) DataflowPublishSnapshot(w http.ResponseWriter
 			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "legal_entity_id"})
 		} else {
 			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legal_entity_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "view" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "view", r.URL.Query(), &params.View, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "view"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "view", Err: err})
 		}
 		return
 	}
@@ -1422,7 +1524,7 @@ func (response DataflowGetSnapshot404ApplicationProblemPlusJSONResponse) VisitDa
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-	// DataflowGetGraph DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — org-unit swimlanes, activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge
+	// DataflowGetGraph DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — a swimlane per DFG-06 view (department/company/data_category), activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge
 	// (GET /admin/v1/dataflow/graph)
 	DataflowGetGraph(ctx context.Context, request DataflowGetGraphRequestObject) (DataflowGetGraphResponseObject, error)
 	// DataflowExportGraph DFG-08: the diagram (DFG-01/03/04's own live Graph) as a standalone image — SVG (vector, no renderer needed), or PNG/PDF rendered through the shared platform/docs/render renderer, sized for print (always landscape)

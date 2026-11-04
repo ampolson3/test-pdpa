@@ -66,7 +66,7 @@ func TestExportDiagram_SVGContainsWarnings(t *testing.T) {
 	seedExportFixture(t, e)
 
 	e.in(t, func(ctx context.Context) error {
-		b, name, err := e.svc.ExportDiagram(ctx, nil, dataflowservice.FormatSVG, dataflowservice.PaperA3)
+		b, name, err := e.svc.ExportDiagram(ctx, nil, "", dataflowservice.FormatSVG, dataflowservice.PaperA3)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -93,7 +93,7 @@ func TestExportDiagram_SVGContainsWarnings(t *testing.T) {
 func TestExportDiagram_InvalidFormat(t *testing.T) {
 	e := setup(t, "dfgexportfmt")
 	e.in(t, func(ctx context.Context) error {
-		if _, _, err := e.svc.ExportDiagram(ctx, nil, "bmp", dataflowservice.PaperA3); !errors.Is(err, dataflowservice.ErrInvalid) {
+		if _, _, err := e.svc.ExportDiagram(ctx, nil, "", "bmp", dataflowservice.PaperA3); !errors.Is(err, dataflowservice.ErrInvalid) {
 			t.Errorf("err = %v, want ErrInvalid", err)
 		}
 		return nil
@@ -103,7 +103,7 @@ func TestExportDiagram_InvalidFormat(t *testing.T) {
 func TestExportDiagram_InvalidPaperForPDF(t *testing.T) {
 	e := setup(t, "dfgexportpaper")
 	e.in(t, func(ctx context.Context) error {
-		if _, _, err := e.svc.ExportDiagram(ctx, nil, dataflowservice.FormatPDF, "poster"); !errors.Is(err, dataflowservice.ErrInvalid) {
+		if _, _, err := e.svc.ExportDiagram(ctx, nil, "", dataflowservice.FormatPDF, "poster"); !errors.Is(err, dataflowservice.ErrInvalid) {
 			t.Errorf("err = %v, want ErrInvalid", err)
 		}
 		return nil
@@ -117,13 +117,13 @@ func TestExportDiagram_NoRendererConfigured(t *testing.T) {
 	seedExportFixture(t, e)
 
 	e.in(t, func(ctx context.Context) error {
-		if _, _, err := e.svc.ExportDiagram(ctx, nil, dataflowservice.FormatPNG, dataflowservice.PaperA3); !errors.Is(err, render.ErrNoImageRenderer) {
+		if _, _, err := e.svc.ExportDiagram(ctx, nil, "", dataflowservice.FormatPNG, dataflowservice.PaperA3); !errors.Is(err, render.ErrNoImageRenderer) {
 			t.Errorf("png err = %v, want ErrNoImageRenderer", err)
 		}
-		if _, _, err := e.svc.ExportDiagram(ctx, nil, dataflowservice.FormatPDF, dataflowservice.PaperA3); !errors.Is(err, render.ErrNoRenderer) {
+		if _, _, err := e.svc.ExportDiagram(ctx, nil, "", dataflowservice.FormatPDF, dataflowservice.PaperA3); !errors.Is(err, render.ErrNoRenderer) {
 			t.Errorf("pdf err = %v, want ErrNoRenderer", err)
 		}
-		if _, _, err := e.svc.ExportDiagram(ctx, nil, dataflowservice.FormatSVG, dataflowservice.PaperA3); err != nil {
+		if _, _, err := e.svc.ExportDiagram(ctx, nil, "", dataflowservice.FormatSVG, dataflowservice.PaperA3); err != nil {
 			t.Errorf("svg err = %v, want nil", err)
 		}
 		return nil
@@ -144,14 +144,14 @@ func TestExportDiagram_ChromiumRendersPNGAndPDF(t *testing.T) {
 	e.svc.Image = &render.Chromium{Path: path}
 
 	e.in(t, func(ctx context.Context) error {
-		png, name, err := e.svc.ExportDiagram(ctx, nil, dataflowservice.FormatPNG, dataflowservice.PaperA3)
+		png, name, err := e.svc.ExportDiagram(ctx, nil, "", dataflowservice.FormatPNG, dataflowservice.PaperA3)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if name != "dataflow.png" || len(png) < 100 || string(png[1:4]) != "PNG" {
 			t.Errorf("not a PNG: name=%q len=%d", name, len(png))
 		}
-		pdf, name, err := e.svc.ExportDiagram(ctx, nil, dataflowservice.FormatPDF, dataflowservice.PaperA3)
+		pdf, name, err := e.svc.ExportDiagram(ctx, nil, "", dataflowservice.FormatPDF, dataflowservice.PaperA3)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -169,7 +169,7 @@ func TestReport_CoversActivityRecipientsTransfersAndDisposal(t *testing.T) {
 	seedExportFixture(t, e)
 
 	e.in(t, func(ctx context.Context) error {
-		b, name, err := e.svc.Report(ctx, nil, "th", "html")
+		b, name, err := e.svc.Report(ctx, nil, "", "th", "html")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -186,7 +186,7 @@ func TestReport_CoversActivityRecipientsTransfersAndDisposal(t *testing.T) {
 	})
 
 	e.in(t, func(ctx context.Context) error {
-		b, _, err := e.svc.Report(ctx, nil, "en", "html")
+		b, _, err := e.svc.Report(ctx, nil, "", "en", "html")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -200,7 +200,7 @@ func TestReport_CoversActivityRecipientsTransfersAndDisposal(t *testing.T) {
 func TestReport_NoActivitiesIsEmptyNotError(t *testing.T) {
 	e := setup(t, "dfgreportempty")
 	e.in(t, func(ctx context.Context) error {
-		b, _, err := e.svc.Report(ctx, nil, "th", "html")
+		b, _, err := e.svc.Report(ctx, nil, "", "th", "html")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -214,10 +214,10 @@ func TestReport_NoActivitiesIsEmptyNotError(t *testing.T) {
 func TestReport_InvalidLanguageAndFormat(t *testing.T) {
 	e := setup(t, "dfgreportinvalid")
 	e.in(t, func(ctx context.Context) error {
-		if _, _, err := e.svc.Report(ctx, nil, "fr", "html"); !errors.Is(err, dataflowservice.ErrInvalid) {
+		if _, _, err := e.svc.Report(ctx, nil, "", "fr", "html"); !errors.Is(err, dataflowservice.ErrInvalid) {
 			t.Errorf("language err = %v, want ErrInvalid", err)
 		}
-		if _, _, err := e.svc.Report(ctx, nil, "th", "xml"); !errors.Is(err, dataflowservice.ErrInvalid) {
+		if _, _, err := e.svc.Report(ctx, nil, "", "th", "xml"); !errors.Is(err, dataflowservice.ErrInvalid) {
 			t.Errorf("format err = %v, want ErrInvalid", err)
 		}
 		return nil
@@ -229,10 +229,10 @@ func TestReport_InvalidLanguageAndFormat(t *testing.T) {
 func TestReport_PDFWithoutRenderer(t *testing.T) {
 	e := setup(t, "dfgreportnorender")
 	e.in(t, func(ctx context.Context) error {
-		if _, _, err := e.svc.Report(ctx, nil, "th", "pdf"); !errors.Is(err, render.ErrNoRenderer) {
+		if _, _, err := e.svc.Report(ctx, nil, "", "th", "pdf"); !errors.Is(err, render.ErrNoRenderer) {
 			t.Errorf("err = %v, want ErrNoRenderer", err)
 		}
-		if _, _, err := e.svc.Report(ctx, nil, "th", "docx"); err != nil {
+		if _, _, err := e.svc.Report(ctx, nil, "", "th", "docx"); err != nil {
 			t.Errorf("docx err = %v, want nil", err)
 		}
 		return nil

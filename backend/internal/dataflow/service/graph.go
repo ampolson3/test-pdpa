@@ -16,7 +16,7 @@ import (
 // Node is one box on the diagram.
 type Node struct {
 	ID              string
-	Type            string // org_unit | activity | recipient | country
+	Type            string // org_unit | legal_entity | data_category | activity | recipient | country | disposal
 	Label           string
 	ParentID        string
 	ActivityCode    string
@@ -54,29 +54,60 @@ type Graph struct {
 	GeneratedAt   time.Time
 }
 
-func orgUnitNodeID(id uuid.UUID) string   { return "org_unit:" + id.String() }
-func activityNodeID(id uuid.UUID) string  { return "activity:" + id.String() }
-func recipientNodeID(id uuid.UUID) string { return "recipient:" + id.String() }
-func countryNodeID(code string) string    { return "country:" + code }
+func orgUnitNodeID(id uuid.UUID) string      { return "org_unit:" + id.String() }
+func legalEntityNodeID(id uuid.UUID) string  { return "legal_entity:" + id.String() }
+func dataCategoryNodeID(id uuid.UUID) string { return "data_category:" + id.String() }
+func activityNodeID(id uuid.UUID) string     { return "activity:" + id.String() }
+func recipientNodeID(id uuid.UUID) string    { return "recipient:" + id.String() }
+func countryNodeID(code string) string       { return "country:" + code }
 func disposalNodeID(activityID uuid.UUID, method string) string {
 	return "disposal:" + activityID.String() + ":" + method
 }
 
+// uncategorizedDataCategoryNodeID is DFG-06's own data_category view's swimlane for an activity whose
+// ropa.activity_data names no category at all — never a silently empty parent_id.
+const uncategorizedDataCategoryNodeID = "data_category:uncategorized"
+
 func isForeignCountry(code string) bool { return code != "" && code != "TH" }
 
+// View is DFG-06's own set of swimlane groupings for the same underlying diagram ("มุมมองรายแผนก รายระบบ
+// รายบริษัท และรายประเภทข้อมูล" — department/system/company/data-category; "system" is deliberately not
+// built here, the same "no consumer yet" deferral this codebase uses throughout: ROPA-02/03 never built any
+// activity-to-ropa.assets link for a view to group by, per DPIA-04's own disclosed gap). Every view computes
+// from the exact same activities/recipients/countries/disposal methods — only which swimlane an activity's
+// own ParentID points at changes, so "สลับมุมมองได้โดยข้อมูลตรงกัน" (switching views keeps the data
+// consistent) holds by construction: nodes/edges beyond the swimlane itself are identical across views.
+type View string
+
+const (
+	// ViewDepartment's own string is "org_unit", not "department" — the literal value snapshots.go's own
+	// pre-existing ViewTypeOrgUnit constant and every snapshot published before DFG-06 already use for
+	// dataflow.snapshots.view_type, so this view's own published history keeps resolving under the same key.
+	ViewDepartment   View = "org_unit"
+	ViewCompany      View = "company"
+	ViewDataCategory View = "data_category"
+)
+
+// dataflow.snapshots.view_type (DFG-07) stores one of these three strings directly — ViewTypeOrgUnit
+// (snapshots.go) is this same department view's own legacy constant, kept for existing snapshots.
+
 // Graph builds DFG-01's data flow diagram (and DFG-03's cross-border view, which shares the same
-// acceptance criterion and dependency): every org-unit swimlane with its activities, each activity's
-// recipients ("send" edges) and, for ROPA-08's logged cross-border transfers, one "transfer" edge per
-// transfer row — warning-coloured when a foreign recipient has no transfer row at all (DFG-03's own
-// acceptance criterion: "เส้นทางโอนที่ไม่มีฐานการโอนแสดงเป็นสีเตือน"), mirroring ropaservice's own
-// completeness() "transfer_basis" check for an implicit, never-logged transfer — plus one "disposal" node
-// per unique retention disposal method the activity names. Computed live on every call, same discipline as
-// dpia's ActivityDescription/Registry — never a stale persisted copy (DFG-05's layouts / DFG-07's published
-// snapshots are a later, separate feature this pass doesn't build).
-func (s *Service) Graph(ctx context.Context, legalEntityID *uuid.UUID) (Graph, error) {
+// acceptance criterion and dependency): a swimlane per View (department/company/data_category, DFG-06)
+// with its activities, each activity's recipients ("send" edges) and, for ROPA-08's logged cross-border
+// transfers, one "transfer" edge per transfer row — warning-coloured when a foreign recipient has no
+// transfer row at all (DFG-03's own acceptance criterion: "เส้นทางโอนที่ไม่มีฐานการโอนแสดงเป็นสีเตือน"),
+// mirroring ropaservice's own completeness() "transfer_basis" check for an implicit, never-logged transfer
+// — plus one "disposal" node per unique retention disposal method the activity names. Computed live on
+// every call, same discipline as dpia's ActivityDescription/Registry — never a stale persisted copy
+// (DFG-05's layouts / DFG-07's published snapshots are a later, separate feature this pass doesn't build).
+// An empty view defaults to ViewDepartment (DFG-01's own original, and still the default, grouping).
+func (s *Service) Graph(ctx context.Context, legalEntityID *uuid.UUID, view View) (Graph, error) {
+	if view == "" {
+		view = ViewDepartment
+	}
 	g := Graph{GeneratedAt: time.Now().UTC()}
 
-	seenOrgUnit := map[uuid.UUID]bool{}
+	seenSwimlane := map[string]bool{}
 	seenRecipient := map[uuid.UUID]bool{}
 	seenCountry := map[string]bool{}
 	seenDisposal := map[string]bool{}
@@ -92,20 +123,13 @@ func (s *Service) Graph(ctx context.Context, legalEntityID *uuid.UUID) (Graph, e
 		}
 		g.ActivityCount++
 
-		if !seenOrgUnit[a.OrgUnitID] {
-			seenOrgUnit[a.OrgUnitID] = true
-			unit, err := s.Org.GetOrgUnit(ctx, a.OrgUnitID)
-			if err != nil {
-				return Graph{}, err
-			}
-			g.Nodes = append(g.Nodes, Node{ID: orgUnitNodeID(a.OrgUnitID), Type: "org_unit", Label: unit.NameTh})
-		}
-
 		data, err := s.Ropa.ListActivityData(ctx, a.ID)
 		if err != nil {
 			return Graph{}, err
 		}
 		var dataCategories []string
+		var primaryCategoryID uuid.UUID
+		var primaryCategoryName string
 		seenCategory := map[uuid.UUID]bool{}
 		for _, d := range data {
 			if seenCategory[d.DataCategoryID] {
@@ -117,10 +141,18 @@ func (s *Service) Graph(ctx context.Context, legalEntityID *uuid.UUID) (Graph, e
 				return Graph{}, err
 			}
 			dataCategories = append(dataCategories, cat.NameTh)
+			if primaryCategoryID == uuid.Nil {
+				primaryCategoryID, primaryCategoryName = d.DataCategoryID, cat.NameTh
+			}
+		}
+
+		swimlaneID, err := s.swimlaneNode(ctx, &g, seenSwimlane, view, a, primaryCategoryID, primaryCategoryName)
+		if err != nil {
+			return Graph{}, err
 		}
 
 		actNode := Node{
-			ID: activityNodeID(a.ID), Type: "activity", Label: a.Name, ParentID: orgUnitNodeID(a.OrgUnitID),
+			ID: activityNodeID(a.ID), Type: "activity", Label: a.Name, ParentID: swimlaneID,
 			ActivityCode: a.Code, ActivityStatus: a.Status, Role: a.Role, DataCategories: dataCategories,
 		}
 
@@ -221,6 +253,51 @@ func (s *Service) Graph(ctx context.Context, legalEntityID *uuid.UUID) (Graph, e
 	sort.Slice(g.Nodes, func(i, j int) bool { return g.Nodes[i].ID < g.Nodes[j].ID })
 	sort.Slice(g.Edges, func(i, j int) bool { return g.Edges[i].ID < g.Edges[j].ID })
 	return g, nil
+}
+
+// swimlaneNode resolves (and, the first time it's seen, creates) the one swimlane node this activity's
+// own ParentID should point at under the given View — department groups by org unit (DFG-01's own
+// original, unchanged), company by legal entity, data_category by the activity's own primary (first)
+// data category, or an "uncategorized" swimlane when it names none at all.
+func (s *Service) swimlaneNode(ctx context.Context, g *Graph, seen map[string]bool, view View, a ropaservice.Activity, primaryCategoryID uuid.UUID, primaryCategoryName string) (string, error) {
+	switch view {
+	case ViewCompany:
+		id := legalEntityNodeID(a.LegalEntityID)
+		if !seen[id] {
+			seen[id] = true
+			le, err := s.Org.GetLegalEntity(ctx, a.LegalEntityID)
+			if err != nil {
+				return "", err
+			}
+			g.Nodes = append(g.Nodes, Node{ID: id, Type: "legal_entity", Label: le.NameTh})
+		}
+		return id, nil
+	case ViewDataCategory:
+		if primaryCategoryID == uuid.Nil {
+			if !seen[uncategorizedDataCategoryNodeID] {
+				seen[uncategorizedDataCategoryNodeID] = true
+				g.Nodes = append(g.Nodes, Node{ID: uncategorizedDataCategoryNodeID, Type: "data_category", Label: "ไม่ระบุหมวดข้อมูล"})
+			}
+			return uncategorizedDataCategoryNodeID, nil
+		}
+		id := dataCategoryNodeID(primaryCategoryID)
+		if !seen[id] {
+			seen[id] = true
+			g.Nodes = append(g.Nodes, Node{ID: id, Type: "data_category", Label: primaryCategoryName})
+		}
+		return id, nil
+	default: // ViewDepartment
+		id := orgUnitNodeID(a.OrgUnitID)
+		if !seen[id] {
+			seen[id] = true
+			unit, err := s.Org.GetOrgUnit(ctx, a.OrgUnitID)
+			if err != nil {
+				return "", err
+			}
+			g.Nodes = append(g.Nodes, Node{ID: id, Type: "org_unit", Label: unit.NameTh})
+		}
+		return id, nil
+	}
 }
 
 // flagMissingDPA is DFG-04's own acceptance criterion: a processor-role recipient who is tracked as a

@@ -191,11 +191,11 @@ func dedupe(items []string) []string {
 
 // Report is DFG-08's own "รายงานประกอบ" (accompanying report): the written companion to ExportDiagram, built
 // from the exact same live Graph() so it never drifts from the exported image.
-func (s *Service) Report(ctx context.Context, legalEntityID *uuid.UUID, lang, format string) ([]byte, string, error) {
+func (s *Service) Report(ctx context.Context, legalEntityID *uuid.UUID, view View, lang, format string) ([]byte, string, error) {
 	if lang != "th" && lang != "en" {
 		return nil, "", fmt.Errorf("%w: language", ErrInvalid)
 	}
-	g, err := s.Graph(ctx, legalEntityID)
+	g, err := s.Graph(ctx, legalEntityID, view)
 	if err != nil {
 		return nil, "", err
 	}

@@ -3931,6 +3931,12 @@
       "loadError": "ไม่สามารถโหลดประวัติเวอร์ชานได้",
       "empty": "ยางไม่มีเวอร์ชานที่เผยแพร่",
       "versionLabel": "เวอร์ชาน {n}"
+    },
+    "view": {
+      "label": "มุมมอง",
+      "department": "แผนก",
+      "company": "บริษัท",
+      "dataCategory": "หมวดข้อมูล"
     }
   },
   "cookieBanners": {

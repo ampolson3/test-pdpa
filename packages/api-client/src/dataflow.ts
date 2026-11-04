@@ -6,12 +6,15 @@ export type DataflowNode = components["schemas"]["DataflowNode"];
 export type DataflowEdge = components["schemas"]["DataflowEdge"];
 export type DataflowSnapshot = components["schemas"]["DataflowSnapshot"];
 export type DataflowSnapshotSummary = components["schemas"]["DataflowSnapshotSummary"];
+export type DataflowView = components["schemas"]["DataflowView"];
 
 /** GET /admin/v1/dataflow/graph (DFG-01/DFG-03) — the data flow diagram, composed live from RoPA on every
  *  read; no pagination (the whole tenant diagram is meant to be viewed as one graph). DFG-02's "update
  *  without regenerating" needs no server-side push: the backend never caches the graph, so the 30s poll
- *  below is enough to show a RoPA edit made elsewhere without the viewer doing anything. */
-export function useDataflowGraph(client: ApiClient, filter: { legal_entity_id?: string } = {}) {
+ *  below is enough to show a RoPA edit made elsewhere without the viewer doing anything. DFG-06's own
+ *  `view` switches the swimlane grouping (department/company/data_category) — the same nodes/edges
+ *  otherwise, so switching it needs no extra invalidation beyond the query key already carrying it. */
+export function useDataflowGraph(client: ApiClient, filter: { legal_entity_id?: string; view?: DataflowView } = {}) {
   return useQuery({
     queryKey: ["dataflow", "graph", filter],
     queryFn: async () => {
@@ -33,9 +36,11 @@ export function dataflowExportHref(
   format: "svg" | "png" | "pdf",
   paper: "a3" | "a4" | "letter" = "a3",
   legalEntityId?: string,
+  view?: DataflowView,
 ): string {
   const q = new URLSearchParams({ format, paper });
   if (legalEntityId) q.set("legal_entity_id", legalEntityId);
+  if (view) q.set("view", view);
   return `${bffBaseUrl}/admin/v1/dataflow/graph/export?${q}`;
 }
 
@@ -46,15 +51,17 @@ export function dataflowReportHref(
   language: "th" | "en",
   format: "pdf" | "docx" | "html",
   legalEntityId?: string,
+  view?: DataflowView,
 ): string {
   const q = new URLSearchParams({ language, format });
   if (legalEntityId) q.set("legal_entity_id", legalEntityId);
+  if (view) q.set("view", view);
   return `${bffBaseUrl}/admin/v1/dataflow/report?${q}`;
 }
 
 /** GET /admin/v1/dataflow/snapshots (DFG-07): every published version of the diagram, newest first —
  *  "ดูแผนผังที่ publish ย้อนหลังได้". */
-export function useDataflowSnapshots(client: ApiClient, filter: { legal_entity_id?: string } = {}) {
+export function useDataflowSnapshots(client: ApiClient, filter: { legal_entity_id?: string; view?: DataflowView } = {}) {
   return useQuery({
     queryKey: ["dataflow", "snapshots", filter],
     queryFn: async () => {
@@ -82,7 +89,7 @@ export function useDataflowSnapshot(client: ApiClient, id: string | undefined) {
 export function useDataflowPublishSnapshot(client: ApiClient) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (filter: { legal_entity_id?: string } = {}) => {
+    mutationFn: async (filter: { legal_entity_id?: string; view?: DataflowView } = {}) => {
       const { data, error } = await client.POST("/admin/v1/dataflow/snapshots", { params: { query: filter } });
       if (error) throw error;
       return data;

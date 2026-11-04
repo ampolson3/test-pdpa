@@ -30,12 +30,15 @@ type Ropa interface {
 	ListActivityData(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityData, error)
 }
 
-// Org is what dataflow reads from the org module (rule 9): org-unit names for swimlanes, external-party
-// names/countries for recipient and country nodes, and master-data names for data categories.
+// Org is what dataflow reads from the org module (rule 9): org-unit names for the department view's
+// swimlanes, external-party names/countries for recipient and country nodes, master-data names for data
+// categories (also DFG-06's own data-category view swimlanes), and legal-entity names for DFG-06's own
+// company-view swimlanes.
 type Org interface {
 	GetOrgUnit(ctx context.Context, id uuid.UUID) (orgservice.OrgUnit, error)
 	GetExternalParty(ctx context.Context, id uuid.UUID) (orgservice.ExternalParty, error)
 	GetMaster(ctx context.Context, kind string, id uuid.UUID) (orgservice.MasterItem, error)
+	GetLegalEntity(ctx context.Context, id uuid.UUID) (orgservice.LegalEntity, error)
 }
 
 // Vendor is what dataflow reads from the vendormgmt module (rule 9) — DFG-04's own way to tell whether a

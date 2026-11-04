@@ -16,9 +16,9 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 )
 
-// ViewTypeOrgUnit is the only view DFG-01/03/04 build (org-unit swimlanes) — the one dataflow.snapshots'
-// own view_type column (no CHECK constraint, unlike dataflow.layouts) carries until DFG-06's own
-// multi-view feature adds others.
+// ViewTypeOrgUnit is DFG-01/03/04's own original view, kept as its own named constant for any already-
+// published snapshot's own stored view_type string — DFG-06's own View type (graph.go) now also stores
+// directly into this same no-CHECK-constraint column, one row per (view_type, scope_id).
 const ViewTypeOrgUnit = "org_unit"
 
 var ErrSnapshotNotFound = errors.New("dataflow: snapshot not found")
@@ -44,8 +44,11 @@ type Snapshot struct {
 // version — wrapped in pdb.Savepoint since two concurrent publishes of the same (view_type, scope_id)
 // could still race the real unique constraint, the same pattern org.SaveLegalEntity/ropa's own
 // SaveActivity already use for a write that can hit a real DB constraint.
-func (s *Service) PublishSnapshot(ctx context.Context, legalEntityID *uuid.UUID) (Snapshot, error) {
-	g, err := s.Graph(ctx, legalEntityID)
+func (s *Service) PublishSnapshot(ctx context.Context, legalEntityID *uuid.UUID, view View) (Snapshot, error) {
+	if view == "" {
+		view = ViewDepartment
+	}
+	g, err := s.Graph(ctx, legalEntityID, view)
 	if err != nil {
 		return Snapshot{}, err
 	}
@@ -59,7 +62,7 @@ func (s *Service) PublishSnapshot(ctx context.Context, legalEntityID *uuid.UUID)
 		q := dataflowstore.New(pdb.MustTxFromContext(ctx))
 		var err error
 		row, err = q.InsertSnapshot(ctx, dataflowstore.InsertSnapshotParams{
-			ViewType: ViewTypeOrgUnit, ScopeID: dfPgUUID(legalEntityID), Graph: graphJSON,
+			ViewType: string(view), ScopeID: dfPgUUID(legalEntityID), Graph: graphJSON,
 		})
 		return err
 	})
@@ -75,9 +78,12 @@ func (s *Service) PublishSnapshot(ctx context.Context, legalEntityID *uuid.UUID)
 
 // ListSnapshots is DFG-07's own acceptance criterion's read half, "ดูแผนผังที่ publish ย้อนหลังได้" —
 // every published version of this scope's own diagram, newest first.
-func (s *Service) ListSnapshots(ctx context.Context, legalEntityID *uuid.UUID) ([]SnapshotSummary, error) {
+func (s *Service) ListSnapshots(ctx context.Context, legalEntityID *uuid.UUID, view View) ([]SnapshotSummary, error) {
+	if view == "" {
+		view = ViewDepartment
+	}
 	q := dataflowstore.New(pdb.MustTxFromContext(ctx))
-	rows, err := q.ListSnapshots(ctx, dataflowstore.ListSnapshotsParams{ViewType: ViewTypeOrgUnit, ScopeID: dfPgUUID(legalEntityID)})
+	rows, err := q.ListSnapshots(ctx, dataflowstore.ListSnapshotsParams{ViewType: string(view), ScopeID: dfPgUUID(legalEntityID)})
 	if err != nil {
 		return nil, err
 	}

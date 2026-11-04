@@ -18,7 +18,7 @@ func (h *Strict) DataflowExportGraph(ctx context.Context, req DataflowExportGrap
 	if req.Params.Paper != nil {
 		paper = dataflowservice.Paper(*req.Params.Paper)
 	}
-	b, name, err := h.svc.ExportDiagram(ctx, req.Params.LegalEntityId, dataflowservice.ExportFormat(req.Params.Format), paper)
+	b, name, err := h.svc.ExportDiagram(ctx, req.Params.LegalEntityId, toView(req.Params.View), dataflowservice.ExportFormat(req.Params.Format), paper)
 	if err != nil {
 		return nil, exportProblem(err)
 	}
@@ -28,7 +28,7 @@ func (h *Strict) DataflowExportGraph(ctx context.Context, req DataflowExportGrap
 }
 
 func (h *Strict) DataflowGetReport(ctx context.Context, req DataflowGetReportRequestObject) (DataflowGetReportResponseObject, error) {
-	b, name, err := h.svc.Report(ctx, req.Params.LegalEntityId, string(req.Params.Language), string(req.Params.Format))
+	b, name, err := h.svc.Report(ctx, req.Params.LegalEntityId, toView(req.Params.View), string(req.Params.Language), string(req.Params.Format))
 	if err != nil {
 		return nil, exportProblem(err)
 	}

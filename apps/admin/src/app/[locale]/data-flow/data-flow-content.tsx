@@ -14,6 +14,7 @@ import {
   useHighRiskActivityScores,
   type DataflowEdge,
   type DataflowNode,
+  type DataflowView,
 } from "@pdpa/api-client";
 import { Button } from "@pdpa/ui";
 import {
@@ -131,9 +132,14 @@ function activityIdOf(nodeId: string): string | undefined {
   return nodeId.startsWith("activity:") ? nodeId.slice("activity:".length) : undefined;
 }
 
+// DFG-06: whichever swimlane type the requested view produced (org_unit/legal_entity/data_category) is
+// rendered as a React Flow "group" background, same as the department view's own org_unit always was.
+function isSwimlane(type: string): boolean {
+  return type === "org_unit" || type === "legal_entity" || type === "data_category";
+}
+
 function toFlowNode(n: DataflowNode, pos: { x: number; y: number; width: number; height: number }, isHighRisk: boolean): Node {
-  // org_unit nodes are rendered as a React Flow "group" background; every other node type is a styled box.
-  const isGroup = n.type === "org_unit";
+  const isGroup = isSwimlane(n.type);
   // RRA-11: a high-risk activity is highlighted the same warning-red DFG-04/DSA-12's own missing-agreement
   // flag already uses — "ไฮไลต์กิจกรรม...พร้อมเหตุผลและลิงก์ไปแก้ไข" (reason via the tooltip, link via
   // onNodeClick below).
@@ -193,9 +199,10 @@ export function DataFlowContent() {
   const client = useMemo(() => createApiClient("/api/bff"), []);
   const router = useRouter();
   const [legalEntityId, setLegalEntityId] = useState<string>();
+  const [view, setView] = useState<DataflowView>("department");
 
   const entities = useLegalEntities(client);
-  const graph = useDataflowGraph(client, { legal_entity_id: legalEntityId });
+  const graph = useDataflowGraph(client, { legal_entity_id: legalEntityId, view });
   // RRA-11: the same tenant-wide high-risk set the RoPA activity list highlights, matched here against
   // each activity node's own id ("activity:<uuid>") — "ไฮไลต์...ทั้งในรายการและแผนผัง".
   const highRisk = useHighRiskActivityScores(client);
@@ -238,7 +245,7 @@ export function DataFlowContent() {
         if (!n) continue;
         const activityId = activityIdOf(n.id);
         nodes.push(toFlowNode(n, pos, !!activityId && highRiskIds.has(activityId)));
-        if (n.type === "org_unit") {
+        if (isSwimlane(n.type)) {
           // React Flow's built-in "group" node renders no text of its own — a small non-interactive
           // label node, parented to the group, carries the swimlane's name instead.
           nodes.push({
@@ -284,6 +291,14 @@ export function DataFlowContent() {
             ))}
           </select>
         </label>
+        <label>
+          <span className="block text-slate-600">{t("view.label")}</span>
+          <select className={INPUT} value={view} onChange={(e) => setView(e.target.value as DataflowView)} data-testid="dataflow-view-picker">
+            <option value="department">{t("view.department")}</option>
+            <option value="company">{t("view.company")}</option>
+            <option value="data_category">{t("view.dataCategory")}</option>
+          </select>
+        </label>
         <div className="flex items-center gap-3 text-slate-500">
           {graph.data ? <p>{t("activityCount", { count: graph.data.activity_count })}</p> : null}
           {graph.data ? (
@@ -303,9 +318,9 @@ export function DataFlowContent() {
 
       <Legend />
 
-      <ExportPanel legalEntityId={legalEntityId} />
+      <ExportPanel legalEntityId={legalEntityId} view={view} />
 
-      <SnapshotsPanel legalEntityId={legalEntityId} />
+      <SnapshotsPanel legalEntityId={legalEntityId} view={view} />
 
       {graph.isPending || !laidOut ? (
         <p className="text-slate-500">{t("loading")}</p>
@@ -380,12 +395,12 @@ function Legend() {
 /** DFG-07: publish the current live diagram as a new, immutable version, and browse past published
  *  versions — "ปุ่ม publish + ดูเวอร์ชันเก่า". The publish button is shown only to a caller holding
  *  ropa.dataflow.publish (DPO, the module's own actor); the version list itself is visible to any reader. */
-function SnapshotsPanel({ legalEntityId }: { legalEntityId?: string }) {
+function SnapshotsPanel({ legalEntityId, view }: { legalEntityId?: string; view: DataflowView }) {
   const t = useTranslations("dataflow.snapshots");
   const canPublish = usePermission("ropa.dataflow.publish");
   const client = useMemo(() => createApiClient("/api/bff"), []);
   const [open, setOpen] = useState(false);
-  const snapshots = useDataflowSnapshots(client, { legal_entity_id: legalEntityId });
+  const snapshots = useDataflowSnapshots(client, { legal_entity_id: legalEntityId, view });
   const publish = useDataflowPublishSnapshot(client);
 
   return (
@@ -397,7 +412,7 @@ function SnapshotsPanel({ legalEntityId }: { legalEntityId?: string }) {
         {canPublish && (
           <Button
             disabled={publish.isPending}
-            onClick={() => publish.mutate({ legal_entity_id: legalEntityId })}
+            onClick={() => publish.mutate({ legal_entity_id: legalEntityId, view })}
             data-testid="dataflow-publish-button"
           >
             {t("publish")}
@@ -431,7 +446,7 @@ function SnapshotsPanel({ legalEntityId }: { legalEntityId?: string }) {
  *  landscape) and the written companion report (pdf/docx/html, th/en) — both plain `<a href>`s through the
  *  BFF, the same pattern dpiaReportHref/documentExportHref already use; the browser downloads the file
  *  directly, no client-side fetch needed. */
-function ExportPanel({ legalEntityId }: { legalEntityId?: string }) {
+function ExportPanel({ legalEntityId, view }: { legalEntityId?: string; view: DataflowView }) {
   const t = useTranslations("dataflow");
   const [format, setFormat] = useState<"svg" | "png" | "pdf">("svg");
   const [paper, setPaper] = useState<"a3" | "a4" | "letter">("a3");
@@ -461,7 +476,7 @@ function ExportPanel({ legalEntityId }: { legalEntityId?: string }) {
         ) : null}
         <a
           className="rounded-md border border-sky-300 bg-sky-50 px-3 py-1.5 text-sky-800 hover:bg-sky-100"
-          href={dataflowExportHref("/api/bff", format, paper, legalEntityId)}
+          href={dataflowExportHref("/api/bff", format, paper, legalEntityId, view)}
           target="_blank"
           rel="noreferrer"
           data-testid="dataflow-export-image"
@@ -490,7 +505,7 @@ function ExportPanel({ legalEntityId }: { legalEntityId?: string }) {
         </label>
         <a
           className="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50"
-          href={dataflowReportHref("/api/bff", reportLang, reportFormat, legalEntityId)}
+          href={dataflowReportHref("/api/bff", reportLang, reportFormat, legalEntityId, view)}
           target="_blank"
           rel="noreferrer"
           data-testid="dataflow-export-report"

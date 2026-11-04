@@ -128,7 +128,7 @@ func TestGraph_SwimlanesActivitiesAndDisposal(t *testing.T) {
 	})
 
 	e.in(t, func(ctx context.Context) error {
-		g, err := e.svc.Graph(ctx, nil)
+		g, err := e.svc.Graph(ctx, nil, "")
 		if err != nil {
 			return err
 		}
@@ -208,7 +208,7 @@ func TestGraph_ForeignTransferWarning(t *testing.T) {
 	})
 
 	e.in(t, func(ctx context.Context) error {
-		g, err := e.svc.Graph(ctx, nil)
+		g, err := e.svc.Graph(ctx, nil, "")
 		if err != nil {
 			return err
 		}
@@ -233,7 +233,7 @@ func TestGraph_ForeignTransferWarning(t *testing.T) {
 		return err
 	})
 	e.in(t, func(ctx context.Context) error {
-		g, err := e.svc.Graph(ctx, nil)
+		g, err := e.svc.Graph(ctx, nil, "")
 		if err != nil {
 			return err
 		}
@@ -280,7 +280,7 @@ func TestGraph_LegalEntityFilter(t *testing.T) {
 	})
 
 	e.in(t, func(ctx context.Context) error {
-		g, err := e.svc.Graph(ctx, &le1.ID)
+		g, err := e.svc.Graph(ctx, &le1.ID, "")
 		if err != nil {
 			return err
 		}
@@ -330,7 +330,7 @@ func TestGraph_TwoTenantIsolation(t *testing.T) {
 	})
 
 	e2.in(t, func(ctx context.Context) error {
-		g, err := e2.svc.Graph(ctx, nil)
+		g, err := e2.svc.Graph(ctx, nil, "")
 		if err != nil {
 			return err
 		}
