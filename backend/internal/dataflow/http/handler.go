@@ -1,0 +1,154 @@
+// Package dataflowhttp holds the dataflow module's admin endpoint (DFG-01/DFG-03: the RoPA-generated data
+// flow diagram). Types in dataflow.gen.go are generated from api/openapi/openapi.yaml by oapi-codegen (see
+// oapi-codegen.yaml).
+package dataflowhttp
+
+import (
+	"context"
+	"errors"
+
+	dataflowservice "pdpa-platform/internal/dataflow/service"
+	"pdpa-platform/internal/pkg/httpx"
+)
+
+type Strict struct {
+	svc *dataflowservice.Service
+}
+
+func NewStrict(svc *dataflowservice.Service) *Strict { return &Strict{svc: svc} }
+
+var _ StrictServerInterface = (*Strict)(nil)
+
+func (h *Strict) DataflowGetGraph(ctx context.Context, req DataflowGetGraphRequestObject) (DataflowGetGraphResponseObject, error) {
+	g, err := h.svc.Graph(ctx, req.Params.LegalEntityId, toView(req.Params.View))
+	if err != nil {
+		return nil, err
+	}
+	return DataflowGetGraph200JSONResponse(toGraphWire(g)), nil
+}
+
+// toView maps the wire DataflowView enum (department/company/data_category) onto the service's own View
+// type — DFG-06's own department value is the literal string "org_unit" internally (ViewDepartment,
+// graph.go), the same value every snapshot published before DFG-06 already stores, so the wire-facing name
+// stays clear while dataflow.snapshots.view_type keeps resolving under its original key.
+func toView(v *DataflowView) dataflowservice.View {
+	if v == nil {
+		return dataflowservice.ViewDepartment
+	}
+	switch *v {
+	case "company":
+		return dataflowservice.ViewCompany
+	case "data_category":
+		return dataflowservice.ViewDataCategory
+	default:
+		return dataflowservice.ViewDepartment
+	}
+}
+
+// DFG-07: publish/version-history endpoints.
+
+func (h *Strict) DataflowListSnapshots(ctx context.Context, req DataflowListSnapshotsRequestObject) (DataflowListSnapshotsResponseObject, error) {
+	list, err := h.svc.ListSnapshots(ctx, req.Params.LegalEntityId, toView(req.Params.View))
+	if err != nil {
+		return nil, err
+	}
+	resp := DataflowListSnapshots200JSONResponse{Data: make([]DataflowSnapshotSummary, 0, len(list))}
+	for _, s := range list {
+		resp.Data = append(resp.Data, toSnapshotSummaryWire(s))
+	}
+	return resp, nil
+}
+
+func (h *Strict) DataflowPublishSnapshot(ctx context.Context, req DataflowPublishSnapshotRequestObject) (DataflowPublishSnapshotResponseObject, error) {
+	s, err := h.svc.PublishSnapshot(ctx, req.Params.LegalEntityId, toView(req.Params.View))
+	if err != nil {
+		return nil, snapshotProblem(err)
+	}
+	return DataflowPublishSnapshot201JSONResponse(toSnapshotWire(s)), nil
+}
+
+func (h *Strict) DataflowGetSnapshot(ctx context.Context, req DataflowGetSnapshotRequestObject) (DataflowGetSnapshotResponseObject, error) {
+	s, err := h.svc.GetSnapshot(ctx, req.Id)
+	if err != nil {
+		return nil, snapshotProblem(err)
+	}
+	return DataflowGetSnapshot200JSONResponse(toSnapshotWire(s)), nil
+}
+
+// snapshotProblem maps DFG-07's own sentinels to the same problem+json shapes export.go's exportProblem
+// already establishes for this module.
+func snapshotProblem(err error) error {
+	switch {
+	case errors.Is(err, dataflowservice.ErrSnapshotNotFound):
+		return httpx.NotFound()
+	case errors.Is(err, dataflowservice.ErrInvalid):
+		return httpx.UnprocessableEntity("dataflow.invalid_input", err.Error())
+	}
+	return err
+}
+
+func toSnapshotSummaryWire(s dataflowservice.SnapshotSummary) DataflowSnapshotSummary {
+	return DataflowSnapshotSummary{Id: s.ID, VersionNo: int(s.VersionNo), PublishedBy: s.PublishedBy, PublishedAt: s.PublishedAt, CreatedAt: s.CreatedAt}
+}
+
+func toSnapshotWire(s dataflowservice.Snapshot) DataflowSnapshot {
+	return DataflowSnapshot{
+		Id: s.ID, VersionNo: int(s.VersionNo), PublishedBy: s.PublishedBy, PublishedAt: s.PublishedAt, CreatedAt: s.CreatedAt,
+		Graph: toGraphWire(s.Graph),
+	}
+}
+
+func toGraphWire(g dataflowservice.Graph) DataflowGraph {
+	w := DataflowGraph{ActivityCount: g.ActivityCount, GeneratedAt: g.GeneratedAt}
+	for _, n := range g.Nodes {
+		dn := DataflowNode{Id: n.ID, Type: DataflowNodeType(n.Type), Label: n.Label}
+		if n.ParentID != "" {
+			dn.ParentId = &n.ParentID
+		}
+		if n.ActivityCode != "" {
+			dn.ActivityCode = &n.ActivityCode
+		}
+		if n.ActivityStatus != "" {
+			dn.ActivityStatus = &n.ActivityStatus
+		}
+		if n.Role != "" {
+			dn.Role = &n.Role
+		}
+		if len(n.Purposes) > 0 {
+			dn.Purposes = &n.Purposes
+		}
+		if len(n.DataCategories) > 0 {
+			dn.DataCategories = &n.DataCategories
+		}
+		if n.RecipientRole != "" {
+			dn.RecipientRole = &n.RecipientRole
+		}
+		if n.DisclosureBasis != "" {
+			dn.DisclosureBasis = &n.DisclosureBasis
+		}
+		if n.CountryCode != "" {
+			dn.CountryCode = &n.CountryCode
+		}
+		if len(n.DisposalMethods) > 0 {
+			dn.DisposalMethods = &n.DisposalMethods
+		}
+		if n.Warning {
+			dn.Warning = &n.Warning
+		}
+		if n.VendorID != nil {
+			dn.VendorId = n.VendorID
+		}
+		if len(n.AgreementIDs) > 0 {
+			dn.AgreementIds = &n.AgreementIDs
+		}
+		w.Nodes = append(w.Nodes, dn)
+	}
+	for _, e := range g.Edges {
+		de := DataflowEdge{Id: e.ID, Source: e.Source, Target: e.Target, Type: DataflowEdgeType(e.Type), Warning: e.Warning}
+		if e.Label != "" {
+			de.Label = &e.Label
+		}
+		w.Edges = append(w.Edges, de)
+	}
+	return w
+}

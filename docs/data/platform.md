@@ -17,9 +17,11 @@
 | [workflow_instances](#platform-workflow-instances) | workflow ที่กำลังทำงานของแต่ละ record | tenant · RLS `tenant_isolation` |  | ERD-01 |  |
 | [workflow_tasks](#platform-workflow-tasks) | งานในแต่ละขั้นของ workflow | tenant · RLS `tenant_isolation` |  | ERD-01 |  |
 | [sla_timers](#platform-sla-timers) | ตัวนับเวลา SLA (วันปฏิทิน / วันทำการ / ชั่วโมง) | tenant · RLS `tenant_isolation` |  | ERD-01 | BP-06, SEQ-05 |
+| [audit_chain_anchors](#platform-audit-chain-anchors) | หลักฐานการลบ audit log ที่พ้นระยะเก็บ (hash สุดท้ายต่อ tenant) | tenant · RLS `tenant_isolation` | append-only | D-22 |  |
 | [form_definitions](#platform-form-definitions) | ฟอร์ม / แบบประเมิน (form engine) | tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write` |  | ERD-01 |  |
 | [form_versions](#platform-form-versions) | เวอร์ชันของฟอร์ม (schema JSON) | tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write` |  | ERD-01 |  |
 | [form_submissions](#platform-form-submissions) | คำตอบของฟอร์ม | tenant · RLS `tenant_isolation` |  | ERD-01 |  |
+| [form_section_assignments](#platform-form-section-assignments) | มอบหมายส่วนของคำตอบให้ผู้ตอบ | tenant · RLS `tenant_isolation` |  | PLT-06 |  |
 | [record_versions](#platform-record-versions) | snapshot และ diff ของ record ที่มีเวอร์ชัน | tenant · RLS `tenant_isolation` |  | ERD-01 | BP-05, SEQ-02 |
 | [approvals](#platform-approvals) | ขั้นตอนอนุมัติ (maker-checker / หลายระดับ) | tenant · RLS `tenant_isolation` |  | ERD-01 | BP-05, BP-12 |
 | [comments](#platform-comments) | ความเห็น / @mention ต่อ record | tenant · RLS `tenant_isolation` |  | ERD-01 |  |
@@ -100,6 +102,7 @@ public key สำหรับ /public/v1 และ portal: หา tenant ก่�
 - PK: `(key)`
 - Index: `platform.public_keys (tenant_id)` · `platform.public_keys (entity_id)`
 - RLS: lookup สาธารณะ · RLS `public_read` (อ่านได้ก่อนรู้ tenant) + `tenant_write`
+- ใช้งาน: `internal/platform/publickeys` — `Issue` (24 ไบต์สุ่ม base64url) / `Revoke` / `SetOrigins` ใน tx ของ tenant; `Middleware` ของ `/public/v1` หาคีย์จาก path `/public/v1/collection-points/{key}` หรือ header `X-Public-Key` ก่อนเปิด transaction (ไม่พบ/เพิกถอน = 404, `Origin` ไม่อยู่ใน `allowed_origins` = 403) แล้วตั้ง principal `data_subject` ของ tenant นั้น · ผู้ใช้รายแรก: collection point (CON-09)
 
 <a id="platform-workflow-definitions"></a>
 ## platform.workflow_definitions
@@ -122,6 +125,7 @@ public key สำหรับ /public/v1 และ portal: หา tenant ก่�
 - Unique: `uq_workflow_definitions_code_version_no UNIQUE NULLS NOT DISTINCT (tenant_id, code, version_no)`
 - RLS: tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write`
 - ถูกอ้างถึงโดย: `platform.workflow_instances.definition_id`, `dsar.request_types.workflow_definition_id`
+- `definition` (PLT-05): `{"initial": "<key>", "states": [{"key", "label": {"th", "en"}, "terminal", "pause_sla", "task": {"title": {"th", "en"}, "assignee_user_id" | "assignee_group_id", "due": {"mode", "amount"}}}], "transitions": [{"from", "to", "label"}], "sla": {"code", "mode", "amount", "calendar_id", "remind_before": [n…], "escalate_user_ids": […], "escalate_group_id"}}` — ตรวจโดย `workflow.Definition.Validate` (ต้องมีขั้นสุดท้าย, ไม่มีขั้นทางตัน, ขั้นสุดท้ายไม่มีงาน) · ทุกการบันทึกเป็นแถวใหม่ `version_no + 1` และปิด `is_active` ของเวอร์ชันก่อนหน้าของ tenant
 
 <a id="platform-workflow-instances"></a>
 ## platform.workflow_instances
@@ -169,6 +173,7 @@ workflow ที่กำลังทำงานของแต่ละ record
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_workflow_tasks_updated`
 - PK: `(id)`
 - Index: `platform.workflow_tasks (tenant_id, instance_id)` · `platform.workflow_tasks (tenant_id, assignee_user_id)` · `platform.workflow_tasks (tenant_id, assignee_group_id)`
+- Partial index (migration 00028): งานที่ยังเปิด (`open`, `in_progress`) ตาม `assignee_user_id` / `assignee_group_id` — สำหรับกระดานงานของฉัน · `title` เก็บชื่อภาษาไทย ส่วนชื่อหลายภาษามาจากนิยามของขั้น
 - RLS: tenant · RLS `tenant_isolation`
 
 <a id="platform-sla-timers"></a>
@@ -194,7 +199,28 @@ workflow ที่กำลังทำงานของแต่ละ record
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_sla_timers_updated`
 - PK: `(id)`
 - Index: `platform.sla_timers (tenant_id, instance_id)` · `platform.sla_timers (tenant_id, calendar_id)` · `platform.sla_timers (tenant_id, due_at)`
+- `paused_at timestamptz` (migration 00028): ตั้งเมื่อ instance เข้าขั้น `pause_sla`; เมื่อออก `due_at` ถูกเลื่อนตามช่วงที่หยุดแล้วล้างค่า · `reminders` = `[{"before": n, "at": ts, "sent_at": ts|null}]` เรียงตามเวลา · `calendar_id` NULL = ปฏิทินในตัว (จันทร์–ศุกร์ Asia/Bangkok) เพราะ tenant ยังไม่มีปฏิทิน · สถานะ: `running` → `met` (จบก่อนกำหนด) / `breached` (เลยกำหนด ตั้ง `escalated_at`) · `stopped_at` = เวลาที่ instance จบ
 - RLS: tenant · RLS `tenant_isolation`
+
+<a id="platform-audit-chain-anchors"></a>
+## platform.audit_chain_anchors
+
+หลักฐานการลบ partition ของ `audit_log` ที่พ้นระยะเก็บ 5 ปี (decisions D-22, migration 00033) — append-only
+
+| คอลัมน์ | type | NOT NULL | default | key / อ้างอิง | หมายเหตุ |
+|---|---|---|---|---|---|
+| `id` | `uuid` | ✓ | gen_random_uuid() | PK |  |
+| `tenant_id` | `uuid` | ✓ |  | FK → [platform.tenants](#platform-tenants) | RLS |
+| `partition_name` | `text` | ✓ |  |  | partition ที่ถูกลบ เช่น `audit_log_y2020m01` |
+| `dropped_through` | `timestamptz` | ✓ |  |  | ขอบบนของเดือนที่ลบ |
+| `last_id` | `bigint` | ✓ |  |  | แถวสุดท้ายของ tenant ในเดือนนั้น |
+| `last_occurred_at` | `timestamptz` | ✓ |  |  |  |
+| `last_hash` | `char(64)` | ✓ |  |  | hash ที่แถวแรกที่เหลือต้องอ้างถึง (`prev_hash`) |
+| `rows_dropped` | `bigint` | ✓ |  |  |  |
+| `created_at` | `timestamptz` | ✓ | now() |  |  |
+
+- PK: `(id)` · Unique: `uq_audit_chain_anchors (tenant_id, partition_name)` · Index: `ix_platform_audit_chain_anchors_latest (tenant_id, dropped_through DESC)`
+- RLS: tenant · RLS `tenant_isolation` · เขียนได้เฉพาะ `platform.drop_expired_audit_partitions()` (SECURITY DEFINER) — แอปอ่านได้อย่างเดียว (REVOKE ใน `deploy/db/10-grants.sql`)
 
 <a id="platform-form-definitions"></a>
 ## platform.form_definitions
@@ -239,6 +265,7 @@ workflow ที่กำลังทำงานของแต่ละ record
 - Index: `platform.form_versions (form_id)` · `platform.form_versions (published_by)`
 - RLS: tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write`
 - ถูกอ้างถึงโดย: `platform.form_submissions.form_version_id`, `assess.assessments.form_version_id`
+- PLT-06 (migration 00032): ร่างได้ครั้งละหนึ่งเวอร์ชันต่อฟอร์ม (`ux_platform_form_versions_draft` unique `(form_id) WHERE published_at IS NULL`) · `ux_platform_form_versions_no (form_id, version_no)` · เวอร์ชันที่มี `published_at` แก้ไม่ได้อีก · รูปแบบ `schema` / `scoring` ดู [PLT.md#plt-06](../modules/PLT.md#plt-06)
 
 <a id="platform-form-submissions"></a>
 ## platform.form_submissions
@@ -256,13 +283,36 @@ workflow ที่กำลังทำงานของแต่ละ record
 | `submitted_by` | `uuid` |  |  |  |  |
 | `answers` | `jsonb` | ✓ |  |  |  |
 | `score` | `numeric(8,2)` |  |  |  |  |
-| `submitted_at` | `timestamptz` | ✓ | now() |  |  |
+| `submitted_at` | `timestamptz` |  | now() |  | NULL ขณะยังเป็นร่าง (migration 00032) |
+| `status` | `text` | ✓ | 'submitted' |  | ค่า: `draft`, `submitted` (migration 00032) |
+| `result` | `jsonb` |  |  |  | ผลประเมินตอนส่ง: `visible`, `answers`, `errors`, `score`, `max_score`, `band` (migration 00032) |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_form_submissions_updated`
 - PK: `(id)`
 - Index: `platform.form_submissions (tenant_id, form_version_id)` · `platform.form_submissions (tenant_id, entity_type)` · `platform.form_submissions (tenant_id, entity_id)`
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `consent.consent_receipts.form_submission_id`, `ropa.questionnaires.form_submission_id`, `ropa.sme_exemption_checks.form_submission_id`, `dsar.requests.form_submission_id`, `breach.assessments.form_submission_id`, `vendor.intakes.form_submission_id`
+- PLT-06: `status = 'draft'` คือคำตอบที่ยังตอบไม่เสร็จ (แก้ได้ แบ่งส่วนให้คนอื่นตอบได้ผ่าน [form_section_assignments](#platform-form-section-assignments)); `submitted` ถูกตรวจ คิดคะแนน และแช่แข็ง — โมดูลที่รับคำตอบจากภายนอก (consent, DSAR) บันทึกเป็น `submitted` ทีเดียวด้วย `forms.Service.Record`
+
+<a id="platform-form-section-assignments"></a>
+## platform.form_section_assignments
+
+การมอบหมายส่วนของคำตอบให้ผู้ใช้ตอบ (PLT-06, migration 00032)
+
+| คอลัมน์ | type | NOT NULL | default | key / อ้างอิง | หมายเหตุ |
+|---|---|---|---|---|---|
+| `id` | `uuid` | ✓ | gen_random_uuid() | PK |  |
+| `tenant_id` | `uuid` | ✓ |  | FK → [platform.tenants](#platform-tenants) | RLS |
+| `submission_id` | `uuid` | ✓ |  | FK → [platform.form_submissions](#platform-form-submissions) ON DELETE CASCADE |  |
+| `section_key` | `varchar(60)` | ✓ |  |  | `key` ของส่วนใน schema ของเวอร์ชัน |
+| `assignee_user_id` | `uuid` | ✓ |  | FK → [iam.users](iam.md#iam-users) |  |
+| `status` | `text` | ✓ | 'open' |  | ค่า: `open`, `done` |
+| `completed_at` | `timestamptz` |  |  |  |  |
+
+- มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_form_section_assignments_updated`
+- PK: `(id)` · Unique: `uq_form_section_assignments (tenant_id, submission_id, section_key)` — หนึ่งส่วนหนึ่งผู้ตอบ
+- Index: `ix_platform_form_section_assignments_assignee (tenant_id, assignee_user_id) WHERE status = 'open'`
+- RLS: tenant · RLS `tenant_isolation`
 
 <a id="platform-record-versions"></a>
 ## platform.record_versions
@@ -286,6 +336,7 @@ snapshot และ diff ของ record ที่มีเวอร์ชัน
 - Index: `platform.record_versions (tenant_id, entity_type)` · `platform.record_versions (tenant_id, entity_id)`
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `platform.approvals.record_version_id`
+- PLT-08 (migration 00029): unique partial index — เวอร์ชันเปิด (`draft`, `in_review`, `approved`) ได้ 1 และ `published` ได้ 1 ต่อ `(tenant_id, entity_type, entity_id)` · `created_by` = ผู้จัดทำ (maker) · `diff` = `[{"path", "before", "after"}]` เทียบฉบับเผยแพร่ ณ เวลาส่งขออนุมัติ · แก้ `snapshot` ได้เฉพาะสถานะ `draft`
 
 <a id="platform-approvals"></a>
 ## platform.approvals
@@ -312,6 +363,7 @@ snapshot และ diff ของ record ที่มีเวอร์ชัน
 - Index: `platform.approvals (tenant_id, entity_type)` · `platform.approvals (tenant_id, entity_id)` · `platform.approvals (tenant_id, record_version_id)` · `platform.approvals (tenant_id, requested_by)` · `platform.approvals (tenant_id, approver_user_id)`
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `iam.role_assignments.approval_id`, `risk.acceptances.approval_id`
+- PLT-08: หนึ่งแถวต่อขั้นต่อรอบการส่ง (`step_no` 1…n, `approver_role` = role ที่ตัดสินขั้นนั้น, `requested_by` = ผู้ส่ง) · `approver_user_id` = ผู้ที่ตัดสินจริง · เมื่อส่งกลับ/ไม่อนุมัติ ขั้นที่ยัง `pending` ถูกลบ (การส่งใหม่เปิดรอบใหม่) · index `ix_platform_approvals_pending_role` สำหรับกล่องงานรออนุมัติ
 
 <a id="platform-comments"></a>
 ## platform.comments
@@ -337,6 +389,8 @@ snapshot และ diff ของ record ที่มีเวอร์ชัน
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `platform.comments.parent_id`
 
+- PLT-07: `entity_type` ต้องเป็นประเภทที่ module ลงทะเบียนกับ `collab.Service` (ตรวจว่ามี record จริงภายใต้ RLS ก่อนเขียน — decisions D-20) · `mentions` = user id ที่ถูกกล่าวถึงซึ่งเป็นผู้ใช้ active ของ tenant (แยกจาก `@[ชื่อ](id)` ใน body) · ตอบกลับได้ชั้นเดียว · `resolved_at` ใช้กับความเห็นแรกของ thread เท่านั้น
+
 <a id="platform-files"></a>
 ## platform.files
 
@@ -361,6 +415,7 @@ snapshot และ diff ของ record ที่มีเวอร์ชัน
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_files_updated`
 - PK: `(id)`
 - Unique: `uq_files_object_key UNIQUE (tenant_id, object_key)`
+- PLT-09 (`backend/internal/platform/files`): `object_key` = `<tenant>/<yyyy>/<mm>/<file id>` (ไม่มีชื่อไฟล์ — ชื่ออาจเป็นข้อมูลส่วนบุคคล) · `mime_type` มาจากการ sniff เนื้อหา ไม่เชื่อค่าที่ client ส่ง · `encryption_key_id` = `sse-s3` เมื่อเปิด SSE · `av_status` เปลี่ยนตาม state machine `PLT-09` ใน `docs/states/state-machines.yaml` โดย job `files.scan` พร้อม audit (`platform.file.scan`) · infected → ลบ object เก็บแถวไว้เป็นหลักฐาน · `retention_until` = กำหนดลบไฟล์ที่ยังไม่ถูกผูกกับ record (orphan, ค่าเริ่มต้น 24 ชม., job `files.expire`) และถูกล้างเมื่อ `Attach`
 - Index: `platform.files (tenant_id, entity_type)` · `platform.files (tenant_id, entity_id)`
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `platform.document_versions.pdf_file_id`, `platform.document_versions.docx_file_id`, `platform.import_jobs.file_id`, `platform.import_jobs.error_file_id`, `platform.export_jobs.file_id`, `iam.users.avatar_file_id`, `org.legal_entities.logo_file_id`, `consent.consent_receipts.evidence_file_id`, `consent.reconcile_runs.report_file_id`, `cookie.scans.report_file_id`, `notice.indirect_collections.evidence_file_id`, `notice.linked_documents.file_id`, `dataflow.snapshots.image_file_id`, `dsar.agents.authority_file_id`, `dsar.verifications.masked_id_file_id`, `dsar.subtasks.evidence_file_id`, `dsar.search_results.result_file_id`, `dsar.packages.file_id`, `dsar.redactions.source_file_id`, `dsar.redactions.output_file_id`, `dsar.downstream_notices.evidence_file_id`, `breach.pdpc_notifications.evidence_file_id`, `breach.evidence.file_id`, `vendor.certificates.file_id`, `vendor.remediation_items.evidence_file_id`, `vendor.offboardings.destruction_certificate_file_id`, `agreement.annexes.file_id`, `agreement.signature_requests.signed_file_id`, `agreement.return_confirmations.certificate_file_id`, `dpo.appointments.appointment_file_id`, `dpo.appointments.pdpc_evidence_file_id`, `dpo.independence_declarations.file_id`, `gov.courses.content_file_id`, `gov.training_attempts.certificate_file_id`, `gov.audit_findings.evidence_file_id`, `gov.disposal_jobs.evidence_file_id`, `gov.regulator_letters.file_id`, `gov.masking_jobs.source_file_id`, `gov.masking_jobs.output_file_id`
@@ -381,10 +436,12 @@ snapshot และ diff ของ record ที่มีเวอร์ชัน
 | `template_id` | `uuid` |  |  | FK → [platform.templates](#platform-templates) |  |
 | `status` | `text` | ✓ | 'draft' |  | ค่า: `draft`, `in_review`, `approved`, `published`, `archived` |
 | `current_version_id` | `uuid` |  |  |  |  |
+| `legal_entity_id` | `uuid` |  |  | FK → [org.legal_entities](org.md#org-legal-entities) | migration 00037 — whose details fill org_* merge fields |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_documents_updated`
 - PK: `(id)`
-- Index: `platform.documents (tenant_id, entity_type)` · `platform.documents (tenant_id, entity_id)` · `platform.documents (tenant_id, template_id)`
+- Index: `platform.documents (tenant_id, entity_type)` · `platform.documents (tenant_id, entity_id)` · `platform.documents (tenant_id, template_id)` · `platform.documents (tenant_id, legal_entity_id)` (00037) · `platform.documents (tenant_id, doc_type, updated_at DESC, id)` (00037)
+- PLT-16 uses only `draft` / `published` of the `status` enum (draft → in_review → approved run at the PLT-08 version level, `platform.record_versions.status`, not here); `archived` is unused so far.
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `platform.document_versions.document_id`, `notice.notices.document_id`, `agreement.agreements.document_id`, `gov.policies.document_id`
 
@@ -412,6 +469,8 @@ snapshot และ diff ของ record ที่มีเวอร์ชัน
 - PK: `(id)`
 - Unique: `uq_document_versions_document_id_version_no UNIQUE (document_id, version_no)`
 - Index: `platform.document_versions (tenant_id, document_id)` · `platform.document_versions (tenant_id, pdf_file_id)` · `platform.document_versions (tenant_id, docx_file_id)` · `platform.document_versions (tenant_id, approved_by)`
+- `content` (migration 00037 columns aside) holds the *frozen* snapshot published: `{title, content: {th,en}, fields: {th:{key:value}, en:{...}}, clauses: {th:{"code@version":{title,doc}}, en:{...}}, record_version_id}` — every merge field value and cited clause text as of publish, so later organization or clause-library changes never alter a published version.
+- migration 00037 added `pdf_en_file_id` / `docx_en_file_id` (English render alongside the Thai `pdf_file_id` / `docx_file_id`) and `render_status` (`pending` → `done` | `failed`, the `docs.render` job)
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `notice.notice_versions.document_version_id`, `dsar.communications.document_version_id`, `breach.pdpc_notifications.document_version_id`, `agreement.downloads.document_version_id`
 
@@ -511,7 +570,8 @@ template อีเมล / SMS / LINE / in-app
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_notifications_updated`
 - PK: `(id)`
-- Index: `platform.notifications (tenant_id, template_id)` · `platform.notifications (tenant_id, recipient_user_id)` · `platform.notifications (tenant_id, entity_type)` · `platform.notifications (tenant_id, entity_id)`
+- Index: `platform.notifications (tenant_id, template_id)` · `platform.notifications (tenant_id, recipient_user_id)` · `platform.notifications (tenant_id, entity_type)` · `platform.notifications (tenant_id, entity_id)` · `ix_platform_notifications_created (tenant_id, created_at DESC, id DESC)` · `ix_platform_notifications_inbox (tenant_id, recipient_user_id, created_at DESC) WHERE channel = 'in_app'` (migration 00025)
+- PLT-04: `payload` = `{"language", "vars_enc"}` — ตัวแปรของ template เข้ารหัสด้วย keyring (class `notification`) เพราะมักมีชื่อ / ข้อมูลส่วนบุคคล · `recipient_address_enc` เก็บที่อยู่ที่ normalize แล้ว (อีเมล lower-case, เบอร์ E.164) · `status` ตาม state machine `PLT-04`: in-app สร้างเป็น `sent` ทันที และเป็น `delivered` เมื่อผู้รับเปิดอ่าน · `error` ผ่านการตัดอีเมล / ตัวเลขยาวออก
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `dsar.communications.notification_id`
 
@@ -534,7 +594,8 @@ transactional outbox ของ domain event
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_outbox_events_updated`
 - PK: `(id)`
-- Index: `platform.outbox_events (tenant_id, event_type)` · `platform.outbox_events (tenant_id, published_at)`
+- Index: `platform.outbox_events (tenant_id, event_type)` · `platform.outbox_events (tenant_id, published_at)` · `ix_platform_outbox_events_unpublished (tenant_id, occurred_at, id) WHERE published_at IS NULL` (migration 00022 — dispatcher)
+- `payload` = `{"version": <n>, "data": {...}}` · `data` มีฟิลด์ตาม `docs/architecture/events.yaml` ครบและไม่เกิน (ตรวจใน `events.Publisher`) · envelope `subject` = `aggregate_type` + `aggregate_id` · `attempts` นับทุกครั้งที่ dispatch (สำเร็จหรือล้มเหลว) (PLT-11)
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `platform.webhook_deliveries.event_id`
 
@@ -579,8 +640,30 @@ webhook ที่ระบบปลายทางลงทะเบียน
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_webhook_deliveries_updated`
 - PK: `(id)`
 - Index: `platform.webhook_deliveries (tenant_id, subscription_id)` · `platform.webhook_deliveries (tenant_id, event_id)` · `platform.webhook_deliveries (tenant_id, next_retry_at)`
+- Unique: `uq_platform_webhook_deliveries_subscription_event (tenant_id, subscription_id, event_id)` (migration 00022) — dispatch ซ้ำไม่สร้าง delivery ซ้ำ · แถวถูกสร้างเป็น `pending` โดย `outbox.dispatch` (PLT-11) และส่งจริงโดย `webhook.deliver` (PLT-15)
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `consent.downstream_syncs.webhook_delivery_id`
+
+<a id="platform-tenant-keys"></a>
+## platform.tenant_keys
+
+กุญแจข้อมูล (DEK / blind index key) ต่อ tenant ที่ห่อด้วย KEK ใน OpenBao Transit — ห้ามลบ (PLT-13, migration 00024)
+
+| คอลัมน์ | type | NOT NULL | default | key / อ้างอิง | หมายเหตุ |
+|---|---|---|---|---|---|
+| `id` | `uuid` | ✓ | gen_random_uuid() | PK |  |
+| `tenant_id` | `uuid` | ✓ |  | FK → [platform.tenants](#platform-tenants) | RLS |
+| `purpose` | `text` | ✓ |  |  | ค่า: `dek` (AES-256-GCM สำหรับ `*_enc`), `blind_index` (HMAC-SHA256) |
+| `data_class` | `varchar(60)` | ✓ |  |  | ประเภทข้อมูลของ DEK เช่น `subject_identifier`, `contact` · blind index ใช้ `default` (1 key ต่อ tenant) |
+| `version` | `int` | ✓ |  |  | เริ่ม 1 · `RotateDEK` เพิ่มทีละ 1 |
+| `wrapped_key` | `bytea` | ✓ |  |  | key ที่ห่อด้วย KEK ของ tenant (Transit ciphertext) |
+| `kek_ref` | `varchar(200)` | ✓ |  |  | KEK version ที่ห่อ เช่น `transit:tenant-<id>:v2` · เปลี่ยนเมื่อ `RotateKEK` rewrap |
+| `status` | `text` | ✓ | 'active' |  | ค่า: `active`, `retired` (version เก่ายังใช้ถอดรหัสได้) |
+
+- มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_tenant_keys_updated`
+- Unique: `uq_tenant_keys_purpose_class_version (tenant_id, purpose, data_class, version)` · `uq_tenant_keys_active (tenant_id, purpose, data_class) WHERE status = 'active'`
+- RLS: tenant · RLS `tenant_isolation` · `pdpa_app` / `pdpa_platform` ไม่มีสิทธิ์ DELETE / TRUNCATE (`deploy/db/10-grants.sql`) — ลบ key = ข้อมูลอ่านไม่ได้ถาวร (crypto-shredding ตอนเลิกใช้ tenant)
+- รูปแบบค่าใน `*_enc`: `0x01 | DEK version (uint32) | nonce | AES-256-GCM ciphertext+tag` · associated data = tenant_id + data_class + ชื่อคอลัมน์ (ย้าย ciphertext ไปคอลัมน์ / tenant อื่นแล้วถอดไม่ได้) · `blind_index` = HMAC-SHA256(key, identifier_type ‖ ค่าที่ normalize) — normalize: อีเมล lower-case, เบอร์ E.164 (ค่าเริ่มต้น +66), เลขบัตร 13 หลัก, เลขไทยแปลงเป็นอารบิก
 
 <a id="platform-audit-log"></a>
 ## platform.audit_log
@@ -605,7 +688,8 @@ audit log แบบ append-only + hash chain (partition รายเดือน
 | `hash` | `char(64)` | ✓ |  |  |  |
 
 - PK: `(id, occurred_at)` — รวมคอลัมน์ partition
-- Index: `platform.audit_log (tenant_id, entity_type)` · `platform.audit_log (tenant_id, entity_id)`
+- Index: `platform.audit_log (tenant_id, entity_type)` · `platform.audit_log (tenant_id, entity_id)` · `ix_platform_audit_log_chain (tenant_id, occurred_at, id)` (migration 00023, Go migration: ON ONLY + CONCURRENTLY ต่อ partition + ATTACH)
+- hash chain ต่อ tenant (PLT-12, `internal/platform/audit/service`): `hash` = SHA-256 ของทุกคอลัมน์ยกเว้น `id`/`hash` (แต่ละฟิลด์มี length prefix, tag `audit/v2`, `before`/`after` เป็น canonical JSON, `occurred_at` ระดับ microsecond UTC) · `prev_hash` = `hash` ของแถวก่อนหน้า (แถวแรก NULL) · ลำดับ chain = `(occurred_at, id)` · ผู้เขียนถือ advisory lock ต่อ tenant ถึง COMMIT และ `occurred_at` = นาฬิกา DB แต่ไม่น้อยกว่าแถวก่อน + 1µs · `Verify` ไล่ตรวจทั้ง chain · job `audit.verify` ทุกวันต่อ tenant → `alert=audit_chain_broken`
 - RLS: tenant · RLS `tenant_isolation`
 
 <a id="platform-import-jobs"></a>
@@ -630,6 +714,7 @@ audit log แบบ append-only + hash chain (partition รายเดือน
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_import_jobs_updated`
 - PK: `(id)`
 - Index: `platform.import_jobs (tenant_id, file_id)` · `platform.import_jobs (tenant_id, error_file_id)`
+- `mapping` (PLT-14): `{"headers": [หัวคอลัมน์ในไฟล์], "suggested": {column_key: header}, "columns": {column_key: header} (ที่ผู้ใช้ยืนยัน), "failure": "<เหตุผล เช่น file_rejected, no_header_row, apply_failed_line_N>"}` · `dry_run` = true จนกว่าจะเริ่ม `importing` · `success_rows` = แถวที่ผ่านการตรวจ (ขณะ `ready`) แล้วเป็นแถวที่นำเข้าจริง (`done`) · `error_file_id` = รายงาน CSV ของแถวที่ผิด (ไม่มีค่าเซลล์ เพื่อไม่ให้ PII หลุด)
 - RLS: tenant · RLS `tenant_isolation`
 
 <a id="platform-export-jobs"></a>

@@ -182,6 +182,47 @@
 
 **Acceptance criteria:** ไม่มีช่องติ๊กล่วงหน้า; ปฏิเสธทั้งหมดได้ในคลิกเดียว; ขนาด SDK ไม่เกิน 30 KB gzip
 
+**Implementation note (done):** `internal/cookie` — the first module on the `cookie` schema (`cookie.banner.*`,
+already seeded in the baseline permission migration). Deliberately scoped to the three literal acceptance
+criteria only: `cookie.apps`/`scan*`/`cookie_kb`/`script_rules`/`ab_variants` (CON-02/03/04/07/08's own
+tables) stay untouched, unused until their own feature passes. `domains.go`/`categories.go` are plain CRUD
+(`RegisterDomain` FK-checks `legal_entity_id` via `orgservice.GetLegalEntity`, rule 1; domain verification is
+this pass's own manual confirmation — no outbound DNS resolution is available in this environment for a real
+TXT/meta-tag check, so the already-issued `verification_token` is shown but staff mark it verified by hand).
+`banners.go` is `cookie.banner_configs`' own simple `draft → published → archived` versioning (not PLT-08):
+publishing archives every sibling published version in the same call and issues the domain's own
+`platform.public_keys` entry (`publickeys.EntityCookieDomain`, already in the baseline schema's CHECK
+constraint) only on first publish — a new shared `publickeys.Get` helper was added for this, since
+`cookie.domains` (unlike `breach.report_forms`/`dsar.intake_forms`) has no `public_key` column of its own to
+read it back from. `CookieBannerConfig.id` is returned to the SDK as `banner_config_id` on the public banner
+read, closing the one gap found while building the SDK client: the wire schema otherwise named a config only
+by `domain_id`+`version_no`. `consent.go`'s `RecordConsent` is the acceptance criterion's own evidence write —
+append-only, one call per decision — hashing the IP (SHA-256, rule 3: `cookie.consent_records.ip_hash` never
+stores the raw address).
+
+API: `/admin/v1/cookie/{domains,categories}` + `.../domains/{id}/verify` + `.../domains/{id}/banner-configs` +
+`.../banner-configs/{id}` + `.../banner-configs/{id}/publish`; public `GET /public/v1/cookie-banners/{key}`
+(banner + categories, no login) and `POST .../consents` (`Idempotency-Key` required, rule 10). UI:
+`/settings/cookie-banners` (domain registration + verify, category CRUD, a per-domain banner draft
+editor/publish, the install snippet shown once a domain's banner has published at least once). The SDK itself
+is `packages/cookie-sdk` — vanilla TypeScript, no React/`@pdpa/api-client` dependency (a standalone CDN bundle
+has a different size budget than a Next.js app) — fetches the published banner, renders three genuinely
+equal-weight buttons (accept-all / reject-all / settings, the same CSS class, no category pre-ticked unless
+`is_required`), and posts the decision with a first-party visitor cookie. Built with esbuild
+(`pnpm --filter @pdpa/cookie-sdk build`), verified at **2.48 KB gzip** (`pnpm check-size`, failing the build
+past 30 KB) — comfortably inside the acceptance criterion's own budget, with headroom for CON-02/03's own
+later scripts. Tests: unit (no category pre-ticked unless required; domain FK-visibility and uniqueness
+checks; publish lifecycle archives siblings and issues the public key only once; `RecordConsent`'s evidence
+row carries the right action with a hashed, never-raw IP; two-tenant isolation of domains/categories/banner
+configs), HTTP contract for both the admin and public packages (401/403/404/412/428/422/201 through the real
+validator + AuthZ/public-key/Idempotency/Tx chain, an Idempotency-Key replay returning the original result).
+Not verified live against a real Postgres/Redis — the same environment limitation DSAR-01/BRE-01/DSAR-14
+already disclosed; every test compiles and vets clean and skips the same way the rest of this codebase's own
+test suite already does here. Not done, deliberately (sibling features, not this one's literal criterion):
+CON-02's own immediate script-blocking effect, CON-03's prior-to-consent script interception, CON-04's
+automated scanner, CON-06's branding/multi-language beyond th/en, CON-07's mobile/LIFF SDK, CON-08's A/B
+testing — every one of their own baseline tables stays unused until that pass.
+
 <a id="con-02"></a>
 ### CON-02 ตั้งค่าคุกกี้รายหมวด
 
@@ -203,6 +244,61 @@
 
 **Acceptance criteria:** เปิด/ปิดรายหมวดแล้วมีผลทันทีกับสคริปต์ในหมวดนั้น
 
+**Implementation note (done):** Builds on CON-01's own `cookie` module and schema — no migration needed,
+every table this feature touches (`cookie.cookies`, `cookie.script_rules`) was already in the baseline.
+`domains.go`'s `RegisterDomain` now seeds the module doc's own "ค่าเริ่มต้น 4 หมวด" (Strictly Necessary /
+Functional / Analytics / Marketing, only "necessary" required) on a tenant's *first* domain
+(`seedDefaultCategoriesIfNone`) — a tunable convenience, not legal content (rule 8 doesn't apply: these are
+internal category labels, never shown as notice/consent wording to a data subject), so no `docs/decisions.md`
+entry was needed; a later domain never re-seeds, so a DPO who already edited the set keeps their own.
+`cookies.go` is "รายการคุกกี้ต่อหมวด" — plain CRUD on `cookie.cookies` (manual entry only, `source='manual'`;
+`scan`/`kb` stay CON-04's own unused columns), FK-checking `category_id` via a new `GetCategory` service
+method (added to `categories.go`, since CON-01 never needed a single-row read). `script_rules.go`'s
+`cookie.script_rules` is the acceptance criterion's own enforcement mechanism: a DPO declares which URL
+pattern belongs to which category (`action` block/allow, default block); `PublicScriptRules` exposes them to
+the SDK keyed by the category's own *code* (a new sqlc query joining `cookie.categories`, not by id — the
+SDK already only knows categories by code), added to `GET /public/v1/cookie-banners/{key}`'s own response
+right alongside the categories it already returned.
+
+The SDK itself (`packages/cookie-sdk/src/scripts.ts`) is where "มีผลทันที" (immediate effect) actually
+happens — the same two mechanisms every commercial consent-management platform uses, since there is no way
+to literally un-execute code that has already run (a universal limitation, not specific to this SDK):
+declarative gating (a site marks a script `<script type="text/plain" data-pdpa-category="analytics"
+data-pdpa-src="...">`; the browser never executes `type="text/plain"` by spec, and this SDK activates it the
+moment that category turns on — turning it back off after that only prevents re-activation, since the script
+already ran) and pattern-based removal (a still-present, not-yet-loaded `<script src>` matching a `block`
+rule's pattern is removed the instant its category is disallowed). A `pdpa:consent` `CustomEvent` is
+dispatched on every change too, so a site's own already-running trackers (which this SDK can't reach
+directly) can react on their own. Applied both right after a fresh decision (the literal acceptance
+criterion) and on every page load for a returning visitor's already-recorded choice (so the effect isn't
+only ever "immediate," it's also *persistent*). `choicesForAction`/`categoryAllowed`/`matchesPattern`/
+`scriptsToBlock` are pure, DOM-free functions — `applyPreferences` is the one function that actually touches
+the DOM — so the gating logic itself is unit-tested directly (`scripts.test.ts`, the package's first test
+file; `vitest` added as a new devDependency) rather than only exercised through a browser nobody has
+available in this environment. The bundle grew from CON-01's own 2.48 KB to **2.98 KB gzip** — still
+comfortably inside the 30 KB budget `pnpm --filter @pdpa/cookie-sdk check-size` enforces.
+
+API: `GET`/`POST /admin/v1/cookie/domains/{id}/cookies`, `DELETE /admin/v1/cookie/cookies/{id}`,
+`GET`/`POST /admin/v1/cookie/domains/{id}/script-rules`, `DELETE /admin/v1/cookie/script-rules/{id}` — all on
+the already-seeded `cookie.banner.*` codes (child-table pattern reusing the parent resource's own
+permissions, the same move ROPA-03's own child tables use); `script_rules` added to `CookiePublicBanner`.
+UI: `/settings/cookie-banners` gained a "Cookies" and a "Script rules" section per domain (name/provider/
+category/storage-type form + list; pattern/category/action form + list), both inside the existing
+per-domain banner-management panel. Tests: unit (`internal/cookie/service/con02_test.go` — the 4-defaults
+seed fires once per tenant and never re-seeds, cookie/script-rule validation incl. unknown domain/category
+and bad storage_type/action, `PublicScriptRules` keyed by category code and reflecting a delete, two-tenant
+isolation of both new tables) and `packages/cookie-sdk/src/scripts.test.ts` (choicesForAction's three modes,
+category-allowed lookup, substring and `/regex/` pattern matching incl. a malformed pattern never throwing,
+which scripts a given choice set blocks), HTTP contract for both the admin and public packages (403 without
+`cookie.banner.create`, 201/204/404, the public banner response now carrying `script_rules`). Existing CON-01
+tests that created a category named "analytics" or asserted an empty category list right after
+`RegisterDomain` were updated for the new 4-seeded-defaults baseline. Not verified live against a real
+Postgres/Redis — same environment limitation CON-01 already disclosed; every Go test compiles and vets clean
+and skips the same way the rest of this codebase's own test suite already does here. `go build ./...`,
+`go vet ./...`, `go test -p 1 ./...` (no regressions), `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/cookie-sdk test` (vitest + build + size check) and
+`pnpm --filter @pdpa/admin build`/`typecheck` all verified clean.
+
 <a id="con-03"></a>
 ### CON-03 บล็อกสคริปต์ก่อนได้รับความยินยอม
 
@@ -223,6 +319,71 @@
 **Frontend (Next.js):** auto-blocking ใน SDK (MutationObserver + rewrite type=text/plain), Google Consent Mode v2, GTM template, event สำหรับ tag manager
 
 **Acceptance criteria:** ก่อนยินยอมไม่มีคุกกี้ Analytics / Marketing ถูกตั้ง (Playwright test บนเว็บตัวอย่าง)
+
+**Implementation note (done):** Backend scope is already fully covered by CON-02's own `cookie.script_rules`
+(blocking rules per script/domain) — no new migration, endpoint, or permission. This feature's real scope is
+entirely `packages/cookie-sdk`.
+
+A MutationObserver-based "remove after insertion" mechanism was tried first and rejected by this package's
+own Playwright E2E test: a mutation callback fires as a microtask *after* the synchronous DOM insertion that
+already starts the browser's fetch (and, per spec, scripts inserted via `appendChild`/`insertBefore` are not
+guaranteed to stop executing once removed) — a real, observed failure, not a theoretical one. `scripts.ts`'s
+`guardDynamicScripts()` instead patches `Node.prototype.appendChild`/`insertBefore` directly: a `<script src>`
+is rewritten *before* the original call ever runs — stripped of `src`, given `type="text/plain"` and a
+`data-pdpa-src` — so the browser never fetches it at all. This is exactly "rewrite type=text/plain", just
+applied *before* insertion instead of after, which is what makes it deterministic rather than racy. A script
+intercepted before the tenant's real `script_rules` are even known (the realistic case: GTM's own container
+injecting a sub-tag can run before this SDK's async banner fetch resolves) is held pending with no category
+yet; `guard.resolve(choices, rules)` — called once the banner loads, and again on every later decision —
+classifies each one: matches a block rule and still disallowed → stays inert with `data-pdpa-category` set,
+so `applyPreferences`' own CON-02 mechanism 1 activates it the moment that category is allowed; matches no
+rule at all → released immediately, since nothing the tenant flagged as tracking should stay blocked forever
+on a guess. `activatePlaceholder` was extracted out of `applyPreferences` so both call sites share one
+activation code path.
+
+A second real bug, found by the same E2E test: `autoInit()` previously deferred the *entire* `init()` call to
+`DOMContentLoaded` whenever `document.readyState === 'loading'` — which is always true for a `<script>` tag
+placed in `<body>`, the embed snippet's own recommended placement. That meant `guardDynamicScripts()` and
+`gtagDefault()` (both synchronous, needing nothing but `document.currentScript`) ran only *after* every other
+script on the page had already executed — the opposite of "prior." Fixed by calling `init()` unconditionally
+and immediately, deferring only the one step that actually needs `document.body` (the banner's own DOM
+insertion) to `DOMContentLoaded` if `document.body` doesn't exist yet.
+
+Google Consent Mode v2 ("รองรับ Google Consent Mode v2"): `consentMode.ts`'s `gtagDefault()`/`gtagUpdate()`
+push the fixed-vocabulary gtag consent signals (`ad_storage`/`ad_user_data`/`ad_personalization` ← marketing,
+`analytics_storage` ← analytics, `functionality_storage`/`personalization_storage` ← functional,
+`security_storage` always granted) onto `window.dataLayer` directly — this works whether or not gtag.js/GTM
+has actually loaded yet, since GTM reads its own queued dataLayer array once it initializes; no real GTM
+container exists in this environment to test against, so this is proven by unit test (the exact signals
+pushed) rather than a live container. `gtagDefault()` is called synchronously at the very top of `init()`
+(before the banner fetch), `gtagUpdate()` on every later preference change — the same timing CON-03's own
+"prior blocking" needs. A literal downloadable GTM community template (the module doc's own "GTM template"
+bullet) is deliberately not built — no real GTM container exists here to design or test one against, the
+same "no consumer yet" deferral this codebase uses throughout; the `pdpa:consent` CustomEvent (CON-02) and
+the dataLayer consent pushes are what such a template, or a custom GTM trigger, would read.
+
+The acceptance criterion itself is proven by a real Playwright test (`packages/cookie-sdk/e2e/`, `pnpm
+test:e2e`), not just asserted — this environment has a pre-installed Chromium (unlike most of this
+codebase's own "no browser available here" E2E disclaimers), so this is a genuine first for this session.
+`e2e/fixtures/index.html` is the literal "เว็บตัวอย่าง": a declaratively-gated analytics tag, and an inline
+script simulating a tag manager injecting a marketing sub-tag after its own container loads (the realistic
+case `guardDynamicScripts` targets) — a plain `<script src>` already present *earlier* in the HTML than the
+SDK's own tag is the one case nothing can retroactively stop (CON-02's own documented "can't un-execute code
+that already ran"), so the fixture places the SDK first, the documented real-world recommendation. `e2e/
+server.mjs` is a minimal static file server (no real backend — the test mocks `/public/v1` at the network
+layer via Playwright's own route interception). Three tests: no analytics/marketing cookie before any
+decision (the acceptance criterion directly), accepting all activates the gated script immediately (CON-02's
+own criterion, still true here), rejecting all keeps both blocked. `playwright.config.ts` points
+`launchOptions.executablePath` at this environment's own pre-installed Chromium (`/opt/pw-browsers/chromium`)
+since the pinned `@playwright/test` version would otherwise try to download a second, incompatible revision.
+`vitest.config.ts` was added to scope vitest's own glob to `src/**/*.test.ts` — needed once `e2e/*.spec.ts`
+existed, since vitest would otherwise try to run Playwright's own test files and fail immediately.
+
+Bundle grew from CON-02's own 2.98 KB to **3.51 KB gzip** — still comfortably inside the 30 KB budget. Tests:
+`pnpm --filter @pdpa/cookie-sdk test` (vitest incl. new `consentMode.test.ts`, build, size check) and `pnpm
+--filter @pdpa/cookie-sdk test:e2e` (the 3 Playwright tests above, all passing against a real Chromium). No
+backend or admin-UI changes — `go build/vet/test`, `pnpm --filter @pdpa/api-client typecheck` and `pnpm
+--filter @pdpa/i18n test` re-verified clean regardless.
 
 <a id="con-04"></a>
 ### CON-04 สแกนและจัดหมวดคุกกี้อัตโนมัติ
@@ -247,6 +408,35 @@
 
 **หมายเหตุ:** ดึงเข้า P1: แบนเนอร์ที่ไม่มี scanner แข่งในตลาดยาก
 
+**Implementation (CON-04) — done:** `internal/cookie/scan` เป็น crawler จริง (chromedp + headless Chromium
+ที่ติดตั้งไว้ในสภาพแวดล้อมนี้) — BFS ภายในโดเมนเดียวกัน (same-origin) หลาย tab พร้อมกัน (`Concurrency`,
+ดีฟอลต์ 4), เก็บคุกกี้ทุกตัวต่อหน้าผ่าน CDP `Storage.getCookies` (เห็นคุกกี้ของบุคคลที่สามด้วย ไม่ใช่แค่
+`document.cookie`), มีการ "warm up" tab ด้วย `about:blank` ก่อน timeout ครั้งแรก (บั๊กจริงที่พบ: chromedp ผูก
+อายุของ tab กับ context ของคำสั่งแรก) วัดจริงได้ ~378ms/หน้าที่ concurrency 6 → นอกเวลาเหลือเฟือสำหรับ 200
+หน้าใน 30 นาที (เกณฑ์ตอบรับ). `cookie.scans`/`cookie.scan_findings` (migration ที่มีอยู่แล้วในฐานข้อมูล
+baseline) + migration ใหม่ 00068 สำหรับ `cookie.cookie_kb` (23 รายการ tracker ที่รู้จักทั่วไป เช่น GA/Meta/
+TikTok — ข้อมูลสาธารณะทางอุตสาหกรรม ไม่ใช่ข้อความทางกฎหมาย จึงไม่ต้องมีสถานะ DRAFT ตามกติกาข้อ 8).
+`internal/cookie/service/scan.go`: `StartScan`/`RunScan`/`ClassifyFinding` — คุกกี้ที่พบใหม่จะถูกสร้างแถว
+`cookie.cookies` อัตโนมัติ (`source='scan'`) พร้อมหมวดแนะนำจาก `cookie_kb` (ถ้าตรงกับหมวดที่ tenant มีอยู่
+จริง) แล้วแจ้งเตือน DPO/IT ทันที (เทมเพลต `cookie.scan_new_cookies`, migration 00069) — ครอบคลุม
+"คุกกี้ใหม่ถูกแจ้งเตือน" ตามเกณฑ์ตอบรับโดยตรง. สแกนตามรอบ (`scan_schedule` ของ `cookie.domains`: daily/
+weekly/monthly) ผ่าน River สองขั้นตอน — `cookie.scan_schedule_sweep` (global job อ่านแค่ `platform.tenants`)
+enqueue `cookie.scan_schedule_check` ต่อ tenant ซึ่งอ่านโดเมนของตัวเองใน RLS tx เดียวกัน เหมือนแพทเทิร์นของ
+PLT-11's outbox sweep. API: `GET/POST .../scans`, `GET .../scans/{id}`, `GET .../scans/{id}/findings`,
+`POST .../scan-findings/{id}/classify` (ทั้งหมดใช้ permission `cookie.scan.*` ที่ seed ไว้แล้วตั้งแต่
+migration baseline — ไม่มี permission code ใหม่). Frontend: ส่วน "สแกนคุกกี้อัตโนมัติ" บนหน้า
+`/settings/cookie-banners` ต่อโดเมน (ปุ่มเริ่มสแกน, ตารางประวัติพร้อม polling ขณะกำลังสแกน, แผงดูผลสแกน +
+จัดหมวดคุกกี้ที่ไม่รู้จัก). ทดสอบ: unit (`matchesKBPattern`, `scanDue`/`scheduleInterval` — pure functions),
+service (DB-backed: คุกกี้ใหม่ถูกจัดหมวด+นับถูก, จัดหมวดแก้ไขได้, crawl ล้มเหลวไม่ทำให้ state เสีย, permission
+gate แต่ละตัวแยกกัน, two-tenant isolation), **real-browser crawler test** (ไม่ใช่ mock — รันจริงกับ Chromium
+ที่ติดตั้งไว้ ต่อเว็บ fixture 3 หน้าที่ตั้งคุกกี้คนละตัว พิสูจน์ว่าเจอทุกหน้า+ทุกคุกกี้ และไม่ไหลตามลิงก์
+off-site, กับทดสอบ `MaxPages` อีกเคส), HTTP contract (401/403/404/422/200/201 ผ่าน validator จริง). ยังไม่ทำ
+(ไม่ใช่ขอบเขตของเกณฑ์ตอบรับนี้): sitemap.xml เป็นจุดเริ่มสแกนเพิ่มเติม (เดินตามลิงก์บนหน้าเว็บเพียงพอสำหรับ
+เกณฑ์ตอบรับแล้ว), การตรวจ localStorage/sessionStorage (schema ของ `cookie.scan_findings` ไม่มีคอลัมน์แยก
+ประเภท storage เหมือน `cookie.cookies.storage_type` — เพิ่มเมื่อมีจอที่ต้องใช้จริง), เทียบกับรอบก่อน
+("เทียบกับรอบก่อน" ใน FE note — ตารางประวัติที่มีอยู่แล้วให้เห็น new_cookies ต่อรอบ แต่ยังไม่มี diff เจาะจงราย
+คุกกี้; เป็น CON-05's "ตารางในหน้า Cookie Policy ตรงกับผลสแกนล่าสุด" ที่แยกเป็นฟีเจอร์ของตัวเอง).
+
 <a id="con-06"></a>
 ### CON-06 ปรับแต่งดีไซน์และหลายภาษา
 
@@ -270,6 +460,15 @@
 
 **หมายเหตุ:** ดึงเข้า P1 เพราะเป็นส่วนหนึ่งของแบนเนอร์ที่ลูกค้าใช้จริง
 
+**Implementation:** done — see CLAUDE.md's own `### CON-06` entry for the full account. `cookie.
+banner_configs.theme`/`texts` (already `jsonb` from CON-01, previously always written as `{}`/th-en-only)
+now carry a real `BannerTheme` (colors, logo, docking position, length-capped custom CSS) and an
+open-ended `translations` map alongside the fixed th/en fields — no migration needed. The SDK's own
+`resolveCopy` picks a tenant-added language by the visitor's `navigator.languages`, falling back to the
+existing th/en logic; theme colors/position apply via CSS variables, custom CSS via its own `<style>` tag.
+Admin UI gained a design editor with a live preview plus an extra-languages section on `/settings/
+cookie-banners`. Bundle: 4.06 KB gzip (within the 30 KB budget CON-01 set).
+
 <a id="con-09"></a>
 ### CON-09 แบบฟอร์มขอความยินยอม (Collection Point)
 
@@ -290,6 +489,8 @@
 **Frontend (Next.js):** form builder (PLT-06) + ลิงก์ / embed / QR / API endpoint
 
 **Acceptance criteria:** ฟอร์มที่ publish แล้วรับความยินยอมแยกรายวัตถุประสงค์และออก receipt ทุกครั้ง
+
+**Implementation (CON-09):** `backend/internal/consent/service/collection_points.go` — จุดเก็บความยินยอม = ชื่อ, ช่องทาง, นิติบุคคล, วัตถุประสงค์ (แต่ละข้อ "จำเป็น" ได้ ยกเว้นข้อมูลอ่อนไหว), origin ที่อนุญาต · draft → active (publish) → retired · publish ต้องผ่าน `cpChecks`: มีวัตถุประสงค์, ทุกวัตถุประสงค์เผยแพร่แล้ว, และผู้ publish ยืนยัน checklist ม.19 ทั้ง 4 ข้อ (`separate_text`, `not_bundled`, `plain_language`, `withdrawal_info`, เก็บใน `publish_checklist`) — ไม่ผ่าน = 422 `consent.publish_checks` พร้อม `errors[].code` · publish ครั้งแรกออกคีย์สาธารณะ (`platform.public_keys`, 192 บิต base64url, entity `collection_point`) · retire เพิกถอนคีย์ทันที · ฟอร์มสาธารณะ: `GET /public/v1/collection-points/{key}` + `POST /public/v1/consents` (`X-Public-Key`, `Idempotency-Key`) — ไม่มี AuthN, `publickeys.Middleware` หา tenant จากคีย์ (ไม่รู้จัก = 404), ปฏิเสธ `Origin` ที่ไม่อยู่ในรายการ (403), ตั้ง principal `data_subject` แล้วผ่าน Idempotency + Tx + audit ตามปกติ · ฟอร์มสาธารณะต้องตัดสินทุกวัตถุประสงค์ที่แสดง (ติ๊ก = ยินยอม, ไม่ติ๊ก = ไม่ยินยอม) และถอนไม่ได้ (ต้องผ่านศูนย์ตั้งค่า CON-18/19) · หน้าจอ admin `/consent/collection-points` (แก้ไข, checklist, ลิงก์ + คีย์) · หน้าฟอร์มใน portal `/[locale]/c/[key]` (server action, Idempotency-Key ต่อการส่ง, ส่ง `X-Forwarded-For`/`User-Agent` ของผู้ใช้ต่อ — ต้องใส่ portal ใน `TRUSTED_PROXIES`) · migration 00034 · ยังไม่ทำ: QR code, embed script / SDK และ CORS สำหรับเว็บไซต์ลูกค้า (CON-07/14), CAPTCHA, `/api/v1` (CON-16 ต้องมี ORG-16), age gate (CON-11)
 
 **หมายเหตุ:** ย้าย domain model จากระบบ Consent เดิม
 
@@ -313,6 +514,8 @@
 **Frontend (Next.js):** ส่วนตั้งค่าข้อมูลอ่อนไหวใน Purpose
 
 **Acceptance criteria:** publish ไม่ได้ถ้า Purpose ข้อมูลอ่อนไหวไม่มีช่องยินยอมแยก
+
+**Implementation (CON-10):** ความอ่อนไหวของวัตถุประสงค์มาจากหมวดข้อมูลที่เลือก (`purposes.data_category_codes` เทียบ `is_sensitive` ของ master data ORG-07) · วัตถุประสงค์ที่อ่อนไหวต้องมีข้อความยินยอมโดยชัดแจ้ง (`explicit_text`, `purpose_versions.explicit_text_th/en`) — ไม่มี = ส่งเผยแพร่ไม่ได้ (`explicit_text_required`) · เผยแพร่แล้ว lawful basis = `EXPLICIT_CONSENT`, `requires_explicit = true` · จุดเก็บความยินยอม publish ไม่ได้ถ้าวัตถุประสงค์อ่อนไหวถูกตั้งเป็น "จำเป็น" (`sensitive_required`) หรือไม่มีข้อความชัดแจ้ง (`sensitive_without_explicit_text`) · ฟอร์มแสดงข้อความชัดแจ้งกับช่องติ๊กของตัวเองเสมอ
 
 <a id="con-11"></a>
 ### CON-11 ความยินยอมผู้เยาว์และผู้ปกครอง
@@ -356,6 +559,8 @@
 
 **Acceptance criteria:** ย้อนดูได้ว่าแต่ละคนยินยอมข้อความเวอร์ชันใด
 
+**Implementation (CON-12):** วัตถุประสงค์ใช้ PLT-08 (ประเภท `consent_purpose`, สิทธิ์ `consent.purpose.read/update/publish`, 1 ขั้นอนุมัติโดย role DPO — maker-checker: ผู้ร่างอนุมัติเองไม่ได้) · เนื้อหาร่าง = ชื่อ, คำอธิบาย, ข้อความยินยอม, ข้อความชัดแจ้ง, หมวดข้อมูล, อายุขั้นต่ำ, อายุความยินยอม (วัน), ประเภทการเปลี่ยนแปลง (`minor`/`material`), ต้องขอใหม่, ตัวเลือกย่อย · `OnPublish` เพิ่ม `consent.purpose_versions` แถวใหม่ (ฉบับแรก = `initial`) และปรับ `current_version_id` ใน tx เดียว; ฉบับที่เผยแพร่ไม่ถูกแก้ · ทุก transaction อ้าง `purpose_version_id` ที่ผู้ใช้เห็น — ส่งเลขฉบับเก่า = 422 `stale_version` · โปรไฟล์เจ้าของข้อมูลแสดงฉบับที่ยินยอมและธง "ต้องขอใหม่" เมื่อฉบับปัจจุบัน `requires_reconsent` · หน้าจอ `/consent/purposes` (ตัวแก้ร่าง + `RecordVersions`) · ยังไม่ทำ: เปลี่ยนสถานะ ACTIVE → PENDING อัตโนมัติเมื่อมีฉบับ material (ST-01 ยังไม่มี PENDING + CONSENTED จึงยินยอมใหม่ไม่ได้ — decisions Q-22)
+
 <a id="con-13"></a>
 ### CON-13 ถอนความยินยอม
 
@@ -376,6 +581,8 @@
 **Frontend (Next.js):** ปุ่มถอนใน preference center และหน้าพนักงาน
 
 **Acceptance criteria:** ถอนแล้วสถานะเปลี่ยนทันทีและระบบปลายทางได้รับ event ภายใน 1 นาที
+
+**Implementation (CON-13) — done:** การถอนเปลี่ยน `consent_status` เป็น `WITHDRAWN` ใน tx เดียวกับ transaction + receipt และเขียน `consent.withdrawn` ลง outbox ใน tx เดียวกัน (ไม่ใช่ async — รับประกัน "ภายใน 1 นาที" ของ acceptance criterion ได้เกินพอ; PLT-11's sweeper ส่งต่อให้ subscriber ภายในไม่กี่วินาที) · ถอนได้เฉพาะจาก ACTIVE (อื่น ๆ = 422 `withdraw_not_allowed`) พร้อมเหตุผล (`reason_code`) · ถอนได้ทางเจ้าหน้าที่ (`POST /admin/v1/consent/records`, `consent.onbehalf.create`, หน้าโปรไฟล์ `/consent/subjects`) ครอบคลุม acceptance criterion เต็มรูปแบบสำหรับช่องทางนี้ — ทดสอบแล้วทั้ง service (สถานะเปลี่ยนทันที, เหตุผลบังคับ, ถอนซ้ำถูกปฏิเสธ, แถว `consent.withdrawn` ใน outbox) และ HTTP contract (422/200) · **ยังไม่ทำ (ฟีเจอร์พี่น้องแยกต่างหาก ไม่ใช่ขอบเขตของ CON-13):** เจ้าของข้อมูลถอนเอง (ศูนย์ตั้งค่า CON-18 + ยืนยันตัวตน CON-19 — ทั้งคู่ Should, ขึ้นกับ IAM-05 ซึ่งเสร็จแล้ว, CON-18 ยังขึ้นกับ PLT-17), ส่ง HMAC webhook จริงถึงระบบปลายทางภายนอก เช่น CRM/POS (PLT-15 ต้องมี ORG-16 — ทั้งคู่ยัง todo; event ภายในระบบผ่าน outbox/subscriber ทำงานแล้ววันนี้ ตามกติกา CLAUDE.md ข้อ 6)
 
 <a id="con-14"></a>
 ### CON-14 เก็บความยินยอมหลายช่องทาง
@@ -418,6 +625,8 @@
 **Frontend (Next.js):** หน้า profile + ประวัติรายการ
 
 **Acceptance criteria:** แก้หรือลบ transaction ไม่ได้ และตรวจย้อนหลังได้ว่าความยินยอมมาจากเวอร์ชันและช่องทางใด
+
+**Implementation (CON-15):** `Record()` ใน `consent/service/record.go` — ทุกการส่ง = 1 receipt (`CR-YYYYMMDD-XXXXXXXXXX`) + 1 transaction ต่อวัตถุประสงค์ (ฉบับ, ช่องทาง, จุดเก็บ, ที่มา web/app/staff, IP, user agent, ผู้บันทึก, idempotency key) · สถานะตาม ST-01 (`Decide`: ยินยอมซ้ำ = `EXTENDED`, เปลี่ยนตัวเลือก = `CHANGED_PREFERENCES`, ไม่ติ๊กครั้งแรก = `NOT_GIVEN`, ไม่ติ๊กขณะ ACTIVE = ไม่เปลี่ยนแปลง — decisions Q-21) · event `consent.granted/denied/withdrawn/preferences_changed` · receipt ต่อกันเป็น hash chain ต่อเจ้าของข้อมูล (SHA-256 บน canonical JSON แท็ก `consent-receipt/v1` ครอบคลุม receipt, `prev_hash` และ transaction ทุกแถว; advisory lock ต่อ subject) · `consent_transactions`/`consent_receipts` app role INSERT ได้อย่างเดียว · ตรวจห่วงโซ่ได้ที่ `POST /admin/v1/consent/subjects/{id}/verify` (บอก receipt แรกที่ผิดและสาเหตุ `hash_mismatch`/`prev_hash_mismatch`) · ส่ง receipt ทางอีเมล (template `consent.receipt`, PLT-04) เมื่อมีอีเมล · ค้นหาเจ้าของข้อมูลด้วย blind index แบบตรงตัว (`POST …/subjects/search`, ตัวระบุอยู่ใน body ไม่อยู่ใน URL) · โปรไฟล์: ตัวระบุแบบปกปิด, สถานะรายวัตถุประสงค์, ประวัติพร้อมเลข receipt · migration 00034 (index chain) + 00035 (index subject บนตาราง partitioned) · หน้าจอ `/consent/subjects`
 
 **หมายเหตุ:** Consent Transaction ตาม FSD V3.2
 
@@ -463,6 +672,9 @@
 
 **Acceptance criteria:** ผลทดสอบยืนยันว่าข้อมูลความยินยอมเข้ารหัสและอยู่ใน region ที่กำหนด
 
+**Implementation (CON-17) — เสร็จเท่าที่ทำได้ในสภาพแวดล้อมนี้:** ตัวระบุ (อีเมล, โทรศัพท์, เลขบัตร ฯลฯ) เก็บใน `subject_identifiers.value_enc` ด้วย PLT-13 (AES-256-GCM, DEK ต่อ tenant คลาส `consent`, ผูก associated data กับคอลัมน์) + `blind_index` สำหรับค้นหา — ทดสอบแล้วว่าไบต์ที่เก็บไม่มีค่าเดิม · `GET /admin/v1/consent/settings` แสดง region ของ tenant (`platform.tenants.data_region`) และการจัดการกุญแจ (OpenBao Transit / กุญแจพัฒนา) บนหน้า `/consent/subjects`. "หลักฐานทดสอบ region" ที่ขาดอยู่ก่อนนี้ปิดแล้ว:
+`TestGetSettings_ReportsRegionAndEncryption` (ไม่มี endpoint เขียน `data_region` ให้เรียก — คอลัมน์นี้ตั้งค่าได้แค่ตอน provision tenant เท่านั้น ไม่มีหน้าจอแก้ไขในระบบนี้ — จึงตั้งค่าตรงผ่าน `platform.tenants` เหมือนการ provision จริง) พิสูจน์ว่า `GetSettings` อ่าน `data_region` ของ tenant ตนเองจริง ไม่ใช่ค่าตายตัว และไม่รั่วข้าม tenant (tenant A เป็น TH ค่าเริ่มต้น, tenant B ตั้งเป็น SG แล้วอ่านกลับถูกต้องทั้งสอง tenant ในการเรียกคนละครั้ง) บวก HTTP contract (401 ไม่มี principal, 403 ไม่มี `consent.record.read`, 200 คืน `data_region`/`identifier_encryption` ที่ถูกต้องผ่าน validator จริง). ยังไม่ทำโดยตั้งใจ: บังคับ region ที่ระดับ deployment จริง (ฐานข้อมูล/บักเก็ตแยกต่อ region) — ไม่มี infra หลาย region ให้ทดสอบจริงในสภาพแวดล้อมนี้ (`docs/decisions.md` Q-02 ยังเปิดอยู่), เหตุผลเดียวกับที่ PLT-02 เลื่อน DB-per-tenant deployment mode ไว้ก่อน
+
 <a id="con-18"></a>
 ### CON-18 ศูนย์ตั้งค่าความเป็นส่วนตัว
 
@@ -486,6 +698,53 @@
 
 **หมายเหตุ:** ดึงเข้า P1: ต้องมีช่องทางถอนที่ง่ายเท่ากับการให้ (ม.19)
 
+**Implementation (CON-18) — done, OTP only; magic link deferred (no consumer, same as CON-19):** no new table —
+`platform.public_keys` already had `entity_type` value `"portal"` seeded in the baseline migration, unused
+until now (`publickeys.EntityPreferenceCenter`); the key stands directly for an `org.legal_entities` row, the
+same granularity CON-09's own collection points use, so one legal entity gets one preference-centre link.
+`internal/consent/service/preferences.go`: `PublishPreferenceCenter`/`RetirePreferenceCenter`/
+`GetPreferenceCenterLink` (admin, `consent.collectionpoint.{read,publish,delete}` — a preference centre is
+just another publishable public consent surface, no new permission code); `StartPreferenceVerification` reuses
+CON-19's own IAM-05 OTP primitive under a distinct purpose (`"preference_center"`, already reserved in
+`iamservice.verificationPurposes`) so a plain consent-form OTP can never double as a preference-centre
+session; `GetPreferenceCenter` shows every active purpose in the tenant (not one form's own list) with the
+subject's current decision and preferences overlaid; `UpdatePreferences` lets the subject grant, refuse *or
+withdraw* any of them in one call — `Record()`'s own "a public submission can't withdraw" rule (CON-19) simply
+doesn't apply, since every preference-centre call is OTP-verified first. `Record()` was refactored to extract
+its own core (`writeDecisions`) so `UpdatePreferences` reuses the exact same hash-chained receipt + transaction
++ status-projection + outbox logic without duplicating it, validating decisions against a synthetic
+`CollectionPoint{Purposes: ...}` built from every active purpose instead of one real form's list.
+`consent.consent_receipts.collection_point_id` is a hard NOT NULL FK and the preference centre isn't modelled
+as a collection point, so `channelForPreferenceUpdate` attributes the receipt to a real active collection
+point — one already showing the decided purpose when there is one, else any active point of the tenant — a
+disclosed, deliberate limitation (CLAUDE.md's "minimal slice" pattern): the receipt's channel then names
+wherever that purpose happens to also be collected, not literally "the preference centre."
+`verifyPreferenceIdentity` lets one OTP code cover both a view and a later update in the same session: once
+`VerifyOTP` has decided a verification "verified", calling it again errors `ErrVerificationDecided` rather than
+re-checking the code (and would otherwise burn IAM-05's own 5-attempt cap twice for one legitimate code), so
+the gate falls back to the side-effect-free `VerifiedIdentifier` check once a code has already been consumed.
+
+API: `GET`/`POST .../publish`/`POST .../retire` on `/admin/v1/consent/preference-centers/{legalEntityId}`;
+public `POST /public/v1/preference-centers/{key}/start-verification`, `.../view`, `.../update` (`Idempotency-Key`
+required on all three, rule 10 read literally). UI: `/consent/collection-points` gained a "Preference centre"
+section (legal-entity picker, publish/retire, the hosted link) — no new page, since the existing collection-
+points screen already has the legal-entity picker pattern this needed. The portal gained
+`/[locale]/preferences/[key]` (`apps/portal/src/lib/preferences.ts` + `actions.ts` +
+`preference-center-form.tsx`): a three-phase flow — send code → verify → a list of every active purpose with
+radio choices (keep / consent / withdraw, withdraw only shown once a purpose is already `ACTIVE`) — ending in
+the same kind of receipt number the public consent form shows. Tests: unit
+(`internal/consent/service/preferences_test.go` — the acceptance criterion directly: grant then withdraw both
+record and both return a receipt; every read/write refused without a correct OTP against the exact identifier;
+publish/retire/re-publish link lifecycle; two-tenant isolation of the verification id), HTTP contract
+(`internal/consent/http/handler_test.go` — the full publish → start-verification → view → update(grant) →
+update(withdraw) → retire chain through the real validator + AuthZ + public-key + Idempotency + Tx chain, plus
+404s for an unknown or retired key). Not verified live against a real Postgres/Redis — the same environment
+limitation this codebase's other recent passes already disclosed; every test compiles and vets clean and skips
+the same way the rest of this module's own test suite already does here. Not done: magic_link/idp methods (no
+consumer or design for either yet, same as CON-19); "ช่องทางการสื่อสาร" (communication-channel preferences
+beyond a purpose's own `Preferences` sub-choices) — no separate channel-opt-out model exists in this schema
+distinct from a purpose's preferences, so none was invented for this pass.
+
 <a id="con-19"></a>
 ### CON-19 ยืนยันตัวตนก่อนบันทึก
 
@@ -506,6 +765,41 @@
 **Frontend (Next.js):** ตัวเลือกวิธียืนยันในหน้าตั้งค่า collection point
 
 **Acceptance criteria:** collection point ที่บังคับ OTP บันทึกได้เมื่อยืนยันผ่านเท่านั้น
+
+**Implementation (CON-19) — done, OTP only; magic_link/idp left in the CHECK constraint for later:**
+`consent.collection_points.verification_method` (`none`/`otp`/`magic_link`/`idp`) was already in the baseline
+migration, unused until now — no new migration. `internal/consent/service/collection_points.go` validates it
+on create/update (empty normalizes to `none`); `StartConsentVerification`
+(`internal/consent/service/record.go`) refuses unless the collection point is `active` with
+`verification_method = "otp"`, resolves the identifier's kind to IAM-05's own `otp_email`/`otp_sms` method,
+and calls `iamservice.StartVerification(Purpose: "consent", ...)` — the same OTP primitive CON-11's guardian
+flow already uses, now given a second, direct-subject consumer. Unlike CON-11's separate confirm-then-submit
+flow, CON-19 verifies inline inside `Record()` itself: `Submission` gained `VerificationID`/`VerificationCode`,
+and `verifyIdentityIfRequired` calls `VerifyOTP` then a new `iamservice.VerifiedIdentifier` (constant-time blind
+-index comparison) to prove the completed OTP was started against *this* submission's own identifier, not a
+stranger's — closing a real gap a naive `status == "verified"` check would have left open. A missing/invalid
+code or an identifier mismatch is a `DecisionError` (422 `consent.invalid_decisions`, field `verification`),
+the exact shape every other field-level consent validation error already uses.
+
+API: `POST /public/v1/consents/start-verification` (`Idempotency-Key` required, rule 10) returns
+`{verification_id, channel}`; `ConsentSubmitPublicConsent`'s body gained an optional
+`verification: {verification_id, code}`; `verification_method` added to both the admin
+`CollectionPointInput`/`ConsentCollectionPoint` wire schemas and the public `GET
+/public/v1/collection-points/{key}` response (previously hard-coded to `"none"`). UI: `/consent/collection
+-points` gained a verification-method selector (OTP enabled, magic_link/idp shown disabled — not built yet);
+the portal's `/[locale]/c/[key]` form gained a two-phase flow when `verification_method === "otp"` — a
+send-code step (`startVerification`, `apps/portal/src/lib/consent.ts`) followed by the existing purpose
+checklist with a code field and the `verification_id`/`code` carried as hidden inputs into the final submit
+(`apps/portal/src/app/[locale]/c/[key]/actions.ts`/`consent-form.tsx`). Tests: unit
+(`internal/consent/service/verification_test.go` — the acceptance criterion directly: an OTP-gated collection
+point refuses a submission without a prior, correct verification and accepts one once verified; starting
+verification against a non-OTP or non-active collection point is refused; two-tenant isolation),
+HTTP contract (`internal/consent/http/handler_test.go` — create/publish an OTP collection point, 422 without
+verification, 201 with a real OTP round-trip through the fake IAM notifier, 404 for an unknown public key on
+start-verification). Not verified live against a real Postgres/Redis — the same environment limitation this
+codebase's other recent passes already disclosed. Not done: magic_link/idp methods (no consumer or design for
+either yet — the column already anticipates them); a portal-side resend/rate-limit UI beyond what IAM-05's own
+5-attempt OTP cap already provides.
 
 <a id="con-21"></a>
 ### CON-21 ค้นหา แดชบอร์ด และส่งออก
@@ -553,6 +847,57 @@
 
 **หมายเหตุ:** ดึงเข้า P1 เพื่อย้ายข้อมูลตอน go-live (T26)
 
+**Implementation — done.** `internal/consent/service/import.go` is a new PLT-14 import type
+(`consentservice.ImportType = "consent.legacy"`, registered in `internal/wiring.ImportTypes()`, widened to
+take `keyring`/`riverClient` so the consent `Service` instance it builds for the import type has PLT-13
+encryption and PLT-11 event publishing — both `cmd/api` and `cmd/worker` already construct those before
+calling it, so no new config). One row per (data subject × purpose) decision from the legacy system:
+`legal_entity_registration_no` (ORG-01's own mod-11-checked business key — exact match, not a fuzzy name
+match, since every legal entity already carries one), `identifier_type`/`identifier_value`, `purpose_code`
+(matched against the tenant's own currently-published purposes), `decision` (consented/not_consented/
+withdrawn) and `occurred_at` (the legacy decision's own original date). Every row writes through the exact
+same `checkDecisions`/`writeDecisions` core every live submission uses — real hash-chained receipts,
+append-only transactions, the ST-01 status projection, `consent.*` events — so "ทำเครื่องหมายว่าเป็นข้อมูล
+นำเข้า" is literal: `Submission.Source = "import"` (already in `consent_transactions.source`'s own CHECK
+constraint, migration 00005, unused until now) against a new per-legal-entity "legacy import" collection
+point (`channel = "import"`, CON-01's own `channels` var already reserved that value for exactly this —
+"import ... points are made by their own features"; activated via a new minimal `ActivateCollectionPoint`
+query, skipping CON-09's checklist/public-key publish step entirely since it's never reached from
+`/public/v1`). "ตรวจซ้ำ" (dedup) needed no new code: `writeDecisions`' own blind-index subject resolution
+already finds-or-creates by identifier, so two legacy rows for the same person land on one subject.
+
+A `withdrawn` legacy row is this feature's own trickiest case: ST-01 declares no `"" -> WITHDRAWN"` edge
+(only `ACTIVE -> WITHDRAWN`), and per CLAUDE.md's own source-priority order (migrations > `docs/states` >
+...) this feature doesn't invent one — a "withdrawn" row implies consent was given at some point before it
+was taken back, so it's replayed as two receipts at the same original date (`Submission.OccurredAt *time.Time`,
+a new field on the existing `Submission` struct, backward-compatible since `Record()`/`UpdatePreferences()`
+never set it): a synthetic CONSENTED receipt immediately followed by WITHDRAWN. `writeDecisions`' own
+monotonic chain-ordering (each subject's receipts already get bumped a moment past the previous one, a
+property that existed for ordinary concurrent submissions) keeps both correctly sequenced on one chain
+without any new logic there.
+
+"reconcile ยอดตรง" is read literally against PLT-14's own mechanism, not a bespoke reconciliation table:
+`consent.reconcile_items`/`reconcile_runs` are CON-21's own downstream-webhook-drift tables (a materially
+different concern), so this feature doesn't touch them. PLT-14's all-or-nothing `Apply` plus its
+per-row error report (unknown legal entity / purpose / bad identifier / bad decision / bad date, one
+`FieldError` per failing column) already is the reconciliation: N valid rows import as N real receipts, and
+every rejected row is named with its reason before anything is written. API: unchanged — the import type is
+consumed through PLT-14's own generic `/admin/v1/platform/imports` endpoints
+(`consent.bulk.execute`, already seeded in the baseline permission migration, role IT — no new permission
+code or migration). UI: `/consent/subjects` gained an "Import legacy consent data" toggle (gated on
+`consent.bulk.execute`) mounting the shared `ImportWizard` component, the same reuse pattern
+`/settings/master-data`/`/settings/calendar`/`/ropa/activities` already established for their own PLT-14
+import types. Tests (`internal/consent/service/import_test.go`, run live against a real Postgres): a
+consented row lands ACTIVE, a not_consented row lands NOT_GIVEN, a withdrawn row lands WITHDRAWN with both
+synthetic transactions on record; an unknown legal entity / unknown purpose / bad identifier / bad decision /
+bad date are each refused at validation with the right column; two-tenant isolation (tenant B can't resolve
+tenant A's own registration number or see its imported subject). `go build ./...`, `go vet ./...`,
+`gofmt -l` and `go test -count=1 ./internal/consent/service/... ./internal/consent/http/...` all verified
+clean against a real Postgres 16 (port 5433); the package's own pre-existing CON-23 double-opt-in test
+failures (unrelated — a separate bug in `double_optin.go`'s own event-catalog wiring) are untouched by this
+change. `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/consent/subjects` route) all verified clean.
+
 <a id="con-05"></a>
 ### CON-05 นโยบายคุกกี้อัตโนมัติ
 
@@ -573,6 +918,8 @@
 **Frontend (Next.js):** embed script / iframe สำหรับหน้า Cookie Policy
 
 **Acceptance criteria:** ตารางในหน้า Cookie Policy ตรงกับผลสแกนล่าสุด
+
+**สถานะ:** done — see CLAUDE.md § CON-05 for the implementation note.
 
 <a id="con-07"></a>
 ### CON-07 หลายโดเมนและ Mobile SDK
@@ -618,6 +965,53 @@
 
 **Acceptance criteria:** ความยินยอมที่ครบอายุเปลี่ยนสถานะอัตโนมัติและระบบปลายทางได้รับ event
 
+**Implementation — done.** Most of this feature's scope was already built by earlier passes: `consent.purposes.
+lifespan_days` (set on the purpose form, `/consent/purposes`), the lifespan→`expires_at` computation on every
+CONSENTED write, the `TxExtended`/EXTENDED transaction on renewing an already-ACTIVE purpose (ST-01's own
+`ACTIVE → ACTIVE` self-edge via `Decide`), and ST-01's `ACTIVE <-> EXPIRED` edges in
+`docs/states/state-machines.yaml` were all already in place — only the daily sweep and its own read list were
+missing. `backend/db/queries/consent/expiry.sql` (`ListDueExpirations`/`ListNearExpiry`, no new migration —
+`consent_transactions.transaction_type`'s CHECK already includes `'EXPIRED'` and `source` already includes
+`'system'`) and `internal/consent/service/expiry.go`: `CheckDueExpirations`/`expireStatus` mirror
+`writeDecisions`' own hash-chain mechanics directly (`receiptRecord`/`txRecord`/`.hash()`/`newReceiptNo`) rather
+than routing through `checkDecisions`/`Decide` — expiry is the system's own decision, not a data subject's, so
+reusing that public-facing path would be a worse fit, not a better one. The EXPIRED transaction's receipt is
+attributed to the same collection point the subject's prior transaction for that purpose was recorded against
+(resolved via `consent_status.last_transaction_id` → `consent_transactions.receipt_id` →
+`consent_receipts.collection_point_id`/`channel`) — there's no "system" channel value to invent one with, and
+reusing the original channel is the more accurate record of where the now-expired consent came from.
+`expireStatus` re-locks and re-checks the status row (`LockSubjectChain` + `LockStatus`) before writing, so a
+status renewed or withdrawn between the sweep's own read and the per-row write is silently skipped, not wrongly
+expired — and once a row is EXPIRED it no longer matches `ListDueExpirations`' own `WHERE status = 'ACTIVE'`
+filter, so a retried/second sweep is naturally a no-op, the same idempotency every other daily-sweep feature in
+this codebase (PNG-15/ROPA-15/VEN-10) already relies on. `ExpirySweepArgs`/`ExpirySweeper`/
+`ExpirySweepPeriodicJob`/`ExpiryCheckArgs`/`ExpiryChecker` are CON-23's own double opt-in sweep's exact
+"sweep lists tenants, per-tenant job reads its own rows" pattern (CLAUDE.md rule 1), just daily
+(`consent.expiry_sweep`/`consent.expiry_check`, `river.PeriodicInterval(24*time.Hour)`) rather than hourly —
+expiry is date-granular (`lifespan_days`), unlike CON-23's own 48-hour confirmation window.
+
+API: `GET /admin/v1/consent/near-expiry` (`consent.record.read`, already-seeded — no new permission code;
+`within_days` query param, default `NearExpiryDefaultDays = 30` — a plain config default per CLAUDE.md's own
+"implement the listed default as config," not a `docs/decisions.md` question, since it only shapes which rows
+the admin UI's own list surfaces). UI: `/consent/subjects` gained a "Consents expiring soon" card
+(`NearExpiryCard`, shown above the subject search) listing each near-due purpose with its own expiry date —
+the module doc's own "รายการที่ใกล้หมดอายุ." "แจ้งเตือนต่ออายุ" (a renewal-reminder *notification*, distinct
+from this read-only list) is deliberately not built: no portal/notification-channel consumer exists for a
+per-subject push yet, the same "no consumer yet" deferral this codebase uses throughout — the literal
+acceptance criterion only requires the EXPIRED transition and its event, which the sweep already delivers in
+full; a reminder notification can be layered on top of `ListNearExpiry` later without any schema change.
+
+Tests: unit (`internal/consent/service/expiry_test.go` — the acceptance criterion directly: a consent past its
+own lifespan moves to EXPIRED with a chained transaction and a published `consent.expired` outbox row; not yet
+due is untouched; a repeat check is a harmless no-op; `ListNearExpiry`'s window includes a near-due purpose and
+excludes one further out; two-tenant isolation), HTTP contract (`internal/consent/http/handler_test.go` —
+401/403/200 through the real validator + AuthZ, a real near-expiry purpose present in the response). Not
+verified live against a real Postgres/Redis — the same environment limitation this codebase's other recent
+passes already disclosed; every test compiles and vets clean and skips the same way the rest of this module's
+own test suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file),
+`go test -count=1 ./...` (no regressions, full backend suite), `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` all verified clean.
+
 <a id="con-23"></a>
 ### CON-23 Double Opt-In
 
@@ -639,6 +1033,30 @@
 
 **Acceptance criteria:** ความยินยอมมีผลหลังยืนยันเท่านั้น
 
+**Implementation — done.** `consent.double_optin_requests` was already fully specified in the baseline
+migration (00005), completely unused until this feature — no new migration. `CollectionPointInput`/
+`ConsentCollectionPoint` gained `double_opt_in` (a tenant toggle on the collection point, not per-purpose);
+`Decide()`'s PENDING trigger is now `(guardianRequired || doubleOptInRequired) && current == ""`, with
+guardian consent (CON-11) always taking priority when both would apply to the same first-ever decision — a
+minor's own double opt-in link is no stronger proof than the decision it would confirm. `requestDoubleOptInConfirmation`
+(`internal/consent/service/double_optin.go`) issues a 32-byte random token, stores only its SHA-256 hash, and
+sends a link (`{portal}/{lang}/consent-confirm/{collection-point-key}?token=...`) to the subject's own channel
+via PLT-04 (`consent.double_opt_in` template, migration 00078, th/en × email/sms, 48h expiry, a tunable
+config default). `ConfirmDoubleOptIn` (new public endpoint `POST /public/v1/consents/double-opt-in/confirm`,
+`X-Public-Key` names the tenant) is the acceptance criterion itself — the decision has no effect until this
+succeeds; a redelivered confirm with the same token is a harmless no-op. `SweepDueDoubleOptInRequests`
+(River, the usual "sweep lists tenants, per-tenant job reads its own rows" pattern) cancels an unconfirmed
+link past its window to NOT_GIVEN (ST-01's own PENDING → NOT_GIVEN edge, no state-machine change needed).
+UI: a toggle on `/consent/collection-points`'s editor, and a new portal page
+`/[locale]/consent-confirm/[key]` (a Confirm button, not an auto-confirming link, so an e-mail link-preview
+scanner never activates consent on the subject's behalf). Tests: unit (`Decide`'s new parameter and
+guardian-priority case, pending-until-confirmed end to end via a white-box token read, unknown-token refused,
+sweep cancels an unconfirmed link, two-tenant isolation), HTTP contract (the admin `double_opt_in` round-trip,
+the public confirm chain through the real validator + publickeys + Idempotency + Tx chain). Not verified live
+against a real Postgres/Redis — the same environment limitation this codebase's other recent passes already
+disclosed; every test compiles and vets clean and skips the same way the rest of this module's own suite
+already does here.
+
 <a id="con-24"></a>
 ### CON-24 ส่งคำขอความยินยอมแบบ Bulk
 
@@ -659,6 +1077,14 @@
 **Frontend (Next.js):** หน้าสร้างแคมเปญ + สถิติการตอบ
 
 **Acceptance criteria:** แคมเปญแสดงจำนวนส่ง / เปิด / ตอบ และส่งซ้ำเฉพาะผู้ยังไม่ตอบได้
+
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### CON-24`. สรุป: `consent.campaigns`/
+`consent.campaign_recipients` มีอยู่แล้วตั้งแต่ baseline migration ไม่ได้ใช้งานจนถึงรอบนี้ — audience (ที่อยู่
+อีเมล/เบอร์โทร) แปลงเป็นเจ้าของข้อมูลจริงทันทีตอนสร้างแคมเปญ ไม่เคยเก็บค่าดิบ (rule 3) ส่ง/ส่งซ้ำผ่าน
+`consentSendCampaign`/`consentResendCampaign` — ส่งซ้ำไปถึงเฉพาะผู้ที่ยังไม่ตอบเท่านั้น (สถานะ queued/sent/
+opened) ลิงก์ของผู้รับที่ตอบแล้วใช้ไม่ได้อีก ผู้รับตัดสินใจผ่าน `/public/v1/consent-campaigns/{view,respond}`
+(X-Public-Key ชื่อแคมเปญ + token ของผู้รับเอง) เขียนผ่าน consent transaction/receipt เดิมทุกอย่าง
+(source="campaign").
 
 <a id="con-08"></a>
 ### CON-08 A/B testing และวัด consent rate

@@ -1,0 +1,126 @@
+name: CI
+
+# PLT-01's own acceptance criterion: editing OpenAPI then regenerating the Go stub and the TS client
+# must be checked in CI (fail on drift), backend code must build and its tests must pass, and the
+# frontend workspace must build and test clean. See docs/architecture/code-structure.md's Codegen
+# table and the Makefile's `gen`/`test` targets, which this workflow runs directly rather than
+# re-implementing.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  GO_INSTALL_BIN: /home/runner/go/bin
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # pgvector/pgvector:pg16 ships PostgreSQL 16 with the `vector` extension already built —
+        # 00001_init.sql needs CREATE EXTENSION vector, which plain postgres:16 doesn't have.
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install pnpm workspace deps (api-client codegen needs openapi-typescript)
+        run: pnpm install --frozen-lockfile
+
+      - name: Install codegen tools (sqlc, oapi-codegen — pinned to backend/go.mod's oapi-codegen runtime version)
+        run: |
+          go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
+          go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0
+          echo "$GO_INSTALL_BIN" >> "$GITHUB_PATH"
+
+      - name: make gen (sqlc, events catalog, every module's oapi-codegen, openapi-typescript)
+        run: make gen
+
+      - name: Fail if generated code doesn't match the committed OpenAPI/SQL sources
+        run: git diff --exit-code -- backend packages/api-client/src/generated
+
+      - name: gofmt
+        run: |
+          cd backend
+          out=$(gofmt -l .)
+          if [ -n "$out" ]; then echo "$out"; echo "gofmt needed on the above files"; exit 1; fi
+
+      - name: go vet
+        run: cd backend && go vet ./...
+
+      - name: go build
+        run: cd backend && go build ./...
+
+      - name: Bootstrap database roles (deploy/db/00-bootstrap.sql, superuser one-time step)
+        run: |
+          PGPASSWORD=postgres psql -h localhost -p 5433 -U postgres -d postgres -v ON_ERROR_STOP=1 \
+            -v migrator_password=pdpa_migrator -v app_password=pdpa_app \
+            -v platform_password=pdpa_platform -v readonly_password=pdpa_readonly \
+            -f deploy/db/00-bootstrap.sql
+
+      - name: Run migrations + grants (cmd/migrate, as pdpa_migrator with role=pdpa_owner)
+        run: |
+          cd backend
+          MIGRATOR_DATABASE_URL="postgres://pdpa_migrator:pdpa_migrator@localhost:5433/pdpa?sslmode=disable" \
+            go run ./cmd/migrate -grants ../deploy/db/10-grants.sql
+
+      - name: go test
+        env:
+          TEST_DATABASE_URL: postgres://pdpa_app:pdpa_app@localhost:5433/pdpa?sslmode=disable
+          TEST_PLATFORM_DATABASE_URL: postgres://pdpa_platform:pdpa_platform@localhost:5433/pdpa?sslmode=disable
+          TEST_REDIS_ADDR: localhost:6379
+          # OpenBao / S3 / clamd are not set up in CI — their tests skip cleanly (see README.md), the
+          # same degraded-but-passing mode this repo already relies on wherever those aren't reachable.
+        run: cd backend && go test -race -p 1 ./...
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Create .env (make dev-env — random AUTH_SECRET/LOCAL_KEK_BASE64, no secrets committed)
+        run: make dev-env
+
+      - name: pnpm -r build
+        run: pnpm -r build
+
+      - name: pnpm -r test
+        run: pnpm -r test
+
+      - name: pnpm -r typecheck
+        run: pnpm -r typecheck

@@ -1,0 +1,30 @@
+package: cookiehttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - cookieListDomains
+    - cookieRegisterDomain
+    - cookieGetDomain
+    - cookieVerifyDomain
+    - cookieListCategories
+    - cookieCreateCategory
+    - cookieDeleteCategory
+    - cookieListBannerConfigs
+    - cookieCreateBannerConfig
+    - cookieGetBannerConfig
+    - cookieUpdateBannerConfigDraft
+    - cookiePublishBannerConfig
+    - cookieListCookies
+    - cookieCreateCookie
+    - cookieDeleteCookie
+    - cookieListScriptRules
+    - cookieCreateScriptRule
+    - cookieDeleteScriptRule
+    - cookieListScans
+    - cookieStartScan
+    - cookieGetScan
+    - cookieListScanFindings
+    - cookieClassifyScanFinding

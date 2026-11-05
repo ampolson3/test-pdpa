@@ -1,0 +1,286 @@
+// Package service is the gov module's first feature: DPX-05, retention & disposal management
+// (ม.33/ม.37(3)). A gov.retention_schedules row names a ropa.retention_rules rule and the
+// ropa.assets system it governs; a daily sweep (jobs.go) finds schedules past their next_due_at
+// with no disposal job still open and opens a fresh gov.disposal_jobs row — the acceptance
+// criterion's "ข้อมูลครบกำหนดสร้างงานทำลายอัตโนมัติ" (data reaching its due date automatically
+// creates a disposal job). A job can only reach "done" once it carries evidence
+// ("...และปิดได้เมื่อแนบหลักฐาน").
+package service
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/riverqueue/river"
+
+	breachservice "pdpa-platform/internal/breach/service"
+	dpiaservice "pdpa-platform/internal/dpia/service"
+	dsarservice "pdpa-platform/internal/dsar/service"
+	orgservice "pdpa-platform/internal/org/service"
+	"pdpa-platform/internal/pkg/authz"
+	pdb "pdpa-platform/internal/pkg/db"
+	audit "pdpa-platform/internal/platform/audit/service"
+	docsservice "pdpa-platform/internal/platform/docs"
+	"pdpa-platform/internal/platform/files"
+	"pdpa-platform/internal/platform/forms"
+	"pdpa-platform/internal/platform/notify"
+	ropaservice "pdpa-platform/internal/ropa/service"
+)
+
+// Entity types (audit, files).
+const (
+	ScheduleType = "gov_retention_schedule"
+	JobType      = "gov_disposal_job"
+)
+
+// Permission codes (docs/security/permissions.yaml, already seeded).
+const (
+	PermRead    = "dpx.retention.read"
+	PermCreate  = "dpx.retention.create"
+	PermUpdate  = "dpx.retention.update"
+	PermDelete  = "dpx.retention.delete"
+	PermApprove = "dpx.retention.approve"
+	PermExecute = "dpx.retention.execute"
+)
+
+// DPX-02's own permission codes (dpx.policy.*, distinct from the retention family above). DPO holds
+// publish/create/read/update/delete; LEGAL holds create/read/update; every other role (EMP, EXEC, FRONT,
+// IT, MKT, OWNER, PROC, SEC) holds only .execute — attesting is "doing the thing", not administering it.
+const (
+	PolicyPermRead    = "dpx.policy.read"
+	PolicyPermCreate  = "dpx.policy.create"
+	PolicyPermUpdate  = "dpx.policy.update"
+	PolicyPermDelete  = "dpx.policy.delete"
+	PolicyPermPublish = "dpx.policy.publish"
+	PolicyPermAttest  = "dpx.policy.execute"
+)
+
+var (
+	ErrNotFound          = errors.New("gov: not found")
+	ErrInvalid           = errors.New("gov: invalid input")
+	ErrForbidden         = errors.New("gov: forbidden")
+	ErrVersionMismatch   = errors.New("gov: version mismatch")
+	ErrInvalidTransition = errors.New("gov: invalid transition")
+	ErrOnLegalHold       = errors.New("gov: asset is under an active legal hold")
+	ErrEvidenceRequired  = errors.New("gov: evidence file is required to close a disposal job")
+	ErrFileNotUsable     = errors.New("gov: file not usable")
+)
+
+var disposalMethods = []string{"delete", "destroy", "anonymize", "return"}
+
+// Ropa is what gov reads from the RoPA module (rule 9): FK visibility (rule 1) for a schedule's
+// retention_rule_id/asset_id.
+type Ropa interface {
+	GetAsset(ctx context.Context, id uuid.UUID) (ropaservice.Asset, error)
+	GetRetentionRule(ctx context.Context, id uuid.UUID) (ropaservice.RetentionRule, error)
+}
+
+// Dsar is what gov reads from the DSAR module (rule 9): whether an asset is under an active legal
+// hold (dsar.legal_holds), which must suspend that asset's disposal jobs. No import cycle: dsar
+// does not import gov, so (unlike the ropa<->dpia situation DPX-06 had to route around with a
+// wiring adapter) gov can reference dsarservice's own exported return type directly here, the same
+// way breach's own Org interface references orgservice.LegalEntity directly.
+type Dsar interface {
+	ActiveHoldForAsset(ctx context.Context, assetID uuid.UUID) (*dsarservice.LegalHold, error)
+}
+
+// Files is what gov needs from file storage (PLT-09) for a disposal job's evidence.
+type Files interface {
+	Get(ctx context.Context, id uuid.UUID) (files.File, error)
+	AttachSystem(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error
+}
+
+// Docs is what DPX-02 reads from PLT-16 (rule 9): resolving the published PLT-16 document a policy
+// cites to the version employees must attest to — the exact Docs shape breach's own PDPC-filing feature
+// already established for the identical "cite a published document version" need.
+type Docs interface {
+	Get(ctx context.Context, id uuid.UUID) (docsservice.Document, error)
+	PublishedVersionOf(ctx context.Context, versionID uuid.UUID) (docsservice.PublishedVersion, uuid.UUID, error)
+}
+
+// Breach is what DPX-08 reads from the breach module (rule 9): FK visibility (rule 1) for a
+// regulator letter's optional incident_id. No import cycle: breach/service does not import gov.
+type Breach interface {
+	Get(ctx context.Context, id uuid.UUID) (breachservice.Incident, error)
+}
+
+// Dpo is what DPX-04 reads from the dpo module (rule 9): opening one dpo.tasks remediation job per audit
+// finding, the same "mobilize work in the generic task board" move RRA-07/DPO-09/DPA-12/PNG-07/ROPA-19/
+// DPIA-08/RRA-08/RTG-10 already make — gov never writes to dpo.tasks directly. No import cycle: dpo/service
+// does not import gov.
+type Dpo interface {
+	OpenAuditFindingTask(ctx context.Context, findingID uuid.UUID, title, description string,
+		assigneeUserID *uuid.UUID, dueAt *time.Time, priority string) (uuid.UUID, error)
+}
+
+// DPX-08's own permission codes (dpx.regulator.*, already seeded — DPO holds all four, LEGAL holds
+// create/read/update, AUDIT holds read).
+const (
+	RegulatorPermRead   = "dpx.regulator.read"
+	RegulatorPermCreate = "dpx.regulator.create"
+	RegulatorPermUpdate = "dpx.regulator.update"
+	RegulatorPermDelete = "dpx.regulator.delete"
+)
+
+// RegulatorLetterType is the entity type for audit/files (DPX-08).
+const RegulatorLetterType = "gov_regulator_letter"
+
+// Org is what gov reads from the org module (rule 9): FK visibility (rule 1) for an org-unit-targeted
+// training assignment (DPX-01) and for the legal entity a maturity audit covers (DPX-03).
+type Org interface {
+	GetOrgUnit(ctx context.Context, id uuid.UUID) (orgservice.OrgUnit, error)
+	GetLegalEntity(ctx context.Context, id uuid.UUID) (orgservice.LegalEntity, error)
+}
+
+// Forms is what DPX-01 reads from PLT-06 (rule 9): a course's own quiz, designed and published as an
+// ordinary "quiz"-type form (internal/wiring.Forms), and answered in one step (forms.Service.Record) when
+// an employee completes a course.
+type Forms interface {
+	GetForm(ctx context.Context, id uuid.UUID) (forms.Form, error)
+	Record(ctx context.Context, versionID uuid.UUID, answers forms.Answers, submitterType string, submitter *uuid.UUID, entityType string, entityID *uuid.UUID) (uuid.UUID, forms.Result, error)
+}
+
+// DPX-01's own permission codes (dpx.training.*, already seeded — DPO holds create/read/update/publish/
+// delete, every other seeded role holds .execute: "ดำเนินการ / มอบหมาย / ทำรายการ").
+const (
+	TrainingPermRead    = "dpx.training.read"
+	TrainingPermCreate  = "dpx.training.create"
+	TrainingPermUpdate  = "dpx.training.update"
+	TrainingPermDelete  = "dpx.training.delete"
+	TrainingPermPublish = "dpx.training.publish"
+	TrainingPermExecute = "dpx.training.execute"
+)
+
+// QuizFormType is the PLT-06 form type DPX-01's course quizzes use ('quiz' has been reserved in
+// platform.form_definitions.form_type's own CHECK since the very first baseline migration, unused until
+// now — the same "schema already anticipated this" discovery every recent pass in this codebase relies on).
+const QuizFormType = "quiz"
+
+// CourseType/AssignmentType/AttemptType are the entity types for audit/files (DPX-01).
+const (
+	CourseType     = "gov_course"
+	AssignmentType = "gov_training_assignment"
+	AttemptType    = "gov_training_attempt"
+)
+
+// Dpia is what DPX-03 reads from the dpia module (rule 9): the generic, non-activity assess.templates/
+// assess.assessments screening round dpia already exposes for DPO-02's own ม.41(2) OR-rule, reused here for
+// an organization-wide maturity audit — no import cycle, dpia never imports gov. gov references dpia's own
+// exported Decide/SubjectScreeningResult types directly, the same way it already references breachservice's
+// own Incident type for DPX-08.
+type Dpia interface {
+	ScreenSubject(ctx context.Context, assessmentType, templateCode, subjectType string, subjectID uuid.UUID, title string, answers forms.Answers, decide dpiaservice.Decide) (dpiaservice.SubjectScreeningResult, error)
+}
+
+// DPX-03's own permission codes (dpx.audit.*, already seeded — DPO holds create/read/update/delete/
+// approve, AUDIT holds read/export, EXEC/IT/OWNER/PRIVACY/SEC hold a mix of read/update).
+const (
+	AuditPermRead    = "dpx.audit.read"
+	AuditPermCreate  = "dpx.audit.create"
+	AuditPermUpdate  = "dpx.audit.update"
+	AuditPermDelete  = "dpx.audit.delete"
+	AuditPermApprove = "dpx.audit.approve"
+)
+
+// MaturityAssessmentType is the assess.templates assessment_type DPX-03 uses — 'maturity' has been
+// reserved in its own CHECK constraint since the very first baseline migration (00011_assess.sql), unused
+// until now (the same "schema already anticipated this" discovery this codebase keeps relying on).
+const MaturityAssessmentType = "maturity"
+
+// AuditType/AuditFindingType are the entity types for audit/files (DPX-03).
+const (
+	AuditType        = "gov_audit"
+	AuditFindingType = "gov_audit_finding"
+)
+
+// Service runs the gov module for the tenant of the transaction in ctx.
+type Service struct {
+	Audit  *audit.Service
+	Ropa   Ropa
+	Dsar   Dsar
+	Files  Files
+	Docs   Docs
+	Breach Breach
+	Org    Org
+	Forms  Forms
+	Dpia   Dpia
+	Dpo    Dpo
+	Notify *notify.Service
+	River  *river.Client[pgx.Tx]
+	Now    func() time.Time
+}
+
+func (s *Service) now() time.Time {
+	if s.Now != nil {
+		return s.Now().UTC()
+	}
+	return time.Now().UTC()
+}
+
+func tenantID(ctx context.Context) (uuid.UUID, error) {
+	var t string
+	if err := pdb.MustTxFromContext(ctx).QueryRow(ctx, `SELECT current_setting('app.tenant_id')`).Scan(&t); err != nil {
+		return uuid.Nil, err
+	}
+	return uuid.Parse(t)
+}
+
+func currentUser(ctx context.Context) *uuid.UUID {
+	g, _ := authz.FromContext(ctx)
+	if u, err := uuid.Parse(g.UserID); err == nil {
+		return &u
+	}
+	return nil
+}
+
+func has(ctx context.Context, perm string) bool {
+	g, _ := authz.FromContext(ctx)
+	return g.Has(perm)
+}
+
+func (s *Service) audit(ctx context.Context, action, entityType string, id uuid.UUID, before, after any) error {
+	if s.Audit == nil {
+		return nil
+	}
+	tenant, err := tenantID(ctx)
+	if err != nil {
+		return err
+	}
+	e := audit.Entry{TenantID: tenant, ActorType: "system", Action: action, EntityType: entityType, EntityID: &id, Before: before, After: after}
+	if u := currentUser(ctx); u != nil {
+		e.ActorType, e.ActorID = "user", u
+	}
+	return s.Audit.Write(ctx, e)
+}
+
+func pgDate(t time.Time) pgtype.Date {
+	return pgtype.Date{Time: t, Valid: true}
+}
+
+func fromPgDate(d pgtype.Date) time.Time { return d.Time }
+
+func pgUUIDPtr(u *uuid.UUID) pgtype.UUID {
+	if u == nil {
+		return pgtype.UUID{}
+	}
+	return pgtype.UUID{Bytes: *u, Valid: true}
+}
+
+func cursorTime(t *time.Time) pgtype.Timestamptz {
+	if t == nil {
+		return pgtype.Timestamptz{}
+	}
+	return pgtype.Timestamptz{Time: *t, Valid: true}
+}
+
+func fromPgUUID(u pgtype.UUID) *uuid.UUID {
+	if !u.Valid {
+		return nil
+	}
+	id := uuid.UUID(u.Bytes)
+	return &id
+}

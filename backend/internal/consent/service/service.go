@@ -1,0 +1,120 @@
+// Package service is the consent module (CON): purposes and their versioned consent text (CON-12, approved through
+// PLT-08), collection points with the s.19 / s.26 publish checks (CON-09, CON-10), recording decisions as
+// hash-chained receipts, append-only transactions and a status projection (CON-15), and withdrawal (CON-13).
+// It works in the transaction of the context (CLAUDE.md rule 1) and reads other modules only through their services.
+package service
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/google/uuid"
+
+	iamservice "pdpa-platform/internal/iam/service"
+	orgservice "pdpa-platform/internal/org/service"
+	"pdpa-platform/internal/pkg/authz"
+	pdb "pdpa-platform/internal/pkg/db"
+	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/crypto"
+	"pdpa-platform/internal/platform/events"
+	"pdpa-platform/internal/platform/notify"
+	"pdpa-platform/internal/platform/versioning"
+)
+
+// Entity types (audit, versioning, notifications).
+const (
+	PurposeType         = "consent_purpose"
+	CollectionPointType = "consent_collection_point"
+	SubjectType         = "consent_subject"
+	CampaignType        = "consent_campaign"
+)
+
+var (
+	ErrNotFound          = errors.New("consent: not found")
+	ErrForbidden         = errors.New("consent: forbidden")
+	ErrVersionMismatch   = errors.New("consent: version mismatch")
+	ErrInvalidTransition = errors.New("consent: invalid transition")
+	ErrInvalidRequest    = errors.New("consent: invalid request")
+	ErrStaleVersion      = errors.New("consent: purpose version is not the current one")
+	ErrPublishChecks     = errors.New("consent: publish checks failed")
+	ErrSubjectConflict   = errors.New("consent: identifiers belong to different data subjects")
+	ErrInUse             = errors.New("consent: in use")
+)
+
+// CheckError lists which publish checks failed (codes the UI localizes).
+type CheckError struct{ Failed []string }
+
+func (e *CheckError) Error() string {
+	return fmt.Sprintf("consent: publish checks failed: %v", e.Failed)
+}
+func (e *CheckError) Unwrap() error { return ErrPublishChecks }
+
+// Org is what consent reads from the organization module (rule 9).
+type Org interface {
+	GetLegalEntity(ctx context.Context, id uuid.UUID) (orgservice.LegalEntity, error)
+	ListMaster(ctx context.Context, kind string) ([]orgservice.MasterItem, error)
+	// ListLegalEntities is CON-22's own lookup: resolving a legacy import row's legal entity by its
+	// registration number (the real, already-unique business key — ORG-01's own mod-11-checked id) rather
+	// than a free-text fuzzy name match, since every legal entity already carries one.
+	ListLegalEntities(ctx context.Context) ([]orgservice.LegalEntity, error)
+}
+
+// Service runs the consent module for the tenant of the transaction in ctx.
+type Service struct {
+	Versioning *versioning.Service
+	Events     *events.Publisher
+	Notify     *notify.Service
+	Keyring    *crypto.Keyring
+	Audit      *audit.Service
+	Org        Org
+	// Verification is IAM-05 (rule 9): the guardian's own OTP before a guardian-gated consent (CON-11, ม.20)
+	// takes effect. Nil where guardian consent isn't exercised (e.g. tests that don't need it).
+	Verification *iamservice.Service
+	// PortalBaseURL is CON-23's own confirmation link base (e.g. "https://portal.example.com") — the backend's
+	// own counterpart to PORTAL_PUBLIC_URL, which only the frontend reads today; empty falls back to the same
+	// http://localhost:3001 default the admin app's own pages use.
+	PortalBaseURL string
+	Now           func() time.Time
+}
+
+func (s *Service) now() time.Time {
+	if s.Now != nil {
+		return s.Now().UTC()
+	}
+	return time.Now().UTC()
+}
+
+func (s *Service) audit(ctx context.Context, action, entityType string, id uuid.UUID, before, after any) error {
+	if s.Audit == nil {
+		return nil
+	}
+	g, _ := authz.FromContext(ctx)
+	tenant, err := uuid.Parse(g.TenantID)
+	if err != nil {
+		// No authz.Grants on this request — the /public/v1 routes (publickeys.Middleware) only set an
+		// httpx.Principal, not Grants, since there is no user to authorize. Fall back to the tenant the Tx
+		// middleware already set transaction-locally (same technique IAM-05's own verificationTenantID uses).
+		if terr := pdb.MustTxFromContext(ctx).QueryRow(ctx, `SELECT current_setting('app.tenant_id')`).Scan(&tenant); terr != nil {
+			return ErrForbidden
+		}
+	}
+	e := audit.Entry{TenantID: tenant, ActorType: "system", Action: action, EntityType: entityType, EntityID: &id, Before: before, After: after}
+	if u, err := uuid.Parse(g.UserID); err == nil {
+		e.ActorType, e.ActorID = "user", &u
+	}
+	return s.Audit.Write(ctx, e)
+}
+
+func currentUser(ctx context.Context) *uuid.UUID {
+	g, _ := authz.FromContext(ctx)
+	if u, err := uuid.Parse(g.UserID); err == nil {
+		return &u
+	}
+	return nil
+}
+
+func invalid(format string, a ...any) error {
+	return fmt.Errorf("%w: %s", ErrInvalidRequest, fmt.Sprintf(format, a...))
+}

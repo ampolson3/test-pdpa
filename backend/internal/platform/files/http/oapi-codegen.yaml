@@ -1,0 +1,10 @@
+package: fileshttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - platformUploadFile
+    - platformGetFile
+    - platformDownloadFile

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="th">
+<head><meta charset="utf-8"><title>CON-03 example site</title></head>
+<body>
+<h1>ตัวอย่างเว็บไซต์</h1>
+
+<!-- The CMP script loads first, synchronously — the recommended real-world placement (and CON-01's own
+     install snippet) — so its MutationObserver is already watching before anything below can run. A plain
+     <script src> already present *earlier* in the HTML than this tag is a browser-level limitation no
+     client-side script can retroactively stop (CON-02's own documented "can't un-execute code that already
+     ran"); a real site avoids that by loading the CMP first, exactly as this page does. -->
+<script src="/pdpa-cookie-sdk.js" data-domain-key="demo-domain"></script>
+
+<!-- Declarative gating (mechanism 1): inert by HTML spec until this SDK activates it once "analytics" is
+     allowed. CON-02's own acceptance criterion already proves this activates immediately on a decision;
+     this page also proves it stays inert before any decision exists (CON-03). -->
+<script type="text/plain" data-pdpa-category="analytics" data-pdpa-src="/analytics.js"></script>
+
+<!-- Simulates a real tag manager (e.g. Google Tag Manager) injecting a further sub-tag *after its own
+     container has loaded* — the realistic case CON-03's own MutationObserver (mechanism 3) targets, since
+     a site owner typically doesn't bother declaratively-gating every tag a tag manager itself injects.
+     cookie.script_rules names this pattern as blocked for "marketing". -->
+<script>
+  var s = document.createElement('script');
+  s.src = '/marketing-tag.js';
+  document.body.appendChild(s);
+</script>
+</body>
+</html>

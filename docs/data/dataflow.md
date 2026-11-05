@@ -25,12 +25,13 @@
 |---|---|---|---|---|---|
 | `id` | `uuid` | ✓ | gen_random_uuid() | PK |  |
 | `tenant_id` | `uuid` | ✓ |  | FK → [platform.tenants](platform.md#platform-tenants) | RLS |
-| `view_type` | `text` | ✓ |  |  | ค่า: `org_unit`, `system`, `legal_entity`, `data_category`, `lineage`, `world` |
+| `view_type` | `text` | ✓ |  |  | ค่า: `org_unit`, `system`, `legal_entity`, `company`, `data_category`, `lineage`, `world` (migration 00099 เพิ่ม `company` — DFG-06 เก็บมุมมองบริษัทด้วยคีย์นี้ จริง) |
 | `scope_id` | `uuid` |  |  |  |  |
-| `layout` | `jsonb` | ✓ |  |  |  |
-| `user_id` | `uuid` |  |  | FK → [iam.users](iam.md#iam-users) |  |
+| `layout` | `jsonb` | ✓ |  |  | DFG-05: `{positions: {<node_id>: {x, y}}, notes: {<node_id>: text}}` |
+| `user_id` | `uuid` |  |  | FK → [iam.users](iam.md#iam-users) | DFG-05: การจัดเองเป็นรายบุคคล — ว่าง = เค้าโครงของผู้ใช้ที่ไม่มี session (ไม่เกิดในทางปฏิบัติ) |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_layouts_updated`
+- Unique: `uq_dataflow_layouts_scope_user UNIQUE NULLS NOT DISTINCT (tenant_id, view_type, scope_id, user_id)` (migration 00099 — หนึ่งเค้าโครงต่อผู้ใช้ต่อ (view_type, scope_id))
 - PK: `(id)`
 - Index: `dataflow.layouts (tenant_id, user_id)`
 - RLS: tenant · RLS `tenant_isolation`

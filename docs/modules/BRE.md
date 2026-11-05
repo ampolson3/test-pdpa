@@ -143,6 +143,28 @@
 
 **Acceptance criteria:** แจ้งเหตุแล้วทีมที่กำหนดได้รับแจ้งเตือนทันที
 
+**Implementation (done, see CLAUDE.md's own BRE-01 note for the full design record):** EMP's own login-gated
+intake form already existed from BRE-02's admin `/incidents` page (`reported_via: employee_form`,
+`breach.incident.create`). This pass added PUBLIC's own loginless channel: `breach.report_forms` (a
+publishable wrapper around a legal entity, the same role `dsar.intake_forms`/`consent.collection_points`
+play), issuing a `platform.public_keys` key once published. `internal/breach/service/incidents.go`'s `Create`
+was refactored into a shared `create()` core so a public submission (`CreatePublicReport`,
+`internal/breach/service/intake.go`) goes through the exact same numbering, timeline, `breach.reported`
+event, audit and — the acceptance criterion itself — `s.alert` (owner + every DPO, in-app + e-mail) that
+BRE-02's own admin-recorded incidents already use. `GET`/`POST /admin/v1/breach/report-forms`, `/{id}`,
+`/{id}/publish`, `/{id}/retire` (new permission `breach.form.*`); public
+`GET /public/v1/breach-report-forms/{key}`, `POST .../incidents` (`Idempotency-Key` required). UI:
+`/settings/breach-report-forms` (admin: create/publish/retire + the public link) and
+`apps/portal/.../[locale]/breach/[key]` (the public report form, TH/EN via next-intl). CAPTCHA is
+deliberately not built — no provider is chosen anywhere in this codebase yet (the same gap CON-09/PNG-06's
+own public forms already disclosed), and `platform.public_keys`' own Origin check already limits which sites
+can embed the form. Tests: unit (a public submission creates the incident and alerts the team — the
+acceptance criterion directly; draft/retired forms refuse a submission; publish is idempotent on the key;
+two-tenant isolation), HTTP contract (404/200/201 + Idempotency-Key replay through the real validator +
+publickeys + Idempotency + Tx chain). Not verified live against a real Postgres/Redis — this environment has
+neither reachable; every test compiles and skips cleanly the same way the rest of this module's own suite
+already does here.
+
 <a id="bre-02"></a>
 ### BRE-02 ทะเบียนเหตุละเมิด
 
@@ -163,6 +185,8 @@
 **Frontend (Next.js):** หน้าทะเบียนเหตุ + หน้ารายละเอียด
 
 **Acceptance criteria:** ทุกเหตุมีสถานะและผู้รับผิดชอบชัดเจน
+
+**Implementation (BRE-02):** `backend/internal/breach` (`service`, `store`, `http`) — เหตุ = เลขที่ `BR-ปีค.ศ.-NNNN` ต่อ tenant (advisory lock), นิติบุคคล, ช่องทาง (`employee_form` / `email` / `phone` / `system` ใน admin), หัวข้อ, รายละเอียด, ลักษณะ C/I/A, เวลาเกิด / ทราบ / ควบคุมได้, จำนวนเจ้าของข้อมูล, หมวดข้อมูล (ORG-07), **ผู้รับผิดชอบ** (`owner_user_id`, migration 00036 — ค่าเริ่มต้นคือผู้บันทึก) · สถานะตาม ST-03 เท่านั้น (`Allowed` = allow-list จาก state-machines.yaml): รับเรื่อง (reported → triage, มอบผู้รับผิดชอบได้), ยืนยันเหตุ (→ assessing), ไม่ใช่เหตุ (triage → closed) / ปิดเหตุ (remediating → closed) ต้องมี `breach.incident.approve` และเหตุผล (`close_reason`), พบข้อเท็จจริงใหม่ (remediating → assessing, เหตุผล) · assessing → notifying / remediating ผ่านการตัดสิน (BRE-06) เท่านั้น · notifying → remediating ต้องมีการแจ้ง สคส. ที่บันทึกแล้ว (BRE-09) — ตอนนี้ตอบ 409 `breach.pdpc_notice_missing` (ดู decisions Q-23) · ทุกการเปลี่ยนสถานะเขียน timeline + audit ใน tx เดียว, event `breach.reported` / `breach.closed` · สิทธิ์เห็นเหตุ: `breach.incident.read` เห็นทั้งหมด, ผู้มีแค่ `create` เห็นเฉพาะที่ตนแจ้ง · API `/admin/v1/breach/incidents` (+ `/{id}`, `/transitions`) · หน้าจอ `/incidents` (ทะเบียน + ค้นหา + ตัวนับถอยหลัง) และ `/incidents/{id}`
 
 <a id="bre-03"></a>
 ### BRE-03 รับแจ้งเหตุจากผู้ประมวลผล
@@ -229,6 +253,8 @@
 
 **Acceptance criteria:** ผลประเมินได้ระดับความเสี่ยงพร้อมเหตุผลตามปัจจัย
 
+**Implementation (BRE-05):** แบบประเมินเป็นฟอร์ม PLT-06 ประเภทใหม่ `breach` (สิทธิ์: สร้าง/แก้/เผยแพร่ = `breach.incident.approve` คือ DPO, ตอบ = `breach.incident.update`) ที่ต้องมีระดับคะแนน (bands) เป็น `none` / `low` / `high` เท่านั้น — ตัวคำถาม/ปัจจัยตามประกาศ พ.ศ. 2565 เป็นเนื้อหาที่ DPO สร้างเอง (ระบบไม่ฝังถ้อยคำกฎหมาย, rule 8) · `Assess` (สถานะ assessing) ส่งคำตอบผ่าน `forms.Service.Record` (ตรวจ + คิดคะแนน + เก็บ `form_submissions`) → ระดับความเสี่ยง = band, **เหตุผลตามปัจจัย** = `forms.Contributions` (คำถาม, คำตอบ + ป้ายตัวเลือก, คะแนนที่ได้) เก็บใน `assessments.factors` · ระดับล่าสุดเป็น `incidents.risk_level`, event `breach.assessed` · API `/incidents/{id}/assessments`
+
 <a id="bre-06"></a>
 ### BRE-06 ตัดสินหน้าที่แจ้งพร้อมเหตุผล
 
@@ -249,6 +275,8 @@
 **Frontend (Next.js):** ขั้นตอนตัดสินหน้าที่แจ้ง
 
 **Acceptance criteria:** ทุกการตัดสินมีเหตุผลและผู้อนุมัติ
+
+**Implementation (BRE-06):** `Decide` (`breach.incident.approve`, If-Match) ต้องมีผลประเมินแล้วและเหตุผล · กฎ ม.37(4): none → ไม่ต้องแจ้ง, low → แจ้ง สคส., high → แจ้ง สคส. และเจ้าของข้อมูล — DPO เลือกแจ้ง **มากกว่า** ที่ระดับกำหนดได้ แต่น้อยกว่าไม่ได้ (422 `breach.decision_too_weak`) · บันทึก `decision`, `decision_reason`, `decided_by` + timeline + audit · ไม่ต้องแจ้ง → remediating (นาฬิกา 72 ชม. หยุด), นอกนั้น → notifying · หน้าจอ: แผงตัดสิน (ตัวเลือกที่อ่อนกว่ากำหนดถูกปิด)
 
 <a id="bre-07"></a>
 ### BRE-07 นับเวลา 72 ชั่วโมง
@@ -271,6 +299,8 @@
 
 **Acceptance criteria:** แจ้งเตือนครบทุกจุดเวลาและ escalate เมื่อใกล้ครบ 72 ชั่วโมง
 
+**Implementation (BRE-07):** ฟังก์ชันล้วน (ทดสอบด้วยเวลาที่กำหนดเอง, rule 7) ใน `breach/service/deadlines.go`: `PDPCDue` = ทราบเหตุ + 72 ชม. (ชั่วโมงจริง ไม่ใช่วันทำการ), `LateDeadline` = + 15 วัน (Q-07), `Checkpoints` 24 / 48 / 66 / 72 ชม., `ToSchedule` (จุดที่ยังไม่ถึง + จุดล่าสุดที่ผ่านไปแล้วให้ยิงทันที — บันทึกเหตุช้าก็ยังเตือน/escalate), `ClockAt` (on_track / due_soon ≥ 66 ชม. / overdue / stopped) · สร้างเหตุ = ตั้ง job `breach.sla_timer` ทุกจุด (River ScheduledAt, unique ต่อ args) · ยิงแล้ว: ถ้านาฬิกายังเดิน (reported…notifying และไม่ได้ตัดสินว่าไม่ต้องแจ้ง) → timeline `deadline:N` + แจ้งเตือน in-app + อีเมล (เร่งด่วน) ถึงผู้รับผิดชอบและผู้มี role DPO, **ตั้งแต่ 66 ชม. เพิ่มผู้มี role EXEC**, 72 ชม. = เกินกำหนด (template `breach.deadline_overdue`) · ผู้รับตาม role นี้เป็นค่าเริ่มต้นจนกว่าจะมีกฎผู้รับแจ้ง BRE-04 · แก้เวลาที่ทราบเหตุต้องมี `approve` + เหตุผล (SEQ-06) แล้วตั้งเวลาใหม่ job เก่าเห็น `aware_at` ไม่ตรงจึงไม่ทำอะไร · แจ้งเหตุใหม่ทันทีด้วย template `breach.reported`
+
 <a id="bre-08"></a>
 ### BRE-08 แจ้งล่าช้าพร้อมเหตุผล
 
@@ -291,6 +321,8 @@
 **Frontend (Next.js):** ส่วนเหตุผลความล่าช้า
 
 **Acceptance criteria:** แบบแจ้งที่ล่าช้าส่งไม่ได้ถ้าไม่มีเหตุผล
+
+**Implementation (BRE-08):** `LateReasonRequired(awareAt, submittedAt)` (`service/deadlines.go`, เขียนไว้ตั้งแต่ BRE-07) — ยื่นเกิน 72 ชม. นับแต่ทราบเหตุ ต้องกรอก `late_reason` มิฉะนั้น 422 `breach.invalid` (`late_reason: required`) · `is_late` คำนวณจากค่านี้ เก็บคู่กับ `late_reason` ในแต่ละรอบการแจ้ง (`breach.pdpc_notifications`, ดู BRE-09) · กรอบ 15 วันยังไม่บังคับเป็น hard limit (การตีความยังรอฝ่ายกฎหมาย — decisions Q-07); ตอนนี้เป็นแค่ธง `is_late` ให้ผู้ใช้เห็น
 
 <a id="bre-09"></a>
 ### BRE-09 แบบแจ้ง สคส. และแจ้งเพิ่มเติมเป็นระยะ
@@ -315,6 +347,8 @@
 
 **หมายเหตุ:** ระบบเตรียมเอกสาร ผู้ใช้ยื่นผ่านช่องทางของ สคส.
 
+**Implementation (BRE-09):** `internal/breach/service/pdpc.go` — เอกสารแบบแจ้ง (ครบหัวข้อตามประกาศ) สร้างผ่านตัวสร้างเอกสาร PLT-16 เองในฐานะเอกสารประเภท `pdpc_form` (permission `breach.notification.*`, อนุมัติโดย DPO ผ่าน PLT-08) · `breach.pdpc_notifications` แต่ละแถวคือหนึ่งรอบการยื่น (`sequence_no` ต่อเหตุ, `notification_type` = `initial` / `supplementary` / `final`) อ้างอิง `document_version_id` ของเวอร์ชันที่**เผยแพร่แล้ว**เท่านั้น (ตรวจผ่าน `docs.Service` ซึ่งพิสูจน์ด้วยว่าแถวนั้นมองเห็นได้ภายใต้ RLS, rule 1) · เก็บ `submitted_at` (เวลาที่ยื่นจริงผ่านช่องทางของ สคส., ห้ามเป็นอนาคต), `submission_ref` (เลขที่รับจาก สคส.), `evidence_file_id` (ไฟล์หลักฐานการยื่น, ไม่บังคับ), `is_late` / `late_reason` (BRE-08) · ต้องมีคนที่สองยืนยัน (`breach.notification.approve`, maker-checker แบบเดียวกับการแจ้งเจ้าของข้อมูล — ผู้บันทึกยืนยันเองไม่ได้) ก่อนจะนับเป็นการแจ้งที่สมบูรณ์ · ออกจาก `notifying` (ST-03) ต้องมีรอบที่ยืนยันแล้วอย่างน้อยหนึ่งรอบ **และ** ถ้าการตัดสินใจรวมเจ้าของข้อมูลด้วย ต้องมีการแจ้งเจ้าของข้อมูลที่ส่งเสร็จแล้วด้วย (`breach.subject_notice_missing`) · API `/incidents/{id}/pdpc-notifications`, `/pdpc-notifications/{id}/confirm` · หน้าจอ: แท็บ "แจ้ง สคส." ในหน้าเหตุละเมิด — เลือกเอกสารที่เผยแพร่แล้ว (มีทางลัดไปสร้างใหม่ที่ตัวสร้างเอกสาร) บันทึกรอบ อัปโหลดหลักฐาน และยืนยัน
+
 <a id="bre-10"></a>
 ### BRE-10 แจ้งเจ้าของข้อมูลเมื่อความเสี่ยงสูง
 
@@ -335,6 +369,8 @@
 **Frontend (Next.js):** หน้าส่งแจ้งเจ้าของข้อมูล + สถานะ
 
 **Acceptance criteria:** ส่งแจ้ง 10,000 รายได้และติดตามผลการส่งรายคน
+
+**Implementation (BRE-10):** ใช้ได้เมื่อการตัดสินเป็น `notify_pdpc_and_subjects` · ร่าง (`breach.notification.create`): ช่องทางอีเมล / SMS + ตัวแปรของเหตุ (องค์กร, สรุป, แนวทางเยียวยา, ติดต่อ — `subject_notifications.variables`) ที่เติมลง template `breach.subject_notice` ซึ่ง seed เป็น **ร่างที่ติดป้ายรอฝ่ายกฎหมายอนุมัติ** (rule 8) ให้ tenant แก้ที่หน้าแม่แบบการแจ้งเตือน · รายชื่อ = CSV ที่ผู้ใช้อัปโหลด (ไฟล์ PLT-09 สะอาด) คอลัมน์ email/phone + language — normalize, ตัดซ้ำ, บรรทัดผิดปฏิเสธทั้งไฟล์ (แจ้งเลขบรรทัด+รหัส ไม่แสดงค่า), ที่อยู่เข้ารหัส PLT-13 (`address_enc`), สูงสุด 100,000 · **maker-checker:** ผู้จัดทำอนุมัติเองไม่ได้ (403 `breach.self_approval`), ผู้อนุมัติต้องมี `breach.notification.approve` · job `breach.subject_notice` ส่งต่อให้ PLT-04 ครั้งละ 1,000 รายใน tx ของ job (ล้มกลางทางไม่ส่งซ้ำ) แล้วต่อ job ถัดไป · ติดตามรายคน: ผู้รับเก็บ `notification_id` → สถานะการส่งจริง (queued / sent / failed, จำนวนครั้ง) จาก `notify.Service.Statuses` · จบแล้ว event `breach.subjects_notified` · ทดสอบ 10,000 ราย ~12–17 วินาที · ยังไม่ทำ: LINE, จดหมาย, ประกาศบนเว็บไซต์
 
 **หมายเหตุ:** OneTrust ต้องใช้เครื่องมือส่งภายนอก
 
@@ -359,6 +395,8 @@
 
 **Acceptance criteria:** timeline แสดงทุกการตัดสินใจพร้อมเวลาและผู้ตัดสิน
 
+**Implementation (BRE-12):** `breach.timeline_events` เพิ่มได้อย่างเดียว (app role ไม่มีสิทธิ์ UPDATE/DELETE, rule 4) · รายการอัตโนมัติเก็บเป็น token คงที่ + ข้อความที่คนให้ (เหตุผล) เช่น `status:triage:assessing`, `assessment:high:8`, `decision:notify_pdpc_and_subjects:high`, `deadline:66`, `evidence:<sha256>`, `notice_sent:email:25:0` — หน้าจอแปลเป็นไทย/อังกฤษ (rule 12) · บันทึกของคนเพิ่มได้ (เวลาย้อนหลังได้, ไม่ใช่อนาคต) · หลักฐาน: ไฟล์ที่ผู้ใช้อัปโหลดและผ่านการตรวจไวรัส ผูกกับเหตุ (ดาวน์โหลดด้วย `breach.incident.read`) + SHA-256 บน timeline · ปิดเหตุแล้วเพิ่มไม่ได้
+
 <a id="bre-13"></a>
 ### BRE-13 ประวัติและสืบค้นเหตุ
 
@@ -380,6 +418,8 @@
 
 **Acceptance criteria:** ค้นหาเหตุย้อนหลังได้ครบ
 
+**Implementation (BRE-13):** `GET /admin/v1/breach/incidents` ค้นหาตามสถานะ / ความเสี่ยง / ผู้รับผิดชอบ / ช่วงเวลาที่ทราบเหตุ / เฉพาะที่ยังไม่ปิด / คำค้น (เลขเหตุ หัวข้อ รายละเอียด — escape `%` `_`) เรียงเวลาทราบเหตุใหม่สุด cursor (aware_at, id) · ประวัติ = timeline + audit log
+
 <a id="bre-11"></a>
 ### BRE-11 แผนตอบสนองและงานควบคุมเหตุ
 
@@ -400,6 +440,27 @@
 **Frontend (Next.js):** หน้าตั้งค่า playbook + checklist ในหน้าเหตุ
 
 **Acceptance criteria:** เลือกประเภทเหตุแล้วได้ชุดงานตาม playbook
+
+**สถานะ:** done — `breach.playbooks`/`breach.response_tasks` ถูกระบุไว้ในฐานข้อมูลตั้งต้นแล้ว (00013_breach.sql,
+FK ครบใน 00018) ไม่ต้อง migration ใหม่ มีเพียง service (`internal/breach/service/playbooks.go`) + HTTP ใหม่.
+จงใจไม่ใช้ PLT-05 (workflow engine ทั่วไป) ตามที่ backlog ระบุ `ขึ้นกับ` — `breach.response_tasks` ไม่มีคอลัมน์
+เจ้าของงานให้ resolve ต่อ record แบบที่ engine นั้นออกแบบไว้ (ผูก assignee ไว้ใน Definition JSON ระดับ type) จึง
+ใช้ state machine เล็กในโมดูลเอง (`open -> in_progress -> done | cancelled`) แบบเดียวกับที่ DSAR-08 เคยเลือกไม่ใช้
+PLT-05 ด้วยเหตุผลเดียวกัน. `ApplyPlaybook` คือเกณฑ์การรับรู้ผลลัพธ์โดยตรง: resolve playbook จาก `incident_type`
+ของ incident เอง (หรือระบุ playbook_id ตรงก็ได้) แล้วแปลงทุก step เป็นแถว `breach.response_tasks` จริง — เรียกซ้ำ
+กับ playbook เดียวกันเป็น no-op ไม่สร้างซ้ำ. `breach.playbooks.tenant_id` เป็น nullable แบบเดียวกับ master data
+ของ ORG-07 (global default + tenant เขียนทับได้เฉพาะของตัวเอง) แต่รอบนี้ไม่ seed playbook ตัวอย่างใด ๆ — ปล่อยให้
+DPO/SEC สร้างเองตามบริบทจริงขององค์กร. สิทธิ์ใช้โค้ดที่ seed ไว้แล้วทั้งหมด `breach.incident.{read,create,update,
+execute}` (`execute` ถูก seed ไว้ตั้งแต่ baseline แต่ไม่มี feature ใดใช้มาก่อนรอบนี้) — ไม่มีโค้ดสิทธิ์ใหม่. API:
+`GET`/`POST /admin/v1/breach/playbooks`, `GET`/`PUT /admin/v1/breach/playbooks/{id}`,
+`GET /admin/v1/breach/incidents/{id}/response-tasks`, `POST .../apply-playbook`,
+`POST /admin/v1/breach/response-tasks/{id}/status`, `POST .../assign`. UI: แท็บ "Playbook" ใหม่บนหน้า
+`/incidents/{id}` (เลือก playbook หรือปล่อยให้ resolve ตาม incident_type แล้วกดใช้, รายการงานพร้อมสถานะ/
+ผู้รับผิดชอบ, ปุ่มเริ่ม/ทำเสร็จ). ทดสอบ: unit (เกณฑ์การรับรู้ผลลัพธ์ตรง — เลือกประเภทเหตุแล้วได้ชุดงานตาม
+playbook, เรียกซ้ำเป็น no-op, ไม่มี playbook ที่ตรงถูกปฏิเสธ, มอบหมาย+เปลี่ยนสถานะ+stale ETag, two-tenant
+isolation), HTTP contract ผ่าน validator/AuthZ จริง. ไม่ได้ยืนยันแบบ live กับ Postgres/Redis/S3/clamd จริงในรอบ
+นี้ (environment limitation ที่โมดูลนี้เปิดเผยไว้แล้วในรอบก่อน ๆ) — คอมไพล์/vet ผ่านและ skip อย่างสุภาพเหมือน
+feature อื่นของโมดูลนี้.
 
 <a id="bre-14"></a>
 ### BRE-14 รายงานและสถิติเหตุละเมิด
@@ -443,6 +504,9 @@
 
 **Acceptance criteria:** มาตรการป้องกันซ้ำถูกติดตามจนเสร็จ
 
+**Implementation:** `internal/breach/service/rootcause.go` on the already-specified `breach.root_causes`
+table (no new migration) — see `CLAUDE.md`'s `### BRE-15` entry for the full note.
+
 <a id="bre-16"></a>
 ### BRE-16 ซ้อมรับมือเหตุละเมิด
 
@@ -465,6 +529,42 @@
 **Acceptance criteria:** เหตุซ้อมไม่ปนกับเหตุจริงในรายงาน
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
+
+**Status (done):** `breach.incidents.is_drill` was already fully specified in the baseline migrations
+(00013_breach.sql) and already round-tripped through create/update/read (the "flag แยก" half of this
+feature's own backend note) — unused by anything else until now. `internal/breach/service/incidents.go`'s
+`create()` now skips `scheduleTimers`/`alert` entirely when `IsDrill` is set ("ไม่ส่งแจ้งจริง" — a drill
+never carries the real 72-hour PDPC timers or a real notification), and `UpdateFacts`'s own
+timer-reschedule on a moved `aware_at` is skipped the same way. `Filter` gained `IncludeDrills` (default
+false): `List`'s own SQL now excludes `is_drill` rows unless the caller explicitly asks — the acceptance
+criterion itself, "เหตุซ้อมไม่ปนกับเหตุจริงในรายงาน" — and since DPO-05's own cross-module deadline center
+already calls `breachservice.List` with a plain `Filter{OpenOnly: true}`, a drill is excluded from
+"สถิติ" (stats) too, with no change needed in `dpo/service/center.go`. "บันทึกบทเรียน" (record lessons
+learned) needed no new code: BRE-15's own root-cause/corrective-action panel is already generic over any
+incident, drill or real, and is reused as-is.
+
+API: `GET /admin/v1/breach/incidents` gained `include_drills` (boolean query param, no new permission —
+reuses the endpoint's own `authenticated`); `POST /admin/v1/breach/incidents`'s existing `is_drill` field
+on `BreachIncidentInput` is this feature's own "ปุ่มสร้างเหตุซ้อม" (a checkbox on the existing create
+form, not a second button — the module doc's own literal wording is satisfied by one form that can
+produce either kind). UI: `/incidents`'s create form gained an "is a drill" checkbox with an explanatory
+hint, and the list's own filter bar gained an "include drills" checkbox (the existing drill badge on each
+row was already built). Tests: unit
+(`internal/breach/service/bre16_test.go` — the acceptance criterion directly: a drill schedules zero
+real SLA timer jobs and sends zero real notifications while a real incident created in the same test
+still gets its full 4 timers + 3 alerted people; the drill is absent from `List` by default and present
+with `IncludeDrills: true`), HTTP contract (`internal/breach/http/handler_test.go`'s existing
+`TestBreachEndpoints_Contract`, extended with the same default-excluded / `include_drills=true`-included
+round trip through the real validator). Not verified live against a real Postgres/Redis — both were
+reachable for most of this session but this specific package's own fixture (`breachtest.Fixture`) also
+needs a real S3 + clamd, neither reachable in this environment (the same limitation this module's own
+prior passes already disclosed); every test compiles and vets clean and skips the same way the rest of
+this package's own suite already does here — confirmed the pre-existing `TestBreachPublicEndpoints_
+Contract` failure (unrelated: a `breach: forbidden` error, present identically before this change via
+`git stash -u`) is not something this feature introduced. `go build ./...`, `go vet ./...`, `gofmt -l`
+(clean on every touched file), `make gen` re-run with no drift, `pnpm --filter @pdpa/api-client
+typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the updated
+`/incidents` route) all verified clean.
 
 <a id="bre-17"></a>
 ### BRE-17 AI ช่วยประเมินเหตุและร่างรายงาน

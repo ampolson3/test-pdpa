@@ -108,6 +108,42 @@
 
 **Acceptance criteria:** ประกาศทุกฉบับแสดงช่องทางติดต่อ DPO ล่าสุด
 
+**Implementation (DPO-01):** `internal/dpo` — the first module on the `dpo` schema (`dpo.profile.*`, already
+seeded in the baseline permission migration; no new migration — `dpo.appointments` was already fully
+specified: `dpo_type` internal/external/group, `user_id` for internal, `external_name`/`external_company`
+for external/group, `contact_email`/`contact_phone`, `appointed_at`/`ended_at`, `appointment_file_id` and
+`pdpc_notified_at`/`pdpc_evidence_file_id` for recording the ม.41 filing with the PDPC). `SaveAppointment`
+checks the legal entity is visible under RLS (rule 1, via `orgservice.GetLegalEntity`) and, for an internal
+appointment, that `user_id` is a real active user of the tenant (`iamservice.Names`, the same cross-module
+helper ROPA already uses); a file id (order or evidence) is checked and attached the same way BRE-09's PDPC
+evidence is (`Files.Get` + `AttachSystem`, refused unless it's the caller's own clean, still-unattached
+upload) — but only when it's new or changed from a stored one, since re-checking an id already attached to
+this same appointment would fail the "unattached" test on every plain update. A legal entity's *current*
+appointment is whichever has no `ended_at` yet, most recently appointed (`CurrentAppointment`, a new sqlc
+query) — plain CRUD otherwise, no state machine (the module doc lists no process for this feature).
+
+The acceptance criterion itself is a new extension point on PLT-16, not a screen: `docs.Service` gained a
+second merge-field source alongside `OrgFields` (ORG-01) — `DpoFields` (`Dpo DpoFields` field, same
+`MergeFields(ctx, legalEntityID) (map[string]string, error)` shape) — resolved in `fieldValues` right after
+the organization's own fields, so every document (notices today; DPAs, DSA and PDPC-form letters once those
+document types exist) picks up `dpo_name`/`dpo_email`/`dpo_phone` from the legal entity's current appointment
+without any template ever hard-coding it (rule 8). `dpo.Service.MergeFields` returns nothing when there's no
+current appointment — the draft then shows `[dpo_name]` etc. as an unresolved placeholder and publishing
+refuses it, exactly like any other missing merge field; it never blocks *reading* a document. `wiring.Docs`
+builds the `dpo.Service` itself (mirroring how it already builds its own `orgservice.Service`) so `docs`
+never imports `dpo`'s HTTP layer or vice versa — module boundaries stay one-directional (rule 9: `dpo` reads
+`org`; `docs` reads `dpo` only through the two-method `DpoFields` interface it declares itself).
+
+API `/admin/v1/dpo/appointments` (cursor pagination, same shape as ROPA-04's own list), `/{id}`. UI
+`/settings/dpo`: a legal-entity picker (the same two-step pattern `/settings/organization` and
+`/ropa/activities` use) then the entity's appointments with a create/edit form (`FileUploader` for the
+appointment order), current vs. ended shown as a badge. Tests: unit (validation incl. dpo_type-conditional
+fields, the two FK-visibility checks, update, current-contact resolution as an appointment starts/ends/is
+replaced — the acceptance criterion's core logic — two-tenant isolation), a white-box `docs` package test
+proving `fieldValues` actually merges the dpo source in (with a stub, no database needed — the org source
+has no equivalent unit test, only the existing Chromium-based E2E; this closes that gap for the new source
+too), HTTP contract (401/403/400 schema/422/412/428).
+
 <a id="dpo-04"></a>
 ### DPO-04 แดชบอร์ด DPO
 
@@ -154,6 +190,10 @@
 
 **หมายเหตุ:** OneTrust ไม่มีมุมมองรวม
 
+**สถานะ implementation:** done — see `CLAUDE.md`'s DPO-05 section. Scoped to the modules that already track a
+legal deadline (DSAR's 30-day SLA, breach's 72-hour PDPC clock); DPIA review cycles, contract expiry and notice
+review aren't built yet, so they're left out until they exist.
+
 <a id="dpo-09"></a>
 ### DPO-09 ประเมินมาตรการความปลอดภัย
 
@@ -176,6 +216,32 @@
 **Acceptance criteria:** ข้อที่ไม่ผ่านสร้างงานแก้ไขอัตโนมัติ
 
 **หมายเหตุ:** OneTrust ต้องนำเข้า framework เอง
+
+**Implementation (DPO-09):** the checklist itself is an ordinary PLT-06 form the DPO authors and publishes
+(a new module-agnostic form type, `"security"` — `internal/wiring/forms.go` registers it with
+`dpo.risk.*` permissions, since a failed control reads as a risk-register-adjacent finding, not a new
+permission code; `platform.form_definitions.form_type`'s CHECK constraint widened by migration 00039 rather
+than reusing the unclaimed `'quiz'` value, for clarity). SEC/DPO submit a completed run in one call —
+`internal/dpo/service/assessment.go`'s `Assess` — via `forms.Service.Record` (BRE-05's exact pattern:
+bypasses the draft/section-assignment UI flow, for a form filled in one atomic step) against a specific
+published form version, refusing with `ErrBadForm` if that form isn't type `"security"` or has no published
+version. The score/band (`forms.Result`) and every question's answer (`forms.Contributions`) are stored in a
+new `dpo.security_assessments` row (migration 00039, mirrors `breach.assessments`' shape: score, result,
+factors jsonb, form_submission_id). The acceptance criterion — a failed item auto-opens remediation work —
+is computed by walking the form's schema directly (not `Contribution.Points`, which would misfire on any
+non-yes_no question): every `yes_no` question answered `"no"` opens one `dpo.tasks` row
+(`source_type = 'risk'`, no enum widening needed; numbered `SEC-<year>-NNNN` with the same
+per-tenant-per-year advisory-lock pattern `breach.incidents.incident_no` already uses), linked back to the
+assessment. API `/admin/v1/dpo/security-assessments` (cursor pagination, list + create) and `/{id}`. UI: a
+"Security assessments" section on `/settings/dpo` (`FormRenderer` against the published form, score badge,
+expandable factor table, remediation-task list). Tests: unit (pass/fail scoring, task auto-creation and
+round-trip via `GetAssessment`, validation — unknown legal entity, unknown/unpublished form,
+non-`"security"`-type form, missing required answer — two-tenant isolation), HTTP contract
+(401/403/201/200/404/422). Found while writing the tests (a re-confirmed forms-package gotcha, not new to
+this feature): `forms.Service.CreateForm`/`Publish` both return via `GetForm`, which folds a missing *Read*
+permission into `ErrNotFound` rather than `ErrForbidden` — so any fixture granting only Create/Update/Publish
+for a form type fails opaquely; test grants for `"security"` (and the cross-type rejection test's
+`"questionnaire"` fixture) now include Read.
 
 <a id="dpo-02"></a>
 ### DPO-02 ประเมินหน้าที่ต้องแต่งตั้ง DPO
@@ -200,6 +266,32 @@
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
 
+**Implementation (done):** `internal/dpo/service/requirement_check.go` (`AssessDpoRequirement`, `dpo.profile.*`,
+already seeded — no new permission code). ม.41(2)/2023-notice is a 4-question OR-rule checklist (`decideDpoRequirement`
+— any one flagged criterion already triggers `required`, zero flagged is `not_required`), answered against the
+global `dpo_check`/`dpo_requirement_check` screening template (migration 00077, `assess.templates.assessment_type`'s
+own CHECK already listed `'dpo_check'` since the baseline — the same "schema already anticipated this" pattern
+DPX-06/Q-36 and DPIA-01's own Q-26 found) via a new generic, additive-only method on `dpiaservice.Service`,
+`ScreenSubject` (`internal/dpia/service/subject_screening.go`) — parameterized by assessment_type/template code/
+subject_type/subject_id/title/answers and a caller-supplied `Decide` function, so dpo's own ม.41(2) judgement lives
+in the `dpo` package, never in `dpia` (rule 9: dpia owns the `assess` schema, dpo only calls its exported service).
+`dpo.Service` gained a direct concrete `Dpia *dpiaservice.Service` field (no import cycle — dpia never imports dpo),
+wired in `cmd/api/main.go` right after `dpiaSvc` is constructed. `dpo.requirement_checks` (already fully specified in
+the baseline migrations) stores each round's result/basis/assessment_id — new sqlc queries
+`InsertRequirementCheck`/`GetLatestRequirementCheckForLegalEntity`/`ListRequirementChecks`
+(`db/queries/dpo/requirement_checks.sql`). API: `GET`/`POST /admin/v1/dpo/requirement-checks`
+(`dpo.profile.{read,create}`). UI: a "DPO appointment requirement check" section on `/settings/dpo` (4 checkboxes +
+run button, result banner, past-rounds list) above the existing security-assessments section. `docs/decisions.md`
+Q-37 flags the seeded checklist content as DRAFT pending legal review (rule 8's spirit — paraphrased from the
+module doc's own description, not copied from the official notice text). Tests: unit
+(`internal/dpo/service/requirement_check_test.go` — not_required with no criteria met, the acceptance criterion
+directly: any single flagged criterion returns required with a reason citing the notice, unknown legal entity
+refused, two-tenant isolation), HTTP contract (`internal/dpo/http/handler_test.go`'s
+`TestRequirementCheckEndpoints_Contract` — 401/403/422/201/200 through the real validator + AuthZ). `go build`/
+`go vet`/`gofmt -l` and the full `go test -p 1 ./internal/dpo/... ./internal/dpia/...` suite (real Postgres/Redis,
+no regressions) all verified clean, plus `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test`
+and `pnpm --filter @pdpa/admin build`.
+
 <a id="dpo-06"></a>
 ### DPO-06 Tasks Management
 
@@ -220,6 +312,63 @@
 **Frontend (Next.js):** kanban + รายการงาน
 
 **Acceptance criteria:** งานที่สร้างอัตโนมัติมีที่มาและลิงก์กลับ
+
+**Implementation — done.** `dpo.tasks` (already fully specified in the baseline migrations —
+`source_type`/`source_id` for provenance, the exact 5-state `status` CHECK, `priority`,
+`assignee_user_id`, `reviewer_user_id`, `org_unit_id`, `due_at`) and `dpo.task.{read,create,update,
+delete,execute}` (already seeded, migration 00019) had everything DPO-06's own description needs —
+RRA-07 had already built `GetTask`/`UpdateTaskStatus` (the 5-state transition machine, the two-tier
+access restriction) as its own generic "tracking view," and seven other features
+(DPO-09/DPA-12/PNG-07/ROPA-19/DPIA-08/RRA-08/RTG-10) already open these jobs automatically, each
+baking in an assignee/due date once, at creation. What was actually missing against this feature's
+own literal acceptance criterion and its description's "มีผู้ตรวจ วันครบกำหนด ความสำคัญ และความเห็น":
+a general kanban/list view across every source (no caller had ever needed one — every existing
+consumer only ever fetches one task by id), and a way to set or change the reviewer/due
+date/priority/assignee *after* creation (nothing could, since every `Open*Task` caller only ever
+sets those once).
+
+`internal/dpo/service/gap_tasks.go` gained `ListTasks` (RRA-09's own `ListRisks` keyset-cursor shape
+ported to `dpo.tasks` — newest first, optionally narrowed by status/source_type/priority/assignee) and
+`AssignTask` (gated on `dpo.task.execute`, since "มอบหมาย" is already part of that permission's own
+seeded description — every id given is checked visible under RLS first via `iamservice.Names`/
+`Org.GetOrgUnit`, rule 1). `Task` itself gained `ReviewerUserID`/`OrgUnitID` fields — both columns
+existed from the baseline but nothing read or wrote them until now. "ความเห็น" (comments) reuses
+PLT-07 directly: `dpo_task` is a new registered collaboration record type
+(`dpo.task.read`/`.update`, `Exists` backed by `GetTask`) — the same cheap reuse
+ROPA-12/DSAR-17/DPIA-14 already made for their own records.
+
+The acceptance criterion itself ("งานที่สร้างอัตโนมัติมีที่มาและลิงก์กลับ") is literal:
+`source_type`/`source_id` are already on every task (provenance), and the frontend resolves a
+link back only where the id a module actually gave is known to mean a real, existing record — an
+"agreement"-type task's `source_id` is a *vendor* id (DPA-12's own missing-DPA reminder), so it
+links straight to `/vendors/{id}`; "ropa_gap"/"risk" link to their own register pages
+(`/settings/gap-register`/`/settings/risk-register`). Disclosed, not silently worked around: every
+other source_type's own `source_id` carries a *different* meaning per caller even within the same
+source_type (a finding id in one `ropa_gap` task, an activity id in another — RTG-10's own; an
+assessment id in one `risk` task, a risk id in another), so this feature doesn't guess at a link it
+can't prove — those tasks still show their provenance badge, just with no deep link.
+
+API: `GET /admin/v1/dpo/tasks` (cursor pagination, filters: status/source_type/priority/
+assignee_user_id), `POST /admin/v1/dpo/tasks/{id}/assign` (ETag/If-Match) — both on the already-seeded
+`dpo.task.{read,execute}` (no new permission code or migration). UI: a new page, `/dpo/tasks`
+(linked from the existing `/dpo` deadline center's own header, next to the advisories link) — a
+kanban board (5 columns, one per status) and a list-view toggle, filterable by source/priority, each
+task card showing its provenance + link back, an assign form (assignee/reviewer/due date/priority
+picker, reusing PLT-07's own `useMentionSearch`), and a comments toggle mounting the shared
+`RecordCollaboration` component. Tests: unit (`internal/dpo/service/dpo06_test.go` — the acceptance
+criterion directly: every task's provenance is present and correct regardless of which feature opened
+it, filters narrow correctly, `AssignTask` sets assignee/reviewer/org_unit/due_date/priority and moves
+`created → assigned` the first time an assignee is given, the `dpo.task.execute` gate, FK-visibility
+refusals for an unknown assignee/reviewer/org_unit, a bad priority, a stale row_version, two-tenant
+isolation of the list), HTTP contract (`internal/dpo/http/handler_test.go`'s existing
+`TestTaskEndpoints_Contract`, extended with the list + assign chain: 401/403/200/412/428 through the
+real validator + AuthZ). Not verified live against a real Postgres/Redis in this pass — neither was
+reachable in this environment for this feature; every test compiles and vets clean and skips the same
+way the rest of this module's own suite already does without one. `go build ./...`, `go vet ./...`,
+`gofmt -l` (clean on every touched file), `go test ./...` (no regressions, full backend suite — only
+the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build`/`typecheck` (incl. the new `/dpo/tasks` route) all verified clean.
 
 <a id="dpo-07"></a>
 ### DPO-07 รับคำปรึกษาจากหน่วยงาน
@@ -242,6 +391,38 @@
 
 **Acceptance criteria:** คำถามที่ตอบแล้วค้นได้ในคลังคำตอบ
 
+**Status (done):** `dpo.advisories`/`dpo.kb_articles` were already fully specified in the baseline
+migrations (00016_dpo.sql, `dpo.advisory.*`/`dpo.kb.*` already seeded — EMP/OWNER/IT/MKT hold
+`.create`/`.read`, DPO/LEGAL/PRIVACY hold `.update`/`dpo.kb.create`) — no new migration, only new sqlc
+queries and `internal/dpo/service/advisories.go`. Deliberately not built on PLT-05's generic workflow
+engine (the same reasoning ROPA-12 already used): a question/answer with a numbered advisory_no and a
+promotion into the knowledge base fits this feature's own small local status machine
+(open → answered → closed) better than PLT-05's per-type task-assignee model.
+
+`SubmitAdvisory` is "หน่วยงานส่งคำถาม": any employee may ask, optionally against their own department
+(checked visible under RLS, rule 1, when given) — numbered `ADV-<year>-NNNN` via the same per-tenant-
+per-year advisory-lock pattern this codebase's task numbering already uses. `AnswerAdvisory` is the
+acceptance criterion itself ("ตอบ → เก็บเป็นคลังคำตอบ"): answering a still-open advisory
+(`dpo.advisory.update`) also creates one new, already-published `dpo.kb_articles` row (category
+`"advisory"`, source `"faq"`, body `{question, answer}`) in the same call and links it back
+(`kb_article_id`) — every answered question is searchable the moment it's answered, nothing left for a
+separate "publish" step. `SearchKbArticles` (`dpo.kb.read`) is a plain title/body substring match.
+
+API: `GET`/`POST /admin/v1/dpo/advisories`, `GET /admin/v1/dpo/advisories/{id}`,
+`POST .../answer` (ETag/If-Match), `GET /admin/v1/dpo/kb-articles` — all on the already-seeded
+`dpo.advisory.*`/`dpo.kb.*` codes (no new permission). UI: a new page, `/dpo/advisories` (linked from
+`/dpo`'s own deadline-center header) — an "ask the DPO" form, a status-filtered list, an answer panel,
+and a knowledge-base search box right on the same page. Tests: unit
+(`internal/dpo/service/advisories_test.go` — the acceptance criterion directly: an unanswered advisory
+is not yet in the knowledge base, answering it makes it findable immediately with the real answer text;
+answering an already-answered advisory is refused distinctly; validation; two-tenant isolation), HTTP
+contract (`internal/dpo/http/advisories_test.go` — 401/403/200/201/428 through the real validator +
+AuthZ, the full submit → answer → search chain). `go build ./...`, `go vet ./...`, `gofmt -l` (clean on
+every touched file), the full `internal/dpo/service`/`internal/dpo/http` suites run live against this
+session's own real Postgres 16 + Redis (no regressions), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build` (incl. the new `/dpo/advisories` route) all verified clean.
+
 <a id="dpo-08"></a>
 ### DPO-08 ปฏิทินงาน compliance
 
@@ -263,6 +444,51 @@
 
 **Acceptance criteria:** ปฏิทินแสดงกิจกรรมจากทุกโมดูลตรงกับกำหนดการจริง
 
+**Implementation — done.** The real gap against the literal acceptance criterion was never a new
+column — every source this feature names already had one, unused by any calendar view: `ropa.
+processing_activities.next_review_at` (ROPA-15), `notice.notices.next_review_at` (PNG-15), `vendor.
+vendors.next_assessment_at` (VEN-10), `gov.training_assignments.due_at` (DPX-01), and
+`assess.assessments.next_review_at` (already in the baseline `00011_assess.sql`, unread by any sweep
+since DPIA's own review trigger is event-based — breach-linked, DPIA-13 — not date-based). This
+feature adds one forward-looking window read per source (distinct from each module's own "already
+due" sweep filter) and a single cross-module aggregator, `internal/dpo/service/calendar.go`'s
+`ComplianceCalendar`, the same "read live, never a stale copy, skip a source the caller can't see"
+shape DPO-05's own `Deadlines` already established — `dpo.report.read` is not a blanket grant to
+every module's own detail; each source checks the caller's own permission for that module
+(`ropa.activity.read`, `notice.document.read`, `assessment.dpia.read`, `dpx.training.read`,
+`vendor.vendor.read`) before calling into it.
+
+Four of the five sources (`Ropa`/`Dpia`/`Gov`/`Vendor`) are direct concrete fields on `dpo.Service` —
+no cycle, since none of ropa/dpia/gov/vendormgmt imports dpo concretely (dpo already imports ropa
+transitively via dsar, and gov/vendormgmt don't import dpo at all). Notice is the one exception
+(notice already imports `dpo/service` directly for PNG-07's own `OpenConsentTask`, so the reverse
+import would be a real cycle): `dpo.Notice` stays a local interface whose return type is dpo's own
+`CalendarItem`, and notice's matching `ListUpcomingReviews` method already returns that exact type —
+satisfied directly, no adapter needed, the cleanest resolution of this codebase's own recurring
+cross-module-type problem. `ComplianceCalendarICS` is the module description's own "export iCal" —
+a plain, hand-written RFC 5545 feed (no dependency needed, the format is simple enough, the same
+"hand-roll the simple format" move PLT-16's own DOCX composer already made).
+
+API: `GET /admin/v1/dpo/calendar` (JSON, `from`/`to` query params, default a 90-day forward window),
+`GET /admin/v1/dpo/calendar.ics` (`text/calendar`, same window) — both on the already-seeded
+`dpo.report.read` (no new permission code or migration — every column already existed). UI: a
+"Compliance calendar" section on the existing `/dpo` deadline-center page (linked from the same
+header the advisories/tasks links already use) — a table of upcoming items by source, due date, and
+an "Export iCal" link. Tests: unit (`internal/dpo/service/dpo08_test.go` —
+`ComplianceCalendarICS` directly (a valid VCALENDAR envelope, a stable per-item UID, SUMMARY
+escaping, an empty list still valid), the acceptance criterion directly through a real RoPA source
+(an activity's own review date inside the window appears, one outside doesn't — read live off the
+real column), the per-source permission gate, two-tenant isolation), HTTP contract
+(`internal/dpo/http/handler_test.go`'s existing `TestAppointmentEndpoints_Contract`, extended with
+401/403/200 on both endpoints). Not verified live against a real Postgres/Redis in this pass —
+neither was reachable in this environment for this feature, though the pure-function ICS tests ran
+for real regardless; every DB test compiles and vets clean and skips the same way the rest of this
+module's own suite already does without one. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on
+every touched file), `go test ./...` (no regressions, full backend suite — only the pre-existing,
+unrelated `internal/pkg/validate` failure), `make gen` re-run with no drift, `pnpm --filter
+@pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build`/`typecheck` (incl. the updated `/dpo` route) all verified clean.
+
 <a id="dpo-10"></a>
 ### DPO-10 คะแนนความพร้อมรายหน่วยงาน
 
@@ -283,6 +509,42 @@
 **Frontend (Next.js):** scorecard รายหน่วยงาน
 
 **Acceptance criteria:** คะแนนคำนวณซ้ำได้และอธิบายที่มาได้
+
+**Implementation — done.** `internal/dpo/service/scorecard.go`'s `OrgUnitScorecard(ctx, orgUnitID)` combines
+what four other modules already compute, each read live every call (never a stale cached number — "คะแนน
+คำนวณซ้ำได้" literally) with every component named (its own `Detail` string — "อธิบายที่มาได้"): RoPA
+completeness (ROPA-03's own `Activity.Completeness`, averaged across the unit's own activities), legal-gap
+readiness (RRA-13's own `OrgUnitComplianceScore`, this feature's direct dependency), DPIA screening/approval
+status (the fraction of the unit's activities whose latest round is `not_required` or `approved`, via
+`dpiaservice.ListAssessments`), and training completion (a new `CountOrgUnitTrainingCompletion` sqlc query —
+the fraction of `org_unit`-targeted `gov.training_assignments` with a passed attempt). The overall score is a
+plain average of whichever components actually apply (an org unit with no activities carries no
+`ropa_completeness`/`dpia_readiness` component at all, rather than a misleading 0 or 100). No new migration —
+every table read already existed; the only new query is the training-completion count.
+
+Deliberately left out, with the reason named rather than silently skipped: "คำขอเกินกำหนด" (overdue DSAR
+requests), the module description's own fourth named factor — `dsar.requests` has no org-unit column in this
+schema (a request is tied to a requester identity, not an internal department), so there is no reliable way
+to attribute an overdue request to one org unit without inventing a column no other DSAR feature needs; add
+it if a future pass gives DSAR requests a real org-unit link.
+
+`dposervice.Service` reuses its already-wired `Ropa`/`Risk`/`Dpia`/`Gov` fields (all added by earlier DPO-05/
+DPO-08 work) — no new cross-module wiring beyond the one new `Gov.OrgUnitTrainingCompletion` method. API:
+`GET /admin/v1/dpo/scorecard/{orgUnitId}` (`dpo.report.read`, no new permission code). UI: the existing
+`ComplianceScoreSection` on `/settings/risk-register` (RRA-13's own per-org-unit expand panel) gained a
+`ScorecardDetail` sub-component showing this feature's own overall score + every named component right
+alongside RRA-13's legal-gap deductions, reusing the same page rather than a dedicated new screen. Tests:
+unit (`internal/dpo/service/scorecard_test.go` — the acceptance criterion directly: every component named
+with a non-empty explanation, the legal-gap figure matches RRA-13's own math exactly, recomputing twice from
+unchanged data gives an identical overall score; a unit with zero activities carries no ropa/dpia components;
+two-tenant isolation), HTTP contract (`internal/dpo/http/handler_test.go`'s existing
+`TestAppointmentEndpoints_Contract`, extended with 401/403/200 on the new endpoint). Not verified live against
+a real Postgres/Redis in this pass — neither was reachable in this environment for this feature; every test
+compiles and vets clean and skips the same way the rest of this module's own suite already does without one.
+`go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions,
+full backend suite — only the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run
+with no drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/settings/risk-register` route) all verified clean.
 
 <a id="dpo-11"></a>
 ### DPO-11 รายงานการปฏิบัติหน้าที่ DPO และรายงานผู้บริหาร
@@ -346,3 +608,32 @@
 **Frontend (Next.js):** หน้าคำรับรอง
 
 **Acceptance criteria:** มีคำรับรองที่ลงนามทุกปี
+
+**สถานะ: done.** `dpo.independence_declarations` was already fully specified in the baseline migrations
+(00016_dpo.sql, FKs in 00018) — a thin, one-row-per-appointment-per-year record (`year`, `other_duties`,
+`has_conflict`, `signed_at`, an optional evidence `file_id`) — no new migration.
+`internal/dpo/service/independence.go`: `RecordDeclaration` creates or edits the still-unsigned draft for
+one appointment+year (resolved by looking the pair up first, not a unique index, since an edit must never
+silently overwrite an already-signed year — refused with `ErrInvalid` instead); `SignDeclaration` is the
+acceptance criterion itself — stamps `signed_at` once, optionally attaching the caller's own clean,
+still-unattached PLT-09 upload as the signed evidence (the same pattern DPO-01's own appointment order
+already uses) — a re-sign attempt on an already-signed row is refused, never silently moving the
+attestation date. Permissions reuse the already-seeded `dpo.profile.{read,create,update}` (DPO-01's own
+family — no new permission code, since this is DPO-managed register data adjacent to the appointment
+record it belongs to).
+
+API: `GET`/`POST /admin/v1/dpo/appointments/{id}/independence-declarations`,
+`POST /admin/v1/dpo/independence-declarations/{id}/sign` (ETag/If-Match). UI: `/settings/dpo` gained a
+"คำรับรองประจำปี" toggle per appointment row — a record form (year/other-duties/conflict checkbox) and a
+list of past years each showing signed/unsigned, with a sign button on an unsigned row. Tests: unit
+(`internal/dpo/service/independence_test.go` — the acceptance criterion directly: a recorded declaration
+starts unsigned, signing it stamps `signed_at`, re-signing or editing an already-signed year is refused, a
+new year starts its own fresh unsigned draft; an unknown appointment is refused before any write;
+two-tenant isolation), HTTP contract (`internal/dpo/http/handler_test.go`'s existing
+`TestAppointmentEndpoints_Contract`, extended with the full record → sign → re-sign-refused chain through
+the real validator + AuthZ). Not verified live against a real Postgres/Redis — this session's own
+environment limitation, consistent with this codebase's other recent passes; every test compiles and vets
+clean and skips the same way the rest of this module's own suite already does here. `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions, full backend
+suite), `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/settings/dpo` route) all verified clean.

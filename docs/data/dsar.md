@@ -34,6 +34,7 @@
 | `tenant_id` | `uuid` |  |  | FK → [platform.tenants](platform.md#platform-tenants) | RLS · NULL = ข้อมูลกลาง |
 | `code` | `text` | ✓ |  |  | ค่า: `access`, `portability`, `objection`, `erasure`, `restriction`, `rectification`, `withdraw_consent`, `complaint`, `inquiry` |
 | `name_th` | `text` | ✓ |  |  |  |
+| `name_en` | `text` |  |  |  | migration 00043 (DSAR-13) — the bilingual response letter needs an English name too |
 | `legal_ref` | `varchar(40)` |  |  |  |  |
 | `workflow_definition_id` | `uuid` |  |  | FK → [platform.workflow_definitions](platform.md#platform-workflow-definitions) |  |
 | `sla_days` | `smallint` | ✓ | 30 |  |  |
@@ -44,6 +45,10 @@
 - Unique: `uq_request_types_code UNIQUE NULLS NOT DISTINCT (tenant_id, code)`
 - Index: `dsar.request_types (workflow_definition_id)` · `dsar.request_types (response_template_id)`
 - RLS: tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write`
+- DSAR-13's 9 seeded rows (migration 00043) leave `response_template_id` unset: the actual response letter is
+  resolved by (`platform.templates.template_type = 'dsar_response'`, `code` = the *purpose* — result /
+  rejection / request_info, not the request type), the same code-keyed lookup pattern PNG-03's
+  `notice.wizard_templates` uses instead of a single FK column.
 - ถูกอ้างถึงโดย: `dsar.requests.request_type_id`
 
 <a id="dsar-requests"></a>

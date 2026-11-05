@@ -1,0 +1,32 @@
+package: dpohttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - dpoListAdvisories
+    - dpoSubmitAdvisory
+    - dpoGetAdvisory
+    - dpoAnswerAdvisory
+    - dpoSearchKbArticles
+    - dpoListRequirementChecks
+    - dpoAssessRequirementCheck
+    - dpoListAppointments
+    - dpoCreateAppointment
+    - dpoGetAppointment
+    - dpoUpdateAppointment
+    - dpoListDeadlines
+    - dpoGetComplianceCalendar
+    - dpoGetComplianceCalendarIcs
+    - dpoGetOrgUnitScorecard
+    - dpoListAssessments
+    - dpoRecordAssessment
+    - dpoGetAssessment
+    - dpoGetTask
+    - dpoUpdateTaskStatus
+    - dpoListTasks
+    - dpoAssignTask
+    - dpoListIndependenceDeclarations
+    - dpoRecordIndependenceDeclaration
+    - dpoSignIndependenceDeclaration

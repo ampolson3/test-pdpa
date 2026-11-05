@@ -36,6 +36,32 @@ func (g Grants) Has(code string) bool {
 	return false
 }
 
+// LegalEntityScope reports which legal entities the caller's own grants restrict visibility to (ORG-02's
+// own acceptance criterion: a user of company A never sees company B's data unless given scope). ok is
+// false when nothing narrows it — no grants are attached at all (a worker's own trusted system call, never
+// a real user) or the caller holds at least one tenant-scoped assignment — so every legal entity in the
+// tenant stays visible, exactly as before this feature (the default every seeded/dev role assignment
+// already uses). ok is true only when the caller holds at least one legal_entity-scoped assignment and no
+// tenant-scoped one; ids is then the union of every legal entity those assignments name.
+func (g Grants) LegalEntityScope() (ids []string, ok bool) {
+	seen := map[string]bool{}
+	for _, s := range g.Scopes {
+		switch s.ScopeType {
+		case "tenant":
+			return nil, false
+		case "legal_entity":
+			if s.LegalEntityID != nil && !seen[*s.LegalEntityID] {
+				seen[*s.LegalEntityID] = true
+				ids = append(ids, *s.LegalEntityID)
+			}
+		}
+	}
+	if len(ids) == 0 {
+		return nil, false
+	}
+	return ids, true
+}
+
 type ctxKey struct{}
 
 // WithGrants attaches g to ctx. Called once by the AuthZ middleware.
