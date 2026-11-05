@@ -6133,6 +6133,83 @@ redaction (no PDF-editing library available here without a new heavy dependency 
 names PDF specifically) and real OCR (still blocked on T13's PoC, per Q-30/Q-47) — `detecting` can replace
 the manual-rectangle step with no schema or API change once either becomes available.
 
+### DSAR-19 พอร์ทัลติดตามสถานะสำหรับผู้ยื่น (`docs/modules/DSAR.md#dsar-19`) — done, status + submit document only
+A loginless public portal gated by the exact OTP identity check CON-18/CON-19/CON-23 already established —
+its own purpose, `"dsar_track"` (migration `00098_dsar19_tracking_portal.sql`, widening `iam.
+subject_verifications.purpose`'s own CHECK), so a plain intake/identity OTP (DSAR-01/06's own `"dsar"`
+purpose) can never double as proof of someone else's tracking session. The public key names an
+`org.legal_entities` row directly (`publickeys.EntityDsarTrack = "dsar_track"`, the same `platform.
+public_keys.entity_type` CHECK widening + "no dedicated table" pattern CON-18's own preference centre
+already uses) — resolving the tenant only, never scoping which requests can be tracked through it: any of
+a tenant's own published tracking links works for any of that tenant's requests, since a request is
+resolved by its own number plus the requester's own stored contact (`dsar.requests.requester_blind_index`,
+a new exact-match sqlc query, `GetRequestByNoAndBlindIndex` — never decrypted to search, rule 3, the same
+reasoning DSAR-17's own search already established). Every call re-checks the verified contact's own blind
+index against *this exact request's* own stored blind index, not just the OTP's own purpose+identifier —
+`VerifiedIdentifier` alone only proves some contact was OTP-verified under this purpose, not that it's the
+requester of this specific request.
+
+`internal/dsar/service/tracking.go` (new): `PublishTrackingPortal`/`RetireTrackingPortal`/
+`GetTrackingPortalLink` (the coalesce-on-first-publish shape DSAR-01/PNG-06/BRE-01/CON-01/CON-18 already
+use), `StartTrackingVerification`/`GetTrackedStatus`/`SubmitTrackingDocument`. The `dsar.Files` interface
+(DSAR-06's own, already used by DSAR-04/14/16) gained `Upload(ctx, fileName, r) (files.File, error)` —
+every existing implementer (`*files.Service`, and the `fakeFiles`/`fakePackageFiles` test doubles across
+`internal/dsar/service` and `internal/dsar/publichttp`) already has or gained a matching method, since
+`Upload` needs no authenticated principal to own the result, unlike every other caller of this interface
+which already holds one before the file ever reaches it. `SubmitTrackingDocument` uploads the data
+subject's own file and attaches it to the request exactly like a staff-recorded one (PLT-07/PLT-09) —
+already queued for the ordinary virus scan, and already visible on the existing "ประวัติ" attachments
+panel with no new admin screen needed, since that panel already reads any file sharing the record's own
+`entity_type`/`entity_id`, regardless of who uploaded it.
+
+API: `GET`/`POST /admin/v1/dsar/tracking-portal/{legalEntityId}`, `POST .../publish`, `POST .../retire`
+(reusing DSAR-01's already-seeded `dsar.form.{read,publish,delete}` — no new permission code); public
+`POST /public/v1/dsar-tracking/{key}/start-verification` (body `{request_no, method, contact}` →
+`{verification_id, channel}`), `POST .../status` (body adds `verification_id`/optional `code` →
+`{request_no, status, received_at, due_at, outcome?, rejection_reason_code?, closed_at?}` — omitting `code`
+on a later call in the same session is the same convention `consentViewPreferenceCenter` already
+established), `POST .../documents` (`multipart/form-data`: the same text fields as `.../status` plus
+`file` — text parts must arrive before the file part, the same order a `FormData` built field-by-field
+already sends in → `{file_id}`) — all three require `Idempotency-Key` per rule 10, including the two reads.
+`cmd/api/maxbody.go`'s own file-upload body-size exception (previously only `/admin/v1/platform/files`) now
+also covers `POST .../documents` under `/public/v1/dsar-tracking/`, the same multipart body shape as
+PLT-09's own admin upload. `internal/platform/publickeys`'s own `pathKeyRE` widened for `dsar-tracking`.
+
+UI: a "Tracking portal" panel on `/settings/dsar-forms` (`TrackingPortalPanel`, mirroring CON-18's own
+`PreferenceCenterPanel` almost exactly — a legal-entity picker, publish/retire, the hosted link shown once
+issued) and a new portal page, `apps/portal/src/app/[locale]/dsar-status/[key]` (`TrackForm` +
+`actions.ts`): request number + contact + method → OTP code → a status view plus a document-upload form.
+The status-check and document-submission forms share one `useActionState` hook whose single server action
+(`trackSession`) dispatches on a hidden `intent` field — two independent hooks would each have started from
+the same stale initial state and never seen each other's updates, since `useActionState`'s own initial-value
+argument is read only once, at mount. New `packages/api-client` hooks `useDsarTrackingPortalLink`/
+`useDsarTrackingPortalMutations`; new `apps/portal/src/lib/dsar-track.ts` (the server-only fetch wrapper,
+the same pattern `lib/dsar.ts`'s own DSAR-01 functions already use); new `dsarForms.tracking.*` and
+`portal.dsarTrack.*` i18n keys (th/en).
+
+Tests: unit (`internal/dsar/service/tracking_test.go` — the acceptance criterion directly: status is
+readable and a submitted document attaches to the right request only once the OTP is verified against
+that exact request's own contact, a later call in the same session may omit the code, an unknown request
+number and a contact that doesn't match the real one both read identically as not-found, portal
+publish/retire coalesces on first publish and reissues a fresh key after retire; two-tenant isolation),
+HTTP contract (`internal/dsar/http/handler_test.go`'s existing `TestDsarEndpoints_Contract`, extended with
+the admin tracking-portal get/publish/re-publish/retire chain; `internal/dsar/publichttp/handler_test.go`'s
+new `TestDsarPublicTrackingEndpoints_Contract` — the full public start-verification → status (wrong code
+422, correct code 200, code omitted 200) → submit-document chain, including a real multipart request,
+through the real validator + publickeys + Idempotency + Tx chain). Not verified live against a real
+Postgres/Redis — neither was reachable in this environment for this feature; every test compiles and vets
+clean and skips the same way the rest of this module's own suite already does here. `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions, full backend
+suite — only the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/admin
+build`/`typecheck` (incl. the updated `/settings/dsar-forms` route) and `pnpm --filter @pdpa/portal
+build`/`typecheck` (incl. the new `/[locale]/dsar-status/[key]` route) all verified clean. Not done,
+deliberately (no consumer yet, the same deferral this codebase uses throughout): two-way messaging between
+the data subject and staff (PLT-07's own comment mechanism already exists generically, as ROPA-12's own Q&A
+feature already shows — a data-subject-facing variant would need its own, separate design); and surfacing
+the actual delivered result beyond the bare status (DSAR-14's own package mechanism already delivers a
+result through a separate, access-code-gated link, which this feature doesn't duplicate).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

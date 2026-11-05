@@ -706,6 +706,8 @@ export {
   useDsarSaveRequestTypeConfig,
   useDsarResponseTemplates,
   useDsarSaveResponseTemplate,
+  useDsarTrackingPortalLink,
+  useDsarTrackingPortalMutations,
   type DsarRequestType,
   type DsarRequest,
   type DsarRequestStatus,
@@ -744,6 +746,7 @@ export {
   type DsarRequestTypeConfigInput,
   type DsarResponseTemplate,
   type DsarSaveResponseTemplateInput,
+  type DsarTrackingPortalLink,
 } from "./dsar";
 export {
   useCookieDomains,

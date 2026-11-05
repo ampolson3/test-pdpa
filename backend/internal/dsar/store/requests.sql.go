@@ -74,6 +74,65 @@ func (q *Queries) GetRequest(ctx context.Context, id uuid.UUID) (GetRequestRow, 
 	return i, err
 }
 
+const getRequestByNoAndBlindIndex = `-- name: GetRequestByNoAndBlindIndex :one
+SELECT id, request_no, request_type_id, legal_entity_id, channel, on_behalf, details, status, received_at,
+    due_at, verified_at, closed_at, outcome, rejection_reason_code, assignee_user_id, row_version, updated_at
+FROM dsar.requests WHERE request_no = $1 AND requester_blind_index = $2::bytea
+`
+
+type GetRequestByNoAndBlindIndexParams struct {
+	RequestNo           string `db:"request_no" json:"request_no"`
+	RequesterBlindIndex []byte `db:"requester_blind_index" json:"requester_blind_index"`
+}
+
+type GetRequestByNoAndBlindIndexRow struct {
+	ID                  uuid.UUID          `db:"id" json:"id"`
+	RequestNo           string             `db:"request_no" json:"request_no"`
+	RequestTypeID       uuid.UUID          `db:"request_type_id" json:"request_type_id"`
+	LegalEntityID       uuid.UUID          `db:"legal_entity_id" json:"legal_entity_id"`
+	Channel             string             `db:"channel" json:"channel"`
+	OnBehalf            bool               `db:"on_behalf" json:"on_behalf"`
+	Details             []byte             `db:"details" json:"details"`
+	Status              string             `db:"status" json:"status"`
+	ReceivedAt          pgtype.Timestamptz `db:"received_at" json:"received_at"`
+	DueAt               pgtype.Timestamptz `db:"due_at" json:"due_at"`
+	VerifiedAt          pgtype.Timestamptz `db:"verified_at" json:"verified_at"`
+	ClosedAt            pgtype.Timestamptz `db:"closed_at" json:"closed_at"`
+	Outcome             *string            `db:"outcome" json:"outcome"`
+	RejectionReasonCode *string            `db:"rejection_reason_code" json:"rejection_reason_code"`
+	AssigneeUserID      pgtype.UUID        `db:"assignee_user_id" json:"assignee_user_id"`
+	RowVersion          int32              `db:"row_version" json:"row_version"`
+	UpdatedAt           pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+}
+
+// DSAR-19: resolves a request for self-service tracking by its own exact number and the requester's own
+// stored contact, matched by blind index (never decrypted to search — rule 3). Either not matching reads
+// identically (no rows) to the caller — no information leak either way.
+func (q *Queries) GetRequestByNoAndBlindIndex(ctx context.Context, arg GetRequestByNoAndBlindIndexParams) (GetRequestByNoAndBlindIndexRow, error) {
+	row := q.db.QueryRow(ctx, getRequestByNoAndBlindIndex, arg.RequestNo, arg.RequesterBlindIndex)
+	var i GetRequestByNoAndBlindIndexRow
+	err := row.Scan(
+		&i.ID,
+		&i.RequestNo,
+		&i.RequestTypeID,
+		&i.LegalEntityID,
+		&i.Channel,
+		&i.OnBehalf,
+		&i.Details,
+		&i.Status,
+		&i.ReceivedAt,
+		&i.DueAt,
+		&i.VerifiedAt,
+		&i.ClosedAt,
+		&i.Outcome,
+		&i.RejectionReasonCode,
+		&i.AssigneeUserID,
+		&i.RowVersion,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getRequestRequesterContact = `-- name: GetRequestRequesterContact :one
 SELECT requester_contact_enc FROM dsar.requests WHERE id = $1
 `

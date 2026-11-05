@@ -142,7 +142,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	grants := map[string][]string{
 		tenant.UserID.String(): {"dsar.request.read", "dsar.request.create", "dsar.request.execute", "dsar.request.update", "dsar.request.approve",
 			"dsar.request.delete", "dsar.subtask.read", "dsar.subtask.create", "dsar.subtask.update", "dsar.subtask.execute", "dsar.subtask.delete",
-			"dsar.form.read", "dsar.form.update", "dsar.package.read", "dsar.package.create"},
+			"dsar.form.read", "dsar.form.update", "dsar.form.publish", "dsar.form.delete", "dsar.package.read", "dsar.package.create"},
 		other.String(): {"dsar.request.read", "dsar.subtask.read", "dsar.form.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
@@ -549,6 +549,37 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	}
 	if code, _ := do("POST", itemE+"/redactions", &viewer, map[string]any{"raw_file_id": uuid.New(), "regions": []any{map[string]any{"x": 0, "y": 0, "width": 1, "height": 1}}}); code != 403 {
 		t.Errorf("redact file, read only: %d, want 403", code)
+	}
+
+	// DSAR-19: the legal entity's self-service status-tracking portal link — admin side only; the public
+	// start-verification/status/documents chain is exercised through the real publickeys+Idempotency+Tx
+	// chain in internal/dsar/publichttp's own contract test.
+	trackingE := "/admin/v1/dsar/tracking-portal/" + legalEntity.String()
+	if code, _ := do("GET", trackingE, nil, nil); code != 401 {
+		t.Errorf("get tracking portal, no principal: %d, want 401", code)
+	}
+	if code, body := do("GET", trackingE, &admin, nil); code != 200 || !strings.Contains(body, `"public_key":null`) {
+		t.Errorf("get tracking portal before publish: %d %s, want public_key null", code, body)
+	}
+	if code, _ := do("POST", trackingE+"/publish", &viewer, nil); code != 403 {
+		t.Errorf("publish tracking portal, read only: %d, want 403", code)
+	}
+	code, body = do("POST", trackingE+"/publish", &admin, nil)
+	if code != 200 || strings.Contains(body, `"public_key":null`) {
+		t.Fatalf("publish tracking portal: %d %s", code, body)
+	}
+	code, body = do("POST", trackingE+"/publish", &admin, nil)
+	if code != 200 || strings.Contains(body, `"public_key":null`) {
+		t.Fatalf("re-publish tracking portal: %d %s, want the same key (coalesce)", code, body)
+	}
+	if code, _ := do("POST", trackingE+"/retire", &viewer, nil); code != 403 {
+		t.Errorf("retire tracking portal, read only: %d, want 403", code)
+	}
+	if code, _ := do("POST", trackingE+"/retire", &admin, nil); code != 204 {
+		t.Errorf("retire tracking portal: %d, want 204", code)
+	}
+	if code, _ := do("POST", trackingE+"/retire", &admin, nil); code != 404 {
+		t.Errorf("retire tracking portal again: %d, want 404", code)
 	}
 
 	// DSAR-20: configurable workflow per right type — steps/responsible/response-letter override.

@@ -99,6 +99,25 @@ func (f *fakeFiles) SaveGenerated(ctx context.Context, fileName string, r io.Rea
 	return files.File{ID: id, FileName: fileName, EntityType: entityType, EntityID: &entityID}, nil
 }
 
+// Upload stands in for a data subject's own public submission (DSAR-19) — a real, still-unattached
+// platform.files row, the same shape SaveGenerated already inserts minus the entity link.
+func (f *fakeFiles) Upload(ctx context.Context, fileName string, r io.Reader) (files.File, error) {
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return files.File{}, err
+	}
+	id := uuid.New()
+	f.raw[id] = b
+	sum := sha256.Sum256(b)
+	if _, err := pdb.MustTxFromContext(ctx).Exec(ctx,
+		`INSERT INTO platform.files (id, tenant_id, bucket, object_key, file_name, mime_type, size_bytes, sha256, av_status)
+		 VALUES ($1, current_setting('app.tenant_id')::uuid, 'test', $2, $3, 'application/octet-stream', $4, $5, 'pending')`,
+		id, id.String(), fileName, len(b), hex.EncodeToString(sum[:])); err != nil {
+		return files.File{}, err
+	}
+	return files.File{ID: id, FileName: fileName}, nil
+}
+
 // Attach marks an already-inserted platform.files row as attached — the real table's own FK to
 // dsar.subtasks.evidence_file_id needs a real row to point at, so DSAR-08's own subtasks_test.go inserts one
 // directly (the same "caller's own clean, unattached upload" fixture BRE/PLT-09 tests use elsewhere) before

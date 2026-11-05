@@ -44,11 +44,14 @@ var (
 
 // Files is what dsar needs from file storage (PLT-09): DSAR-06's caller-owned raw upload + saving the
 // redacted output as a new, already-attached file, DSAR-08's own Attach for a subtask's evidence (the
-// caller's own clean, still-unattached upload), and DSAR-14's own secure-delivery package (a signed URL for
-// an already-attached file, and deleting its bytes once the package expires).
+// caller's own clean, still-unattached upload), DSAR-14's own secure-delivery package (a signed URL for
+// an already-attached file, and deleting its bytes once the package expires), and DSAR-19's own Upload for
+// a data subject's own public submission (no authenticated principal to own it, unlike the admin-side
+// upload every other caller already holds before this interface ever sees the file).
 type Files interface {
 	Get(ctx context.Context, id uuid.UUID) (files.File, error)
 	Open(ctx context.Context, id uuid.UUID) (io.ReadCloser, files.File, error)
+	Upload(ctx context.Context, fileName string, r io.Reader) (files.File, error)
 	SaveGenerated(ctx context.Context, fileName string, r io.Reader, entityType string, entityID uuid.UUID) (files.File, error)
 	Attach(ctx context.Context, id uuid.UUID, entityType string, entityID uuid.UUID) error
 	SignedURL(ctx context.Context, id uuid.UUID) (string, error)

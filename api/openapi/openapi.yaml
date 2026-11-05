@@ -8474,6 +8474,90 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dsar/tracking-portal/{legalEntityId}:
+    get:
+      operationId: dsarGetTrackingPortal
+      tags: [dsar]
+      summary: The legal entity's self-service status-tracking link, if one has been published (DSAR-19)
+      x-permission: dsar.form.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: legalEntityId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarTrackingPortalLink'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/dsar/tracking-portal/{legalEntityId}/publish:
+    post:
+      operationId: dsarPublishTrackingPortal
+      tags: [dsar]
+      summary: Issue (or re-read) the legal entity's status-tracking link (DSAR-19)
+      description: Coalesces on first publish — a later call returns the same key, the same pattern every other public-facing surface in this codebase uses.
+      x-permission: dsar.form.publish
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: legalEntityId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarTrackingPortalLink'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/tracking-portal/{legalEntityId}/retire:
+    post:
+      operationId: dsarRetireTrackingPortal
+      tags: [dsar]
+      summary: Revoke the legal entity's current status-tracking link (DSAR-19)
+      x-permission: dsar.form.delete
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: legalEntityId
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /admin/v1/platform/documents/types:
     get:
       operationId: platformListDocumentTypes
@@ -9883,6 +9967,163 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /public/v1/dsar-tracking/{key}/start-verification:
+    post:
+      operationId: dsarStartTrackingVerification
+      tags: [dsar]
+      summary: Send an OTP to the requester's own stored contact for a request they're tracking (DSAR-19)
+      description: |
+        The path key names a legal entity's published status-tracking portal; any of a tenant's own
+        published tracking portals works for any of that tenant's requests — the request itself is resolved
+        by its own number and the requester's own stored contact (matched by blind index, never decrypted
+        to search — rule 3). An unknown request number or a contact that doesn't match it reads identically
+        (404) — no information leak either way.
+      x-permission: public
+      x-module: dsar
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarTrackStartInput'
+      responses:
+        '201':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarTrackVerificationResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /public/v1/dsar-tracking/{key}/status:
+    post:
+      operationId: dsarGetTrackedStatus
+      tags: [dsar]
+      summary: The request's own current status, due date and outcome (DSAR-19's own acceptance criterion)
+      description: Requires a verified OTP against the given contact (dsarStartTrackingVerification). Once verified in this session, later calls may omit code.
+      x-permission: public
+      x-module: dsar
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarTrackStatusInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarTrackedStatus'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /public/v1/dsar-tracking/{key}/documents:
+    post:
+      operationId: dsarSubmitTrackingDocument
+      tags: [dsar]
+      summary: Submit an additional document to the request, from the data subject themselves (DSAR-19's own acceptance criterion)
+      description: |
+        Requires the same verified OTP as dsarGetTrackedStatus. The stored file is attached to the request
+        exactly like a staff-recorded attachment (PLT-07) — it appears on the request's own activity/
+        attachments panel, already queued for the ordinary PLT-09 virus scan.
+      x-permission: public
+      x-module: dsar
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_-]{22,64}$'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [request_no, method, contact, verification_id, file]
+              properties:
+                request_no:
+                  type: string
+                method:
+                  type: string
+                  enum: [otp_sms, otp_email]
+                contact:
+                  type: string
+                verification_id:
+                  type: string
+                code:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Stored; scan pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarTrackDocumentResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          description: File larger than the configured limit (`files.too_large`)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '415':
+          description: File type not allowed (`files.type_not_allowed`)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /api/v1/consents:
     post:
       operationId: consentSubmitConsents
@@ -25006,6 +25247,73 @@ components:
           description: Defaults to 7 days from now when omitted
           type: string
           format: date-time
+    DsarTrackingPortalLink:
+      type: object
+      properties:
+        public_key:
+          type:
+          - string
+          - 'null'
+          description: Null when no status-tracking portal has been published for this legal entity yet (DSAR-19)
+    DsarTrackStartInput:
+      type: object
+      required: [request_no, method, contact]
+      additionalProperties: false
+      properties:
+        request_no:
+          type: string
+          description: The request number the data subject was given at intake (e.g. DSAR-2026-0001)
+        method:
+          type: string
+          enum: [otp_sms, otp_email]
+        contact:
+          type: string
+          writeOnly: true
+          description: The exact contact the request was filed with — matched by blind index, never decrypted to search (rule 3)
+    DsarTrackVerificationResult:
+      type: object
+      required: [verification_id, channel]
+      properties:
+        verification_id: {$ref: '#/components/schemas/Uuid'}
+        channel:
+          type: string
+          enum: [sms, email]
+    DsarTrackStatusInput:
+      type: object
+      required: [request_no, method, contact, verification_id]
+      additionalProperties: false
+      properties:
+        request_no: {type: string}
+        method:
+          type: string
+          enum: [otp_sms, otp_email]
+        contact:
+          type: string
+          writeOnly: true
+        verification_id: {$ref: '#/components/schemas/Uuid'}
+        code:
+          type: string
+          pattern: ^[0-9]{6}$
+          description: Omit once already verified in this session (consentViewPreferenceCenter's own convention)
+    DsarTrackedStatus:
+      type: object
+      required: [request_no, status, received_at, due_at]
+      properties:
+        request_no: {type: string}
+        status: {$ref: '#/components/schemas/DsarRequestStatus'}
+        received_at: {type: string, format: date-time}
+        due_at: {type: string, format: date-time}
+        closed_at: {type: [string, 'null'], format: date-time}
+        outcome:
+          oneOf:
+            - $ref: '#/components/schemas/DsarOutcome'
+            - type: 'null'
+        rejection_reason_code: {type: [string, 'null']}
+    DsarTrackDocumentResult:
+      type: object
+      required: [file_id]
+      properties:
+        file_id: {$ref: '#/components/schemas/Uuid'}
     CookieDomain:
       type: object
       required: [id, domain, legal_entity_id, status, row_version]

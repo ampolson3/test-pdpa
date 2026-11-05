@@ -2895,6 +2895,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/tracking-portal/{legalEntityId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The legal entity's self-service status-tracking link, if one has been published (DSAR-19) */
+        get: operations["dsarGetTrackingPortal"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/tracking-portal/{legalEntityId}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue (or re-read) the legal entity's status-tracking link (DSAR-19)
+         * @description Coalesces on first publish — a later call returns the same key, the same pattern every other public-facing surface in this codebase uses.
+         */
+        post: operations["dsarPublishTrackingPortal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/tracking-portal/{legalEntityId}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke the legal entity's current status-tracking link (DSAR-19) */
+        post: operations["dsarRetireTrackingPortal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/platform/documents/types": {
         parameters: {
             query?: never;
@@ -3424,6 +3478,72 @@ export interface paths {
          *     is a harmless retry.
          */
         post: operations["dsarDownloadPublicPackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/dsar-tracking/{key}/start-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send an OTP to the requester's own stored contact for a request they're tracking (DSAR-19)
+         * @description The path key names a legal entity's published status-tracking portal; any of a tenant's own
+         *     published tracking portals works for any of that tenant's requests — the request itself is resolved
+         *     by its own number and the requester's own stored contact (matched by blind index, never decrypted
+         *     to search — rule 3). An unknown request number or a contact that doesn't match it reads identically
+         *     (404) — no information leak either way.
+         */
+        post: operations["dsarStartTrackingVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/dsar-tracking/{key}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The request's own current status, due date and outcome (DSAR-19's own acceptance criterion)
+         * @description Requires a verified OTP against the given contact (dsarStartTrackingVerification). Once verified in this session, later calls may omit code.
+         */
+        post: operations["dsarGetTrackedStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/v1/dsar-tracking/{key}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit an additional document to the request, from the data subject themselves (DSAR-19's own acceptance criterion)
+         * @description Requires the same verified OTP as dsarGetTrackedStatus. The stored file is attached to the request
+         *     exactly like a staff-recorded attachment (PLT-07) — it appears on the request's own activity/
+         *     attachments panel, already queued for the ordinary PLT-09 virus scan.
+         */
+        post: operations["dsarSubmitTrackingDocument"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10106,6 +10226,47 @@ export interface components {
              * @description Defaults to 7 days from now when omitted
              */
             expires_at?: string;
+        };
+        DsarTrackingPortalLink: {
+            /** @description Null when no status-tracking portal has been published for this legal entity yet (DSAR-19) */
+            public_key?: string | null;
+        };
+        DsarTrackStartInput: {
+            /** @description The request number the data subject was given at intake (e.g. DSAR-2026-0001) */
+            request_no: string;
+            /** @enum {string} */
+            method: "otp_sms" | "otp_email";
+            /** @description The exact contact the request was filed with — matched by blind index, never decrypted to search (rule 3) */
+            contact: string;
+        };
+        DsarTrackVerificationResult: {
+            verification_id: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            channel: "sms" | "email";
+        };
+        DsarTrackStatusInput: {
+            request_no: string;
+            /** @enum {string} */
+            method: "otp_sms" | "otp_email";
+            contact: string;
+            verification_id: components["schemas"]["Uuid"];
+            /** @description Omit once already verified in this session (consentViewPreferenceCenter's own convention) */
+            code?: string;
+        };
+        DsarTrackedStatus: {
+            request_no: string;
+            status: components["schemas"]["DsarRequestStatus"];
+            /** Format: date-time */
+            received_at: string;
+            /** Format: date-time */
+            due_at: string;
+            /** Format: date-time */
+            closed_at?: string | null;
+            outcome?: components["schemas"]["DsarOutcome"] | null;
+            rejection_reason_code?: string | null;
+        };
+        DsarTrackDocumentResult: {
+            file_id: components["schemas"]["Uuid"];
         };
         CookieDomain: {
             id: components["schemas"]["Uuid"];
@@ -19279,6 +19440,88 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    dsarGetTrackingPortal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                legalEntityId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarTrackingPortalLink"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dsarPublishTrackingPortal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                legalEntityId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarTrackingPortalLink"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarRetireTrackingPortal: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                legalEntityId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     platformListDocumentTypes: {
         parameters: {
             query?: never;
@@ -20352,6 +20595,140 @@ export interface operations {
             };
             404: components["responses"]["NotFound"];
             422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarStartTrackingVerification: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarTrackStartInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarTrackVerificationResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    dsarGetTrackedStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarTrackStatusInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarTrackedStatus"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    dsarSubmitTrackingDocument: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it). */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    request_no: string;
+                    /** @enum {string} */
+                    method: "otp_sms" | "otp_email";
+                    contact: string;
+                    verification_id: string;
+                    code?: string;
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Stored; scan pending */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarTrackDocumentResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description File larger than the configured limit (`files.too_large`) */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description File type not allowed (`files.type_not_allowed`) */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     consentSubmitConsents: {

@@ -41,7 +41,7 @@ const (
 	MaxOTPAttempts = 5
 )
 
-var verificationPurposes = []string{"preference_center", "consent", "dsar", "double_opt_in", "guardian"}
+var verificationPurposes = []string{"preference_center", "consent", "dsar", "double_opt_in", "guardian", "dsar_track"}
 var otpMethods = []string{"otp_sms", "otp_email"}
 
 // SubjectVerification is one row of iam.subject_verifications — never carries the plaintext identifier or

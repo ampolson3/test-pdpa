@@ -881,6 +881,47 @@ acceptance criterion names PDF specifically) and real OCR (still blocked on T13'
 
 **Acceptance criteria:** เจ้าของข้อมูลเห็นสถานะล่าสุดและส่งเอกสารเพิ่มได้เอง
 
+**Implementation (done, status + submit document only — no "ข้อความโต้ตอบ"/two-way messaging, no delivered
+result beyond the bare status; see CLAUDE.md's own DSAR-19 note for the full design):** a loginless public
+portal gated by the exact OTP identity check CON-18/CON-19/CON-23 already established, its own purpose
+"dsar_track" (migration 00098, widening `iam.subject_verifications.purpose`'s own CHECK) so a plain intake/
+identity OTP (DSAR-01/06's own "dsar" purpose) can never double as proof of someone else's tracking session.
+The public key names an `org.legal_entities` row directly (`publickeys.EntityDsarTrack = "dsar_track"`, the
+same "no dedicated table" pattern CON-18's own preference centre already uses) — resolving the tenant only,
+never scoping which requests can be tracked through it: any of a tenant's own published tracking links works
+for any of that tenant's requests, since a request is resolved by its own number plus the requester's own
+stored contact (blind-index matched, never decrypted to search — rule 3), the same pattern DSAR-17's search
+already established. Every call re-checks the verified contact's own blind index against *this exact
+request's* own stored `requester_blind_index`, not just the OTP's own purpose+identifier (`VerifiedIdentifier`
+alone would only prove some contact was OTP-verified, not that it's the requester of this specific request).
+Submitting a document is a new public multipart endpoint (`internal/dsar/service/tracking.go`'s
+`SubmitTrackingDocument`, a new `dsarservice.Files.Upload` method widening the shared interface) — the
+upload lands on the request's own attachments exactly like a staff-recorded one (PLT-07/PLT-09), already
+queued for the ordinary virus scan, with no new admin screen needed (the existing "ประวัติ" panel already
+shows it). API: `GET`/`POST`/`.../retire` on `/admin/v1/dsar/tracking-portal/{legalEntityId}` (reusing
+DSAR-01's already-seeded `dsar.form.{read,publish,delete}` — no new permission code), public
+`POST /public/v1/dsar-tracking/{key}/{start-verification,status,documents}` (all three require
+`Idempotency-Key` per rule 10, including the two reads — the same convention CON-18's own view endpoint
+already uses). UI: a "Tracking portal" panel on `/settings/dsar-forms` (mirrors CON-18's own
+`PreferenceCenterPanel` almost exactly) and a new portal page, `/[locale]/dsar-status/[key]` (request
+number + contact + method → OTP code → status view + a document-upload form, one `useActionState` hook
+whose single server action dispatches on a hidden `intent` field so a status check and a later document
+submission share one evolving session state). Tests: unit
+(`internal/dsar/service/tracking_test.go` — the acceptance criterion directly: status is readable and a
+document attaches to the right request only once the OTP is verified, a later call in the same session may
+omit the code, an unknown request number and a mismatched contact both read as not-found identically,
+portal publish/retire coalesces and reissues; two-tenant isolation), HTTP contract (admin
+`tracking-portal` endpoints in `internal/dsar/http/handler_test.go`; the full public start → status →
+submit-document chain, including a real multipart request, in
+`internal/dsar/publichttp/handler_test.go`'s `TestDsarPublicTrackingEndpoints_Contract`). Not verified live
+against a real Postgres/Redis — neither was reachable in this environment; every test compiles and vets
+clean and skips the same way the rest of this module's own suite already does here. Not done, deliberately
+(no consumer yet, the same deferral this codebase uses throughout): two-way messaging between the data
+subject and staff (PLT-07's own comment mechanism already exists generically — ROPA-12's own Q&A feature
+already built the pattern — add a data-subject-facing variant only once a real screen needs it), and
+surfacing the delivered result itself beyond the bare status (DSAR-14's own package mechanism already
+delivers a result through a separate, access-code-gated link — this feature doesn't duplicate that).
+
 <a id="dsar-20"></a>
 ### DSAR-20 ตั้งค่า workflow แยกตามประเภทสิทธิ
 

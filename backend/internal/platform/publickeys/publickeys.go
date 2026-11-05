@@ -47,6 +47,12 @@ const (
 	// must match platform.public_keys.entity_type's own CHECK constraint, widened for this feature
 	// (00095_con24_campaign_public_key.sql).
 	EntityConsentCampaign = "consent_campaign"
+	// EntityDsarTrack (DSAR-19): the key names an org.legal_entities row directly, the same "no dedicated
+	// table" pattern EntityPreferenceCenter already uses — any of a tenant's own published tracking portals
+	// resolves the tenant only; the actual request is looked up by its own number plus the requester's own
+	// stored contact, not by this key's entity id. Its value must match platform.public_keys.entity_type's
+	// own CHECK constraint, widened for this feature (00098_dsar19_tracking_portal.sql).
+	EntityDsarTrack = "dsar_track"
 )
 
 // Key is a resolved public key.
@@ -127,8 +133,9 @@ func WithKey(ctx context.Context, k Key) context.Context { return context.WithVa
 
 // pathKeyRE matches every /public/v1 route shape that carries the key as its first path segment — one
 // alternative per module that has a public page (collection points, notices from PNG-06, dsar-forms from
-// DSAR-01, breach-report-forms from BRE-01, dsar-packages from DSAR-14, preference-centers from CON-18).
-var pathKeyRE = regexp.MustCompile(`^/public/v1/(?:collection-points|notices|dsar-forms|breach-report-forms|dsar-packages|cookie-banners|preference-centers)/([^/]+)`)
+// DSAR-01, breach-report-forms from BRE-01, dsar-packages from DSAR-14, preference-centers from CON-18,
+// dsar-tracking from DSAR-19).
+var pathKeyRE = regexp.MustCompile(`^/public/v1/(?:collection-points|notices|dsar-forms|breach-report-forms|dsar-packages|cookie-banners|preference-centers|dsar-tracking)/([^/]+)`)
 
 // Middleware resolves the public key of a /public/v1 request — from the path (e.g.
 // /public/v1/collection-points/{key} or /public/v1/notices/{key}) or the X-Public-Key header — refuses

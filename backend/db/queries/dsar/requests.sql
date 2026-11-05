@@ -30,6 +30,14 @@ SELECT id, request_no, request_type_id, legal_entity_id, channel, on_behalf, det
     due_at, verified_at, closed_at, outcome, rejection_reason_code, assignee_user_id, row_version, updated_at
 FROM dsar.requests WHERE id = $1;
 
+-- name: GetRequestByNoAndBlindIndex :one
+-- DSAR-19: resolves a request for self-service tracking by its own exact number and the requester's own
+-- stored contact, matched by blind index (never decrypted to search — rule 3). Either not matching reads
+-- identically (no rows) to the caller — no information leak either way.
+SELECT id, request_no, request_type_id, legal_entity_id, channel, on_behalf, details, status, received_at,
+    due_at, verified_at, closed_at, outcome, rejection_reason_code, assignee_user_id, row_version, updated_at
+FROM dsar.requests WHERE request_no = @request_no AND requester_blind_index = @requester_blind_index::bytea;
+
 -- name: ListRequests :many
 -- DSAR-17: request_no is matched as a case-insensitive substring (ม.39(7) "ค้นหาด้วยเลขคำขอ"); an email or
 -- other identifier is matched by exact blind index (never decrypted to search — rule 3), computed by the

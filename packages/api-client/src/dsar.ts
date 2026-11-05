@@ -551,3 +551,42 @@ export function useDsarSaveResponseTemplate(client: ApiClient) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["dsar", "response-templates"] }),
   });
 }
+
+// DSAR-19: self-service status tracking — the legal entity's own loginless portal link, the same
+// coalesce-on-first-publish shape CON-18's own preference centre already uses.
+export type DsarTrackingPortalLink = components["schemas"]["DsarTrackingPortalLink"];
+
+/** GET /admin/v1/dsar/tracking-portal/{legalEntityId}. */
+export function useDsarTrackingPortalLink(client: ApiClient, legalEntityId: string | undefined) {
+  return useQuery({
+    queryKey: ["dsar", "tracking-portal", legalEntityId ?? ""] as const,
+    enabled: !!legalEntityId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dsar/tracking-portal/{legalEntityId}", { params: { path: { legalEntityId: legalEntityId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useDsarTrackingPortalMutations(client: ApiClient) {
+  const qc = useQueryClient();
+  const refresh = (legalEntityId: string) => qc.invalidateQueries({ queryKey: ["dsar", "tracking-portal", legalEntityId] });
+  return {
+    publish: useMutation({
+      mutationFn: async (legalEntityId: string) => {
+        const { data, error } = await client.POST("/admin/v1/dsar/tracking-portal/{legalEntityId}/publish", { params: { path: { legalEntityId } } });
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: (_d, legalEntityId) => refresh(legalEntityId),
+    }),
+    retire: useMutation({
+      mutationFn: async (legalEntityId: string) => {
+        const { error } = await client.POST("/admin/v1/dsar/tracking-portal/{legalEntityId}/retire", { params: { path: { legalEntityId } } });
+        if (error) throw error;
+      },
+      onSuccess: (_d, legalEntityId) => refresh(legalEntityId),
+    }),
+  };
+}

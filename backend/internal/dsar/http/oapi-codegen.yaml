@@ -41,3 +41,6 @@ output-options:
     - dsarSaveResponseTemplate
     - dsarListRedactions
     - dsarRedactFile
+    - dsarGetTrackingPortal
+    - dsarPublishTrackingPortal
+    - dsarRetireTrackingPortal

@@ -3,10 +3,13 @@
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePermission } from "@pdpa/authz";
+import { Button } from "@pdpa/ui";
 import {
   createApiClient,
   useDsarIntakeForms,
   useDsarIntakeFormMutations,
+  useDsarTrackingPortalLink,
+  useDsarTrackingPortalMutations,
   useLegalEntities,
   type DsarIntakeForm,
 } from "@pdpa/api-client";
@@ -91,7 +94,62 @@ export function DsarFormsContent({ portalUrl }: { portalUrl: string }) {
         </tbody>
       </table>
       {rows.length === 0 && <p className="text-sm text-slate-500">{t("empty")}</p>}
+
+      <TrackingPortalPanel portalUrl={portalUrl} entities={entities} />
     </main>
+  );
+}
+
+// DSAR-19: one self-service status-tracking link per legal entity — any of a tenant's own published
+// tracking links works for any of that tenant's requests, so this mirrors CON-18's own preference-centre
+// panel exactly rather than being tied to one intake form.
+function TrackingPortalPanel({ portalUrl, entities }: { portalUrl: string; entities: { id: string; name_th: string }[] }) {
+  const t = useTranslations("dsarForms");
+  const locale = useLocale();
+  const canPublish = usePermission("dsar.form.publish");
+  const canRetire = usePermission("dsar.form.delete");
+  const client = useMemo(() => createApiClient("/api/bff"), []);
+  const [entityId, setEntityId] = useState("");
+  const chosen = entityId || entities[0]?.id || "";
+  const link = useDsarTrackingPortalLink(client, chosen || undefined);
+  const m = useDsarTrackingPortalMutations(client);
+  const url = link.data?.public_key ? `${portalUrl.replace(/\/$/, "")}/${locale}/dsar-status/${link.data.public_key}` : "";
+
+  return (
+    <section className="space-y-3 rounded-md border border-slate-200 bg-white p-4" data-testid="tracking-portal-panel">
+      <div>
+        <h2 className="font-medium">{t("tracking.title")}</h2>
+        <p className="text-sm text-slate-600">{t("tracking.intro")}</p>
+      </div>
+      <label className="block max-w-sm text-sm">
+        {t("legalEntity")}
+        <select className={INPUT} value={chosen} onChange={(e) => setEntityId(e.target.value)} data-testid="tracking-legal-entity">
+          {entities.map((e) => <option key={e.id} value={e.id}>{e.name_th}</option>)}
+        </select>
+      </label>
+      {link.data?.public_key ? (
+        <div className="space-y-2">
+          <div>
+            <p className="font-medium text-sm">{t("tracking.hostedLink")}</p>
+            <p className="flex flex-wrap items-center gap-2">
+              <a className="break-all text-sm text-sky-700 underline" href={url} target="_blank" rel="noreferrer" data-testid="tracking-link">{url}</a>
+            </p>
+          </div>
+          {canRetire && (
+            <Button variant="secondary" onClick={() => m.retire.mutate(chosen)} disabled={m.retire.isPending} data-testid="tracking-retire">
+              {t("tracking.retire")}
+            </Button>
+          )}
+        </div>
+      ) : (
+        canPublish && (
+          <button type="button" onClick={() => m.publish.mutate(chosen)} disabled={!chosen || m.publish.isPending}
+            className="rounded-md bg-blue-700 px-3 py-1.5 text-sm text-white disabled:opacity-60" data-testid="tracking-publish">
+            {t("tracking.publish")}
+          </button>
+        )
+      )}
+    </section>
   );
 }
 

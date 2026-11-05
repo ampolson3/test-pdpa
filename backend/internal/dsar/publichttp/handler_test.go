@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -219,6 +220,20 @@ func (fakePackageFiles) Get(ctx context.Context, id uuid.UUID) (files.File, erro
 func (fakePackageFiles) Open(ctx context.Context, id uuid.UUID) (io.ReadCloser, files.File, error) {
 	return nil, files.File{}, nil
 }
+func (fakePackageFiles) Upload(ctx context.Context, fileName string, r io.Reader) (files.File, error) {
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return files.File{}, err
+	}
+	id := uuid.New()
+	if _, err := pdb.MustTxFromContext(ctx).Exec(ctx,
+		`INSERT INTO platform.files (id, tenant_id, bucket, object_key, file_name, mime_type, size_bytes, sha256, av_status)
+		 VALUES ($1, current_setting('app.tenant_id')::uuid, 'test', $2, $3, 'application/octet-stream', $4, 'x', 'pending')`,
+		id, id.String(), fileName, len(b)); err != nil {
+		return files.File{}, err
+	}
+	return files.File{ID: id, FileName: fileName}, nil
+}
 func (fakePackageFiles) SaveGenerated(ctx context.Context, fileName string, r io.Reader, entityType string, entityID uuid.UUID) (files.File, error) {
 	return files.File{}, nil
 }
@@ -379,5 +394,194 @@ func TestDsarPublicPackageEndpoints_Contract(t *testing.T) {
 	code2, body2 := do("POST", "/public/v1/dsar-packages/"+publicKey+"/download", idemKey, map[string]any{"access_code": accessCode})
 	if code2 != 200 || body2 != body {
 		t.Errorf("idempotent replay: %d %s, want the original %d %s", code2, body2, code, body)
+	}
+}
+
+// TestDsarPublicTrackingEndpoints_Contract is DSAR-19's own contract test: the public start-verification/
+// status/documents chain behind the real validator + publickeys + Idempotency + Tx chain. An unknown key
+// is 404; starting a verification for a request whose own stored contact doesn't match is 404 too — no
+// leak either way; the full start → status → submit-document chain succeeds with the right OTP code.
+func TestDsarPublicTrackingEndpoints_Contract(t *testing.T) {
+	ctx := context.Background()
+	rdb := redis.NewClient(&redis.Options{Addr: envOr("TEST_REDIS_ADDR", "localhost:6379")})
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		t.Skipf("no Redis: %v", err)
+	}
+	t.Cleanup(func() { rdb.Close() })
+
+	app, owner := dbtest.Pool(t), dbtest.OwnerPool(t)
+	tenant := dbtest.SeedTenant(t, ctx, app, dbtest.PlatformPool(t), "dsartrackpublichttp")
+	t.Cleanup(func() {
+		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
+			tx := pdb.MustTxFromContext(ctx)
+			for _, q := range []string{
+				`DELETE FROM dsar.verifications`, `DELETE FROM iam.subject_verifications`,
+				`DELETE FROM platform.public_keys`, `DELETE FROM platform.files`,
+				`DELETE FROM dsar.requests`, `DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
+			} {
+				_, _ = tx.Exec(ctx, q)
+			}
+			return nil
+		})
+	})
+
+	orgSvc := &orgservice.Service{Audit: audit.New()}
+	ropaSvc := &ropaservice.Service{Audit: audit.New(), Org: orgSvc}
+	versioningSvc := wiring.Versioning(nil, audit.New())
+	docsSvc := wiring.Docs(versioningSvc, nil, nil, audit.New(), nil)
+	docsSvc.RegisterVersioning()
+	keyring := &crypto.Keyring{KEK: crypto.NewLocalKEK()}
+	svc := &dsarservice.Service{Audit: audit.New(), Org: orgSvc, Docs: docsSvc, Ropa: ropaSvc, Keyring: keyring, Files: fakePackageFiles{}}
+	notifier := &fakeNotifier{}
+	svc.Verification = wiring.IamVerification(keyring, nil, nil)
+	svc.Verification.Notify = notifier
+
+	var publicKey, requestNo string
+	if err := pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		le, err := orgSvc.SaveLegalEntity(ctx, orgservice.LegalEntity{NameTh: "บริษัท ติดตามพับลิก จำกัด", IsController: true}, 0)
+		if err != nil {
+			return err
+		}
+		publicKey, err = svc.PublishTrackingPortal(ctx, le.ID)
+		if err != nil {
+			return err
+		}
+		types, err := svc.ListRequestTypes(ctx)
+		if err != nil || len(types) == 0 {
+			t.Fatal(err, "expected seeded request types")
+		}
+		req, err := svc.CreateRequest(ctx, dsarservice.CreateRequestInput{RequestTypeID: types[0].ID, LegalEntityID: le.ID,
+			Channel: "web", RequesterName: "ทดสอบ ติดตาม", RequesterContact: "track-public@example.com", ContactKind: crypto.KindEmail})
+		if err != nil {
+			return err
+		}
+		requestNo = req.RequestNo
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	validateMw, _ := validate.Middleware(spec, nil)
+	requestError := func(w http.ResponseWriter, r *http.Request, err error) {
+		httpx.WriteProblem(w, r, httpx.RequestInvalid(err.Error()))
+	}
+	responseError := func(w http.ResponseWriter, r *http.Request, err error) {
+		if p, ok := err.(httpx.Problem); ok {
+			httpx.WriteProblem(w, r, p)
+			return
+		}
+		httpx.WriteProblem(w, r, httpx.Internal())
+	}
+	idem := idempotency.New(rdb)
+	auditSvc := audit.New()
+
+	r := chi.NewRouter()
+	r.Use(validateMw)
+	r.Group(func(g chi.Router) {
+		g.Use(publickeys.Middleware(app), idem.Handler, auditSvc.TxMiddleware(app))
+		strict := dsarpublichttp.NewStrictHandlerWithOptions(dsarpublichttp.NewStrict(svc), nil,
+			dsarpublichttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		dsarpublichttp.HandlerWithOptions(strict, dsarpublichttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+	})
+	srv := httptest.NewServer(r)
+	t.Cleanup(srv.Close)
+
+	do := func(method, path string, idemKey string, body any) (int, string) {
+		var buf bytes.Buffer
+		if body != nil {
+			_ = json.NewEncoder(&buf).Encode(body)
+		}
+		req, _ := http.NewRequest(method, srv.URL+path, &buf)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		if idemKey != "" {
+			req.Header.Set("Idempotency-Key", idemKey)
+		}
+		res, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer res.Body.Close()
+		var out bytes.Buffer
+		_, _ = out.ReadFrom(res.Body)
+		return res.StatusCode, out.String()
+	}
+
+	if code, _ := do("POST", "/public/v1/dsar-tracking/not-a-real-key-not-a-real-key/start-verification", uuid.NewString(),
+		map[string]any{"request_no": requestNo, "method": "otp_email", "contact": "track-public@example.com"}); code != 404 {
+		t.Errorf("unknown key: %d, want 404", code)
+	}
+
+	startPath := "/public/v1/dsar-tracking/" + publicKey + "/start-verification"
+	if code, _ := do("POST", startPath, uuid.NewString(),
+		map[string]any{"request_no": requestNo, "method": "otp_email", "contact": "wrong@example.com"}); code != 404 {
+		t.Errorf("mismatched contact: %d, want 404", code)
+	}
+
+	code, body := do("POST", startPath, uuid.NewString(),
+		map[string]any{"request_no": requestNo, "method": "otp_email", "contact": "track-public@example.com"})
+	if code != 201 || !strings.Contains(body, `"verification_id"`) || !strings.Contains(body, `"channel":"email"`) {
+		t.Fatalf("start verification: %d %s", code, body)
+	}
+	var ref dsarpublichttp.DsarTrackVerificationResult
+	_ = json.Unmarshal([]byte(body), &ref)
+
+	if len(notifier.sent) != 1 {
+		t.Fatalf("expected one OTP sent, got %d", len(notifier.sent))
+	}
+	otpCode, _ := notifier.sent[0].Vars["code"].(string)
+	if otpCode == "" {
+		t.Fatal("no OTP code captured")
+	}
+
+	statusPath := "/public/v1/dsar-tracking/" + publicKey + "/status"
+	if code, _ := do("POST", statusPath, uuid.NewString(),
+		map[string]any{"request_no": requestNo, "method": "otp_email", "contact": "track-public@example.com",
+			"verification_id": ref.VerificationId, "code": "000000"}); code != 422 {
+		t.Errorf("wrong otp code: %d, want 422", code)
+	}
+	code, body = do("POST", statusPath, uuid.NewString(),
+		map[string]any{"request_no": requestNo, "method": "otp_email", "contact": "track-public@example.com",
+			"verification_id": ref.VerificationId, "code": otpCode})
+	if code != 200 || !strings.Contains(body, `"status":"received"`) || !strings.Contains(body, `"request_no":"`+requestNo+`"`) {
+		t.Fatalf("get tracked status: %d %s", code, body)
+	}
+
+	// A later call in the same session may omit the code.
+	code, body = do("POST", statusPath, uuid.NewString(),
+		map[string]any{"request_no": requestNo, "method": "otp_email", "contact": "track-public@example.com",
+			"verification_id": ref.VerificationId})
+	if code != 200 || !strings.Contains(body, `"status":"received"`) {
+		t.Errorf("get tracked status without code: %d %s", code, body)
+	}
+
+	// Submit an additional document: multipart, text fields before the file part.
+	var mb bytes.Buffer
+	mw := multipart.NewWriter(&mb)
+	_ = mw.WriteField("request_no", requestNo)
+	_ = mw.WriteField("method", "otp_email")
+	_ = mw.WriteField("contact", "track-public@example.com")
+	_ = mw.WriteField("verification_id", ref.VerificationId.String())
+	fw, _ := mw.CreateFormFile("file", "evidence.txt")
+	_, _ = fw.Write([]byte("ขอส่งเอกสารเพิ่มเติม"))
+	_ = mw.Close()
+
+	req, _ := http.NewRequest("POST", srv.URL+"/public/v1/dsar-tracking/"+publicKey+"/documents", &mb)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.Header.Set("Idempotency-Key", uuid.NewString())
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	_, _ = out.ReadFrom(res.Body)
+	res.Body.Close()
+	if res.StatusCode != 201 || !strings.Contains(out.String(), `"file_id"`) {
+		t.Fatalf("submit document: %d %s", res.StatusCode, out.String())
 	}
 }

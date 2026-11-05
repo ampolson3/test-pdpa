@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"time"
 
@@ -17,6 +18,30 @@ import (
 	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for DsarOutcome.
+const (
+	DsarOutcomeFulfilled          DsarOutcome = "fulfilled"
+	DsarOutcomePartiallyFulfilled DsarOutcome = "partially_fulfilled"
+	DsarOutcomeRejected           DsarOutcome = "rejected"
+	DsarOutcomeWithdrawn          DsarOutcome = "withdrawn"
+)
+
+// Valid indicates whether the value is a known member of the DsarOutcome enum.
+func (e DsarOutcome) Valid() bool {
+	switch e {
+	case DsarOutcomeFulfilled:
+		return true
+	case DsarOutcomePartiallyFulfilled:
+		return true
+	case DsarOutcomeRejected:
+		return true
+	case DsarOutcomeWithdrawn:
+		return true
+	default:
+		return false
+	}
+}
 
 // Defines values for DsarPackageFormat.
 const (
@@ -86,34 +111,34 @@ func (e DsarPublicSubmissionInputRequestTypeCode) Valid() bool {
 
 // Defines values for DsarRequestStatus.
 const (
-	AwaitingInfo DsarRequestStatus = "awaiting_info"
-	Completed    DsarRequestStatus = "completed"
-	InProgress   DsarRequestStatus = "in_progress"
-	InReview     DsarRequestStatus = "in_review"
-	Received     DsarRequestStatus = "received"
-	Rejected     DsarRequestStatus = "rejected"
-	Verifying    DsarRequestStatus = "verifying"
-	Withdrawn    DsarRequestStatus = "withdrawn"
+	DsarRequestStatusAwaitingInfo DsarRequestStatus = "awaiting_info"
+	DsarRequestStatusCompleted    DsarRequestStatus = "completed"
+	DsarRequestStatusInProgress   DsarRequestStatus = "in_progress"
+	DsarRequestStatusInReview     DsarRequestStatus = "in_review"
+	DsarRequestStatusReceived     DsarRequestStatus = "received"
+	DsarRequestStatusRejected     DsarRequestStatus = "rejected"
+	DsarRequestStatusVerifying    DsarRequestStatus = "verifying"
+	DsarRequestStatusWithdrawn    DsarRequestStatus = "withdrawn"
 )
 
 // Valid indicates whether the value is a known member of the DsarRequestStatus enum.
 func (e DsarRequestStatus) Valid() bool {
 	switch e {
-	case AwaitingInfo:
+	case DsarRequestStatusAwaitingInfo:
 		return true
-	case Completed:
+	case DsarRequestStatusCompleted:
 		return true
-	case InProgress:
+	case DsarRequestStatusInProgress:
 		return true
-	case InReview:
+	case DsarRequestStatusInReview:
 		return true
-	case Received:
+	case DsarRequestStatusReceived:
 		return true
-	case Rejected:
+	case DsarRequestStatusRejected:
 		return true
-	case Verifying:
+	case DsarRequestStatusVerifying:
 		return true
-	case Withdrawn:
+	case DsarRequestStatusWithdrawn:
 		return true
 	default:
 		return false
@@ -192,21 +217,75 @@ func (e DsarSubtaskAction) Valid() bool {
 	}
 }
 
+// Defines values for DsarTrackStartInputMethod.
+const (
+	DsarTrackStartInputMethodOtpEmail DsarTrackStartInputMethod = "otp_email"
+	DsarTrackStartInputMethodOtpSms   DsarTrackStartInputMethod = "otp_sms"
+)
+
+// Valid indicates whether the value is a known member of the DsarTrackStartInputMethod enum.
+func (e DsarTrackStartInputMethod) Valid() bool {
+	switch e {
+	case DsarTrackStartInputMethodOtpEmail:
+		return true
+	case DsarTrackStartInputMethodOtpSms:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarTrackStatusInputMethod.
+const (
+	DsarTrackStatusInputMethodOtpEmail DsarTrackStatusInputMethod = "otp_email"
+	DsarTrackStatusInputMethodOtpSms   DsarTrackStatusInputMethod = "otp_sms"
+)
+
+// Valid indicates whether the value is a known member of the DsarTrackStatusInputMethod enum.
+func (e DsarTrackStatusInputMethod) Valid() bool {
+	switch e {
+	case DsarTrackStatusInputMethodOtpEmail:
+		return true
+	case DsarTrackStatusInputMethodOtpSms:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarTrackVerificationResultChannel.
+const (
+	Email DsarTrackVerificationResultChannel = "email"
+	Sms   DsarTrackVerificationResultChannel = "sms"
+)
+
+// Valid indicates whether the value is a known member of the DsarTrackVerificationResultChannel enum.
+func (e DsarTrackVerificationResultChannel) Valid() bool {
+	switch e {
+	case Email:
+		return true
+	case Sms:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DsarVerificationMethod.
 const (
-	IdDocument DsarVerificationMethod = "id_document"
-	OtpEmail   DsarVerificationMethod = "otp_email"
-	OtpSms     DsarVerificationMethod = "otp_sms"
+	DsarVerificationMethodIdDocument DsarVerificationMethod = "id_document"
+	DsarVerificationMethodOtpEmail   DsarVerificationMethod = "otp_email"
+	DsarVerificationMethodOtpSms     DsarVerificationMethod = "otp_sms"
 )
 
 // Valid indicates whether the value is a known member of the DsarVerificationMethod enum.
 func (e DsarVerificationMethod) Valid() bool {
 	switch e {
-	case IdDocument:
+	case DsarVerificationMethodIdDocument:
 		return true
-	case OtpEmail:
+	case DsarVerificationMethodOtpEmail:
 		return true
-	case OtpSms:
+	case DsarVerificationMethodOtpSms:
 		return true
 	default:
 		return false
@@ -384,6 +463,81 @@ func (e DsarDownloadPublicPackageParamsAcceptLanguage) Valid() bool {
 	}
 }
 
+// Defines values for DsarSubmitTrackingDocumentParamsAcceptLanguage.
+const (
+	DsarSubmitTrackingDocumentParamsAcceptLanguageEn DsarSubmitTrackingDocumentParamsAcceptLanguage = "en"
+	DsarSubmitTrackingDocumentParamsAcceptLanguageTh DsarSubmitTrackingDocumentParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DsarSubmitTrackingDocumentParamsAcceptLanguage enum.
+func (e DsarSubmitTrackingDocumentParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DsarSubmitTrackingDocumentParamsAcceptLanguageEn:
+		return true
+	case DsarSubmitTrackingDocumentParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarSubmitTrackingDocumentMultipartBodyMethod.
+const (
+	DsarSubmitTrackingDocumentMultipartBodyMethodOtpEmail DsarSubmitTrackingDocumentMultipartBodyMethod = "otp_email"
+	DsarSubmitTrackingDocumentMultipartBodyMethodOtpSms   DsarSubmitTrackingDocumentMultipartBodyMethod = "otp_sms"
+)
+
+// Valid indicates whether the value is a known member of the DsarSubmitTrackingDocumentMultipartBodyMethod enum.
+func (e DsarSubmitTrackingDocumentMultipartBodyMethod) Valid() bool {
+	switch e {
+	case DsarSubmitTrackingDocumentMultipartBodyMethodOtpEmail:
+		return true
+	case DsarSubmitTrackingDocumentMultipartBodyMethodOtpSms:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarStartTrackingVerificationParamsAcceptLanguage.
+const (
+	DsarStartTrackingVerificationParamsAcceptLanguageEn DsarStartTrackingVerificationParamsAcceptLanguage = "en"
+	DsarStartTrackingVerificationParamsAcceptLanguageTh DsarStartTrackingVerificationParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DsarStartTrackingVerificationParamsAcceptLanguage enum.
+func (e DsarStartTrackingVerificationParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DsarStartTrackingVerificationParamsAcceptLanguageEn:
+		return true
+	case DsarStartTrackingVerificationParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarGetTrackedStatusParamsAcceptLanguage.
+const (
+	DsarGetTrackedStatusParamsAcceptLanguageEn DsarGetTrackedStatusParamsAcceptLanguage = "en"
+	DsarGetTrackedStatusParamsAcceptLanguageTh DsarGetTrackedStatusParamsAcceptLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DsarGetTrackedStatusParamsAcceptLanguage enum.
+func (e DsarGetTrackedStatusParamsAcceptLanguage) Valid() bool {
+	switch e {
+	case DsarGetTrackedStatusParamsAcceptLanguageEn:
+		return true
+	case DsarGetTrackedStatusParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// DsarOutcome defines model for DsarOutcome.
+type DsarOutcome string
+
 // DsarPackageFormat defines model for DsarPackageFormat.
 type DsarPackageFormat string
 
@@ -461,6 +615,62 @@ type DsarRequestTypeCode string
 
 // DsarSubtaskAction defines model for DsarSubtaskAction.
 type DsarSubtaskAction string
+
+// DsarTrackDocumentResult defines model for DsarTrackDocumentResult.
+type DsarTrackDocumentResult struct {
+	// FileId UUIDv7 generated by the API
+	FileId Uuid `json:"file_id"`
+}
+
+// DsarTrackStartInput defines model for DsarTrackStartInput.
+type DsarTrackStartInput struct {
+	// Contact The exact contact the request was filed with — matched by blind index, never decrypted to search (rule 3)
+	Contact *string                   `json:"contact,omitempty"`
+	Method  DsarTrackStartInputMethod `json:"method"`
+
+	// RequestNo The request number the data subject was given at intake (e.g. DSAR-2026-0001)
+	RequestNo string `json:"request_no"`
+}
+
+// DsarTrackStartInputMethod defines model for DsarTrackStartInput.Method.
+type DsarTrackStartInputMethod string
+
+// DsarTrackStatusInput defines model for DsarTrackStatusInput.
+type DsarTrackStatusInput struct {
+	// Code Omit once already verified in this session (consentViewPreferenceCenter's own convention)
+	Code      *string                    `json:"code,omitempty"`
+	Contact   *string                    `json:"contact,omitempty"`
+	Method    DsarTrackStatusInputMethod `json:"method"`
+	RequestNo string                     `json:"request_no"`
+
+	// VerificationId UUIDv7 generated by the API
+	VerificationId Uuid `json:"verification_id"`
+}
+
+// DsarTrackStatusInputMethod defines model for DsarTrackStatusInput.Method.
+type DsarTrackStatusInputMethod string
+
+// DsarTrackVerificationResult defines model for DsarTrackVerificationResult.
+type DsarTrackVerificationResult struct {
+	Channel DsarTrackVerificationResultChannel `json:"channel"`
+
+	// VerificationId UUIDv7 generated by the API
+	VerificationId Uuid `json:"verification_id"`
+}
+
+// DsarTrackVerificationResultChannel defines model for DsarTrackVerificationResult.Channel.
+type DsarTrackVerificationResultChannel string
+
+// DsarTrackedStatus defines model for DsarTrackedStatus.
+type DsarTrackedStatus struct {
+	ClosedAt            *time.Time        `json:"closed_at,omitempty"`
+	DueAt               time.Time         `json:"due_at"`
+	Outcome             *DsarOutcome      `json:"outcome,omitempty"`
+	ReceivedAt          time.Time         `json:"received_at"`
+	RejectionReasonCode *string           `json:"rejection_reason_code,omitempty"`
+	RequestNo           string            `json:"request_no"`
+	Status              DsarRequestStatus `json:"status"`
+}
 
 // DsarVerification defines model for DsarVerification.
 type DsarVerification struct {
@@ -609,6 +819,55 @@ type DsarDownloadPublicPackageParams struct {
 // DsarDownloadPublicPackageParamsAcceptLanguage defines parameters for DsarDownloadPublicPackage.
 type DsarDownloadPublicPackageParamsAcceptLanguage string
 
+// DsarSubmitTrackingDocumentMultipartBody defines parameters for DsarSubmitTrackingDocument.
+type DsarSubmitTrackingDocumentMultipartBody struct {
+	Code           *string                                       `json:"code,omitempty"`
+	Contact        string                                        `json:"contact"`
+	File           openapi_types.File                            `json:"file"`
+	Method         DsarSubmitTrackingDocumentMultipartBodyMethod `json:"method"`
+	RequestNo      string                                        `json:"request_no"`
+	VerificationId string                                        `json:"verification_id"`
+}
+
+// DsarSubmitTrackingDocumentParams defines parameters for DsarSubmitTrackingDocument.
+type DsarSubmitTrackingDocumentParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DsarSubmitTrackingDocumentParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IdempotencyKey Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it).
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// DsarSubmitTrackingDocumentParamsAcceptLanguage defines parameters for DsarSubmitTrackingDocument.
+type DsarSubmitTrackingDocumentParamsAcceptLanguage string
+
+// DsarSubmitTrackingDocumentMultipartBodyMethod defines parameters for DsarSubmitTrackingDocument.
+type DsarSubmitTrackingDocumentMultipartBodyMethod string
+
+// DsarStartTrackingVerificationParams defines parameters for DsarStartTrackingVerification.
+type DsarStartTrackingVerificationParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DsarStartTrackingVerificationParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IdempotencyKey Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it).
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// DsarStartTrackingVerificationParamsAcceptLanguage defines parameters for DsarStartTrackingVerification.
+type DsarStartTrackingVerificationParamsAcceptLanguage string
+
+// DsarGetTrackedStatusParams defines parameters for DsarGetTrackedStatus.
+type DsarGetTrackedStatusParams struct {
+	// AcceptLanguage Language of messages and localized fields (default th)
+	AcceptLanguage *DsarGetTrackedStatusParamsAcceptLanguage `json:"Accept-Language,omitempty"`
+
+	// IdempotencyKey Client-generated unique key (UUID recommended). Kept 24 hours per tenant and principal. Missing → 428 (the validator maps it).
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// DsarGetTrackedStatusParamsAcceptLanguage defines parameters for DsarGetTrackedStatus.
+type DsarGetTrackedStatusParamsAcceptLanguage string
+
 // DsarSubmitPublicRequestJSONRequestBody defines body for DsarSubmitPublicRequest for application/json ContentType.
 type DsarSubmitPublicRequestJSONRequestBody = DsarPublicSubmissionInput
 
@@ -617,6 +876,15 @@ type DsarConfirmPublicVerificationJSONRequestBody DsarConfirmPublicVerificationJ
 
 // DsarDownloadPublicPackageJSONRequestBody defines body for DsarDownloadPublicPackage for application/json ContentType.
 type DsarDownloadPublicPackageJSONRequestBody DsarDownloadPublicPackageJSONBody
+
+// DsarSubmitTrackingDocumentMultipartRequestBody defines body for DsarSubmitTrackingDocument for multipart/form-data ContentType.
+type DsarSubmitTrackingDocumentMultipartRequestBody DsarSubmitTrackingDocumentMultipartBody
+
+// DsarStartTrackingVerificationJSONRequestBody defines body for DsarStartTrackingVerification for application/json ContentType.
+type DsarStartTrackingVerificationJSONRequestBody = DsarTrackStartInput
+
+// DsarGetTrackedStatusJSONRequestBody defines body for DsarGetTrackedStatus for application/json ContentType.
+type DsarGetTrackedStatusJSONRequestBody = DsarTrackStatusInput
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -635,6 +903,15 @@ type ServerInterface interface {
 	// DsarDownloadPublicPackage Download the package's file (DSAR-14's own acceptance criterion — the link expires per its setting and every download is logged)
 	// (POST /public/v1/dsar-packages/{key}/download)
 	DsarDownloadPublicPackage(w http.ResponseWriter, r *http.Request, key string, params DsarDownloadPublicPackageParams)
+	// DsarSubmitTrackingDocument Submit an additional document to the request, from the data subject themselves (DSAR-19's own acceptance criterion)
+	// (POST /public/v1/dsar-tracking/{key}/documents)
+	DsarSubmitTrackingDocument(w http.ResponseWriter, r *http.Request, key string, params DsarSubmitTrackingDocumentParams)
+	// DsarStartTrackingVerification Send an OTP to the requester's own stored contact for a request they're tracking (DSAR-19)
+	// (POST /public/v1/dsar-tracking/{key}/start-verification)
+	DsarStartTrackingVerification(w http.ResponseWriter, r *http.Request, key string, params DsarStartTrackingVerificationParams)
+	// DsarGetTrackedStatus The request's own current status, due date and outcome (DSAR-19's own acceptance criterion)
+	// (POST /public/v1/dsar-tracking/{key}/status)
+	DsarGetTrackedStatus(w http.ResponseWriter, r *http.Request, key string, params DsarGetTrackedStatusParams)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -668,6 +945,24 @@ func (_ Unimplemented) DsarGetPublicPackage(w http.ResponseWriter, r *http.Reque
 // DsarDownloadPublicPackage Download the package's file (DSAR-14's own acceptance criterion — the link expires per its setting and every download is logged)
 // (POST /public/v1/dsar-packages/{key}/download)
 func (_ Unimplemented) DsarDownloadPublicPackage(w http.ResponseWriter, r *http.Request, key string, params DsarDownloadPublicPackageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DsarSubmitTrackingDocument Submit an additional document to the request, from the data subject themselves (DSAR-19's own acceptance criterion)
+// (POST /public/v1/dsar-tracking/{key}/documents)
+func (_ Unimplemented) DsarSubmitTrackingDocument(w http.ResponseWriter, r *http.Request, key string, params DsarSubmitTrackingDocumentParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DsarStartTrackingVerification Send an OTP to the requester's own stored contact for a request they're tracking (DSAR-19)
+// (POST /public/v1/dsar-tracking/{key}/start-verification)
+func (_ Unimplemented) DsarStartTrackingVerification(w http.ResponseWriter, r *http.Request, key string, params DsarStartTrackingVerificationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DsarGetTrackedStatus The request's own current status, due date and outcome (DSAR-19's own acceptance criterion)
+// (POST /public/v1/dsar-tracking/{key}/status)
+func (_ Unimplemented) DsarGetTrackedStatus(w http.ResponseWriter, r *http.Request, key string, params DsarGetTrackedStatusParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1008,6 +1303,225 @@ func (siw *ServerInterfaceWrapper) DsarDownloadPublicPackage(w http.ResponseWrit
 	handler.ServeHTTP(w, r)
 }
 
+// DsarSubmitTrackingDocument operation middleware
+func (siw *ServerInterfaceWrapper) DsarSubmitTrackingDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", chi.URLParam(r, "key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DsarSubmitTrackingDocumentParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DsarSubmitTrackingDocumentParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DsarSubmitTrackingDocument(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DsarStartTrackingVerification operation middleware
+func (siw *ServerInterfaceWrapper) DsarStartTrackingVerification(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", chi.URLParam(r, "key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DsarStartTrackingVerificationParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DsarStartTrackingVerificationParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DsarStartTrackingVerification(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DsarGetTrackedStatus operation middleware
+func (siw *ServerInterfaceWrapper) DsarGetTrackedStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "key" -------------
+	var key string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "key", chi.URLParam(r, "key"), &key, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "key", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DsarGetTrackedStatusParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Accept-Language" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Accept-Language")]; found {
+		var AcceptLanguage DsarGetTrackedStatusParamsAcceptLanguage
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Accept-Language", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Accept-Language", valueList[0], &AcceptLanguage, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Accept-Language", Err: err})
+			return
+		}
+
+		params.AcceptLanguage = &AcceptLanguage
+
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DsarGetTrackedStatus(w, r, key, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -1135,6 +1649,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/public/v1/dsar-packages/{key}/download", wrapper.DsarDownloadPublicPackage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/public/v1/dsar-tracking/{key}/start-verification", wrapper.DsarStartTrackingVerification)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/public/v1/dsar-tracking/{key}/status", wrapper.DsarGetTrackedStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/public/v1/dsar-tracking/{key}/documents", wrapper.DsarSubmitTrackingDocument)
 	})
 
 	return r
@@ -1521,6 +2044,336 @@ func (response DsarDownloadPublicPackage422ApplicationProblemPlusJSONResponse) V
 	return err
 }
 
+type DsarSubmitTrackingDocumentRequestObject struct {
+	Key    string `json:"key"`
+	Params DsarSubmitTrackingDocumentParams
+	Body   *multipart.Reader
+}
+
+type DsarSubmitTrackingDocumentResponseObject interface {
+	VisitDsarSubmitTrackingDocumentResponse(w http.ResponseWriter) error
+}
+
+type DsarSubmitTrackingDocument201JSONResponse DsarTrackDocumentResult
+
+func (response DsarSubmitTrackingDocument201JSONResponse) VisitDsarSubmitTrackingDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSubmitTrackingDocument400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSubmitTrackingDocument400ApplicationProblemPlusJSONResponse) VisitDsarSubmitTrackingDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSubmitTrackingDocument404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSubmitTrackingDocument404ApplicationProblemPlusJSONResponse) VisitDsarSubmitTrackingDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSubmitTrackingDocument413ApplicationProblemPlusJSONResponse Problem
+
+func (response DsarSubmitTrackingDocument413ApplicationProblemPlusJSONResponse) VisitDsarSubmitTrackingDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(413)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSubmitTrackingDocument415ApplicationProblemPlusJSONResponse Problem
+
+func (response DsarSubmitTrackingDocument415ApplicationProblemPlusJSONResponse) VisitDsarSubmitTrackingDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(415)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSubmitTrackingDocument422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSubmitTrackingDocument422ApplicationProblemPlusJSONResponse) VisitDsarSubmitTrackingDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSubmitTrackingDocument428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSubmitTrackingDocument428ApplicationProblemPlusJSONResponse) VisitDsarSubmitTrackingDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarStartTrackingVerificationRequestObject struct {
+	Key    string `json:"key"`
+	Params DsarStartTrackingVerificationParams
+	Body   *DsarStartTrackingVerificationJSONRequestBody
+}
+
+type DsarStartTrackingVerificationResponseObject interface {
+	VisitDsarStartTrackingVerificationResponse(w http.ResponseWriter) error
+}
+
+type DsarStartTrackingVerification201JSONResponse DsarTrackVerificationResult
+
+func (response DsarStartTrackingVerification201JSONResponse) VisitDsarStartTrackingVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarStartTrackingVerification400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DsarStartTrackingVerification400ApplicationProblemPlusJSONResponse) VisitDsarStartTrackingVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarStartTrackingVerification404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DsarStartTrackingVerification404ApplicationProblemPlusJSONResponse) VisitDsarStartTrackingVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarStartTrackingVerification422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DsarStartTrackingVerification422ApplicationProblemPlusJSONResponse) VisitDsarStartTrackingVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarStartTrackingVerification428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response DsarStartTrackingVerification428ApplicationProblemPlusJSONResponse) VisitDsarStartTrackingVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarStartTrackingVerification429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response DsarStartTrackingVerification429ApplicationProblemPlusJSONResponse) VisitDsarStartTrackingVerificationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarGetTrackedStatusRequestObject struct {
+	Key    string `json:"key"`
+	Params DsarGetTrackedStatusParams
+	Body   *DsarGetTrackedStatusJSONRequestBody
+}
+
+type DsarGetTrackedStatusResponseObject interface {
+	VisitDsarGetTrackedStatusResponse(w http.ResponseWriter) error
+}
+
+type DsarGetTrackedStatus200JSONResponse DsarTrackedStatus
+
+func (response DsarGetTrackedStatus200JSONResponse) VisitDsarGetTrackedStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarGetTrackedStatus400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DsarGetTrackedStatus400ApplicationProblemPlusJSONResponse) VisitDsarGetTrackedStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarGetTrackedStatus404ApplicationProblemPlusJSONResponse struct {
+	NotFoundApplicationProblemPlusJSONResponse
+}
+
+func (response DsarGetTrackedStatus404ApplicationProblemPlusJSONResponse) VisitDsarGetTrackedStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarGetTrackedStatus422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DsarGetTrackedStatus422ApplicationProblemPlusJSONResponse) VisitDsarGetTrackedStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarGetTrackedStatus428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response DsarGetTrackedStatus428ApplicationProblemPlusJSONResponse) VisitDsarGetTrackedStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarGetTrackedStatus429ApplicationProblemPlusJSONResponse struct {
+	TooManyRequestsApplicationProblemPlusJSONResponse
+}
+
+func (response DsarGetTrackedStatus429ApplicationProblemPlusJSONResponse) VisitDsarGetTrackedStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	if response.Headers.RetryAfter != nil {
+		w.Header().Set("Retry-After", fmt.Sprint(*response.Headers.RetryAfter))
+	}
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// DsarGetPublicIntakeForm An active intake form's right-type picker (DSAR-01, no login)
@@ -1538,6 +2391,15 @@ type StrictServerInterface interface {
 	// DsarDownloadPublicPackage Download the package's file (DSAR-14's own acceptance criterion — the link expires per its setting and every download is logged)
 	// (POST /public/v1/dsar-packages/{key}/download)
 	DsarDownloadPublicPackage(ctx context.Context, request DsarDownloadPublicPackageRequestObject) (DsarDownloadPublicPackageResponseObject, error)
+	// DsarSubmitTrackingDocument Submit an additional document to the request, from the data subject themselves (DSAR-19's own acceptance criterion)
+	// (POST /public/v1/dsar-tracking/{key}/documents)
+	DsarSubmitTrackingDocument(ctx context.Context, request DsarSubmitTrackingDocumentRequestObject) (DsarSubmitTrackingDocumentResponseObject, error)
+	// DsarStartTrackingVerification Send an OTP to the requester's own stored contact for a request they're tracking (DSAR-19)
+	// (POST /public/v1/dsar-tracking/{key}/start-verification)
+	DsarStartTrackingVerification(ctx context.Context, request DsarStartTrackingVerificationRequestObject) (DsarStartTrackingVerificationResponseObject, error)
+	// DsarGetTrackedStatus The request's own current status, due date and outcome (DSAR-19's own acceptance criterion)
+	// (POST /public/v1/dsar-tracking/{key}/status)
+	DsarGetTrackedStatus(ctx context.Context, request DsarGetTrackedStatusRequestObject) (DsarGetTrackedStatusResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -1732,6 +2594,108 @@ func (sh *strictHandler) DsarDownloadPublicPackage(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DsarDownloadPublicPackageResponseObject); ok {
 		if err := validResponse.VisitDsarDownloadPublicPackageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DsarSubmitTrackingDocument operation middleware
+func (sh *strictHandler) DsarSubmitTrackingDocument(w http.ResponseWriter, r *http.Request, key string, params DsarSubmitTrackingDocumentParams) {
+	var request DsarSubmitTrackingDocumentRequestObject
+
+	request.Key = key
+	request.Params = params
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DsarSubmitTrackingDocument(ctx, request.(DsarSubmitTrackingDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DsarSubmitTrackingDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DsarSubmitTrackingDocumentResponseObject); ok {
+		if err := validResponse.VisitDsarSubmitTrackingDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DsarStartTrackingVerification operation middleware
+func (sh *strictHandler) DsarStartTrackingVerification(w http.ResponseWriter, r *http.Request, key string, params DsarStartTrackingVerificationParams) {
+	var request DsarStartTrackingVerificationRequestObject
+
+	request.Key = key
+	request.Params = params
+
+	var body DsarStartTrackingVerificationJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DsarStartTrackingVerification(ctx, request.(DsarStartTrackingVerificationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DsarStartTrackingVerification")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DsarStartTrackingVerificationResponseObject); ok {
+		if err := validResponse.VisitDsarStartTrackingVerificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DsarGetTrackedStatus operation middleware
+func (sh *strictHandler) DsarGetTrackedStatus(w http.ResponseWriter, r *http.Request, key string, params DsarGetTrackedStatusParams) {
+	var request DsarGetTrackedStatusRequestObject
+
+	request.Key = key
+	request.Params = params
+
+	var body DsarGetTrackedStatusJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DsarGetTrackedStatus(ctx, request.(DsarGetTrackedStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DsarGetTrackedStatus")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DsarGetTrackedStatusResponseObject); ok {
+		if err := validResponse.VisitDsarGetTrackedStatusResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

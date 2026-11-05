@@ -6,8 +6,12 @@
 package dsarpublichttp
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
+
+	"github.com/google/uuid"
 
 	dsarservice "pdpa-platform/internal/dsar/service"
 	"pdpa-platform/internal/pkg/httpx"
@@ -26,6 +30,17 @@ var _ StrictServerInterface = (*Strict)(nil)
 func intakeForm(ctx context.Context) (publickeys.Key, error) {
 	k, ok := publickeys.FromContext(ctx)
 	if !ok || k.EntityType != publickeys.EntityDsarForm {
+		return publickeys.Key{}, httpx.NotFound()
+	}
+	return k, nil
+}
+
+// trackingPortal is the key of this request, which must stand for a published DSAR-19 status-tracking
+// portal — its own entity id (a legal entity) is only ever used to resolve the tenant, not to scope which
+// requests this exact link can track.
+func trackingPortal(ctx context.Context) (publickeys.Key, error) {
+	k, ok := publickeys.FromContext(ctx)
+	if !ok || k.EntityType != publickeys.EntityDsarTrack {
 		return publickeys.Key{}, httpx.NotFound()
 	}
 	return k, nil
@@ -103,6 +118,109 @@ func (h *Strict) DsarConfirmPublicVerification(ctx context.Context, req DsarConf
 		return nil, problem(err)
 	}
 	return DsarConfirmPublicVerification200JSONResponse(toVerificationWire(v)), nil
+}
+
+// ---- DSAR-19: self-service status tracking ----
+
+func (h *Strict) DsarStartTrackingVerification(ctx context.Context, req DsarStartTrackingVerificationRequestObject) (DsarStartTrackingVerificationResponseObject, error) {
+	if _, err := trackingPortal(ctx); err != nil {
+		return nil, err
+	}
+	b := req.Body
+	contact := ""
+	if b.Contact != nil {
+		contact = *b.Contact
+	}
+	ref, err := h.svc.StartTrackingVerification(ctx, b.RequestNo, string(b.Method), contact)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return DsarStartTrackingVerification201JSONResponse{VerificationId: ref.VerificationID, Channel: DsarTrackVerificationResultChannel(ref.Channel)}, nil
+}
+
+func (h *Strict) DsarGetTrackedStatus(ctx context.Context, req DsarGetTrackedStatusRequestObject) (DsarGetTrackedStatusResponseObject, error) {
+	if _, err := trackingPortal(ctx); err != nil {
+		return nil, err
+	}
+	b := req.Body
+	contact := ""
+	if b.Contact != nil {
+		contact = *b.Contact
+	}
+	code := ""
+	if b.Code != nil {
+		code = *b.Code
+	}
+	r, err := h.svc.GetTrackedStatus(ctx, b.RequestNo, string(b.Method), contact, b.VerificationId, code)
+	if err != nil {
+		return nil, problem(err)
+	}
+	out := DsarTrackedStatus{RequestNo: r.RequestNo, Status: DsarRequestStatus(r.Status), ReceivedAt: r.ReceivedAt.UTC(), DueAt: r.DueAt.UTC(),
+		RejectionReasonCode: r.RejectionReasonCode}
+	if r.ClosedAt != nil {
+		t := r.ClosedAt.UTC()
+		out.ClosedAt = &t
+	}
+	if r.Outcome != nil {
+		o := DsarOutcome(*r.Outcome)
+		out.Outcome = &o
+	}
+	return DsarGetTrackedStatus200JSONResponse(out), nil
+}
+
+func (h *Strict) DsarSubmitTrackingDocument(ctx context.Context, req DsarSubmitTrackingDocumentRequestObject) (DsarSubmitTrackingDocumentResponseObject, error) {
+	if _, err := trackingPortal(ctx); err != nil {
+		return nil, err
+	}
+	// Text fields must arrive before the file part — the same order a FormData built field-by-field
+	// already sends them in (apps/portal's own upload action appends them in exactly this order).
+	var requestNo, method, contact, verificationID, code string
+	for {
+		part, err := req.Body.NextPart()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, httpx.RequestInvalid("malformed multipart body")
+		}
+		name := part.FormName()
+		if name != "file" {
+			b, err := io.ReadAll(part)
+			part.Close()
+			if err != nil {
+				return nil, httpx.RequestInvalid("malformed multipart body")
+			}
+			switch name {
+			case "request_no":
+				requestNo = string(b)
+			case "method":
+				method = string(b)
+			case "contact":
+				contact = string(b)
+			case "verification_id":
+				verificationID = string(b)
+			case "code":
+				code = string(b)
+			}
+			continue
+		}
+		fileName := part.FileName()
+		fileBytes, err := io.ReadAll(part)
+		part.Close()
+		if err != nil {
+			return nil, httpx.RequestInvalid("malformed multipart body")
+		}
+		vid, err := uuid.Parse(verificationID)
+		if err != nil {
+			return nil, httpx.UnprocessableEntity("dsar.invalid_input", "verification_id")
+		}
+		fileID, err := h.svc.SubmitTrackingDocument(ctx, requestNo, method, contact, vid, code, fileName, bytes.NewReader(fileBytes))
+		if err != nil {
+			return nil, problem(err)
+		}
+		return DsarSubmitTrackingDocument201JSONResponse{FileId: fileID}, nil
+	}
+	return nil, httpx.RequestInvalid("multipart field \"file\" is required")
 }
 
 func toVerificationWire(v dsarservice.Verification) DsarVerification {

@@ -2591,6 +2591,50 @@
         "generic": "Something went wrong. Please try again."
       }
     },
+    "dsarTrack": {
+      "title": "Track your request",
+      "intro": "Check the current status of a rights request you already filed, and submit an additional document yourself.",
+      "requestNo": "Request number",
+      "method": "Send the code by",
+      "methodEmail": "Email",
+      "methodSms": "SMS",
+      "contact": "Contact",
+      "contactHint": "The exact e-mail or phone number you gave when you filed the request.",
+      "start": "Send code",
+      "submitting": "Submitting…",
+      "requestNoHeading": "Request {requestNo}",
+      "otpHint": "We sent a verification code by {channel}.",
+      "otpLabel": "Verification code",
+      "viewStatus": "View status",
+      "status": "Status",
+      "dueAt": "Due by",
+      "outcome": "Outcome",
+      "statuses": {
+        "received": "Received",
+        "verifying": "Verifying your identity",
+        "in_review": "In review",
+        "in_progress": "In progress",
+        "awaiting_info": "Awaiting more information from you",
+        "completed": "Completed",
+        "rejected": "Rejected",
+        "withdrawn": "Withdrawn"
+      },
+      "outcomes": {
+        "fulfilled": "Fulfilled",
+        "partially_fulfilled": "Partially fulfilled",
+        "rejected": "Rejected",
+        "withdrawn": "Withdrawn"
+      },
+      "submitDocumentTitle": "Submit an additional document",
+      "documentSubmitted": "Document received.",
+      "submitDocument": "Submit document",
+      "errors": {
+        "missing_fields": "Please fill in the required fields.",
+        "dsar_invalid_input": "The code doesn't match, or this session has expired. Please start again.",
+        "unavailable": "We couldn't reach the server right now. Please try again shortly.",
+        "generic": "Something went wrong. Please try again."
+      }
+    },
     "breach": {
       "intro": "Use this form to report a suspected or confirmed personal data breach. The incident response team is notified immediately.",
       "breachType": "What happened",
@@ -4093,7 +4137,14 @@
     "retire": "Retire",
     "empty": "No intake forms yet.",
     "forbidden": "You don't have permission to view this page.",
-    "signInRequired": "Please sign in."
+    "signInRequired": "Please sign in.",
+    "tracking": {
+      "title": "Status-tracking portal",
+      "intro": "A self-service link where a data subject can check the current status of a request they already filed, and submit an additional document themselves (DSAR-19). Any of the tenant's own published links works for any of its requests.",
+      "hostedLink": "Hosted link",
+      "publish": "Publish",
+      "retire": "Retire"
+    }
   },
   "dsarWorkflow": {
     "title": "DSAR workflow per right type",

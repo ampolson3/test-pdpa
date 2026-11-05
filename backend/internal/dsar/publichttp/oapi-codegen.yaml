@@ -10,3 +10,6 @@ output-options:
     - dsarConfirmPublicVerification
     - dsarGetPublicPackage
     - dsarDownloadPublicPackage
+    - dsarStartTrackingVerification
+    - dsarGetTrackedStatus
+    - dsarSubmitTrackingDocument
