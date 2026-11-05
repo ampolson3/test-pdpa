@@ -11,6 +11,9 @@ import {
   dataflowReportHref,
   useDataflowSnapshots,
   useDataflowPublishSnapshot,
+  useDataflowLayout,
+  useSaveDataflowLayout,
+  useResetDataflowLayout,
   useHighRiskActivityScores,
   type DataflowEdge,
   type DataflowNode,
@@ -138,7 +141,23 @@ function isSwimlane(type: string): boolean {
   return type === "org_unit" || type === "legal_entity" || type === "data_category";
 }
 
-function toFlowNode(n: DataflowNode, pos: { x: number; y: number; width: number; height: number }, isHighRisk: boolean): Node {
+// DFG-05: the caller's own saved drag-and-drop overlay for one (legal_entity, view) diagram — node
+// positions keyed by the node's own stable id (still applies after a RoPA data update, since the id never
+// changes for an activity/recipient/country/disposal that still exists) and free-text annotations per node.
+interface Overlay {
+  positions: Record<string, { x: number; y: number }>;
+  notes: Record<string, string>;
+}
+
+const EMPTY_OVERLAY: Overlay = { positions: {}, notes: {} };
+
+function toFlowNode(
+  n: DataflowNode,
+  pos: { x: number; y: number; width: number; height: number },
+  isHighRisk: boolean,
+  draggable: boolean,
+  note: string | undefined,
+): Node {
   const isGroup = isSwimlane(n.type);
   // RRA-11: a high-risk activity is highlighted the same warning-red DFG-04/DSA-12's own missing-agreement
   // flag already uses — "ไฮไลต์กิจกรรม...พร้อมเหตุผลและลิงก์ไปแก้ไข" (reason via the tooltip, link via
@@ -147,7 +166,7 @@ function toFlowNode(n: DataflowNode, pos: { x: number; y: number; width: number;
   return {
     id: n.id,
     type: isGroup ? "group" : undefined,
-    data: { label: n.label, node: n, isHighRisk },
+    data: { label: note ? `${n.label} 📝` : n.label, node: n, isHighRisk, note },
     position: { x: pos.x, y: pos.y },
     parentId: n.parent_id ?? undefined,
     extent: n.parent_id ? "parent" : undefined,
@@ -168,9 +187,9 @@ function toFlowNode(n: DataflowNode, pos: { x: number; y: number; width: number;
           alignItems: "center",
           justifyContent: "center",
           textAlign: "center",
-          cursor: n.agreement_ids?.length || isHighRisk ? "pointer" : undefined,
+          cursor: n.agreement_ids?.length || isHighRisk || draggable ? "pointer" : undefined,
         },
-    draggable: false,
+    draggable: !isGroup && draggable,
     selectable: !isGroup,
   };
 }
@@ -190,12 +209,15 @@ function toFlowEdge(e: DataflowEdge): Edge {
 }
 
 /** DFG-01/DFG-03: the RoPA-generated data flow diagram — org-unit swimlanes, activities, recipients and
- *  destination countries, auto-laid-out with ELK on every load (no persisted/arranged layout yet — that's
- *  DFG-05, a later feature). A "transfer" edge in warning colour is a foreign recipient with no ROPA-08
- *  transfer basis logged (DFG-03's own acceptance criterion). */
+ *  destination countries, auto-laid-out with ELK on every load, overlaid with DFG-05's own saved
+ *  drag-and-drop positions + per-node annotations (ตำแหน่งที่จัดเองยังอยู่หลังข้อมูลอัปเดต — the overlay is
+ *  keyed by each node's own stable id, so it still applies to the same nodes after the graph is
+ *  recomputed). A "transfer" edge in warning colour is a foreign recipient with no ROPA-08 transfer basis
+ *  logged (DFG-03's own acceptance criterion). */
 export function DataFlowContent() {
   const t = useTranslations("dataflow");
   const canRead = usePermission("ropa.dataflow.read");
+  const canEdit = usePermission("ropa.dataflow.update");
   const client = useMemo(() => createApiClient("/api/bff"), []);
   const router = useRouter();
   const [legalEntityId, setLegalEntityId] = useState<string>();
@@ -207,6 +229,69 @@ export function DataFlowContent() {
   // each activity node's own id ("activity:<uuid>") — "ไฮไลต์...ทั้งในรายการและแผนผัง".
   const highRisk = useHighRiskActivityScores(client);
   const highRiskIds = useMemo(() => new Set((highRisk.data ?? []).map((s) => s.activity_id)), [highRisk.data]);
+
+  // DFG-05: drag & drop editor — editMode gates dragging/annotating at all; overlay is the working copy
+  // (dragged positions + notes, not yet necessarily saved), history/historyIdx its own undo/redo stack,
+  // savedOverlay the last-known-saved baseline (what "dirty" is measured against).
+  const layoutQuery = useDataflowLayout(client, { legal_entity_id: legalEntityId, view });
+  const saveLayout = useSaveDataflowLayout(client);
+  const resetLayout = useResetDataflowLayout(client);
+  const [editMode, setEditMode] = useState(false);
+  const [overlay, setOverlay] = useState<Overlay>(EMPTY_OVERLAY);
+  const [history, setHistory] = useState<Overlay[]>([EMPTY_OVERLAY]);
+  const [historyIdx, setHistoryIdx] = useState(0);
+  const [savedOverlay, setSavedOverlay] = useState<Overlay>(EMPTY_OVERLAY);
+  const [selectedNodeId, setSelectedNodeId] = useState<string>();
+
+  useEffect(() => {
+    if (!layoutQuery.data) return;
+    const positions: Overlay["positions"] = {};
+    for (const p of layoutQuery.data.positions) positions[p.node_id] = { x: p.x, y: p.y };
+    const notes: Overlay["notes"] = {};
+    for (const n of layoutQuery.data.notes) notes[n.node_id] = n.text;
+    const loaded: Overlay = { positions, notes };
+    setOverlay(loaded);
+    setSavedOverlay(loaded);
+    setHistory([loaded]);
+    setHistoryIdx(0);
+    setSelectedNodeId(undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-seed only when the server's own overlay for this (legal_entity, view) arrives, not on every local edit
+  }, [layoutQuery.data]);
+
+  const dirty = JSON.stringify(overlay) !== JSON.stringify(savedOverlay);
+
+  function pushOverlay(next: Overlay) {
+    setOverlay(next);
+    setHistory((h) => [...h.slice(0, historyIdx + 1), next]);
+    setHistoryIdx((i) => i + 1);
+  }
+
+  function undo() {
+    if (historyIdx === 0) return;
+    const idx = historyIdx - 1;
+    setHistoryIdx(idx);
+    setOverlay(history[idx]);
+  }
+
+  function redo() {
+    if (historyIdx >= history.length - 1) return;
+    const idx = historyIdx + 1;
+    setHistoryIdx(idx);
+    setOverlay(history[idx]);
+  }
+
+  const [noteDraft, setNoteDraft] = useState("");
+  useEffect(() => {
+    setNoteDraft(selectedNodeId ? overlay.notes[selectedNodeId] ?? "" : "");
+  }, [selectedNodeId, overlay.notes]);
+
+  function commitNote() {
+    if (!selectedNodeId) return;
+    const notes = { ...overlay.notes };
+    if (noteDraft.trim()) notes[selectedNodeId] = noteDraft.trim();
+    else delete notes[selectedNodeId];
+    pushOverlay({ positions: overlay.positions, notes });
+  }
 
   const [flowNodes, setFlowNodes] = useState<Node[]>([]);
   const [flowEdges, setFlowEdges] = useState<Edge[]>([]);
@@ -244,7 +329,11 @@ export function DataFlowContent() {
         const n = byId.get(id);
         if (!n) continue;
         const activityId = activityIdOf(n.id);
-        nodes.push(toFlowNode(n, pos, !!activityId && highRiskIds.has(activityId)));
+        // DFG-05: a saved position overrides the auto-layout's own x/y for that exact node id — the
+        // acceptance criterion itself, surviving the ELK recompute a data/view change triggers.
+        const override = overlay.positions[id];
+        const effectivePos = override ? { ...pos, x: override.x, y: override.y } : pos;
+        nodes.push(toFlowNode(n, effectivePos, !!activityId && highRiskIds.has(activityId), editMode, overlay.notes[id]));
         if (isSwimlane(n.type)) {
           // React Flow's built-in "group" node renders no text of its own — a small non-interactive
           // label node, parented to the group, carries the swimlane's name instead.
@@ -268,7 +357,7 @@ export function DataFlowContent() {
     return () => {
       cancelled = true;
     };
-  }, [gNodes, gEdges, highRiskIds]);
+  }, [gNodes, gEdges, highRiskIds, overlay, editMode]);
 
   if (!canRead) return <main className="mx-auto max-w-6xl p-8 text-slate-600">{t("forbidden")}</main>;
 
@@ -322,6 +411,66 @@ export function DataFlowContent() {
 
       <SnapshotsPanel legalEntityId={legalEntityId} view={view} />
 
+      {canEdit && (
+        <LayoutEditorPanel
+          editMode={editMode}
+          onToggleEditMode={() => setEditMode((v) => !v)}
+          dirty={dirty}
+          canUndo={historyIdx > 0}
+          canRedo={historyIdx < history.length - 1}
+          onUndo={undo}
+          onRedo={redo}
+          saving={saveLayout.isPending}
+          onSave={() => {
+            saveLayout.mutate(
+              {
+                filter: { legal_entity_id: legalEntityId, view },
+                rowVersion: layoutQuery.data?.row_version ?? 0,
+                positions: Object.entries(overlay.positions).map(([node_id, p]) => ({ node_id, x: p.x, y: p.y })),
+                notes: Object.entries(overlay.notes).map(([node_id, text]) => ({ node_id, text })),
+              },
+              { onSuccess: () => setSavedOverlay(overlay) },
+            );
+          }}
+          resetting={resetLayout.isPending}
+          onReset={() => {
+            resetLayout.mutate(
+              { legal_entity_id: legalEntityId, view },
+              {
+                onSuccess: () => {
+                  setOverlay(EMPTY_OVERLAY);
+                  setSavedOverlay(EMPTY_OVERLAY);
+                  setHistory([EMPTY_OVERLAY]);
+                  setHistoryIdx(0);
+                  setSelectedNodeId(undefined);
+                },
+              },
+            );
+          }}
+        />
+      )}
+
+      {editMode && selectedNodeId && (
+        <div className="flex items-end gap-2 rounded-md border border-sky-200 bg-sky-50 p-3 text-xs" data-testid="dataflow-note-panel">
+          <label className="flex-1">
+            <span className="block text-slate-600">{t("layoutEditor.noteFor", { node: selectedNodeId })}</span>
+            <textarea
+              className="mt-0.5 w-full rounded-md border border-slate-300 bg-white px-2 py-1"
+              rows={2}
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              data-testid="dataflow-note-textarea"
+            />
+          </label>
+          <Button onClick={commitNote} data-testid="dataflow-note-save">
+            {t("layoutEditor.saveNote")}
+          </Button>
+          <button type="button" className="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50" onClick={() => setSelectedNodeId(undefined)}>
+            {t("layoutEditor.closeNote")}
+          </button>
+        </div>
+      )}
+
       {graph.isPending || !laidOut ? (
         <p className="text-slate-500">{t("loading")}</p>
       ) : graph.isError ? (
@@ -334,11 +483,22 @@ export function DataFlowContent() {
             nodes={flowNodes}
             edges={flowEdges}
             fitView
-            nodesDraggable={false}
+            nodesDraggable={editMode}
             nodesConnectable={false}
             edgesFocusable={false}
+            onNodeDragStop={(_, node) => {
+              if (!editMode) return;
+              const data = node.data as { node?: DataflowNode };
+              if (!data.node || isSwimlane(data.node.type)) return;
+              pushOverlay({ positions: { ...overlay.positions, [node.id]: { x: node.position.x, y: node.position.y } }, notes: overlay.notes });
+            }}
             onNodeClick={(_, node) => {
               const data = node.data as { node?: DataflowNode; isHighRisk?: boolean };
+              if (editMode) {
+                if (!data.node || isSwimlane(data.node.type)) return;
+                setSelectedNodeId(node.id);
+                return;
+              }
               const agreementId = data.node?.agreement_ids?.[0];
               if (agreementId) {
                 router.push(`/agreements/${agreementId}`);
@@ -355,6 +515,71 @@ export function DataFlowContent() {
         </div>
       )}
     </main>
+  );
+}
+
+/** DFG-05: the drag & drop editor's own toolbar — enter/exit edit mode, undo/redo the working overlay,
+ *  save it (ETag-guarded against the loaded layout's own row_version), or "คืนค่าเดิม" (discard it). */
+function LayoutEditorPanel(props: {
+  editMode: boolean;
+  onToggleEditMode: () => void;
+  dirty: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+  saving: boolean;
+  onSave: () => void;
+  resetting: boolean;
+  onReset: () => void;
+}) {
+  const t = useTranslations("dataflow.layoutEditor");
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white p-3 text-xs" data-testid="dataflow-layout-editor">
+      <button
+        type="button"
+        className={`rounded-md border px-3 py-1.5 ${props.editMode ? "border-sky-400 bg-sky-100 text-sky-800" : "border-slate-300 bg-white hover:bg-slate-50"}`}
+        onClick={props.onToggleEditMode}
+        data-testid="dataflow-edit-toggle"
+      >
+        {props.editMode ? t("exitEdit") : t("enterEdit")}
+      </button>
+      {props.editMode && (
+        <>
+          <button
+            type="button"
+            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40"
+            disabled={!props.canUndo}
+            onClick={props.onUndo}
+            data-testid="dataflow-undo"
+          >
+            {t("undo")}
+          </button>
+          <button
+            type="button"
+            className="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50 disabled:opacity-40"
+            disabled={!props.canRedo}
+            onClick={props.onRedo}
+            data-testid="dataflow-redo"
+          >
+            {t("redo")}
+          </button>
+          <Button disabled={!props.dirty || props.saving} onClick={props.onSave} data-testid="dataflow-save-layout">
+            {props.saving ? t("saving") : t("save")}
+          </Button>
+          <button
+            type="button"
+            className="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-amber-800 hover:bg-amber-100 disabled:opacity-40"
+            disabled={props.resetting}
+            onClick={props.onReset}
+            data-testid="dataflow-reset-layout"
+          >
+            {t("reset")}
+          </button>
+          {props.dirty && <span className="text-amber-700">{t("unsaved")}</span>}
+        </>
+      )}
+    </div>
   );
 }
 

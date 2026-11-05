@@ -7019,6 +7019,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dataflow/layout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DFG-05: the caller's own saved node-position overlay + per-node annotations for one (legal_entity, view) diagram — "ตำแหน่งที่จัดเองยังอยู่หลังข้อมูลอัปเดต"; a diagram never saved yet reads as the defaults (empty overlay, row_version 0), the same pattern ORG-20's org_settings already uses */
+        get: operations["dataflowGetLayout"];
+        /** DFG-05: save the caller's own dragged node positions and/or per-node annotation text for one (legal_entity, view) diagram — a full replace of the overlay, not a merge */
+        put: operations["dataflowSaveLayout"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dataflow/layout/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** DFG-05: "คืนค่าเดิม" — discard the caller's own saved overlay for this (legal_entity, view) diagram, reverting to the automatic ELK layout with no annotations */
+        post: operations["dataflowResetLayout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/provider/v1/tenants": {
         parameters: {
             query?: never;
@@ -9362,6 +9397,27 @@ export interface components {
             published_at: components["schemas"]["Timestamp"];
             created_at: components["schemas"]["Timestamp"];
             graph: components["schemas"]["DataflowGraph"];
+        };
+        DataflowNodePosition: {
+            /** @description The DataflowNode.id this position belongs to — stable for an unchanged activity/recipient/country/disposal/swimlane node across a RoPA data update, so a saved position still applies after a refresh (DFG-05's own acceptance criterion). */
+            node_id: string;
+            x: number;
+            y: number;
+        };
+        DataflowNodeNote: {
+            node_id: string;
+            text: string;
+        };
+        /** @description DFG-05: the caller's own saved drag-and-drop overlay for one (legal_entity, view) diagram. */
+        DataflowLayout: {
+            positions: components["schemas"]["DataflowNodePosition"][];
+            notes: components["schemas"]["DataflowNodeNote"][];
+            row_version: number;
+            updated_at?: components["schemas"]["Timestamp"];
+        };
+        DataflowLayoutInput: {
+            positions: components["schemas"]["DataflowNodePosition"][];
+            notes: components["schemas"]["DataflowNodeNote"][];
         };
         /** @description DPIA-05: "necessary" only once every question is answered "yes"; otherwise "needs_review" names the flagged questions. */
         DpiaNecessity: {
@@ -29429,6 +29485,91 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    dataflowGetLayout: {
+        parameters: {
+            query?: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+                view?: components["schemas"]["DataflowView"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The overlay, or the empty defaults if never saved */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataflowLayout"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dataflowSaveLayout: {
+        parameters: {
+            query?: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+                view?: components["schemas"]["DataflowView"];
+            };
+            header: {
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DataflowLayoutInput"];
+            };
+        };
+        responses: {
+            /** @description Saved */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataflowLayout"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dataflowResetLayout: {
+        parameters: {
+            query?: {
+                legal_entity_id?: components["schemas"]["Uuid"];
+                view?: components["schemas"]["DataflowView"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reset (a harmless no-op if nothing was saved) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     providerListTenants: {

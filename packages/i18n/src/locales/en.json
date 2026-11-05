@@ -4003,6 +4003,19 @@
       "department": "Department",
       "company": "Company",
       "dataCategory": "Data category"
+    },
+    "layoutEditor": {
+      "enterEdit": "Edit layout",
+      "exitEdit": "Done editing",
+      "undo": "Undo",
+      "redo": "Redo",
+      "save": "Save layout",
+      "saving": "Saving...",
+      "reset": "Reset to default",
+      "unsaved": "Unsaved changes",
+      "noteFor": "Note for {node}",
+      "saveNote": "Save note",
+      "closeNote": "Close"
     }
   },
   "cookieBanners": {

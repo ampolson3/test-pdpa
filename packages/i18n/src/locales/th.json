@@ -4003,6 +4003,19 @@
       "department": "แผนก",
       "company": "บริษัท",
       "dataCategory": "หมวดข้อมูล"
+    },
+    "layoutEditor": {
+      "enterEdit": "แก้ไขแผนผัง",
+      "exitEdit": "เสร็จแล้ว",
+      "undo": "ย้อนกลับ",
+      "redo": "ทำซ้ำ",
+      "save": "บันทึกตำแหน่ง",
+      "saving": "กำลังบันทึก...",
+      "reset": "คืนค่าเดิม",
+      "unsaved": "มีการเปลี่ยนแปลงที่ยังไม่บันทึก",
+      "noteFor": "คำอธิบายสำหรับ {node}",
+      "saveNote": "บันทึกคำอธิบาย",
+      "closeNote": "ปิด"
     }
   },
   "cookieBanners": {

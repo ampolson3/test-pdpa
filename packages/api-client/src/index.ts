@@ -674,12 +674,18 @@ export {
   useDataflowSnapshots,
   useDataflowSnapshot,
   useDataflowPublishSnapshot,
+  useDataflowLayout,
+  useSaveDataflowLayout,
+  useResetDataflowLayout,
   type DataflowGraph,
   type DataflowNode,
   type DataflowEdge,
   type DataflowSnapshot,
   type DataflowSnapshotSummary,
   type DataflowView,
+  type DataflowLayout,
+  type DataflowNodePosition,
+  type DataflowNodeNote,
 } from "./dataflow";
 export {
   useDsarRequestTypes,

@@ -20250,6 +20250,113 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /admin/v1/dataflow/layout:
+    get:
+      operationId: dataflowGetLayout
+      tags: [dataflow]
+      summary: 'DFG-05: the caller''s own saved node-position overlay + per-node annotations for one (legal_entity, view) diagram — "ตำแหน่งที่จัดเองยังอยู่หลังข้อมูลอัปเดต"; a diagram never saved yet reads as the defaults (empty overlay, row_version 0), the same pattern ORG-20''s org_settings already uses'
+      x-permission: ropa.dataflow.read
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      parameters:
+        - name: legal_entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: view
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/DataflowView'
+      responses:
+        '200':
+          description: The overlay, or the empty defaults if never saved
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataflowLayout'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      operationId: dataflowSaveLayout
+      tags: [dataflow]
+      summary: 'DFG-05: save the caller''s own dragged node positions and/or per-node annotation text for one (legal_entity, view) diagram — a full replace of the overlay, not a merge'
+      x-permission: ropa.dataflow.update
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      parameters:
+        - name: legal_entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: view
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/DataflowView'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DataflowLayoutInput'
+      responses:
+        '200':
+          description: Saved
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataflowLayout'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dataflow/layout/reset:
+    post:
+      operationId: dataflowResetLayout
+      tags: [dataflow]
+      summary: 'DFG-05: "คืนค่าเดิม" — discard the caller''s own saved overlay for this (legal_entity, view) diagram, reverting to the automatic ELK layout with no annotations'
+      x-permission: ropa.dataflow.update
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      parameters:
+        - name: legal_entity_id
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: view
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/DataflowView'
+      responses:
+        '204':
+          description: Reset (a harmless no-op if nothing was saved)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /provider/v1/tenants:
     get:
       operationId: providerListTenants
@@ -24136,6 +24243,42 @@ components:
         published_at: {$ref: '#/components/schemas/Timestamp'}
         created_at: {$ref: '#/components/schemas/Timestamp'}
         graph: {$ref: '#/components/schemas/DataflowGraph'}
+    DataflowNodePosition:
+      type: object
+      required: [node_id, x, y]
+      properties:
+        node_id: {type: string, description: 'The DataflowNode.id this position belongs to — stable for an unchanged activity/recipient/country/disposal/swimlane node across a RoPA data update, so a saved position still applies after a refresh (DFG-05''s own acceptance criterion).'}
+        x: {type: number}
+        y: {type: number}
+    DataflowNodeNote:
+      type: object
+      required: [node_id, text]
+      properties:
+        node_id: {type: string}
+        text: {type: string}
+    DataflowLayout:
+      type: object
+      description: 'DFG-05: the caller''s own saved drag-and-drop overlay for one (legal_entity, view) diagram.'
+      required: [positions, notes, row_version]
+      properties:
+        positions:
+          type: array
+          items: {$ref: '#/components/schemas/DataflowNodePosition'}
+        notes:
+          type: array
+          items: {$ref: '#/components/schemas/DataflowNodeNote'}
+        row_version: {type: integer}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
+    DataflowLayoutInput:
+      type: object
+      required: [positions, notes]
+      properties:
+        positions:
+          type: array
+          items: {$ref: '#/components/schemas/DataflowNodePosition'}
+        notes:
+          type: array
+          items: {$ref: '#/components/schemas/DataflowNodeNote'}
     DpiaNecessity:
       type: object
       description: 'DPIA-05: "necessary" only once every question is answered "yes"; otherwise "needs_review" names the flagged questions.'

@@ -11,3 +11,6 @@ output-options:
     - dataflowListSnapshots
     - dataflowPublishSnapshot
     - dataflowGetSnapshot
+    - dataflowGetLayout
+    - dataflowSaveLayout
+    - dataflowResetLayout

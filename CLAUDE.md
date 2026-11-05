@@ -6210,6 +6210,81 @@ feature already shows — a data-subject-facing variant would need its own, sepa
 the actual delivered result beyond the bare status (DSAR-14's own package mechanism already delivers a
 result through a separate, access-code-gated link, which this feature doesn't duplicate).
 
+### DFG-05 แก้ไขแผนผังแบบลากวาง (`docs/modules/DFG.md#dfg-05`) — done
+`dataflow.layouts` was already fully specified in the baseline migration (00009), unused until now —
+DFG-01/03/04/06/07/08's own package doc comment already named it as "exists for the later DFG-05... feature."
+Migration 00099 widens its `view_type` CHECK to add `company` (DFG-06, built in a later pass than this
+table's own original migration, stores its own swimlane view under that literal wire value, not the
+`legal_entity` the CHECK had originally anticipated) and adds `uq_dataflow_layouts_scope_user UNIQUE NULLS
+NOT DISTINCT (tenant_id, view_type, scope_id, user_id)` — the upsert target this feature's own save needs.
+The overlay is personal, not shared: `user_id` (already a column, unused before this) scopes each person's
+own dragged positions and notes to themselves, read from `app.user_id` the same way every other per-user
+write in this codebase already does — two people arranging the same diagram never clobber each other.
+
+`internal/dataflow/service/layout.go`'s `GetLayout`/`SaveLayout`/`ResetLayout` are the whole feature: the
+acceptance criterion ("ตำแหน่งที่จัดเองยังอยู่หลังข้อมูลอัปเดต") holds by construction rather than by any
+special-case code — every position/note is keyed by a `DataflowNode`'s own stable id string
+(`"activity:<uuid>"`, `"org_unit:<uuid>"`, ...), which a RoPA data refresh never changes for a node that
+still exists, so the saved overlay goes on applying to the exact same nodes after `Graph()` recomputes
+from scratch; a node the overlay still names but the graph no longer has (the activity was deleted) is
+simply never drawn — a harmless, self-healing orphan, not an error, and not worth a cleanup job, since the
+next `SaveLayout` naturally replaces the whole overlay anyway. `SaveLayout` is a full replace, never a
+merge (the frontend always sends everything it wants kept), guarded by the usual ETag/`If-Match` —
+`UpsertLayout`'s own `ON CONFLICT ... DO UPDATE ... WHERE row_version = $n` (the same "insert on first save,
+guarded update after" pattern ORG-20's own `org_settings` already established) returns no row on a stale
+If-Match, mapped to `ErrVersionMismatch` → 412 the usual way. No internal permission checks inside the
+service — `GetLayout`/`SaveLayout`/`ResetLayout`'s own needed permissions (`ropa.dataflow.read`/`.update`,
+both already seeded, DPO holding both) are exactly the endpoint's own declared `x-permission`, so the
+generic AuthZ middleware already gates them with nothing more to add (unlike a stricter-than-the-floor
+approve-only gate elsewhere in this codebase, which does need one).
+
+API: `GET`/`PUT /admin/v1/dataflow/layout` (ETag/If-Match on PUT, defaults to the empty overlay at
+row_version 0 if never saved, the same convention ORG-20 uses), `POST /admin/v1/dataflow/layout/reset`
+(204, a harmless no-op if nothing was saved) — `legal_entity_id`/`view` query params, same shape every
+other dataflow endpoint already uses. UI: `/data-flow` gained an edit toolbar (`LayoutEditorPanel`, shown
+only to a caller holding `ropa.dataflow.update`) — enter/exit edit mode, undo/redo, save, "คืนค่าเดิม."
+Entering edit mode makes every non-swimlane node draggable (`nodesDraggable`); dragging one calls
+`onNodeDragStop`, which pushes the new position into a local undo/redo stack (`history`/`historyIdx`) —
+nothing is sent to the server until "Save layout" is clicked, so a careless drag is cheap to undo and the
+PUT's own ETag only has to defend against a genuinely concurrent save, not every mouse-up. Clicking a node
+in edit mode opens a small note panel (a plain textarea, committed to the same undo stack on its own save
+button) instead of navigating — the existing click-to-navigate behaviour (DFG-04's agreement link, RRA-11's
+high-risk link) is preserved outside edit mode. A node carrying a note shows a small 📝 marker appended to
+its own label — the simplest way to surface it without a bespoke custom React Flow node renderer, which
+this feature's own literal scope doesn't call for. The ELK auto-layout effect now also depends on the
+working `overlay` and `editMode`, applying a saved position as a straight x/y override on top of whatever
+ELK just computed for that node id — recomputing ELK on every drag-end is a little wasteful but keeps the
+override logic in one place and stays well within this feature's own performance needs. `useDataflowLayout`/
+`useSaveDataflowLayout`/`useResetDataflowLayout` (`packages/api-client/src/dataflow.ts`) follow the
+existing `useDataflowSnapshots`/`useDataflowPublishSnapshot` shapes exactly.
+
+Tests: unit (`internal/dataflow/service/layout_test.go` — the acceptance criterion directly: a saved
+position and note for an activity node survive a real second-activity RoPA data update that recomputes the
+live Graph from 1 to 2 activities, unchanged; a second save fully replaces the overlay, dropping anything
+left out; a stale row_version is refused with `ErrVersionMismatch`; reset reverts to the empty defaults and
+a second reset is a harmless no-op; the overlay is correctly scoped per (legal_entity, view) — company and
+department views never share one overlay, nor does a different legal entity; two-tenant isolation), HTTP
+contract (`internal/dataflow/http/layout_test.go` — 401/403/200/412/428/204 through the real validator +
+AuthZ, including the full save → stale-retry-refused → reset → defaults-again chain). Not verified live
+against a real Postgres/Redis in this pass — neither was reachable in this environment for this feature;
+every test compiles and vets clean and skips the same way the rest of this module's own suite already does
+without one. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched file — the same
+pre-existing stable violation list this codebase's other recent passes already disclose, untouched by this
+change), `go test ./...` (no regressions, full backend suite). One pre-existing failure confirmed via `git
+stash` to exist identically on HEAD before this change, so out of this feature's own scope: `internal/pkg/
+validate`'s own `TestMiddleware_ValidatesAgainstSpecRegardlessOfHost` now fails with `invalid components:
+schema "NoticeAcknowledgement": extra sibling fields: [empty for an anonymous public acknowledgement]` — a
+different message than this codebase's earlier passes disclosed for that same test, suggesting a kin-openapi
+version or spec-authoring drift unrelated to anything this feature touches; logged here for visibility, not
+fixed, since PNG-09 (the feature that added that schema) is the one that would need to resolve it. `make
+gen` re-run with no drift beyond this feature's own additions, `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated
+`/data-flow` route) all verified clean. Not done, deliberately (no consumer yet, the same deferral this
+codebase uses throughout): a shared/team-wide layout (today's own `user_id` scoping is personal, matching
+the schema's own original intent — "ตำแหน่ง node ที่ผู้ใช้จัดเองต่อมุมมอง"); a richer note-rendering UI
+(a custom React Flow node type showing the full note text inline, rather than a label marker) — nothing
+in the literal acceptance criterion needs one.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

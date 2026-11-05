@@ -313,6 +313,22 @@ type DataflowGraph struct {
 	Nodes       []DataflowNode `json:"nodes"`
 }
 
+// DataflowLayout DFG-05: the caller's own saved drag-and-drop overlay for one (legal_entity, view) diagram.
+type DataflowLayout struct {
+	Notes      []DataflowNodeNote     `json:"notes"`
+	Positions  []DataflowNodePosition `json:"positions"`
+	RowVersion int                    `json:"row_version"`
+
+	// UpdatedAt RFC 3339 in UTC, e.g. 2026-09-25T03:15:00Z
+	UpdatedAt *Timestamp `json:"updated_at,omitempty"`
+}
+
+// DataflowLayoutInput defines model for DataflowLayoutInput.
+type DataflowLayoutInput struct {
+	Notes     []DataflowNodeNote     `json:"notes"`
+	Positions []DataflowNodePosition `json:"positions"`
+}
+
 // DataflowNode One box on the diagram — a swimlane (DFG-06: org_unit, legal_entity or data_category, depending on the requested view) other nodes nest under via parent_id, a processing activity, an external-party recipient, a destination country, or a disposal method.
 type DataflowNode struct {
 	ActivityCode   *string `json:"activity_code,omitempty"`
@@ -347,6 +363,20 @@ type DataflowNode struct {
 
 // DataflowNodeType defines model for DataflowNode.Type.
 type DataflowNodeType string
+
+// DataflowNodeNote defines model for DataflowNodeNote.
+type DataflowNodeNote struct {
+	NodeId string `json:"node_id"`
+	Text   string `json:"text"`
+}
+
+// DataflowNodePosition defines model for DataflowNodePosition.
+type DataflowNodePosition struct {
+	// NodeId The DataflowNode.id this position belongs to — stable for an unchanged activity/recipient/country/disposal/swimlane node across a RoPA data update, so a saved position still applies after a refresh (DFG-05's own acceptance criterion).
+	NodeId string  `json:"node_id"`
+	X      float32 `json:"x"`
+	Y      float32 `json:"y"`
+}
 
 // DataflowSnapshot DFG-07: one published version, graph included — exactly the same shape DataflowGraph already uses, frozen at publish time.
 type DataflowSnapshot struct {
@@ -426,11 +456,23 @@ type Uuid = openapi_types.UUID
 // AcceptLanguage defines model for AcceptLanguage.
 type AcceptLanguage string
 
+// IfMatch defines model for IfMatch.
+type IfMatch = string
+
+// BadRequest RFC 9457 problem details with a stable machine-readable `code`
+type BadRequest = Problem
+
 // Forbidden RFC 9457 problem details with a stable machine-readable `code`
 type Forbidden = Problem
 
 // NotFound RFC 9457 problem details with a stable machine-readable `code`
 type NotFound = Problem
+
+// PreconditionFailed RFC 9457 problem details with a stable machine-readable `code`
+type PreconditionFailed = Problem
+
+// PreconditionRequired RFC 9457 problem details with a stable machine-readable `code`
+type PreconditionRequired = Problem
 
 // Unauthorized RFC 9457 problem details with a stable machine-readable `code`
 type Unauthorized = Problem
@@ -475,6 +517,27 @@ type DataflowExportGraphParamsPaper string
 // DataflowExportGraphParamsAcceptLanguage defines parameters for DataflowExportGraph.
 type DataflowExportGraphParamsAcceptLanguage string
 
+// DataflowGetLayoutParams defines parameters for DataflowGetLayout.
+type DataflowGetLayoutParams struct {
+	LegalEntityId *Uuid         `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+	View          *DataflowView `form:"view,omitempty" json:"view,omitempty"`
+}
+
+// DataflowSaveLayoutParams defines parameters for DataflowSaveLayout.
+type DataflowSaveLayoutParams struct {
+	LegalEntityId *Uuid         `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+	View          *DataflowView `form:"view,omitempty" json:"view,omitempty"`
+
+	// IfMatch ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428.
+	IfMatch IfMatch `json:"If-Match"`
+}
+
+// DataflowResetLayoutParams defines parameters for DataflowResetLayout.
+type DataflowResetLayoutParams struct {
+	LegalEntityId *Uuid         `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
+	View          *DataflowView `form:"view,omitempty" json:"view,omitempty"`
+}
+
 // DataflowGetReportParams defines parameters for DataflowGetReport.
 type DataflowGetReportParams struct {
 	LegalEntityId *Uuid                           `form:"legal_entity_id,omitempty" json:"legal_entity_id,omitempty"`
@@ -507,6 +570,9 @@ type DataflowPublishSnapshotParams struct {
 	View          *DataflowView `form:"view,omitempty" json:"view,omitempty"`
 }
 
+// DataflowSaveLayoutJSONRequestBody defines body for DataflowSaveLayout for application/json ContentType.
+type DataflowSaveLayoutJSONRequestBody = DataflowLayoutInput
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// DataflowGetGraph DFG-01/DFG-03: the tenant's data flow diagram, composed live from RoPA (ROPA-03/08) on every read — a swimlane per DFG-06 view (department/company/data_category), activities, recipients and destination countries, with a cross-border transfer missing its legal basis flagged as a warning edge
@@ -515,6 +581,15 @@ type ServerInterface interface {
 	// DataflowExportGraph DFG-08: the diagram (DFG-01/03/04's own live Graph) as a standalone image — SVG (vector, no renderer needed), or PNG/PDF rendered through the shared platform/docs/render renderer, sized for print (always landscape)
 	// (GET /admin/v1/dataflow/graph/export)
 	DataflowExportGraph(w http.ResponseWriter, r *http.Request, params DataflowExportGraphParams)
+	// DataflowGetLayout DFG-05: the caller's own saved node-position overlay + per-node annotations for one (legal_entity, view) diagram — "ตำแหน่งที่จัดเองยังอยู่หลังข้อมูลอัปเดต"; a diagram never saved yet reads as the defaults (empty overlay, row_version 0), the same pattern ORG-20's org_settings already uses
+	// (GET /admin/v1/dataflow/layout)
+	DataflowGetLayout(w http.ResponseWriter, r *http.Request, params DataflowGetLayoutParams)
+	// DataflowSaveLayout DFG-05: save the caller's own dragged node positions and/or per-node annotation text for one (legal_entity, view) diagram — a full replace of the overlay, not a merge
+	// (PUT /admin/v1/dataflow/layout)
+	DataflowSaveLayout(w http.ResponseWriter, r *http.Request, params DataflowSaveLayoutParams)
+	// DataflowResetLayout DFG-05: "คืนค่าเดิม" — discard the caller's own saved overlay for this (legal_entity, view) diagram, reverting to the automatic ELK layout with no annotations
+	// (POST /admin/v1/dataflow/layout/reset)
+	DataflowResetLayout(w http.ResponseWriter, r *http.Request, params DataflowResetLayoutParams)
 	// DataflowGetReport DFG-08: the written report ("รายงานประกอบ") accompanying the diagram export — per org-unit/activity breakdown of data categories, recipients (flagging a processor with no DPA), cross-border transfers (flagging one with no basis) and disposal methods, built from the same live Graph as the image export
 	// (GET /admin/v1/dataflow/report)
 	DataflowGetReport(w http.ResponseWriter, r *http.Request, params DataflowGetReportParams)
@@ -542,6 +617,24 @@ func (_ Unimplemented) DataflowGetGraph(w http.ResponseWriter, r *http.Request, 
 // DataflowExportGraph DFG-08: the diagram (DFG-01/03/04's own live Graph) as a standalone image — SVG (vector, no renderer needed), or PNG/PDF rendered through the shared platform/docs/render renderer, sized for print (always landscape)
 // (GET /admin/v1/dataflow/graph/export)
 func (_ Unimplemented) DataflowExportGraph(w http.ResponseWriter, r *http.Request, params DataflowExportGraphParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DataflowGetLayout DFG-05: the caller's own saved node-position overlay + per-node annotations for one (legal_entity, view) diagram — "ตำแหน่งที่จัดเองยังอยู่หลังข้อมูลอัปเดต"; a diagram never saved yet reads as the defaults (empty overlay, row_version 0), the same pattern ORG-20's org_settings already uses
+// (GET /admin/v1/dataflow/layout)
+func (_ Unimplemented) DataflowGetLayout(w http.ResponseWriter, r *http.Request, params DataflowGetLayoutParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DataflowSaveLayout DFG-05: save the caller's own dragged node positions and/or per-node annotation text for one (legal_entity, view) diagram — a full replace of the overlay, not a merge
+// (PUT /admin/v1/dataflow/layout)
+func (_ Unimplemented) DataflowSaveLayout(w http.ResponseWriter, r *http.Request, params DataflowSaveLayoutParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DataflowResetLayout DFG-05: "คืนค่าเดิม" — discard the caller's own saved overlay for this (legal_entity, view) diagram, reverting to the automatic ELK layout with no annotations
+// (POST /admin/v1/dataflow/layout/reset)
+func (_ Unimplemented) DataflowResetLayout(w http.ResponseWriter, r *http.Request, params DataflowResetLayoutParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -729,6 +822,169 @@ func (siw *ServerInterfaceWrapper) DataflowExportGraph(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DataflowExportGraph(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DataflowGetLayout operation middleware
+func (siw *ServerInterfaceWrapper) DataflowGetLayout(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DataflowGetLayoutParams
+
+	// ------------- Optional query parameter "legal_entity_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "legal_entity_id", r.URL.Query(), &params.LegalEntityId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "legal_entity_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legal_entity_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "view" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "view", r.URL.Query(), &params.View, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "view"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "view", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DataflowGetLayout(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DataflowSaveLayout operation middleware
+func (siw *ServerInterfaceWrapper) DataflowSaveLayout(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DataflowSaveLayoutParams
+
+	// ------------- Optional query parameter "legal_entity_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "legal_entity_id", r.URL.Query(), &params.LegalEntityId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "legal_entity_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legal_entity_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "view" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "view", r.URL.Query(), &params.View, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "view"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "view", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "If-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-Match")]; found {
+		var IfMatch IfMatch
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-Match", valueList[0], &IfMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-Match", Err: err})
+			return
+		}
+
+		params.IfMatch = IfMatch
+
+	} else {
+		err := fmt.Errorf("Header parameter If-Match is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "If-Match", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DataflowSaveLayout(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DataflowResetLayout operation middleware
+func (siw *ServerInterfaceWrapper) DataflowResetLayout(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DataflowResetLayoutParams
+
+	// ------------- Optional query parameter "legal_entity_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "legal_entity_id", r.URL.Query(), &params.LegalEntityId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "legal_entity_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "legal_entity_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "view" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "view", r.URL.Query(), &params.View, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "view"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "view", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DataflowResetLayout(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1080,13 +1336,28 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/dataflow/snapshots/{id}", wrapper.DataflowGetSnapshot)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dataflow/layout", wrapper.DataflowGetLayout)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/v1/dataflow/layout", wrapper.DataflowSaveLayout)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/v1/dataflow/layout/reset", wrapper.DataflowResetLayout)
+	})
 
 	return r
 }
 
+type BadRequestApplicationProblemPlusJSONResponse Problem
+
 type ForbiddenApplicationProblemPlusJSONResponse Problem
 
 type NotFoundApplicationProblemPlusJSONResponse Problem
+
+type PreconditionFailedApplicationProblemPlusJSONResponse Problem
+
+type PreconditionRequiredApplicationProblemPlusJSONResponse Problem
 
 type UnauthorizedApplicationProblemPlusJSONResponse Problem
 
@@ -1240,6 +1511,231 @@ func (response DataflowExportGraph503ApplicationProblemPlusJSONResponse) VisitDa
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowGetLayoutRequestObject struct {
+	Params DataflowGetLayoutParams
+}
+
+type DataflowGetLayoutResponseObject interface {
+	VisitDataflowGetLayoutResponse(w http.ResponseWriter) error
+}
+
+type DataflowGetLayout200ResponseHeaders struct {
+	ETag *string
+}
+
+type DataflowGetLayout200JSONResponse struct {
+	Body    DataflowLayout
+	Headers DataflowGetLayout200ResponseHeaders
+}
+
+func (response DataflowGetLayout200JSONResponse) VisitDataflowGetLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowGetLayout401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowGetLayout401ApplicationProblemPlusJSONResponse) VisitDataflowGetLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowGetLayout403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowGetLayout403ApplicationProblemPlusJSONResponse) VisitDataflowGetLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowSaveLayoutRequestObject struct {
+	Params DataflowSaveLayoutParams
+	Body   *DataflowSaveLayoutJSONRequestBody
+}
+
+type DataflowSaveLayoutResponseObject interface {
+	VisitDataflowSaveLayoutResponse(w http.ResponseWriter) error
+}
+
+type DataflowSaveLayout200ResponseHeaders struct {
+	ETag *string
+}
+
+type DataflowSaveLayout200JSONResponse struct {
+	Body    DataflowLayout
+	Headers DataflowSaveLayout200ResponseHeaders
+}
+
+func (response DataflowSaveLayout200JSONResponse) VisitDataflowSaveLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.ETag != nil {
+		w.Header().Set("ETag", fmt.Sprint(*response.Headers.ETag))
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowSaveLayout400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowSaveLayout400ApplicationProblemPlusJSONResponse) VisitDataflowSaveLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowSaveLayout401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowSaveLayout401ApplicationProblemPlusJSONResponse) VisitDataflowSaveLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowSaveLayout403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowSaveLayout403ApplicationProblemPlusJSONResponse) VisitDataflowSaveLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowSaveLayout412ApplicationProblemPlusJSONResponse struct {
+	PreconditionFailedApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowSaveLayout412ApplicationProblemPlusJSONResponse) VisitDataflowSaveLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(412)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowSaveLayout428ApplicationProblemPlusJSONResponse struct {
+	PreconditionRequiredApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowSaveLayout428ApplicationProblemPlusJSONResponse) VisitDataflowSaveLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(428)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowResetLayoutRequestObject struct {
+	Params DataflowResetLayoutParams
+}
+
+type DataflowResetLayoutResponseObject interface {
+	VisitDataflowResetLayoutResponse(w http.ResponseWriter) error
+}
+
+type DataflowResetLayout204Response struct {
+}
+
+func (response DataflowResetLayout204Response) VisitDataflowResetLayoutResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DataflowResetLayout401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowResetLayout401ApplicationProblemPlusJSONResponse) VisitDataflowResetLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DataflowResetLayout403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DataflowResetLayout403ApplicationProblemPlusJSONResponse) VisitDataflowResetLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -1530,6 +2026,15 @@ type StrictServerInterface interface {
 	// DataflowExportGraph DFG-08: the diagram (DFG-01/03/04's own live Graph) as a standalone image — SVG (vector, no renderer needed), or PNG/PDF rendered through the shared platform/docs/render renderer, sized for print (always landscape)
 	// (GET /admin/v1/dataflow/graph/export)
 	DataflowExportGraph(ctx context.Context, request DataflowExportGraphRequestObject) (DataflowExportGraphResponseObject, error)
+	// DataflowGetLayout DFG-05: the caller's own saved node-position overlay + per-node annotations for one (legal_entity, view) diagram — "ตำแหน่งที่จัดเองยังอยู่หลังข้อมูลอัปเดต"; a diagram never saved yet reads as the defaults (empty overlay, row_version 0), the same pattern ORG-20's org_settings already uses
+	// (GET /admin/v1/dataflow/layout)
+	DataflowGetLayout(ctx context.Context, request DataflowGetLayoutRequestObject) (DataflowGetLayoutResponseObject, error)
+	// DataflowSaveLayout DFG-05: save the caller's own dragged node positions and/or per-node annotation text for one (legal_entity, view) diagram — a full replace of the overlay, not a merge
+	// (PUT /admin/v1/dataflow/layout)
+	DataflowSaveLayout(ctx context.Context, request DataflowSaveLayoutRequestObject) (DataflowSaveLayoutResponseObject, error)
+	// DataflowResetLayout DFG-05: "คืนค่าเดิม" — discard the caller's own saved overlay for this (legal_entity, view) diagram, reverting to the automatic ELK layout with no annotations
+	// (POST /admin/v1/dataflow/layout/reset)
+	DataflowResetLayout(ctx context.Context, request DataflowResetLayoutRequestObject) (DataflowResetLayoutResponseObject, error)
 	// DataflowGetReport DFG-08: the written report ("รายงานประกอบ") accompanying the diagram export — per org-unit/activity breakdown of data categories, recipients (flagging a processor with no DPA), cross-border transfers (flagging one with no basis) and disposal methods, built from the same live Graph as the image export
 	// (GET /admin/v1/dataflow/report)
 	DataflowGetReport(ctx context.Context, request DataflowGetReportRequestObject) (DataflowGetReportResponseObject, error)
@@ -1628,6 +2133,91 @@ func (sh *strictHandler) DataflowExportGraph(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DataflowExportGraphResponseObject); ok {
 		if err := validResponse.VisitDataflowExportGraphResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DataflowGetLayout operation middleware
+func (sh *strictHandler) DataflowGetLayout(w http.ResponseWriter, r *http.Request, params DataflowGetLayoutParams) {
+	var request DataflowGetLayoutRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DataflowGetLayout(ctx, request.(DataflowGetLayoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DataflowGetLayout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DataflowGetLayoutResponseObject); ok {
+		if err := validResponse.VisitDataflowGetLayoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DataflowSaveLayout operation middleware
+func (sh *strictHandler) DataflowSaveLayout(w http.ResponseWriter, r *http.Request, params DataflowSaveLayoutParams) {
+	var request DataflowSaveLayoutRequestObject
+
+	request.Params = params
+
+	var body DataflowSaveLayoutJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DataflowSaveLayout(ctx, request.(DataflowSaveLayoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DataflowSaveLayout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DataflowSaveLayoutResponseObject); ok {
+		if err := validResponse.VisitDataflowSaveLayoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DataflowResetLayout operation middleware
+func (sh *strictHandler) DataflowResetLayout(w http.ResponseWriter, r *http.Request, params DataflowResetLayoutParams) {
+	var request DataflowResetLayoutRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DataflowResetLayout(ctx, request.(DataflowResetLayoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DataflowResetLayout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DataflowResetLayoutResponseObject); ok {
+		if err := validResponse.VisitDataflowResetLayoutResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
