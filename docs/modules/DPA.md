@@ -504,6 +504,53 @@ the same way the rest of this module's own suite already does here. `go build ./
 
 **Acceptance criteria:** ปรับรูปแบบแล้วไฟล์ที่ส่งออกตรงกับที่เห็น
 
+**Implementation — done.** Builds on PLT-16's existing `DocEditor` (TipTap on ProseMirror) and
+`internal/platform/docs/render` — not a new editor, since merge fields ("เพิ่มฟิลด์ในเอกสาร") were already
+insertable (the toolbar's own field picker) and the outline sidebar already existed; the real gap against
+the literal acceptance criterion was that neither renderer (HTML/PDF/DOCX) could reproduce any formatting
+beyond headings/lists/marks already in `render.model.go`'s own node/mark allow-list, so nothing a DPO could
+newly set in the editor would ever show up in an export. Three additions, each threaded through every
+renderer so the exported file matches the editor exactly:
+
+Paragraph alignment ("ย่อหน้า"): a `textAlign` attribute (left/center/right/justify) on `paragraph` and
+`heading` nodes, validated in `render.Validate`. HTML emits an inline `style="text-align:..."` only when not
+the default left (`alignedOpen`); DOCX emits `<w:jc>` (Word's own `"both"` for `justify`, which has no
+literal counterpart) via a widened `docxWriter.paragraph(..., align)`. PDF needs no separate code at all — it
+is Chromium/Gotenberg printing the same HTML the preview shows, so HTML fidelity is PDF fidelity.
+
+Font size ("ฟอนต์"): a narrow `fontSize` mark with exactly two presets, `small`/`large` (never an arbitrary
+font family) — deliberately kept inside the one embedded Sarabun font every export already relies on for
+correct Thai glyph shaping (PLT-16's own established constraint); widening to real font-family choice would
+risk breaking that guarantee or need embedding more fonts, well beyond this feature's own literal criterion.
+HTML wraps the run in `<span style="font-size:...%">`; DOCX sets `<w:sz>`/`<w:szCs>` in half-points relative
+to the document's own base size.
+
+Table of contents ("สารบัญ"): a new `tableOfContents` atom block the DPO inserts anywhere via the toolbar.
+Never stored content — `render.Outline` walks the document's own (clause-expanded, field-resolved) body at
+render time and lists every heading, so the exported TOC always matches the document's current headings,
+even one edited after the TOC was inserted, with nothing to go stale. Rendered as an indented list in both
+HTML and DOCX from the identical `Outline` call.
+
+`internal/platform/docs/render/model.go`'s `Validate` refuses an unknown `textAlign`/`fontSize` value the
+same way it already refuses any other malformed attribute — a document a DPO never actually produced this
+way (a hand-crafted API call) can't smuggle through a value neither renderer understands. UI: `doc-editor.tsx`'s
+toolbar gained an alignment button group, a font-size `<select>`, and an "insert table of contents" button —
+three small, hand-written TipTap extensions (`TextAlign`/`FontSize`/`TableOfContents`) rather than installing
+`@tiptap/extension-text-align` (avoids adding a dependency for one global attribute this codebase can express
+in a dozen lines, matching how `MergeField`/`Clause` are already hand-written in the same file). Tests: unit
+(`internal/platform/docs/render/dpa06_formatting_test.go` — the acceptance criterion directly: HTML and DOCX
+both carry the exact alignment/font-size/TOC-heading-text the input set; a document with no alignment set
+carries no style attribute at all (the default case stays untouched); the table of contents reflects a
+heading edited *after* the TOC node was inserted, proving it is computed fresh, not cached; validation
+rejects an unknown alignment or font-size value). `go build ./...`, `go vet ./...`, `gofmt -l` (clean on
+every touched file), `go test ./...` (no regressions — only the pre-existing, unrelated `internal/pkg/
+validate` failure, confirmed identical via `git stash` both before and after this change),
+`pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/admin typecheck` and `pnpm --filter @pdpa/admin build`
+(incl. the updated `/documents/[id]`, `/documents/templates` and `/documents/clauses` routes, which all share
+the same `DocEditor` component) all verified clean. No OpenAPI or sqlc change was needed — the document's
+content is already a free-form, server-validated jsonb column, so no migration either. Not verified live
+against a real Postgres/Redis in this pass — neither was reachable in this environment for this feature.
+
 <a id="dpa-07"></a>
 ### DPA-07 ตรวจทานและอนุมัติ
 

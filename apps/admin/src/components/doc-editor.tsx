@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { EditorContent, Node, mergeAttributes, useEditor, useEditorState, type Editor, type JSONContent } from "@tiptap/react";
+import { EditorContent, Extension, Mark, Node, mergeAttributes, useEditor, useEditorState, type Editor, type JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 /** A merge field chip: filled from the organization / document when the document is rendered (PLT-16). */
@@ -39,6 +39,47 @@ const Clause = Node.create<{ titles: Record<string, string> }>({
     const ref = `${node.attrs.code}@${node.attrs.version}`;
     return ["div", mergeAttributes(HTMLAttributes, { "data-clause": node.attrs.code, "data-version": node.attrs.version, class: "my-2 rounded border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-900" }),
       `§ ${this.options.titles[ref] ?? ""} [${ref}]`];
+  },
+});
+
+/** A document-wide table of contents (DPA-06): the editor shows a placeholder; the server computes the real list
+ *  of headings fresh at render/export time (render.Outline), so it can never go stale against the body. */
+const TableOfContents = Node.create({
+  name: "tableOfContents",
+  group: "block",
+  atom: true,
+  selectable: true,
+  parseHTML: () => [{ tag: "div[data-toc]" }],
+  renderHTML: ({ HTMLAttributes }) => ["div", mergeAttributes(HTMLAttributes, { "data-toc": "", class: "rounded border border-dashed border-slate-400 bg-slate-50 px-3 py-2 text-slate-500" }), "สารบัญ (คำนวณใหม่ตอนส่งออก)"],
+});
+
+/** Paragraph/heading text alignment (DPA-06's "ย่อหน้า"): a plain attribute on both block types, stored as
+ *  textAlign so the server's own renderers (render.go's alignedOpen / docx.go's jcValue) read it directly. */
+const TextAlign = Extension.create({
+  name: "textAlign",
+  addGlobalAttributes() {
+    return [{
+      types: ["paragraph", "heading"],
+      attributes: { textAlign: { default: null, parseHTML: (el) => el.style.textAlign || null, renderHTML: (attrs) => (attrs.textAlign ? { style: `text-align: ${attrs.textAlign}` } : {}) } },
+    }];
+  },
+  addCommands() {
+    return {
+      setTextAlign: (align: string) => ({ commands }: { commands: { updateAttributes: (type: string, attrs: Record<string, unknown>) => boolean } }) =>
+        commands.updateAttributes("paragraph", { textAlign: align }) && commands.updateAttributes("heading", { textAlign: align }),
+    } as never;
+  },
+});
+
+/** A font-size mark (DPA-06's "ฟอนต์"): two presets only — kept narrow so every renderer (and the one embedded
+ *  Sarabun font every export already relies on for correct Thai glyphs) stays exact, never an arbitrary family. */
+const FontSize = Mark.create({
+  name: "fontSize",
+  addAttributes: () => ({ size: { default: "normal", parseHTML: (el) => (el as HTMLElement).dataset.fontSize || "normal" } }),
+  parseHTML: () => [{ tag: "span[data-font-size]" }],
+  renderHTML: ({ HTMLAttributes, mark }) => {
+    const pct = mark.attrs.size === "large" ? "130%" : mark.attrs.size === "small" ? "80%" : undefined;
+    return ["span", mergeAttributes(HTMLAttributes, { "data-font-size": mark.attrs.size, ...(pct ? { style: `font-size: ${pct}` } : {}) }), 0];
   },
 });
 
@@ -91,6 +132,9 @@ export function DocEditor({
       extensions: [
         StarterKit.configure({ heading: { levels: [1, 2, 3] }, code: false, codeBlock: false, link: false }),
         MergeField.configure({ labels }),
+        TableOfContents,
+        TextAlign,
+        FontSize,
         ...(allowClauses ? [Clause.configure({ titles })] : []),
       ],
       content: value ?? emptyDoc,
@@ -124,6 +168,8 @@ function Toolbar({ editor, fields, clauses }: { editor: Editor; fields: { key: s
       bold: e.isActive("bold"), italic: e.isActive("italic"), underline: e.isActive("underline"), strike: e.isActive("strike"),
       h1: e.isActive("heading", { level: 1 }), h2: e.isActive("heading", { level: 2 }), h3: e.isActive("heading", { level: 3 }),
       bullet: e.isActive("bulletList"), ordered: e.isActive("orderedList"), quote: e.isActive("blockquote"),
+      align: (e.getAttributes("paragraph").textAlign ?? e.getAttributes("heading").textAlign ?? "left") as string,
+      fontSize: (e.getAttributes("fontSize").size ?? "normal") as string,
     }),
   });
   // Clicking a toolbar <button> or <select> moves DOM focus there first; tiptap's own focus() only reclaims it
@@ -132,7 +178,8 @@ function Toolbar({ editor, fields, clauses }: { editor: Editor; fields: { key: s
     editor.view.dom.focus();
     return editor.chain().focus();
   };
-  const buttons: { key: keyof typeof state | "rule" | "undo" | "redo"; text: string; run: () => void }[] = [
+  type BoolKey = "bold" | "italic" | "underline" | "strike" | "h1" | "h2" | "h3" | "bullet" | "ordered" | "quote";
+  const buttons: { key: BoolKey | "rule" | "undo" | "redo"; text: string; run: () => void }[] = [
     { key: "bold", text: "B", run: () => chain().toggleBold().run() },
     { key: "italic", text: "I", run: () => chain().toggleItalic().run() },
     { key: "underline", text: "U", run: () => chain().toggleUnderline().run() },
@@ -147,6 +194,12 @@ function Toolbar({ editor, fields, clauses }: { editor: Editor; fields: { key: s
     { key: "undo", text: "↶", run: () => chain().undo().run() },
     { key: "redo", text: "↷", run: () => chain().redo().run() },
   ];
+  const aligns: { value: string; text: string }[] = [
+    { value: "left", text: "⇤" }, { value: "center", text: "↔" }, { value: "right", text: "⇥" }, { value: "justify", text: "≡" },
+  ];
+  const sizes: { value: string; label: string }[] = [
+    { value: "normal", label: tb("fontSizeNormal") }, { value: "small", label: tb("fontSizeSmall") }, { value: "large", label: tb("fontSizeLarge") },
+  ];
   return (
     <div className="flex flex-wrap items-center gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1 text-sm" role="toolbar">
       {buttons.map((b) => (
@@ -155,15 +208,36 @@ function Toolbar({ editor, fields, clauses }: { editor: Editor; fields: { key: s
           type="button"
           title={tb(b.key)}
           aria-label={tb(b.key)}
-          aria-pressed={b.key in state ? state[b.key as keyof typeof state] : undefined}
+          aria-pressed={b.key in state ? state[b.key as BoolKey] : undefined}
           onClick={b.run}
-          className={`min-w-8 rounded px-2 py-1 ${b.key in state && state[b.key as keyof typeof state] ? "bg-slate-800 text-white" : "hover:bg-slate-200"}`}
+          className={`min-w-8 rounded px-2 py-1 ${b.key in state && state[b.key as BoolKey] ? "bg-slate-800 text-white" : "hover:bg-slate-200"}`}
         >
           {b.text}
         </button>
       ))}
+      <span className="ml-2 flex items-center gap-1" role="group" aria-label={tb("align")}>
+        {aligns.map((a) => (
+          <button key={a.value} type="button" title={tb(`align${a.value}` as "alignleft")} aria-label={tb(`align${a.value}` as "alignleft")}
+            aria-pressed={state.align === a.value} onClick={() => chain().updateAttributes("paragraph", { textAlign: a.value }).updateAttributes("heading", { textAlign: a.value }).run()}
+            className={`min-w-8 rounded px-2 py-1 ${state.align === a.value ? "bg-slate-800 text-white" : "hover:bg-slate-200"}`}>{a.text}</button>
+        ))}
+      </span>
       <select
-        className="ml-2 rounded border border-slate-300 bg-white px-1 py-1"
+        className="rounded border border-slate-300 bg-white px-1 py-1"
+        aria-label={tb("fontSize")}
+        value={state.fontSize}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v === "normal") chain().unsetMark("fontSize").run();
+          else chain().setMark("fontSize", { size: v }).run();
+        }}
+      >
+        {sizes.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+      </select>
+      <button type="button" title={tb("insertToc")} aria-label={tb("insertToc")} onClick={() => chain().insertContent({ type: "tableOfContents" }).run()}
+        className="rounded px-2 py-1 hover:bg-slate-200">{tb("insertToc")}</button>
+      <select
+        className="rounded border border-slate-300 bg-white px-1 py-1"
         aria-label={t("insertField")}
         value=""
         onChange={(e) => {

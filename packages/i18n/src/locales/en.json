@@ -3021,7 +3021,17 @@
         "quote": "Quote",
         "rule": "Divider",
         "undo": "Undo",
-        "redo": "Redo"
+        "redo": "Redo",
+        "align": "Text align",
+        "alignleft": "Align left",
+        "aligncenter": "Align center",
+        "alignright": "Align right",
+        "alignjustify": "Justify",
+        "fontSize": "Font size",
+        "fontSizeNormal": "Normal",
+        "fontSizeSmall": "Small",
+        "fontSizeLarge": "Large",
+        "insertToc": "Insert table of contents"
       }
     },
     "clauses": {

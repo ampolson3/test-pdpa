@@ -30,9 +30,11 @@ type Content map[string]Node
 
 // Node and mark types the editor may produce; anything else is refused (and so never reaches the renderers).
 var (
-	blockTypes  = map[string]bool{"doc": true, "paragraph": true, "heading": true, "bulletList": true, "orderedList": true, "listItem": true, "blockquote": true, "horizontalRule": true, "clause": true}
+	blockTypes  = map[string]bool{"doc": true, "paragraph": true, "heading": true, "bulletList": true, "orderedList": true, "listItem": true, "blockquote": true, "horizontalRule": true, "clause": true, "tableOfContents": true}
 	inlineTypes = map[string]bool{"text": true, "hardBreak": true, "mergeField": true}
-	markTypes   = map[string]bool{"bold": true, "italic": true, "underline": true, "strike": true}
+	markTypes   = map[string]bool{"bold": true, "italic": true, "underline": true, "strike": true, "fontSize": true}
+	textAligns  = map[string]bool{"left": true, "center": true, "right": true, "justify": true}
+	fontSizes   = map[string]bool{"small": true, "large": true}
 )
 
 // ErrInvalid wraps every content problem.
@@ -80,6 +82,13 @@ func validate(n Node, depth int, count *int) error {
 		if l := Level(n); l < 1 || l > 3 {
 			return invalid("heading level")
 		}
+		if a := attr(n, "textAlign"); a != "" && !textAligns[a] {
+			return invalid("text align")
+		}
+	case "paragraph":
+		if a := attr(n, "textAlign"); a != "" && !textAligns[a] {
+			return invalid("text align")
+		}
 	case "mergeField":
 		if !keyRE(attr(n, "key")) {
 			return invalid("merge field key")
@@ -95,6 +104,11 @@ func validate(n Node, depth int, count *int) error {
 		for _, m := range n.Marks {
 			if !markTypes[m.Type] {
 				return invalid("mark %q", m.Type)
+			}
+			if m.Type == "fontSize" {
+				if s, _ := m.Attrs["size"].(string); !fontSizes[s] {
+					return invalid("font size")
+				}
 			}
 		}
 	}
@@ -181,6 +195,25 @@ func ClauseRefs(n Node) []string {
 				seen[k] = true
 				out = append(out, k)
 			}
+		}
+	})
+	return out
+}
+
+// OutlineEntry is one heading found while rendering, for a document's own table of contents (DPA-06).
+type OutlineEntry struct {
+	Level int
+	Text  string
+}
+
+// Outline walks n (already clause-expanded) and lists every heading, text resolved through fields — a
+// tableOfContents node renders from this, computed fresh at render time so it can never go stale against
+// the body it was generated from.
+func Outline(n Node, fields map[string]string) []OutlineEntry {
+	var out []OutlineEntry
+	walk(n, func(x Node) {
+		if x.Type == "heading" {
+			out = append(out, OutlineEntry{Level: Level(x), Text: PlainText(x, fields)})
 		}
 	})
 	return out

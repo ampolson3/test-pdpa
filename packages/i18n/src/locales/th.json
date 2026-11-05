@@ -3021,7 +3021,17 @@
         "quote": "ข้อความอ้างอิง",
         "rule": "เส้นคั่น",
         "undo": "เลิกทำ",
-        "redo": "ทำซ้ำ"
+        "redo": "ทำซ้ำ",
+        "align": "จัดแนวข้อความ",
+        "alignleft": "ชิดซ้าย",
+        "aligncenter": "กึ่งกลาง",
+        "alignright": "ชิดขวา",
+        "alignjustify": "กระจายขอบ",
+        "fontSize": "ขนาดตัวอักษร",
+        "fontSizeNormal": "ปกติ",
+        "fontSizeSmall": "เล็ก",
+        "fontSizeLarge": "ใหญ่",
+        "insertToc": "แทรกสารบัญ"
       }
     },
     "clauses": {

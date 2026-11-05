@@ -13,18 +13,19 @@ import (
 // language th-TH, so Word shapes Thai correctly and falls back to a Thai system font when Sarabun isn't installed.
 func DOCX(in Input) ([]byte, error) {
 	var body bytes.Buffer
-	d := &docxWriter{b: &body, fields: in.Fields}
+	expanded := in.expanded()
+	d := &docxWriter{b: &body, fields: in.Fields, outline: Outline(expanded, in.Fields)}
 	if in.Draft {
 		lang := in.Language
 		if lang == "" {
 			lang = "th"
 		}
-		d.paragraph("", "", []run{{text: DraftLabel(lang), bold: true, highlight: true}})
+		d.paragraph("", "", []run{{text: DraftLabel(lang), bold: true, highlight: true}}, "")
 	}
 	if in.Title != "" {
-		d.paragraph("Title", "", []run{{text: in.Title}})
+		d.paragraph("Title", "", []run{{text: in.Title}}, "")
 	}
-	for _, c := range in.expanded().Content {
+	for _, c := range expanded.Content {
 		d.block(c, "")
 	}
 	lang := "th-TH"
@@ -85,11 +86,31 @@ type run struct {
 	br                              bool
 	bold, italic, underline, strike bool
 	highlight                       bool
+	fontSize                        string // "", "small" or "large"
 }
 
 type docxWriter struct {
-	b      *bytes.Buffer
-	fields map[string]string
+	b       *bytes.Buffer
+	fields  map[string]string
+	outline []OutlineEntry
+}
+
+// docxHalfPoints is a run's font size in half-points (Word's own unit), from DPA-06's own "small"/"large" mark —
+// the document's base size (styles.xml's docDefaults) is 30 half-points (15pt).
+var docxHalfPoints = map[string]string{"small": "24", "large": "40"}
+
+// jcValue maps a ProseMirror textAlign value onto Word's own w:jc enum ("justify" has no literal counterpart).
+func jcValue(align string) string {
+	switch align {
+	case "center":
+		return "center"
+	case "right":
+		return "right"
+	case "justify":
+		return "both"
+	default:
+		return ""
+	}
 }
 
 func esc(s string) string {
@@ -98,10 +119,17 @@ func esc(s string) string {
 	return b.String()
 }
 
-func (d *docxWriter) paragraph(style, prefix string, runs []run) {
+func (d *docxWriter) paragraph(style, prefix string, runs []run, align string) {
 	d.b.WriteString("<w:p>")
-	if style != "" {
-		fmt.Fprintf(d.b, `<w:pPr><w:pStyle w:val="%s"/></w:pPr>`, style)
+	if style != "" || jcValue(align) != "" {
+		d.b.WriteString("<w:pPr>")
+		if style != "" {
+			fmt.Fprintf(d.b, `<w:pStyle w:val="%s"/>`, style)
+		}
+		if jc := jcValue(align); jc != "" {
+			fmt.Fprintf(d.b, `<w:jc w:val="%s"/>`, jc)
+		}
+		d.b.WriteString("</w:pPr>")
 	}
 	if prefix != "" {
 		runs = append([]run{{text: prefix}}, runs...)
@@ -123,6 +151,9 @@ func (d *docxWriter) paragraph(style, prefix string, runs []run) {
 		}
 		if r.highlight {
 			rpr.WriteString(`<w:highlight w:val="yellow"/>`)
+		}
+		if sz := docxHalfPoints[r.fontSize]; sz != "" {
+			fmt.Fprintf(&rpr, `<w:sz w:val="%s"/><w:szCs w:val="%s"/>`, sz, sz)
 		}
 		if rpr.Len() > 0 {
 			d.b.WriteString("<w:rPr>" + rpr.String() + "</w:rPr>")
@@ -153,6 +184,8 @@ func (d *docxWriter) inline(n Node) []run {
 					r.underline = true
 				case "strike":
 					r.strike = true
+				case "fontSize":
+					r.fontSize, _ = m.Attrs["size"].(string)
 				}
 			}
 			out = append(out, r)
@@ -173,9 +206,13 @@ func (d *docxWriter) inline(n Node) []run {
 func (d *docxWriter) block(n Node, indent string) {
 	switch n.Type {
 	case "paragraph":
-		d.paragraph("", indent, d.inline(n))
+		d.paragraph("", indent, d.inline(n), attr(n, "textAlign"))
 	case "heading":
-		d.paragraph(fmt.Sprintf("Heading%d", Level(n)), "", d.inline(n))
+		d.paragraph(fmt.Sprintf("Heading%d", Level(n)), "", d.inline(n), attr(n, "textAlign"))
+	case "tableOfContents":
+		for _, h := range d.outline {
+			d.paragraph("", strings.Repeat("    ", h.Level-1), []run{{text: h.Text}}, "")
+		}
 	case "blockquote":
 		for _, c := range n.Content {
 			d.block(c, indent)
@@ -192,22 +229,22 @@ func (d *docxWriter) block(n Node, indent string) {
 					p = indent + marker
 				}
 				if c.Type == "paragraph" {
-					d.paragraph("", p, d.inline(c))
+					d.paragraph("", p, d.inline(c), "")
 				} else {
 					d.block(c, indent+"    ")
 				}
 			}
 		}
 	case "horizontalRule":
-		d.paragraph("", "", []run{{text: "────────────────────"}})
+		d.paragraph("", "", []run{{text: "────────────────────"}}, "")
 	case "clauseBlock":
 		if t := attr(n, "title"); t != "" {
-			d.paragraph("Heading3", "", []run{{text: t}})
+			d.paragraph("Heading3", "", []run{{text: t}}, "")
 		}
 		for _, c := range n.Content {
 			d.block(c, indent)
 		}
 	case "clause":
-		d.paragraph("", "", []run{{text: fmt.Sprintf("[%s@%d]", attr(n, "code"), ClauseVersion(n)), highlight: true}})
+		d.paragraph("", "", []run{{text: fmt.Sprintf("[%s@%d]", attr(n, "code"), ClauseVersion(n)), highlight: true}}, "")
 	}
 }

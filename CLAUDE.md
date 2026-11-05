@@ -5984,6 +5984,58 @@ failure, `internal/pkg/validate`'s own pre-existing, unrelated one) all verified
 frontend change — `pnpm --filter @pdpa/i18n test` re-verified clean as a sanity check since no file there
 changed either.
 
+### DPA-06 แก้ไขเอกสารในระบบ (`docs/modules/DPA.md#dpa-06`) — done
+Builds on PLT-16's existing `DocEditor` (TipTap on ProseMirror) and `internal/platform/docs/render` — not a
+new editor. Merge fields ("เพิ่มฟิลด์ในเอกสาร") were already insertable through the toolbar's own field
+picker and the outline sidebar already existed, so the real gap against the literal acceptance criterion
+("ปรับรูปแบบแล้วไฟล์ที่ส่งออกตรงกับที่เห็น") was that neither renderer (HTML/PDF/DOCX) could reproduce any
+formatting beyond headings/lists/marks already in `render/model.go`'s own node/mark allow-list — nothing a
+DPO newly set in the editor would ever show up in an export. Three additions, each threaded through every
+renderer so the exported file matches the editor exactly:
+
+**Paragraph alignment** ("ย่อหน้า"): a `textAlign` attribute (left/center/right/justify) on `paragraph` and
+`heading` nodes, validated in `render.Content.Validate`. HTML emits an inline `style="text-align:..."` only
+when not the default left (a new `alignedOpen` helper); DOCX emits `<w:jc>` via a widened
+`docxWriter.paragraph(..., align)` (Word's own `"both"` for `justify`, which has no literal counterpart).
+PDF needs no separate code — it's Chromium/Gotenberg printing the same HTML the preview shows, so HTML
+fidelity is PDF fidelity by construction.
+
+**Font size** ("ฟอนต์"): a narrow `fontSize` mark with exactly two presets, `small`/`large` — deliberately
+not an arbitrary font family, to stay inside the one embedded Sarabun font every export already relies on
+for correct Thai glyph shaping (PLT-16's own established constraint); real font-family choice would risk
+breaking that guarantee or need embedding more fonts, well beyond this feature's own literal criterion. HTML
+wraps the run in `<span style="font-size:...%">`; DOCX sets `<w:sz>`/`<w:szCs>` in half-points relative to
+the document's own base size.
+
+**Table of contents** ("สารบัญ"): a new `tableOfContents` atom block node the DPO inserts anywhere via the
+toolbar. It carries no stored content — a new `render.Outline` walks the document's own (clause-expanded,
+field-resolved) body fresh at render time and lists every heading, so the exported TOC always matches the
+document's current headings, even one edited *after* the TOC node was inserted, with nothing to go stale.
+Rendered as an indented list in both HTML and DOCX from the identical `Outline` call. `render.Validate`
+refuses an unknown `textAlign`/`fontSize` value the same way it already refuses any other malformed
+attribute, so a document never actually produced through the editor (a hand-crafted API call) can't smuggle
+through a value neither renderer understands.
+
+UI: `doc-editor.tsx`'s toolbar gained an alignment button group, a font-size `<select>`, and an "insert
+table of contents" button — three small, hand-written TipTap extensions (`TextAlign`/`FontSize`/
+`TableOfContents`) rather than installing `@tiptap/extension-text-align`, avoiding a new dependency for one
+global attribute this codebase can express in a dozen lines, matching how `MergeField`/`Clause` are already
+hand-written in the same file. Every `DocEditor` consumer (`/documents/{id}`, `/documents/templates`,
+`/documents/clauses`) gets the new toolbar for free, since all three already share the one component.
+
+Tests: unit (`internal/platform/docs/render/dpa06_formatting_test.go` — the acceptance criterion directly:
+HTML and DOCX both carry the exact alignment/font-size/TOC-heading-text the input set; a document with no
+alignment set carries no style attribute at all, so the pre-existing default case is untouched; the table
+of contents reflects a heading edited *after* the TOC node was inserted, proving it's computed fresh, not
+cached; validation rejects an unknown alignment or font-size value). No OpenAPI, sqlc, or migration change
+was needed — a document's content is already a free-form, server-validated jsonb column. `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions — only the
+pre-existing, unrelated `internal/pkg/validate` failure, confirmed identical via `git stash` both before and
+after this change), `pnpm --filter @pdpa/i18n test`, `pnpm --filter @pdpa/admin typecheck` and
+`pnpm --filter @pdpa/admin build` (incl. the updated `/documents/[id]`, `/documents/templates` and
+`/documents/clauses` routes) all verified clean. Not verified live against a real Postgres/Redis in this
+pass — neither was reachable in this environment for this feature.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

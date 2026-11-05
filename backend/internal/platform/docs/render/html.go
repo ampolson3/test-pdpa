@@ -49,6 +49,7 @@ h1{font-size:20pt;margin:0 0 8pt}h2{font-size:17pt;margin:14pt 0 6pt}h3{font-siz
 p{margin:0 0 6pt}ul,ol{margin:0 0 6pt 18pt;padding:0}blockquote{margin:6pt 0 6pt 12pt;padding-left:8pt;border-left:2pt solid #999}
 hr{border:0;border-top:1px solid #999;margin:10pt 0}.clause{margin:8pt 0}.clause>.clause-title{font-weight:700;margin-bottom:4pt}
 .missing{background:#fde68a;padding:0 2pt}.doc-title{font-size:22pt;font-weight:700;margin-bottom:12pt}.draft{border:2pt solid #b91c1c;color:#b91c1c;font-weight:700;text-align:center;padding:4pt;margin-bottom:12pt}
+.toc{margin:0 0 12pt}.toc p{margin:0 0 4pt}.toc-l1{font-weight:700}.toc-l2{margin-left:14pt}.toc-l3{margin-left:28pt}
 `
 
 // HTML renders a complete, self-contained page (fonts embedded) — what Gotenberg or Chromium prints to PDF and what
@@ -67,8 +68,9 @@ func HTML(in Input) []byte {
 	if in.Title != "" {
 		fmt.Fprintf(&b, `<div class="doc-title">%s</div>`, html.EscapeString(in.Title))
 	}
-	w := &htmlWriter{b: &b, fields: in.Fields}
-	for _, c := range in.expanded().Content {
+	expanded := in.expanded()
+	w := &htmlWriter{b: &b, fields: in.Fields, outline: Outline(expanded, in.Fields)}
+	for _, c := range expanded.Content {
 		w.node(c)
 	}
 	b.WriteString("</body></html>")
@@ -76,8 +78,9 @@ func HTML(in Input) []byte {
 }
 
 type htmlWriter struct {
-	b      *bytes.Buffer
-	fields map[string]string
+	b       *bytes.Buffer
+	fields  map[string]string
+	outline []OutlineEntry
 }
 
 func (w *htmlWriter) children(n Node) {
@@ -90,14 +93,20 @@ func (w *htmlWriter) node(n Node) {
 	b := w.b
 	switch n.Type {
 	case "paragraph":
-		b.WriteString("<p>")
+		b.WriteString(alignedOpen("p", attr(n, "textAlign")))
 		w.children(n)
 		b.WriteString("</p>")
 	case "heading":
 		l := Level(n)
-		fmt.Fprintf(b, "<h%d>", l)
+		b.WriteString(alignedOpen(fmt.Sprintf("h%d", l), attr(n, "textAlign")))
 		w.children(n)
 		fmt.Fprintf(b, "</h%d>", l)
+	case "tableOfContents":
+		b.WriteString(`<nav class="toc">`)
+		for _, h := range w.outline {
+			fmt.Fprintf(b, `<p class="toc-l%d">%s</p>`, h.Level, html.EscapeString(h.Text))
+		}
+		b.WriteString("</nav>")
 	case "bulletList":
 		b.WriteString("<ul>")
 		w.children(n)
@@ -142,16 +151,34 @@ func (w *htmlWriter) node(n Node) {
 	}
 }
 
+// alignedOpen opens tag with an inline text-align style when align isn't the default "left".
+func alignedOpen(tag, align string) string {
+	if align != "" && align != "left" {
+		return fmt.Sprintf(`<%s style="text-align:%s">`, tag, html.EscapeString(align))
+	}
+	return "<" + tag + ">"
+}
+
+var fontSizePct = map[string]string{"small": "80%", "large": "130%"}
+
 func marks(ms []Mark) (string, string) {
 	tags := map[string]string{"bold": "strong", "italic": "em", "underline": "u", "strike": "s"}
 	var open, close strings.Builder
-	for i, m := range ms {
+	for _, m := range ms {
+		if m.Type == "fontSize" {
+			size, _ := m.Attrs["size"].(string)
+			fmt.Fprintf(&open, `<span style="font-size:%s">`, fontSizePct[size])
+			continue
+		}
 		if t, ok := tags[m.Type]; ok {
 			open.WriteString("<" + t + ">")
-			_ = i
 		}
 	}
 	for i := len(ms) - 1; i >= 0; i-- {
+		if ms[i].Type == "fontSize" {
+			close.WriteString("</span>")
+			continue
+		}
 		if t, ok := tags[ms[i].Type]; ok {
 			close.WriteString("</" + t + ">")
 		}
