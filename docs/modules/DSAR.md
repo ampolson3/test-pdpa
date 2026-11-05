@@ -874,6 +874,57 @@ is_active=false), `GET`/`POST /admin/v1/dsar/requests/{id}/exemption-checks` —
 
 **Acceptance criteria:** เปลี่ยน workflow แล้วมีผลกับคำขอใหม่โดยไม่ต้อง deploy
 
+**Implementation — done.** The real constraint this feature ran into: `dsar.request_types` is seeded
+globally (migration 00043, `tenant_id IS NULL`), and RLS's own `tenant_write` policy only ever lets a
+caller write a row whose `tenant_id` is their own — so a tenant can never UPDATE the global row directly.
+Migration 00097 adds DSAR-20's own 5 config columns (`default_subtask_action`, `default_assignee_user_id`,
+`response_code_result`/`_rejection`/`_request_info`) and resolves this the same way ORG-07's own master
+data separates global defaults from tenant rows, but inverted for this table's own natural key: a tenant
+that configures a right type gets its *own* row sharing that code (`uq_request_types_code` already allows
+one row per `(tenant_id, code)`, including the global `tenant_id IS NULL` default); `ListRequestTypes`/
+`GetRequestType` resolve the *effective* row per code (`ORDER BY tenant_id NULLS LAST`), so every other
+caller (the intake picker, `CreateRequest`, `Transition`) sees exactly one row per code with no
+special-casing, whichever id it was looked up by.
+
+The acceptance criterion itself holds by construction, not by any cache-busting: `CreateRequest`/
+`Transition`/`generateResponseLetter` already call `GetRequestType` fresh on every single call (never a
+cached value), so a DPO's own `SaveRequestTypeConfig` save changes behaviour for the very next new request
+of that type immediately. Steps: `openRightSubtasks` (DSAR-03/08) uses the configured
+`default_subtask_action` when set, falling back to DSAR-03's own hardcoded `rightSubtaskAction` map
+otherwise. Responsible: `CreateRequest` applies a configured `default_assignee_user_id` right after
+creation via the existing `AssignRequest` (DSAR-07), so a new request of a configured type never starts
+unassigned. Response letter: `generateResponseLetter` (DSAR-13) resolves the configured override code for
+the triggering purpose (result/rejection/request_info) first, falling back to the shared global purpose
+template when the override has no (or incomplete) published content — never a silently broken generation.
+
+Response-letter overrides reuse `platform.templates` (`template_type = 'dsar_response'`) — a DPO-chosen
+code always distinct from the 3 reserved global purpose codes (`result`/`rejection`/`request_info`), so an
+override is always a brand-new row, never a same-code shadow needing the request-types-style resolution;
+`SaveResponseTemplateOverride` refuses the 3 reserved codes and inserts/updates `status = 'published'`
+directly (this is internal reference content a DPO edits freely, not a versioned legal document — rule 8's
+DRAFT/approval gate is about the generated *letter instance*, itself still a draft needing DPO review
+before it's ever sent, not this starting text).
+
+API: `PUT /admin/v1/dsar/request-types/{code}` (`dsar.form.update`, reusing DSAR-01's already-seeded
+family — no new permission code), `GET`/`PUT /admin/v1/dsar/response-templates`(`/{code}`) (`dsar.form.
+{read,update}`). UI: a new page, `/settings/dsar-workflow` — a table of all 9 right types with an inline
+step picker, a responsible-person search (reusing PLT-07's own `useMentionSearch`), and the 3 response-code
+override fields, plus a response-letter override editor (code/language/plain-text content) with a list of
+what's already saved. Tests: unit (`internal/dsar/service/dsar20_workflow_config_test.go` — the acceptance
+criterion directly: a configuration save changes the very next `CreateRequest`'s own default assignee
+immediately, validation for a bad subtask action/unknown assignee/unknown code, clearing restores the
+hardcoded default, effective-row resolution from either the original or the tenant's own row id, a
+response-letter override takes priority over the shared default on the very next generated letter through
+the real `verifying → in_review → in_progress → completed` chain, reserved-code and bad-language refusals),
+HTTP contract (`internal/dsar/http/handler_test.go`'s existing `TestDsarEndpoints_Contract`, extended with
+401/403/422/200 on all three new endpoints through the real validator + AuthZ). Not verified live against a
+real Postgres/Redis — this environment's own services were unreachable for this pass; every test compiles
+and vets clean and skips the same way the rest of this module's own suite already does here. `go build
+./...`, `go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions, full
+backend suite — only the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run with
+no drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter
+@pdpa/admin build`/`typecheck` (incl. the new `/settings/dsar-workflow` route) all verified clean.
+
 <a id="dsar-21"></a>
 ### DSAR-21 เชื่อมกับระบบ Consent
 

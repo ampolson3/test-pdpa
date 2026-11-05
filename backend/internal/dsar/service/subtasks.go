@@ -266,9 +266,18 @@ var rightSubtaskAction = map[string]string{
 // every system involved, not just a single generic task. An unmapped right type (future CHECK-constraint
 // addition) falls back to "review" rather than failing the transition outright.
 func (s *Service) openRightSubtasks(ctx context.Context, req Request, rt RequestType, assetIDs []uuid.UUID) error {
-	action, ok := rightSubtaskAction[rt.Code]
-	if !ok {
-		action = "review"
+	// DSAR-20: a DPO-configured default_subtask_action always wins over the hardcoded default below — the
+	// one lever that lets "ขั้นตอน" change per tenant with no redeploy.
+	action := ""
+	if rt.DefaultSubtaskAction != nil {
+		action = *rt.DefaultSubtaskAction
+	}
+	if action == "" {
+		var ok bool
+		action, ok = rightSubtaskAction[rt.Code]
+		if !ok {
+			action = "review"
+		}
 	}
 	for _, aid := range assetIDs {
 		assetID := aid

@@ -147,6 +147,16 @@ func (s *Service) CreateRequest(ctx context.Context, in CreateRequestInput) (Req
 	if err := s.audit(ctx, "dsar.request.create", out.ID, nil, map[string]any{"request_no": out.RequestNo, "request_type_id": out.RequestTypeID, "channel": out.Channel}); err != nil {
 		return Request{}, err
 	}
+	// DSAR-20: "ผู้รับผิดชอบ" — a request type's own configured default assignee is applied right away, so a
+	// new request of this type never starts unassigned the way DSAR-07's own fallback-to-role-DPO reminder
+	// otherwise requires.
+	if rt.DefaultAssigneeUserID != nil {
+		assigned, err := s.AssignRequest(ctx, out.ID, out.RowVersion, rt.DefaultAssigneeUserID)
+		if err != nil {
+			return Request{}, err
+		}
+		out = assigned
+	}
 	if err := s.scheduleReminder(ctx, out); err != nil {
 		return Request{}, err
 	}

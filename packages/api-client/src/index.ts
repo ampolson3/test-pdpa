@@ -701,6 +701,9 @@ export {
   useDsarLegalHoldMutations,
   useDsarExemptionChecks,
   useDsarRunExemptionCheck,
+  useDsarSaveRequestTypeConfig,
+  useDsarResponseTemplates,
+  useDsarSaveResponseTemplate,
   type DsarRequestType,
   type DsarRequest,
   type DsarRequestStatus,
@@ -733,6 +736,9 @@ export {
   type DsarExemptionCheck,
   type DsarExemptionResult,
   type DsarRunExemptionCheckInput,
+  type DsarRequestTypeConfigInput,
+  type DsarResponseTemplate,
+  type DsarSaveResponseTemplateInput,
 } from "./dsar";
 export {
   useCookieDomains,

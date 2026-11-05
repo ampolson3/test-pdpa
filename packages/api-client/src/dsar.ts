@@ -17,6 +17,9 @@ export type DsarIdentityRedaction = components["schemas"]["DsarIdentityRedaction
 export type DsarSubtask = components["schemas"]["DsarSubtask"];
 export type DsarSubtaskAction = components["schemas"]["DsarSubtaskAction"];
 export type DsarSubtaskStatus = components["schemas"]["DsarSubtaskStatus"];
+export type DsarRequestTypeConfigInput = components["schemas"]["DsarRequestTypeConfigInput"];
+export type DsarResponseTemplate = components["schemas"]["DsarResponseTemplate"];
+export type DsarSaveResponseTemplateInput = components["schemas"]["DsarSaveResponseTemplateInput"];
 
 const requestsKey = ["dsar", "requests"] as const;
 const requestKey = (id: string) => [...requestsKey, id] as const;
@@ -472,5 +475,46 @@ export function useDsarRunExemptionCheck(client: ApiClient) {
       return data;
     },
     onSuccess: (_d, { requestId }) => qc.invalidateQueries({ queryKey: ["dsar", "exemption-checks", requestId] }),
+  });
+}
+
+/** PUT /admin/v1/dsar/request-types/{code} (DSAR-20) — steps/responsible/response-letter override, applied
+ *  to the very next new request of this type with no redeploy. Invalidates the request-types list so the
+ *  intake form's own picker and this page's own table both see the save at once. */
+export function useDsarSaveRequestTypeConfig(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ code, input }: { code: DsarRequestType["code"]; input: DsarRequestTypeConfigInput }) => {
+      const { data, error } = await client.PUT("/admin/v1/dsar/request-types/{code}", { params: { path: { code } }, body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["dsar", "request-types"] }),
+  });
+}
+
+/** GET /admin/v1/dsar/response-templates (DSAR-20) — this tenant's own response-letter override codes. */
+export function useDsarResponseTemplates(client: ApiClient) {
+  return useQuery({
+    queryKey: ["dsar", "response-templates"] as const,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dsar/response-templates", {});
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** PUT /admin/v1/dsar/response-templates/{code} (DSAR-20) — save one language of a tenant-chosen override
+ *  code; "result"/"rejection"/"request_info" are refused (reserved for the shared global defaults). */
+export function useDsarSaveResponseTemplate(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ code, input }: { code: string; input: DsarSaveResponseTemplateInput }) => {
+      const { data, error } = await client.PUT("/admin/v1/dsar/response-templates/{code}", { params: { path: { code } }, body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["dsar", "response-templates"] }),
   });
 }

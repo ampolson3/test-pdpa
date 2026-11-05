@@ -1548,20 +1548,25 @@ type DsarRequest struct {
 
 // ประเภทคำขอ (ม.19, ม.30-36, ร้องเรียน, สอบถาม)
 type DsarRequestType struct {
-	ID                   uuid.UUID          `db:"id" json:"id"`
-	TenantID             pgtype.UUID        `db:"tenant_id" json:"tenant_id"`
-	Code                 string             `db:"code" json:"code"`
-	NameTh               string             `db:"name_th" json:"name_th"`
-	LegalRef             *string            `db:"legal_ref" json:"legal_ref"`
-	WorkflowDefinitionID pgtype.UUID        `db:"workflow_definition_id" json:"workflow_definition_id"`
-	SlaDays              int16              `db:"sla_days" json:"sla_days"`
-	ResponseTemplateID   pgtype.UUID        `db:"response_template_id" json:"response_template_id"`
-	CreatedAt            pgtype.Timestamptz `db:"created_at" json:"created_at"`
-	CreatedBy            pgtype.UUID        `db:"created_by" json:"created_by"`
-	UpdatedAt            pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
-	UpdatedBy            pgtype.UUID        `db:"updated_by" json:"updated_by"`
-	RowVersion           int32              `db:"row_version" json:"row_version"`
-	NameEn               *string            `db:"name_en" json:"name_en"`
+	ID                      uuid.UUID          `db:"id" json:"id"`
+	TenantID                pgtype.UUID        `db:"tenant_id" json:"tenant_id"`
+	Code                    string             `db:"code" json:"code"`
+	NameTh                  string             `db:"name_th" json:"name_th"`
+	LegalRef                *string            `db:"legal_ref" json:"legal_ref"`
+	WorkflowDefinitionID    pgtype.UUID        `db:"workflow_definition_id" json:"workflow_definition_id"`
+	SlaDays                 int16              `db:"sla_days" json:"sla_days"`
+	ResponseTemplateID      pgtype.UUID        `db:"response_template_id" json:"response_template_id"`
+	CreatedAt               pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy               pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt               pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy               pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion              int32              `db:"row_version" json:"row_version"`
+	NameEn                  *string            `db:"name_en" json:"name_en"`
+	DefaultSubtaskAction    *string            `db:"default_subtask_action" json:"default_subtask_action"`
+	DefaultAssigneeUserID   pgtype.UUID        `db:"default_assignee_user_id" json:"default_assignee_user_id"`
+	ResponseCodeResult      *string            `db:"response_code_result" json:"response_code_result"`
+	ResponseCodeRejection   *string            `db:"response_code_rejection" json:"response_code_rejection"`
+	ResponseCodeRequestInfo *string            `db:"response_code_request_info" json:"response_code_request_info"`
 }
 
 // ผลค้นหาข้อมูลข้ามระบบ (เข้ารหัส ลบเมื่อปิดคำขอ)

@@ -36,3 +36,6 @@ output-options:
     - dsarDeactivateLegalHold
     - dsarListExemptionChecks
     - dsarRunExemptionCheck
+    - dsarSaveRequestTypeConfig
+    - dsarListResponseTemplates
+    - dsarSaveResponseTemplate

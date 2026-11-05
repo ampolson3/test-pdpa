@@ -2406,6 +2406,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/request-types/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** DSAR-20 — configure a right type's own steps/responsible/response-letter override; takes effect for the very next new request, no redeploy */
+        put: operations["dsarSaveRequestTypeConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/response-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DSAR-20 — this tenant's own response-letter overrides (never the shared global defaults) */
+        get: operations["dsarListResponseTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dsar/response-templates/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** DSAR-20 — save one language of a tenant-chosen response-letter override code */
+        put: operations["dsarSaveResponseTemplate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dsar/forms": {
         parameters: {
             query?: never;
@@ -9743,6 +9794,40 @@ export interface components {
             name_en?: string;
             legal_ref?: string;
             sla_days: number;
+            row_version: number;
+            /** @description DSAR-20's own "steps" override — wins over DSAR-03's hardcoded per-type default when set. */
+            default_subtask_action?: components["schemas"]["DsarSubtaskAction"] | null;
+            /** @description DSAR-20's own "responsible" override — applied to every new request of this type at intake. */
+            default_assignee_user_id?: components["schemas"]["Uuid"] | null;
+            response_code_result?: string | null;
+            response_code_rejection?: string | null;
+            response_code_request_info?: string | null;
+        };
+        /** @description DSAR-20's own full-replace config save — an omitted field clears that override back to today's hardcoded default. */
+        DsarRequestTypeConfigInput: {
+            default_subtask_action?: components["schemas"]["DsarSubtaskAction"] | null;
+            default_assignee_user_id?: components["schemas"]["Uuid"] | null;
+            response_code_result?: string | null;
+            response_code_rejection?: string | null;
+            response_code_request_info?: string | null;
+        };
+        /** @description A tenant-authored override response letter (DSAR-20), under a code the DPO chose themselves — never one of the shared global purpose codes (result/rejection/request_info). */
+        DsarResponseTemplate: {
+            id: components["schemas"]["Uuid"];
+            code: string;
+            name: string;
+            /** @enum {string} */
+            language: "th" | "en";
+            content: {
+                [key: string]: unknown;
+            };
+        };
+        DsarSaveResponseTemplateInput: {
+            /** @enum {string} */
+            language: "th" | "en";
+            content: {
+                [key: string]: unknown;
+            };
         };
         /** @enum {string} */
         DsarRequestChannel: "web" | "email" | "phone" | "branch" | "letter" | "line" | "api";
@@ -18008,6 +18093,88 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    dsarSaveRequestTypeConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: "access" | "portability" | "objection" | "erasure" | "restriction" | "rectification" | "withdraw_consent" | "complaint" | "inquiry";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarRequestTypeConfigInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarRequestType"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarListResponseTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarResponseTemplate"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dsarSaveResponseTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarSaveResponseTemplateInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarResponseTemplate"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     dsarListIntakeForms: {

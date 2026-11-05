@@ -9,27 +9,76 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const getRequestType = `-- name: GetRequestType :one
-SELECT id, code, name_th, name_en, legal_ref, sla_days FROM dsar.request_types WHERE id = $1
+const getEffectiveRequestTypeByCode = `-- name: GetEffectiveRequestTypeByCode :one
+SELECT id, code, name_th, name_en, legal_ref, sla_days, default_subtask_action, default_assignee_user_id,
+    response_code_result, response_code_rejection, response_code_request_info, row_version
+FROM dsar.request_types WHERE code = $1 ORDER BY tenant_id NULLS LAST LIMIT 1
 `
 
-type GetRequestTypeRow struct {
-	ID       uuid.UUID `db:"id" json:"id"`
-	Code     string    `db:"code" json:"code"`
-	NameTh   string    `db:"name_th" json:"name_th"`
-	NameEn   *string   `db:"name_en" json:"name_en"`
-	LegalRef *string   `db:"legal_ref" json:"legal_ref"`
-	SlaDays  int16     `db:"sla_days" json:"sla_days"`
+type GetEffectiveRequestTypeByCodeRow struct {
+	ID                      uuid.UUID   `db:"id" json:"id"`
+	Code                    string      `db:"code" json:"code"`
+	NameTh                  string      `db:"name_th" json:"name_th"`
+	NameEn                  *string     `db:"name_en" json:"name_en"`
+	LegalRef                *string     `db:"legal_ref" json:"legal_ref"`
+	SlaDays                 int16       `db:"sla_days" json:"sla_days"`
+	DefaultSubtaskAction    *string     `db:"default_subtask_action" json:"default_subtask_action"`
+	DefaultAssigneeUserID   pgtype.UUID `db:"default_assignee_user_id" json:"default_assignee_user_id"`
+	ResponseCodeResult      *string     `db:"response_code_result" json:"response_code_result"`
+	ResponseCodeRejection   *string     `db:"response_code_rejection" json:"response_code_rejection"`
+	ResponseCodeRequestInfo *string     `db:"response_code_request_info" json:"response_code_request_info"`
+	RowVersion              int32       `db:"row_version" json:"row_version"`
 }
 
-func (q *Queries) GetRequestType(ctx context.Context, id uuid.UUID) (GetRequestTypeRow, error) {
-	row := q.db.QueryRow(ctx, getRequestType, id)
-	var i GetRequestTypeRow
+func (q *Queries) GetEffectiveRequestTypeByCode(ctx context.Context, code string) (GetEffectiveRequestTypeByCodeRow, error) {
+	row := q.db.QueryRow(ctx, getEffectiveRequestTypeByCode, code)
+	var i GetEffectiveRequestTypeByCodeRow
 	err := row.Scan(
 		&i.ID,
 		&i.Code,
+		&i.NameTh,
+		&i.NameEn,
+		&i.LegalRef,
+		&i.SlaDays,
+		&i.DefaultSubtaskAction,
+		&i.DefaultAssigneeUserID,
+		&i.ResponseCodeResult,
+		&i.ResponseCodeRejection,
+		&i.ResponseCodeRequestInfo,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
+const getRequestTypeCode = `-- name: GetRequestTypeCode :one
+SELECT code FROM dsar.request_types WHERE id = $1
+`
+
+func (q *Queries) GetRequestTypeCode(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, getRequestTypeCode, id)
+	var code string
+	err := row.Scan(&code)
+	return code, err
+}
+
+const getRequestTypeDefaultsByCode = `-- name: GetRequestTypeDefaultsByCode :one
+SELECT name_th, name_en, legal_ref, sla_days FROM dsar.request_types WHERE code = $1 AND tenant_id IS NULL
+`
+
+type GetRequestTypeDefaultsByCodeRow struct {
+	NameTh   string  `db:"name_th" json:"name_th"`
+	NameEn   *string `db:"name_en" json:"name_en"`
+	LegalRef *string `db:"legal_ref" json:"legal_ref"`
+	SlaDays  int16   `db:"sla_days" json:"sla_days"`
+}
+
+func (q *Queries) GetRequestTypeDefaultsByCode(ctx context.Context, code string) (GetRequestTypeDefaultsByCodeRow, error) {
+	row := q.db.QueryRow(ctx, getRequestTypeDefaultsByCode, code)
+	var i GetRequestTypeDefaultsByCodeRow
+	err := row.Scan(
 		&i.NameTh,
 		&i.NameEn,
 		&i.LegalRef,
@@ -39,18 +88,35 @@ func (q *Queries) GetRequestType(ctx context.Context, id uuid.UUID) (GetRequestT
 }
 
 const listRequestTypes = `-- name: ListRequestTypes :many
-SELECT id, code, name_th, name_en, legal_ref, sla_days FROM dsar.request_types ORDER BY code
+
+SELECT DISTINCT ON (code) id, code, name_th, name_en, legal_ref, sla_days, default_subtask_action, default_assignee_user_id,
+    response_code_result, response_code_rejection, response_code_request_info, row_version
+FROM dsar.request_types ORDER BY code, tenant_id NULLS LAST
 `
 
 type ListRequestTypesRow struct {
-	ID       uuid.UUID `db:"id" json:"id"`
-	Code     string    `db:"code" json:"code"`
-	NameTh   string    `db:"name_th" json:"name_th"`
-	NameEn   *string   `db:"name_en" json:"name_en"`
-	LegalRef *string   `db:"legal_ref" json:"legal_ref"`
-	SlaDays  int16     `db:"sla_days" json:"sla_days"`
+	ID                      uuid.UUID   `db:"id" json:"id"`
+	Code                    string      `db:"code" json:"code"`
+	NameTh                  string      `db:"name_th" json:"name_th"`
+	NameEn                  *string     `db:"name_en" json:"name_en"`
+	LegalRef                *string     `db:"legal_ref" json:"legal_ref"`
+	SlaDays                 int16       `db:"sla_days" json:"sla_days"`
+	DefaultSubtaskAction    *string     `db:"default_subtask_action" json:"default_subtask_action"`
+	DefaultAssigneeUserID   pgtype.UUID `db:"default_assignee_user_id" json:"default_assignee_user_id"`
+	ResponseCodeResult      *string     `db:"response_code_result" json:"response_code_result"`
+	ResponseCodeRejection   *string     `db:"response_code_rejection" json:"response_code_rejection"`
+	ResponseCodeRequestInfo *string     `db:"response_code_request_info" json:"response_code_request_info"`
+	RowVersion              int32       `db:"row_version" json:"row_version"`
 }
 
+// DSAR-20: a tenant's own configuration (default_subtask_action/default_assignee_user_id/response_code_*)
+// can never be written onto the global seeded row (migration 00043, tenant_id IS NULL) — RLS's own
+// tenant_write policy only allows writing a row whose tenant_id is the caller's own. So a tenant that
+// configures a right type gets its own row sharing that type's code (uq_request_types_code already allows
+// one row per (tenant_id, code), including tenant_id NULL for the global default); the "effective" row for
+// a code is always the tenant's own if one exists, else the global default — ListRequestTypes/GetRequestType
+// resolve that preference so every other caller (CreateRequest, Transition, the intake picker) just sees one
+// row per code with no special-casing of its own.
 func (q *Queries) ListRequestTypes(ctx context.Context) ([]ListRequestTypesRow, error) {
 	rows, err := q.db.Query(ctx, listRequestTypes)
 	if err != nil {
@@ -67,6 +133,12 @@ func (q *Queries) ListRequestTypes(ctx context.Context) ([]ListRequestTypesRow, 
 			&i.NameEn,
 			&i.LegalRef,
 			&i.SlaDays,
+			&i.DefaultSubtaskAction,
+			&i.DefaultAssigneeUserID,
+			&i.ResponseCodeResult,
+			&i.ResponseCodeRejection,
+			&i.ResponseCodeRequestInfo,
+			&i.RowVersion,
 		); err != nil {
 			return nil, err
 		}
@@ -76,4 +148,82 @@ func (q *Queries) ListRequestTypes(ctx context.Context) ([]ListRequestTypesRow, 
 		return nil, err
 	}
 	return items, nil
+}
+
+const upsertRequestTypeConfig = `-- name: UpsertRequestTypeConfig :one
+INSERT INTO dsar.request_types (tenant_id, code, name_th, name_en, legal_ref, sla_days,
+    default_subtask_action, default_assignee_user_id, response_code_result, response_code_rejection, response_code_request_info)
+VALUES (current_setting('app.tenant_id')::uuid, $1, $2, $3, $4, $5,
+    $6, $7, $8,
+    $9, $10)
+ON CONFLICT ON CONSTRAINT uq_request_types_code DO UPDATE SET
+    default_subtask_action = EXCLUDED.default_subtask_action,
+    default_assignee_user_id = EXCLUDED.default_assignee_user_id,
+    response_code_result = EXCLUDED.response_code_result,
+    response_code_rejection = EXCLUDED.response_code_rejection,
+    response_code_request_info = EXCLUDED.response_code_request_info
+RETURNING id, code, name_th, name_en, legal_ref, sla_days, default_subtask_action, default_assignee_user_id,
+    response_code_result, response_code_rejection, response_code_request_info, row_version
+`
+
+type UpsertRequestTypeConfigParams struct {
+	Code                    string      `db:"code" json:"code"`
+	NameTh                  string      `db:"name_th" json:"name_th"`
+	NameEn                  *string     `db:"name_en" json:"name_en"`
+	LegalRef                *string     `db:"legal_ref" json:"legal_ref"`
+	SlaDays                 int16       `db:"sla_days" json:"sla_days"`
+	DefaultSubtaskAction    *string     `db:"default_subtask_action" json:"default_subtask_action"`
+	DefaultAssigneeUserID   pgtype.UUID `db:"default_assignee_user_id" json:"default_assignee_user_id"`
+	ResponseCodeResult      *string     `db:"response_code_result" json:"response_code_result"`
+	ResponseCodeRejection   *string     `db:"response_code_rejection" json:"response_code_rejection"`
+	ResponseCodeRequestInfo *string     `db:"response_code_request_info" json:"response_code_request_info"`
+}
+
+type UpsertRequestTypeConfigRow struct {
+	ID                      uuid.UUID   `db:"id" json:"id"`
+	Code                    string      `db:"code" json:"code"`
+	NameTh                  string      `db:"name_th" json:"name_th"`
+	NameEn                  *string     `db:"name_en" json:"name_en"`
+	LegalRef                *string     `db:"legal_ref" json:"legal_ref"`
+	SlaDays                 int16       `db:"sla_days" json:"sla_days"`
+	DefaultSubtaskAction    *string     `db:"default_subtask_action" json:"default_subtask_action"`
+	DefaultAssigneeUserID   pgtype.UUID `db:"default_assignee_user_id" json:"default_assignee_user_id"`
+	ResponseCodeResult      *string     `db:"response_code_result" json:"response_code_result"`
+	ResponseCodeRejection   *string     `db:"response_code_rejection" json:"response_code_rejection"`
+	ResponseCodeRequestInfo *string     `db:"response_code_request_info" json:"response_code_request_info"`
+	RowVersion              int32       `db:"row_version" json:"row_version"`
+}
+
+// Always a tenant-owned row (current tenant, never NULL) — the display fields (name/legal_ref/sla_days) are
+// copied from the global default once, at first save, purely to satisfy this table's own NOT NULL columns;
+// DSAR-20's own config columns are what every later save actually changes.
+func (q *Queries) UpsertRequestTypeConfig(ctx context.Context, arg UpsertRequestTypeConfigParams) (UpsertRequestTypeConfigRow, error) {
+	row := q.db.QueryRow(ctx, upsertRequestTypeConfig,
+		arg.Code,
+		arg.NameTh,
+		arg.NameEn,
+		arg.LegalRef,
+		arg.SlaDays,
+		arg.DefaultSubtaskAction,
+		arg.DefaultAssigneeUserID,
+		arg.ResponseCodeResult,
+		arg.ResponseCodeRejection,
+		arg.ResponseCodeRequestInfo,
+	)
+	var i UpsertRequestTypeConfigRow
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.NameTh,
+		&i.NameEn,
+		&i.LegalRef,
+		&i.SlaDays,
+		&i.DefaultSubtaskAction,
+		&i.DefaultAssigneeUserID,
+		&i.ResponseCodeResult,
+		&i.ResponseCodeRejection,
+		&i.ResponseCodeRequestInfo,
+		&i.RowVersion,
+	)
+	return i, err
 }

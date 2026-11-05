@@ -7127,6 +7127,100 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/dsar/request-types/{code}:
+    put:
+      operationId: dsarSaveRequestTypeConfig
+      tags: [dsar]
+      summary: DSAR-20 — configure a right type's own steps/responsible/response-letter override; takes effect for the very next new request, no redeploy
+      x-permission: dsar.form.update
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [access, portability, objection, erasure, restriction, rectification, withdraw_consent, complaint, inquiry]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarRequestTypeConfigInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarRequestType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/response-templates:
+    get:
+      operationId: dsarListResponseTemplates
+      tags: [dsar]
+      summary: DSAR-20 — this tenant's own response-letter overrides (never the shared global defaults)
+      x-permission: dsar.form.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarResponseTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/dsar/response-templates/{code}:
+    put:
+      operationId: dsarSaveResponseTemplate
+      tags: [dsar]
+      summary: DSAR-20 — save one language of a tenant-chosen response-letter override code
+      x-permission: dsar.form.update
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: {type: string, minLength: 1, maxLength: 80}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarSaveResponseTemplateInput'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarResponseTemplate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/dsar/forms:
     get:
       operationId: dsarListIntakeForms
@@ -24455,7 +24549,7 @@ components:
         rejected_at: {type: string, format: date-time}
     DsarRequestType:
       type: object
-      required: [id, code, name_th, sla_days]
+      required: [id, code, name_th, sla_days, row_version]
       properties:
         id: {$ref: '#/components/schemas/Uuid'}
         code:
@@ -24465,6 +24559,43 @@ components:
         name_en: {type: string}
         legal_ref: {type: string}
         sla_days: {type: integer}
+        row_version: {type: integer}
+        default_subtask_action:
+          description: DSAR-20's own "steps" override — wins over DSAR-03's hardcoded per-type default when set.
+          oneOf: [{$ref: '#/components/schemas/DsarSubtaskAction'}, {type: 'null'}]
+        default_assignee_user_id:
+          description: DSAR-20's own "responsible" override — applied to every new request of this type at intake.
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        response_code_result: {type: [string, 'null']}
+        response_code_rejection: {type: [string, 'null']}
+        response_code_request_info: {type: [string, 'null']}
+    DsarRequestTypeConfigInput:
+      description: DSAR-20's own full-replace config save — an omitted field clears that override back to today's hardcoded default.
+      type: object
+      properties:
+        default_subtask_action:
+          oneOf: [{$ref: '#/components/schemas/DsarSubtaskAction'}, {type: 'null'}]
+        default_assignee_user_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        response_code_result: {type: [string, 'null']}
+        response_code_rejection: {type: [string, 'null']}
+        response_code_request_info: {type: [string, 'null']}
+    DsarResponseTemplate:
+      description: A tenant-authored override response letter (DSAR-20), under a code the DPO chose themselves — never one of the shared global purpose codes (result/rejection/request_info).
+      type: object
+      required: [id, code, name, language, content]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        code: {type: string}
+        name: {type: string}
+        language: {type: string, enum: [th, en]}
+        content: {type: object, additionalProperties: true}
+    DsarSaveResponseTemplateInput:
+      type: object
+      required: [language, content]
+      properties:
+        language: {type: string, enum: [th, en]}
+        content: {type: object, additionalProperties: true}
     DsarRequestChannel:
       type: string
       enum: [web, email, phone, branch, letter, line, api]

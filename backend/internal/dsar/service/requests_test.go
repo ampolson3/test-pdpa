@@ -55,6 +55,7 @@ func setup(t *testing.T, suffix string) env {
 				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
 				`DELETE FROM ropa.processing_activities`, `DELETE FROM org.org_units`,
 				`UPDATE org.legal_entities SET parent_id = NULL`, `DELETE FROM org.legal_entities`, `DELETE FROM platform.audit_log`,
+				`DELETE FROM dsar.request_types`, `DELETE FROM platform.templates WHERE template_type = 'dsar_response'`,
 				`DELETE FROM iam.users WHERE email LIKE 'assignee-%@dbtest.example'`,
 			} {
 				_, _ = tx.Exec(ctx, q)

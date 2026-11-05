@@ -141,8 +141,9 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	other := uuid.New()
 	grants := map[string][]string{
 		tenant.UserID.String(): {"dsar.request.read", "dsar.request.create", "dsar.request.execute", "dsar.request.update", "dsar.request.approve",
-			"dsar.request.delete", "dsar.subtask.read", "dsar.subtask.create", "dsar.subtask.update", "dsar.subtask.execute", "dsar.subtask.delete"},
-		other.String(): {"dsar.request.read", "dsar.subtask.read"},
+			"dsar.request.delete", "dsar.subtask.read", "dsar.subtask.create", "dsar.subtask.update", "dsar.subtask.execute", "dsar.subtask.delete",
+			"dsar.form.read", "dsar.form.update"},
+		other.String(): {"dsar.request.read", "dsar.subtask.read", "dsar.form.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
 		return authz.Grants{TenantID: tid, UserID: uid, Permissions: grants[uid]}, nil
@@ -529,6 +530,47 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("DELETE", "/admin/v1/dsar/legal-holds/"+hold.Id.String(), &admin, nil, map[string]string{"If-Match": etagOf(hold.RowVersion)}); code != 200 || !strings.Contains(body, `"is_active":false`) {
 		t.Errorf("deactivate legal hold: %d %s", code, body)
+	}
+
+	// DSAR-20: configurable workflow per right type — steps/responsible/response-letter override.
+	if code, _ := do("PUT", "/admin/v1/dsar/request-types/access", nil, map[string]any{"default_subtask_action": "export"}); code != 401 {
+		t.Errorf("save request-type config, no principal: %d, want 401", code)
+	}
+	if code, _ := do("PUT", "/admin/v1/dsar/request-types/access", &viewer, map[string]any{"default_subtask_action": "export"}); code != 403 {
+		t.Errorf("save request-type config, read only: %d, want 403", code)
+	}
+	if code, _ := do("PUT", "/admin/v1/dsar/request-types/access", &admin, map[string]any{"default_subtask_action": "bogus"}); code != 422 {
+		t.Errorf("save request-type config, bad action: %d, want 422", code)
+	}
+	code, body = do("PUT", "/admin/v1/dsar/request-types/access", &admin,
+		map[string]any{"default_subtask_action": "export", "default_assignee_user_id": assignee, "response_code_result": "my-result"})
+	if code != 200 || !strings.Contains(body, `"default_subtask_action":"export"`) || !strings.Contains(body, `"response_code_result":"my-result"`) {
+		t.Fatalf("save request-type config: %d %s", code, body)
+	}
+	// Effective-row resolution: GET request-types now shows the configured row for "access" alongside every
+	// other still-default code, with no redeploy between the save above and this read.
+	if code, body := do("GET", "/admin/v1/dsar/request-types", &viewer, nil); code != 200 || !strings.Contains(body, `"default_subtask_action":"export"`) {
+		t.Errorf("request-types after config: %d %s, want the configured access row", code, body)
+	}
+
+	if code, _ := do("GET", "/admin/v1/dsar/response-templates", nil, nil); code != 401 {
+		t.Errorf("list response-templates, no principal: %d, want 401", code)
+	}
+	if code, _ := do("PUT", "/admin/v1/dsar/response-templates/result", &admin, map[string]any{"language": "th", "content": map[string]any{"type": "doc"}}); code != 422 {
+		t.Errorf("save response-template, reserved code: %d, want 422", code)
+	}
+	if code, _ := do("PUT", "/admin/v1/dsar/response-templates/my-result", &viewer, map[string]any{"language": "th", "content": map[string]any{"type": "doc"}}); code != 403 {
+		t.Errorf("save response-template, read only: %d, want 403", code)
+	}
+	code, body = do("PUT", "/admin/v1/dsar/response-templates/my-result", &admin,
+		map[string]any{"language": "th", "content": map[string]any{"type": "doc", "content": []any{
+			map[string]any{"type": "paragraph", "content": []any{map[string]any{"type": "text", "text": "ผลการพิจารณาแบบกำหนดเอง"}}},
+		}}})
+	if code != 200 || !strings.Contains(body, `"code":"my-result"`) || !strings.Contains(body, `"language":"th"`) {
+		t.Fatalf("save response-template: %d %s", code, body)
+	}
+	if code, body := do("GET", "/admin/v1/dsar/response-templates", &viewer, nil); code != 200 || !strings.Contains(body, `"my-result"`) {
+		t.Errorf("list response-templates: %d %s", code, body)
 	}
 }
 

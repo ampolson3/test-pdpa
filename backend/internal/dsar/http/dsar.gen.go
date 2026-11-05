@@ -259,37 +259,73 @@ func (e DsarRequestStatus) Valid() bool {
 
 // Defines values for DsarRequestTypeCode.
 const (
-	Access          DsarRequestTypeCode = "access"
-	Complaint       DsarRequestTypeCode = "complaint"
-	Erasure         DsarRequestTypeCode = "erasure"
-	Inquiry         DsarRequestTypeCode = "inquiry"
-	Objection       DsarRequestTypeCode = "objection"
-	Portability     DsarRequestTypeCode = "portability"
-	Rectification   DsarRequestTypeCode = "rectification"
-	Restriction     DsarRequestTypeCode = "restriction"
-	WithdrawConsent DsarRequestTypeCode = "withdraw_consent"
+	DsarRequestTypeCodeAccess          DsarRequestTypeCode = "access"
+	DsarRequestTypeCodeComplaint       DsarRequestTypeCode = "complaint"
+	DsarRequestTypeCodeErasure         DsarRequestTypeCode = "erasure"
+	DsarRequestTypeCodeInquiry         DsarRequestTypeCode = "inquiry"
+	DsarRequestTypeCodeObjection       DsarRequestTypeCode = "objection"
+	DsarRequestTypeCodePortability     DsarRequestTypeCode = "portability"
+	DsarRequestTypeCodeRectification   DsarRequestTypeCode = "rectification"
+	DsarRequestTypeCodeRestriction     DsarRequestTypeCode = "restriction"
+	DsarRequestTypeCodeWithdrawConsent DsarRequestTypeCode = "withdraw_consent"
 )
 
 // Valid indicates whether the value is a known member of the DsarRequestTypeCode enum.
 func (e DsarRequestTypeCode) Valid() bool {
 	switch e {
-	case Access:
+	case DsarRequestTypeCodeAccess:
 		return true
-	case Complaint:
+	case DsarRequestTypeCodeComplaint:
 		return true
-	case Erasure:
+	case DsarRequestTypeCodeErasure:
 		return true
-	case Inquiry:
+	case DsarRequestTypeCodeInquiry:
 		return true
-	case Objection:
+	case DsarRequestTypeCodeObjection:
 		return true
-	case Portability:
+	case DsarRequestTypeCodePortability:
 		return true
-	case Rectification:
+	case DsarRequestTypeCodeRectification:
 		return true
-	case Restriction:
+	case DsarRequestTypeCodeRestriction:
 		return true
-	case WithdrawConsent:
+	case DsarRequestTypeCodeWithdrawConsent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarResponseTemplateLanguage.
+const (
+	DsarResponseTemplateLanguageEn DsarResponseTemplateLanguage = "en"
+	DsarResponseTemplateLanguageTh DsarResponseTemplateLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DsarResponseTemplateLanguage enum.
+func (e DsarResponseTemplateLanguage) Valid() bool {
+	switch e {
+	case DsarResponseTemplateLanguageEn:
+		return true
+	case DsarResponseTemplateLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarSaveResponseTemplateInputLanguage.
+const (
+	DsarSaveResponseTemplateInputLanguageEn DsarSaveResponseTemplateInputLanguage = "en"
+	DsarSaveResponseTemplateInputLanguageTh DsarSaveResponseTemplateInputLanguage = "th"
+)
+
+// Valid indicates whether the value is a known member of the DsarSaveResponseTemplateInputLanguage enum.
+func (e DsarSaveResponseTemplateInputLanguage) Valid() bool {
+	switch e {
+	case DsarSaveResponseTemplateInputLanguageEn:
+		return true
+	case DsarSaveResponseTemplateInputLanguageTh:
 		return true
 	default:
 		return false
@@ -671,6 +707,45 @@ func (e DsarListRequestTypesParamsAcceptLanguage) Valid() bool {
 	case DsarListRequestTypesParamsAcceptLanguageEn:
 		return true
 	case DsarListRequestTypesParamsAcceptLanguageTh:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DsarSaveRequestTypeConfigParamsCode.
+const (
+	DsarSaveRequestTypeConfigParamsCodeAccess          DsarSaveRequestTypeConfigParamsCode = "access"
+	DsarSaveRequestTypeConfigParamsCodeComplaint       DsarSaveRequestTypeConfigParamsCode = "complaint"
+	DsarSaveRequestTypeConfigParamsCodeErasure         DsarSaveRequestTypeConfigParamsCode = "erasure"
+	DsarSaveRequestTypeConfigParamsCodeInquiry         DsarSaveRequestTypeConfigParamsCode = "inquiry"
+	DsarSaveRequestTypeConfigParamsCodeObjection       DsarSaveRequestTypeConfigParamsCode = "objection"
+	DsarSaveRequestTypeConfigParamsCodePortability     DsarSaveRequestTypeConfigParamsCode = "portability"
+	DsarSaveRequestTypeConfigParamsCodeRectification   DsarSaveRequestTypeConfigParamsCode = "rectification"
+	DsarSaveRequestTypeConfigParamsCodeRestriction     DsarSaveRequestTypeConfigParamsCode = "restriction"
+	DsarSaveRequestTypeConfigParamsCodeWithdrawConsent DsarSaveRequestTypeConfigParamsCode = "withdraw_consent"
+)
+
+// Valid indicates whether the value is a known member of the DsarSaveRequestTypeConfigParamsCode enum.
+func (e DsarSaveRequestTypeConfigParamsCode) Valid() bool {
+	switch e {
+	case DsarSaveRequestTypeConfigParamsCodeAccess:
+		return true
+	case DsarSaveRequestTypeConfigParamsCodeComplaint:
+		return true
+	case DsarSaveRequestTypeConfigParamsCodeErasure:
+		return true
+	case DsarSaveRequestTypeConfigParamsCodeInquiry:
+		return true
+	case DsarSaveRequestTypeConfigParamsCodeObjection:
+		return true
+	case DsarSaveRequestTypeConfigParamsCodePortability:
+		return true
+	case DsarSaveRequestTypeConfigParamsCodeRectification:
+		return true
+	case DsarSaveRequestTypeConfigParamsCodeRestriction:
+		return true
+	case DsarSaveRequestTypeConfigParamsCodeWithdrawConsent:
 		return true
 	default:
 		return false
@@ -1335,22 +1410,64 @@ type DsarRequestStatus string
 type DsarRequestType struct {
 	Code DsarRequestTypeCode `json:"code"`
 
+	// DefaultAssigneeUserId DSAR-20's own "responsible" override — applied to every new request of this type at intake.
+	DefaultAssigneeUserId *Uuid `json:"default_assignee_user_id,omitempty"`
+
+	// DefaultSubtaskAction DSAR-20's own "steps" override — wins over DSAR-03's hardcoded per-type default when set.
+	DefaultSubtaskAction *DsarSubtaskAction `json:"default_subtask_action,omitempty"`
+
 	// Id UUIDv7 generated by the API
-	Id       Uuid    `json:"id"`
-	LegalRef *string `json:"legal_ref,omitempty"`
-	NameEn   *string `json:"name_en,omitempty"`
-	NameTh   string  `json:"name_th"`
-	SlaDays  int     `json:"sla_days"`
+	Id                      Uuid    `json:"id"`
+	LegalRef                *string `json:"legal_ref,omitempty"`
+	NameEn                  *string `json:"name_en,omitempty"`
+	NameTh                  string  `json:"name_th"`
+	ResponseCodeRejection   *string `json:"response_code_rejection,omitempty"`
+	ResponseCodeRequestInfo *string `json:"response_code_request_info,omitempty"`
+	ResponseCodeResult      *string `json:"response_code_result,omitempty"`
+	RowVersion              int     `json:"row_version"`
+	SlaDays                 int     `json:"sla_days"`
 }
 
 // DsarRequestTypeCode defines model for DsarRequestType.Code.
 type DsarRequestTypeCode string
+
+// DsarRequestTypeConfigInput DSAR-20's own full-replace config save — an omitted field clears that override back to today's hardcoded default.
+type DsarRequestTypeConfigInput struct {
+	DefaultAssigneeUserId   *Uuid              `json:"default_assignee_user_id,omitempty"`
+	DefaultSubtaskAction    *DsarSubtaskAction `json:"default_subtask_action,omitempty"`
+	ResponseCodeRejection   *string            `json:"response_code_rejection,omitempty"`
+	ResponseCodeRequestInfo *string            `json:"response_code_request_info,omitempty"`
+	ResponseCodeResult      *string            `json:"response_code_result,omitempty"`
+}
+
+// DsarResponseTemplate A tenant-authored override response letter (DSAR-20), under a code the DPO chose themselves — never one of the shared global purpose codes (result/rejection/request_info).
+type DsarResponseTemplate struct {
+	Code    string                 `json:"code"`
+	Content map[string]interface{} `json:"content"`
+
+	// Id UUIDv7 generated by the API
+	Id       Uuid                         `json:"id"`
+	Language DsarResponseTemplateLanguage `json:"language"`
+	Name     string                       `json:"name"`
+}
+
+// DsarResponseTemplateLanguage defines model for DsarResponseTemplate.Language.
+type DsarResponseTemplateLanguage string
 
 // DsarRunExemptionCheckInput defines model for DsarRunExemptionCheckInput.
 type DsarRunExemptionCheckInput struct {
 	// AssetIds The RoPA assets (systems) this erasure request's own work touches — same scope DSAR-03's own asset picker already names on the request
 	AssetIds []Uuid `json:"asset_ids"`
 }
+
+// DsarSaveResponseTemplateInput defines model for DsarSaveResponseTemplateInput.
+type DsarSaveResponseTemplateInput struct {
+	Content  map[string]interface{}                `json:"content"`
+	Language DsarSaveResponseTemplateInputLanguage `json:"language"`
+}
+
+// DsarSaveResponseTemplateInputLanguage defines model for DsarSaveResponseTemplateInput.Language.
+type DsarSaveResponseTemplateInputLanguage string
 
 // DsarSlaStatus DSAR-07 — computed live off due_at, never stored — on_track, at_risk (10 days or fewer left) or overdue.
 type DsarSlaStatus string
@@ -1608,6 +1725,9 @@ type DsarListRequestTypesParams struct {
 // DsarListRequestTypesParamsAcceptLanguage defines parameters for DsarListRequestTypes.
 type DsarListRequestTypesParamsAcceptLanguage string
 
+// DsarSaveRequestTypeConfigParamsCode defines parameters for DsarSaveRequestTypeConfig.
+type DsarSaveRequestTypeConfigParamsCode string
+
 // DsarListRequestsParams defines parameters for DsarListRequests.
 type DsarListRequestsParams struct {
 	Status *DsarRequestStatus `form:"status,omitempty" json:"status,omitempty"`
@@ -1831,6 +1951,9 @@ type DsarCreateIntakeFormJSONRequestBody = DsarIntakeFormInput
 // DsarCreateLegalHoldJSONRequestBody defines body for DsarCreateLegalHold for application/json ContentType.
 type DsarCreateLegalHoldJSONRequestBody = DsarLegalHoldInput
 
+// DsarSaveRequestTypeConfigJSONRequestBody defines body for DsarSaveRequestTypeConfig for application/json ContentType.
+type DsarSaveRequestTypeConfigJSONRequestBody = DsarRequestTypeConfigInput
+
 // DsarCreateRequestJSONRequestBody defines body for DsarCreateRequest for application/json ContentType.
 type DsarCreateRequestJSONRequestBody = DsarRequestInput
 
@@ -1870,6 +1993,9 @@ type DsarConfirmOtpVerificationJSONRequestBody = DsarConfirmOtpInput
 // DsarDecideVerificationJSONRequestBody defines body for DsarDecideVerification for application/json ContentType.
 type DsarDecideVerificationJSONRequestBody = DsarDecideVerificationInput
 
+// DsarSaveResponseTemplateJSONRequestBody defines body for DsarSaveResponseTemplate for application/json ContentType.
+type DsarSaveResponseTemplateJSONRequestBody = DsarSaveResponseTemplateInput
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// DsarListIntakeForms Public web intake forms (DSAR-01)
@@ -1899,6 +2025,9 @@ type ServerInterface interface {
 	// DsarListRequestTypes The 9 fixed DSAR right types (dsar.requests.request_type_id), for the request form's picker
 	// (GET /admin/v1/dsar/request-types)
 	DsarListRequestTypes(w http.ResponseWriter, r *http.Request, params DsarListRequestTypesParams)
+	// DsarSaveRequestTypeConfig DSAR-20 — configure a right type's own steps/responsible/response-letter override; takes effect for the very next new request, no redeploy
+	// (PUT /admin/v1/dsar/request-types/{code})
+	DsarSaveRequestTypeConfig(w http.ResponseWriter, r *http.Request, code DsarSaveRequestTypeConfigParamsCode)
 	// DsarListRequests The tenant's DSAR requests (ST-02)
 	// (GET /admin/v1/dsar/requests)
 	DsarListRequests(w http.ResponseWriter, r *http.Request, params DsarListRequestsParams)
@@ -1965,6 +2094,12 @@ type ServerInterface interface {
 	// DsarDecideVerification Staff decision on a pending id_document verification after checking it against system records — passing sets dsar.requests.verified_at and moves verifying → in_review
 	// (POST /admin/v1/dsar/requests/{id}/verifications/{verificationId}/decide)
 	DsarDecideVerification(w http.ResponseWriter, r *http.Request, id Uuid, verificationId Uuid, params DsarDecideVerificationParams)
+	// DsarListResponseTemplates DSAR-20 — this tenant's own response-letter overrides (never the shared global defaults)
+	// (GET /admin/v1/dsar/response-templates)
+	DsarListResponseTemplates(w http.ResponseWriter, r *http.Request)
+	// DsarSaveResponseTemplate DSAR-20 — save one language of a tenant-chosen response-letter override code
+	// (PUT /admin/v1/dsar/response-templates/{code})
+	DsarSaveResponseTemplate(w http.ResponseWriter, r *http.Request, code string)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -2022,6 +2157,12 @@ func (_ Unimplemented) DsarDeactivateLegalHold(w http.ResponseWriter, r *http.Re
 // DsarListRequestTypes The 9 fixed DSAR right types (dsar.requests.request_type_id), for the request form's picker
 // (GET /admin/v1/dsar/request-types)
 func (_ Unimplemented) DsarListRequestTypes(w http.ResponseWriter, r *http.Request, params DsarListRequestTypesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DsarSaveRequestTypeConfig DSAR-20 — configure a right type's own steps/responsible/response-letter override; takes effect for the very next new request, no redeploy
+// (PUT /admin/v1/dsar/request-types/{code})
+func (_ Unimplemented) DsarSaveRequestTypeConfig(w http.ResponseWriter, r *http.Request, code DsarSaveRequestTypeConfigParamsCode) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2154,6 +2295,18 @@ func (_ Unimplemented) DsarConfirmOtpVerification(w http.ResponseWriter, r *http
 // DsarDecideVerification Staff decision on a pending id_document verification after checking it against system records — passing sets dsar.requests.verified_at and moves verifying → in_review
 // (POST /admin/v1/dsar/requests/{id}/verifications/{verificationId}/decide)
 func (_ Unimplemented) DsarDecideVerification(w http.ResponseWriter, r *http.Request, id Uuid, verificationId Uuid, params DsarDecideVerificationParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DsarListResponseTemplates DSAR-20 — this tenant's own response-letter overrides (never the shared global defaults)
+// (GET /admin/v1/dsar/response-templates)
+func (_ Unimplemented) DsarListResponseTemplates(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DsarSaveResponseTemplate DSAR-20 — save one language of a tenant-chosen response-letter override code
+// (PUT /admin/v1/dsar/response-templates/{code})
+func (_ Unimplemented) DsarSaveResponseTemplate(w http.ResponseWriter, r *http.Request, code string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2670,6 +2823,32 @@ func (siw *ServerInterfaceWrapper) DsarListRequestTypes(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DsarListRequestTypes(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DsarSaveRequestTypeConfig operation middleware
+func (siw *ServerInterfaceWrapper) DsarSaveRequestTypeConfig(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "code" -------------
+	var code DsarSaveRequestTypeConfigParamsCode
+
+	err = runtime.BindStyledParameterWithOptions("simple", "code", chi.URLParam(r, "code"), &code, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "code", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DsarSaveRequestTypeConfig(w, r, code)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3940,6 +4119,46 @@ func (siw *ServerInterfaceWrapper) DsarDecideVerification(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// DsarListResponseTemplates operation middleware
+func (siw *ServerInterfaceWrapper) DsarListResponseTemplates(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DsarListResponseTemplates(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DsarSaveResponseTemplate operation middleware
+func (siw *ServerInterfaceWrapper) DsarSaveResponseTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "code" -------------
+	var code string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "code", chi.URLParam(r, "code"), &code, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "code", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DsarSaveResponseTemplate(w, r, code)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -4055,6 +4274,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/dsar/request-types", wrapper.DsarListRequestTypes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/v1/dsar/request-types/{code}", wrapper.DsarSaveRequestTypeConfig)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/v1/dsar/response-templates", wrapper.DsarListResponseTemplates)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/v1/dsar/response-templates/{code}", wrapper.DsarSaveResponseTemplate)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/admin/v1/dsar/forms", wrapper.DsarListIntakeForms)
@@ -4957,6 +5185,77 @@ func (response DsarListRequestTypes403ApplicationProblemPlusJSONResponse) VisitD
 	}
 	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSaveRequestTypeConfigRequestObject struct {
+	Code DsarSaveRequestTypeConfigParamsCode `json:"code"`
+	Body *DsarSaveRequestTypeConfigJSONRequestBody
+}
+
+type DsarSaveRequestTypeConfigResponseObject interface {
+	VisitDsarSaveRequestTypeConfigResponse(w http.ResponseWriter) error
+}
+
+type DsarSaveRequestTypeConfig200JSONResponse DsarRequestType
+
+func (response DsarSaveRequestTypeConfig200JSONResponse) VisitDsarSaveRequestTypeConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSaveRequestTypeConfig401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSaveRequestTypeConfig401ApplicationProblemPlusJSONResponse) VisitDsarSaveRequestTypeConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSaveRequestTypeConfig403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSaveRequestTypeConfig403ApplicationProblemPlusJSONResponse) VisitDsarSaveRequestTypeConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSaveRequestTypeConfig422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSaveRequestTypeConfig422ApplicationProblemPlusJSONResponse) VisitDsarSaveRequestTypeConfigResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -7150,6 +7449,132 @@ func (response DsarDecideVerification422ApplicationProblemPlusJSONResponse) Visi
 	return err
 }
 
+type DsarListResponseTemplatesRequestObject struct {
+}
+
+type DsarListResponseTemplatesResponseObject interface {
+	VisitDsarListResponseTemplatesResponse(w http.ResponseWriter) error
+}
+
+type DsarListResponseTemplates200JSONResponse struct {
+	Data []DsarResponseTemplate `json:"data"`
+}
+
+func (response DsarListResponseTemplates200JSONResponse) VisitDsarListResponseTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarListResponseTemplates401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DsarListResponseTemplates401ApplicationProblemPlusJSONResponse) VisitDsarListResponseTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarListResponseTemplates403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DsarListResponseTemplates403ApplicationProblemPlusJSONResponse) VisitDsarListResponseTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSaveResponseTemplateRequestObject struct {
+	Code string `json:"code"`
+	Body *DsarSaveResponseTemplateJSONRequestBody
+}
+
+type DsarSaveResponseTemplateResponseObject interface {
+	VisitDsarSaveResponseTemplateResponse(w http.ResponseWriter) error
+}
+
+type DsarSaveResponseTemplate200JSONResponse DsarResponseTemplate
+
+func (response DsarSaveResponseTemplate200JSONResponse) VisitDsarSaveResponseTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSaveResponseTemplate401ApplicationProblemPlusJSONResponse struct {
+	UnauthorizedApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSaveResponseTemplate401ApplicationProblemPlusJSONResponse) VisitDsarSaveResponseTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSaveResponseTemplate403ApplicationProblemPlusJSONResponse struct {
+	ForbiddenApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSaveResponseTemplate403ApplicationProblemPlusJSONResponse) VisitDsarSaveResponseTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DsarSaveResponseTemplate422ApplicationProblemPlusJSONResponse struct {
+	UnprocessableEntityApplicationProblemPlusJSONResponse
+}
+
+func (response DsarSaveResponseTemplate422ApplicationProblemPlusJSONResponse) VisitDsarSaveResponseTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// DsarListIntakeForms Public web intake forms (DSAR-01)
@@ -7179,6 +7604,9 @@ type StrictServerInterface interface {
 	// DsarListRequestTypes The 9 fixed DSAR right types (dsar.requests.request_type_id), for the request form's picker
 	// (GET /admin/v1/dsar/request-types)
 	DsarListRequestTypes(ctx context.Context, request DsarListRequestTypesRequestObject) (DsarListRequestTypesResponseObject, error)
+	// DsarSaveRequestTypeConfig DSAR-20 — configure a right type's own steps/responsible/response-letter override; takes effect for the very next new request, no redeploy
+	// (PUT /admin/v1/dsar/request-types/{code})
+	DsarSaveRequestTypeConfig(ctx context.Context, request DsarSaveRequestTypeConfigRequestObject) (DsarSaveRequestTypeConfigResponseObject, error)
 	// DsarListRequests The tenant's DSAR requests (ST-02)
 	// (GET /admin/v1/dsar/requests)
 	DsarListRequests(ctx context.Context, request DsarListRequestsRequestObject) (DsarListRequestsResponseObject, error)
@@ -7245,6 +7673,12 @@ type StrictServerInterface interface {
 	// DsarDecideVerification Staff decision on a pending id_document verification after checking it against system records — passing sets dsar.requests.verified_at and moves verifying → in_review
 	// (POST /admin/v1/dsar/requests/{id}/verifications/{verificationId}/decide)
 	DsarDecideVerification(ctx context.Context, request DsarDecideVerificationRequestObject) (DsarDecideVerificationResponseObject, error)
+	// DsarListResponseTemplates DSAR-20 — this tenant's own response-letter overrides (never the shared global defaults)
+	// (GET /admin/v1/dsar/response-templates)
+	DsarListResponseTemplates(ctx context.Context, request DsarListResponseTemplatesRequestObject) (DsarListResponseTemplatesResponseObject, error)
+	// DsarSaveResponseTemplate DSAR-20 — save one language of a tenant-chosen response-letter override code
+	// (PUT /admin/v1/dsar/response-templates/{code})
+	DsarSaveResponseTemplate(ctx context.Context, request DsarSaveResponseTemplateRequestObject) (DsarSaveResponseTemplateResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -7531,6 +7965,39 @@ func (sh *strictHandler) DsarListRequestTypes(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DsarListRequestTypesResponseObject); ok {
 		if err := validResponse.VisitDsarListRequestTypesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DsarSaveRequestTypeConfig operation middleware
+func (sh *strictHandler) DsarSaveRequestTypeConfig(w http.ResponseWriter, r *http.Request, code DsarSaveRequestTypeConfigParamsCode) {
+	var request DsarSaveRequestTypeConfigRequestObject
+
+	request.Code = code
+
+	var body DsarSaveRequestTypeConfigJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DsarSaveRequestTypeConfig(ctx, request.(DsarSaveRequestTypeConfigRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DsarSaveRequestTypeConfig")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DsarSaveRequestTypeConfigResponseObject); ok {
+		if err := validResponse.VisitDsarSaveRequestTypeConfigResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -8219,6 +8686,63 @@ func (sh *strictHandler) DsarDecideVerification(w http.ResponseWriter, r *http.R
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DsarDecideVerificationResponseObject); ok {
 		if err := validResponse.VisitDsarDecideVerificationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DsarListResponseTemplates operation middleware
+func (sh *strictHandler) DsarListResponseTemplates(w http.ResponseWriter, r *http.Request) {
+	var request DsarListResponseTemplatesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DsarListResponseTemplates(ctx, request.(DsarListResponseTemplatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DsarListResponseTemplates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DsarListResponseTemplatesResponseObject); ok {
+		if err := validResponse.VisitDsarListResponseTemplatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DsarSaveResponseTemplate operation middleware
+func (sh *strictHandler) DsarSaveResponseTemplate(w http.ResponseWriter, r *http.Request, code string) {
+	var request DsarSaveResponseTemplateRequestObject
+
+	request.Code = code
+
+	var body DsarSaveResponseTemplateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DsarSaveResponseTemplate(ctx, request.(DsarSaveResponseTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DsarSaveResponseTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DsarSaveResponseTemplateResponseObject); ok {
+		if err := validResponse.VisitDsarSaveResponseTemplateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

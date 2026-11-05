@@ -28,9 +28,24 @@ var purposeTitleTh = map[string]string{"result": "ผลการพิจาร
 // body correctly reads as being about "การเข้าถึงข้อมูล" for an access request and "การลบข้อมูล" for an
 // erasure request without 27 near-duplicate template bodies to keep in sync.
 func (s *Service) generateResponseLetter(ctx context.Context, req Request, rt RequestType, purpose string) (uuid.UUID, error) {
-	tpl, err := templateContent(ctx, purpose)
+	// DSAR-20: a request type's own configured response_code_* override takes priority over the shared
+	// global purpose code — read fresh on every generation, so a DPO's own save applies to the very next
+	// letter with no redeploy.
+	code := purpose
+	if override := rt.responseCodeOverride(purpose); override != nil && *override != "" {
+		code = *override
+	}
+	tpl, err := templateContent(ctx, code)
 	if err != nil {
 		return uuid.Nil, err
+	}
+	if len(tpl) == 0 && code != purpose {
+		// A configured override with no (or incomplete) published content falls back to the shared default
+		// rather than leaving the DPO with a silently broken letter generation.
+		tpl, err = templateContent(ctx, purpose)
+		if err != nil {
+			return uuid.Nil, err
+		}
 	}
 	if len(tpl) == 0 {
 		return uuid.Nil, fmt.Errorf("dsar: no published %s response template", purpose)

@@ -6,6 +6,7 @@ package dsarhttp
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	dsarservice "pdpa-platform/internal/dsar/service"
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/platform/crypto"
+	"pdpa-platform/internal/platform/docs/render"
 )
 
 type Strict struct {
@@ -144,14 +146,81 @@ func (h *Strict) DsarAssignRequest(ctx context.Context, req DsarAssignRequestReq
 }
 
 func toRequestTypeWire(t dsarservice.RequestType) DsarRequestType {
-	w := DsarRequestType{Id: t.ID, Code: DsarRequestTypeCode(t.Code), NameTh: t.NameTh, SlaDays: int(t.SLADays)}
+	w := DsarRequestType{Id: t.ID, Code: DsarRequestTypeCode(t.Code), NameTh: t.NameTh, SlaDays: int(t.SLADays), RowVersion: int(t.RowVersion),
+		DefaultSubtaskAction: nil, ResponseCodeResult: t.ResponseCodeResult, ResponseCodeRejection: t.ResponseCodeRejection, ResponseCodeRequestInfo: t.ResponseCodeRequestInfo}
 	if t.NameEn != "" {
 		w.NameEn = &t.NameEn
 	}
 	if t.LegalRef != "" {
 		w.LegalRef = &t.LegalRef
 	}
+	if t.DefaultSubtaskAction != nil {
+		a := DsarSubtaskAction(*t.DefaultSubtaskAction)
+		w.DefaultSubtaskAction = &a
+	}
+	w.DefaultAssigneeUserId = t.DefaultAssigneeUserID
 	return w
+}
+
+// DsarSaveRequestTypeConfig is DSAR-20's own write: steps/responsible/response-letter override, read fresh
+// by CreateRequest/Transition/generateResponseLetter so a save here applies to the very next new request —
+// the acceptance criterion itself, no redeploy needed.
+func (h *Strict) DsarSaveRequestTypeConfig(ctx context.Context, req DsarSaveRequestTypeConfigRequestObject) (DsarSaveRequestTypeConfigResponseObject, error) {
+	b := DsarRequestTypeConfigInput{}
+	if req.Body != nil {
+		b = *req.Body
+	}
+	in := dsarservice.RequestTypeConfigInput{
+		DefaultAssigneeUserID: b.DefaultAssigneeUserId, ResponseCodeResult: b.ResponseCodeResult,
+		ResponseCodeRejection: b.ResponseCodeRejection, ResponseCodeRequestInfo: b.ResponseCodeRequestInfo,
+	}
+	if b.DefaultSubtaskAction != nil {
+		a := string(*b.DefaultSubtaskAction)
+		in.DefaultSubtaskAction = &a
+	}
+	rt, err := h.svc.SaveRequestTypeConfig(ctx, string(req.Code), in)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return DsarSaveRequestTypeConfig200JSONResponse(toRequestTypeWire(rt)), nil
+}
+
+func (h *Strict) DsarListResponseTemplates(ctx context.Context, req DsarListResponseTemplatesRequestObject) (DsarListResponseTemplatesResponseObject, error) {
+	list, err := h.svc.ListResponseTemplateOverrides(ctx)
+	if err != nil {
+		return nil, problem(err)
+	}
+	resp := DsarListResponseTemplates200JSONResponse{Data: make([]DsarResponseTemplate, 0, len(list))}
+	for _, t := range list {
+		resp.Data = append(resp.Data, toResponseTemplateWire(t))
+	}
+	return resp, nil
+}
+
+func (h *Strict) DsarSaveResponseTemplate(ctx context.Context, req DsarSaveResponseTemplateRequestObject) (DsarSaveResponseTemplateResponseObject, error) {
+	if req.Body == nil {
+		return nil, httpx.RequestInvalid("body")
+	}
+	raw, err := json.Marshal(req.Body.Content)
+	if err != nil {
+		return nil, err
+	}
+	var node render.Node
+	if err := json.Unmarshal(raw, &node); err != nil {
+		return nil, httpx.RequestInvalid("content")
+	}
+	t, err := h.svc.SaveResponseTemplateOverride(ctx, req.Code, string(req.Body.Language), node)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return DsarSaveResponseTemplate200JSONResponse(toResponseTemplateWire(t)), nil
+}
+
+func toResponseTemplateWire(t dsarservice.ResponseTemplateOverride) DsarResponseTemplate {
+	content := map[string]any{}
+	raw, _ := json.Marshal(t.Content)
+	_ = json.Unmarshal(raw, &content)
+	return DsarResponseTemplate{Id: t.ID, Code: t.Code, Name: t.Name, Language: DsarResponseTemplateLanguage(t.Language), Content: content}
 }
 
 func toRequestWire(r dsarservice.Request) DsarRequest {
