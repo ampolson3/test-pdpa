@@ -8030,6 +8030,85 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/requests/{id}/redactions:
+    get:
+      operationId: dsarListRedactions
+      tags: [dsar]
+      summary: Every redaction performed before a file was delivered for this request, newest first (DSAR-16)
+      x-permission: dsar.package.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarRedaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dsarRedactFile
+      tags: [dsar]
+      summary: Black out another data subject's own personal data in a file before it is ever delivered (DSAR-16, ม.30 วรรคสอง)
+      description: |
+        No OCR is available in this environment to find another person's data automatically (the same gap
+        DSAR-06/decisions.md Q-30 already resolved for an ID card photo) — staff mark every rectangle
+        themselves. Only the redacted output (output_file_id on the response) is ever eligible for a DSAR-14
+        package or DSAR-15 export; the raw upload is attached only as the record's own internal evidence of
+        what was covered, never delivered on its own.
+      x-permission: dsar.package.create
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DsarRedactFileInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DsarRedaction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/dsar/requests/{id}/verifications:
     get:
       operationId: dsarListVerifications
@@ -24753,6 +24832,46 @@ components:
       required: [pass]
       properties:
         pass: {type: boolean}
+    DsarRedactionRegion:
+      type: object
+      required: [x, y, width, height]
+      description: A pixel rectangle (the uploaded image's own coordinate space) to black out — DSAR-16's own generalization of DsarIdentityRedaction to any file, not just an ID-card photo.
+      properties:
+        x: {type: integer, minimum: 0}
+        y: {type: integer, minimum: 0}
+        width: {type: integer, minimum: 1}
+        height: {type: integer, minimum: 1}
+    DsarRedactFileInput:
+      type: object
+      required: [raw_file_id, regions]
+      properties:
+        raw_file_id:
+          description: The caller's own clean, still-unattached PLT-09 upload (POST /admin/v1/platform/files) containing another data subject's own personal data
+          $ref: '#/components/schemas/Uuid'
+        regions:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/DsarRedactionRegion'
+    DsarRedactionStatus:
+      type: string
+      description: detecting (OCR, not available in this environment — never reached) | review | done
+      enum: [detecting, review, done]
+    DsarRedaction:
+      type: object
+      required: [id, request_id, source_file_id, output_file_id, regions, status, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        request_id: {$ref: '#/components/schemas/Uuid'}
+        source_file_id: {$ref: '#/components/schemas/Uuid'}
+        output_file_id: {$ref: '#/components/schemas/Uuid'}
+        regions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DsarRedactionRegion'
+        status: {$ref: '#/components/schemas/DsarRedactionStatus'}
+        reviewed_by: {oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]}
+        created_at: {type: string, format: date-time}
     DsarAuthorityType:
       type: string
       description: DSAR-04, ม.20 — the agent's own authority to submit on the data subject's behalf.

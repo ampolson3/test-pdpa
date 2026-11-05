@@ -2733,6 +2733,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/requests/{id}/redactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every redaction performed before a file was delivered for this request, newest first (DSAR-16) */
+        get: operations["dsarListRedactions"];
+        put?: never;
+        /**
+         * Black out another data subject's own personal data in a file before it is ever delivered (DSAR-16, ม.30 วรรคสอง)
+         * @description No OCR is available in this environment to find another person's data automatically (the same gap
+         *     DSAR-06/decisions.md Q-30 already resolved for an ID card photo) — staff mark every rectangle
+         *     themselves. Only the redacted output (output_file_id on the response) is ever eligible for a DSAR-14
+         *     package or DSAR-15 export; the raw upload is attached only as the record's own internal evidence of
+         *     what was covered, never delivered on its own.
+         */
+        post: operations["dsarRedactFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dsar/requests/{id}/verifications": {
         parameters: {
             query?: never;
@@ -9942,6 +9967,34 @@ export interface components {
         };
         DsarDecideVerificationInput: {
             pass: boolean;
+        };
+        /** @description A pixel rectangle (the uploaded image's own coordinate space) to black out — DSAR-16's own generalization of DsarIdentityRedaction to any file, not just an ID-card photo. */
+        DsarRedactionRegion: {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+        };
+        DsarRedactFileInput: {
+            /** @description The caller's own clean, still-unattached PLT-09 upload (POST /admin/v1/platform/files) containing another data subject's own personal data */
+            raw_file_id: components["schemas"]["Uuid"];
+            regions: components["schemas"]["DsarRedactionRegion"][];
+        };
+        /**
+         * @description detecting (OCR, not available in this environment — never reached) | review | done
+         * @enum {string}
+         */
+        DsarRedactionStatus: "detecting" | "review" | "done";
+        DsarRedaction: {
+            id: components["schemas"]["Uuid"];
+            request_id: components["schemas"]["Uuid"];
+            source_file_id: components["schemas"]["Uuid"];
+            output_file_id: components["schemas"]["Uuid"];
+            regions: components["schemas"]["DsarRedactionRegion"][];
+            status: components["schemas"]["DsarRedactionStatus"];
+            reviewed_by?: components["schemas"]["Uuid"] | null;
+            /** Format: date-time */
+            created_at: string;
         };
         /**
          * @description DSAR-04, ม.20 — the agent's own authority to submit on the data subject's behalf.
@@ -18850,6 +18903,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DsarCreatePackageResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarListRedactions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarRedaction"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dsarRedactFile: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DsarRedactFileInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DsarRedaction"];
                 };
             };
             400: components["responses"]["BadRequest"];

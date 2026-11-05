@@ -356,6 +356,39 @@ export function useDsarAgentMutations(client: ApiClient) {
   return { record, verify };
 }
 
+// DSAR-16: redaction of another person's own data before a file is delivered (ม.30 วรรคสอง) — staff mark
+// the rectangles themselves (no OCR available), the output is a brand-new file with the source attached
+// only as internal evidence, never itself deliverable.
+export type DsarRedaction = components["schemas"]["DsarRedaction"];
+export type DsarRedactionRegion = components["schemas"]["DsarRedactionRegion"];
+export type DsarRedactFileInput = components["schemas"]["DsarRedactFileInput"];
+
+/** GET /admin/v1/dsar/requests/{id}/redactions. */
+export function useDsarRedactions(client: ApiClient, requestId: string | undefined) {
+  return useQuery({
+    queryKey: ["dsar", "redactions", requestId ?? ""] as const,
+    enabled: !!requestId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dsar/requests/{id}/redactions", { params: { path: { id: requestId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/dsar/requests/{id}/redactions. */
+export function useDsarRedactFile(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ requestId, input }: { requestId: string; input: DsarRedactFileInput }) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/redactions", { params: { path: { id: requestId } }, body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, { requestId }) => qc.invalidateQueries({ queryKey: ["dsar", "redactions", requestId] }),
+  });
+}
+
 // DSAR-14: secure delivery packages — a loginless link wrapping an already-attached file, expiring per a
 // configured setting, optionally gated by a one-time access code.
 export type DsarPackage = components["schemas"]["DsarPackage"];

@@ -142,7 +142,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	grants := map[string][]string{
 		tenant.UserID.String(): {"dsar.request.read", "dsar.request.create", "dsar.request.execute", "dsar.request.update", "dsar.request.approve",
 			"dsar.request.delete", "dsar.subtask.read", "dsar.subtask.create", "dsar.subtask.update", "dsar.subtask.execute", "dsar.subtask.delete",
-			"dsar.form.read", "dsar.form.update"},
+			"dsar.form.read", "dsar.form.update", "dsar.package.read", "dsar.package.create"},
 		other.String(): {"dsar.request.read", "dsar.subtask.read", "dsar.form.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
@@ -530,6 +530,25 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("DELETE", "/admin/v1/dsar/legal-holds/"+hold.Id.String(), &admin, nil, map[string]string{"If-Match": etagOf(hold.RowVersion)}); code != 200 || !strings.Contains(body, `"is_active":false`) {
 		t.Errorf("deactivate legal hold: %d %s", code, body)
+	}
+
+	// DSAR-16: redaction before delivery. s.Files is never wired in this fixture (no S3/clamd here), so only
+	// the permission gate is exercised through HTTP — the real redact-and-save happy path is proven directly
+	// against a fully wired fakeFiles in internal/dsar/service/redaction_test.go.
+	if code, _ := do("GET", itemE+"/redactions", nil, nil); code != 401 {
+		t.Errorf("list redactions, no principal: %d, want 401", code)
+	}
+	if code, _ := do("GET", itemE+"/redactions", &viewer, nil); code != 403 {
+		t.Errorf("list redactions, read only: %d, want 403", code)
+	}
+	if code, body := do("GET", itemE+"/redactions", &admin, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list redactions: %d %s, want an empty list", code, body)
+	}
+	if code, _ := do("POST", itemE+"/redactions", nil, map[string]any{"raw_file_id": uuid.New(), "regions": []any{map[string]any{"x": 0, "y": 0, "width": 1, "height": 1}}}); code != 401 {
+		t.Errorf("redact file, no principal: %d, want 401", code)
+	}
+	if code, _ := do("POST", itemE+"/redactions", &viewer, map[string]any{"raw_file_id": uuid.New(), "regions": []any{map[string]any{"x": 0, "y": 0, "width": 1, "height": 1}}}); code != 403 {
+		t.Errorf("redact file, read only: %d, want 403", code)
 	}
 
 	// DSAR-20: configurable workflow per right type — steps/responsible/response-letter override.

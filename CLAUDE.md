@@ -6086,6 +6086,53 @@ with no drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/
 `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the new `/settings/dsar-workflow` route) all verified
 clean.
 
+### DSAR-16 ปกปิดข้อมูลของบุคคลอื่น (`docs/modules/DSAR.md#dsar-16`) — done, images only, no OCR
+`dsar.redactions` was already fully specified in the baseline migrations (`00012_dsar.sql`, FKs in
+`00018_foreign_keys.sql`: `source_file_id` a real NOT NULL FK to `platform.files`, `output_file_id`
+nullable, `regions` jsonb, `status` detecting/review/done) — unused until now, no new migration. No OCR
+library or service is reachable in this environment (`docs/decisions.md` Q-47, the same gap DSAR-06's own
+Q-30 already resolved for an ID-card photo), so `internal/dsar/service/redaction.go`'s `RedactFile` skips
+the schema's own `detecting` status entirely and goes straight to `done` in one call: staff mark every
+rectangle themselves, reusing DSAR-06's own `redactImage` pure function (Go stdlib `image`/`image/draw`,
+PNG/JPEG only, draws black boxes, refuses an out-of-bounds rectangle with `ErrRedactionOutOfBounds`)
+generalized to any image a request is about to deliver, not just an identity upload.
+
+The caller's own clean, still-unattached upload (`source_file_id`) is attached to the request as internal
+evidence only — via `Files.Attach`, so its own real FK never dangles once PLT-09's 24h orphan-expiry sweep
+would otherwise delete it — while the redacted bytes are saved as a brand-new file (`Files.SaveGenerated`,
+`output_file_id`), already attached. Neither DSAR-14's `CreatePackage` nor DSAR-15's `GeneratePortabilityExport`
+ever reads `dsar.redactions`, so the source is never offered to either as something deliverable: the
+acceptance criterion ("กู้คืนจากไฟล์ผลลัพธ์ไม่ได้") is about the *delivered output* alone, and holds
+literally without any extra enforcement needed. `RedactFile` guards `s.Files == nil` the same way DSAR-14's
+own `CreatePackage` already does. `GET`/`POST /admin/v1/dsar/requests/{id}/redactions` reuse DSAR-14's
+already-seeded `dsar.package.{read,create}` (redaction is package-prep work, no new permission code or
+migration for RBAC) — both added to `internal/dsar/http/oapi-codegen.yaml`'s own `include-operation-ids`
+allowlist, the recurring gotcha several prior features already hit.
+
+UI: a "ปกปิดก่อนส่งมอบ" toggle per row on `/requests` (`RedactionPanel`), mirroring `VerificationPanel`'s
+own `FileUploader` + x/y/width/height rectangle form exactly — a list of past rounds (status/region count/
+created-at) and a record form for a caller holding `dsar.package.create`. New `packages/api-client`
+hooks `useDsarRedactions`/`useDsarRedactFile`; new `dsarRequests.redaction.*` i18n keys (th/en). Tests:
+unit (`internal/dsar/service/redaction_test.go` — the acceptance criterion directly: the output file
+carries exactly the given rectangle blacked out and nothing outside it untouched, the source file is
+attached to the request (`EntityType == "dsar_request"`) but never delivered, `ListRedactions` round-trips,
+an out-of-bounds region is refused before anything new is written, no regions and an already-attached file
+id are both refused; two-tenant isolation), HTTP contract (`internal/dsar/http/handler_test.go`'s existing
+`TestDsarEndpoints_Contract`, extended with 401/403 for both new endpoints and 200 with an empty list for
+the admin caller — the 201 happy path has no fixture-wired `Files` in this particular test file, the same
+pre-existing gap DSAR-06's own `/verifications/id-document` endpoint already has there (confirmed via grep:
+neither is exercised for its success path in `handler_test.go`), so the happy path is proven instead at the
+service level against `redaction_test.go`'s own fully wired `fakeFiles`). Not verified live against a real
+Postgres/Redis — neither was reachable in this environment for this feature; every test compiles and vets
+clean and skips the same way the rest of this module's own suite already does here. `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file), `go test ./...` (no regressions, full backend
+suite — only the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run with no drift,
+`pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin
+build`/`typecheck` (incl. the updated `/requests` route) all verified clean. Not done, deliberately: PDF
+redaction (no PDF-editing library available here without a new heavy dependency — no acceptance criterion
+names PDF specifically) and real OCR (still blocked on T13's PoC, per Q-30/Q-47) — `detecting` can replace
+the manual-rectangle step with no schema or API change once either becomes available.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

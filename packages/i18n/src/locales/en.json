@@ -3314,6 +3314,18 @@
         "must_retain": "Must retain",
         "partial": "Partially retained"
       }
+    },
+    "redaction": {
+      "title": "Redact before delivery",
+      "hint": "Black out another person's own data before a file is delivered (ม.30 วรรคสอง) — mark every rectangle yourself; no automatic detection is available.",
+      "status": "Status",
+      "regions": "Regions",
+      "createdAt": "Created at",
+      "recordTitle": "Redact an image",
+      "idHint": "Upload your own clean image and mark the rectangle(s) to black out. Only the redacted result is ever eligible for delivery.",
+      "rect": { "x": "X", "y": "Y", "width": "Width", "height": "Height" },
+      "redact": "Redact file",
+      "statuses": { "detecting": "Detecting", "review": "In review", "done": "Done" }
     }
   },
   "dpoDeadlines": {

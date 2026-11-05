@@ -832,6 +832,34 @@ is_active=false), `GET`/`POST /admin/v1/dsar/requests/{id}/exemption-checks` —
 
 **หมายเหตุ:** OCR ภาษาไทยต้อง PoC (T13)
 
+**Implementation (done, images only — no PDF redaction, no OCR; see CLAUDE.md's own DSAR-16 note and
+`docs/decisions.md` Q-47 for the full design):** `dsar.redactions` was already fully specified in the
+baseline migrations (`00012_dsar.sql`, FKs in `00018_foreign_keys.sql`: `source_file_id` a real NOT NULL
+FK to `platform.files`, `output_file_id` nullable, `regions` jsonb, `status` detecting/review/done) — no
+new migration. No OCR library or service is reachable in this environment (the same gap DSAR-06/decisions
+Q-30 already resolved for an ID-card photo), so a round skips `detecting` and goes straight to `done` in one
+call: staff mark every rectangle themselves via `RedactFile`, reusing DSAR-06's own `redactImage` pure
+function (Go stdlib `image`/`image/draw`, PNG/JPEG only) generalized to any image a request is about to
+deliver, not just an identity upload. The caller's own clean, still-unattached upload (`source_file_id`) is
+attached to the request as internal evidence only (so its real FK never dangles once PLT-09's 24h orphan
+sweep would otherwise delete it) — the redacted bytes are saved as a brand-new file (`output_file_id`), and
+neither DSAR-14's package creation nor DSAR-15's export ever reads `dsar.redactions`, so the source is never
+offered to either as something deliverable: the acceptance criterion ("กู้คืนจากไฟล์ผลลัพธ์ไม่ได้") is about
+the delivered output alone, and holds literally. `GET`/`POST /admin/v1/dsar/requests/{id}/redactions` reuse
+DSAR-14's already-seeded `dsar.package.{read,create}` (redaction is package-prep work, no new permission
+code). UI: a "ปกปิดก่อนส่งมอบ" toggle per row on `/requests`, mirroring `VerificationPanel`'s own
+upload + x/y/width/height rectangle form. Tests: unit (`internal/dsar/service/redaction_test.go` — the
+acceptance criterion directly: the output file carries exactly the given rectangle blacked out and nothing
+else, the source is attached to the request but never delivered, an out-of-bounds region is refused before
+anything is written, no regions and an already-attached file are both refused, `ListRedactions` round-trips;
+two-tenant isolation), HTTP contract (401/403 through the real validator + AuthZ — the 201 happy path has
+no fixture-wired `Files` in this test file, the same pre-existing gap DSAR-06's own id-document endpoint
+already has there, so it's proven at the service level instead, against a fully wired fake). Not verified
+live against a real Postgres/Redis — neither was reachable in this environment; every test compiles and
+vets clean and skips the same way the rest of this module's own suite already does here. Not done,
+deliberately: PDF redaction (no PDF-editing library available here without a new heavy dependency — no
+acceptance criterion names PDF specifically) and real OCR (still blocked on T13's PoC, per Q-30/Q-47).
+
 <a id="dsar-19"></a>
 ### DSAR-19 พอร์ทัลติดตามสถานะสำหรับผู้ยื่น
 

@@ -69,7 +69,15 @@ type Verification struct {
 }
 
 // Rect is one pixel rectangle, in the uploaded image's own coordinate space, to black out.
-type Rect struct{ X, Y, Width, Height int }
+// JSON tags give Rect stable snake_case field names when persisted as jsonb (DSAR-16's own
+// dsar.redactions.regions) — the wire layer already converts field-by-field
+// (internal/dsar/http/identity.go), so no existing marshaling depends on the old, untagged field names.
+type Rect struct {
+	X      int `json:"x"`
+	Y      int `json:"y"`
+	Width  int `json:"width"`
+	Height int `json:"height"`
+}
 
 func (s *Service) decryptRequesterContact(ctx context.Context, requestID uuid.UUID) (string, error) {
 	row, err := dsarstore.New(pdb.MustTxFromContext(ctx)).GetRequestRequesterContact(ctx, requestID)

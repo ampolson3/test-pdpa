@@ -23,6 +23,8 @@ import {
   useDsarPortabilityExport,
   useDsarExemptionChecks,
   useDsarRunExemptionCheck,
+  useDsarRedactions,
+  useDsarRedactFile,
   useLegalEntities,
   useMentionSearch,
   useGroupSearch,
@@ -366,6 +368,58 @@ function AgentPanel({ client, request, canUpdate }: { client: ReturnType<typeof 
   );
 }
 
+function RedactionPanel({ client, request, canCreate }: { client: ReturnType<typeof createApiClient>; request: DsarRequest; canCreate: boolean }) {
+  const t = useTranslations("dsarRequests");
+  const list = useDsarRedactions(client, request.id);
+  const redact = useDsarRedactFile(client);
+  const [rawFileId, setRawFileId] = useState<string | null>(null);
+  const [rect, setRect] = useState({ x: 0, y: 0, width: 100, height: 40 });
+
+  const rows = list.data ?? [];
+
+  return (
+    <div className="space-y-3" data-testid="redaction-panel">
+      <p className="text-xs text-slate-600">{t("redaction.hint")}</p>
+      {rows.length > 0 && (
+        <table className="w-full text-xs">
+          <thead className="text-left text-slate-500">
+            <tr><th className="py-1">{t("redaction.status")}</th><th className="py-1">{t("redaction.regions")}</th><th className="py-1">{t("redaction.createdAt")}</th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.map((r) => (
+              <tr key={r.id} data-testid={`redaction-row-${r.id}`}>
+                <td className="py-1">{t(`redaction.statuses.${r.status}`)}</td>
+                <td className="py-1">{r.regions.length}</td>
+                <td className="py-1">{new Date(r.created_at).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {canCreate && (
+        <fieldset className="space-y-2 rounded-md border border-slate-200 p-3">
+          <legend className="px-1 text-slate-600">{t("redaction.recordTitle")}</legend>
+          <p className="text-xs text-slate-500">{t("redaction.idHint")}</p>
+          <FileUploader accept=".png,.jpg,.jpeg" onUploaded={(f) => setRawFileId(f.id)} />
+          <div className="grid grid-cols-4 gap-1 text-xs">
+            {(["x", "y", "width", "height"] as const).map((k) => (
+              <label key={k}><span className="block text-slate-500">{t(`redaction.rect.${k}`)}</span>
+                <input type="number" className={INPUT} value={rect[k]} min={0}
+                  onChange={(e) => setRect({ ...rect, [k]: Number(e.target.value) })} /></label>
+            ))}
+          </div>
+          <Button
+            onClick={() => rawFileId && redact.mutate({ requestId: request.id, input: { raw_file_id: rawFileId, regions: [rect] } }, { onSuccess: () => setRawFileId(null) })}
+            disabled={!rawFileId || redact.isPending} data-testid="redact-file">
+            {t("redaction.redact")}
+          </Button>
+          {redact.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(redact.error) })}</p>}
+        </fieldset>
+      )}
+    </div>
+  );
+}
+
 function ExemptionPanel({ client, request, canUpdate, assets }: {
   client: ReturnType<typeof createApiClient>; request: DsarRequest; canUpdate: boolean; assets: { id: string; name: string }[];
 }) {
@@ -537,6 +591,7 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
   const [subtaskId, setSubtaskId] = useState<string | null>(null);
   const [agentId, setAgentId] = useState<string | null>(null);
   const [packageId, setPackageId] = useState<string | null>(null);
+  const [redactionId, setRedactionId] = useState<string | null>(null);
   const [exemptionId, setExemptionId] = useState<string | null>(null);
   const list = useDsarRequests(client, {
     status: statusFilter || undefined,
@@ -744,6 +799,10 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
                       onClick={() => setPackageId(packageId === r.id ? null : r.id)}>
                       {packageId === r.id ? t("form.hide") : t("package.title")}
                     </button>
+                    <button type="button" className="text-sky-700 underline" data-testid={`redaction-toggle-${r.id}`}
+                      onClick={() => setRedactionId(redactionId === r.id ? null : r.id)}>
+                      {redactionId === r.id ? t("form.hide") : t("redaction.title")}
+                    </button>
                     {isErasure(r.request_type_id) && (
                       <button type="button" className="text-sky-700 underline" data-testid={`exemption-toggle-${r.id}`}
                         onClick={() => setExemptionId(exemptionId === r.id ? null : r.id)}>
@@ -784,6 +843,13 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
                   <tr>
                     <td colSpan={7} className="bg-slate-50 px-3 py-3">
                       <PackagePanel client={client} request={r} canCreate={canPackageCreate} portalUrl={portalUrl} locale={locale} />
+                    </td>
+                  </tr>
+                )}
+                {redactionId === r.id && (
+                  <tr>
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
+                      <RedactionPanel client={client} request={r} canCreate={canPackageCreate} />
                     </td>
                   </tr>
                 )}
