@@ -14,3 +14,7 @@ output-options:
     - dataflowGetLayout
     - dataflowSaveLayout
     - dataflowResetLayout
+    - dataflowListDiscoveryScans
+    - dataflowRunDiscoveryScan
+    - dataflowListDiscoveryFindings
+    - dataflowReviewDiscoveryFinding

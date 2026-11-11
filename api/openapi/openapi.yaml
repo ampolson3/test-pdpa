@@ -20678,6 +20678,142 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/dataflow/discovery-scans:
+    get:
+      operationId: dataflowListDiscoveryScans
+      tags: [dataflow]
+      summary: 'DFG-09: past data-discovery scans, newest first'
+      x-permission: ropa.discovery.read
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/DataflowDiscoveryScan'}
+                  next_cursor: {type: [string, 'null']}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: dataflowRunDiscoveryScan
+      tags: [dataflow]
+      summary: 'DFG-09: run a discovery scan over a connector now — lists its tables, samples rows, classifies columns (Thai ID / phone / name) and proposes findings; no sampled value is stored'
+      x-permission: ropa.discovery.execute
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [connector_id]
+              properties:
+                connector_id: {$ref: '#/components/schemas/Uuid'}
+                asset_id: {$ref: '#/components/schemas/Uuid'}
+      responses:
+        '201':
+          description: Scan finished (status done or failed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataflowDiscoveryScan'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dataflow/discovery-scans/{id}/findings:
+    get:
+      operationId: dataflowListDiscoveryFindings
+      tags: [dataflow]
+      summary: 'DFG-09: the findings of one scan, strongest match first'
+      x-permission: ropa.discovery.read
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {$ref: '#/components/schemas/Uuid'}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: {$ref: '#/components/schemas/DataflowDiscoveryFinding'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /admin/v1/dataflow/discovery-findings/{id}/review:
+    post:
+      operationId: dataflowReviewDiscoveryFinding
+      tags: [dataflow]
+      summary: 'DFG-09: accept or reject a proposed finding'
+      x-permission: ropa.discovery.update
+      x-module: dataflow
+      security:
+        - adminJwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {$ref: '#/components/schemas/Uuid'}
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: {type: string, enum: [accepted, rejected]}
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataflowDiscoveryFinding'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /provider/v1/tenants:
     get:
       operationId: providerListTenants
@@ -24577,6 +24713,37 @@ components:
       properties:
         node_id: {type: string}
         text: {type: string}
+    DataflowDiscoveryScan:
+      type: object
+      required: [id, connector_id, status, objects_scanned, findings_count, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        connector_id: {$ref: '#/components/schemas/Uuid'}
+        asset_id: {$ref: '#/components/schemas/Uuid'}
+        status: {type: string, enum: [queued, running, done, failed]}
+        started_at: {$ref: '#/components/schemas/Timestamp'}
+        finished_at: {$ref: '#/components/schemas/Timestamp'}
+        objects_scanned: {type: integer}
+        findings_count: {type: integer}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
+    DataflowDiscoveryFinding:
+      type: object
+      description: 'DFG-09: a column that looks like personal data. Only the match statistics are stored — never a sampled value.'
+      required: [id, scan_id, object_path, classifier_id, classifier_code, classifier_name, match_ratio, sample_count, status, row_version, created_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        scan_id: {$ref: '#/components/schemas/Uuid'}
+        object_path: {type: string, description: 'table.column'}
+        classifier_id: {$ref: '#/components/schemas/Uuid'}
+        classifier_code: {type: string}
+        classifier_name: {type: string}
+        match_ratio: {type: number}
+        sample_count: {type: integer}
+        suggested_category_id: {$ref: '#/components/schemas/Uuid'}
+        status: {type: string, enum: [proposed, accepted, rejected]}
+        row_version: {type: integer}
+        created_at: {$ref: '#/components/schemas/Timestamp'}
     DataflowLayout:
       type: object
       description: 'DFG-05: the caller''s own saved drag-and-drop overlay for one (legal_entity, view) diagram.'

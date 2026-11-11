@@ -4460,5 +4460,30 @@
     "comments": {
       "open": "Comments"
     }
+  },
+  "discovery": {
+      "signInRequired": "Please sign in.",
+      "forbidden": "You don't have permission to view data discovery.",
+      "title": "Data discovery",
+      "intro": "Scan registered connectors for columns that look like personal data (Thai national ID, phone number, Thai name) and review the proposed findings.",
+      "connector": "Connector",
+      "choose": "Choose a connector",
+      "run": "Run scan",
+      "running": "Scanning…",
+      "error": "Scan failed: {detail}",
+      "privacy": "Only match statistics are stored — sampled values are never saved.",
+      "history": "Scan history",
+      "status": "Status",
+      "objects": "Tables",
+      "findings": "Findings",
+      "viewFindings": "View findings",
+      "empty": "No scans yet.",
+      "findingsTitle": "Findings",
+      "column": "Column",
+      "classifier": "Classifier",
+      "ratio": "Match",
+      "samples": "Samples",
+      "accept": "Accept",
+      "reject": "Reject"
   }
 }

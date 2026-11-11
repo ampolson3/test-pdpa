@@ -148,3 +148,60 @@ export function useResetDataflowLayout(client: ApiClient) {
     onSuccess: (_data, filter) => qc.invalidateQueries({ queryKey: ["dataflow", "layout", filter] }),
   });
 }
+
+export type DataflowDiscoveryScan = components["schemas"]["DataflowDiscoveryScan"];
+export type DataflowDiscoveryFinding = components["schemas"]["DataflowDiscoveryFinding"];
+
+/** GET /admin/v1/dataflow/discovery-scans (DFG-09): past scans, newest first. */
+export function useDiscoveryScans(client: ApiClient) {
+  return useQuery({
+    queryKey: ["dataflow", "discovery-scans"],
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dataflow/discovery-scans", { params: { query: { limit: 50 } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/dataflow/discovery-scans (DFG-09): run a scan now. */
+export function useRunDiscoveryScan(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { connector_id: string; asset_id?: string }) => {
+      const { data, error } = await client.POST("/admin/v1/dataflow/discovery-scans", { body: input });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["dataflow", "discovery-scans"] }),
+  });
+}
+
+/** GET /admin/v1/dataflow/discovery-scans/{id}/findings (DFG-09). */
+export function useDiscoveryFindings(client: ApiClient, scanId: string | undefined) {
+  return useQuery({
+    queryKey: ["dataflow", "discovery-findings", scanId],
+    enabled: !!scanId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dataflow/discovery-scans/{id}/findings", { params: { path: { id: scanId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/dataflow/discovery-findings/{id}/review (DFG-09): accept or reject a proposed finding. */
+export function useReviewDiscoveryFinding(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; rowVersion: number; decision: "accepted" | "rejected" }) => {
+      const { data, error } = await client.POST("/admin/v1/dataflow/discovery-findings/{id}/review", {
+        params: { path: { id: input.id }, header: { "If-Match": `"${input.rowVersion}"` } },
+        body: { decision: input.decision },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["dataflow", "discovery-findings"] }),
+  });
+}

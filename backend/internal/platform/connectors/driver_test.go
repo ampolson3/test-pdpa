@@ -96,6 +96,16 @@ func TestPostgresDriver_FullLifecycle(t *testing.T) {
 		t.Fatalf("SearchSubject = %+v, want one record named Alice", recs)
 	}
 
+	// DFG-09's own second step: a bounded sample of real rows, run through a caller's own classifiers
+	// in-process — never persisted by this driver itself.
+	sampled, err := d.Sample(ctx, cfg, "connectors_driver_test", 10)
+	if err != nil {
+		t.Fatalf("Sample: %v", err)
+	}
+	if len(sampled) != 1 || sampled[0]["email"] != "a@example.com" {
+		t.Fatalf("Sample = %+v, want one row with email a@example.com", sampled)
+	}
+
 	if err := d.Update(ctx, cfg, "a@example.com", map[string]string{"name": "Alicia"}); err != nil {
 		t.Fatalf("Update: %v", err)
 	}

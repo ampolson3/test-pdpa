@@ -33,6 +33,11 @@ type DiscoveredTable struct {
 	Columns []string
 }
 
+// SampledRow is one row a Sample call pulled back, column name to its own stringified value — used only
+// in-process, for the duration of one DFG-09 classification pass, and never persisted (rule 3: no real
+// value is ever stored, only the classifier's own match statistics).
+type SampledRow map[string]string
+
 // SubjectRecord is one row/object a SearchSubject call found, naming its own table/collection.
 type SubjectRecord struct {
 	Table  string
@@ -53,6 +58,10 @@ type Driver struct {
 	SearchSubject func(ctx context.Context, cfg Config, identifier string) ([]SubjectRecord, error)
 	Update        func(ctx context.Context, cfg Config, identifier string, fields map[string]string) error
 	Delete        func(ctx context.Context, cfg Config, identifier string) error
+	// Sample is DFG-09's own addition: a small, bounded read of real rows from one table, for a caller to
+	// run its own classifiers against in-process — never implemented by RESTDriver (no generic "sample N
+	// objects" convention exists across customer REST APIs the way SQL's LIMIT does).
+	Sample func(ctx context.Context, cfg Config, table string, limit int) ([]SampledRow, error)
 }
 
 // Registry is every connector_type this process knows how to drive — built once in
@@ -66,4 +75,5 @@ const (
 	CapSearchSubject = "search_subject"
 	CapUpdate        = "update"
 	CapDelete        = "delete"
+	CapSample        = "sample"
 )

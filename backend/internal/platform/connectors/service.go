@@ -443,6 +443,48 @@ func (s *Service) SearchSubject(ctx context.Context, id uuid.UUID, identifier st
 	return d.SearchSubject(ctx, cfg, identifier)
 }
 
+// Discover lists the tables/collections a connector can see — DFG-09's own first step, resolving which
+// objects even exist before sampling any of them.
+func (s *Service) Discover(ctx context.Context, id uuid.UUID) ([]DiscoveredTable, error) {
+	c, err := s.GetConnector(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.driverFor(c.ConnectorType)
+	if err != nil {
+		return nil, err
+	}
+	if d.Discover == nil || !hasCapability(c.Capabilities, CapDiscover) {
+		return nil, fmt.Errorf("%w: discover", ErrUnsupported)
+	}
+	cfg, err := s.config(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+	return d.Discover(ctx, cfg)
+}
+
+// Sample pulls a small, bounded set of real rows from one table — DFG-09's own second step, run entirely
+// in-process by the caller's classifiers; this method never persists a single value it returns.
+func (s *Service) Sample(ctx context.Context, id uuid.UUID, table string, limit int) ([]SampledRow, error) {
+	c, err := s.GetConnector(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.driverFor(c.ConnectorType)
+	if err != nil {
+		return nil, err
+	}
+	if d.Sample == nil || !hasCapability(c.Capabilities, CapSample) {
+		return nil, fmt.Errorf("%w: sample", ErrUnsupported)
+	}
+	cfg, err := s.config(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+	return d.Sample(ctx, cfg, table, limit)
+}
+
 // ListActiveWithCapability is the read side DSAR-09's own "ค้นข้อมูลจากระบบที่เชื่อมได้ในคำสั่งเดียว"
 // needs: every one of this tenant's own active connectors that can actually be searched, across every
 // page — small enough in practice (a handful of registered connectors per tenant) that paging through the

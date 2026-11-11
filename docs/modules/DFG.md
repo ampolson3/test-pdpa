@@ -403,6 +403,8 @@ panel "ประวัติเวอร์ชันที่เผยแพร�
 
 **หมายเหตุ:** OneTrust ไม่มี classifier ไทย (จุดต่าง)
 
+**สถานะ:** done — `internal/dataflow/service/discovery.go`; สแกนแบบ synchronous ผ่าน PLT-20 (Discover → Sample → classify ใน memory), เก็บเฉพาะ `match_ratio`/`sample_count`; classifier ไทยเป็นร่าง seed (migration 00101), `thai_name` เป็น heuristic อักษรไทย ยังไม่มีพจนานุกรม/ML จริง; UI `/settings/discovery-scans`
+
 <a id="dfg-10"></a>
 ### DFG-10 แผนผังระดับระบบ (Data lineage)
 

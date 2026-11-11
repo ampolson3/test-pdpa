@@ -1,6 +1,5 @@
-// Package service implements DFG-01/DFG-03/DFG-04: a data flow diagram computed live from RoPA on every
-// read. dataflow owns no table of its own for this feature — dataflow.layouts/snapshots exist for the later
-// DFG-05 (drag-to-arrange) and DFG-07 (publish) features, which this pass doesn't build.
+// Package service implements the dataflow module: DFG-01/03/04/06 compute the diagram live from RoPA;
+// DFG-05/07 persist layouts and snapshots; DFG-09 runs data-discovery scans over PLT-20 connectors.
 package service
 
 import (
@@ -11,6 +10,7 @@ import (
 
 	agreementservice "pdpa-platform/internal/agreement/service"
 	orgservice "pdpa-platform/internal/org/service"
+	"pdpa-platform/internal/platform/connectors"
 	"pdpa-platform/internal/platform/docs/render"
 	ropaservice "pdpa-platform/internal/ropa/service"
 	vendorservice "pdpa-platform/internal/vendormgmt/service"
@@ -28,6 +28,7 @@ type Ropa interface {
 	ListActivityTransfers(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityTransfer, error)
 	ListRetentionRules(ctx context.Context, activityID uuid.UUID) ([]ropaservice.RetentionRule, error)
 	ListActivityData(ctx context.Context, activityID uuid.UUID) ([]ropaservice.ActivityData, error)
+	GetAsset(ctx context.Context, id uuid.UUID) (ropaservice.Asset, error)
 }
 
 // Org is what dataflow reads from the org module (rule 9): org-unit names for the department view's
@@ -65,4 +66,6 @@ type Service struct {
 	Agreement Agreement
 	PDF       render.PDFRenderer
 	Image     render.ImageRenderer
+	// Connectors is DFG-09's source access (nil refuses discovery scans).
+	Connectors *connectors.Service
 }

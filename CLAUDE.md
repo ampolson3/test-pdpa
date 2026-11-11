@@ -6444,6 +6444,33 @@ throughout): `result_file_id`/a large-result file attachment (this pass's own en
 small enough that no screen has asked for a separate downloadable file); a live MySQL/SQL Server connector
 exercised against a real such server (PLT-20's own disclosed gap, unaffected by this feature).
 
+### DFG-09 ค้นหาข้อมูลส่วนบุคคลอัตโนมัติ (`docs/modules/DFG.md#dfg-09`) — done
+Builds on PLT-20 and the baseline `dataflow.classifiers`/`discovery_scans`/`discovery_findings` tables (unused
+until now). Migration 00101 seeds three global (`tenant_id NULL`) Thai classifiers: `thai_national_id`
+(`checksum`, reusing ORG-01's `orgservice.ValidThaiID` mod-11 check), `thai_phone` (`regex`) and `thai_name`
+(`dictionary`, a deliberately simple Thai-script heuristic — no real name dictionary/ML model is available
+here, so it is a draft to replace later). The connector SDK gained a `CapSample` capability / `Driver.Sample`
+(bounded `SELECT * ... LIMIT n`, SQL drivers only; REST leaves it nil) and `connectors.Service.Discover`/`Sample`.
+
+`dataflowservice.RunScan(connectorID, assetID)` runs **synchronously** inside the request transaction (like
+`TestConnection`; no River job, so no new `jobs.GlobalKinds` entry): it checks the connector and optional asset
+are visible (rule 1), lists tables, samples up to `DiscoverySampleLimit` (100) rows each, runs every active
+classifier over each column's non-empty values in memory, and proposes one `discovery_findings` row where the
+match ratio is at least `DiscoveryMinMatchRatio` (0.5) — both tunables. Only `match_ratio` and `sample_count`
+are stored, never a sampled value (rule 3). A failed table marks the scan `failed` but keeps findings found so
+far. `ReviewDiscoveryFinding` accepts/rejects a proposed finding (ETag/If-Match, 412 on stale). Permissions
+reuse the seeded `ropa.discovery.{read,execute,update}` (no new code).
+
+API: `GET`/`POST /admin/v1/dataflow/discovery-scans`, `GET .../discovery-scans/{id}/findings`,
+`POST /admin/v1/dataflow/discovery-findings/{id}/review`. UI: `/settings/discovery-scans` (run, history,
+findings with accept/reject; th/en `discovery.*`). Tests: pure `MatchValue` tests (>= 95% of 200 synthetic
+valid ids incl. dash-formatted ones detected; wrong check digit rejected; phone/name cases), a DB-backed
+`TestRunScan_FindsThaiPIIAndStoresNoValues` against a real scratch table (asserts the raw id/name appear in no
+findings row; skips without a reachable Postgres), and an HTTP contract test (401/403/404/422/428). Not
+verified live against Postgres/Redis in this environment. Not done: file/S3/cloud sources (only SQL
+connectors can sample), turning an accepted finding into a RoPA inventory row automatically, and scheduled
+scans.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

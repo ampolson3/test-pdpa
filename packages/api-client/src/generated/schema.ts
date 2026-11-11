@@ -7155,6 +7155,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dataflow/discovery-scans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DFG-09: past data-discovery scans, newest first */
+        get: operations["dataflowListDiscoveryScans"];
+        put?: never;
+        /** DFG-09: run a discovery scan over a connector now — lists its tables, samples rows, classifies columns (Thai ID / phone / name) and proposes findings; no sampled value is stored */
+        post: operations["dataflowRunDiscoveryScan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dataflow/discovery-scans/{id}/findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** DFG-09: the findings of one scan, strongest match first */
+        get: operations["dataflowListDiscoveryFindings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dataflow/discovery-findings/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** DFG-09: accept or reject a proposed finding */
+        post: operations["dataflowReviewDiscoveryFinding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/provider/v1/tenants": {
         parameters: {
             query?: never;
@@ -9508,6 +9560,36 @@ export interface components {
         DataflowNodeNote: {
             node_id: string;
             text: string;
+        };
+        DataflowDiscoveryScan: {
+            id: components["schemas"]["Uuid"];
+            connector_id: components["schemas"]["Uuid"];
+            asset_id?: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "queued" | "running" | "done" | "failed";
+            started_at?: components["schemas"]["Timestamp"];
+            finished_at?: components["schemas"]["Timestamp"];
+            objects_scanned: number;
+            findings_count: number;
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @description DFG-09: a column that looks like personal data. Only the match statistics are stored — never a sampled value. */
+        DataflowDiscoveryFinding: {
+            id: components["schemas"]["Uuid"];
+            scan_id: components["schemas"]["Uuid"];
+            /** @description table.column */
+            object_path: string;
+            classifier_id: components["schemas"]["Uuid"];
+            classifier_code: string;
+            classifier_name: string;
+            match_ratio: number;
+            sample_count: number;
+            suggested_category_id?: components["schemas"]["Uuid"];
+            /** @enum {string} */
+            status: "proposed" | "accepted" | "rejected";
+            row_version: number;
+            created_at: components["schemas"]["Timestamp"];
         };
         /** @description DFG-05: the caller's own saved drag-and-drop overlay for one (legal_entity, view) diagram. */
         DataflowLayout: {
@@ -30034,6 +30116,130 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    dataflowListDiscoveryScans: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor from `next_cursor` of the previous page */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DataflowDiscoveryScan"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    dataflowRunDiscoveryScan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    connector_id: components["schemas"]["Uuid"];
+                    asset_id?: components["schemas"]["Uuid"];
+                };
+            };
+        };
+        responses: {
+            /** @description Scan finished (status done or failed) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataflowDiscoveryScan"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dataflowListDiscoveryFindings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DataflowDiscoveryFinding"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dataflowReviewDiscoveryFinding: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    decision: "accepted" | "rejected";
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataflowDiscoveryFinding"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     providerListTenants: {

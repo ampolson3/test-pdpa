@@ -72,7 +72,41 @@ func sqlDriver(d sqlDialect) Driver {
 	}
 
 	return Driver{
-		Capabilities: []string{CapTest, CapDiscover, CapSearchSubject, CapUpdate, CapDelete},
+		Capabilities: []string{CapTest, CapDiscover, CapSearchSubject, CapUpdate, CapDelete, CapSample},
+		Sample: func(ctx context.Context, cfg Config, table string, limit int) ([]SampledRow, error) {
+			db, err := open(cfg)
+			if err != nil {
+				return nil, err
+			}
+			defer db.Close()
+			q := fmt.Sprintf("SELECT * FROM %s LIMIT %d", d.quoteIdent(table), limit)
+			rows, err := db.QueryContext(ctx, q)
+			if err != nil {
+				return nil, err
+			}
+			defer rows.Close()
+			cols, err := rows.Columns()
+			if err != nil {
+				return nil, err
+			}
+			var out []SampledRow
+			for rows.Next() {
+				vals := make([]any, len(cols))
+				ptrs := make([]any, len(cols))
+				for i := range vals {
+					ptrs[i] = &vals[i]
+				}
+				if err := rows.Scan(ptrs...); err != nil {
+					return nil, err
+				}
+				row := make(SampledRow, len(cols))
+				for i, c := range cols {
+					row[c] = fmt.Sprint(vals[i])
+				}
+				out = append(out, row)
+			}
+			return out, rows.Err()
+		},
 		Test: func(ctx context.Context, cfg Config) error {
 			db, err := open(cfg)
 			if err != nil {
