@@ -754,6 +754,20 @@ row) is unrelated.
 
 **Acceptance criteria:** ค้นข้อมูลจากระบบที่เชื่อมได้ในคำสั่งเดียว และผลถูกลบเมื่อปิดคำขอ
 
+**Implementation (DSAR-09) — done:** `dsar.search_results` was already fully specified in the baseline
+migration (00012_dsar.sql) — unused until PLT-20 shipped a real connector to search through.
+`internal/platform/connectors.Service` gained `SearchSubject`/`ListActiveWithCapability` (PLT-20's own
+module note already named DSAR-09 as a consumer); `internal/dsar/service/search.go`'s
+`SearchAcrossSystems` is the acceptance criterion's own literal first half — one call reaches every
+active connector offering `search_subject`, records one row per connector, and a single connector's own
+failure is recorded as not-found rather than aborting the run. The other half, "ผลถูกลบเมื่อปิดคำขอ," is a
+hook in `Transition`: entering `completed`/`rejected`/`withdrawn` purges every row's own finding (found,
+record_count, the PLT-13-encrypted summary) while the row itself stays as a trail of which connectors were
+searched. The list endpoint never returns the decrypted summary (rule 3) — only whether a system had a
+match and roughly how much. API: `GET`/`POST /admin/v1/dsar/requests/{id}/search-results`, reusing
+`dsar.request.{read,update}` (no new permission code). UI: a "cross-system search" toggle per row on
+`/requests`. See CLAUDE.md's own `### DSAR-09` section for full detail.
+
 <a id="dsar-10"></a>
 ### DSAR-10 ตรวจข้อยกเว้นก่อนลบข้อมูล
 

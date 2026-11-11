@@ -25,6 +25,8 @@ import {
   useDsarRunExemptionCheck,
   useDsarRedactions,
   useDsarRedactFile,
+  useDsarSearchResults,
+  useDsarRunSearch,
   useLegalEntities,
   useMentionSearch,
   useGroupSearch,
@@ -420,6 +422,55 @@ function RedactionPanel({ client, request, canCreate }: { client: ReturnType<typ
   );
 }
 
+/** DSAR-09: search every connected, search-capable connector (PLT-20) for this request's own requester in
+ *  one command — never shows the decrypted content (rule 3), only whether each system had data. */
+function SearchPanel({ client, request, canUpdate }: { client: ReturnType<typeof createApiClient>; request: DsarRequest; canUpdate: boolean }) {
+  const t = useTranslations("dsarRequests");
+  const list = useDsarSearchResults(client, request.id);
+  const run = useDsarRunSearch(client);
+  const rows = list.data ?? [];
+
+  return (
+    <div className="space-y-3" data-testid="search-panel">
+      <p className="text-xs text-slate-600">{t("search.hint")}</p>
+      {canUpdate && (
+        <Button onClick={() => run.mutate(request.id)} disabled={run.isPending} data-testid="run-search">
+          {t("search.run")}
+        </Button>
+      )}
+      {run.isError && <p className="text-red-700" role="alert">{t("form.saveError", { detail: detail(run.error) })}</p>}
+      {list.isPending ? (
+        <p className="text-slate-500">{t("loading")}</p>
+      ) : rows.length === 0 ? (
+        <p className="text-slate-500">{t("search.empty")}</p>
+      ) : (
+        <table className="w-full text-xs">
+          <thead className="text-left text-slate-500">
+            <tr>
+              <th className="py-1">{t("search.connector")}</th>
+              <th className="py-1">{t("search.found")}</th>
+              <th className="py-1">{t("search.recordCount")}</th>
+              <th className="py-1">{t("search.searchedAt")}</th>
+              <th className="py-1">{t("search.purgedAt")}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {rows.map((r) => (
+              <tr key={r.id} data-testid={`search-result-row-${r.id}`}>
+                <td className="py-1">{r.connector_name} ({r.connector_type})</td>
+                <td className="py-1">{r.found ? t("search.yes") : t("search.no")}</td>
+                <td className="py-1">{r.record_count ?? "—"}</td>
+                <td className="py-1">{new Date(r.searched_at).toLocaleString()}</td>
+                <td className="py-1">{r.purged_at ? new Date(r.purged_at).toLocaleString() : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
 function ExemptionPanel({ client, request, canUpdate, assets }: {
   client: ReturnType<typeof createApiClient>; request: DsarRequest; canUpdate: boolean; assets: { id: string; name: string }[];
 }) {
@@ -593,6 +644,7 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
   const [packageId, setPackageId] = useState<string | null>(null);
   const [redactionId, setRedactionId] = useState<string | null>(null);
   const [exemptionId, setExemptionId] = useState<string | null>(null);
+  const [searchId, setSearchId] = useState<string | null>(null);
   const list = useDsarRequests(client, {
     status: statusFilter || undefined,
     request_type_id: typeFilter || undefined,
@@ -809,6 +861,10 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
                         {exemptionId === r.id ? t("form.hide") : t("exemption.title")}
                       </button>
                     )}
+                    <button type="button" className="text-sky-700 underline" data-testid={`search-toggle-${r.id}`}
+                      onClick={() => setSearchId(searchId === r.id ? null : r.id)}>
+                      {searchId === r.id ? t("form.hide") : t("search.title")}
+                    </button>
                   </td>
                 </tr>
                 {verifyId === r.id && (
@@ -850,6 +906,13 @@ export function RequestsContent({ currentUserId, portalUrl }: { currentUserId: s
                   <tr>
                     <td colSpan={7} className="bg-slate-50 px-3 py-3">
                       <RedactionPanel client={client} request={r} canCreate={canPackageCreate} />
+                    </td>
+                  </tr>
+                )}
+                {searchId === r.id && (
+                  <tr>
+                    <td colSpan={7} className="bg-slate-50 px-3 py-3">
+                      <SearchPanel client={client} request={r} canUpdate={canUpdate} />
                     </td>
                   </tr>
                 )}

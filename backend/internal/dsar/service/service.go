@@ -24,6 +24,7 @@ import (
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/connectors"
 	"pdpa-platform/internal/platform/crypto"
 	docsservice "pdpa-platform/internal/platform/docs"
 	"pdpa-platform/internal/platform/events"
@@ -95,6 +96,8 @@ type Service struct {
 	// (the same optionality PNG-04's indirect-collection reminders use).
 	Notify *notify.Service
 	River  *river.Client[pgx.Tx]
+	// Connectors drives DSAR-09's cross-system search (PLT-20); nil in tests that don't need it.
+	Connectors *connectors.Service
 	// Now is the clock (injectable for tests); nil means time.Now.
 	Now func() time.Time
 }

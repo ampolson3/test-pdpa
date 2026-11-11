@@ -357,6 +357,15 @@ func (s *Service) Transition(ctx context.Context, id uuid.UUID, rowVersion int32
 		return Request{}, nil, err
 	}
 
+	// DSAR-09's own acceptance criterion: any cross-system search results recorded for this request are
+	// purged (content wiped, row kept) the moment it reaches a terminal status — completed, rejected or
+	// withdrawn are exactly the states st02Edges never lists as a source, i.e. nothing leaves them.
+	if in.To == "completed" || in.To == "rejected" || in.To == "withdrawn" {
+		if err := s.purgeSearchResults(ctx, out.ID); err != nil {
+			return Request{}, nil, err
+		}
+	}
+
 	// DSAR-03: entering in_progress opens one per-right subtask per linked RoPA asset (ม.30-36/19's own
 	// "ขั้นตอนเฉพาะของแต่ละสิทธิ" — "สร้าง subtask ไปทุกระบบที่มีข้อมูล" generalized across every right type).
 	if in.To == "in_progress" && len(in.AssetIDs) > 0 {

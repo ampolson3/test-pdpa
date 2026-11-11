@@ -727,6 +727,8 @@ export {
   useDsarSaveResponseTemplate,
   useDsarTrackingPortalLink,
   useDsarTrackingPortalMutations,
+  useDsarSearchResults,
+  useDsarRunSearch,
   type DsarRequestType,
   type DsarRequest,
   type DsarRequestStatus,
@@ -766,6 +768,7 @@ export {
   type DsarResponseTemplate,
   type DsarSaveResponseTemplateInput,
   type DsarTrackingPortalLink,
+  type DsarSearchResult,
 } from "./dsar";
 export {
   useCookieDomains,

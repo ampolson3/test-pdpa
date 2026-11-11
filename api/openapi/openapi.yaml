@@ -8160,6 +8160,79 @@ paths:
           $ref: '#/components/responses/NotFound'
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dsar/requests/{id}/search-results:
+    get:
+      operationId: dsarListSearchResults
+      tags: [dsar]
+      summary: Every cross-system search result recorded for this request, newest first (DSAR-09)
+      description: Never carries the decrypted summary (rule 3) — only whether a connector's own system had data and roughly how much; the content is purged entirely once the request reaches a terminal status.
+      x-permission: dsar.request.read
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarSearchResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: dsarRunSearch
+      tags: [dsar]
+      summary: Search every connected, search-capable connector for this request's own requester in one command (DSAR-09, ม.30)
+      description: The acceptance criterion itself — one call reaches every active connector offering the search_subject capability (PLT-20); a single connector's own failure is recorded as not-found and never aborts the rest of the run.
+      x-permission: dsar.request.update
+      x-module: dsar
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DsarSearchResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/dsar/requests/{id}/packages:
     get:
       operationId: dsarListPackages
@@ -25569,6 +25642,20 @@ components:
         result: {$ref: '#/components/schemas/DsarExemptionResult'}
         reason: {type: string}
         created_at: {type: string, format: date-time}
+    DsarSearchResult:
+      type: object
+      required: [id, connector_id, connector_name, connector_type, found, searched_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        connector_id: {$ref: '#/components/schemas/Uuid'}
+        connector_name: {type: string}
+        connector_type: {type: string}
+        found: {type: boolean}
+        record_count:
+          oneOf: [{type: integer}, {type: 'null'}]
+        searched_at: {type: string, format: date-time}
+        purged_at:
+          oneOf: [{type: string, format: date-time}, {type: 'null'}]
     DsarRunExemptionCheckInput:
       type: object
       required: [asset_ids]

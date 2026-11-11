@@ -3370,6 +3370,19 @@
       "rect": { "x": "X", "y": "Y", "width": "Width", "height": "Height" },
       "redact": "Redact file",
       "statuses": { "detecting": "Detecting", "review": "In review", "done": "Done" }
+    },
+    "search": {
+      "title": "Cross-system search",
+      "hint": "Search every connected system (PLT-20) for this requester's own data in one command (ม.30) — results never show the actual data found, only whether a system had a match; they're deleted once the request closes.",
+      "run": "Run search",
+      "empty": "No search has been run yet.",
+      "connector": "System",
+      "found": "Found",
+      "recordCount": "Records",
+      "searchedAt": "Searched at",
+      "purgedAt": "Purged at",
+      "yes": "Yes",
+      "no": "No"
     }
   },
   "dpoDeadlines": {

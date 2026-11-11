@@ -590,3 +590,33 @@ export function useDsarTrackingPortalMutations(client: ApiClient) {
     }),
   };
 }
+
+export type DsarSearchResult = components["schemas"]["DsarSearchResult"];
+
+/** GET /admin/v1/dsar/requests/{id}/search-results (DSAR-09) — every cross-system search result recorded
+ *  for this request, newest first; never carries the decrypted summary (rule 3). */
+export function useDsarSearchResults(client: ApiClient, requestId: string | undefined) {
+  return useQuery({
+    queryKey: ["dsar", "search-results", requestId ?? ""] as const,
+    enabled: !!requestId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/dsar/requests/{id}/search-results", { params: { path: { id: requestId! } } });
+      if (error) throw error;
+      return data.data;
+    },
+  });
+}
+
+/** POST /admin/v1/dsar/requests/{id}/search-results (DSAR-09) — the acceptance criterion itself: search
+ *  every connected, search-capable connector (PLT-20) for this request's own requester in one command. */
+export function useDsarRunSearch(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (requestId: string) => {
+      const { data, error } = await client.POST("/admin/v1/dsar/requests/{id}/search-results", { params: { path: { id: requestId } } });
+      if (error) throw error;
+      return data.data;
+    },
+    onSuccess: (_d, requestId) => qc.invalidateQueries({ queryKey: ["dsar", "search-results", requestId] }),
+  });
+}

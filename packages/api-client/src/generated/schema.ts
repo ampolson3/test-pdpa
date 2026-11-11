@@ -2766,6 +2766,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/dsar/requests/{id}/search-results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every cross-system search result recorded for this request, newest first (DSAR-09)
+         * @description Never carries the decrypted summary (rule 3) — only whether a connector's own system had data and roughly how much; the content is purged entirely once the request reaches a terminal status.
+         */
+        get: operations["dsarListSearchResults"];
+        put?: never;
+        /**
+         * Search every connected, search-capable connector for this request's own requester in one command (DSAR-09, ม.30)
+         * @description The acceptance criterion itself — one call reaches every active connector offering the search_subject capability (PLT-20); a single connector's own failure is recorded as not-found and never aborts the rest of the run.
+         */
+        post: operations["dsarRunSearch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/dsar/requests/{id}/packages": {
         parameters: {
             query?: never;
@@ -10307,6 +10331,17 @@ export interface components {
             reason: string;
             /** Format: date-time */
             created_at: string;
+        };
+        DsarSearchResult: {
+            id: components["schemas"]["Uuid"];
+            connector_id: components["schemas"]["Uuid"];
+            connector_name: string;
+            connector_type: string;
+            found: boolean;
+            record_count?: number | null;
+            /** Format: date-time */
+            searched_at: string;
+            purged_at?: string | null;
         };
         DsarRunExemptionCheckInput: {
             /** @description The RoPA assets (systems) this erasure request's own work touches — same scope DSAR-03's own asset picker already names on the request */
@@ -19393,6 +19428,67 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dsarListSearchResults: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarSearchResult"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dsarRunSearch: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["DsarSearchResult"][];
+                    };
+                };
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

@@ -6382,6 +6382,68 @@ SDK's own named future consumers per the module doc's "ใช้ร่วม" no
 mysql/sqlserver driver test (both compile and vet cleanly against the real drivers; no MySQL/SQL Server
 server is reachable in this environment to test either against at runtime).
 
+### DSAR-09 ค้นหาข้อมูลของเจ้าของข้อมูลข้ามระบบ (`docs/modules/DSAR.md#dsar-09`) — done
+`dsar.search_results` was already fully specified in the baseline migration (00012_dsar.sql,
+`connector_id` already a real FK to `platform.connectors`) — unused by any code until now, since PLT-20
+(the very previous feature this same session built) had just shipped the connector framework this one
+actually needs. `internal/platform/connectors.Service` gained two methods PLT-20's own module note already
+named DSAR-09 as the future consumer of: `SearchSubject(ctx, connectorID, identifier)` (reuses the already-
+built `driverFor`/`config` machinery `TestConnection` established, refusing a connector type or a
+connector's own narrower `capabilities` that don't offer `search_subject`) and
+`ListActiveWithCapability(ctx, capability)` (pages through the tenant's own connectors, filtering to
+`status = "active"` and the given capability — small enough in practice that paging client-side beats
+adding a capability filter to the generic `ListConnectors` query).
+
+`internal/dsar/service/search.go`'s `SearchAcrossSystems` is the acceptance criterion's own literal first
+half, "ค้นข้อมูลจากระบบที่เชื่อมได้ในคำสั่งเดียว": decrypts the request's own stored contact (the same
+`decryptRequesterContact` DSAR-06/15 already use), calls `SearchSubject` against every active,
+search-capable connector, and records one `dsar.search_results` row per connector — a single connector's
+own failure (its own search endpoint erroring, say) is recorded as `found = false` and never aborts the
+rest of the run, proven directly by a test with one connector that finds a match and a second, equally
+active connector whose own search path returns a 500. A found result's records are PLT-13-sealed (class
+`"dsar"`, context `"dsar.search_results:<request>:<connector>"`) into `summary_enc`; the list endpoint
+(`ListSearchResults`) never selects or returns it (rule 3) — only `found`/`record_count`/the connector's own
+name and type, resolved via a plain read-only cross-schema join to `platform.connectors` (the same
+convenience-join pattern ROPA-01's own inventory query already established for `org.data_categories`).
+
+The other half, "ผลถูกลบเมื่อปิดคำขอ," is a new case in `Transition` (requests.go): entering `completed`,
+`rejected` or `withdrawn` — exactly the three statuses `st02Edges` never lists as a source, i.e. nothing
+leaves them — calls `purgeSearchResults`, which wipes `found`/`record_count`/`summary_enc`/`result_file_id`
+back to their empty/false state and stamps `purged_at`, while the row itself stays as a trail of which
+connectors were searched (the same "row kept, content gone" shape PLT-09 already uses for an infected
+file) — read literally as "the finding is deleted," not merely "the encrypted bytes are deleted," since a
+stale `found = true` with no way to ever decrypt what it referred to would be a misleading audit trail.
+Reuses the already-seeded `dsar.request.{read,update}` (no new permission code) — a cross-system search is
+really part of working the request, the same reasoning DSAR-13's own letter-generation write already used
+for reusing that family.
+
+API: `GET`/`POST /admin/v1/dsar/requests/{id}/search-results` (POST runs the search and returns the full,
+current result list — no request body, since the identifier is always the request's own stored contact).
+UI: a "cross-system search" toggle per row on `/requests` (`SearchPanel`) — a run-search button and a
+results table (connector/found/record count/searched-at/purged-at), reusing the page's own existing toggle
+pattern (redaction/exemption panels). Tests: unit (`internal/dsar/service/search_test.go` — the acceptance
+criterion directly: one command reaches every active, capable connector, a found match is recorded with
+its record count, an erroring connector's own search is recorded as not-found rather than aborting the
+run, a connector with no `search_subject` capability or still `draft` is never queried at all; purge on
+reaching `withdrawn` wipes `found`/`record_count` while keeping the row and stamping `purged_at`; no
+`Connectors` configured is refused cleanly, not a panic), `internal/platform/connectors/service_test.go`
+gained `TestSearchSubject_RequiresTheCapability`/`TestListActiveWithCapability_FiltersStatusAndCapability`
+(PLT-20's own SDK proof for these two new methods), HTTP contract
+(`internal/dsar/http/handler_test.go`'s existing `TestDsarEndpoints_Contract`, extended with a real "crm"
+REST connector created and activated against a local `httptest.Server`, then the full run-search →
+list → withdraw → purged chain through the real validator + AuthZ). Not verified live against a real
+Postgres/Redis in this pass — neither was reachable in this environment; every test compiles and vets
+clean and skips the same way the rest of this codebase's own suite already does without one. `go build
+./...`, `go vet ./...`, `gofmt -l` (clean on every touched file — the same four pre-existing violations
+this session's other recent passes already disclose are untouched), `go test ./...` (no regressions, full
+backend suite — only the pre-existing, unrelated `internal/pkg/validate` failure), `make gen` re-run with
+no drift beyond this feature's own additions, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter
+@pdpa/i18n test` and `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the updated `/requests` route)
+all verified clean. Not done, deliberately (no consumer yet, the same deferral this codebase uses
+throughout): `result_file_id`/a large-result file attachment (this pass's own encrypted JSON summary is
+small enough that no screen has asked for a separate downloadable file); a live MySQL/SQL Server connector
+exercised against a real such server (PLT-20's own disclosed gap, unaffected by this feature).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

@@ -175,6 +175,7 @@
 | `purged_at` | `timestamptz` |  |  |  |  |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_search_results_updated`
+- DSAR-09: `found`/`record_count` อยู่รอดหลัง purge (เป็นแค่สรุปสถิติ ไม่ใช่เนื้อหา) — `purge` ล้าง `found=false`, `record_count=NULL`, `summary_enc=NULL`, `result_file_id=NULL` และตั้ง `purged_at` เมื่อคำขอเข้าสถานะ terminal (completed/rejected/withdrawn) แถวยังอยู่เป็น audit trail ว่าค้นระบบใดไปแล้วบ้าง
 - PK: `(id)`
 - Index: `dsar.search_results (tenant_id, request_id)` · `dsar.search_results (tenant_id, connector_id)` · `dsar.search_results (tenant_id, result_file_id)`
 - RLS: tenant · RLS `tenant_isolation`

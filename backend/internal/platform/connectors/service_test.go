@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/google/uuid"
@@ -282,6 +284,92 @@ func TestTwoTenantIsolation(t *testing.T) {
 		}
 		return nil
 	})
+}
+
+// TestSearchSubject_RequiresTheCapability is DSAR-09's own prerequisite: a connector whose type offers
+// search_subject but whose own narrower Capabilities list doesn't include it is refused, not silently run.
+func TestSearchSubject_RequiresTheCapability(t *testing.T) {
+	e := setup(t, "csearch", nil)
+	var withCap, withoutCap uuid.UUID
+	e.in(t, func(ctx context.Context) error {
+		c1, err := e.svc.CreateConnector(ctx, connectors.Input{
+			Name: "rest-with-search", ConnectorType: "rest", Capabilities: []string{"test", "search_subject"},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		withCap = c1.ID
+		c2, err := e.svc.CreateConnector(ctx, connectors.Input{Name: "rest-test-only", ConnectorType: "rest", Capabilities: []string{"test"}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		withoutCap = c2.ID
+		return nil
+	})
+	e.in(t, func(ctx context.Context) error {
+		if _, err := e.svc.SearchSubject(ctx, withoutCap, "a@example.com"); !errors.Is(err, connectors.ErrUnsupported) {
+			t.Fatalf("SearchSubject without the capability = %v, want ErrUnsupported", err)
+		}
+		// withCap's own REST driver will fail to actually reach http://example.invalid, but that's a
+		// network error, not ErrUnsupported — the capability check itself is what this test proves.
+		if _, err := e.svc.SearchSubject(ctx, withCap, "a@example.com"); errors.Is(err, connectors.ErrUnsupported) {
+			t.Fatalf("SearchSubject with the capability = %v, want something other than ErrUnsupported", err)
+		}
+		return nil
+	})
+}
+
+// TestListActiveWithCapability_FiltersStatusAndCapability is the read side DSAR-09's own "ค้นข้อมูลจาก
+// ระบบที่เชื่อมได้" needs: only active connectors that actually offer the given capability.
+func TestListActiveWithCapability_FiltersStatusAndCapability(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }))
+	defer srv.Close()
+
+	e := setup(t, "clistcap", nil)
+	e.in(t, func(ctx context.Context) error {
+		searchable, err := e.svc.CreateConnector(ctx, connectors.Input{
+			Name: "searchable", ConnectorType: "rest", Capabilities: []string{"test", "search_subject"},
+			Config: json.RawMessage(`{"base_url": "` + srv.URL + `", "test_path": "/"}`),
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := e.svc.CreateConnector(ctx, connectors.Input{Name: "not-searchable", ConnectorType: "rest", Capabilities: []string{"test"}}); err != nil {
+			t.Fatal(err)
+		}
+		// A connector's status defaults to "draft" until TestConnection succeeds.
+		ok, _, _, _, err := e.svc.TestConnection(ctx, searchable.ID)
+		if err != nil || !ok {
+			t.Fatalf("TestConnection = %v, %v, want ok", ok, err)
+		}
+
+		list, err := e.svc.ListActiveWithCapability(ctx, connectors.CapSearchSubject)
+		if err != nil {
+			t.Fatal(err)
+		}
+		found := false
+		for _, c := range list {
+			if c.ID == searchable.ID {
+				found = true
+			}
+			if c.Status != "active" || !containsStr(c.Capabilities, connectors.CapSearchSubject) {
+				t.Fatalf("ListActiveWithCapability returned a non-matching connector: %+v", c)
+			}
+		}
+		if !found {
+			t.Fatal("ListActiveWithCapability did not include the active, searchable connector")
+		}
+		return nil
+	})
+}
+
+func containsStr(ss []string, s string) bool {
+	for _, v := range ss {
+		if v == s {
+			return true
+		}
+	}
+	return false
 }
 
 func strPtr(s string) *string { return &s }

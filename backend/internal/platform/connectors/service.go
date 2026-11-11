@@ -420,6 +420,63 @@ func (s *Service) TestConnection(ctx context.Context, id uuid.UUID) (ok bool, me
 	return testErr == nil, msg, r.LastTestedAt.Time, updated, nil
 }
 
+// SearchSubject runs one connector's own SearchSubject capability against a given identifier — DSAR-09's
+// own cross-system search, PLT-20's module note naming it as a consumer from the start. Refuses a
+// connector type whose Driver has no SearchSubject capability, or one whose own narrower Capabilities
+// list doesn't offer it, with ErrUnsupported either way.
+func (s *Service) SearchSubject(ctx context.Context, id uuid.UUID, identifier string) ([]SubjectRecord, error) {
+	c, err := s.GetConnector(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.driverFor(c.ConnectorType)
+	if err != nil {
+		return nil, err
+	}
+	if d.SearchSubject == nil || !hasCapability(c.Capabilities, CapSearchSubject) {
+		return nil, fmt.Errorf("%w: search_subject", ErrUnsupported)
+	}
+	cfg, err := s.config(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+	return d.SearchSubject(ctx, cfg, identifier)
+}
+
+// ListActiveWithCapability is the read side DSAR-09's own "ค้นข้อมูลจากระบบที่เชื่อมได้ในคำสั่งเดียว"
+// needs: every one of this tenant's own active connectors that can actually be searched, across every
+// page — small enough in practice (a handful of registered connectors per tenant) that paging through the
+// whole list here, rather than exposing a capability filter on ListConnectors, is the simpler choice.
+func (s *Service) ListActiveWithCapability(ctx context.Context, capability string) ([]Connector, error) {
+	var out []Connector
+	var cursor *Cursor
+	for {
+		page, next, err := s.ListConnectors(ctx, Filter{Status: "active", Cursor: cursor, Limit: pageSize})
+		if err != nil {
+			return nil, err
+		}
+		for _, c := range page {
+			if hasCapability(c.Capabilities, capability) {
+				out = append(out, c)
+			}
+		}
+		if next == nil {
+			break
+		}
+		cursor = next
+	}
+	return out, nil
+}
+
+func hasCapability(capabilities []string, capability string) bool {
+	for _, c := range capabilities {
+		if c == capability {
+			return true
+		}
+	}
+	return false
+}
+
 // config resolves a connector's own Driver Config — its decoded settings plus its decrypted secret, if
 // any — the one place this package ever decrypts a secret (rule 3: never logged, never returned over the
 // wire, used only in-process for the duration of one Driver call).

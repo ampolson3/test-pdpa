@@ -26,6 +26,7 @@ import (
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/validate"
 	audit "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/connectors"
 	"pdpa-platform/internal/platform/crypto"
 	ropaservice "pdpa-platform/internal/ropa/service"
 	"pdpa-platform/internal/wiring"
@@ -64,6 +65,7 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 		_ = pdb.WithTenantTx(context.Background(), owner, tenant.ID.String(), "", func(ctx context.Context) error {
 			tx := pdb.MustTxFromContext(ctx)
 			for _, q := range []string{
+				`DELETE FROM dsar.search_results`, `DELETE FROM platform.connector_secrets`, `DELETE FROM platform.connectors`,
 				`DELETE FROM dsar.verifications`, `DELETE FROM iam.subject_verifications`, `DELETE FROM dsar.subtasks`,
 				`DELETE FROM dsar.exemption_checks`, `DELETE FROM dsar.legal_holds`,
 				`DELETE FROM dsar.requests`, `DELETE FROM platform.document_downloads`, `DELETE FROM platform.document_versions`, `DELETE FROM platform.documents`,
@@ -85,6 +87,8 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	notifier := &fakeNotifier{}
 	svc.Verification = wiring.IamVerification(keyring, nil, nil)
 	svc.Verification.Notify = notifier
+	connSvc := connectors.New(connectors.Registry{"rest": connectors.RESTDriver()}, keyring, nil)
+	svc.Connectors = connSvc
 
 	var legalEntity uuid.UUID
 	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
@@ -123,6 +127,32 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 		return pdb.MustTxFromContext(ctx).QueryRow(ctx,
 			`INSERT INTO iam.users (tenant_id, email, display_name, status) VALUES (current_setting('app.tenant_id')::uuid, $1, 'Assignee', 'active') RETURNING id`,
 			"dsarhttp-assignee@dbtest.example").Scan(&assignee)
+	})
+
+	// DSAR-09: one active, search-capable connector to search against — the real end-to-end exercise of
+	// PLT-20's own SDK through dsar's own SearchAcrossSystems.
+	searchSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/health" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"email": "somchai@example.com"})
+	}))
+	t.Cleanup(searchSrv.Close)
+	_ = pdb.WithTenantTx(ctx, app, tenant.ID.String(), tenant.UserID.String(), func(ctx context.Context) error {
+		c, err := connSvc.CreateConnector(ctx, connectors.Input{
+			Name: "crm", ConnectorType: "rest", Capabilities: []string{"test", "search_subject"},
+			Config: json.RawMessage(`{"base_url": "` + searchSrv.URL + `", "test_path": "/health", "search_path": "/subjects/{id}"}`),
+		})
+		if err != nil {
+			return err
+		}
+		ok, _, _, _, err := connSvc.TestConnection(ctx, c.ID)
+		if err != nil || !ok {
+			t.Fatalf("TestConnection(crm) = %v, %v", ok, err)
+		}
+		return nil
 	})
 
 	spec, err := openapi3.NewLoader().LoadFromFile("../../../../api/openapi/openapi.yaml")
@@ -621,6 +651,46 @@ func TestDsarEndpoints_Contract(t *testing.T) {
 	}
 	if code, body := do("GET", "/admin/v1/dsar/response-templates", &viewer, nil); code != 200 || !strings.Contains(body, `"my-result"`) {
 		t.Errorf("list response-templates: %d %s", code, body)
+	}
+
+	// DSAR-09: cross-system search — one command reaches the real "crm" connector (PLT-20), finds a match,
+	// and the search is never aborted by a single connector's own failure. A fresh request, since `created`
+	// above has already closed to "rejected" earlier in this same test.
+	searchCreate := map[string]any{"request_type_id": requestTypeID, "legal_entity_id": legalEntity, "channel": "web",
+		"requester_name": "สมชาย ใจดี", "requester_contact": "somchai@example.com", "contact_kind": "email"}
+	code, body = do("POST", "/admin/v1/dsar/requests", &admin, searchCreate)
+	if code != 201 {
+		t.Fatalf("create request for search: %d %s", code, body)
+	}
+	var searchReq dsarhttp.DsarRequest
+	_ = json.Unmarshal([]byte(body), &searchReq)
+	searchItem := "/admin/v1/dsar/requests/" + searchReq.Id.String()
+	searchResults := searchItem + "/search-results"
+
+	if code, body := do("GET", searchResults, &viewer, nil); code != 200 || !strings.Contains(body, `"data":[]`) {
+		t.Errorf("list search results (none yet): %d %s", code, body)
+	}
+	if code, _ := do("POST", searchResults, &viewer, nil); code != 403 {
+		t.Errorf("run search with read only: %d, want 403", code)
+	}
+	code, body = do("POST", searchResults, &admin, nil)
+	if code != 201 || !strings.Contains(body, `"found":true`) || !strings.Contains(body, `"connector_name":"crm"`) {
+		t.Fatalf("run search: %d %s", code, body)
+	}
+	if code, body := do("GET", searchResults, &viewer, nil); code != 200 || !strings.Contains(body, `"found":true`) {
+		t.Errorf("list search results: %d %s", code, body)
+	}
+	if code, _ := do("GET", "/admin/v1/dsar/requests/"+uuid.New().String()+"/search-results", &admin, nil); code != 404 {
+		t.Errorf("list search results, unknown request: %d, want 404", code)
+	}
+
+	// Closing the request purges the search result's own content (DSAR-09's other acceptance-criterion
+	// half) — withdraw is the shortest path to a terminal status from "received".
+	if code, _ := do("POST", searchItem+"/transition", &admin, map[string]any{"to": "withdrawn"}, map[string]string{"If-Match": etagOf(int(searchReq.RowVersion))}); code != 200 {
+		t.Errorf("withdraw request: %d", code)
+	}
+	if code, body := do("GET", searchResults, &viewer, nil); code != 200 || strings.Contains(body, `"found":true`) || !strings.Contains(body, `"purged_at":"`) {
+		t.Errorf("list search results after closing: %d %s, want purged", code, body)
 	}
 }
 
