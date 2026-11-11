@@ -39,6 +39,7 @@
 | [import_jobs](#platform-import-jobs) | งานนำเข้า Excel / CSV | tenant · RLS `tenant_isolation` |  | ERD-02 |  |
 | [export_jobs](#platform-export-jobs) | งานส่งออกแบบ async (ศูนย์ดาวน์โหลด) | tenant · RLS `tenant_isolation` |  | ERD-02 |  |
 | [connectors](#platform-connectors) | connector ไปยังระบบของลูกค้า (DB / REST / SaaS) | tenant · RLS `tenant_isolation` |  | ERD-02 |  |
+| [connector_secrets](#platform-connector-secrets) | credential ของ connector เข้ารหัสด้วย Keyring (PLT-20, migration 00100) | tenant · RLS `tenant_isolation` |  | ERD-02 |  |
 | [ai_requests](#platform-ai-requests) | log การเรียก AI (หลังปกปิด PII) | tenant · RLS `tenant_isolation` |  | ERD-02 |  |
 
 <a id="platform-tenants"></a>
@@ -762,6 +763,26 @@ connector ไปยังระบบของลูกค้า (DB / REST / Sa
 - Index: `platform.connectors (tenant_id, asset_id)`
 - RLS: tenant · RLS `tenant_isolation`
 - ถูกอ้างถึงโดย: `consent.reconcile_runs.connector_id`, `dataflow.discovery_scans.connector_id`, `dsar.search_results.connector_id`
+- `connector_type` ไม่มี CHECK constraint โดยตั้งใจ (PLT-20): `internal/platform/connectors.Registry` เป็นผู้ตัดสินว่าค่านี้ใช้ได้หรือไม่ ไม่ใช่ schema — เพิ่มประเภทใหม่ได้โดยไม่ต้อง migration
+- `secret_ref` เป็น reference string ไปยัง [platform.connector_secrets](#platform-connector-secrets) เท่านั้น ไม่ใช่ credential จริง (PLT-20)
+
+<a id="platform-connector-secrets"></a>
+## platform.connector_secrets
+
+credential ของ connector เข้ารหัสด้วย Keyring ต่อ secret_ref (PLT-20)
+
+| คอลัมน์ | type | NOT NULL | default | key / อ้างอิง | หมายเหตุ |
+|---|---|---|---|---|---|
+| `id` | `uuid` | ✓ | gen_random_uuid() | PK |  |
+| `tenant_id` | `uuid` | ✓ |  | FK → [platform.tenants](#platform-tenants) | RLS |
+| `secret_ref` | `varchar(200)` | ✓ |  |  | ตรงกับ `platform.connectors.secret_ref` ของ tenant เดียวกัน |
+| `value_enc` | `bytea` | ✓ |  |  | เข้ารหัสด้วย PLT-13 Keyring (class `"connector"`, context = `secret_ref`) |
+
+- มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_connector_secrets_updated`
+- PK: `(id)`
+- Unique: `uq_connector_secrets_ref UNIQUE (tenant_id, secret_ref)`
+- RLS: tenant · RLS `tenant_isolation`
+- ลบ connector แล้วลบ secret ของมันไปด้วย (ไม่มีข้อกังวลเรื่อง crypto-shredding เหมือน `platform.tenant_keys` — credential นี้ลูกค้าหมุนเวียน/ออกใหม่ได้เสมอ ไม่ใช่หลักฐานที่ต้องเก็บ)
 
 <a id="platform-ai-requests"></a>
 ## platform.ai_requests

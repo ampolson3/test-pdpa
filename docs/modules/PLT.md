@@ -758,6 +758,21 @@ vitals / server instrumentation (the module doc's own frontend note) — no cons
 
 **หมายเหตุ:** ใช้ร่วม DSAR-09, DSAR-12, DFG-09, DPX-13
 
+**Implementation (PLT-20) — done:** `internal/platform/connectors` (`Driver`/`Registry`, the same
+`Type`/`Registry` pattern PLT-14's importer already established — `Service` never switches on
+`connector_type`, proven directly by a test that registers a brand-new type with zero other code change).
+Four real drivers: `PostgresDriver`/`MySQLDriver`/`SQLServerDriver` (one generic `database/sql`-based
+builder parameterized by dialect) and `RESTDriver` (a generic Bearer-token JSON REST connector). Secrets are
+sealed via the PLT-13 Keyring in a new table, migration 00100's `platform.connector_secrets` (class
+`"connector"`, context = the connector's own `secret_ref`). `TestConnection` never fails the HTTP call
+itself — a bad connection reports through `status`/`last_tested_at` and the response body's own `ok`. Reuses
+the already-seeded `ropa.discovery.*` permission (this exact actor, IT, already held it) rather than minting
+a new code. API: `GET /admin/v1/platform/connector-types`, `GET`/`POST /admin/v1/platform/connectors`,
+`GET`/`PATCH`/`DELETE /admin/v1/platform/connectors/{id}` (ETag/If-Match), `POST .../test`. UI:
+`/settings/connectors`. See CLAUDE.md's own `### PLT-20` section for full detail. Not done: the scheduled
+discovery-scan job itself (DFG-09/DSAR-09/DSAR-12/DPX-13's own future consumers, none built yet) and a live
+MySQL/SQL Server driver test (no such server reachable in this environment).
+
 <a id="plt-21"></a>
 ### PLT-21 ค้นหาข้ามระบบ
 

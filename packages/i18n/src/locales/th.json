@@ -4337,6 +4337,51 @@
       }
     }
   },
+  "connectors": {
+    "signInRequired": "กรุณาเข้าสู่ระบบ",
+    "forbidden": "คุณไม่มีสิทธิ์ดู connector",
+    "title": "Connector",
+    "intro": "ลงทะเบียนและทดสอบการเชื่อมต่อไปยังระบบของลูกค้า (PostgreSQL, MySQL, SQL Server, REST) — ใช้โดย data discovery และการค้นหา/แก้ไข/ลบข้อมูลเจ้าของข้อมูลในหลายโมดูล",
+    "newConnector": "เพิ่ม connector",
+    "loading": "กำลังโหลด…",
+    "loadError": "โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่",
+    "empty": "ยังไม่มี connector ที่ลงทะเบียน",
+    "edit": "แก้ไข",
+    "delete": "ลบ",
+    "test": "ทดสอบการเชื่อมต่อ",
+    "testOk": "เชื่อมต่อสำเร็จ",
+    "testFailed": "ล้มเหลว: {message}",
+    "never": "ยังไม่เคย",
+    "filters": {
+      "status": "สถานะ",
+      "all": "ทั้งหมด"
+    },
+    "statuses": {
+      "draft": "ร่าง",
+      "active": "ใช้งาน",
+      "error": "ผิดพลาด",
+      "disabled": "ปิดใช้งาน"
+    },
+    "table": {
+      "name": "ชื่อ",
+      "type": "ประเภท",
+      "status": "สถานะ",
+      "lastTested": "ทดสอบล่าสุด"
+    },
+    "form": {
+      "newTitle": "เพิ่ม connector",
+      "editTitle": "แก้ไข connector",
+      "name": "ชื่อ",
+      "connectorType": "ประเภท connector",
+      "secret": "รหัสผ่าน / API token",
+      "secretUnchanged": "เว้นว่างเพื่อคงค่าที่มีอยู่",
+      "config": "ค่าตั้งค่า (JSON)",
+      "capabilities": "ความสามารถ",
+      "save": "บันทึก",
+      "cancel": "ยกเลิก",
+      "saveError": "บันทึกไม่สำเร็จ: {detail}"
+    }
+  },
   "dpoTasks": {
     "signInRequired": "กรุณาเข้าสู่ระบบเพื่อดูหน้านี้",
     "forbidden": "คุณไม่มีสิทธิ์ดูงานของ DPO",

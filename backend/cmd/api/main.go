@@ -64,6 +64,8 @@ import (
 	auditservice "pdpa-platform/internal/platform/audit/service"
 	"pdpa-platform/internal/platform/collab"
 	collabhttp "pdpa-platform/internal/platform/collab/http"
+	"pdpa-platform/internal/platform/connectors"
+	connectorshttp "pdpa-platform/internal/platform/connectors/http"
 	"pdpa-platform/internal/platform/crypto"
 	docshttp "pdpa-platform/internal/platform/docs/http"
 	"pdpa-platform/internal/platform/docs/render"
@@ -276,7 +278,8 @@ func run() error {
 	ropaTemplatesSvc.Audit = auditSvc                                                                        // RTG-08: audit a tenant's own custom template set/activity writes
 	ropaSvc := &ropaservice.Service{Audit: auditSvc, Org: orgSvc, Risk: riskSvc, Templates: ropaTemplatesSvc, Collab: collabSvc,
 		Events: &events.Publisher{River: riverClient}, River: riverClient} // ROPA-05: create an activity from one of these templates; ROPA-12: Q&A task list; PNG-10: tell notice when an approved activity changes; RTG-11: schedule the draft-confirm SLA checkpoints on write
-	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc} // RRA-01: score an activity from its own RoPA data
+	riskSvc.Ropa = wiring.RiskRopa{Ropa: ropaSvc, Org: orgSvc}                                          // RRA-01: score an activity from its own RoPA data
+	connectorsSvc := connectors.New(wiring.Connectors(), keyring, wiring.ConnectorsRopa{Ropa: ropaSvc}) // PLT-20: connector framework (test/discover/search_subject/update/delete)
 	// ROPA-12: comments, mentions and activity (PLT-07) on the processing activity itself — the Q&A tab;
 	// an unresolved top-level comment naming a user is that user's own open question (MyOpenQuestions).
 	collabSvc.Register(ropaservice.ActivityCollabEntityType, collab.Policy{
@@ -480,6 +483,11 @@ func run() error {
 			[]jobshttp.StrictMiddlewareFunc{authz.StrictMiddleware[jobshttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[jobshttp.StrictHandlerFunc](requiredModule)},
 			jobshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
 		jobshttp.HandlerWithOptions(strictJobs, jobshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
+
+		strictConnectors := connectorshttp.NewStrictHandlerWithOptions(connectorshttp.NewStrict(connectorsSvc),
+			[]connectorshttp.StrictMiddlewareFunc{authz.StrictMiddleware[connectorshttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[connectorshttp.StrictHandlerFunc](requiredModule)},
+			connectorshttp.StrictHTTPServerOptions{RequestErrorHandlerFunc: requestError, ResponseErrorHandlerFunc: responseError})
+		connectorshttp.HandlerWithOptions(strictConnectors, connectorshttp.ChiServerOptions{BaseRouter: g, ErrorHandlerFunc: requestError})
 
 		strictCollab := collabhttp.NewStrictHandlerWithOptions(collabhttp.NewStrict(collabSvc),
 			[]collabhttp.StrictMiddlewareFunc{authz.StrictMiddleware[collabhttp.StrictHandlerFunc](authzCache, requiredPermission), modulegate.Middleware[collabhttp.StrictHandlerFunc](requiredModule)},

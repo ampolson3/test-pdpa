@@ -2725,6 +2725,19 @@ type PlatformConnector struct {
 	RowVersion    int32              `db:"row_version" json:"row_version"`
 }
 
+// credential ของ connector เข้ารหัสด้วย Keyring ต่อ secret_ref (PLT-20)
+type PlatformConnectorSecret struct {
+	ID         uuid.UUID          `db:"id" json:"id"`
+	TenantID   uuid.UUID          `db:"tenant_id" json:"tenant_id"`
+	SecretRef  string             `db:"secret_ref" json:"secret_ref"`
+	ValueEnc   []byte             `db:"value_enc" json:"value_enc"`
+	CreatedAt  pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	CreatedBy  pgtype.UUID        `db:"created_by" json:"created_by"`
+	UpdatedAt  pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	UpdatedBy  pgtype.UUID        `db:"updated_by" json:"updated_by"`
+	RowVersion int32              `db:"row_version" json:"row_version"`
+}
+
 // เอกสารที่สร้างจาก composer (ประกาศ สัญญา หนังสือ แบบแจ้ง)
 type PlatformDocument struct {
 	ID               uuid.UUID          `db:"id" json:"id"`

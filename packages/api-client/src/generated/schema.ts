@@ -87,6 +87,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/platform/connector-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every connector_type this process's own Registry knows how to drive, with its capabilities (PLT-20)
+         * @description Reads internal/platform/connectors.Registry directly — the acceptance criterion's own "เพิ่ม
+         *     connector ใหม่ได้โดยไม่แก้โมดูลหลัก" holds because this list, the create form's own type picker,
+         *     and TestConnection all come from the one registry; adding a type is a new Driver + one registry
+         *     entry in internal/wiring.Connectors(), never a change to this endpoint or the service beneath it.
+         */
+        get: operations["platformListConnectorTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/connectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The tenant's registered connectors (PLT-20) */
+        get: operations["platformListConnectors"];
+        put?: never;
+        /** Register a new connector (PLT-20) — its secret, if any, is sealed via the PLT-13 Keyring, never returned */
+        post: operations["platformCreateConnector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/platform/connectors/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One connector, never carrying its own decrypted secret (PLT-20) */
+        get: operations["platformGetConnector"];
+        put?: never;
+        post?: never;
+        /** Remove a connector and its own sealed secret, if any (PLT-20) */
+        delete: operations["platformDeleteConnector"];
+        options?: never;
+        head?: never;
+        /** Change a connector's own name/config/secret/capabilities (PLT-20) */
+        patch: operations["platformUpdateConnector"];
+        trace?: never;
+    };
+    "/admin/v1/platform/connectors/{id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test the connection from the admin screen (PLT-20's own acceptance criterion) — updates status/last_tested_at */
+        post: operations["platformTestConnector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/platform/files": {
         parameters: {
             query?: never;
@@ -11044,6 +11121,76 @@ export interface components {
             data: components["schemas"]["Job"][];
             next_cursor: string | null;
         };
+        /** @enum {string} */
+        ConnectorStatus: "draft" | "active" | "error" | "disabled";
+        /**
+         * @description Matches internal/platform/connectors's own capability constants (CapTest etc.)
+         * @enum {string}
+         */
+        ConnectorCapability: "test" | "discover" | "search_subject" | "update" | "delete";
+        /** @description One Driver this process's Registry carries (internal/wiring.Connectors()) — never hard-coded on this response, read live from the registry map. */
+        ConnectorType: {
+            /** @description e.g. postgres, mysql, sqlserver, rest */
+            code: string;
+            capabilities: components["schemas"]["ConnectorCapability"][];
+        };
+        /**
+         * @example {
+         *       "name": "HR system (Postgres replica)",
+         *       "connector_type": "postgres",
+         *       "config": {
+         *         "dsn": "postgres://readonly@hr-db.internal:5432/hr?sslmode=require",
+         *         "table": "employees",
+         *         "identifier_column": "email"
+         *       },
+         *       "secret": "",
+         *       "capabilities": [
+         *         "test",
+         *         "discover",
+         *         "search_subject"
+         *       ]
+         *     }
+         */
+        ConnectorInput: {
+            name: string;
+            /** @description Must be a code platformListConnectorTypes currently returns */
+            connector_type: string;
+            /** @description The ropa.assets row (ROPA-02) this connector represents, if any */
+            asset_id?: components["schemas"]["Uuid"] | null;
+            /** @description Driver-specific settings (dsn/table/identifier_column for the SQL drivers; base_url/test_path/search_path/update_path/delete_path for rest) — never the secret itself */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** @description Write-only credential (a DSN password, an API token, ...), sealed via the PLT-13 Keyring on save and never echoed back. Omit to leave an existing secret unchanged; an empty string clears it. */
+            secret?: string | null;
+            /**
+             * @description This connector's own offered subset of its connector_type's Driver capabilities (e.g. a read-only replica omits update/delete)
+             * @default []
+             */
+            capabilities: components["schemas"]["ConnectorCapability"][];
+        };
+        Connector: {
+            id: components["schemas"]["Uuid"];
+            name: string;
+            connector_type: string;
+            asset_id?: components["schemas"]["Uuid"] | null;
+            config: {
+                [key: string]: unknown;
+            };
+            /** @description Whether a secret is sealed for this connector — the value itself is never returned (rule 3) */
+            has_secret: boolean;
+            capabilities: components["schemas"]["ConnectorCapability"][];
+            status: components["schemas"]["ConnectorStatus"];
+            /** Format: date-time */
+            last_tested_at?: string | null;
+            row_version: number;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        ConnectorTestResult: {
+            ok: boolean;
+            message?: string | null;
+            tested_at: components["schemas"]["Timestamp"];
+        };
         /**
          * Format: uuid
          * @description UUIDv7 generated by the API
@@ -12615,6 +12762,227 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    platformListConnectorTypes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ConnectorType"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformListConnectors: {
+        parameters: {
+            query?: {
+                connector_type?: string;
+                status?: components["schemas"]["ConnectorStatus"];
+                /** @description Opaque cursor from `next_cursor` of the previous page */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Connector"][];
+                        next_cursor?: string | null;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    platformCreateConnector: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectorInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Connector"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    platformGetConnector: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Connector"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    platformDeleteConnector: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformUpdateConnector: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectorInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Connector"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    platformTestConnector: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Test result (never fails the HTTP call itself — a failed connection is reported as ok=false) */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorTestResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["UnprocessableEntity"];
         };
     };
     platformUploadFile: {

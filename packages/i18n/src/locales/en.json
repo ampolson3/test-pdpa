@@ -4337,6 +4337,51 @@
       }
     }
   },
+  "connectors": {
+    "signInRequired": "Please sign in.",
+    "forbidden": "You don't have permission to view connectors.",
+    "title": "Connectors",
+    "intro": "Register and test connections to customer systems (PostgreSQL, MySQL, SQL Server, REST) — used by data discovery and subject search/update/delete across modules.",
+    "newConnector": "Add connector",
+    "loading": "Loading…",
+    "loadError": "Failed to load. Please try again.",
+    "empty": "No connectors registered yet.",
+    "edit": "Edit",
+    "delete": "Delete",
+    "test": "Test connection",
+    "testOk": "Connected",
+    "testFailed": "Failed: {message}",
+    "never": "Never",
+    "filters": {
+      "status": "Status",
+      "all": "All"
+    },
+    "statuses": {
+      "draft": "Draft",
+      "active": "Active",
+      "error": "Error",
+      "disabled": "Disabled"
+    },
+    "table": {
+      "name": "Name",
+      "type": "Type",
+      "status": "Status",
+      "lastTested": "Last tested"
+    },
+    "form": {
+      "newTitle": "Add connector",
+      "editTitle": "Edit connector",
+      "name": "Name",
+      "connectorType": "Connector type",
+      "secret": "Secret (password / API token)",
+      "secretUnchanged": "Leave blank to keep the existing secret",
+      "config": "Config (JSON)",
+      "capabilities": "Capabilities",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saveError": "Failed to save: {detail}"
+    }
+  },
   "dpoTasks": {
     "signInRequired": "Sign in to view this page.",
     "forbidden": "You don't have permission to view DPO tasks.",

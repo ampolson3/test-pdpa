@@ -222,6 +222,254 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+  /admin/v1/platform/connector-types:
+    get:
+      operationId: platformListConnectorTypes
+      tags: [platform]
+      summary: Every connector_type this process's own Registry knows how to drive, with its capabilities (PLT-20)
+      description: |
+        Reads internal/platform/connectors.Registry directly — the acceptance criterion's own "เพิ่ม
+        connector ใหม่ได้โดยไม่แก้โมดูลหลัก" holds because this list, the create form's own type picker,
+        and TestConnection all come from the one registry; adding a type is a new Driver + one registry
+        entry in internal/wiring.Connectors(), never a change to this endpoint or the service beneath it.
+      x-permission: ropa.discovery.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConnectorType'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /admin/v1/platform/connectors:
+    get:
+      operationId: platformListConnectors
+      tags: [platform]
+      summary: The tenant's registered connectors (PLT-20)
+      x-permission: ropa.discovery.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: connector_type
+          in: query
+          required: false
+          schema: {type: string, maxLength: 40}
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ConnectorStatus'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Connector'
+                  next_cursor: {type: [string, 'null']}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: platformCreateConnector
+      tags: [platform]
+      summary: Register a new connector (PLT-20) — its secret, if any, is sealed via the PLT-13 Keyring, never returned
+      x-permission: ropa.discovery.create
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorInput'
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connector'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/platform/connectors/{id}:
+    get:
+      operationId: platformGetConnector
+      tags: [platform]
+      summary: One connector, never carrying its own decrypted secret (PLT-20)
+      x-permission: ropa.discovery.read
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connector'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: platformUpdateConnector
+      tags: [platform]
+      summary: Change a connector's own name/config/secret/capabilities (PLT-20)
+      x-permission: ropa.discovery.update
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorInput'
+      responses:
+        '200':
+          description: Updated
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connector'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+    delete:
+      operationId: platformDeleteConnector
+      tags: [platform]
+      summary: Remove a connector and its own sealed secret, if any (PLT-20)
+      x-permission: ropa.discovery.delete
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - $ref: '#/components/parameters/IfMatch'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/platform/connectors/{id}/test:
+    post:
+      operationId: platformTestConnector
+      tags: [platform]
+      summary: Test the connection from the admin screen (PLT-20's own acceptance criterion) — updates status/last_tested_at
+      x-permission: ropa.discovery.execute
+      x-module: platform
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Test result (never fails the HTTP call itself — a failed connection is reported as ok=false)
+          headers:
+            ETag:
+              $ref: '#/components/headers/ETag'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorTestResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
   /admin/v1/platform/files:
     post:
       operationId: platformUploadFile
@@ -26529,6 +26777,86 @@ components:
             $ref: '#/components/schemas/Job'
         next_cursor:
           type: [string, 'null']
+    ConnectorStatus:
+      type: string
+      enum: [draft, active, error, disabled]
+    ConnectorCapability:
+      type: string
+      enum: [test, discover, search_subject, update, delete]
+      description: Matches internal/platform/connectors's own capability constants (CapTest etc.)
+    ConnectorType:
+      type: object
+      required: [code, capabilities]
+      description: One Driver this process's Registry carries (internal/wiring.Connectors()) — never hard-coded on this response, read live from the registry map.
+      properties:
+        code: {type: string, maxLength: 40, description: 'e.g. postgres, mysql, sqlserver, rest'}
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectorCapability'
+    ConnectorInput:
+      type: object
+      required: [name, connector_type]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 200}
+        connector_type:
+          type: string
+          maxLength: 40
+          description: Must be a code platformListConnectorTypes currently returns
+        asset_id:
+          description: The ropa.assets row (ROPA-02) this connector represents, if any
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        config:
+          description: Driver-specific settings (dsn/table/identifier_column for the SQL drivers; base_url/test_path/search_path/update_path/delete_path for rest) — never the secret itself
+          type: object
+          additionalProperties: true
+        secret:
+          description: Write-only credential (a DSN password, an API token, ...), sealed via the PLT-13 Keyring on save and never echoed back. Omit to leave an existing secret unchanged; an empty string clears it.
+          type: [string, 'null']
+        capabilities:
+          description: This connector's own offered subset of its connector_type's Driver capabilities (e.g. a read-only replica omits update/delete)
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectorCapability'
+          default: []
+      example:
+        name: HR system (Postgres replica)
+        connector_type: postgres
+        config: {dsn: 'postgres://readonly@hr-db.internal:5432/hr?sslmode=require', table: employees, identifier_column: email}
+        secret: ''
+        capabilities: [test, discover, search_subject]
+    Connector:
+      type: object
+      required: [id, name, connector_type, config, capabilities, status, has_secret, row_version, updated_at]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid'}
+        name: {type: string}
+        connector_type: {type: string}
+        asset_id:
+          oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
+        config:
+          type: object
+          additionalProperties: true
+        has_secret:
+          type: boolean
+          description: Whether a secret is sealed for this connector — the value itself is never returned (rule 3)
+        capabilities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConnectorCapability'
+        status: {$ref: '#/components/schemas/ConnectorStatus'}
+        last_tested_at:
+          type: [string, 'null']
+          format: date-time
+        row_version: {type: integer}
+        updated_at: {$ref: '#/components/schemas/Timestamp'}
+    ConnectorTestResult:
+      type: object
+      required: [ok, tested_at]
+      properties:
+        ok: {type: boolean}
+        message: {type: [string, 'null']}
+        tested_at: {$ref: '#/components/schemas/Timestamp'}
     Uuid:
       type: string
       format: uuid

@@ -51,6 +51,19 @@ export {
 } from "./parties";
 export { useAssets, useSaveAsset, type Asset, type AssetInput, type AssetType } from "./assets";
 export {
+  useConnectorTypes,
+  useConnectors,
+  useConnector,
+  useSaveConnector,
+  useDeleteConnector,
+  useTestConnector,
+  type Connector,
+  type ConnectorInput,
+  type ConnectorType,
+  type ConnectorTestResult,
+  type ConnectorStatus,
+} from "./connectors";
+export {
   useRiskRegister,
   useRiskRegisterEntry,
   useSaveRiskRegisterEntry,

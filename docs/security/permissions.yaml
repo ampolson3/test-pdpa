@@ -905,7 +905,8 @@ permissions:
   name: Data discovery และ connector
   epics:
   - DFG
-  note: null
+  - PLT
+  note: ใช้ร่วมกับ PLT-20 (/admin/v1/platform/connectors) — connector เป็น platform-wide mechanism ที่โมดูลนี้ชื่อ permission ไว้ก่อนแล้ว
   grants:
     DPO:
     - read

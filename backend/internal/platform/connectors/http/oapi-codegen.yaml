@@ -1,0 +1,14 @@
+package: connectorshttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - platformListConnectorTypes
+    - platformListConnectors
+    - platformCreateConnector
+    - platformGetConnector
+    - platformUpdateConnector
+    - platformDeleteConnector
+    - platformTestConnector

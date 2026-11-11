@@ -6285,6 +6285,103 @@ the schema's own original intent — "ตำแหน่ง node ที่ผู
 (a custom React Flow node type showing the full note text inline, rather than a label marker) — nothing
 in the literal acceptance criterion needs one.
 
+### PLT-20 Connector framework (`docs/modules/PLT.md#plt-20`) — done
+`platform.connectors` was already fully specified in the baseline migration (00002_platform.sql) —
+`connector_type varchar(40)` with **no CHECK constraint**, `secret_ref varchar(200)` (a reference string,
+not the credential itself), `config jsonb`, `capabilities text[]`, `status` draft/active/error/disabled,
+already referenced by `consent.reconcile_runs.connector_id`/`dataflow.discovery_scans.connector_id`/
+`dsar.search_results.connector_id` — unused by any code until now. The missing CHECK constraint is the
+literal acceptance criterion's own enabling fact: `internal/platform/connectors.Registry map[string]Driver`
+(the exact `Type`/`Registry` pattern `internal/platform/importer` already established for PLT-14, built at
+construction time via `internal/wiring.Connectors()` rather than a package-level mutable `Register()`)
+decides which `connector_type` values exist, never the schema — adding a new type is one new `Driver` value
+plus one new map entry, with `internal/platform/connectors`'s own `Service` never switching on
+`connector_type` anywhere (proven directly by `TestRegistry_AddingANewTypeNeedsNoCoreChange`).
+
+`Driver` (`driver.go`) is a plain struct of optional functions (`Test`/`Discover`/`SearchSubject`/`Update`/
+`Delete`), not a Go `interface` — a capability a driver doesn't support is simply a nil field, read by
+`Service` via the connector's own `Capabilities []string` rather than an `ErrUnsupported` call a caller
+forgot to check. `sql_driver.go`'s `sqlDriver(dialect)` is the one generic builder behind all three SQL-based
+connector types this feature's own "ชุดแรก" names: `PostgresDriver()`/`MySQLDriver()`/`SQLServerDriver()`
+differ only in their own `sqlDialect` (driver name, parameter placeholder style, identifier quoting, an
+`information_schema.columns` query scoped to "this database" — each engine's own syntax for that predicate
+differs slightly) — real `database/sql` + the real `jackc/pgx/v5/stdlib`/`go-sql-driver/mysql`/
+`microsoft/go-mssqldb` drivers (both added as new Go dependencies via an **unpinned** `go get`, after a
+first, pinned attempt silently downgraded `github.com/pressly/goose/v3` v3.28.0→v3.23.1 through a transitive
+version conflict — reverted and re-run unpinned, letting Go's own resolver pick mutually compatible latest
+versions). `Config.Settings["table"]`/`["identifier_column"]` drive `SearchSubject`/`Update`/`Delete` against
+one named table; `rest_driver.go`'s `RESTDriver()` is the fourth type, a generic JSON REST connector driven
+by `base_url`/`test_path`/`search_path`/`update_path`/`delete_path` templates (a `{id}` placeholder) and a
+Bearer-token secret — the one authentication scheme common enough to build in generically.
+
+`service.go` is PLT-20's own CRUD + test-connection layer, kept deliberately separate from the SDK: plain
+CRUD (`CreateConnector`/`UpdateConnector`/`DeleteConnector`/`GetConnector`/`ListConnectors`, cursor-paginated
+the same keyset shape every other module's own list already uses) plus `TestConnection` — the acceptance
+criterion's other half, "ทดสอบการเชื่อมต่อจากหน้าจอได้" — which **never fails the HTTP call itself**: a bad
+connection is reported through the connector's own `status`/`last_tested_at` columns and the response body's
+`ok`/`message`, the same `cookie.domains` verification-flow pattern this codebase already uses for "show a
+clear failure on screen, not a 5xx." A secret is sealed via the already-built PLT-13 `crypto.Keyring` (class
+`"connector"`, context = the connector's own `secret_ref` string — binding the encryption context to the
+reference so a forged/mismatched ref can never decrypt an unrelated connector's secret) into a new table,
+migration 00100's `platform.connector_secrets` (one row per `(tenant_id, secret_ref)`, RLS `tenant_isolation`,
+no DELETE/UPDATE crypto-shredding concern the way `platform.tenant_keys` has — a connector credential is
+just rotated/reissued by the customer's own source system, not evidence to retain). `ConnectorInput.secret`
+is write-only and nil-means-unchanged (an explicit empty string clears it) — proven directly by
+`TestUpdateConnector_OmittingSecretLeavesItUnchanged`; a connector's own `Connector` response never carries
+the secret, only `has_secret bool` (rule 3).
+
+`asset_id` is an optional FK to `ropa.assets` bypassing RLS (rule 1), checked through a new
+`connectors.Ropa` interface (`AssetVisible`, a plain bool — deliberately not importing ropa's own `Asset`
+type, so `internal/platform/connectors` depends on no business module at all, rule 9) backed by
+`wiring.ConnectorsRopa{Ropa: ropaSvc}` (a thin adapter calling the already-exported `ropaservice.GetAsset`
+and mapping `ErrNotFound` to `false, nil` — the same local-interface-plus-wiring-adapter pattern IAM-05's
+own `Auditor`/`Notifier` and DPIA's own `RopaDpia` already established for a package that must stay decoupled
+from the module it checks against).
+
+Permissions reuse the already-seeded `ropa.discovery.{create,read,update,delete,execute}` (migration 00019,
+IT holding the full set, exactly this feature's own actor) rather than minting a new code — the permission's
+own seeded name, "Data discovery และ connector," already named this exact mechanism before PLT-20 built it;
+`docs/security/permissions.yaml`'s entry gained a `PLT` epic and a note disclosing the reuse. `x-module:
+platform` (never gated by `modulegate` — shared plumbing available to every licensed tenant, the same
+IAM-03-established allow-list `iam`/`platform` already sit on).
+
+API: `GET /admin/v1/platform/connector-types` (the registry read side — a new type registered in
+`internal/wiring.Connectors()` appears here with zero further change), `GET`/`POST
+/admin/v1/platform/connectors`, `GET`/`PATCH`/`DELETE /admin/v1/platform/connectors/{id}` (ETag/If-Match),
+`POST /admin/v1/platform/connectors/{id}/test`. UI: a new page, `/settings/connectors` — a connector_type
+picker fed live by the registry endpoint, a config-as-JSON textarea (deliberately opaque — `config jsonb`
+has no fixed shape across four very different connector types, the same "raw JSON" convention RTG-01's own
+template defaults already use), a capabilities checklist narrowed to the chosen type's own offered set, and
+a per-row test-connection action showing `ok`/`message` inline.
+
+Tests: unit (`driver_test.go` — `TestPostgresDriver_FullLifecycle` against a real scratch table via a direct
+`pdpa_owner` DSN (test/discover/search_subject/update/delete, skips cleanly without a reachable Postgres in
+this environment, same as every DB-backed test this session already discloses); `TestRESTDriver_FullLifecycle`
+against a real `httptest.Server` — no external infrastructure needed, so it always runs regardless of this
+environment's own reachability, proving the Bearer-auth header, 404-means-empty-not-error, and the full
+update/delete cycle; `TestRegistry_AddingANewTypeNeedsNoCoreChange` is the acceptance criterion's own literal
+proof, a brand-new `connector_type` with its own inline `Driver`, never touching `Service`), `service_test.go`
+(DB-backed: unknown/unsupported-capability rejection, the secret-sealing round trip incl. the
+nil-means-unchanged/empty-means-clear contract, a stale ETag, delete removing the secret row too, the
+asset-visibility FK check both ways, two-tenant isolation — all compile and vet clean and skip the same way
+without a reachable Postgres), HTTP contract (`handler_test.go` — 401/403/400/422/412/428/201/200/204/404
+through the real validator + AuthZ, including the test-connection endpoint reporting `ok:false` against a
+deliberately unreachable REST host rather than erroring). `go build ./...`, `go vet ./...`, `gofmt -l` (clean
+on every touched file — the same four pre-existing violations this session's other recent passes already
+disclose are untouched), `go test ./...` (no regressions — only the pre-existing, unrelated
+`internal/pkg/validate` failure), `make gen` re-run with no drift beyond this feature's own additions (every
+other module's own `store/models.go` picked up the two new table types, since sqlc regenerates the full
+shared schema's models per package — purely additive, confirmed via diff), `pnpm --filter @pdpa/api-client
+typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build`/`typecheck` (incl. the new
+`/settings/connectors` route) all verified clean. Not verified live against a real Postgres/Redis in this
+pass — neither was reachable in this environment; every DB-backed test compiles and vets clean and skips the
+same way the rest of this codebase's own suite already does without one. Not done, deliberately (no consumer
+yet, the same deferral this codebase uses throughout): the actual scheduled-discovery-scan job
+(`dataflow.discovery_scans`'s own `connector_id` FK already exists; DFG-09/DSAR-09/DSAR-12/DPX-13 are this
+SDK's own named future consumers per the module doc's "ใช้ร่วม" note, none built yet) and a live
+mysql/sqlserver driver test (both compile and vet cleanly against the real drivers; no MySQL/SQL Server
+server is reachable in this environment to test either against at runtime).
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

@@ -20,6 +20,7 @@ gen:
 	cd backend && go generate ./internal/platform/events
 	cd backend/internal/iam/http && oapi-codegen -config oapi-codegen.yaml -o me.gen.go ../../../../api/openapi/openapi.yaml
 	cd backend/internal/platform/jobs/http && oapi-codegen -config oapi-codegen.yaml -o jobs.gen.go ../../../../../api/openapi/openapi.yaml
+	cd backend/internal/platform/connectors/http && oapi-codegen -config oapi-codegen.yaml -o connectors.gen.go ../../../../../api/openapi/openapi.yaml
 	cd backend/internal/platform/files/http && oapi-codegen -config oapi-codegen.yaml -o files.gen.go ../../../../../api/openapi/openapi.yaml
 	cd backend/internal/platform/notify/http && oapi-codegen -config oapi-codegen.yaml -o notify.gen.go ../../../../../api/openapi/openapi.yaml
 	cd backend/internal/platform/collab/http && oapi-codegen -config oapi-codegen.yaml -o collab.gen.go ../../../../../api/openapi/openapi.yaml
