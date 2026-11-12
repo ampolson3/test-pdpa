@@ -590,6 +590,7 @@ export {
   useSubmitAdvisory,
   useAnswerAdvisory,
   useKbArticles,
+  useKbArticleMutations,
   type DpoAppointment,
   type DpoAppointmentInput,
   type DpoType,
@@ -606,6 +607,8 @@ export {
   type DpoAdvisory,
   type DpoAdvisoryInput,
   type DpoKbArticle,
+  type DpoKbArticleInput,
+  type KbFilter,
 } from "./dpo";
 export {
   useTenants,

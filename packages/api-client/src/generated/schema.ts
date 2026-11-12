@@ -4640,7 +4640,45 @@ export interface paths {
         /** DPO-07 — the searchable knowledge base (every published article, incl. ones promoted from an answered advisory) */
         get: operations["dpoSearchKbArticles"];
         put?: never;
+        /** DPO-12: author a knowledge-base article (starts as a draft) */
+        post: operations["dpoCreateKbArticle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpo/kb-articles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /** DPO-12: one knowledge-base article */
+        get: operations["dpoGetKbArticle"];
+        /** DPO-12: edit an article; editing a published one starts its next version */
+        put: operations["dpoUpdateKbArticle"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/v1/dpo/kb-articles/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** DPO-12: publish (needs dpo.kb.publish) or archive (needs dpo.kb.delete) an article */
+        post: operations["dpoSetKbArticleStatus"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9139,9 +9177,26 @@ export interface components {
             tags: string[];
             /** @enum {string} */
             source: "law" | "pdpc" | "policy" | "faq" | "internal";
+            /** @enum {string} */
+            status?: "draft" | "published" | "archived";
+            version_no?: number;
+            /** @description platform starter content, read-only */
+            is_global?: boolean;
             /** Format: date-time */
             published_at?: string | null;
             row_version: number;
+        };
+        DpoKbArticleInput: {
+            category: string;
+            title: string;
+            body: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            language?: "th" | "en";
+            tags?: string[];
+            /** @enum {string} */
+            source: "law" | "pdpc" | "policy" | "faq" | "internal";
         };
         DpoRequirementCheck: {
             id: components["schemas"]["Uuid"];
@@ -10908,7 +10963,7 @@ export interface components {
             id: components["schemas"]["Uuid"];
             notice_version_id: components["schemas"]["Uuid"];
             user_id?: components["schemas"]["Uuid"] | null;
-            /** @description Resolved display name of user_id */
+            /** @description Resolved display name of user_id; empty for an anonymous public acknowledgement */
             user_name?: string;
             channel: components["schemas"]["NoticeAckChannel"];
             occurred_at: components["schemas"]["Timestamp"];
@@ -10935,7 +10990,7 @@ export interface components {
         PublicNoticeLinkedDocument: {
             label: string;
             display_mode: components["schemas"]["NoticeLinkedDocumentDisplayMode"];
-            /** @description Resolved — the stored url */
+            /** @description Resolved — the stored url, or a short-lived signed link to the attached file */
             url: string;
         };
         PublicNotice: {
@@ -23774,6 +23829,11 @@ export interface operations {
             query?: {
                 category?: string;
                 q?: string;
+                language?: "th" | "en";
+                source?: "law" | "pdpc" | "policy" | "faq" | "internal";
+                tag?: string;
+                /** @description DPO-12: also list drafts and archived articles (needs dpo.kb.update) */
+                include_all?: boolean;
             };
             header?: {
                 /** @description Language of messages and localized fields (default th) */
@@ -23797,6 +23857,135 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    dpoCreateKbArticle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpoKbArticleInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoKbArticle"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    dpoGetKbArticle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoKbArticle"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    dpoUpdateKbArticle: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DpoKbArticleInput"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoKbArticle"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    dpoSetKbArticleStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description ETag (row_version) of the resource being modified. Mismatch → 412, missing → 428. */
+                "If-Match": components["parameters"]["IfMatch"];
+            };
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    status: "published" | "archived";
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    ETag: components["headers"]["ETag"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DpoKbArticle"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            412: components["responses"]["PreconditionFailed"];
+            422: components["responses"]["UnprocessableEntity"];
+            428: components["responses"]["PreconditionRequired"];
         };
     };
     dpoListRequirementChecks: {

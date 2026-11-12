@@ -75,8 +75,18 @@ export function useAnswerAdvisory(client: ApiClient) {
   });
 }
 
-/** GET /admin/v1/dpo/kb-articles (DPO-07) — the searchable knowledge base. */
-export function useKbArticles(client: ApiClient, filter: { category?: string; q?: string } = {}) {
+export type DpoKbArticleInput = components["schemas"]["DpoKbArticleInput"];
+export type KbFilter = {
+  category?: string;
+  q?: string;
+  language?: "th" | "en";
+  source?: DpoKbArticleInput["source"];
+  tag?: string;
+  include_all?: boolean;
+};
+
+/** GET /admin/v1/dpo/kb-articles (DPO-07/DPO-12) — the searchable knowledge base. */
+export function useKbArticles(client: ApiClient, filter: KbFilter = {}) {
   return useQuery({
     queryKey: [...kbArticlesKey, filter],
     queryFn: async () => {
@@ -85,6 +95,40 @@ export function useKbArticles(client: ApiClient, filter: { category?: string; q?
       return data.data;
     },
   });
+}
+
+/** DPO-12: create / edit / publish / archive a knowledge-base article. */
+export function useKbArticleMutations(client: ApiClient) {
+  const qc = useQueryClient();
+  const done = () => qc.invalidateQueries({ queryKey: kbArticlesKey });
+  const save = useMutation({
+    mutationFn: async (input: { id?: string; rowVersion?: number; body: DpoKbArticleInput }) => {
+      if (input.id) {
+        const { data, error } = await client.PUT("/admin/v1/dpo/kb-articles/{id}", {
+          params: { path: { id: input.id }, header: ifMatch(input.rowVersion ?? 0) },
+          body: input.body,
+        });
+        if (error) throw error;
+        return data;
+      }
+      const { data, error } = await client.POST("/admin/v1/dpo/kb-articles", { body: input.body });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: done,
+  });
+  const setStatus = useMutation({
+    mutationFn: async (input: { id: string; rowVersion: number; status: "published" | "archived" }) => {
+      const { data, error } = await client.POST("/admin/v1/dpo/kb-articles/{id}/status", {
+        params: { path: { id: input.id }, header: ifMatch(input.rowVersion) },
+        body: { status: input.status },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: done,
+  });
+  return { save, setStatus };
 }
 
 /** GET /admin/v1/dpo/requirement-checks (DPO-02), newest first, for one legal entity. */

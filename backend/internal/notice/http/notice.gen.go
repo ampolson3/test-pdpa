@@ -806,7 +806,7 @@ type NoticeAcknowledgement struct {
 	OccurredAt Timestamp `json:"occurred_at"`
 	UserId     *Uuid     `json:"user_id,omitempty"`
 
-	// UserName Resolved display name of user_id
+	// UserName Resolved display name of user_id; empty for an anonymous public acknowledgement
 	UserName *string `json:"user_name,omitempty"`
 }
 

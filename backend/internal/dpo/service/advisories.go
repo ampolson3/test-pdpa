@@ -50,6 +50,9 @@ type KbArticle struct {
 	Language    string
 	Tags        []string
 	Source      string
+	Status      string
+	VersionNo   int32
+	IsGlobal    bool
 	PublishedAt *time.Time
 	RowVersion  int32
 }
@@ -66,7 +69,7 @@ func toAdvisory(r dpostore.DpoAdvisory) Advisory {
 }
 
 func toKbArticle(r dpostore.DpoKbArticle) (KbArticle, error) {
-	a := KbArticle{ID: r.ID, Category: r.Category, Title: r.Title, Language: r.Language, Tags: r.Tags, Source: r.Source, RowVersion: r.RowVersion}
+	a := KbArticle{ID: r.ID, Category: r.Category, Title: r.Title, Language: r.Language, Tags: r.Tags, Source: r.Source, Status: r.Status, VersionNo: r.VersionNo, IsGlobal: !r.TenantID.Valid, RowVersion: r.RowVersion}
 	if len(r.Body) > 0 {
 		if err := json.Unmarshal(r.Body, &a.Body); err != nil {
 			return KbArticle{}, err

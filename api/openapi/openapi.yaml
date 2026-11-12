@@ -13269,6 +13269,19 @@ paths:
           in: query
           schema:
             type: string
+        - name: language
+          in: query
+          schema: {type: string, enum: [th, en]}
+        - name: source
+          in: query
+          schema: {type: string, enum: [law, pdpc, policy, faq, internal]}
+        - name: tag
+          in: query
+          schema: {type: string}
+        - name: include_all
+          in: query
+          description: 'DPO-12: also list drafts and archived articles (needs dpo.kb.update)'
+          schema: {type: boolean}
       responses:
         '200':
           description: OK
@@ -13286,6 +13299,140 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: dpoCreateKbArticle
+      tags: [dpo]
+      summary: 'DPO-12: author a knowledge-base article (starts as a draft)'
+      x-permission: dpo.kb.create
+      x-module: dpo
+      security:
+        - adminJwt: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DpoKbArticleInput'}
+      responses:
+        '201':
+          description: Created
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DpoKbArticle'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+  /admin/v1/dpo/kb-articles/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {$ref: '#/components/schemas/Uuid'}
+    get:
+      operationId: dpoGetKbArticle
+      tags: [dpo]
+      summary: 'DPO-12: one knowledge-base article'
+      x-permission: dpo.kb.read
+      x-module: dpo
+      security:
+        - adminJwt: []
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DpoKbArticle'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: dpoUpdateKbArticle
+      tags: [dpo]
+      summary: 'DPO-12: edit an article; editing a published one starts its next version'
+      x-permission: dpo.kb.update
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/DpoKbArticleInput'}
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DpoKbArticle'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/dpo/kb-articles/{id}/status:
+    post:
+      operationId: dpoSetKbArticleStatus
+      tags: [dpo]
+      summary: 'DPO-12: publish (needs dpo.kb.publish) or archive (needs dpo.kb.delete) an article'
+      x-permission: dpo.kb.update
+      x-module: dpo
+      security:
+        - adminJwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {$ref: '#/components/schemas/Uuid'}
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: {type: string, enum: [published, archived]}
+      responses:
+        '200':
+          description: OK
+          headers:
+            ETag: {$ref: '#/components/headers/ETag'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/DpoKbArticle'}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '412':
+          $ref: '#/components/responses/PreconditionFailed'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '428':
+          $ref: '#/components/responses/PreconditionRequired'
   /admin/v1/dpo/requirement-checks:
     get:
       operationId: dpoListRequirementChecks
@@ -24165,8 +24312,25 @@ components:
           type: array
           items: {type: string}
         source: {type: string, enum: [law, pdpc, policy, faq, internal]}
+        status: {type: string, enum: [draft, published, archived]}
+        version_no: {type: integer}
+        is_global: {type: boolean, description: 'platform starter content, read-only'}
         published_at: {type: string, format: date-time, nullable: true}
         row_version: {type: integer}
+    DpoKbArticleInput:
+      type: object
+      required: [category, title, body, source]
+      properties:
+        category: {type: string, minLength: 1, maxLength: 40}
+        title: {type: string, minLength: 1}
+        body:
+          type: object
+          additionalProperties: true
+        language: {type: string, enum: [th, en]}
+        tags:
+          type: array
+          items: {type: string}
+        source: {type: string, enum: [law, pdpc, policy, faq, internal]}
     DpoRequirementCheck:
       type: object
       required: [id, legal_entity_id, assessment_id, result, basis, assessed_at, row_version, created_at]
@@ -26479,7 +26643,7 @@ components:
         notice_version_id: {$ref: '#/components/schemas/Uuid'}
         user_id:
           oneOf: [{$ref: '#/components/schemas/Uuid'}, {type: 'null'}]
-        user_name: {type: string, description: Resolved display name of user_id, empty for an anonymous public acknowledgement}
+        user_name: {type: string, description: 'Resolved display name of user_id; empty for an anonymous public acknowledgement'}
         channel: {$ref: '#/components/schemas/NoticeAckChannel'}
         occurred_at: {$ref: '#/components/schemas/Timestamp'}
         ip: {type: string, nullable: true}
@@ -26513,7 +26677,7 @@ components:
       properties:
         label: {type: string}
         display_mode: {$ref: '#/components/schemas/NoticeLinkedDocumentDisplayMode'}
-        url: {type: string, description: Resolved — the stored url, or a short-lived signed link to the attached file}
+        url: {type: string, description: 'Resolved — the stored url, or a short-lived signed link to the attached file'}
     PublicNotice:
       type: object
       required: [title, notice_type, version_no, effective_from, languages, content]

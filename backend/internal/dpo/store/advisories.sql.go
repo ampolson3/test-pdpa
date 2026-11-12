@@ -125,6 +125,34 @@ func (q *Queries) GetKbArticle(ctx context.Context, id uuid.UUID) (DpoKbArticle,
 	return i, err
 }
 
+const getKbArticleAnyStatus = `-- name: GetKbArticleAnyStatus :one
+SELECT id, tenant_id, category, title, body, language, tags, source, status, version_no, published_at, created_at, created_by, updated_at, updated_by, row_version FROM dpo.kb_articles WHERE id = $1
+`
+
+func (q *Queries) GetKbArticleAnyStatus(ctx context.Context, id uuid.UUID) (DpoKbArticle, error) {
+	row := q.db.QueryRow(ctx, getKbArticleAnyStatus, id)
+	var i DpoKbArticle
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Category,
+		&i.Title,
+		&i.Body,
+		&i.Language,
+		&i.Tags,
+		&i.Source,
+		&i.Status,
+		&i.VersionNo,
+		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
 const insertAdvisory = `-- name: InsertAdvisory :one
 INSERT INTO dpo.advisories (tenant_id, advisory_no, org_unit_id, requester_user_id, subject, question, created_by, updated_by)
 VALUES (current_setting('app.tenant_id')::uuid, $1::varchar, $2::uuid, $3::uuid,
@@ -222,6 +250,55 @@ func (q *Queries) InsertKbArticle(ctx context.Context, arg InsertKbArticleParams
 	return i, err
 }
 
+const insertKbArticleDraft = `-- name: InsertKbArticleDraft :one
+INSERT INTO dpo.kb_articles (tenant_id, category, title, body, language, tags, source, status, created_by, updated_by)
+VALUES (current_setting('app.tenant_id')::uuid, $1::varchar, $2::text, $3::jsonb, $4::varchar,
+        $5::text[], $6::text, 'draft', $7::uuid, $7::uuid)
+RETURNING id, tenant_id, category, title, body, language, tags, source, status, version_no, published_at, created_at, created_by, updated_at, updated_by, row_version
+`
+
+type InsertKbArticleDraftParams struct {
+	Category string      `db:"category" json:"category"`
+	Title    string      `db:"title" json:"title"`
+	Body     []byte      `db:"body" json:"body"`
+	Language string      `db:"language" json:"language"`
+	Tags     []string    `db:"tags" json:"tags"`
+	Source   string      `db:"source" json:"source"`
+	Actor    pgtype.UUID `db:"actor" json:"actor"`
+}
+
+func (q *Queries) InsertKbArticleDraft(ctx context.Context, arg InsertKbArticleDraftParams) (DpoKbArticle, error) {
+	row := q.db.QueryRow(ctx, insertKbArticleDraft,
+		arg.Category,
+		arg.Title,
+		arg.Body,
+		arg.Language,
+		arg.Tags,
+		arg.Source,
+		arg.Actor,
+	)
+	var i DpoKbArticle
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Category,
+		&i.Title,
+		&i.Body,
+		&i.Language,
+		&i.Tags,
+		&i.Source,
+		&i.Status,
+		&i.VersionNo,
+		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
 const linkAdvisoryKbArticle = `-- name: LinkAdvisoryKbArticle :exec
 UPDATE dpo.advisories SET kb_article_id = $2, updated_at = now() WHERE id = $1
 `
@@ -270,6 +347,76 @@ func (q *Queries) ListAdvisories(ctx context.Context, arg ListAdvisoriesParams) 
 			&i.AnsweredBy,
 			&i.AnsweredAt,
 			&i.KbArticleID,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.UpdatedAt,
+			&i.UpdatedBy,
+			&i.RowVersion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listKbArticles = `-- name: ListKbArticles :many
+
+SELECT id, tenant_id, category, title, body, language, tags, source, status, version_no, published_at, created_at, created_by, updated_at, updated_by, row_version FROM dpo.kb_articles
+WHERE ($1::boolean OR status = 'published')
+  AND ($2::varchar IS NULL OR category = $2::varchar)
+  AND ($3::varchar IS NULL OR language = $3::varchar)
+  AND ($4::text IS NULL OR source = $4::text)
+  AND ($5::text IS NULL OR $5::text = ANY(tags))
+  AND ($6::text IS NULL OR title ILIKE '%' || $6::text || '%'
+       OR body::text ILIKE '%' || $6::text || '%'
+       OR array_to_string(tags, ' ') ILIKE '%' || $6::text || '%')
+ORDER BY COALESCE(published_at, created_at) DESC, id
+`
+
+type ListKbArticlesParams struct {
+	IncludeAll bool    `db:"include_all" json:"include_all"`
+	Category   *string `db:"category" json:"category"`
+	Language   *string `db:"language" json:"language"`
+	Source     *string `db:"source" json:"source"`
+	Tag        *string `db:"tag" json:"tag"`
+	Q          *string `db:"q" json:"q"`
+}
+
+// DPO-12 ------------------------------------------------------------------------------------------
+// Readers see published articles only; a manager asks for drafts/archived too (include_all). Thai has no
+// word boundaries, so search is a plain case-insensitive substring match on title, body and tags.
+func (q *Queries) ListKbArticles(ctx context.Context, arg ListKbArticlesParams) ([]DpoKbArticle, error) {
+	rows, err := q.db.Query(ctx, listKbArticles,
+		arg.IncludeAll,
+		arg.Category,
+		arg.Language,
+		arg.Source,
+		arg.Tag,
+		arg.Q,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DpoKbArticle
+	for rows.Next() {
+		var i DpoKbArticle
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.Category,
+			&i.Title,
+			&i.Body,
+			&i.Language,
+			&i.Tags,
+			&i.Source,
+			&i.Status,
+			&i.VersionNo,
+			&i.PublishedAt,
 			&i.CreatedAt,
 			&i.CreatedBy,
 			&i.UpdatedAt,
@@ -347,4 +494,109 @@ func (q *Queries) SearchKbArticles(ctx context.Context, arg SearchKbArticlesPara
 		return nil, err
 	}
 	return items, nil
+}
+
+const setKbArticleStatus = `-- name: SetKbArticleStatus :one
+UPDATE dpo.kb_articles
+SET status = $1::text,
+    published_at = CASE WHEN $1::text = 'published' THEN now() ELSE published_at END,
+    updated_at = now(), updated_by = $2::uuid, row_version = row_version + 1
+WHERE id = $3::uuid AND row_version = $4::int AND status = ANY($5::text[])
+RETURNING id, tenant_id, category, title, body, language, tags, source, status, version_no, published_at, created_at, created_by, updated_at, updated_by, row_version
+`
+
+type SetKbArticleStatusParams struct {
+	Status       string      `db:"status" json:"status"`
+	Actor        pgtype.UUID `db:"actor" json:"actor"`
+	ID           uuid.UUID   `db:"id" json:"id"`
+	RowVersion   int32       `db:"row_version" json:"row_version"`
+	FromStatuses []string    `db:"from_statuses" json:"from_statuses"`
+}
+
+func (q *Queries) SetKbArticleStatus(ctx context.Context, arg SetKbArticleStatusParams) (DpoKbArticle, error) {
+	row := q.db.QueryRow(ctx, setKbArticleStatus,
+		arg.Status,
+		arg.Actor,
+		arg.ID,
+		arg.RowVersion,
+		arg.FromStatuses,
+	)
+	var i DpoKbArticle
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Category,
+		&i.Title,
+		&i.Body,
+		&i.Language,
+		&i.Tags,
+		&i.Source,
+		&i.Status,
+		&i.VersionNo,
+		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.RowVersion,
+	)
+	return i, err
+}
+
+const updateKbArticle = `-- name: UpdateKbArticle :one
+UPDATE dpo.kb_articles
+SET category = $1::varchar, title = $2::text, body = $3::jsonb, language = $4::varchar,
+    tags = $5::text[], source = $6::text,
+    version_no = CASE WHEN status = 'published' THEN version_no + 1 ELSE version_no END,
+    updated_at = now(), updated_by = $7::uuid, row_version = row_version + 1
+WHERE id = $8::uuid AND row_version = $9::int AND status IN ('draft', 'published')
+RETURNING id, tenant_id, category, title, body, language, tags, source, status, version_no, published_at, created_at, created_by, updated_at, updated_by, row_version
+`
+
+type UpdateKbArticleParams struct {
+	Category   string      `db:"category" json:"category"`
+	Title      string      `db:"title" json:"title"`
+	Body       []byte      `db:"body" json:"body"`
+	Language   string      `db:"language" json:"language"`
+	Tags       []string    `db:"tags" json:"tags"`
+	Source     string      `db:"source" json:"source"`
+	Actor      pgtype.UUID `db:"actor" json:"actor"`
+	ID         uuid.UUID   `db:"id" json:"id"`
+	RowVersion int32       `db:"row_version" json:"row_version"`
+}
+
+// Only the tenant's own rows (a global default is read-only, enforced by RLS tenant_write too). Editing a
+// published article starts its next version_no; a draft edit stays on the same one.
+func (q *Queries) UpdateKbArticle(ctx context.Context, arg UpdateKbArticleParams) (DpoKbArticle, error) {
+	row := q.db.QueryRow(ctx, updateKbArticle,
+		arg.Category,
+		arg.Title,
+		arg.Body,
+		arg.Language,
+		arg.Tags,
+		arg.Source,
+		arg.Actor,
+		arg.ID,
+		arg.RowVersion,
+	)
+	var i DpoKbArticle
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.Category,
+		&i.Title,
+		&i.Body,
+		&i.Language,
+		&i.Tags,
+		&i.Source,
+		&i.Status,
+		&i.VersionNo,
+		&i.PublishedAt,
+		&i.CreatedAt,
+		&i.CreatedBy,
+		&i.UpdatedAt,
+		&i.UpdatedBy,
+		&i.RowVersion,
+	)
+	return i, err
 }

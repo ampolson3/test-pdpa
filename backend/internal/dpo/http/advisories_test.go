@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"testing"
@@ -74,7 +75,7 @@ func TestAdvisoryEndpoints_Contract(t *testing.T) {
 		t.Fatal(err)
 	}
 	grants := map[string][]string{
-		dpo.String(): {"dpo.advisory.read", "dpo.advisory.update", "dpo.kb.read", "dpo.kb.create"},
+		dpo.String(): {"dpo.advisory.read", "dpo.advisory.update", "dpo.kb.read", "dpo.kb.create", "dpo.kb.update", "dpo.kb.publish", "dpo.kb.delete"},
 		emp.String(): {"dpo.advisory.create", "dpo.advisory.read", "dpo.kb.read"},
 	}
 	cache := authz.NewCachedLoader(rdb, func(_ context.Context, tid, uid string) (authz.Grants, error) {
@@ -200,5 +201,48 @@ func TestAdvisoryEndpoints_Contract(t *testing.T) {
 	code, body = do("GET", "/admin/v1/dpo/kb-articles?q=VPN", &emp, nil, nil)
 	if code != 200 || !strings.Contains(body, "corporate VPN") {
 		t.Errorf("kb search: %d %s", code, body)
+	}
+
+	// DPO-12: author → publish → Thai search; an employee can't author or see drafts.
+	art := map[string]any{"category": "policy", "title": "นโยบายการใช้อีเมลองค์กร", "source": "policy",
+		"body": map[string]any{"text": "ห้ามส่งข้อมูลส่วนบุคคลของลูกค้าทางอีเมลส่วนตัว"}, "tags": []string{"อีเมล"}}
+	if code, _ = do("POST", "/admin/v1/dpo/kb-articles", &emp, art, nil); code != 403 {
+		t.Errorf("employee create kb: %d, want 403", code)
+	}
+	code, body = do("POST", "/admin/v1/dpo/kb-articles", &dpo, art, nil)
+	if code != 201 {
+		t.Fatalf("create kb: %d %s", code, body)
+	}
+	var kb struct {
+		ID         uuid.UUID `json:"id"`
+		RowVersion int       `json:"row_version"`
+		VersionNo  int       `json:"version_no"`
+	}
+	_ = json.Unmarshal([]byte(body), &kb)
+	kbPath := "/admin/v1/dpo/kb-articles/" + kb.ID.String()
+	if code, body = do("GET", "/admin/v1/dpo/kb-articles?q="+url.QueryEscape("อีเมลส่วนตัว"), &emp, nil, nil); code != 200 || strings.Contains(body, kb.ID.String()) {
+		t.Errorf("draft must not be searchable by a reader: %d %s", code, body)
+	}
+	if code, _ = do("GET", kbPath, &emp, nil, nil); code != 404 {
+		t.Errorf("reader get draft: %d, want 404", code)
+	}
+	if code, _ = do("GET", "/admin/v1/dpo/kb-articles?include_all=true", &emp, nil, nil); code != 403 {
+		t.Errorf("reader include_all: %d, want 403", code)
+	}
+	if code, _ = do("POST", kbPath+"/status", &dpo, map[string]any{"status": "published"}, nil); code != 428 {
+		t.Errorf("publish without If-Match: %d, want 428", code)
+	}
+	code, body = do("POST", kbPath+"/status", &dpo, map[string]any{"status": "published"}, map[string]string{"If-Match": `"` + strconv.Itoa(kb.RowVersion) + `"`})
+	if code != 200 {
+		t.Fatalf("publish kb: %d %s", code, body)
+	}
+	if code, body = do("GET", "/admin/v1/dpo/kb-articles?q="+url.QueryEscape("อีเมลส่วนตัว"), &emp, nil, nil); code != 200 || !strings.Contains(body, kb.ID.String()) {
+		t.Errorf("Thai search after publish: %d %s", code, body)
+	}
+	if code, _ = do("PUT", kbPath, &dpo, art, map[string]string{"If-Match": `"` + strconv.Itoa(kb.RowVersion) + `"`}); code != 412 {
+		t.Errorf("stale update: %d, want 412", code)
+	}
+	if code, _ = do("GET", "/admin/v1/dpo/kb-articles/"+uuid.NewString(), &emp, nil, nil); code != 404 {
+		t.Errorf("unknown kb: %d, want 404", code)
 	}
 }

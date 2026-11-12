@@ -6471,6 +6471,29 @@ verified live against Postgres/Redis in this environment. Not done: file/S3/clou
 connectors can sample), turning an accepted finding into a RoPA inventory row automatically, and scheduled
 scans.
 
+### DPO-12 คลังเอกสารกฎหมายและ FAQ (`docs/modules/DPO.md#dpo-12`) — done
+Builds on DPO-07's `dpo.kb_articles` (which already had read/search and advisory promotion). No schema change;
+migration 00102 seeds six global (`tenant_id NULL`) starter articles in Thai, each titled "[ร่าง]" — a draft
+paraphrase pending legal review (`docs/decisions.md` Q-48, since T40 has no deliverable). `internal/dpo/service/kb.go`:
+`ListKbArticles` (filters: category, language, source, tag, `q`; `IncludeAll` for drafts/archived needs
+`dpo.kb.update`), `GetKbArticle`, `CreateKbArticle` (draft), `UpdateKbArticle` (ETag; editing a published article
+bumps `version_no`), `SetKbArticleStatus` (publish needs `dpo.kb.publish`, archive needs `dpo.kb.delete`). Global
+articles are read-only. The acceptance criterion (Thai search) is a case-insensitive substring match on title,
+body and tags — Thai has no word boundaries, so no full-text tokenizer is used. Permissions are the seeded
+`dpo.kb.*`; no new code.
+
+API: `GET`/`POST /admin/v1/dpo/kb-articles`, `GET`/`PUT /admin/v1/dpo/kb-articles/{id}`, `POST .../{id}/status`.
+UI: `/dpo/knowledge-base` (search, source filter, author/edit/publish/archive), linked from `/dpo`. Tests:
+`internal/dpo/service/dpo12_test.go` (Thai queries on body/title/tag, seeded content, lifecycle, versioning,
+permission gates, two-tenant isolation) and the contract test in `internal/dpo/http/advisories_test.go`
+(403/404/428/412/201/200) — both skip without a reachable Postgres/Redis, which this environment lacks.
+
+Also fixed here: two unquoted flow-map descriptions containing commas (`NoticeAcknowledgement.user_name`,
+`PublicNotice` linked-document `url`) made the whole OpenAPI spec invalid for kin-openapi, which is why
+`internal/pkg/validate`'s spec test had been failing since PNG-09/PNG-13. Both are quoted now and the full
+`go test ./...` suite passes. Not done: version history of past article text (only the number is kept),
+attachments on articles, and English starter content.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

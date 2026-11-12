@@ -588,6 +588,8 @@ with no drift, `pnpm --filter @pdpa/api-client typecheck`, `pnpm --filter @pdpa/
 
 **Acceptance criteria:** ค้นหาเอกสารภาษาไทยได้
 
+**สถานะ:** done — `internal/dpo/service/kb.go`; ค้นหาแบบ substring (ILIKE) บนชื่อ เนื้อหา และแท็ก, draft → published → archived, แก้บทความที่เผยแพร่แล้วเพิ่ม `version_no`, เนื้อหากลางเป็นร่าง (decisions Q-48); UI `/dpo/knowledge-base`
+
 <a id="dpo-03"></a>
 ### DPO-03 ความเป็นอิสระและผลประโยชน์ทับซ้อน
 

@@ -30,3 +30,7 @@ output-options:
     - dpoListIndependenceDeclarations
     - dpoRecordIndependenceDeclaration
     - dpoSignIndependenceDeclaration
+    - dpoCreateKbArticle
+    - dpoGetKbArticle
+    - dpoUpdateKbArticle
+    - dpoSetKbArticleStatus

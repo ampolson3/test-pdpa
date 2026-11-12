@@ -60,7 +60,20 @@ func (h *Strict) DpoSearchKbArticles(ctx context.Context, req DpoSearchKbArticle
 	if req.Params.Q != nil {
 		q = *req.Params.Q
 	}
-	list, err := h.svc.SearchKbArticles(ctx, category, q)
+	f := dposervice.KbFilter{Category: category, Q: q}
+	if req.Params.Language != nil {
+		f.Language = string(*req.Params.Language)
+	}
+	if req.Params.Source != nil {
+		f.Source = string(*req.Params.Source)
+	}
+	if req.Params.Tag != nil {
+		f.Tag = *req.Params.Tag
+	}
+	if req.Params.IncludeAll != nil {
+		f.IncludeAll = *req.Params.IncludeAll
+	}
+	list, err := h.svc.ListKbArticles(ctx, f)
 	if err != nil {
 		return nil, problem(err)
 	}
@@ -85,6 +98,8 @@ func toKbArticleWire(a dposervice.KbArticle) DpoKbArticle {
 	body := map[string]interface{}(a.Body)
 	w := DpoKbArticle{Id: a.ID, Category: a.Category, Title: a.Title, Body: &body, Language: a.Language, Tags: a.Tags,
 		Source: DpoKbArticleSource(a.Source), RowVersion: int(a.RowVersion)}
+	st, vn, g := DpoKbArticleStatus(a.Status), int(a.VersionNo), a.IsGlobal
+	w.Status, w.VersionNo, w.IsGlobal = &st, &vn, &g
 	if a.PublishedAt != nil {
 		w.PublishedAt = a.PublishedAt
 	}
