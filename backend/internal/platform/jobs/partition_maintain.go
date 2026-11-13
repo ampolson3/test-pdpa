@@ -1,6 +1,8 @@
-// Package jobs holds cmd/worker's River job definitions that are genuinely platform-wide (not
-// scoped to one module or one tenant) — see docs/architecture/code-structure.md's job wrapper rule:
-// every other job's args carry a tenant_id and run inside its own db.WithTenantTx.
+// Package jobs is the platform's background-job framework on River (PLT-10, ADR-08): the worker
+// client (NewWorkerClient) with one tenant transaction per job (TenantTxMiddleware) and failure
+// alerting (AlertHandler), in-transaction enqueue (Enqueue), and the few job kinds that are
+// platform-wide rather than per tenant (GlobalKinds). Module jobs live in their module's jobs/
+// package, embed TenantArgs, and are registered in cmd/worker.
 package jobs
 
 import (
@@ -43,7 +45,11 @@ func PeriodicJob() *river.PeriodicJob {
 	return river.NewPeriodicJob(
 		river.PeriodicInterval(24*time.Hour),
 		func() (river.JobArgs, *river.InsertOpts) {
-			return PartitionMaintainArgs{MonthsAhead: 3}, nil
+			// Unique per day as well as leader-only, so a leadership handover mid-period can't
+			// enqueue a second run.
+			return PartitionMaintainArgs{MonthsAhead: 3}, &river.InsertOpts{
+				UniqueOpts: river.UniqueOpts{ByPeriod: 24 * time.Hour},
+			}
 		},
 		&river.PeriodicJobOpts{ID: "partition-maintain-daily", RunOnStart: true},
 	)

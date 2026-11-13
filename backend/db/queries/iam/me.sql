@@ -10,11 +10,12 @@ WHERE id = $1;
 
 -- name: ListEffectiveRoleAssignments :many
 -- Every role currently granted to the user directly or through a group, whether tenant-wide or
--- scoped to a legal entity / org unit (docs/security/permissions.md).
+-- scoped to a legal entity / org unit (docs/security/permissions.md). A disabled account has none.
 SELECT ra.role_id, r.code AS role_code, ra.scope_type, ra.legal_entity_id, ra.org_unit_id, ra.include_descendants
 FROM iam.role_assignments ra
 JOIN iam.roles r ON r.id = ra.role_id
-WHERE (
+WHERE NOT EXISTS (SELECT 1 FROM iam.users u WHERE u.id = $1 AND u.status = 'disabled')
+  AND (
         ra.user_id = $1
         OR ra.group_id IN (SELECT group_id FROM iam.group_members WHERE user_id = $1)
       )

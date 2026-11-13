@@ -1,0 +1,313 @@
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ApiClient, components } from "./client";
+
+export type Vendor = components["schemas"]["Vendor"];
+export type VendorInput = components["schemas"]["VendorInput"];
+export type VendorStatus = components["schemas"]["VendorStatus"];
+export type VendorTier = components["schemas"]["VendorTier"];
+export type VendorIntake = components["schemas"]["VendorIntake"];
+export type VendorIntakeInput = components["schemas"]["VendorIntakeInput"];
+export type VendorIntakeResult = components["schemas"]["VendorIntakeResult"];
+export type VendorAssessment = components["schemas"]["VendorAssessment"];
+export type VendorRecordAssessmentInput = components["schemas"]["VendorRecordAssessmentInput"];
+export type VendorDecideAssessmentInput = components["schemas"]["VendorDecideAssessmentInput"];
+export type VendorDecideAssessmentResult = components["schemas"]["VendorDecideAssessmentResult"];
+export type VendorRemediationItem = components["schemas"]["VendorRemediationItem"];
+export type VendorOffboarding = components["schemas"]["VendorOffboarding"];
+export type VendorOffboardingInput = components["schemas"]["VendorOffboardingInput"];
+export type VendorCertificate = components["schemas"]["VendorCertificate"];
+export type VendorCertificateInput = components["schemas"]["VendorCertificateInput"];
+export type VendorSubProcessor = components["schemas"]["VendorSubProcessor"];
+export type VendorSubProcessorInput = components["schemas"]["VendorSubProcessorInput"];
+
+const vendorsKey = ["vendor", "vendors"] as const;
+
+/** GET /admin/v1/vendors (VEN-01), newest first. */
+export function useVendors(client: ApiClient, filter: { status?: VendorStatus } = {}) {
+  return useInfiniteQuery({
+    queryKey: [...vendorsKey, filter],
+    initialPageParam: undefined as string | undefined,
+    queryFn: async ({ pageParam }) => {
+      const { data, error } = await client.GET("/admin/v1/vendors", {
+        params: { query: { status: filter.status, cursor: pageParam, limit: 50 } },
+      });
+      if (error) throw error;
+      return data;
+    },
+    getNextPageParam: (last) => last.next_cursor ?? undefined,
+  });
+}
+
+/** GET /admin/v1/vendors/{id} — the single page the acceptance criterion calls for. */
+export function useVendor(client: ApiClient, id: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, id ?? ""],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/vendors/{id}", { params: { path: { id: id! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** Create (no id) or update (id + row_version as If-Match) a vendor's profile. */
+export function useSaveVendor(client: ApiClient) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { id?: string; rowVersion?: number; input: VendorInput }) => {
+      if (!v.id) {
+        const { data, error } = await client.POST("/admin/v1/vendors", { body: v.input });
+        if (error) throw error;
+        return data;
+      }
+      const { data, error } = await client.PATCH("/admin/v1/vendors/{id}", {
+        params: { path: { id: v.id }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: vendorsKey }),
+  });
+}
+
+/** GET /admin/v1/vendors/{id}/intakes (VEN-02) — a vendor's tiering rounds, newest first. */
+export function useVendorIntakes(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, vendorId ?? "", "intakes"],
+    enabled: !!vendorId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/vendors/{id}/intakes", { params: { path: { id: vendorId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/intakes — answer the intake questionnaire once; the system computes the tier. */
+export function useRecordVendorIntake(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: VendorIntakeInput) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/intakes", {
+        params: { path: { id: vendorId } },
+        body: input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId] });
+    },
+  });
+}
+
+/** GET /admin/v1/vendors/{id}/assessments (VEN-07) — a vendor's own assessment cycles, newest first. */
+export function useVendorAssessments(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, vendorId ?? "", "assessments"],
+    enabled: !!vendorId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/vendors/{id}/assessments", { params: { path: { id: vendorId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/assessments — answer one of VEN-04's published vendor templates once; the
+ *  system computes the score and the residual risk level on the tenant's own matrix (RRA-02). */
+export function useRecordVendorAssessment(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: VendorRecordAssessmentInput) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/assessments", {
+        params: { path: { id: vendorId } },
+        body: input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "assessments"] }),
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/assessments/{assessmentId}/decision (VEN-08) — approve / reject /
+ *  conditionally approve an answered cycle; a conditional decision opens the given remediation items. */
+export function useDecideVendorAssessment(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { assessmentId: string; input: VendorDecideAssessmentInput }) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/assessments/{assessmentId}/decision", {
+        params: { path: { id: vendorId, assessmentId: v.assessmentId } },
+        body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "assessments"] });
+      qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "remediation-items"] });
+      qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId] });
+    },
+  });
+}
+
+/** GET /admin/v1/vendors/{id}/remediation-items (VEN-08) — a vendor's remediation plan, newest first. */
+export function useVendorRemediationItems(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, vendorId ?? "", "remediation-items"],
+    enabled: !!vendorId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/vendors/{id}/remediation-items", { params: { path: { id: vendorId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** GET /admin/v1/vendors/{id}/offboarding (VEN-14) — the vendor's current offboarding record, if any. */
+export function useVendorOffboarding(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, vendorId ?? "", "offboarding"],
+    enabled: !!vendorId,
+    retry: false,
+    queryFn: async () => {
+      const { data, error, response } = await client.GET("/admin/v1/vendors/{id}/offboarding", { params: { path: { id: vendorId! } } });
+      if (error) {
+        if (response.status === 404) return null;
+        throw error;
+      }
+      return data;
+    },
+  });
+}
+
+/** PUT /admin/v1/vendors/{id}/offboarding — record data-return progress (If-Match on the offboarding row). */
+export function useUpdateVendorOffboarding(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { rowVersion: number; input: VendorOffboardingInput }) => {
+      const { data, error } = await client.PUT("/admin/v1/vendors/{id}/offboarding", {
+        params: { path: { id: vendorId }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: v.input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "offboarding"] }),
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/transitions (VEN-14) — start offboarding, or terminate once data return and
+ *  access revocation are complete (If-Match on the vendor row). */
+export function useTransitionVendor(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { rowVersion: number; to: "offboarding" | "terminated" }) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/transitions", {
+        params: { path: { id: vendorId }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: { to: v.to },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId] });
+      qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "offboarding"] });
+      qc.invalidateQueries({ queryKey: vendorsKey });
+    },
+  });
+}
+
+/** GET /admin/v1/vendors/{id}/certificates (VEN-06) — a vendor's own compliance certificates, soonest-expiring first. */
+export function useVendorCertificates(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, vendorId ?? "", "certificates"],
+    enabled: !!vendorId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/vendors/{id}/certificates", { params: { path: { id: vendorId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/certificates — record a certificate against the caller's own clean, still-
+ *  unattached upload; a valid_to schedules the 30-day expiry reminder. */
+export function useAddVendorCertificate(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: VendorCertificateInput) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/certificates", {
+        params: { path: { id: vendorId } },
+        body: input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "certificates"] }),
+  });
+}
+
+/** DELETE /admin/v1/vendors/{id}/certificates/{certificateId}. */
+export function useDeleteVendorCertificate(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (certificateId: string) => {
+      const { error } = await client.DELETE("/admin/v1/vendors/{id}/certificates/{certificateId}", {
+        params: { path: { id: vendorId, certificateId } },
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "certificates"] }),
+  });
+}
+
+/** GET /admin/v1/vendors/{id}/sub-processors (VEN-03) — every row carries its own status so the UI can
+ *  flag the ones not yet approved. */
+export function useVendorSubProcessors(client: ApiClient, vendorId: string | undefined) {
+  return useQuery({
+    queryKey: [...vendorsKey, vendorId ?? "", "sub-processors"],
+    enabled: !!vendorId,
+    queryFn: async () => {
+      const { data, error } = await client.GET("/admin/v1/vendors/{id}/sub-processors", { params: { path: { id: vendorId! } } });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/sub-processors — always starts "pending"; alerts the DPO team at once. */
+export function useAddVendorSubProcessor(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: VendorSubProcessorInput) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/sub-processors", {
+        params: { path: { id: vendorId } },
+        body: input,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "sub-processors"] }),
+  });
+}
+
+/** POST /admin/v1/vendors/{id}/sub-processors/{subProcessorId}/decision — approve or reject a pending
+ *  sub-processor before it is used (If-Match on the sub-processor's own row). */
+export function useDecideVendorSubProcessor(client: ApiClient, vendorId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: { subProcessorId: string; rowVersion: number; decision: "approved" | "rejected" }) => {
+      const { data, error } = await client.POST("/admin/v1/vendors/{id}/sub-processors/{subProcessorId}/decision", {
+        params: { path: { id: vendorId, subProcessorId: v.subProcessorId }, header: { "If-Match": `"${v.rowVersion}"` } },
+        body: { decision: v.decision },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: [...vendorsKey, vendorId, "sub-processors"] }),
+  });
+}

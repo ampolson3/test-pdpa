@@ -70,9 +70,47 @@ psql -h localhost -p 5433 -d postgres -v ON_ERROR_STOP=1 \
   go run ./cmd/migrate -grants ../deploy/db/10-grants.sql)
 ```
 
+บน Linux (Debian/Ubuntu, เช่น container ของ Claude Code on the web) ใช้ PostgreSQL 16 จาก apt แทน:
+`apt-get install -y postgresql-16-pgvector` → ตั้ง `port = 5433` ใน `/etc/postgresql/16/main/postgresql.conf` →
+`pg_ctlcluster 16 main start` → รัน `00-bootstrap.sql` ด้วย `su postgres -c "psql -p 5433 ..."` และ `cmd/migrate` ตามด้านบน
+(`redis-server --daemonize yes` แทน Valkey)
+
+OpenBao (KEK ของ PLT-13) สำหรับ test: ดาวน์โหลด binary จาก github.com/openbao/openbao/releases แล้ว
+`bao server -dev -dev-root-token-id=dev-root -dev-listen-address=127.0.0.1:8200` + `BAO_ADDR=http://127.0.0.1:8200 BAO_TOKEN=dev-root bao secrets enable transit`
+(test ของ `internal/platform/crypto` ใช้ `TEST_OPENBAO_ADDR` / `TEST_OPENBAO_TOKEN`, ถ้าไม่มีจะทดสอบกับ LocalKEK อย่างเดียว)
+
+ไฟล์ (PLT-09) สำหรับ test: S3 ที่ `127.0.0.1:8333` key `pdpa-dev` / `pdpa-dev-secret-key` (`TEST_S3_*`) — MinIO หรือ SeaweedFS
+(`weed server -s3 -s3.port=8333 -s3.config=<identities json> -master.volumeSizeLimitMB=64 -volume.max=50`, build จาก
+source ได้ถ้าดาวน์โหลด MinIO ไม่ได้) · clamd ที่ `127.0.0.1:3310` (`TEST_CLAMD_ADDR`, `apt install clamav-daemon` + `TCPSocket 3310`;
+ถ้า freshclam ดาวน์โหลด signature ไม่ได้ ให้ใส่ signature ของ EICAR ใน `/var/lib/clamav/eicar.hdb`) — ไม่มีจะ skip
+
 Keycloak ยังไม่ได้ตั้งทางนี้ (Organizations / `tid` claim ต้องรอ PoC T13 ตาม `docs/decisions.md` Q-18) — ทดสอบ
 endpoint ที่ต้อง login ได้ด้วย JWT ที่เซ็นเองชั่วคราวเท่านั้น (ดูวิธีใน git log ของ commit ที่ verify reference
 slice)
+
+## รันบนเครื่องตัวเอง (ไม่ต้องมี Docker / Keycloak)
+
+ต้องมี Go, Node + pnpm, PostgreSQL 16/17 + pgvector และ Redis/Valkey (ตั้งตามหัวข้อด้านบน) แล้วจาก root ของ repo:
+
+```sh
+pnpm install
+make dev-env      # สร้าง .env จาก .env.example + สุ่ม AUTH_SECRET / LOCAL_KEK_BASE64 (รันซ้ำได้ ไม่ทับค่าเดิม)
+# รัน deploy/db/00-bootstrap.sql ครั้งแรกครั้งเดียว (ดูหัวข้อด้านบน) แล้ว
+make migrate
+make dev-seed     # สร้างองค์กรตัวอย่าง + ผู้ดูแลระบบ (ORGADMIN, DPO) สำหรับ dev login
+make run-api      # terminal ที่ 1 — :8080
+make run-worker   # terminal ที่ 2
+make run-web      # terminal ที่ 3 — http://localhost:3000/th → กด "เข้าสู่ระบบ"
+```
+
+**Dev login** (`AUTH_DEV_LOGIN=true` ใน `.env`): ปุ่มเข้าสู่ระบบจะเข้าเป็นผู้ใช้จาก `make dev-seed` ทันทีโดยไม่ผ่าน Keycloak —
+แอป admin เซ็น access token เอง (`apps/admin/src/lib/dev-auth.ts`, กุญแจเก็บใน `apps/admin/.dev-auth/` ซึ่ง git ไม่เก็บ) และเปิด
+public key ที่ `/api/dev-auth/jwks` ซึ่ง `.env` ชี้ `OIDC_ISSUER` / `OIDC_JWKS_URL` ของ API ไปหา ใช้ได้เฉพาะ `next dev` —
+build สำหรับ production ปิดเสมอแม้ตั้งค่าไว้ และ API ของ production ที่ชี้ไป Keycloak จะไม่ยอมรับ token เหล่านี้
+หน้า "Server error — problem with the server configuration" ที่ `/api/auth/signin/keycloak` แปลว่ายังไม่ได้ตั้งทั้ง Keycloak
+และ dev login (มักเพราะยังไม่มี `.env` ที่ root)
+
+ไม่มี S3 (MinIO) / ClamAV ก็รันได้ — เฉพาะการอัปโหลดไฟล์ที่ใช้ไม่ได้ (`make dev` ของ Docker เปิดให้ครบ)
 
 ## ข้อควรรู้
 

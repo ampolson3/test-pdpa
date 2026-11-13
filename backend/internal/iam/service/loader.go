@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	store "pdpa-platform/internal/iam/store"
@@ -27,7 +26,7 @@ func NewLoader(pool *pgxpool.Pool) authz.Loader {
 		err = pdb.WithTenantTx(ctx, pool, tenantID, userID, func(ctx context.Context) error {
 			q := store.New(pdb.MustTxFromContext(ctx))
 
-			assignments, err := q.ListEffectiveRoleAssignments(ctx, pgtype.UUID{Bytes: uid, Valid: true})
+			assignments, err := q.ListEffectiveRoleAssignments(ctx, uid)
 			if err != nil {
 				return fmt.Errorf("load role assignments: %w", err)
 			}

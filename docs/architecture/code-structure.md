@@ -54,7 +54,7 @@ pdpa-platform/
 | DPO | งานของ DPO (DPO Module) | `backend/internal/dpo` | dpo | `/admin/v1/dpo` | admin: /dpo/*, /dashboard |
 | DPIA | แบบประเมินผลกระทบ (DPIA) | `backend/internal/assess` | assess | `/admin/v1/assessments` | admin: /assessments/*; portal: /guest/assessment/[token] |
 | RRA | ประเมินความเสี่ยงกิจกรรม (ROPA Risk Assessment) | `backend/internal/risk` | risk | `/admin/v1/risk` | admin: /risk/* |
-| VEN | ประเมินคู่ค้า (Vendor Assessment) | `backend/internal/vendor` | vendor | `/admin/v1/vendors` | admin: /vendors/*; portal: /guest/vendor/[token] |
+| VEN | ประเมินคู่ค้า (Vendor Assessment) | `backend/internal/vendormgmt` (ไม่ใช่ `vendor` — ชื่อไดเรกทอรี "vendor" ชนกับการจัดการ vendor directory ของ Go toolchain เอง, VEN-01) | vendor | `/admin/v1/vendors` | admin: /vendors/*; portal: /guest/vendor/[token] |
 | DPA | ข้อตกลงการประมวลผลข้อมูล (DPA) | `backend/internal/agreement` | agreement | `/admin/v1/agreements` | admin: /agreements/dpa/* |
 | DSA | ข้อตกลงการแบ่งปันข้อมูล (DSA) | `backend/internal/agreement` | agreement | `/admin/v1/agreements` | admin: /agreements/dsa/* |
 | DPX | DPO ส่วนต่อขยาย (DPO Extension) | `backend/internal/gov` | gov | `/admin/v1/governance` | admin: /governance/*; portal: /learn |
@@ -80,6 +80,7 @@ backend/internal/<module>/
 - FK constraint ของ PostgreSQL ไม่ผ่าน RLS: ก่อนบันทึก id ที่อ้างถึงแถวอื่นใน tenant ให้ตรวจว่า id นั้นมองเห็นได้ภายใต้ RLS (helper `store.MustExist…` / `SELECT … FOR KEY SHARE`) และมี test ว่าอ้าง id ของ tenant อื่นแล้วได้ 404 / 422
 - ห้าม import `internal/<other>/store` หรือ `internal/<other>/service` implementation — ใช้ interface ที่ module นั้นประกาศ (ตรวจด้วย depguard / go-arch-lint ใน CI)
 - งานที่ต้อง retry / ใช้เวลานาน → enqueue River job ใน transaction เดียวกัน (`InsertTx`) · job args มี `tenant_id` เสมอ
+- job framework อยู่ที่ `internal/platform/jobs` (PLT-10): args ของ job ต่อ tenant ฝัง `jobs.TenantArgs` · enqueue ด้วย `jobs.Enqueue(ctx, client, args, opts)` ซึ่งใช้ tx จาก context และปฏิเสธ job ของ tenant อื่น · worker สร้างด้วย `jobs.NewWorkerClient` ซึ่งมี `TenantTxMiddleware` เปิด `WithTenantTx` 1 ครั้งต่อ job จาก `tenant_id` ใน args (worker อ่าน tx ด้วย `db.MustTxFromContext`; job ที่ไม่มี tenant_id และไม่อยู่ใน `jobs.GlobalKinds` ถูก cancel) · job args เก็บใน `river_job` แบบไม่เข้ารหัสและไม่มี RLS จึงใส่ได้เฉพาะ id ห้ามมีข้อมูลส่วนบุคคล · worker ต้อง idempotent (at-least-once: job ที่ถูกตัดกลางคันจะรันซ้ำ) · job ที่ต้องไม่ซ้ำใช้ `UniqueOpts{ByArgs: true}` (tenant_id อยู่ใน args จึง unique ต่อ tenant) · periodic job รันเฉพาะ leader
 - เวลา: ใช้ clock ที่ inject ได้ (ทดสอบ SLA / 72 ชม. / 30 วัน ได้โดยไม่รอเวลาจริง)
 
 ## Middleware ของ Go API (ตามลำดับ)
@@ -112,7 +113,36 @@ Tx (#11) ครอบ Handler (#12) และ Audit (#13): audit ระดับ
 | docs/states/state-machines.yaml | สคริปต์ของโปรเจกต์ (ทำใน P0) | ตาราง transition ใน service + test |
 | docs/security/permissions.yaml | migration / seed | iam.permissions, iam.roles |
 
-CI ต้อง fail ถ้า generate แล้วมี diff (ARC-06 ขั้น Codegen check)
+CI ต้อง fail ถ้า generate แล้วมี diff (ARC-06 ขั้น Codegen check) — `.github/workflows/ci.yml` (PLT-01) รัน
+`make gen` แล้ว `git diff --exit-code` จริงทุก push/PR, ต่อด้วย `go vet`/`gofmt`/`go build`/`go test` (Postgres 16 +
+pgvector และ Redis เป็น service container) และ `pnpm -r build/test/typecheck` คนละ job
+
+## สร้างโมดูลใหม่ (PLT-01's "สร้างโมดูลใหม่จาก template ได้ภายใน 1 วัน")
+
+ไม่มี generator CLI (ยังไม่มีความจำเป็น — มีเพียงรายการขั้นตอนที่ใช้ซ้ำแล้วซ้ำอีกตลอดโปรเจกต์นี้ ทุกครั้งใน
+เวลาไม่ถึงวัน) ทำตามลำดับนี้สำหรับโมดูลใหม่ `<module>` บน schema ใหม่ `<schema>`:
+
+1. **Migration** — `goose -s create backend/db/migrations <name> sql` แล้วเพิ่ม `CREATE SCHEMA <schema>` +
+   ตารางแรก + REVOKE/GRANT ตาม `deploy/db/10-grants.sql` (rule 13)
+2. **sqlc** — เพิ่ม entry ใน `backend/db/sqlc.yaml` (`schema:`/`queries: backend/db/queries/<module>`) แล้วสร้าง
+   `.sql` คำสั่งแรกใน `backend/db/queries/<module>/`
+3. **OpenAPI** — เพิ่ม path แรกใน `api/openapi/openapi.yaml` (`x-permission`, `x-module: <module>`, tag ใหม่)
+4. **oapi-codegen** — สร้าง `backend/internal/<module>/http/oapi-codegen.yaml` (ดูของโมดูลอื่นเป็นตัวอย่าง,
+   `include-operation-ids` ต้องมี operationId ของ path ที่เพิ่ม) แล้วเพิ่มบรรทัดใน Makefile's `gen:` ก่อน
+   `pnpm gen:api-client`
+5. **store/service/http** — ตาม layer ใน "Layer ภายใน module" ข้างบน: `store` (wrapper รอบ sqlc generated),
+   `service` (กฎธุรกิจ, state machine ถ้ามี, audit, outbox), `http` (`Strict` struct + `NewStrict`,
+   handler แปลง request/response อย่างเดียว)
+6. **wiring** — ประกาศ `Service` ของโมดูลใน `internal/<module>/service/service.go` (interface ที่โมดูลอื่นเรียก
+   ผ่าน rule 9) แล้วต่อสายใน `cmd/api/main.go` (และ `cmd/worker/main.go` ถ้ามี job)
+7. **`make gen`** — ตรวจว่า `go build ./...` ผ่านและไม่มี diff ที่ไม่ได้ตั้งใจ
+8. **Frontend** — `packages/api-client/src/<module>.ts` (hooks จาก `openapi-typescript` schema),
+   หน้าจอใหม่ใน `apps/admin/src/app/[locale]/<module>/`, i18n key th/en ใน `packages/i18n`
+9. **Tests** — two-tenant isolation test ต่อ repository ใหม่ (rule 1), HTTP contract test (401/403), unit
+   test ของกฎธุรกิจ
+
+ทุก module ตั้งแต่ ORG เป็นต้นมาใน codebase นี้ (ROPA, CON, BRE, DPO, DPIA, VEN, DPA/DSA, DFG, …) สร้างตามลำดับ
+นี้จริง — proof คือ `git log` ของแต่ละ commit `Implement <ID>: …`
 
 ## Frontend
 

@@ -105,3 +105,10 @@ func RateLimited() Problem {
 func Internal() Problem {
 	return Problem{Title: "Internal error", Status: http.StatusInternalServerError, Code: "internal"}
 }
+
+// ModuleDisabled is IAM-03's own gate (internal/pkg/modulegate): the caller's tenant has this
+// module's license switched off in platform.tenant_modules.
+func ModuleDisabled(module string) Problem {
+	return Problem{Title: "Module not enabled for this tenant", Status: http.StatusForbidden,
+		Code: "platform.module_disabled", Detail: module}
+}

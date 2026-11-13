@@ -15,6 +15,7 @@
 | ความปลอดภัย / tenant / PII | [architecture/security.md](architecture/security.md) |
 | event / webhook / job | [architecture/integration.md](architecture/integration.md) + `architecture/events.yaml` |
 | เรื่องที่ยังไม่ตัดสิน | [decisions.md](decisions.md) ส่วนที่ 2 |
+| บั๊กที่พบจากการรันระบบจริง | [known-issues.md](known-issues.md) |
 
 ## โครงสร้าง
 

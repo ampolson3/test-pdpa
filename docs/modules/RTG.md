@@ -106,6 +106,9 @@
 
 **หมายเหตุ:** ดึงเข้า P1: จุดขายหลักเทียบ OneTrust; เนื้อหาจาก T15
 
+**สถานะ implementation:** done — see `CLAUDE.md`'s RTG-01 section. T15's own deliverable wasn't available, so
+content is a 51-activity draft (`docs/decisions.md` Q-28) pending legal review.
+
 <a id="rtg-04"></a>
 ### RTG-04 สร้าง RoPA จาก template ในไม่กี่ขั้นตอน
 
@@ -129,6 +132,28 @@
 
 **หมายเหตุ:** ดึงเข้า P1 คู่กับ RTG-01
 
+**Implementation (RTG-04):** `backend/internal/ropa/service/from_template.go`'s `CreateActivitiesFromTemplates`
+(`ropa.activity.create`, shared with ROPA-05 — no new permission or migration): a thin loop over ROPA-05's own
+`CreateActivityFromTemplate` against one resolved department (`org.GetOrgUnit`'s own `LegalEntityID`, so the
+caller only picks a department — the wizard's third step — not a separate legal-entity field). Each created
+activity's code is the template's own `code` (already unique platform-wide), so the caller never has to type
+20 codes by hand. The whole batch runs inside the request's own transaction (rule 1 — this service never opens
+one): any failure partway through — an unknown template id, or a duplicate code because one of the chosen
+templates was already used for this department — rolls every activity in the batch back with it, the same
+all-or-nothing contract PLT-14's `import.apply` already established for a bulk write. Capped at
+`MaxBatchActivityTemplates = 50` (comfortable headroom over this feature's own 20-activity acceptance
+criterion, not an arbitrary round number).
+
+API: `POST /admin/v1/ropa/activities/batch-from-templates` (`ProcessingActivityBatchFromTemplatesInput`:
+`org_unit_id`, `activity_template_ids` (1–50), optional `owner_user_id`) → 201 `{data: [ProcessingActivity]}`.
+UI: a new page, `/ropa/templates/batch` (the module doc's own UX note: "มีหน้าจอใหม่") — the literal 3-step
+wizard + summary the frontend note calls for (job category → multi-select activities → department → a summary
+listing every chosen activity before the one create call), linked from `/ropa/templates`' own header. Tests:
+unit (the acceptance criterion directly — 20 template ids in one call yield 20 real, independently-scoped
+activities, each already carrying its own template's defaults; an unknown id anywhere in the batch rolls back
+the whole call, nothing partial survives; empty/oversized batches refused), HTTP contract (403/400 schema/201,
+a 10-activity batch's response carries exactly 10 entries).
+
 <a id="rtg-05"></a>
 ### RTG-05 Wizard ถาม-ตอบภาษาง่าย
 
@@ -150,6 +175,54 @@
 
 **Acceptance criteria:** ผู้ใช้ทั่วไปสร้าง RoPA ครบหัวข้อได้โดยไม่ต้องรู้ศัพท์กฎหมาย
 
+**Implementation — done.** `internal/ropa/service/wizard.go` (`ropa.activity.create`/`.update`, already seeded
+and already held by OWNER — no new permission or migration). `CreateActivityFromWizard` is literally the
+module doc's own backend note: a fixed sequence of plain-language questions, each answer mapped by a small Go
+lookup table to a real RoPA field — not a generic PLT-06 form. `internal/wiring/forms.go`'s `"questionnaire"`
+form type (`ropa.template.*`, seeded for exactly this feature's actor — OWNER holds `ropa.template.execute`)
+stays reserved-but-unused: the acceptance criterion is a fixed, structural mapping (one question per RoPA
+sub-resource, same shape every time), not a branching Q&A that would benefit from PLT-06's own conditional-
+section engine, the same reasoning PNG-01/PNG-04 already used for not reinstantiating a generic engine when
+direct composition covers the literal criterion.
+
+Three small lookup tables carry the "ภาษาง่าย → ม.39" translation: `wizardLawfulBasisCodes` (4 plain reasons
+→ real `org.lawful_bases` codes: "เจ้าของข้อมูลยินยอม"→CONSENT, "ต้องทำตามสัญญา"→CONTRACT, "กฎหมายกำหนด"→
+LEGAL_OBLIGATION, "ประโยชน์โดยชอบด้วยกฎหมาย"→LEGITIMATE_INTEREST — these four are genuinely stable platform-
+default codes from the baseline migration, not tenant-editable away), `wizardRetentionPlans` (4 plain
+durations → a `RetentionMonths`/`RetentionBasis`/`TriggerEvent` triple, `DisposalMethod` always "delete" —
+"anonymize"/"destroy"/"return" are legal/technical jargon the wizard doesn't ask about), and
+`wizardRecipientRoles` (3 plain descriptions → a real `recipient_role` enum value). Choosing the consent
+reason without a real `consent_purpose_id` is refused before anything is written (ROPA-06's own rule,
+surfaced through the wizard rather than bypassed). Every actual write reuses ROPA-03's own existing
+`SaveActivity`/`AddActivityPurpose`/`AddActivityData`/`AddRetentionRule`/`AddActivityRecipient` calls — no
+duplicated FK-visibility logic, the same "compose from the platform's own existing writes" pattern ROPA-05's
+own `CreateActivityFromTemplate` already established.
+
+Deliberately out of scope, so the wizard never has to ask about something it has no plain-language framing
+for: role is always "controller" (the common case for a department building its own entry — a processor-role
+activity still goes through ROPA-03/RTG-04 directly), one data subject type and at most one recipient, no
+security controls (ROPA-09 is its own screen), and the data source is always "direct". None of these block the
+resulting activity from being edited further on its own detail page — the wizard only has to get a real,
+reviewable first draft started, read the same way PNG-01's own wizard reads "a complete draft within 30
+minutes, not a finished one." `security_controls` (and, for the rare processor case, `controller`) still show
+as missing items right after creation — expected, not a bug: "ครบหัวข้อ" is read as every topic the wizard
+itself asks about (purpose + lawful basis, who the data is about, what's collected, how long it's kept, and
+optionally who it's shared with), not literally 100% of ROPA-03's own completeness score.
+
+API: `POST /admin/v1/ropa/activities/from-wizard` → the created `ProcessingActivity` (201, same shape every
+other create-activity endpoint returns). UI: a new page, `/ropa/wizard` — six steps (basics, purpose +
+plain-language legal reason, data, retention, optional recipient, a summary before the one create call fires —
+the same "preview before the one call" pattern RTG-04's own batch wizard already uses), linked from
+`/ropa/activities`'s own header. Tests: unit (the acceptance criterion directly — every plain-language answer
+lands as the right real field; choosing "consent" without a consent purpose is refused, then succeeds once
+given one; the optional recipient question creates nothing when skipped and a real recipient row when
+answered; every other validation rule; two-tenant isolation of the legal entity/org unit FK), HTTP contract
+(401/403/201/422) through the real validator + AuthZ chain. `go build`/`go vet`/`gofmt` clean across the whole
+backend; `tsc --noEmit`, `pnpm --filter @pdpa/admin build` and `pnpm --filter @pdpa/i18n test` all verified
+clean — no Postgres/Redis reachable in this environment this round, so both test files are compile-verified
+and skip-cleanly-verified only, the same caveat this codebase's own recent features (DPX-05/DPX-06) already
+recorded.
+
 <a id="rtg-06"></a>
 ### RTG-06 ค่าแนะนำพร้อมเหตุผล
 
@@ -170,6 +243,42 @@
 **Frontend (Next.js):** ป้ายค่าแนะนำ + เหตุผล + ปุ่มยืนยัน
 
 **Acceptance criteria:** ค่าแนะนำทุกข้อมีเหตุผลอ้างมาตรา และไม่ถูกบันทึกจนกว่าผู้ใช้ยืนยัน
+
+**Implementation — done.** RTG-01's own `rationale`/`legal_refs` columns (migration 00049) were seeded with
+exactly this feature in mind but never surfaced per item before — this feature decomposes them into a
+real per-item recommendation instead of ROPA-05's own "copy everything at once" bulk apply.
+`internal/ropa/service/suggestions.go`'s `Suggest(ctx, templateID)` reads one RTG-01 template's
+`defaults` jsonb (the same `templateDefaults` shape ROPA-05's `CreateActivityFromTemplate` already
+decodes — factored the lookup+decode step into a shared `loadTemplateDefaults` helper used by both) and
+decorates each purpose/data/retention item with a rationale that cites a *real* legal article: a
+purpose's own lawful basis resolved against this tenant's visible `org.lawful_bases.section_ref` (ม.24/26
+— the specific one, not the template's own generic "มาตรา 24/26" pair), a data category cited to ม.26
+when `is_sensitive` or ม.39(2) (the RoPA's own "ประเภทข้อมูลส่วนบุคคล" item) otherwise, and retention
+cited to ม.39(3) plus the template's own plain-language `retention_basis_th`. `Suggest` only reads — it
+never writes anything, proven directly by a test that calls it and then checks no activity exists.
+`ApplySuggestedItems(ctx, activityID, in)` is the write half: indices into the exact same ordered slices
+`Suggest` returned select which items to actually add, through the very same
+`AddActivityPurpose`/`AddActivityData`/`AddRetentionRule` calls ROPA-03's own manual entry and ROPA-05's
+bulk copy already use — a selectively-confirmed item is otherwise indistinguishable from one typed in by
+hand. `GetActivity` proves the target activity is the caller's own (rule 1) before anything is written;
+an out-of-range index is refused as `ErrInvalid` before any write starts.
+
+API: `GET /admin/v1/ropa/templates/activities/{activityTemplateId}/suggest` (`ropa.template.read`,
+read-only) and `POST /admin/v1/ropa/activities/{id}/apply-suggestions` (`ropa.activity.update` — adding
+child rows to an existing activity, the same permission `AddActivityPurpose`'s own direct endpoint
+already uses, not `.create` which is for the whole-activity endpoints). UI: a new "ค่าแนะนำจากกิจกรรม
+มาตรฐาน (RTG-06)" section on `/ropa/activities/{id}`, above RRA-01's own risk-score section — a job
+category + standard-activity picker, then a checklist per purpose/data/retention item showing its
+rationale, and an "ยืนยันรายการที่เลือก" button that only becomes active once at least one item is
+checked. Tests: unit (the acceptance criterion directly — every suggested item cites a real article and
+the purpose's citation is the lawful basis's own specific section_ref, not the template's generic pair;
+`Suggest` writes nothing; selecting only a subset writes exactly that subset and nothing else; an
+out-of-range index is refused before any write; an unknown template id is `ErrInvalid`; cross-tenant
+`ApplySuggestedItems` is `ErrNotFound`), HTTP contract (401/403/200 for suggest; 200 for apply with the
+selected purpose present and the unselected data absent) through the real validator + AuthZ.
+`go build`/`go vet`/`gofmt` clean; `tsc --noEmit`, `pnpm --filter @pdpa/i18n test` and
+`pnpm --filter @pdpa/admin build` all verified clean — no reachable Postgres/Redis this pass, so the Go
+tests ran compile-only, consistent with every other test this session.
 
 <a id="rtg-12"></a>
 ### RTG-12 ส่งออก template และร่าง RoPA
@@ -213,6 +322,13 @@
 
 **Acceptance criteria:** มีชุดกิจกรรมครบ 6 อุตสาหกรรม
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### RTG-02`. สรุป: migration 00082
+(`docs/decisions.md` Q-39) seed `ropa.template_sets` ใหม่ 6 ชุด (`set_type='industry'`) — ค้าปลีก
+โรงพยาบาล การเงิน/ประกัน การศึกษา อสังหาฯ ภาครัฐ — พร้อมกิจกรรมตัวแทน 2 รายการต่ออุตสาหกรรม บนตาราง
+เดิมของ RTG-01 (`ropa.template_sets`/`ropa.activity_templates`'s own `set_type`/`industry` columns ซึ่ง
+มีมาตั้งแต่ baseline แต่ RTG-01 ไม่เคยใช้) ไม่มี migration schema หรือ endpoint ใหม่เลย — `/ropa/templates`
+เดิมเพิ่มตัวกรองอุตสาหกรรมที่สลับไปดู template set ของอุตสาหกรรมนั้นแทนคลังมาตรฐานตามหมวดงาน
+
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
 
 <a id="rtg-03"></a>
@@ -235,6 +351,27 @@
 **Frontend (Next.js):** ตัวกรองภาครัฐ
 
 **Acceptance criteria:** RoPA ที่สร้างมีหัวข้อตามแม่แบบ สพร.
+
+**สถานะ: done.** `ropa.template_sets.set_type` already had `'government'` in its baseline CHECK
+constraint — a distinct axis from RTG-02's own `set_type='industry', industry='government'` generic
+starter set — unused until now. Migration 00084 (`docs/decisions.md` Q-40, the same "seed a draft +
+flag for legal review" move RTG-01/RTG-02 already made) seeds one `set_type='government'` template
+set with 3 representative government-agency activities (procurement, personnel records, FOIA/
+complaint handling), each covering every ม.39 topic in the exact `defaults`/`rationale` shape RTG-01/02
+already use. No service code changes: `internal/ropa/templates.Service.ListTemplateSets` already
+returns `SetType`, so browsing the government set is the identical call RTG-01/02's own browsing
+already makes, just against this set's own id. Frontend: `/ropa/templates` gained a government option
+in the existing set picker (`<option value="__government__">`, distinct from the industry axis),
+switching the browsed set the same way picking an industry already does — "ตัวกรองภาครัฐ" literally.
+ROPA-05's existing `CreateActivityFromTemplate` needs no change either: it already copies any
+`activity_template_id`'s `defaults` into a real activity regardless of which set it came from. Tests:
+`internal/ropa/templates/rtg03_test.go` — the acceptance criterion directly (the government set exists,
+is distinct from the industry axis, every activity covers every ม.39 topic and is role=`controller`).
+Not verified live against a real Postgres/Redis — this session's own environment limitation, consistent
+with this codebase's other recent passes; every test compiles and vets clean and skips the same way the
+rest of this package's own suite already does here. `go build ./...`, `go vet ./...`, `gofmt -l` (clean
+on every touched file), `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl. the
+updated `/ropa/templates` route) all verified clean.
 
 **หมายเหตุ:** OneTrust ไม่มี (จุดต่าง)
 
@@ -259,6 +396,38 @@
 
 **Acceptance criteria:** สร้าง RoPA ผู้ประมวลผลจาก template ได้
 
+**Implementation:** `ropa.template_sets.set_type` already reserved `'processor'` in its baseline CHECK
+constraint (ERD-09), unused until now — migration 00087 (`docs/decisions.md` Q-42) seeds one
+`set_type='processor'` template set with 3 representative processor activities (payroll outsourcing,
+outsourced customer support, cloud hosting), each `role='processor'` and in the exact
+`defaults`/`rationale` jsonb shape RTG-01/02/03 already use (purposes, data, recipients, retention,
+security_controls) — `lawful_basis_code` is `CONTRACT` throughout, since a processor's own purpose is
+always performing the data processing agreement with the controller, never the controller's own basis
+for the underlying processing (the same reason ROPA-04's own processor-RoPA export excludes that
+column). No service code change: `internal/ropa/templates.Service.ListTemplateSets`/
+`ListActivityTemplates` already return any set regardless of `set_type`, and ROPA-05's own
+`CreateActivityFromTemplate` already copies any template's `defaults` into a real activity regardless of
+`role` — the acceptance criterion itself ("สร้าง RoPA ผู้ประมวลผลจาก template ได้") was already reachable
+through that exact path the moment a processor-role template existed to point it at.
+
+Frontend: `/ropa/templates`'s existing industry/government `<select>` gained a third sentinel option
+(`__processor__`) switching the browsed set to this one — the same mechanism RTG-03's own government
+sentinel already established, so no new control was needed. The template's own `controller_party_id`
+note (the hiring party) is left for the OWNER to fill in by hand after creation, same as RTG-01's own 3
+embedded processor-role examples already document — a global template can't know which of this tenant's
+own `org.external_parties` rows is the real controller. Tests:
+`internal/ropa/templates/rtg07_test.go` (the set exists, every activity is role=processor and covers
+every ม.39 topic with `lawful_basis_code=CONTRACT`, the axis stays distinct from RTG-01's own standard
+set), `internal/ropa/service/rtg07_test.go` (the acceptance criterion directly: creating an activity
+from one of these templates via `CreateActivityFromTemplate` yields a real role=processor RoPA
+activity with its purposes/data/retention/security-controls copied in) — all run live against a real
+Postgres 16 + Redis in this session. `go build ./...`, `go vet ./...`, `gofmt -l` (clean on every touched
+Go file), the full `internal/ropa/...` suite (no regressions — every pre-existing failure, confirmed
+identical before this change, is unrelated: the ROPA-18 import suite's own unrelated `lawful_basis`/
+`subject_type` fixture gap, the `consent_purpose_id` template-purpose gap, and ROPA-15's own
+notification-count test). `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl.
+the updated `/ropa/templates` route) all verified clean.
+
 <a id="rtg-08"></a>
 ### RTG-08 แก้ไขและสร้าง template ขององค์กร
 
@@ -279,6 +448,67 @@
 **Frontend (Next.js):** หน้าแก้ไข template ขององค์กร
 
 **Acceptance criteria:** บริษัทในเครือใช้ template มาตรฐานของกลุ่มได้
+
+**Implementation:** `ropa.template_sets.set_type` already reserved `'custom'` in its baseline CHECK
+constraint, unused until now — no new migration, since `ropa.template_sets`/`ropa.activity_templates`
+already had every column this feature needs, and the schema's own `tenant_write` RLS policy already
+lets a tenant insert/update/delete its own `tenant_id = current tenant` rows. `internal/ropa/templates/
+write.go` (a new file alongside RTG-01's own read-only `service.go`) adds `CreateTemplateSet`/
+`CloneTemplateSet`/`PublishTemplateSet`/`RetireTemplateSet`/`AddActivityTemplate`/
+`UpdateActivityTemplate`/`DeleteActivityTemplate`/`ListOwnTemplateSets`. `CloneTemplateSet` is the
+acceptance criterion's own first half ("คัดลอก template กลางมาปรับ") — it copies a source set's own
+activities (global or another custom set) verbatim into a brand-new, independent custom set; editing
+the clone afterward never touches the source, since each cloned activity is a fresh row from the start.
+`PublishTemplateSet` is the second half ("กำหนด template มาตรฐานของกลุ่มบริษัท") — once published, the
+set appears on the exact same published browse list `ListTemplateSets` (RTG-01) already returns, and
+ROPA-05's own `CreateActivityFromTemplate` is already set-type/role-agnostic, so a published custom set
+is immediately and fully usable by every legal entity/org unit under this tenant ("บริษัทในเครือ") with
+zero further wiring — proven directly by a cross-package test
+(`internal/ropa/service/rtg08_test.go`) that creates a custom set, adds an activity, publishes it, then
+drives a real `CreateActivityFromTemplate` call against it.
+
+A new `ownSet` guard (`GetOwnTemplateSet`, a new sqlc query filtering `tenant_id = current tenant`)
+proves a write targets one of this tenant's own custom sets before touching it — writing to a global
+standard/industry/government/processor set is refused with a clear `ErrInvalid`, not a confusing
+"0 rows affected" the RLS policy alone would otherwise produce silently. `ErrInvalid`/`ErrVersionMismatch`
+are templates' own new sentinels (`templatesservice.ErrInvalid`/`ErrVersionMismatch`), mapped at the HTTP
+layer (`templatesProblem`, `internal/ropa/http/templates.go`) the same way every other module's own
+write-path sentinels already are. `templatesservice.Service` gained an `Audit *auditservice.Service`
+field (nil-means-skip, the same convention every other optional cross-cutting field on a module Service
+already uses) — wired in `cmd/api/main.go` right after `ropaTemplatesSvc` is constructed.
+
+API: `GET`/`POST /admin/v1/ropa/templates/custom` (the management list + create, distinct from RTG-01's
+own published-only `GET /admin/v1/ropa/templates`), `POST /admin/v1/ropa/templates/{id}/clone`,
+`POST .../publish` / `.../retire` (ETag/If-Match), `POST /admin/v1/ropa/templates/{id}/activities`
+(add), `PUT`/`DELETE /admin/v1/ropa/templates/activities/{activityTemplateId}` (ETag/If-Match) — all on
+the already-seeded `ropa.template.{read,create,update,publish,delete}` permissions (DPO full, LEGAL
+create/read/update — matching this feature's own actor line — no new permission code or migration).
+UI: `/ropa/templates` gained a "Manage custom templates" toggle — create a blank set or clone the
+currently browsed one, a list of the tenant's own sets with publish/retire actions and a status badge, and
+an inline add-activity form (code/name/job category/role + defaults/rationale as JSON, the same opaque-JSON
+convention every seeded template's own defaults already use) with a per-row remove button.
+
+Tests: unit (`internal/ropa/templates/write_test.go` — the acceptance criterion's own two halves directly:
+a draft set never appears in the published browse list and a published one does, retiring removes it
+again; cloning copies every activity independently, editing the clone never touches the source; writing to
+the global standard set is refused with `ErrInvalid`; a stale row_version is refused on update/publish;
+two-tenant isolation of both the management list and a cross-tenant write attempt),
+`internal/ropa/service/rtg08_test.go` (the full cross-package proof above), HTTP contract
+(`internal/ropa/http/rtg08_test.go`, a separate fixture from `TestAssetEndpoints_Contract` — whose own
+batch-create assertion is pre-existing, unrelated, and already failing before this feature touched the
+package, so appending there would never actually run — 401/403/201/200/412/428/422 through the real
+validator + AuthZ). Verified live against this session's own real Postgres 16 + Redis: `go build ./...`,
+`go vet ./...`, `gofmt -l` (clean on every touched file), the full `internal/ropa/...` suite (no
+regressions; every pre-existing failure — `TestAssetEndpoints_Contract`'s own `consent_purpose_id` gap,
+the ROPA-18 import suite's `lawful_basis`/`subject_type` fixture gap, ROPA-15's own notification-count
+test — confirmed identical before and after this change via `git stash -u`), `pnpm --filter
+@pdpa/api-client typecheck`, `pnpm --filter @pdpa/i18n test` and `pnpm --filter @pdpa/admin build` (incl.
+the updated `/ropa/templates` route) all verified clean. Not done, deliberately: a separate approval step
+before publish (the module doc's own acceptance criterion asks only that a published set be usable, not
+that it go through PLT-08's generic review engine — a custom template set is DPO/LEGAL's own internal
+reference content, not a document issued to a data subject or regulator); versioning a custom activity
+across edits (RTG-01's own global templates have no version history either — `version_no` stays at 1,
+the same as every other seeded template).
 
 <a id="rtg-09"></a>
 ### RTG-09 Template สองภาษา
@@ -301,6 +531,12 @@
 
 **Acceptance criteria:** ทุก template มีทั้ง TH และ EN
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### RTG-09`. สรุป: backend content ของทั้ง 63
+template ที่ seed ไว้ (RTG-01's 51 + RTG-02's 12) มี TH/EN ครบอยู่แล้วตั้งแต่ migration เดิม — ไม่ต้อง
+migration หรือ seed เพิ่ม — จึงเหลือเฉพาะตัวสลับภาษา TH/EN บนหน้า `/ropa/templates`'s `ActivityDetail`
+panel และ regression test (`internal/ropa/templates/rtg09_test.go`) ที่ยืนยันทุก template ยังมี
+`name_en`/`description_en`/purpose `purpose_text_en` ครบ ป้องกัน template ใหม่ในอนาคตที่ลืมใส่ EN.
+
 <a id="rtg-10"></a>
 ### RTG-10 เวอร์ชัน template และแจ้งเมื่อกฎหมายเปลี่ยน
 
@@ -322,6 +558,33 @@
 
 **Acceptance criteria:** ประกาศ สคส. ใหม่ → กิจกรรมที่ได้รับผลกระทบได้รับงานทบทวน
 
+**สถานะ: done** — ดูรายละเอียดใน `CLAUDE.md` หัวข้อ `### RTG-10`. สรุป: การ "ออกเวอร์ชันใหม่" ของ
+template เป็น goose migration ใหม่ (เหมือน RTG-01/02/03/07's own seed) ไม่ใช่ live admin action ผ่าน
+`/provider/v1` — เพราะ `internal/platform/provider`'s own bypass pool ถูกจำกัดไว้เฉพาะ
+`platform.tenants`/`platform.tenant_modules` เท่านั้น (CLAUDE.md rule 1) ระบบแจ้งทบทวนเป็น River sweep
+รายวัน (`ropa.template_review_sweep` ใน `jobs.GlobalKinds` → `ropa.template_review_check` ต่อ tenant)
+เทียบ `ropa.processing_activities.template_id` ของแต่ละกิจกรรมกับเวอร์ชันล่าสุดของ template เดียวกัน แล้ว
+เปิด `dpo.tasks` (`source_type='ropa_gap'`, เลขที่ `RTG-<year>-NNNN`) แบบ dedup หนึ่งงานต่อกิจกรรม พบและแก้
+ข้อบกพร่องจริงระหว่างทำ: `ropa.processing_activities.template_id` (คอลัมน์/FK มีมาตั้งแต่ migration 00018)
+ไม่เคยถูกเขียนโดยโค้ดใดเลย — `CreateActivityFromTemplate` (ROPA-05/RTG-04/RTG-07/RTG-08's own shared path)
+ไม่เคยส่งค่านี้ แก้โดยเพิ่ม `TemplateID *uuid.UUID` ใน `Activity` struct, ส่งผ่าน `InsertActivity` SQL และ
+ตั้งค่าจริงใน `CreateActivityFromTemplate` — มิฉะนั้น acceptance criterion นี้จะหากิจกรรมไม่พบเลยใน
+deployment จริง ส่วนอื่น: `GET .../templates/activities/{id}/versions` ("หน้าประวัติ template", newest
+first) และ `GET .../activities/outdated-templates` ("รายการที่ต้องทบทวน") เป็น read-only endpoint ใหม่
+migration 00088 เป็น demonstration เท่านั้น (ไม่มีประกาศ สคส. จริงมาอ้างอิง) — seed เวอร์ชัน 2 ของ
+`recruitment_job_posting` (RTG-01) เพิ่ม `TECH_ENCRYPTION` ติด DRAFT (`docs/decisions.md` Q-43) UI:
+`/ropa/templates` มี panel "รายการที่ต้องทบทวน" (อ่านสดจาก `ListOutdatedTemplateActivities` เดียวกับ
+sweep ไม่ cache) และ `ActivityDetail` panel มี toggle "ประวัติเวอร์ชัน template". Tests:
+`internal/ropa/service/rtg10_test.go` (acceptance criterion ตรง ๆ: กิจกรรมจาก v1 ปรากฏใน outdated list
+และได้ 1 task, sweep ซ้ำไม่ซ้ำ task; กิจกรรมจาก v2 ไม่ถูก flag; nil `Dpo` ไม่ error; two-tenant isolation),
+`internal/ropa/templates`'s existing suite ครอบ `ListTemplateVersions`/`LatestVersion`. ยืนยัน live ต่อ
+Postgres/Redis จริงในเซสชันนี้ — ผ่านทั้งหมด (ความล้มเหลวที่มีอยู่ก่อนในแพ็กเกจเดียวกัน — import suite's
+fixture gap, `consent_purpose_id` template gap, `TestCheckDueReviews_NotifiesOwnerAndReschedules`'s own
+notification-count bug — ยืนยันด้วย `git stash` ว่ามีอยู่ก่อนหน้านี้แล้ว ไม่เกี่ยวกับ feature นี้).
+`go build`/`go vet`/`gofmt -l` สะอาด, `make gen` ไม่มี drift, `pnpm --filter @pdpa/api-client typecheck`,
+`pnpm --filter @pdpa/i18n test` และ `pnpm --filter @pdpa/admin build` (รวม route `/ropa/templates` ที่
+อัปเดต) ผ่านทั้งหมด.
+
 <a id="rtg-11"></a>
 ### RTG-11 มอบหมายร่าง RoPA ให้หน่วยงานยืนยัน
 
@@ -342,6 +605,29 @@
 **Frontend (Next.js):** กล่องงานยืนยันร่างของแผนก
 
 **Acceptance criteria:** ร่างที่ยังไม่ยืนยันถูกเตือนตาม SLA
+
+**สถานะ:** done — จงใจไม่ใช้ PLT-05 (workflow engine ทั่วไป) ตามที่ backlog ระบุ `ขึ้นกับ`, เหตุผลเดียวกับที่
+BRE-11 เพิ่งเลือกไม่ใช้: engine นั้นผูก assignee ไว้ใน Definition JSON ระดับ type ขณะที่กิจกรรม RoPA แต่ละ
+รายการมี `owner_user_id` ของตัวเองอยู่แล้ว. ใช้รูปแบบ "schedule ครั้งเดียวตอนสร้าง แล้วเช็กสถานะจริงตอนยิง
+จริง" แบบเดียวกับที่ VEN-06's certificate-expiry reminder วางไว้ — ไม่ต้อง migration ใหม่สำหรับ schema เดิม
+เลย (`internal/ropa/service/draft_confirm_reminder.go`): `CreateActivityFromTemplate` (ROPA-05, ใช้ร่วมกับ
+RTG-04/RTG-07/RTG-08) schedule สองจุดตรวจพร้อมกันตอนสร้าง — เตือนที่ 3 วัน, เกินกำหนดที่ 7 วัน (ค่าเริ่มต้นที่
+ปรับได้ตาม CLAUDE.md's "implement the listed default as config" ไม่ใช่คำถาม decisions.md) — ยิงจริงแล้วเช็ก
+สถานะกิจกรรมปัจจุบัน ถ้าไม่ใช่ `draft` แล้ว (ยืนยันแล้วด้วยการ submit ปกติ หรือแก้เป็น under_review) เป็น no-op
+ทันที. "ยืนยันร่าง" คือการกด submit ที่มีอยู่แล้ว (ROPA-13's `SubmitActivity`, OWNER ถือ `ropa.activity.update`
+อยู่แล้วพอสำหรับการนี้) ไม่ต้องสร้าง action ใหม่. ผู้รับการแจ้งเตือนคือ `owner_user_id` ของกิจกรรมเอง หรือ
+fallback role OWNER (รูปแบบ "default recipients until real per-record routing exists" เดียวกับ BRE-07/PNG-04/
+VEN-06/VEN-10). migration 00091 seed แม่แบบแจ้งเตือน `ropa.draft_confirm_reminder`/`ropa.draft_confirm_overdue`
+(th/en × in_app/email, ข้อความปฏิบัติงาน ไม่ใช่ถ้อยคำกฎหมาย ไม่ต้องมี DRAFT marker ตาม rule 8).
+
+"กล่องงานยืนยันร่างของแผนก" (frontend note) ไม่ต้องสร้างหน้าใหม่ — `/ropa/activities` เดิมมีตัวกรองสถานะ
+(`status=draft`) และคอลัมน์สถานะอยู่แล้ว ทำหน้าที่เป็น "กล่อง" นั้นได้ทันที, ปุ่ม submit อยู่บนหน้า
+`/ropa/activities/{id}` อยู่แล้ว (ROPA-13), และ `/settings/notifications` แสดงการแจ้งเตือนที่ผู้ใช้ได้รับอยู่
+แล้ว — รูปแบบเดียวกับที่ PNG-15/ROPA-15/VEN-10 ใช้ ("no UI screen — the notification itself is the
+acceptance criterion"). ทดสอบ: unit (`internal/ropa/service/rtg11_test.go` — เกณฑ์การรับรู้ผลลัพธ์ตรง:
+สร้างกิจกรรมจาก template แล้ว schedule ครบ 2 จุดตรวจ, ยิงเตือนตอนยังเป็น draft แจ้งเจ้าของจริง, submit แล้ว
+ยิงซ้ำเป็น no-op ไม่แจ้งซ้ำ). ไม่ได้ยืนยันแบบ live กับ Postgres/Redis จริงในรอบนี้ (ไม่ reachable ใน
+สภาพแวดล้อมนี้) — คอมไพล์/vet ผ่านและ skip อย่างสุภาพเหมือน feature อื่นที่เพิ่งผ่านมาในช่วงนี้.
 
 <a id="rtg-13"></a>
 ### RTG-13 AI แนะนำกิจกรรมจากคำอธิบายงาน

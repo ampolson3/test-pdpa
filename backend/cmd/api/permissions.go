@@ -41,6 +41,34 @@ func loadPermissions(spec *openapi3.T) (map[string]string, error) {
 	return out, nil
 }
 
+// loadModules is modulegate's own twin of loadPermissions, reading x-module instead of x-permission.
+// Every operation already carries x-module (used by internal/pkg/isolationaudit too), so a missing one
+// is a spec bug, exactly like a missing x-permission.
+func loadModules(spec *openapi3.T) (map[string]string, error) {
+	out := make(map[string]string)
+
+	for path, item := range spec.Paths.Map() {
+		methods := map[string]*openapi3.Operation{
+			"GET": item.Get, "POST": item.Post, "PUT": item.Put,
+			"PATCH": item.Patch, "DELETE": item.Delete,
+		}
+		for method, op := range methods {
+			if op == nil {
+				continue
+			}
+			if op.OperationID == "" {
+				return nil, fmt.Errorf("modulegate: %s %s is missing operationId", method, path)
+			}
+			code, ok := stringExtension(op.Extensions, "x-module")
+			if !ok {
+				return nil, fmt.Errorf("modulegate: %s %s is missing x-module", method, path)
+			}
+			out[exportedName(op.OperationID)] = code
+		}
+	}
+	return out, nil
+}
+
 func exportedName(operationID string) string {
 	r := []rune(operationID)
 	if len(r) == 0 {

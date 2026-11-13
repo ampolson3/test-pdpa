@@ -9,26 +9,33 @@ import (
 // deploy/compose/docker-compose.yml and .env.example). Every field has a workable local default so
 // `go run ./cmd/api` starts without extra setup beyond a running Postgres and Valkey.
 type config struct {
-	HTTPAddr           string
-	DatabaseURL        string
-	ValkeyAddr         string
-	OIDCIssuer         string
-	OIDCJWKSURL        string
-	OpenAPISpecPath    string
-	OTelEndpoint       string
-	CORSAllowedOrigins []string
+	HTTPAddr            string
+	DatabaseURL         string
+	PlatformDatabaseURL string
+	ValkeyAddr          string
+	OIDCIssuer          string
+	OIDCJWKSURL         string
+	OpenAPISpecPath     string
+	OTelEndpoint        string
+	CORSAllowedOrigins  []string
+	// TrustedProxies: load balancers / reverse proxies whose X-Forwarded-For is believed (decisions.md D-23),
+	// IPs or CIDRs, comma separated. Empty: the TCP peer is the client.
+	TrustedProxies string
 }
 
 func loadConfig() config {
 	return config{
-		HTTPAddr:           env("HTTP_ADDR", ":8080"),
-		DatabaseURL:        env("DATABASE_URL", "postgres://pdpa_app:pdpa_app@localhost:5432/pdpa?sslmode=disable"),
-		ValkeyAddr:         env("VALKEY_ADDR", "localhost:6379"),
-		OIDCIssuer:         env("OIDC_ISSUER", "http://localhost:8081/realms/pdpa"),
-		OIDCJWKSURL:        env("OIDC_JWKS_URL", env("OIDC_ISSUER", "http://localhost:8081/realms/pdpa")+"/protocol/openid-connect/certs"),
-		OpenAPISpecPath:    env("OPENAPI_SPEC_PATH", "api/openapi/openapi.yaml"),
-		OTelEndpoint:       env("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
-		CORSAllowedOrigins: strings.Split(env("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001"), ","),
+		HTTPAddr:    env("HTTP_ADDR", ":8080"),
+		DatabaseURL: env("DATABASE_URL", "postgres://pdpa_app:pdpa_app@localhost:5432/pdpa?sslmode=disable"),
+		// PlatformDatabaseURL: pdpa_platform (BYPASSRLS) — held only by internal/platform/provider (IAM-03).
+		PlatformDatabaseURL: env("PLATFORM_DATABASE_URL", "postgres://pdpa_platform:pdpa_platform@localhost:5432/pdpa?sslmode=disable"),
+		ValkeyAddr:          env("VALKEY_ADDR", "localhost:6379"),
+		OIDCIssuer:          env("OIDC_ISSUER", "http://localhost:8081/realms/pdpa"),
+		OIDCJWKSURL:         env("OIDC_JWKS_URL", env("OIDC_ISSUER", "http://localhost:8081/realms/pdpa")+"/protocol/openid-connect/certs"),
+		OpenAPISpecPath:     env("OPENAPI_SPEC_PATH", "api/openapi/openapi.yaml"),
+		OTelEndpoint:        env("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
+		CORSAllowedOrigins:  strings.Split(env("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001"), ","),
+		TrustedProxies:      env("TRUSTED_PROXIES", ""),
 	}
 }
 

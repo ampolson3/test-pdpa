@@ -25,17 +25,18 @@ import (
 )
 
 func main() {
-	down := flag.Bool("down", false, "roll back the most recent migration instead of applying pending ones")
+	down := flag.Bool("down", false, "roll back the most recent goose migration instead of applying pending ones")
+	riverDown := flag.Bool("river-down", false, "with -down, also drop River's queue tables (deletes every queued job)")
 	grantsPath := flag.String("grants", "deploy/db/10-grants.sql", "path to the grants SQL file, applied after migrations")
 	flag.Parse()
 
-	if err := run(*down, *grantsPath); err != nil {
+	if err := run(*down, *riverDown, *grantsPath); err != nil {
 		slog.Error("migrate: fatal", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run(down bool, grantsPath string) error {
+func run(down, riverDown bool, grantsPath string) error {
 	ctx := context.Background()
 	dsn := migratorDSN()
 
@@ -50,10 +51,14 @@ func run(down bool, grantsPath string) error {
 	}
 	defer pool.Close()
 
-	if err := runRiver(ctx, pool, down); err != nil {
-		return fmt.Errorf("river: %w", err)
+	// -down rolls back one goose step; River's tables are independent of it and dropping them loses
+	// every queued job (PLT-10), so they only go when asked for explicitly.
+	if !down || riverDown {
+		if err := runRiver(ctx, pool, down); err != nil {
+			return fmt.Errorf("river: %w", err)
+		}
+		slog.Info("migrate: river done")
 	}
-	slog.Info("migrate: river done")
 
 	if !down {
 		if err := applySQLFile(ctx, dsn, grantsPath); err != nil {

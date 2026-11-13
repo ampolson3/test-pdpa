@@ -7,6 +7,11 @@ dist/
 .env
 .env.*.local
 
+# Playwright (packages/cookie-sdk's e2e)
+test-results/
+playwright-report/
+blob-report/
+
 # Go
 /backend/bin/
 *.test
@@ -15,3 +20,9 @@ dist/
 .DS_Store
 .vscode/
 .idea/
+
+# local Redis/Valkey snapshot (dev cache)
+dump.rdb
+
+# dev login signing key (apps/admin/src/lib/dev-auth.ts)
+.dev-auth/

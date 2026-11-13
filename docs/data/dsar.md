@@ -34,6 +34,7 @@
 | `tenant_id` | `uuid` |  |  | FK → [platform.tenants](platform.md#platform-tenants) | RLS · NULL = ข้อมูลกลาง |
 | `code` | `text` | ✓ |  |  | ค่า: `access`, `portability`, `objection`, `erasure`, `restriction`, `rectification`, `withdraw_consent`, `complaint`, `inquiry` |
 | `name_th` | `text` | ✓ |  |  |  |
+| `name_en` | `text` |  |  |  | migration 00043 (DSAR-13) — the bilingual response letter needs an English name too |
 | `legal_ref` | `varchar(40)` |  |  |  |  |
 | `workflow_definition_id` | `uuid` |  |  | FK → [platform.workflow_definitions](platform.md#platform-workflow-definitions) |  |
 | `sla_days` | `smallint` | ✓ | 30 |  |  |
@@ -44,6 +45,10 @@
 - Unique: `uq_request_types_code UNIQUE NULLS NOT DISTINCT (tenant_id, code)`
 - Index: `dsar.request_types (workflow_definition_id)` · `dsar.request_types (response_template_id)`
 - RLS: tenant + ข้อมูลกลาง (tenant_id NULL) · RLS `tenant_read` / `tenant_write`
+- DSAR-13's 9 seeded rows (migration 00043) leave `response_template_id` unset: the actual response letter is
+  resolved by (`platform.templates.template_type = 'dsar_response'`, `code` = the *purpose* — result /
+  rejection / request_info, not the request type), the same code-keyed lookup pattern PNG-03's
+  `notice.wizard_templates` uses instead of a single FK column.
 - ถูกอ้างถึงโดย: `dsar.requests.request_type_id`
 
 <a id="dsar-requests"></a>
@@ -170,6 +175,7 @@
 | `purged_at` | `timestamptz` |  |  |  |  |
 
 - มีคอลัมน์มาตรฐาน `created_at · created_by · updated_at · updated_by · row_version` + trigger `trg_search_results_updated`
+- DSAR-09: `found`/`record_count` อยู่รอดหลัง purge (เป็นแค่สรุปสถิติ ไม่ใช่เนื้อหา) — `purge` ล้าง `found=false`, `record_count=NULL`, `summary_enc=NULL`, `result_file_id=NULL` และตั้ง `purged_at` เมื่อคำขอเข้าสถานะ terminal (completed/rejected/withdrawn) แถวยังอยู่เป็น audit trail ว่าค้นระบบใดไปแล้วบ้าง
 - PK: `(id)`
 - Index: `dsar.search_results (tenant_id, request_id)` · `dsar.search_results (tenant_id, connector_id)` · `dsar.search_results (tenant_id, result_file_id)`
 - RLS: tenant · RLS `tenant_isolation`

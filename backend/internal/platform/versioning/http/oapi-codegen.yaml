@@ -1,0 +1,14 @@
+package: versioninghttp
+generate:
+  chi-server: true
+  strict-server: true
+  models: true
+output-options:
+  include-operation-ids:
+    - platformListRecordVersions
+    - platformGetRecordVersion
+    - platformCompareRecordVersions
+    - platformSubmitRecordVersion
+    - platformPublishRecordVersion
+    - platformDecideApproval
+    - platformListMyApprovals

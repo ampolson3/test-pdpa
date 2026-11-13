@@ -83,6 +83,8 @@
 | `admin.idp` | SSO, IdP, นโยบายรหัสผ่านและ MFA |  | CRUD |  |  |  |  |  |  |  | R |  | R |  |  |  |  | ตั้งค่าใน Keycloak ผ่านหน้าจอของระบบ |
 | `admin.apiclient` | API client และ webhook |  | CRUD | R |  |  |  | CRU |  |  |  |  | R |  |  |  |  | IT จัดการได้เฉพาะ client ของระบบที่ตนดูแล |
 | `admin.audit` | Audit log | RE | RE | RE |  |  |  |  |  |  | RE |  | RE |  |  |  |  | ไม่มีใครแก้ไขหรือลบ log ได้ |
+| `admin.job` | งานเบื้องหลัง (background job) | R | R |  |  |  |  |  |  |  |  |  |  |  |  |  |  | เฉพาะ job ของ tenant ตนเอง · SUPER ดูข้าม tenant ผ่าน /provider/v1 (PLT-10) |
+| `admin.workflow` | นิยาม workflow และ SLA | CRU | CRU | R |  |  |  |  |  |  |  |  |  |  |  |  |  | บันทึกแล้วเป็นเวอร์ชันใหม่ · instance / task ใช้สิทธิ์ของ record เจ้าของหรือผู้ได้รับมอบหมาย (PLT-05, migration 00028) |
 | `admin.accessreview` | ทบทวนสิทธิ์ |  | CRUDX | R |  |  | X | X |  |  |  |  | R |  |  |  |  | หัวหน้าแผนกยืนยันสิทธิ์ของทีมตนเอง |
 | `admin.breakglass` | ใช้สิทธิ์ฉุกเฉิน | X | X |  |  |  |  |  |  |  |  |  |  |  |  |  |  | ต้องระบุเหตุผล มีเวลาจำกัด และแจ้ง DPO / Security ทันที |
 | `admin.notification` | Template แจ้งเตือน |  | CRUD | CRU | CRU |  |  |  | CRU |  |  |  | R |  |  |  |  |  |
@@ -126,7 +128,7 @@
 | `ropa.template` | คลัง RoPA ฉบับมาตรฐาน | CRUD |  | CRUDP | CRU | CRU | RX |  |  |  |  |  | R |  |  |  |  | SUPER ดูแลคลังกลาง; tenant สร้าง template ของตนเอง |
 | `ropa.risk` | ความเสี่ยงและช่องว่างรายกิจกรรม |  |  | CRUDA | CRU |  | RU |  |  |  | RU |  | R | R |  |  |  |  |
 | `ropa.dataflow` | แผนผังการไหลของข้อมูล |  |  | RUPE | RUE | R | R | R |  |  | R |  | RE | R |  |  |  |  |
-| `ropa.discovery` | Data discovery และ connector |  |  | R | R |  |  | CRUDX |  |  | R |  | R |  |  |  |  |  |
+| `ropa.discovery` | Data discovery และ connector |  |  | R | R |  |  | CRUDX |  |  | R |  | R |  |  |  |  | ใช้ร่วม PLT-20 (/admin/v1/platform/connectors) |
 
 ### DSAR
 
