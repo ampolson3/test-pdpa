@@ -8,8 +8,8 @@
 -- own upsert needs (NULLS NOT DISTINCT so a tenant-wide, no-scope layout and an anonymous-session layout
 -- both still upsert correctly instead of inserting a duplicate row every save).
 
-ALTER TABLE dataflow.layouts DROP CONSTRAINT dataflow_layouts_view_type_check;
-ALTER TABLE dataflow.layouts ADD CONSTRAINT dataflow_layouts_view_type_check
+ALTER TABLE dataflow.layouts DROP CONSTRAINT layouts_view_type_check;
+ALTER TABLE dataflow.layouts ADD CONSTRAINT layouts_view_type_check
     CHECK (view_type IN ('org_unit', 'system', 'legal_entity', 'company', 'data_category', 'lineage', 'world'));
 
 CREATE UNIQUE INDEX uq_dataflow_layouts_scope_user ON dataflow.layouts (tenant_id, view_type, scope_id, user_id) NULLS NOT DISTINCT;
@@ -17,6 +17,6 @@ CREATE UNIQUE INDEX uq_dataflow_layouts_scope_user ON dataflow.layouts (tenant_i
 -- +goose Down
 DROP INDEX IF EXISTS dataflow.uq_dataflow_layouts_scope_user;
 
-ALTER TABLE dataflow.layouts DROP CONSTRAINT dataflow_layouts_view_type_check;
-ALTER TABLE dataflow.layouts ADD CONSTRAINT dataflow_layouts_view_type_check
+ALTER TABLE dataflow.layouts DROP CONSTRAINT layouts_view_type_check;
+ALTER TABLE dataflow.layouts ADD CONSTRAINT layouts_view_type_check
     CHECK (view_type IN ('org_unit', 'system', 'legal_entity', 'data_category', 'lineage', 'world'));
