@@ -644,6 +644,9 @@ all verified clean.
 
 **Acceptance criteria:** พนักงานลาออกใน HRIS แล้วบัญชีถูกปิดอัตโนมัติ
 
+**สถานะ (implementation):** ทำแล้วเฉพาะส่วน HRIS ตาม acceptance criteria — connector ประเภท `hris` (PLT-20, ความสามารถ `list_employees`, REST + Bearer token; config: `base_url`, `employees_path`, `items_field`, `email_field`, `id_field`, `status_field`, `terminated_values`) · job รายวัน `gov.hris_sync_sweep` → `gov.hris_sync_check` ต่อ tenant และปุ่ม "ซิงก์ตอนนี้" (`POST /admin/v1/governance/hris-sync`, `ropa.discovery.execute`) ปิดบัญชี (`iam.users.status = disabled`) ของพนักงานที่ HRIS แจ้งว่าพ้นสภาพ โดยจับคู่ด้วยอีเมล บัญชีที่ปิดแล้วไม่ได้รับสิทธิ์ใดเลย · audit `iam.user.disable` เก็บ user id ไม่เก็บอีเมล
+**ยังไม่ทำ:** พนักงานเข้าใหม่ → สร้างผู้ใช้ / มอบหมายอบรม (รอ IAM-01), ServiceNow / Jira (สร้างงาน), SIEM (ส่ง audit log), การยกเลิก session ที่ Keycloak (รอ Q-18)
+
 <a id="dpx-07"></a>
 ### DPX-07 เครื่องมือ Masking / Pseudonymization
 

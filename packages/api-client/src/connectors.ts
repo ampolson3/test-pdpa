@@ -118,3 +118,17 @@ export function useTestConnector(client: ApiClient) {
     },
   });
 }
+
+export type HrisSyncResult = components["schemas"]["GovHrisSyncResult"];
+
+/** POST /admin/v1/governance/hris-sync — DPX-13: close the accounts of employees the HR connectors
+ *  report as having left, now rather than at the next daily run. */
+export function useRunHrisSync(client: ApiClient) {
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await client.POST("/admin/v1/governance/hris-sync", {});
+      if (error) throw error;
+      return data as HrisSyncResult;
+    },
+  });
+}

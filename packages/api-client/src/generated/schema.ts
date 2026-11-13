@@ -7020,6 +7020,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/v1/governance/hris-sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** DPX-13: read every active HR connector now and close the accounts of employees it reports as having left (the same run the daily job makes) */
+        post: operations["govRunHrisSync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/v1/governance/frameworks": {
         parameters: {
             query?: never;
@@ -11299,7 +11316,7 @@ export interface components {
          * @description Matches internal/platform/connectors's own capability constants (CapTest etc.)
          * @enum {string}
          */
-        ConnectorCapability: "test" | "discover" | "search_subject" | "update" | "delete";
+        ConnectorCapability: "test" | "discover" | "search_subject" | "update" | "delete" | "sample" | "list_employees";
         /** @description One Driver this process's Registry carries (internal/wiring.Connectors()) — never hard-coded on this response, read live from the registry map. */
         ConnectorType: {
             /** @description e.g. postgres, mysql, sqlserver, rest */
@@ -12558,6 +12575,14 @@ export interface components {
             };
             score: number;
             max_score: number;
+        };
+        GovHrisSyncResult: {
+            connectors_checked: number;
+            /** @description HR connectors that could not be read this run */
+            connectors_failed: number;
+            employees_seen: number;
+            /** @description Accounts closed by this run (already closed ones are not counted) */
+            accounts_disabled: number;
         };
         GovFramework: {
             id: components["schemas"]["Uuid"];
@@ -29908,6 +29933,31 @@ export interface operations {
             412: components["responses"]["PreconditionFailed"];
             422: components["responses"]["UnprocessableEntity"];
             428: components["responses"]["PreconditionRequired"];
+        };
+    };
+    govRunHrisSync: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Language of messages and localized fields (default th) */
+                "Accept-Language"?: components["parameters"]["AcceptLanguage"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GovHrisSyncResult"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     govListFrameworks: {

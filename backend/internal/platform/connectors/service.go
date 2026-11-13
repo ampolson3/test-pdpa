@@ -485,6 +485,26 @@ func (s *Service) Sample(ctx context.Context, id uuid.UUID, table string, limit 
 	return d.Sample(ctx, cfg, table, limit)
 }
 
+// ListEmployees reads an HR connector's roster (DPX-13). Nothing it returns is persisted here.
+func (s *Service) ListEmployees(ctx context.Context, id uuid.UUID) ([]Employee, error) {
+	c, err := s.GetConnector(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.driverFor(c.ConnectorType)
+	if err != nil {
+		return nil, err
+	}
+	if d.ListEmployees == nil || !hasCapability(c.Capabilities, CapListEmployees) {
+		return nil, fmt.Errorf("%w: list_employees", ErrUnsupported)
+	}
+	cfg, err := s.config(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+	return d.ListEmployees(ctx, cfg)
+}
+
 // ListActiveWithCapability is the read side DSAR-09's own "ค้นข้อมูลจากระบบที่เชื่อมได้ในคำสั่งเดียว"
 // needs: every one of this tenant's own active connectors that can actually be searched, across every
 // page — small enough in practice (a handful of registered connectors per tenant) that paging through the

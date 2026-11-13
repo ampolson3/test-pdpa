@@ -58,6 +58,7 @@ var GlobalKinds = map[string]bool{
 	// gov/jobs.SweepArgs (DPX-05): reads only platform.tenants and enqueues one gov.retention_check per
 	// tenant. gov.retention_check itself is tenant-scoped and must NOT be added here.
 	"gov.retention_sweep": true,
+	"gov.hris_sync_sweep": true, // DPX-13: enqueues gov.hris_sync_check per tenant
 }
 
 // WorkerOptions configures NewWorkerClient. Zero values take the documented defaults.

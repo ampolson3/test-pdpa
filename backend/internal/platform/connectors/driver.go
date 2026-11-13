@@ -62,6 +62,16 @@ type Driver struct {
 	// run its own classifiers against in-process — never implemented by RESTDriver (no generic "sample N
 	// objects" convention exists across customer REST APIs the way SQL's LIMIT does).
 	Sample func(ctx context.Context, cfg Config, table string, limit int) ([]SampledRow, error)
+	// ListEmployees is DPX-13's addition: the HR system's current roster, each employee marked active or
+	// terminated, so a leaver's account can be closed here.
+	ListEmployees func(ctx context.Context, cfg Config) ([]Employee, error)
+}
+
+// Employee is one person an HRIS reports (DPX-13). Used in-process only for one sync run; never stored.
+type Employee struct {
+	ExternalID string
+	Email      string
+	Terminated bool
 }
 
 // Registry is every connector_type this process knows how to drive — built once in
@@ -76,4 +86,5 @@ const (
 	CapUpdate        = "update"
 	CapDelete        = "delete"
 	CapSample        = "sample"
+	CapListEmployees = "list_employees"
 )

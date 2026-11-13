@@ -45,3 +45,10 @@ JOIN iam.roles r ON r.id = ra.role_id
 WHERE r.code = @role_code AND u.status = 'active'
   AND ra.valid_from <= now() AND (ra.valid_to IS NULL OR ra.valid_to > now())
 ORDER BY u.id;
+
+-- name: DisableUserByEmail :one
+-- DPX-13: close the account of someone the HR system reports as having left. Already-disabled accounts
+-- match nothing, so a repeated sync is a no-op.
+UPDATE iam.users SET status = 'disabled', disabled_at = now()
+WHERE email = @email::citext AND status <> 'disabled'
+RETURNING id;

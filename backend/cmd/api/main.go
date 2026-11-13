@@ -424,6 +424,7 @@ func run() error {
 	// remediation job per audit finding (AssignFindingTask).
 	govSvc := &govservice.Service{Audit: auditSvc, Ropa: ropaSvc, Dsar: dsarSvc, Files: fileSvc, Docs: docsSvc,
 		Breach: breachSvc, Notify: notifySvc, River: riverClient, Org: orgSvc, Forms: formsSvc, Dpia: dpiaSvc, Dpo: dpoSvc}
+	govSvc.Connectors = connectorsSvc                                                // DPX-13: HRIS leaver sync
 	dpoSvc.Gov = govSvc                                                              // DPO-08: training due dates on the compliance calendar
 	fileSvc.EntityPermissions[govservice.JobType] = "dpx.retention.read"             // disposal job evidence
 	fileSvc.EntityPermissions[govservice.RegulatorLetterType] = "dpx.regulator.read" // DPX-08 letter attachment

@@ -57,6 +57,8 @@ export {
   useSaveConnector,
   useDeleteConnector,
   useTestConnector,
+  useRunHrisSync,
+  type HrisSyncResult,
   type Connector,
   type ConnectorInput,
   type ConnectorType,

@@ -210,8 +210,10 @@ type Service struct {
 	Dpia   Dpia
 	Dpo    Dpo
 	Notify *notify.Service
-	River  *river.Client[pgx.Tx]
-	Now    func() time.Time
+	// Connectors is DPX-13's HR roster source; nil skips the HRIS sync.
+	Connectors Connectors
+	River      *river.Client[pgx.Tx]
+	Now        func() time.Time
 }
 
 func (s *Service) now() time.Time {

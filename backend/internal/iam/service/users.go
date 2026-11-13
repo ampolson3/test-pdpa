@@ -155,3 +155,19 @@ func UsersWithRole(ctx context.Context, roleCode string) ([]uuid.UUID, error) {
 	}
 	return ids, nil
 }
+
+// DisableUserByEmail closes the account with that e-mail in the caller's tenant (DPX-13: an employee the
+// HR system reports as having left). It returns the user's id and whether an account was actually
+// closed; an unknown or already-disabled account is (uuid.Nil, false). A disabled account loads no
+// grants (ListEffectiveRoleAssignments), so every permission-gated call is refused once the 60 s grant
+// cache expires.
+func DisableUserByEmail(ctx context.Context, email string) (uuid.UUID, bool, error) {
+	id, err := iamstore.New(pdb.MustTxFromContext(ctx)).DisableUserByEmail(ctx, email)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return uuid.Nil, false, nil
+	}
+	if err != nil {
+		return uuid.Nil, false, fmt.Errorf("iam: disable user: %w", err)
+	}
+	return id, true, nil
+}

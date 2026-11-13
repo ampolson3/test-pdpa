@@ -129,6 +129,21 @@ func (q *Queries) AllActiveUsers(ctx context.Context) ([]AllActiveUsersRow, erro
 	return items, nil
 }
 
+const disableUserByEmail = `-- name: DisableUserByEmail :one
+UPDATE iam.users SET status = 'disabled', disabled_at = now()
+WHERE email = $1::citext AND status <> 'disabled'
+RETURNING id
+`
+
+// DPX-13: close the account of someone the HR system reports as having left. Already-disabled accounts
+// match nothing, so a repeated sync is a no-op.
+func (q *Queries) DisableUserByEmail(ctx context.Context, email string) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, disableUserByEmail, email)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getPrimaryOrgUnit = `-- name: GetPrimaryOrgUnit :one
 SELECT primary_org_unit_id FROM iam.users WHERE id = $1 AND status = 'active'
 `

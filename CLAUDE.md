@@ -6494,6 +6494,28 @@ Also fixed here: two unquoted flow-map descriptions containing commas (`NoticeAc
 `go test ./...` suite passes. Not done: version history of past article text (only the number is kept),
 attachments on articles, and English starter content.
 
+### DPX-13 เชื่อมระบบ HR / ITSM / SIEM (`docs/modules/DPX.md#dpx-13`) — done for the acceptance criterion (HRIS leavers); ITSM and SIEM not built
+New connector type `hris` in the PLT-20 registry (`connectors.HRISDriver`, capability `list_employees`): GET a JSON
+roster from the HR system (Bearer token; field names and "has left" status values are config) and return each
+employee as active or terminated. `govservice.SyncHRIS` reads every active HR connector and closes the account
+(`iam.users.status = 'disabled'`, new `iamservice.DisableUserByEmail`) of each terminated employee, matched by
+e-mail inside the tenant. It runs daily (`gov.hris_sync_sweep`, in `jobs.GlobalKinds` → `gov.hris_sync_check` per
+tenant) and on demand (`POST /admin/v1/governance/hris-sync`, `ropa.discovery.execute`; button on
+`/settings/connectors`). A connector that fails is counted and skipped; repeating the run is a no-op. The audit
+row (`iam.user.disable`) holds the user id, never the e-mail (rule 3). No migration.
+
+Two fixes made on the way: `ListEffectiveRoleAssignments` now returns nothing for a disabled user — before, a
+disabled account kept all its permissions (the grant cache still serves old grants for up to 60 s); and the
+OpenAPI `ConnectorCapability` enum lacked `sample` (DFG-09) and `list_employees`, so such connectors could not be
+created through the API.
+
+Tests: `hris_driver_test.go` (real `httptest` server, runs everywhere), `internal/gov/service/dpx13_test.go`
+(leaver closed, stayer untouched, failed connector skipped, no grants afterwards, audit without e-mail, second run
+no-op, two-tenant isolation) and the contract test (401/403/200) — the DB-backed ones skip without Postgres/Redis,
+which this environment lacks. Not done: joiners → user/training (needs IAM-01), ServiceNow/Jira ticket creation,
+SIEM audit forwarding, ending the Keycloak session of a closed account (Q-18), endpoints marked `authenticated`
+still answer a disabled user until then.
+
 ## Definition of done
 Acceptance criteria from the module doc are automated tests · lint and codegen check clean · RLS and permission tests present · no PII in logs · audit + outbox written for state changes · i18n th/en · docs updated · `/review-compliance` on the diff has no blocking findings.
 

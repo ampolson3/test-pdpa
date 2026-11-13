@@ -20341,6 +20341,28 @@ paths:
           $ref: '#/components/responses/UnprocessableEntity'
         '428':
           $ref: '#/components/responses/PreconditionRequired'
+  /admin/v1/governance/hris-sync:
+    post:
+      operationId: govRunHrisSync
+      tags: [gov]
+      summary: 'DPX-13: read every active HR connector now and close the accounts of employees it reports as having left (the same run the daily job makes)'
+      x-permission: ropa.discovery.execute
+      x-module: gov
+      security:
+        - adminJwt: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovHrisSyncResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /admin/v1/governance/frameworks:
     get:
       operationId: govListFrameworks
@@ -27200,7 +27222,7 @@ components:
       enum: [draft, active, error, disabled]
     ConnectorCapability:
       type: string
-      enum: [test, discover, search_subject, update, delete]
+      enum: [test, discover, search_subject, update, delete, sample, list_employees]
       description: Matches internal/platform/connectors's own capability constants (CapTest etc.)
     ConnectorType:
       type: object
@@ -29998,6 +30020,20 @@ components:
           type: number
         max_score:
           type: number
+    GovHrisSyncResult:
+      type: object
+      required: [connectors_checked, connectors_failed, employees_seen, accounts_disabled]
+      properties:
+        connectors_checked:
+          type: integer
+        connectors_failed:
+          type: integer
+          description: HR connectors that could not be read this run
+        employees_seen:
+          type: integer
+        accounts_disabled:
+          type: integer
+          description: Accounts closed by this run (already closed ones are not counted)
     GovFramework:
       type: object
       required: [id, code, name_th, name_en, legal_refs, row_version]

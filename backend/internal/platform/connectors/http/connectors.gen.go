@@ -21,6 +21,8 @@ import (
 const (
 	Delete        ConnectorCapability = "delete"
 	Discover      ConnectorCapability = "discover"
+	ListEmployees ConnectorCapability = "list_employees"
+	Sample        ConnectorCapability = "sample"
 	SearchSubject ConnectorCapability = "search_subject"
 	Test          ConnectorCapability = "test"
 	Update        ConnectorCapability = "update"
@@ -32,6 +34,10 @@ func (e ConnectorCapability) Valid() bool {
 	case Delete:
 		return true
 	case Discover:
+		return true
+	case ListEmployees:
+		return true
+	case Sample:
 		return true
 	case SearchSubject:
 		return true

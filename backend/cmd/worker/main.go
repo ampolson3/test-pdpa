@@ -31,6 +31,7 @@ import (
 	pdb "pdpa-platform/internal/pkg/db"
 	auditjobs "pdpa-platform/internal/platform/audit/jobs"
 	auditservice "pdpa-platform/internal/platform/audit/service"
+	"pdpa-platform/internal/platform/connectors"
 	"pdpa-platform/internal/platform/crypto"
 	"pdpa-platform/internal/platform/docs"
 	"pdpa-platform/internal/platform/docs/render"
@@ -153,7 +154,10 @@ func run() error {
 	// DPX-08: Breach is breachSvc directly (no import cycle) for a regulator letter's optional
 	// incident_id FK-visibility check; Notify is wired for the letter's own due-date reminder.
 	govSvc := &govservice.Service{Audit: auditservice.New(), Ropa: ropaSvc, Dsar: dsarSvc, Files: fileStore(store, inserter), River: inserter,
-		Breach: breachSvc, Notify: notifySvc}
+		Breach: breachSvc, Notify: notifySvc,
+		Connectors: connectors.New(wiring.Connectors(), notifySvc.Keyring, wiring.ConnectorsRopa{Ropa: ropaSvc})} // DPX-13: HR roster
+	river.AddWorker(workers, &govjobs.HrisSweeper{Pool: pool}) // DPX-13: daily leaver sync
+	river.AddWorker(workers, &govjobs.HrisChecker{Gov: govSvc})
 	river.AddWorker(workers, &govjobs.Checker{Gov: govSvc})
 	river.AddWorker(workers, &govjobs.Sweeper{Pool: pool})
 	river.AddWorker(workers, &govservice.RegulatorLetterDueWorker{Service: govSvc}) // DPX-08: due-date reminder
@@ -178,7 +182,7 @@ func run() error {
 		Logger:  slog.Default(),
 		Workers: workers,
 		PeriodicJobs: []*river.PeriodicJob{jobs.PeriodicJob(), events.SweepPeriodicJob(), auditjobs.VerifySweepPeriodicJob(),
-			auditjobs.RetentionPeriodicJob(retentionMonths), govjobs.SweepPeriodicJob(), cookieservice.SweepPeriodicJob(),
+			auditjobs.RetentionPeriodicJob(retentionMonths), govjobs.SweepPeriodicJob(), govjobs.HrisSweepPeriodicJob(), cookieservice.SweepPeriodicJob(),
 			notice.ReviewSweepPeriodicJob(), ropaservice.ReviewSweepPeriodicJob(), vendorservice.ReassessmentSweepPeriodicJob(),
 			consentservice.DoubleOptInSweepPeriodicJob(), consentservice.ExpirySweepPeriodicJob(), agreementservice.MissingDPASweepPeriodicJob(),
 			ropaservice.TemplateReviewSweepPeriodicJob()},

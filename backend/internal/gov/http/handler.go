@@ -976,3 +976,17 @@ func decodeCursor(s string) (time.Time, uuid.UUID, error) {
 	}
 	return at, id, nil
 }
+
+// GovRunHrisSync runs DPX-13's leaver sync now.
+func (h *Strict) GovRunHrisSync(ctx context.Context, _ GovRunHrisSyncRequestObject) (GovRunHrisSyncResponseObject, error) {
+	res, err := h.svc.SyncHRIS(ctx)
+	if err != nil {
+		return nil, problem(err)
+	}
+	return GovRunHrisSync200JSONResponse{
+		ConnectorsChecked: res.ConnectorsChecked,
+		ConnectorsFailed:  res.ConnectorsFailed,
+		EmployeesSeen:     res.EmployeesSeen,
+		AccountsDisabled:  res.AccountsDisabled,
+	}, nil
+}

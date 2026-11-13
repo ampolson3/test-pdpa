@@ -50,6 +50,7 @@ output-options:
     - govAttachFindingEvidence
     - govAssignFindingTask
     - govListFrameworks
+    - govRunHrisSync
     - govAssessFramework
     - govListFrameworkAssessments
     - govGetFrameworkAssessment

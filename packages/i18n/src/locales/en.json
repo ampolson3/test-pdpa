@@ -4352,6 +4352,13 @@
     }
   },
   "connectors": {
+    "hrisSync": {
+      "title": "HR leaver sync",
+      "hint": "Reads every active HR (hris) connector with the list_employees capability and closes the accounts of employees it reports as having left. Runs daily; use the button to run it now.",
+      "run": "Sync now",
+      "result": "Connectors read: {connectors} (failed: {failed}) · employees seen: {employees} · accounts closed: {disabled}",
+      "error": "The sync failed."
+    },
     "signInRequired": "Please sign in.",
     "forbidden": "You don't have permission to view connectors.",
     "title": "Connectors",

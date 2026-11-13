@@ -178,7 +178,7 @@ func TestGovHandler_Contract(t *testing.T) {
 			"dpx.regulator.read", "dpx.regulator.create", "dpx.regulator.update", "dpx.regulator.delete",
 			"dpx.training.read", "dpx.training.create", "dpx.training.update", "dpx.training.publish", "dpx.training.delete", "dpx.training.execute",
 			"dpx.audit.read", "dpx.audit.create", "dpx.audit.update", "dpx.audit.delete", "dpx.audit.approve",
-			"dpx.framework.read", "dpx.framework.execute"},
+			"dpx.framework.read", "dpx.framework.execute", "ropa.discovery.execute"},
 		reader.String(): {"dpx.retention.read", "dpx.audit.read", "dpx.audit.update", "dpx.framework.read"},
 		emp.String():    {"dpx.policy.execute"},
 		dpo.String():    {"dpx.policy.read", "dpx.policy.publish", "notice.document.read", "notice.document.update", "notice.document.approve", "notice.document.publish"},
@@ -263,6 +263,18 @@ func TestGovHandler_Contract(t *testing.T) {
 
 	if code, _, _ := do("GET", schedulesPath, nil, "", nil); code != 401 {
 		t.Errorf("no principal: %d, want 401", code)
+	}
+
+	// DPX-13: the HRIS leaver sync on demand. No HR connector is wired here, so the run reads nothing.
+	hrisPath := "/admin/v1/governance/hris-sync"
+	if code, _, _ := do("POST", hrisPath, nil, "", nil); code != 401 {
+		t.Errorf("hris sync, no principal: %d, want 401", code)
+	}
+	if code, _, _ := do("POST", hrisPath, &reader, "", nil); code != 403 {
+		t.Errorf("hris sync without ropa.discovery.execute: %d, want 403", code)
+	}
+	if code, body, _ := do("POST", hrisPath, &admin, "", nil); code != 200 || !strings.Contains(body, `"accounts_disabled":0`) {
+		t.Errorf("hris sync: %d %s", code, body)
 	}
 
 	createBody := map[string]any{"retention_rule_id": ruleID, "asset_id": assetID, "next_due_at": "2020-01-01"}

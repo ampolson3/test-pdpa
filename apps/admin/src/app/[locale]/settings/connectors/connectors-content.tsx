@@ -11,6 +11,7 @@ import {
   useSaveConnector,
   useDeleteConnector,
   useTestConnector,
+  useRunHrisSync,
   type Connector,
   type ConnectorTestResult,
 } from "@pdpa/api-client";
@@ -66,6 +67,7 @@ export function ConnectorsContent() {
   const save = useSaveConnector(client);
   const del = useDeleteConnector(client);
   const test = useTestConnector(client);
+  const hrisSync = useRunHrisSync(client);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [testResults, setTestResults] = useState<Record<string, ConnectorTestResult>>({});
 
@@ -118,6 +120,27 @@ export function ConnectorsContent() {
           </Button>
         )}
       </header>
+
+      {canExecute && (
+        <section className="space-y-2 rounded-md border border-slate-200 bg-white p-4" data-testid="hris-sync">
+          <h2 className="font-semibold">{t("hrisSync.title")}</h2>
+          <p className="text-slate-600">{t("hrisSync.hint")}</p>
+          <Button onClick={() => hrisSync.mutate()} disabled={hrisSync.isPending} data-testid="hris-sync-run">
+            {t("hrisSync.run")}
+          </Button>
+          {hrisSync.data && (
+            <p data-testid="hris-sync-result">
+              {t("hrisSync.result", {
+                connectors: hrisSync.data.connectors_checked,
+                failed: hrisSync.data.connectors_failed,
+                employees: hrisSync.data.employees_seen,
+                disabled: hrisSync.data.accounts_disabled,
+              })}
+            </p>
+          )}
+          {hrisSync.isError && <p className="text-red-700">{t("hrisSync.error")}</p>}
+        </section>
+      )}
 
       <div className="flex flex-wrap gap-4" data-testid="connector-filters">
         <label>

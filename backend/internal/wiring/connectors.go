@@ -19,6 +19,7 @@ func Connectors() connectors.Registry {
 		"mysql":     connectors.MySQLDriver(),
 		"sqlserver": connectors.SQLServerDriver(),
 		"rest":      connectors.RESTDriver(),
+		"hris":      connectors.HRISDriver(), // DPX-13: employee roster for leaver sync
 	}
 }
 

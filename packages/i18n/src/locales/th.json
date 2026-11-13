@@ -4352,6 +4352,13 @@
     }
   },
   "connectors": {
+    "hrisSync": {
+      "title": "ซิงก์พนักงานลาออกจากระบบ HR",
+      "hint": "อ่าน connector ประเภท HR (hris) ที่เปิดใช้งานและมีความสามารถ list_employees แล้วปิดบัญชีของพนักงานที่ระบบ HR แจ้งว่าพ้นสภาพ ระบบทำงานทุกวัน กดปุ่มเพื่อทำทันที",
+      "run": "ซิงก์ตอนนี้",
+      "result": "connector ที่อ่าน: {connectors} (ล้มเหลว: {failed}) · พนักงานที่พบ: {employees} · บัญชีที่ปิด: {disabled}",
+      "error": "ซิงก์ไม่สำเร็จ"
+    },
     "signInRequired": "กรุณาเข้าสู่ระบบ",
     "forbidden": "คุณไม่มีสิทธิ์ดู connector",
     "title": "Connector",
