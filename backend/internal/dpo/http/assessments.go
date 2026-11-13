@@ -86,7 +86,9 @@ func toAssessmentWire(a dposervice.Assessment) DpoSecurityAssessment {
 	return w
 }
 
-func encodeAssessmentCursor(c dposervice.AssessmentCursor) string { return encodeCursor(c.AssessedAt, c.ID) }
+func encodeAssessmentCursor(c dposervice.AssessmentCursor) string {
+	return encodeCursor(c.AssessedAt, c.ID)
+}
 
 func decodeAssessmentCursor(s string) (dposervice.AssessmentCursor, error) {
 	t, u, err := decodeCursor(s)

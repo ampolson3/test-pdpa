@@ -260,7 +260,6 @@ func TestClauseBilingualTextNotAliased(t *testing.T) {
 	})
 }
 
-
 func TestPublishNeedsEveryField(t *testing.T) {
 	f := docstest.Setup(t)
 	var doc docs.Document

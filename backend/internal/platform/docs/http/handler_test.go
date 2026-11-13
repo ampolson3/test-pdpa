@@ -16,12 +16,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
-	"pdpa-platform/internal/platform/docs/docstest"
-	docshttp "pdpa-platform/internal/platform/docs/http"
 	"pdpa-platform/internal/pkg/authz"
 	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/pkg/httpx"
 	"pdpa-platform/internal/pkg/validate"
+	"pdpa-platform/internal/platform/docs/docstest"
+	docshttp "pdpa-platform/internal/platform/docs/http"
 )
 
 func envOr(k, d string) string {

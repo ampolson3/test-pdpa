@@ -13,8 +13,8 @@ import (
 	"github.com/riverqueue/river"
 
 	iamservice "pdpa-platform/internal/iam/service"
-	pdb "pdpa-platform/internal/pkg/db"
 	noticestore "pdpa-platform/internal/notice/store"
+	pdb "pdpa-platform/internal/pkg/db"
 	"pdpa-platform/internal/platform/jobs"
 	"pdpa-platform/internal/platform/notify"
 )

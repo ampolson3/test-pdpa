@@ -27,10 +27,10 @@ type ActivityDescription struct {
 }
 
 type DescriptionPurpose struct {
-	Text               string
-	LawfulBasisCode    string
-	LawfulBasisNameTh  string
-	LawfulBasisNameEn  string
+	Text              string
+	LawfulBasisCode   string
+	LawfulBasisNameTh string
+	LawfulBasisNameEn string
 }
 
 type DescriptionData struct {

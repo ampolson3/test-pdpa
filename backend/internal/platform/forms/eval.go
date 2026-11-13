@@ -356,9 +356,9 @@ func round(f float64) float64 { return math.Round(f*100) / 100 }
 // Contribution is how much one answered question added to a score — the "why" behind a result (e.g. the factors
 // of a breach risk assessment, BRE-05).
 type Contribution struct {
-	Question string  `json:"question"`
-	Label    Text    `json:"label"`
-	Answer   any     `json:"answer"`
+	Question string `json:"question"`
+	Label    Text   `json:"label"`
+	Answer   any    `json:"answer"`
 	// AnswerLabels are the labels of the chosen options (choice questions whose options have labels).
 	AnswerLabels []Text  `json:"answer_labels,omitempty"`
 	Points       float64 `json:"points"`

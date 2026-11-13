@@ -10,11 +10,15 @@ import (
 
 type stubOrgFields map[string]string
 
-func (s stubOrgFields) MergeFields(context.Context, uuid.UUID) (map[string]string, error) { return s, nil }
+func (s stubOrgFields) MergeFields(context.Context, uuid.UUID) (map[string]string, error) {
+	return s, nil
+}
 
 type stubDpoFields map[string]string
 
-func (s stubDpoFields) MergeFields(context.Context, uuid.UUID) (map[string]string, error) { return s, nil }
+func (s stubDpoFields) MergeFields(context.Context, uuid.UUID) (map[string]string, error) {
+	return s, nil
+}
 
 // TestFieldValues_DpoMergeField is DPO-01's acceptance criterion at the docs layer: the current DPO's
 // contact channel resolves into every document's merge fields, alongside the organization's own (org and
